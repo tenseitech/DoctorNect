@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="DoctorNect — book doctors, manage appointments, health records. Web, Android & iOS.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="DoctorNect">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>DoctorNect</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="google-signin-client_id" content="658118593597-8k252ss5k33jknhqchgui8djnp91fjdg.apps.googleusercontent.com">
+
+  <!-- Force HTTPS in production (Firebase Hosting also redirects; this is defense-in-depth). -->
+  <script>
+    (function () {
+      try {
+        var host = location.hostname;
+        var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '';
+        if (!isLocal && location.protocol === 'http:') {
+          location.replace('https:' + window.location.href.substring(window.location.protocol.length));
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Razorpay Web Checkout JS -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <!-- Self-hosted pdf.js for printing/PdfPreview on web (pdfjs-dist 3.2.146). -->
+  <script>
+    var dartPdfJsBaseUrl = "assets/js/pdf/3.2.146/";
+  </script>
+  <!-- Instant Splash Loader Styles -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      background-color: #FFFFFF;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+    #app-loading-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: #FFFFFF;
+      color: #0B1F33;
+      z-index: 999999;
+      transition: opacity 0.4s ease-out;
+    }
+    .splash-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      margin: auto;
+      padding: 24px;
+    }
+    .splash-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .splash-logo {
+      width: min(220px, 55vw);
+      height: auto;
+      display: block;
+    }
+    .splash-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3.5px solid rgba(11, 31, 51, 0.15);
+      border-radius: 50%;
+      border-top-color: #0B1F33;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+    .splash-text {
+      margin-top: 18px;
+      font-size: 15px;
+      color: #64748B;
+      font-weight: 500;
+      text-align: center;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app-loading-splash">
+    <div class="splash-container">
+      <div class="splash-brand">
+        <img class="splash-logo" src="assets/images/logo.png" alt="DoctorNect" />
+      </div>
+      <div class="splash-spinner"></div>
+      <div class="splash-text">Loading Application...</div>
+    </div>
+  </div>
+
+  <script>
+    // Remove splash screen once Flutter is initialized
+    window.addEventListener('flutter-first-frame', function() {
+      var splash = document.getElementById('app-loading-splash');
+      if (splash) {
+        splash.style.opacity = '0';
+        setTimeout(function() {
+          splash.remove();
+        }, 400);
+      }
+    });
+
+    // Fallback timer to hide splash screen if event was missed
+    setTimeout(function() {
+      var splash = document.getElementById('app-loading-splash');
+      if (splash && splash.parentNode) {
+        splash.style.opacity = '0';
+        setTimeout(function() {
+          if (splash.parentNode) splash.remove();
+        }, 400);
+      }
+    }, 6000);
+
+    (function () {
+      var s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js';
+      s.async = true;
+      document.body.appendChild(s);
+    })();
+  </script>
+</body>
+</html>

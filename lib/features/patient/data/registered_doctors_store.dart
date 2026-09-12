@@ -1,0 +1,132 @@
+import '../../../core/firebase/firestore_service.dart';
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
+import '../../../core/firebase/firebase_bootstrap.dart';
+import '../models/patient_models.dart';
+
+/// Doctors loaded from Firestore — kept in sync via a real-time stream.
+class RegisteredDoctorsStore extends ChangeNotifier {
+  RegisteredDoctorsStore._();
+
+  static final RegisteredDoctorsStore instance = RegisteredDoctorsStore._();
+
+  final List<DoctorListing> _registered = [];
+  StreamSubscription<List<DoctorListing>>? _streamSub;
+  bool _streamActive = false;
+
+  List<DoctorListing> get searchableDoctors => List.unmodifiable(_registered);
+
+  List<DoctorListing> get verifiedDoctors =>
+      _registered.where((d) => d.verified).toList(growable: false);
+
+  bool isRegistered(String doctorId) => _registered.any((d) => d.id == doctorId);
+
+  DoctorListing? findById(String doctorId) {
+    for (final d in _registered) {
+      if (d.id == doctorId) return d;
+    }
+    return null;
+  }
+
+  /// Starts a real-time Firestore stream. Safe to call multiple times —
+  /// only one stream is active at a time. Retries automatically if Firebase
+  /// is not yet ready.
+  void startListening() {
+    if (_streamActive) return;
+
+    if (!FirebaseBootstrap.isReady) {
+      // Firebase not initialised yet — retry after a short delay.
+      Future.delayed(const Duration(seconds: 2), startListening);
+      return;
+    }
+
+    // Kick off a one-time fetch immediately so the UI has data fast.
+    unawaited(refreshFromFirestore(verifiedOnly: true));
+
+    _streamSub?.cancel();
+    _streamActive = true;
+
+    _streamSub = FirestoreService.instance.doctorDirectory
+        .streamAllDoctors(verifiedOnly: true)
+        .listen(
+          (doctors) {
+            if (doctors.isNotEmpty) {
+              _registered
+                ..clear()
+                ..addAll(doctors);
+              notifyListeners();
+            } else if (_registered.isEmpty) {
+              notifyListeners();
+            }
+          },
+          onError: (e) {
+            if (kDebugMode) debugPrint('[RegisteredDoctorsStore] stream error: $e');
+            _streamActive = false;
+            Future.delayed(const Duration(seconds: 3), startListening);
+          },
+        );
+  }
+
+  /// One-time fetch fallback (also used as initial fast-path).
+  Future<void> refreshFromFirestore({bool verifiedOnly = true}) async {
+    try {
+      final doctors =
+          await FirestoreService.instance.doctorDirectory.fetchAllDoctors(verifiedOnly: verifiedOnly);
+      if (doctors.isNotEmpty) {
+        _registered
+          ..clear()
+          ..addAll(doctors);
+        notifyListeners();
+      } else if (_registered.isEmpty) {
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('[RegisteredDoctorsStore] fetch error: $e');
+      // Always notify so UI doesn't stay stuck loading.
+      notifyListeners();
+    }
+  }
+
+  void addFromRegistration(DoctorListing listing) {
+    if (!_registered.any((d) => d.id == listing.id)) {
+      _registered.add(listing);
+      notifyListeners();
+    }
+  }
+
+  /// Keeps search/profile cards in sync after a new patient review.
+  void updateDoctorRating({
+    required String doctorId,
+    required double rating,
+    required int reviewCount,
+  }) {
+    final index = _registered.indexWhere((d) => d.id == doctorId);
+    if (index < 0) return;
+    final current = _registered[index];
+    _registered[index] = DoctorListing(
+      id: current.id,
+      name: current.name,
+      specialization: current.specialization,
+      qualification: current.qualification,
+      experienceYears: current.experienceYears,
+      rating: rating,
+      reviewCount: reviewCount,
+      clinicName: current.clinicName,
+      area: current.area,
+      distanceKm: current.distanceKm,
+      availability: current.availability,
+      nextSlot: current.nextSlot,
+      verified: current.verified,
+      gender: current.gender,
+      languages: current.languages,
+      addressLine1: current.addressLine1,
+      state: current.state,
+      city: current.city,
+      photoPath: current.photoPath,
+      photoUrl: current.photoUrl,
+    );
+    notifyListeners();
+  }
+}

@@ -1,0 +1,77 @@
+[{
+  "countryCode": "default",
+  "followUp": [
+      "fever",
+      "diarrhea",
+      "headache",
+      "intense_fatigue",
+      "muscular_pain",
+      "nausea_vomiting",
+      "sore_throat",
+      "unexplained_bleedings",
+      "rash"
+  ],
+  "case": [
+      "abdominal_pains",
+      "articular_pain",
+      "diarrhea",
+      "difficulty_breathing",
+      "difficulty_swallowing",
+      "headache",
+      "hiccups",
+      "intense_fatigue",
+      "loss_of_appetite",
+      "muscular_pain",
+      "nausea_vomiting",
+      "sore_throat",
+      "thoracic_pain",
+      "unexplained_bleedings",
+      "rash"
+  ]
+}, {
+  "countryCode": "gn",
+  "followUp": [],
+  "case": []
+}, {
+  "countryCode": "lr",
+  "followUp": [
+      "fever",
+      "muscular_pain",
+      "intense_fatigue",
+      "nausea_vomiting",
+      "diarrhea",
+      "headache",
+      "sore_throat",
+      "red_eyes",
+      "unexplained_bleedings",
+      "other_symptoms"
+    ],
+  "case": []
+}, {
+  "countryCode": "ml",
+  "followUp": [],
+  "case": []
+}, {
+  "countryCode": "sl",
+  "followUp": [
+      "fever",
+      "muscular_pain",
+      "articular_pain",
+      "neck_rigidity",
+      "intense_fatigue",
+      "nausea_vomiting",
+      "diarrhea",
+      "abdominal_pains",
+      "headache",
+      "back_pain",
+      "thoracic_pain",
+      "sore_throat",
+      "rash",
+      "bruises",
+      "red_eyes",
+      "unexplained_bleedings",
+      "jaundice",
+      "other_symptoms"
+    ],
+  "case": []
+}]

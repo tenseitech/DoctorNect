@@ -1,0 +1,298 @@
+﻿=== Task 1: print statements ===
+
+=== Task 1: TODO/FIXME ===
+
+Filename                         LineNumber Line                                                                      
+--------                         ---------- ----                                                                      
+doctor_registration_screen.dart         218   // TODO: Google Sign-In temporarily disabled - re-enable once Web Client
+patient_registration_screen.dart        278   // TODO: Google Sign-In temporarily disabled - re-enable once Web Client
+
+
+
+=== Task 1: unguarded debugPrint ===
+
+Filename                                  LineNumber Line                                                              
+--------                                  ---------- ----                                                              
+shared_appointments_store.dart                   275         debugPrint('Failed to persist appointment ${record.id}:...
+ambulance_auth_helper.dart                        27           debugPrint('Ambulance auth: could not clear existing ...
+ambulance_auth_helper.dart                        37         debugPrint('Ambulance auth: anonymous sign-in returned ...
+ambulance_auth_helper.dart                        42         debugPrint(                                               
+firebase_auth_service.dart                       775         debugPrint('Firestore prefetch after login failed: $e\n...
+firebase_bootstrap.dart                           39         debugPrint('Firebase initialized (${defaultTargetPlatfo...
+firebase_bootstrap.dart                           51         debugPrint('Firebase init failed: $e\n$st');              
+firebase_bootstrap.dart                           65           debugPrint(                                             
+firebase_bootstrap.dart                           78         debugPrint('App Check activated on web (reCAPTCHA v3).'); 
+firebase_bootstrap.dart                           94       debugPrint('App Check activated (debug providers on mobil...
+firebase_bootstrap.dart                           99       debugPrint('App Check activation failed: $e\n$st');         
+firebase_bootstrap.dart                          109       debugPrint('Validation rules preload failed: $e\n$st');     
+firebase_error_messages.dart                      77     debugPrint(                                                   
+firestore_screen_sync.dart                        94           debugPrint('Doctor appointments sync error: $e\n$st');  
+appointment_firestore_mapper.dart                229       debugPrint('Failed to map appointment $id: $e\n$st');       
+in_app_notification_firestore_mapper.dart         52         debugPrint('InAppNotificationFirestoreMapper.fromMap fa...
+ambulance_repository.dart                        846           debugPrint('completeBroadcast broadcast update: $e');   
+appointment_repository.dart                       57         debugPrint('Appointment save failed (${record.id}): ${e...
+doctor_directory_repository.dart                 160         debugPrint('[DoctorDirectoryRepository] _fromMap error ...
+review_repository.dart                            52         debugPrint('[ReviewRepository] fetchReviewForPatientAnd...
+review_repository.dart                            93         debugPrint('[ReviewRepository] recalculateDoctorRating ...
+review_repository.dart                           138         debugPrint('[ReviewRepository] submit failed (${e.code}...
+ambulance_push_background.dart                     8     debugPrint('Ambulance push (background): ${message.notifica...
+ambulance_push_service.dart                       85         debugPrint('Ambulance FCM token (copy for Firebase test...
+ambulance_push_service.dart                       89       debugPrint('Ambulance push: FCM token is null or empty');   
+ambulance_push_service.dart                       96         debugPrint('Ambulance FCM token refreshed: [REDACTED]');  
+doctor_in_app_notification_sync.dart              42           debugPrint('Doctor in-app notification sync error: $e...
+patient_in_app_notification_sync.dart             98           debugPrint('Patient in-app notification sync error: $...
+patient_notification_prefs_sync.dart              35           debugPrint('Patient notification prefs sync error: $e...
+file_encryption_service.dart                      82         debugPrint('FileEncryptionService.decryptFromMemoryCach...
+file_encryption_service.dart                     128             debugPrint('FileEncryptionService.readDiskFile decr...
+ambulance_session.dart                            63         debugPrint('AmbulanceSession: failed to persist session...
+ambulance_session.dart                            79           debugPrint(                                             
+ambulance_session.dart                            89         debugPrint('AmbulanceSession: failed to clear persisted...
+ambulance_session.dart                           103         debugPrint('AmbulanceSession: hasPersistedSession read ...
+ambulance_session.dart                           123         debugPrint('AmbulanceSession: restoreSession failed: $e...
+server_validation_service.dart                    92           debugPrint('ServerValidationService: invalid rules ca...
+server_validation_service.dart                   103           debugPrint('ServerValidationService: invalid threshol...
+server_validation_service.dart                   128         debugPrint('ServerValidationService.loadRules fetch fai...
+server_validation_service.dart                   151         debugPrint('ServerValidationService.validateField faile...
+server_validation_service.dart                   171         debugPrint('ServerValidationService.validateFields fail...
+server_validation_service.dart                   195         debugPrint('ServerValidationService.vitalAdvisory faile...
+clinical_prescription_store.dart                 306         debugPrint('ClinicalPrescriptionStore.loadMoreForPatien...
+community_diagnosis_repository.dart               47         debugPrint('CommunityDiagnosisRepository.fetchAll faile...
+community_diagnosis_repository.dart              145         debugPrint('CommunityDiagnosisRepository.persistCustomI...
+community_investigations_repository.dart          87         debugPrint('CommunityInvestigationsRepository._fetchLab...
+community_investigations_repository.dart         104         debugPrint('CommunityInvestigationsRepository._fetchRad...
+community_investigations_repository.dart         121         debugPrint('CommunityInvestigationsRepository._fetchBod...
+community_medicine_repository.dart                77         debugPrint('CommunityMedicineRepository.fetchAll failed...
+icd10_diagnoses_database.dart                     59       debugPrint('Icd10DiagnosesDatabase: loaded ${parsed.lengt...
+icd10_diagnoses_database.dart                     61       debugPrint('Icd10DiagnosesDatabase: load failed, using fa...
+icd10_diagnoses_database.dart                     62       debugPrint('$stackTrace');                                  
+indian_medicines_database.dart                    67       debugPrint('IndianMedicinesDatabase: asset load failed, u...
+indian_medicines_database.dart                    68       debugPrint('$stackTrace');                                  
+patient_clinical_baseline_loader.dart             62         debugPrint('PatientClinicalBaselineLoader.fetchLatestBa...
+symptoms_database.dart                            49         debugPrint('SymptomsDatabase: lists asset skipped. $err...
+symptoms_database.dart                            74       debugPrint(                                                 
+symptoms_database.dart                            79       debugPrint('SymptomsDatabase: load failed, using fallback...
+symptoms_database.dart                            80       debugPrint('$stackTrace');                                  
+write_prescription_screen.dart                   157         debugPrint('WritePrescriptionScreen._prefillPatientBase...
+health_record_file_store.dart                    217         debugPrint('HealthRecordFileStore.uploadToFirebaseStora...
+
+
+
+=== Task 2: Error UI exposing details ===
+
+Filename                    LineNumber Line                                                                      
+--------                    ---------- ----                                                                      
+forgot_password_screen.dart        121           content: Text(result.message ?? 'Could not send reset email.'), 
+forgot_password_screen.dart        272           content: Text(result.message ?? 'Password reset failed.'),      
+login_screen_base.dart             338           content: Text(result.message ?? 'Could not reactivate account'),
+login_screen_base.dart             380           content: Text(result.message ?? 'Sign-in failed'),              
+
+
+
+=== Task 2: catch blocks ===
+
+Filename                                  LineNumber Line                                                              
+--------                                  ---------- ----                                                              
+chime_sound_service.dart                          11     } catch (e) {                                                 
+password_reset_service.dart                       74     } on FirebaseAuthException catch (e) {                        
+password_reset_service.dart                       88     } catch (e) {                                                 
+password_reset_service.dart                      122     } on FirebaseAuthException catch (e) {                        
+password_reset_service.dart                      136     } catch (e) {                                                 
+registration_otp_service.dart                     82     } on FirebaseFunctionsException catch (e) {                   
+registration_otp_service.dart                     87     } catch (e) {                                                 
+registration_otp_service.dart                    144     } on FirebaseFunctionsException catch (e) {                   
+registration_otp_service.dart                    150     } catch (e) {                                                 
+registration_otp_service.dart                    182     } on FirebaseFunctionsException catch (e) {                   
+registration_otp_service.dart                    188     } catch (e) {                                                 
+registration_otp_service.dart                    227     } on FirebaseFunctionsException catch (e) {                   
+registration_otp_service.dart                    229     } catch (e) {                                                 
+local_avatar_store.dart                          129     } catch (e) {                                                 
+shared_appointments_store.dart                   273     } catch (e, st) {                                             
+shared_appointments_store.dart                   292     } catch (e) {                                                 
+shared_appointments_store.dart                   563     } catch (e) {                                                 
+ambulance_auth_helper.dart                        25       } catch (e, st) {                                           
+ambulance_auth_helper.dart                        40     } catch (e, st) {                                             
+firebase_auth_service.dart                       186     } on FirebaseAuthException catch (e) {                        
+firebase_auth_service.dart                       188     } on FirebaseException catch (e) {                            
+firebase_auth_service.dart                       197     } catch (e) {                                                 
+firebase_auth_service.dart                       310         } catch (e) {                                             
+firebase_auth_service.dart                       384     } on FirebaseAuthException catch (e) {                        
+firebase_auth_service.dart                       386     } on FirebaseException catch (e) {                            
+firebase_auth_service.dart                       394     } catch (e) {                                                 
+firebase_auth_service.dart                       449     } on FirebaseAuthException catch (e) {                        
+firebase_auth_service.dart                       451     } catch (e) {                                                 
+firebase_auth_service.dart                       560     } on FirebaseAuthException catch (e) {                        
+firebase_auth_service.dart                       593     } on FirebaseAuthException catch (e) {                        
+firebase_auth_service.dart                       714     } on FirebaseException catch (e) {                            
+firebase_auth_service.dart                       722     } catch (e) {                                                 
+firebase_auth_service.dart                       773     } catch (e, st) {                                             
+firebase_bootstrap.dart                           44     } catch (e, st) {                                             
+firebase_bootstrap.dart                           96   } catch (e, st) {                                               
+firebase_bootstrap.dart                          107   } catch (e, st) {                                               
+firestore_data_prefetch.dart                      41               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      47               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      53               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      58               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      63               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      68               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      73               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      78               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      87               .catchError((e, st) {                               
+firestore_data_prefetch.dart                      90           PatientProfileMock.loadFromFirestore(profileId).catch...
+firestore_data_prefetch.dart                      96               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     102               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     107               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     112               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     117               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     126               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     132               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     141               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     147               .catchError((e, st) {                               
+firestore_data_prefetch.dart                     153               .catchError((e, st) {                               
+appointment_firestore_mapper.dart                228     } catch (e, st) {                                             
+in_app_notification_firestore_mapper.dart         50     } catch (e, st) {                                             
+ambulance_repository.dart                         77     } on FirebaseException catch (e) {                            
+ambulance_repository.dart                         91     } catch (e) {                                                 
+ambulance_repository.dart                        123     } catch (e, st) {                                             
+ambulance_repository.dart                        143     } catch (e) {                                                 
+ambulance_repository.dart                        162     } catch (e) {                                                 
+ambulance_repository.dart                        193     } catch (e, st) {                                             
+ambulance_repository.dart                        215     } catch (e) {                                                 
+ambulance_repository.dart                        260     } catch (e, st) {                                             
+ambulance_repository.dart                        309     } catch (e, st) {                                             
+ambulance_repository.dart                        342     } catch (e, st) {                                             
+ambulance_repository.dart                        454     } on FirebaseException catch (e) {                            
+ambulance_repository.dart                        457     } catch (e, st) {                                             
+ambulance_repository.dart                        507     } catch (e) {                                                 
+ambulance_repository.dart                        606     } on FirebaseException catch (e) {                            
+ambulance_repository.dart                        608     } catch (e) {                                                 
+ambulance_repository.dart                        623     } on FirebaseException catch (e) {                            
+ambulance_repository.dart                        628     } catch (e) {                                                 
+ambulance_repository.dart                        683       } on FirebaseException catch (e) {                          
+ambulance_repository.dart                        724       } catch (e, st) {                                           
+ambulance_repository.dart                        730     } on FirebaseException catch (e, st) {                        
+ambulance_repository.dart                        737     } catch (e, st) {                                             
+ambulance_repository.dart                        805     } on FirebaseException catch (e) {                            
+ambulance_repository.dart                        809     } catch (e, st) {                                             
+ambulance_repository.dart                        844       } on FirebaseException catch (e) {                          
+ambulance_repository.dart                        869     } catch (e, st) {                                             
+ambulance_repository.dart                        899     } on FirebaseException catch (e) {                            
+ambulance_repository.dart                        903     } catch (e, st) {                                             
+ambulance_repository.dart                        969     } on FirebaseFunctionsException catch (e) {                   
+ambulance_repository.dart                        972     } catch (e, st) {                                             
+ambulance_repository.dart                       1017     } catch (e, st) {                                             
+ambulance_repository.dart                       1037     } catch (e) {                                                 
+ambulance_repository.dart                       1089     } on FirebaseFunctionsException catch (e) {                   
+ambulance_repository.dart                       1091     } catch (e, st) {                                             
+ambulance_repository.dart                       1167     } catch (e, st) {                                             
+appointment_repository.dart                       55     } on FirebaseException catch (e, st) {                        
+doctor_directory_repository.dart                 158     } catch (e, st) {                                             
+patient_profile_repository.dart                   89     } catch (e) {                                                 
+patient_profile_repository.dart                  194     } catch (e) {                                                 
+referral_repository.dart                          61     } catch (e, st) {                                             
+review_repository.dart                            50     } catch (e, st) {                                             
+review_repository.dart                            91     } catch (e, st) {                                             
+review_repository.dart                           136     } on FirebaseException catch (e) {                            
+review_repository.dart                           141     } catch (e, st) {                                             
+review_repository.dart                           184     } catch (e, st) {                                             
+review_repository.dart                           210     } catch (e, st) {                                             
+review_repository.dart                           311     } catch (e, st) {                                             
+review_repository.dart                           338     } catch (e, st) {                                             
+user_repository.dart                             343       } on FirebaseException catch (e) {                          
+user_repository.dart                             426     } on FirebaseException catch (e) {                            
+user_repository.dart                             450     } on FirebaseException catch (e) {                            
+user_repository.dart                             509       } on FirebaseException catch (e) {                          
+user_repository.dart                             582         } on FirebaseException catch (e) {                        
+user_repository.dart                             616         } on FirebaseException catch (e) {                        
+user_repository.dart                             651         } on FirebaseException catch (e) {                        
+user_repository.dart                             695           } on FirebaseException catch (e) {                      
+firestore_snapshot_builder.dart                   83     } catch (error) {                                             
+ambulance_invite_service.dart                     90     } catch (e, st) {                                             
+ambulance_invite_service.dart                    103     } catch (e) {                                                 
+ambulance_invite_service.dart                    148     } catch (e) {                                                 
+file_encryption_service.dart                      80     } catch (e, st) {                                             
+file_encryption_service.dart                     126         } catch (e, st) {                                         
+ccavenue_payment_helper.dart                      20     } catch (e) {                                                 
+promoted_ads_service.dart                        155     } catch (e) {                                                 
+razorpay_payment_helper.dart                      97     } catch (e) {                                                 
+ambulance_session.dart                            61     } catch (e, st) {                                             
+ambulance_session.dart                            87     } catch (e, st) {                                             
+ambulance_session.dart                           101     } catch (e, st) {                                             
+ambulance_session.dart                           121     } catch (e, st) {                                             
+server_validation_service.dart                    90       } catch (e, st) {                                           
+server_validation_service.dart                   101       } catch (e, st) {                                           
+server_validation_service.dart                   126     } catch (e, st) {                                             
+server_validation_service.dart                   149     } catch (e, st) {                                             
+server_validation_service.dart                   169     } catch (e, st) {                                             
+server_validation_service.dart                   193     } catch (e, st) {                                             
+ambulance_booking_screen.dart                    322     } catch (e) {                                                 
+ambulance_booking_screen.dart                   1441     } catch (e) {                                                 
+ambulance_invite_setup_screen.dart               170     }).catchError((_) {});                                        
+doctor_registration_screen.dart                  203     } catch (e) {                                                 
+doctor_registration_screen.dart                  381           } catch (e) {                                           
+doctor_registration_screen.dart                  452     } catch (e) {                                                 
+login_screen_base.dart                           149     } catch (e) {                                                 
+login_screen_base.dart                           495     } catch (e) {                                                 
+login_screen_base.dart                           524     } catch (e) {                                                 
+patient_registration_screen.dart                 263     } catch (e) {                                                 
+appointment_actions.dart                          31         } catch (e) {                                             
+appointment_actions.dart                          90               } catch (e) {                                       
+doctor_appointments_screen.dart                  136     } catch (e) {                                                 
+doctor_appointments_screen.dart                  161     } catch (e) {                                                 
+filtered_appointments_screen.dart                105     } catch (e) {                                                 
+filtered_appointments_screen.dart                130     } catch (e) {                                                 
+todays_appointments_screen.dart                   83     } catch (e) {                                                 
+todays_appointments_screen.dart                  108     } catch (e) {                                                 
+clinical_prescription_store.dart                 304     } catch (e, st) {                                             
+community_diagnosis_repository.dart               45     } catch (e, st) {                                             
+community_diagnosis_repository.dart              143     } catch (e, st) {                                             
+community_investigations_repository.dart          85     } catch (e, st) {                                             
+community_investigations_repository.dart         102     } catch (e, st) {                                             
+community_investigations_repository.dart         119     } catch (e, st) {                                             
+community_medicine_repository.dart                75     } catch (e, st) {                                             
+icd10_diagnoses_database.dart                     60     } catch (error, stackTrace) {                                 
+indian_medicines_database.dart                    66     } catch (error, stackTrace) {                                 
+patient_clinical_baseline_loader.dart             60     } catch (e, st) {                                             
+symptoms_database.dart                            48       } catch (error) {                                           
+symptoms_database.dart                            78     } catch (error, stackTrace) {                                 
+lab_test_order_screen.dart                       151     } catch (e) {                                                 
+add_community_medicine_dialog.dart                75     } catch (e) {                                                 
+prescription_preview_modal.dart                   58     } catch (e) {                                                 
+write_prescription_screen.dart                   155     } catch (e, st) {                                             
+write_prescription_screen.dart                   445     } catch (e) {                                                 
+multi_select_test_picker.dart                    131       } catch (e) {                                               
+multi_select_test_picker.dart                    441       } catch (e) {                                               
+prescription_form_sections.dart                  650     } catch (e) {                                                 
+refer_specialist_dialog.dart                     122     } catch (e) {                                                 
+refer_specialist_dialog.dart                     160     } catch (e) {                                                 
+doctor_home_screen.dart                          695     } catch (e) {                                                 
+doctor_home_screen.dart                          725     } catch (e) {                                                 
+doctor_home_screen.dart                          755     } catch (e) {                                                 
+doctor_home_screen.dart                          779     } catch (e) {                                                 
+doctor_profile_screen.dart                       636       } catch (e) {                                               
+doctor_profile_store.dart                        235       } catch (e) {                                               
+doctor_profile_store.dart                        246       } catch (e) {                                               
+doctor_profile_store.dart                        277       } catch (e) {                                               
+account_security_section.dart                    190     } on FirebaseAuthException catch (e) {                        
+clinic_info_section.dart                         172     } catch (e) {                                                 
+lab_profile_screen.dart                          795     } catch (e) {                                                 
+lab_walkin_screen.dart                           112     } catch (e) {                                                 
+lab_report_upload_sheet.dart                     240     } catch (e) {                                                 
+booking_flow_screen.dart                         493       } catch (e) {                                               
+registered_doctors_store.dart                     85     } catch (e) {                                                 
+doctor_profile_share_sheet.dart                  109                   } catch (e) {                                   
+account_security_screen.dart                     105     } on AuthUpdateException catch (e) {                          
+support_ticket_chat_screen.dart                  104     } catch (e) {                                                 
+health_record_file_store.dart                    215     } catch (e, st) {                                             
+store_profile_screen.dart                        867     } catch (e) {                                                 
+create_promoted_ad_screen.dart                   163     } catch (e) {                                                 
+create_promoted_ad_screen.dart                   225     } catch (e) {                                                 
+appointment_detail_screen.dart                   131     } catch (e) {                                                 
+appointment_detail_screen.dart                   151     } catch (e) {                                                 
+appointment_detail_screen.dart                   922     } catch (e) {                                                 
+patient_profile_screen.dart                     1178     } catch (e) {                                                 
+patient_profile_screen.dart                     1701       } catch (e) {                                               
+email_verification_banner.dart                    47     } catch (e) {                                                 
+profile_photo_avatar.dart                        105     } catch (e) {                                                 
+
+
+

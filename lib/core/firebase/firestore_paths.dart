@@ -1,0 +1,33 @@
+abstract final class FirestorePaths {
+  static const users = 'users';
+  static const doctors = 'doctors';
+  static const patients = 'patients';
+  static const medicalStores = 'medical_stores';
+  static const labs = 'labs';
+  static const prescriptions = 'prescriptions';
+  static const medicineSuggestions = 'medicine_suggestions';
+  static const communityMedicines = 'community_medicines';
+  static const pendingCommunityMedicines = 'pending_community_medicines';
+  static const communityDiagnoses = 'community_diagnoses';
+  static const communityLabTests = 'community_lab_tests';
+  static const communityRadiology = 'community_radiology';
+  static const communityBodyParts = 'community_body_parts';
+  static const pharmacyConnections = 'pharmacy_connections';
+  static const labConnections = 'lab_connections';
+  static const pharmacyDeliveries = 'pharmacy_deliveries';
+  static const appointments = 'appointments';
+  static const healthRecords = 'health_records';
+  static const familyMembers = 'family_members';
+  static const reviews = 'reviews';
+  static const referrals = 'referrals';
+  static const labBookings = 'lab_bookings';
+  static const labOrders = 'lab_orders';
+  static const medicalDirectory = 'medical_directory';
+  static const labCatalog = 'lab_catalog';
+  static const doctorAvailability = 'doctor_availability';
+  static const inAppNotifications = 'in_app_notifications';
+  static const ambulanceInvites = 'ambulance_invites';
+  static const ambulances = 'ambulances';
+  static const ambulanceRequests = 'ambulance_requests';
+  static const ambulanceBroadcasts = 'ambulance_broadcasts';
+}

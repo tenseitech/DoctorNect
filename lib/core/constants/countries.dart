@@ -1,0 +1,37 @@
+abstract final class Countries {
+  static const String defaultCountry = 'India';
+
+  static const List<String> all = [
+    'India',
+    'Afghanistan',
+    'Australia',
+    'Bangladesh',
+    'Bhutan',
+    'Canada',
+    'China',
+    'France',
+    'Germany',
+    'Indonesia',
+    'Ireland',
+    'Italy',
+    'Japan',
+    'Malaysia',
+    'Maldives',
+    'Myanmar',
+    'Nepal',
+    'Netherlands',
+    'New Zealand',
+    'Oman',
+    'Pakistan',
+    'Qatar',
+    'Saudi Arabia',
+    'Singapore',
+    'South Africa',
+    'Sri Lanka',
+    'Switzerland',
+    'Thailand',
+    'United Arab Emirates',
+    'United Kingdom',
+    'United States',
+  ];
+}

@@ -1,0 +1,253 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function storageUser() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function authEmail() {
+      return (isSignedIn() && request.auth.token.keys().hasAll(['email']))
+        ? request.auth.token.email.lower()
+        : '';
+    }
+
+    function isSuperAdminStorageUser() {
+      return isSignedIn() && (
+        authEmail() in [
+          'sharmasd2@gmail.com',
+          'tenseitechpvtltd@gmail.com',
+          'admin@doctornect.com',
+          'superadmin@doctornect.com',
+          'support@doctornect.com'
+        ]
+        || (
+          firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+          && (
+            storageUser().get('role', '') == 'super_admin'
+            || storageUser().get('role', '') == 'superAdmin'
+            || storageUser().get('role', '') == 'admin'
+          )
+        )
+      );
+    }
+
+    function isLabStorageUser() {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && storageUser().get('role', '') == 'lab';
+    }
+
+    function isPatientStorageOwner(patientId) {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && storageUser().get('role', '') == 'patient'
+        && storageUser().get('profileId', '') == patientId;
+    }
+
+    function isDoctorStorageUser() {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && storageUser().get('role', '') == 'doctor';
+    }
+
+    function myDoctorProfileId() {
+      return storageUser().get('profileId', '');
+    }
+
+    function doctorStorageProfilePath() {
+      return /databases/(default)/documents/doctors/$(myDoctorProfileId());
+    }
+
+    function isVerifiedDoctorStorageUser() {
+      return isDoctorStorageUser()
+        && myDoctorProfileId() != ''
+        && firestore.exists(doctorStorageProfilePath())
+        && firestore.get(doctorStorageProfilePath()).data.get('verified', false) == true;
+    }
+
+    function doctorCanAccessPatientProfile(patientId) {
+      let patientPath = /databases/(default)/documents/patients/$(patientId);
+      return isVerifiedDoctorStorageUser()
+        && firestore.exists(patientPath)
+        && firestore.get(patientPath).data.get('shareRecordsWithDoctors', true) == true
+        && (
+          myDoctorProfileId() in firestore.get(patientPath).data.get('careTeamDoctorIds', [])
+          || firestore.get(patientPath).data.get('primaryDoctorId', '') == myDoctorProfileId()
+          || firestore.get(patientPath).data.get('invitedDoctorId', '') == myDoctorProfileId()
+        );
+    }
+
+    function doctorCanReadHealthRecordFile(patientId, recordId) {
+      let recordPath = /databases/(default)/documents/health_records/$(recordId);
+      return firestore.exists(recordPath)
+        && firestore.get(recordPath).data.patientId == patientId
+        && firestore.get(recordPath).data.get('sharedWithDoctors', false) == true
+        && doctorCanAccessPatientProfile(patientId);
+    }
+
+    function myLabProfileId() {
+      return storageUser().get('profileId', '');
+    }
+
+    function labBookingReportAccess(patientId, bookingId) {
+      let bookingPath = /databases/(default)/documents/lab_bookings/$(bookingId);
+      return firestore.exists(bookingPath)
+        && firestore.get(bookingPath).data.patientId == patientId
+        && firestore.get(bookingPath).data.get('labId', '') == myLabProfileId()
+        && firestore.get(bookingPath).data.get('status', '') != 'cancelled';
+    }
+
+    function labOrderReportAccess(patientId, orderId) {
+      let orderPath = /databases/(default)/documents/lab_orders/$(orderId);
+      return firestore.exists(orderPath)
+        && firestore.get(orderPath).data.patientId == patientId
+        && firestore.get(orderPath).data.get('labId', '') == myLabProfileId()
+        && firestore.get(orderPath).data.get('status', '') != 'cancelled';
+    }
+
+    function labCanAccessPatientReport(patientId, bookingId) {
+      return isLabStorageUser()
+        && (labBookingReportAccess(patientId, bookingId)
+          || labOrderReportAccess(patientId, bookingId));
+    }
+
+    // ─── Patient Profile Photos ──────────────────────────────────────────────
+    match /patients/{patientId}/profile_photo.jpg {
+      allow read: if isSignedIn();
+      allow create, update: if isPatientStorageOwner(patientId)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isPatientStorageOwner(patientId) || isSuperAdminStorageUser();
+    }
+
+    // ─── Doctor Profile Photos ───────────────────────────────────────────────
+    match /doctor_profiles/{doctorId}/profile.jpg {
+      allow read: if isSignedIn();
+      allow create, update: if isDoctorStorageUser()
+        && myDoctorProfileId() == doctorId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if (isDoctorStorageUser() && myDoctorProfileId() == doctorId)
+        || isSuperAdminStorageUser();
+    }
+
+    // ─── Doctor Documents (Registration Certificates, Degrees & ID Proofs) ───
+    match /doctors/{doctorId}/{docFolder}/{fileName} {
+      allow read: if isSuperAdminStorageUser()
+        || (isDoctorStorageUser() && myDoctorProfileId() == doctorId)
+        || isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf.*')
+          || request.resource.contentType.matches('image/.*')
+        )
+        && docFolder in ['certificates', 'id_proof', 'documents', 'degrees']
+        && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
+      allow delete: if isSuperAdminStorageUser()
+        || (isDoctorStorageUser() && myDoctorProfileId() == doctorId);
+    }
+
+    // ─── Pharmacy Documents (Drug Licenses & GST) ────────────────────────────
+    match /pharmacies/{storeId}/{docFolder}/{fileName} {
+      allow read: if isSuperAdminStorageUser() || isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf.*')
+          || request.resource.contentType.matches('image/.*')
+        )
+        && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
+      allow delete: if isSuperAdminStorageUser();
+    }
+
+    // ─── Diagnostic Lab Documents (NABL & Registration) ───────────────────────
+    match /labs/{labId}/{docFolder}/{fileName} {
+      allow read: if isSuperAdminStorageUser() || isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf.*')
+          || request.resource.contentType.matches('image/.*')
+        )
+        && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
+      allow delete: if isSuperAdminStorageUser();
+    }
+
+    // ─── Ambulance Documents (Permits, RC, Fitness) ──────────────────────────
+    match /ambulances/{ambulanceId}/{docFolder}/{fileName} {
+      allow read: if isSuperAdminStorageUser() || isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf.*')
+          || request.resource.contentType.matches('image/.*')
+        )
+        && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
+      allow delete: if isSuperAdminStorageUser();
+    }
+
+    // ─── Generic Verification KYC Folder ────────────────────────────────────
+    match /verification_docs/{userId}/{fileName} {
+      allow read: if isSuperAdminStorageUser() || (isSignedIn() && request.auth.uid == userId);
+      allow create, update: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf.*')
+          || request.resource.contentType.matches('image/.*')
+        )
+        && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
+      allow delete: if isSuperAdminStorageUser() || (isSignedIn() && request.auth.uid == userId);
+    }
+
+    // ─── Promoted Ad Images ──────────────────────────────────────────────────
+    match /promoted_ads/{providerId}/{fileName} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.auth.uid == providerId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*')
+        && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
+      allow delete: if isSignedIn() && request.auth.uid == providerId;
+    }
+
+    // ─── Lab Reports ────────────────────────────────────────────────────────
+    match /lab_reports/{patientId}/{bookingId}/{fileName} {
+      allow read: if isSuperAdminStorageUser()
+        || isPatientStorageOwner(patientId)
+        || labCanAccessPatientReport(patientId, bookingId);
+      allow create, update: if (isSuperAdminStorageUser() || labCanAccessPatientReport(patientId, bookingId))
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf.*')
+          || request.resource.contentType.matches('image/.*')
+        );
+      allow delete: if isSuperAdminStorageUser() || labCanAccessPatientReport(patientId, bookingId);
+    }
+
+    // ─── Health Records ─────────────────────────────────────────────────────
+    match /health_records/{patientId}/{recordId}/{fileName} {
+      allow read: if isSuperAdminStorageUser()
+        || isPatientStorageOwner(patientId)
+        || doctorCanReadHealthRecordFile(patientId, recordId);
+      allow create, update: if (isSuperAdminStorageUser() || isPatientStorageOwner(patientId))
+        && request.resource.size < 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf.*')
+          || request.resource.contentType.matches('image/.*')
+        );
+      allow delete: if isSuperAdminStorageUser() || isPatientStorageOwner(patientId);
+    }
+
+    // ─── Default Fallback: Super Admin Read Allowed, Public Denied ──────────
+    match /{allPaths=**} {
+      allow read: if isSuperAdminStorageUser();
+      allow write: if false;
+    }
+  }
+}

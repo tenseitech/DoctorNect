@@ -1,0 +1,1052 @@
+rules_version = '2';
+
+// Medibond — Firestore security rules
+// Auth: Firebase Auth (email/password or phone when enabled)
+// User profile: users/{uid} with role + doctorId | patientId
+// Deploy: firebase deploy --only firestore:rules
+//
+// Public internet access: there is no open database port. Clients reach Firestore
+// only via Google APIs with Firebase Auth + these rules. Enforce App Check in the
+// Firebase Console (Firestore → App Check → Enforce) for production.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ───────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // OAuth login: match doctor doc saved email to signed-in Google/Apple email.
+    function authEmail() {
+      return isSignedIn() && request.auth.token.email != null
+        ? request.auth.token.email
+        : '';
+    }
+
+    function doctorEmailMatchesAuth() {
+      // Emails are stored lowercase from the app (registration + OAuth repair).
+      return authEmail() != ''
+        && resource.data.get('email', '').lower() == authEmail().lower();
+    }
+
+    function userEmailMatchesAuth() {
+      return authEmail() != ''
+        && resource.data.get('email', '').lower() == authEmail().lower();
+    }
+
+    // Google login after email/password register: relink ownerUid + email on doctors doc.
+    function oauthDoctorRelinkUpdate() {
+      return isSignedIn()
+        && request.resource.data.get('ownerUid', '') == request.auth.uid
+        && request.resource.data.get('email', '').lower() == authEmail().lower()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['ownerUid', 'email'])
+        && (
+          doctorEmailMatchesAuth()
+          || resource.data.get('email', '') == ''
+        );
+    }
+
+    function userPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userExists() {
+      return isSignedIn() && exists(userPath());
+    }
+
+    function userData() {
+      return userExists() ? get(userPath()).data : {};
+    }
+
+    function role() {
+      return userData().get('role', '');
+    }
+
+    function isDoctor() {
+      return userExists() && role() == 'doctor';
+    }
+
+    function doctorProfilePath() {
+      return /databases/$(database)/documents/doctors/$(myDoctorId());
+    }
+
+    function doctorProfileExists() {
+      return isDoctor()
+        && myDoctorId() != ''
+        && exists(doctorProfilePath());
+    }
+
+    function doctorProfileDoc() {
+      return get(doctorProfilePath()).data;
+    }
+
+    // Admin-approved clinical access — pending doctors may only read own profile.
+    function isVerifiedDoctor() {
+      return isDoctor()
+        && doctorProfileExists()
+        && doctorProfileDoc().get('verified', false) == true;
+    }
+
+    function isPatient() {
+      return userExists() && role() == 'patient';
+    }
+
+    function isMedicalStore() {
+      return userExists() && role() == 'medicalStore';
+    }
+
+    function isLab() {
+      return userExists() && role() == 'lab'; // FIXED: lab operator role helper
+    }
+
+    // Account admins (keep in sync with ACCOUNT_APPROVAL_ADMIN_EMAILS in functions/.env).
+    // Explicit allow-list only — never match on email substrings (e.g. .*admin.*).
+    function isAccountAdmin() {
+      return authEmail() != '' && (
+        authEmail().lower() in [
+          'sharmasd2@gmail.com',
+          'tenseitechpvtltd@gmail.com',
+          'admin@doctornect.com',
+          'superadmin@doctornect.com',
+          'support@doctornect.com'
+        ]
+      );
+    }
+
+    function isSuperAdmin() {
+      return (userExists() && (role() == 'super_admin' || role() == 'superAdmin' || role() == 'admin'))
+        || isAccountAdmin();
+    }
+
+    function myProfileId() {
+      return userData().get('profileId', '');
+    }
+
+    function myDoctorId() {
+      return myProfileId();
+    }
+
+    function myPatientId() {
+      return myProfileId();
+    }
+
+    function myStoreId() {
+      return myProfileId();
+    }
+
+    function myLabId() {
+      return myProfileId(); // FIXED: lab profile id matches users/{uid}.profileId
+    }
+
+    function labBookingLabUpdateKeys() {
+      return [
+        'status',
+        'updatedAt',
+        'reportFileName',
+        'reportStorageUrl',
+        'reportSubmittedAt',
+        'reportBookingId',
+      ];
+    }
+
+    function ownsStore(storeId) {
+      return isMedicalStore() && myStoreId() == storeId;
+    }
+
+    function ownsLab(labId) {
+      return isLab() && myLabId() == labId; // FIXED: lab can only edit its own profile doc
+    }
+
+    function ownsDoctor(doctorId) {
+      return isDoctor() && myDoctorId() == doctorId;
+    }
+
+    function ownsPatient(patientId) {
+      return isPatient() && myPatientId() == patientId;
+    }
+
+    // Doctor may read a registered patient profile only when sharing is ON and
+    // this doctor is on the care team (primary, invite, or appointment-granted).
+    function doctorCanAccessPatient(patientId) {
+      let patient = get(/databases/$(database)/documents/patients/$(patientId)).data;
+      return isVerifiedDoctor()
+        && patient.get('shareRecordsWithDoctors', true) == true
+        && (
+          myDoctorId() in patient.get('careTeamDoctorIds', [])
+          || patient.get('primaryDoctorId', '') == myDoctorId()
+          || patient.get('invitedDoctorId', '') == myDoctorId()
+        );
+    }
+
+    function doctorCanAccessPatientRecord(patientId) {
+      return patientId is string
+        && patientId != ''
+        && exists(/databases/$(database)/documents/patients/$(patientId))
+        && doctorCanAccessPatient(patientId);
+    }
+
+    // Referring doctor must already treat this patient (C2 gate; registered p* ids only).
+    function registeredPatientId(patientId) {
+      return patientId is string && patientId.matches('^p\\d+$');
+    }
+
+    // Walk-in / synthetic patient ids skip sharing checks; registered p* ids require opt-in.
+    function doctorCanReadPatientClinicalData(patientId) {
+      return !registeredPatientId(patientId)
+        || doctorCanAccessPatientRecord(patientId);
+    }
+
+    function referringDoctorHasPatientAccess(patientId) {
+      return patientId is string
+        && patientId != ''
+        && exists(/databases/$(database)/documents/patients/$(patientId))
+        && (
+          exists(/databases/$(database)/documents/patients/$(patientId)/doctor_links/$(myDoctorId()))
+          || myDoctorId() in get(/databases/$(database)/documents/patients/$(patientId)).data.get('careTeamDoctorIds', [])
+          || get(/databases/$(database)/documents/patients/$(patientId)).data.get('invitedDoctorId', '') == myDoctorId()
+        );
+    }
+
+    // Synthetic / walk-in referral ids (non p*) stay metadata-only; no profile escalation path.
+    function referralSenderPatientAccessOk(patientId) {
+      return !registeredPatientId(patientId)
+        || referringDoctorHasPatientAccess(patientId);
+    }
+
+    function referralDoctorLinkCreateValid(patientId, doctorId) {
+      let data = request.resource.data;
+      let linkReferralId = data.get('referralId', '');
+      let referral = get(/databases/$(database)/documents/referrals/$(linkReferralId)).data;
+      return isVerifiedDoctor()
+        && referringDoctorHasPatientAccess(patientId)
+        && data.get('fromDoctorId', '') == myDoctorId()
+        && data.get('doctorId', '') == doctorId
+        && data.get('source', '') == 'referral'
+        && data.keys().hasOnly(['doctorId', 'fromDoctorId', 'source', 'createdAt', 'referralId'])
+        && linkReferralId != ''
+        && exists(/databases/$(database)/documents/referrals/$(linkReferralId))
+        && referral.get('patientId', '') == patientId
+        && referral.get('fromDoctorId', '') == myDoctorId()
+        && referral.get('toDoctorId', '') == doctorId;
+    }
+
+    // Rules cannot query appointments by doctorId+patientId; doctor_links subcollection
+    // is written on patient booking (source appointment) or referral (source referral).
+    function careTeamGrantHasLegitimateRelationship(patientId) {
+      return resource.data.get('invitedDoctorId', '') == myDoctorId()
+        || exists(/databases/$(database)/documents/patients/$(patientId)/doctor_links/$(myDoctorId()));
+    }
+
+    // Doctor may add only themselves to careTeamDoctorIds when a real relationship exists.
+    function careTeamGrantUpdate(patientId) {
+      let oldTeam = resource.data.get('careTeamDoctorIds', []);
+      let newTeam = request.resource.data.get('careTeamDoctorIds', []);
+      return isVerifiedDoctor()
+        && careTeamGrantHasLegitimateRelationship(patientId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['careTeamDoctorIds', 'updatedAt'])
+        && newTeam.size() >= oldTeam.size()
+        && newTeam.size() <= oldTeam.size() + 1
+        && myDoctorId() in newTeam
+        && !(myDoctorId() in oldTeam);
+    }
+
+    function ambulanceBroadcastParty() {
+      return isAmbulanceBooker()
+        || isDriverOwner(resource.data.get('acceptedDriverId', ''));
+    }
+
+    function ambulanceRequestParty() {
+      return isAmbulanceBooker()
+        || isDriverOwner(resource.data.driverId);
+    }
+
+    // Driver claims a pending broadcast (update-only; no broadcast read required).
+    function driverCanClaimBroadcast() {
+      return resource.data.status == 'pending'
+        && request.resource.data.status == 'accepted'
+        && request.resource.data.get('acceptedDriverId', '') != ''
+        && isDriverOwner(request.resource.data.get('acceptedDriverId', ''));
+    }
+
+    // Winning driver marks other drivers' pending request copies as taken.
+    function driverCanMarkSiblingRequestTaken() {
+      let broadcastId = resource.data.get('broadcastId', '');
+      let winnerId = request.resource.data.get('acceptedDriverId', '');
+      return broadcastId != ''
+        && winnerId != ''
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'taken'
+        && isDriverOwner(winnerId)
+        && exists(/databases/$(database)/documents/ambulance_broadcasts/$(broadcastId))
+        && get(/databases/$(database)/documents/ambulance_broadcasts/$(broadcastId)).data.get('status', '') == 'accepted'
+        && get(/databases/$(database)/documents/ambulance_broadcasts/$(broadcastId)).data.get('acceptedDriverId', '') == winnerId;
+    }
+
+    function isVerifiedDoctorListing() {
+      return resource.data.get('verified', false) == true;
+    }
+
+    function isVerifiedStoreListing() {
+      return resource.data.get('verified', false) == true;
+    }
+
+    function isVerifiedLabListing() {
+      return resource.data.get('verified', false) == true;
+    }
+
+    // For doctor registration, verified starts false until Super Admin approval.
+    // For all other roles (patient, pharmacy, lab, ambulance), verified can be set to true on registration.
+    function registrationVerifiedFieldsValid() {
+      return (!('role' in request.resource.data) || request.resource.data.role != 'doctor')
+        || (
+          (!('verified' in request.resource.data) || request.resource.data.verified == false)
+          && !('verifiedAt' in request.resource.data)
+        );
+    }
+
+    function appointmentParty() {
+      return isSignedIn() && (
+        (isVerifiedDoctor() && resource.data.doctorId == myDoctorId()) ||
+        (isPatient() && resource.data.patientId == myPatientId())
+      );
+    }
+
+    function appointmentCreateValid() {
+      let data = request.resource.data;
+      return isPatient()
+        && data.patientId == myPatientId()
+        && data.keys().hasAll(['doctorId', 'patientId', 'appointmentId', 'dateTime'])
+        && data.doctorId is string
+        && data.patientId is string
+        && data.dateTime is timestamp;
+    }
+
+    // Clinic walk-in: doctor creates appointment with generated patientId (wi…), not auth uid.
+    function walkInAppointmentCreateValid() {
+      let data = request.resource.data;
+      return isVerifiedDoctor()
+        && data.get('source', '') == 'walkin'
+        && data.doctorId == myDoctorId()
+        && data.keys().hasAll(['doctorId', 'patientId', 'appointmentId', 'dateTime'])
+        && data.doctorId is string
+        && data.patientId is string
+        && data.patientId.matches('^wi\\d+$')
+        && data.dateTime is timestamp;
+    }
+
+    // ─── users/{uid} ───────────────────────────────────────────────────────
+    // Created on register; role: "doctor" | "patient"
+
+    match /users/{uid} {
+      // Owner or super-admin only — never expose arbitrary users/{uid} by ID.
+      allow read: if isSignedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow list: if isSuperAdmin();
+      allow create: if (isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['role', 'createdAt'])
+        && request.resource.data.role in ['doctor', 'patient', 'medicalStore', 'lab', 'ambulance']
+        && registrationVerifiedFieldsValid())
+        || isSuperAdmin();
+      allow update: if isSuperAdmin()
+        || (isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.role == resource.data.role
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'verifiedAt']));
+      allow delete: if isSuperAdmin();
+    }
+
+    // ─── doctors/{doctorId} ────────────────────────────────────────────────
+    // Patient search: verified doctors only. Doctor edits own profile.
+
+    match /doctors/{doctorId} {
+      // Cap list page size to reduce scraping / bulk export abuse.
+      allow list: if isSignedIn() && request.query.limit <= 100;
+      allow get: if isSignedIn() && (
+        isSuperAdmin()
+        || ownsDoctor(doctorId)
+        || resource.data.get('ownerUid', '') == request.auth.uid
+        || resource.data.get('verified', false) == true
+      );
+      allow create: if (isSignedIn()
+        && request.resource.data.get('ownerUid', '') == request.auth.uid
+        && request.resource.data.get('doctorId', doctorId) == doctorId
+        && registrationVerifiedFieldsValid())
+        || isSuperAdmin();
+      // Rating aggregates are Cloud Functions (Admin SDK) only — never client-writable.
+      allow update: if isSuperAdmin()
+        || (isDoctor()
+          && (ownsDoctor(doctorId) || request.auth.uid == doctorId)
+          && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['verified', 'verifiedAt', 'mobile', 'phone', 'rating', 'reviewCount']))
+        || (doctorEmailMatchesAuth()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid'])
+            && request.resource.data.get('ownerUid', '') == request.auth.uid)
+        || oauthDoctorRelinkUpdate()
+        || (isSignedIn()
+            && resource.data.get('ownerUid', '') == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['email']));
+      allow delete: if isSuperAdmin();
+    }
+
+    // ─── patients/{patientId} ──────────────────────────────────────────────
+    // Private health profile — patient only (+ doctor reads via appointment)
+
+    match /patients/{patientId} {
+      allow read: if ownsPatient(patientId)
+        || (isSignedIn() && resource.data.get('ownerUid', '') == request.auth.uid)
+        || doctorCanAccessPatient(patientId);
+      allow create: if isSignedIn()
+        && request.resource.data.get('ownerUid', '') == request.auth.uid
+        && request.resource.data.get('patientId', patientId) == patientId
+        && registrationVerifiedFieldsValid();
+      allow update: if (ownsPatient(patientId)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'verifiedAt']))
+        || careTeamGrantUpdate(patientId);
+      allow delete: if false;
+
+      // Relationship proof for care-team self-grant (patient booking or referral).
+      match /doctor_links/{doctorId} {
+        allow read: if ownsPatient(patientId)
+          || (isVerifiedDoctor() && doctorId == myDoctorId())
+          || doctorCanAccessPatient(patientId);
+        allow create: if (ownsPatient(patientId)
+            && request.resource.data.get('doctorId', '') == doctorId
+            && request.resource.data.get('source', '') == 'appointment'
+            && request.resource.data.keys().hasOnly(['doctorId', 'source', 'createdAt']))
+          || referralDoctorLinkCreateValid(patientId, doctorId);
+        allow update, delete: if false;
+      }
+    }
+
+    // ─── appointments/{appointmentId} ──────────────────────────────────────
+    // In-clinic bookings; shared between patient & doctor
+
+    match /appointments/{appointmentId} {
+      allow read: if appointmentParty();
+      allow create: if appointmentCreateValid() || walkInAppointmentCreateValid();
+      allow update: if appointmentParty()
+        && validAppointmentUpdate();
+      allow delete: if false;
+    }
+
+    function validAppointmentUpdate() {
+      let incoming = request.resource.data;
+      let existing = resource.data;
+      // patientId / doctorId cannot change after booking
+      return incoming.patientId == existing.patientId
+        && incoming.doctorId == existing.doctorId;
+    }
+
+    // ─── prescriptions/{prescriptionId} ──────────────────────────────────
+
+    match /prescriptions/{prescriptionId} {
+      // Doctors may read non-existent docs (existence check before first save).
+      allow read: if isSignedIn() && (
+        (isVerifiedDoctor() && !exists(/databases/$(database)/documents/prescriptions/$(prescriptionId))) ||
+        (isPatient() && resource.data.patientId == myPatientId()) ||
+        (isVerifiedDoctor()
+          && resource.data.doctorId == myDoctorId()
+          && doctorCanReadPatientClinicalData(resource.data.patientId))
+      );
+      allow create: if isVerifiedDoctor()
+        && request.resource.data.doctorId == myDoctorId()
+        && request.resource.data.keys().hasAll(['patientId', 'doctorId', 'prescriptionId'])
+        && doctorCanReadPatientClinicalData(request.resource.data.patientId);
+      allow update: if isVerifiedDoctor()
+        && resource.data.doctorId == myDoctorId()
+        && request.resource.data.doctorId == resource.data.doctorId
+        && request.resource.data.patientId == resource.data.patientId
+        && doctorCanReadPatientClinicalData(resource.data.patientId);
+      allow delete: if false;
+    }
+
+    // ─── reviews/{reviewId} ────────────────────────────────────────────────
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isPatient()
+        && request.resource.data.patientId == myPatientId()
+        && request.resource.data.doctorId is string
+        && request.resource.data.doctorId.size() > 0
+        && request.resource.data.keys().hasAll(['patientId', 'doctorId', 'rating'])
+        && reviewId == myPatientId() + '_' + request.resource.data.doctorId;
+      allow update: if isPatient()
+        && resource.data.patientId == myPatientId()
+        && request.resource.data.patientId == resource.data.patientId
+        && request.resource.data.doctorId == resource.data.doctorId;
+      allow delete: if false;
+
+      match /votes/{voterId} {
+        allow read: if isSignedIn();
+        allow create: if isPatient()
+          && voterId == myPatientId()
+          && request.resource.data.patientId == myPatientId();
+        allow delete: if isPatient() && voterId == myPatientId();
+        allow update: if false;
+      }
+    }
+
+    // ─── support_tickets/{ticketId} ────────────────────────────────────────
+    // FIXED: backs the Help & Support form so submissions actually persist.
+    match /support_tickets/{ticketId} {
+      allow create: if isSignedIn() && (
+        (isPatient()
+          && request.resource.data.get('patientId', '') == myPatientId())
+        || (isDoctor()
+          && request.resource.data.get('doctorId', '') == myDoctorId())
+      );
+      allow read: if isSignedIn() && (
+        (isPatient() && resource.data.patientId == myPatientId()) ||
+        (isDoctor() && resource.data.doctorId == myDoctorId())
+      );
+      allow update, delete: if false; // handled by admins out-of-band
+
+      match /messages/{messageId} {
+        allow read, create: if isSignedIn() && (
+          (isPatient() && get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.patientId == myPatientId()) ||
+          (isDoctor() && get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.doctorId == myDoctorId())
+        );
+        allow update, delete: if false;
+      }
+    }
+
+    // ─── health_records/{recordId} ─────────────────────────────────────────
+
+    match /health_records/{recordId} {
+      allow read: if (isPatient() && resource.data.patientId == myPatientId())
+        || (isVerifiedDoctor()
+          && resource.data.sharedWithDoctors == true
+          && doctorCanAccessPatientRecord(resource.data.patientId));
+      allow create: if isPatient() && request.resource.data.patientId == myPatientId();
+      allow update, delete: if isPatient() && resource.data.patientId == myPatientId();
+    }
+
+    // ─── lab_catalog/{docId} ───────────────────────────────────────────────
+    // Public lab test catalog (managed via Firebase Console / admin)
+
+    match /lab_catalog/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ─── lab_bookings/{bookingId} ──────────────────────────────────────────
+
+    match /lab_bookings/{bookingId} {
+      allow read: if (isPatient() && resource.data.patientId == myPatientId())
+        || (isLab() && resource.data.labId == myLabId()); // FIXED: lab reads bookings addressed to them
+      allow create: if (isPatient() && request.resource.data.patientId == myPatientId())
+        || (isLab() && request.resource.data.get('labId', '') == myLabId()
+            && request.resource.data.get('source', '') == 'walkin');
+      allow update: if (isPatient()
+          && resource.data.patientId == myPatientId()
+          && request.resource.data.patientId == resource.data.patientId
+          && request.resource.data.get('labId', '') == resource.data.get('labId', ''))
+        || (isLab() && resource.data.get('labId', '') == myLabId()
+          && request.resource.data.patientId == resource.data.patientId
+          && request.resource.data.get('labId', '') == resource.data.get('labId', '')
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(labBookingLabUpdateKeys())); // FIXED: lab can submit report fields
+      allow delete: if false;
+    }
+
+    // ─── referrals/{referralId} — doctor-to-doctor patient referrals ─────
+
+    match /referrals/{referralId} {
+      allow read: if isVerifiedDoctor() && (
+        resource.data.fromDoctorId == myDoctorId() ||
+        resource.data.toDoctorId == myDoctorId()
+      );
+      allow create: if isVerifiedDoctor()
+        && request.resource.data.fromDoctorId == myDoctorId()
+        && request.resource.data.toDoctorId != myDoctorId()
+        && request.resource.data.get('referralId', '') == referralId
+        && request.resource.data.keys().hasAll([
+          'fromDoctorId', 'toDoctorId', 'patientId', 'patientName', 'referralId'
+        ])
+        && referralSenderPatientAccessOk(request.resource.data.patientId);
+      allow update: if isVerifiedDoctor()
+        && resource.data.toDoctorId == myDoctorId()
+        && request.resource.data.fromDoctorId == resource.data.fromDoctorId
+        && request.resource.data.toDoctorId == resource.data.toDoctorId
+        && request.resource.data.patientId == resource.data.patientId;
+      allow delete: if false;
+    }
+
+    // ─── medical_directory/{entryId} — doctor personal contacts (labs, etc.) ─
+
+    match /medical_directory/{entryId} {
+      allow read: if isVerifiedDoctor() && resource.data.doctorId == myDoctorId();
+      allow create: if isVerifiedDoctor()
+        && request.resource.data.doctorId == myDoctorId()
+        && request.resource.data.keys().hasAll(['entryId', 'doctorId', 'name', 'type', 'phone']);
+      allow update: if isVerifiedDoctor() && resource.data.doctorId == myDoctorId();
+      allow delete: if isVerifiedDoctor() && resource.data.doctorId == myDoctorId();
+    }
+
+    // ─── lab_orders/{orderId} — doctor-initiated lab test orders ───────────
+
+    match /lab_orders/{orderId} {
+      allow read: if (isVerifiedDoctor()
+          && resource.data.doctorId == myDoctorId()
+          && doctorCanReadPatientClinicalData(resource.data.get('patientId', '')))
+        || (isPatient() && resource.data.patientId == myPatientId())
+        || (isLab() && resource.data.labId == myLabId()); // FIXED: lab reads orders addressed to them
+      allow create: if isVerifiedDoctor()
+        && request.resource.data.doctorId == myDoctorId()
+        && request.resource.data.keys().hasAll(['patientId', 'doctorId'])
+        && doctorCanReadPatientClinicalData(request.resource.data.patientId);
+      allow update: if (isVerifiedDoctor()
+          && resource.data.doctorId == myDoctorId()
+          && request.resource.data.doctorId == resource.data.doctorId
+          && request.resource.data.patientId == resource.data.patientId
+          && doctorCanReadPatientClinicalData(resource.data.get('patientId', '')))
+        || (isLab() && resource.data.get('labId', '') == myLabId()
+          && request.resource.data.patientId == resource.data.patientId
+          && request.resource.data.doctorId == resource.data.doctorId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'reportFileName', 'reportStorageUrl', 'reportSubmittedAt'])); // FIXED: lab can update status and reports
+      allow delete: if false;
+    }
+
+    // ─── family_members/{memberId} ─────────────────────────────────────────
+
+    match /family_members/{memberId} {
+      allow read: if isPatient() && resource.data.patientId == myPatientId();
+      allow create: if isPatient() && request.resource.data.patientId == myPatientId();
+      allow update, delete: if isPatient() && resource.data.patientId == myPatientId();
+    }
+
+    // ─── doctor_availability/{doctorId} ────────────────────────────────────
+
+    match /doctor_availability/{doctorId} {
+      allow read: if true;
+      allow write: if isVerifiedDoctor() && myDoctorId() == doctorId;
+    }
+
+    // ─── in_app_notifications/{notificationId} ───────────────────────────
+    // recipientUid = Firebase Auth uid. Writes are Cloud Functions (Admin SDK) only.
+
+    match /in_app_notifications/{notificationId} {
+      allow read: if isSignedIn()
+        && resource.data.recipientUid == request.auth.uid;
+
+      allow create: if false;
+      allow delete: if false;
+
+      allow update: if isSignedIn()
+        && resource.data.recipientUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])
+        && request.resource.data.isRead is bool;
+    }
+
+    // ─── medical_stores/{storeId} ──────────────────────────────────────────
+
+    match /medical_stores/{storeId} {
+      allow list: if isSignedIn() && request.query.limit <= 100;
+      allow get: if isSignedIn() && (
+        isSuperAdmin()
+        || ownsStore(storeId)
+        || resource.data.get('ownerUid', '') == request.auth.uid
+        || resource.data.get('verified', false) == true
+      );
+      allow create: if (isSignedIn()
+        && request.resource.data.get('ownerUid', '') == request.auth.uid
+        && request.resource.data.get('storeId', storeId) == storeId)
+        || isSuperAdmin();
+      allow update: if isSuperAdmin()
+        || ownsStore(storeId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ─── labs/{labId} ──────────────────────────────────────────────────────
+
+    match /labs/{labId} {
+      allow list: if isSignedIn() && request.query.limit <= 100;
+      allow get: if isSignedIn() && (
+        isSuperAdmin()
+        || ownsLab(labId)
+        || resource.data.get('ownerUid', '') == request.auth.uid
+        || resource.data.get('verified', false) == true
+      );
+      allow create: if (isSignedIn()
+        && request.resource.data.get('labId', labId) == labId
+        && request.resource.data.get('ownerUid', '') == request.auth.uid)
+        || isSuperAdmin();
+      allow update: if isSuperAdmin()
+        || ownsLab(labId);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ─── pharmacy_connections/{connectionId} ─────────────────────────────
+
+    match /pharmacy_connections/{connectionId} {
+      allow read: if isSignedIn() && (
+        (isVerifiedDoctor() && resource.data.doctorId == myDoctorId()) ||
+        (isMedicalStore() && resource.data.medicalStoreId == myStoreId())
+      );
+      allow create: if isSignedIn() && (
+        (isVerifiedDoctor() && request.resource.data.doctorId == myDoctorId()) ||
+        (isMedicalStore() && request.resource.data.medicalStoreId == myStoreId())
+      );
+      // Updates must be by an existing party — never forge ownership via request.resource only.
+      allow update: if isSignedIn() && (
+        (isVerifiedDoctor()
+          && resource.data.doctorId == myDoctorId()
+          && request.resource.data.doctorId == resource.data.doctorId
+          && request.resource.data.medicalStoreId == resource.data.medicalStoreId) ||
+        (isMedicalStore()
+          && resource.data.medicalStoreId == myStoreId()
+          && request.resource.data.doctorId == resource.data.doctorId
+          && request.resource.data.medicalStoreId == resource.data.medicalStoreId)
+      );
+      allow delete: if false;
+    }
+
+    // ─── lab_connections/{connectionId} ────────────────────────────────
+
+    match /lab_connections/{connectionId} {
+      allow read: if isSignedIn() && (
+        (isVerifiedDoctor() && resource.data.doctorId == myDoctorId()) ||
+        (isLab() && resource.data.labId == myLabId())
+      );
+      allow create: if isSignedIn() && (
+        (isVerifiedDoctor() && request.resource.data.doctorId == myDoctorId()) ||
+        (isLab() && request.resource.data.labId == myLabId())
+      );
+      allow update: if isSignedIn() && (
+        (isVerifiedDoctor()
+          && resource.data.doctorId == myDoctorId()
+          && request.resource.data.doctorId == resource.data.doctorId
+          && request.resource.data.labId == resource.data.labId) ||
+        (isLab()
+          && resource.data.labId == myLabId()
+          && request.resource.data.doctorId == resource.data.doctorId
+          && request.resource.data.labId == resource.data.labId)
+      );
+      allow delete: if false;
+    }
+
+    // ─── pharmacy_deliveries/{deliveryId} ────────────────────────────────
+
+    match /pharmacy_deliveries/{deliveryId} {
+      allow read: if isSignedIn() && (
+        (isVerifiedDoctor() && resource.data.doctorId == myDoctorId()) ||
+        (isMedicalStore() && resource.data.storeId == myStoreId()) ||
+        (isPatient() && resource.data.patientId == myPatientId())
+      );
+      allow create: if isVerifiedDoctor()
+        && request.resource.data.doctorId == myDoctorId()
+        && request.resource.data.keys().hasAll(['patientId', 'doctorId'])
+        && doctorCanReadPatientClinicalData(request.resource.data.patientId);
+      allow update: if isSignedIn() && (
+        (isVerifiedDoctor()
+          && resource.data.doctorId == myDoctorId()
+          && request.resource.data.doctorId == resource.data.doctorId
+          && request.resource.data.patientId == resource.data.patientId) ||
+        (isMedicalStore()
+          && resource.data.storeId == myStoreId()
+          && request.resource.data.doctorId == resource.data.doctorId
+          && request.resource.data.patientId == resource.data.patientId
+          && request.resource.data.storeId == resource.data.storeId)
+      );
+      allow delete: if false;
+    }
+
+    // ─── community_medicines/{docId} ──────────────────────────────────────────
+    // Shared medicine database — any logged-in doctor can read/add
+
+    match /community_medicines/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isVerifiedDoctor()
+          && request.resource.data.keys().hasAll(['name', 'dosageUnit', 'form', 'addedByDoctorId'])
+          && request.resource.data.addedByDoctorId == myDoctorId()
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0;
+      allow update, delete: if false;
+    }
+
+    // ─── community_diagnoses/{docId} ──────────────────────────────────────────
+    // Shared custom diagnoses — any logged-in doctor can read/add
+
+    match /community_diagnoses/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isVerifiedDoctor()
+          && request.resource.data.keys().hasAll(['text', 'addedByDoctorId'])
+          && request.resource.data.addedByDoctorId == myDoctorId()
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0;
+      allow update, delete: if false;
+    }
+
+    // ─── community_lab_tests/{docId} ────────────────────────────────────────
+    // Shared lab test catalog — any signed-in user can read; doctors can add
+
+    match /community_lab_tests/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isVerifiedDoctor()
+          && request.resource.data.keys().hasAll(['name', 'group', 'addedByDoctorId'])
+          && request.resource.data.addedByDoctorId == myDoctorId()
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0;
+      allow update, delete: if false;
+    }
+
+    // ─── community_radiology/{docId} ────────────────────────────────────────
+
+    match /community_radiology/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isVerifiedDoctor()
+          && request.resource.data.keys().hasAll(['name', 'group', 'addedByDoctorId'])
+          && request.resource.data.addedByDoctorId == myDoctorId()
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0;
+      allow update, delete: if false;
+    }
+
+    // ─── community_body_parts/{docId} ───────────────────────────────────────
+
+    match /community_body_parts/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isVerifiedDoctor()
+          && request.resource.data.keys().hasAll(['name', 'addedByDoctorId'])
+          && request.resource.data.addedByDoctorId == myDoctorId()
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0;
+      allow update, delete: if false;
+    }
+
+    // ─── ambulances/{driverId} ─────────────────────────────────────────────
+    // Drivers use username/PIN backed by an anonymous Firebase session; the
+    // driver's auth uid is stored on the doc as `authUid`.
+
+    // FIXED: a driver owns their ambulance doc when its authUid matches the caller.
+    function isDriverOwner(driverId) {
+      return isSignedIn()
+        && driverId is string
+        && driverId != ''
+        && exists(/databases/$(database)/documents/ambulances/$(driverId))
+        && get(/databases/$(database)/documents/ambulances/$(driverId)).data.get('authUid', '') == request.auth.uid;
+    }
+
+    // authUid may only be linked to the caller's own uid — first claim (empty doc) or re-set same uid.
+    // Stale authUid reclaim after reinstall requires a trusted Cloud Function (Admin SDK).
+    function canLinkAmbulanceAuthUid(driverId) {
+      return isSignedIn()
+        && request.resource.data.authUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authUid'])
+        && (
+          resource.data.get('authUid', '') == ''
+          || resource.data.get('authUid', '') == request.auth.uid
+        );
+    }
+
+    // Broadcast/request booker: patientId field holds patient id OR doctor id when doctor books.
+    function isAmbulanceBooker() {
+      return isSignedIn() && (
+        (isPatient() && resource.data.patientId == myPatientId())
+        || (isVerifiedDoctor() && resource.data.patientId == myDoctorId())
+      );
+    }
+
+    // Registered listing with username set (excludes incomplete/demo rows).
+    function isRegisteredAmbulanceListing() {
+      return resource.data.get('username', '').size() >= 3
+        && resource.data.get('serviceName', '').size() > 0;
+    }
+
+    // Patient/doctor discovery during booking — not labs, stores, or unrelated roles.
+    function canBrowseAmbulanceListings() {
+      return isPatient() || isVerifiedDoctor();
+    }
+
+    // Invite read: inviting doctor, linked driver, admin.
+    // Anonymous setup must use the Cloud Function with inviteId+token (not client get-by-id).
+    function ambulanceInviteReadable() {
+      return isAccountAdmin()
+        || (isVerifiedDoctor() && resource.data.get('doctorId', '') == myDoctorId())
+        || isDriverOwner(resource.data.get('ambulanceId', ''));
+    }
+
+    function ambulanceInviteListable() {
+      return isAccountAdmin()
+        || (isVerifiedDoctor() && resource.data.get('doctorId', '') == myDoctorId());
+    }
+
+    match /ambulances/{driverId} {
+      // Public listing fields only — PIN/FCM live in private/settings (owner-only).
+      allow get: if isSuperAdmin()
+        || isDriverOwner(driverId)
+        || (canBrowseAmbulanceListings() && isRegisteredAmbulanceListing())
+        || (isSignedIn() && resource.data.get('authUid', '') == request.auth.uid);
+      allow list: if isSuperAdmin()
+        || (isSignedIn() && (
+          (canBrowseAmbulanceListings() && isRegisteredAmbulanceListing())
+          || isDriverOwner(driverId)
+          || (request.query.limit <= 1 && isRegisteredAmbulanceListing())
+        ));
+      // Self-registration: caller must bind authUid to themselves. Invite IDs are
+      // unguessable and invite docs are not anonymously readable (callable + token).
+      allow create: if isSuperAdmin()
+        || (isSignedIn()
+          && request.resource.data.get('authUid', '') == request.auth.uid
+          && !request.resource.data.keys().hasAny(['pin', 'fcmToken']));
+      allow update: if isSuperAdmin()
+        || (isSignedIn() && (
+          (isDriverOwner(driverId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isAvailable']))
+          || (isDriverOwner(driverId)
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pin', 'fcmToken', 'authUid', 'ratingCount', 'totalRating']))
+          || canLinkAmbulanceAuthUid(driverId)
+        ));
+      allow delete: if isSuperAdmin();
+
+      match /private/settings {
+        allow read, write: if isSuperAdmin() || isDriverOwner(driverId);
+      }
+    }
+
+    // ─── ambulance_broadcasts/{broadcastId} — patient booking session ───────
+    // Read: booker, or assigned driver after accept. Drivers dispatch via
+    // ambulance_requests copies; accept uses update-only broadcast claim (no read).
+
+    match /ambulance_broadcasts/{broadcastId} {
+      allow read: if isSignedIn() && ambulanceBroadcastParty();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll([
+          'broadcastId', 'patientId', 'pickupLocation', 'dropLocation', 'status'
+        ])
+        && request.resource.data.status == 'pending'
+        && (
+          (isPatient() && request.resource.data.patientId == myPatientId()) ||
+          (isVerifiedDoctor() && request.resource.data.patientId == myDoctorId())
+        );
+      allow update: if isSignedIn() && (
+        isAmbulanceBooker()
+        || isDriverOwner(resource.data.get('acceptedDriverId', request.resource.data.get('acceptedDriverId', '')))
+        || driverCanClaimBroadcast()
+      );
+      allow delete: if false;
+    }
+
+    // ─── ambulance_requests/{requestId} — per-driver broadcast copies ───────
+
+    match /ambulance_requests/{requestId} {
+      allow read: if ambulanceRequestParty();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll([
+          'driverId', 'patientId', 'pickupLocation', 'dropLocation', 'status', 'broadcastId'
+        ])
+        && request.resource.data.status == 'pending'
+        && (
+          (isPatient() && request.resource.data.patientId == myPatientId()) ||
+          (isVerifiedDoctor() && request.resource.data.patientId == myDoctorId())
+        );
+      allow update: if isSignedIn() && (
+        isAmbulanceBooker()
+        || isDriverOwner(resource.data.driverId)
+        || driverCanMarkSiblingRequestTaken()
+      );
+      allow delete: if false;
+    }
+
+    // ─── ambulance_invites/{inviteId} — doctor-invited driver onboarding ───
+
+    match /ambulance_invites/{inviteId} {
+      allow get: if ambulanceInviteReadable();
+      allow list: if ambulanceInviteListable();
+      allow create: if isVerifiedDoctor()
+        && request.resource.data.keys().hasAll([
+          'token', 'doctorId', 'ambulanceId', 'status', 'serviceName', 'driverName', 'phone'
+        ])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.doctorId == myDoctorId();
+      allow update: if isSignedIn()
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'completed'
+        && request.resource.data.get('username', '').size() >= 3
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'username', 'completedAt'])
+        && request.auth.uid == get(/databases/$(database)/documents/ambulances/$(resource.data.ambulanceId)).data.get('authUid', '');
+      allow delete: if false;
+    }
+
+    // ─── OTP (server-only via Admin SDK) ───────────────────────────────────
+
+    match /otp_challenges/{challengeId} {
+      allow read, write: if false;
+    }
+
+    match /otp_verification_sessions/{sessionId} {
+      allow read, write: if false;
+    }
+
+    match /otp_rate_limits/{limitId} {
+      allow read, write: if false;
+    }
+
+    match /abuse_rate_limits/{limitId} {
+      allow read, write: if false;
+    }
+
+    // ─── Security telemetry (Cloud Functions Admin SDK only) ───────────────
+    match /security_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    // ─── Super Admin Audit Logs (immutable write-once) ──────────────────────
+
+    match /admin_audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isSuperAdmin();
+      allow update, delete: if false;
+    }
+
+    // ─── System Configuration (Banner config, etc.) ─────────────────────────
+
+    match /system_config/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin();
+    }
+
+    // ─── Promoted Ads Banners ───────────────────────────────────────────────
+
+    match /promotedAds/{adId} {
+      // Anyone (patients & providers) can read promoted ads for home banner display
+      allow read: if true;
+
+      // Creation: Logged-in provider can create draft/pending_payment ads OR Super Admin
+      allow create: if isSuperAdmin()
+        || (isSignedIn()
+          && request.resource.data.providerId == request.auth.uid
+          && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending_payment')
+          && request.resource.data.paymentStatus == 'pending');
+
+      // Update: Super Admin can update all fields; Provider can edit draft content
+      allow update: if isSuperAdmin()
+        || (isSignedIn()
+          && resource.data.providerId == request.auth.uid
+          && request.resource.data.providerId == resource.data.providerId
+          && request.resource.data.status != 'active'
+          && request.resource.data.paymentStatus != 'verified');
+
+      // Deletion: Super Admin or owning provider
+      allow delete: if isSuperAdmin()
+        || (isSignedIn() && resource.data.providerId == request.auth.uid);
+    }
+
+    // ─── Trigger Email Extension (mail queue) ──────────────────────────────
+
+    match /mail/{mailId} {
+      allow read, create: if isSuperAdmin();
+      allow update, delete: if false;
+    }
+
+    // ─── Default deny ──────────────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

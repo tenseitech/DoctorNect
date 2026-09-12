@@ -1,0 +1,88 @@
+import 'repositories/ambulance_repository.dart';
+import 'repositories/appointment_repository.dart';
+import 'repositories/doctor_account_repository.dart';
+import 'repositories/doctor_availability_repository.dart';
+import 'repositories/doctor_directory_repository.dart';
+import 'repositories/doctor_profile_detail_repository.dart';
+import 'repositories/doctor_profile_repository.dart';
+import 'repositories/doctor_verification_repository.dart';
+import 'repositories/family_member_repository.dart';
+import 'repositories/in_app_notification_repository.dart';
+import 'repositories/lab_booking_repository.dart';
+import 'repositories/lab_catalog_repository.dart';
+import 'repositories/lab_connection_repository.dart';
+import 'repositories/lab_order_repository.dart';
+import 'repositories/lab_repository.dart';
+import 'repositories/medical_directory_repository.dart';
+import 'repositories/medical_store_repository.dart';
+import 'repositories/medicine_suggestion_repository.dart';
+import 'repositories/patient_account_repository.dart';
+import 'repositories/patient_profile_repository.dart';
+import 'repositories/pharmacy_firestore_repository.dart';
+import 'repositories/prescription_repository.dart';
+import 'repositories/referral_repository.dart';
+import 'repositories/review_repository.dart';
+import 'repositories/role_account_repository.dart';
+import 'repositories/user_repository.dart';
+
+export 'repositories/ambulance_repository.dart';
+export 'repositories/appointment_repository.dart';
+export 'repositories/doctor_account_repository.dart';
+export 'repositories/doctor_availability_repository.dart';
+export 'repositories/doctor_directory_repository.dart';
+export 'repositories/doctor_profile_detail_repository.dart';
+export 'repositories/doctor_profile_repository.dart';
+export 'repositories/doctor_verification_repository.dart';
+export 'repositories/family_member_repository.dart';
+export 'repositories/in_app_notification_repository.dart';
+export 'repositories/lab_booking_repository.dart';
+export 'repositories/lab_catalog_repository.dart';
+export 'repositories/lab_connection_repository.dart';
+export 'repositories/lab_order_repository.dart';
+export 'repositories/lab_repository.dart';
+export 'repositories/medical_directory_repository.dart';
+export 'repositories/medical_store_repository.dart';
+export 'repositories/medicine_suggestion_repository.dart';
+export 'repositories/patient_account_repository.dart';
+export 'repositories/patient_profile_repository.dart';
+export 'repositories/pharmacy_firestore_repository.dart';
+export 'repositories/prescription_repository.dart';
+export 'repositories/referral_repository.dart';
+export 'repositories/review_repository.dart';
+export 'repositories/role_account_repository.dart';
+export 'repositories/user_repository.dart';
+
+/// Central composition gateway for Firestore repositories.
+class FirestoreService {
+  FirestoreService._();
+
+  static final FirestoreService instance = FirestoreService._();
+
+  AmbulanceRepository get ambulance => AmbulanceRepository.instance;
+  AppointmentRepository get appointment => AppointmentRepository.instance;
+  DoctorAccountRepository get doctorAccount => DoctorAccountRepository.instance;
+  DoctorAvailabilityRepository get doctorAvailability => DoctorAvailabilityRepository.instance;
+  DoctorDirectoryRepository get doctorDirectory => DoctorDirectoryRepository.instance;
+  DoctorProfileDetailRepository get doctorProfileDetail => DoctorProfileDetailRepository.instance;
+  DoctorProfileRepository get doctorProfile => DoctorProfileRepository.instance;
+  DoctorVerificationRepository get doctorVerification => DoctorVerificationRepository.instance;
+  FamilyMemberRepository get familyMember => FamilyMemberRepository.instance;
+  InAppNotificationRepository get notification => InAppNotificationRepository.instance;
+  InAppNotificationRepository get inAppNotification => InAppNotificationRepository.instance;
+  LabBookingRepository get labBooking => LabBookingRepository.instance;
+  LabCatalogRepository get labCatalog => LabCatalogRepository.instance;
+  LabConnectionRepository get labConnection => LabConnectionRepository.instance;
+  LabOrderRepository get labOrder => LabOrderRepository.instance;
+  LabRepository get lab => LabRepository.instance;
+  MedicalDirectoryRepository get medicalDirectory => MedicalDirectoryRepository.instance;
+  MedicalStoreRepository get medicalStore => MedicalStoreRepository.instance;
+  MedicineSuggestionRepository get medicineSuggestion => MedicineSuggestionRepository.instance;
+  PatientAccountRepository get patientAccount => PatientAccountRepository.instance;
+  PatientProfileRepository get patientProfile => PatientProfileRepository.instance;
+  PharmacyFirestoreRepository get pharmacyFirestore => PharmacyFirestoreRepository.instance;
+  PrescriptionRepository get prescription => PrescriptionRepository.instance;
+  ReferralRepository get referral => ReferralRepository.instance;
+  ReviewRepository get review => ReviewRepository.instance;
+  RoleAccountRepository get roleAccount => RoleAccountRepository.instance;
+  UserRepository get user => UserRepository.instance;
+}
