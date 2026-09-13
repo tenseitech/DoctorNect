@@ -10,7 +10,8 @@
     "firebase-functions": "^6.3.0"
   },
   "scripts": {
-    "deploy": "firebase deploy --only firestore:rules,storage,functions"
+    "deploy": "firebase deploy --only firestore:rules,storage,functions",
+    "audit:integrity": "node scripts/audit_data_integrity.js"
   },
   "private": true
 }
