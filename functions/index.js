@@ -851,11 +851,10 @@ exports.notifyPatientOnPharmacyDeliveryUpdated = onDocumentUpdated(
   },
 );
 
-/** Returns declarative validation rules for the client engine. */
+/** Returns declarative validation rules for the client engine (pre-login; rules are not secret). */
 exports.getValidationRules = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
-  protectCallable('getValidationRules', { category: 'api' }, async (request) => {
-    requireAuth(request);
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK, invoker: 'public' },
+  protectCallable('getValidationRules', { category: 'api' }, async () => {
     return { rules: RULES, vitalThresholds: VITAL_THRESHOLDS, version: 1 };
   }),
 );
