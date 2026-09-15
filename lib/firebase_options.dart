@@ -6,9 +6,13 @@ import 'package:flutter/foundation.dart'
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 class DefaultFirebaseOptions {
-  static const String _defaultApiKey = 'AIzaSyCS-3zt1hQWDWSbISBd0kuUmAX2eJ5_e1w';
-
   static FirebaseOptions get currentPlatform {
+    final options = _unsafeCurrentPlatform;
+    _requireConfiguredApiKey(_apiKeyDefineName(), options.apiKey);
+    return options;
+  }
+
+  static FirebaseOptions get _unsafeCurrentPlatform {
     if (kIsWeb) {
       return web;
     }
@@ -33,8 +37,34 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static String _apiKeyDefineName() {
+    if (kIsWeb) {
+      return 'FIREBASE_API_KEY_WEB';
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'FIREBASE_API_KEY_ANDROID';
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        return 'FIREBASE_API_KEY_IOS';
+      case TargetPlatform.windows:
+        return 'FIREBASE_API_KEY_WEB';
+      default:
+        return 'FIREBASE_API_KEY';
+    }
+  }
+
+  static void _requireConfiguredApiKey(String defineName, String apiKey) {
+    if (apiKey.isNotEmpty) {
+      return;
+    }
+    throw StateError(
+      'Missing $defineName. Pass --dart-define=$defineName=<your Firebase API key> at build/run time.',
+    );
+  }
+
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_WEB', defaultValue: _defaultApiKey),
+    apiKey: String.fromEnvironment('FIREBASE_API_KEY_WEB'),
     appId: '1:658118593597:web:fc49d67175f2f39b44ae54',
     messagingSenderId: '658118593597',
     projectId: 'medibond-45fad',
@@ -44,7 +74,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_ANDROID', defaultValue: _defaultApiKey),
+    apiKey: String.fromEnvironment('FIREBASE_API_KEY_ANDROID'),
     appId: '1:658118593597:android:0f1ef9a897bdc52844ae54',
     messagingSenderId: '658118593597',
     projectId: 'medibond-45fad',
@@ -52,7 +82,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_IOS', defaultValue: _defaultApiKey),
+    apiKey: String.fromEnvironment('FIREBASE_API_KEY_IOS'),
     appId: '1:658118593597:ios:0fa63da574d241f044ae54',
     messagingSenderId: '658118593597',
     projectId: 'medibond-45fad',
@@ -63,7 +93,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_IOS', defaultValue: _defaultApiKey),
+    apiKey: String.fromEnvironment('FIREBASE_API_KEY_IOS'),
     appId: '1:658118593597:ios:0fa63da574d241f044ae54',
     messagingSenderId: '658118593597',
     projectId: 'medibond-45fad',
@@ -74,7 +104,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_WEB', defaultValue: _defaultApiKey),
+    apiKey: String.fromEnvironment('FIREBASE_API_KEY_WEB'),
     appId: '1:658118593597:web:fc49d67175f2f39b44ae54',
     messagingSenderId: '658118593597',
     projectId: 'medibond-45fad',
