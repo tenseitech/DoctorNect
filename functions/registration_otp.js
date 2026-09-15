@@ -958,6 +958,96 @@ async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAcco
   }
 }
 
+/**
+ * Atomically validates and consumes an OTP verification session.
+ * Prevents concurrent completion calls from reusing the same session.
+ */
+async function consumeOtpVerificationSessionAtomically(
+  db,
+  sessionId,
+  {
+    assertSession,
+    messages = {},
+  } = {},
+) {
+  const msg = {
+    missing: 'OTP verification session expired. Verify again.',
+    alreadyUsed: 'OTP verification session already used.',
+    expired: 'OTP verification session expired. Verify again.',
+    ...messages,
+  };
+  const sessionRef = db.collection('otp_verification_sessions').doc(sessionId);
+
+  const outcome = await db.runTransaction(async (tx) => {
+    const sessionSnap = await tx.get(sessionRef);
+    if (!sessionSnap.exists) {
+      return { status: 'missing' };
+    }
+
+    const session = sessionSnap.data() || {};
+    if (session.consumed === true) {
+      return { status: 'already_used' };
+    }
+
+    const expiresAt = session.expiresAt?.toDate?.();
+    if (!expiresAt || Date.now() > expiresAt.getTime()) {
+      tx.delete(sessionRef);
+      return { status: 'expired' };
+    }
+
+    if (assertSession) {
+      try {
+        assertSession(session);
+      } catch (err) {
+        if (err instanceof HttpsError) {
+          return {
+            status: 'rejected',
+            errorCode: err.code,
+            errorMessage: err.message,
+          };
+        }
+        throw err;
+      }
+    }
+
+    tx.set(sessionRef, {
+      consumed: true,
+      consumedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    return { status: 'consumed', session };
+  });
+
+  switch (outcome.status) {
+    case 'missing':
+      throw new HttpsError('failed-precondition', msg.missing);
+    case 'already_used':
+      throw new HttpsError('failed-precondition', msg.alreadyUsed);
+    case 'expired':
+      throw new HttpsError('deadline-exceeded', msg.expired);
+    case 'rejected':
+      throw new HttpsError(outcome.errorCode, outcome.errorMessage);
+    case 'consumed':
+      return outcome.session;
+    default:
+      throw new HttpsError('internal', 'OTP session verification failed.');
+  }
+}
+
+function assertAmbulanceOtpSession(session, mobileDigits) {
+  if (session.role !== 'ambulance' || session.mobileVerified !== true) {
+    throw new HttpsError('failed-precondition', 'OTP verification incomplete.');
+  }
+
+  const sessionMobile = normalizeMobileDigits(session.mobileDigits);
+  if (!sessionMobile || !mobileDigits || sessionMobile !== mobileDigits) {
+    throw new HttpsError(
+      'permission-denied',
+      'Registered mobile does not match OTP verification.',
+    );
+  }
+}
+
 async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' } = {}) {
   const role = String(data?.role || 'patient').trim();
   assertSupportedRole(role);
@@ -1103,43 +1193,29 @@ async function finalizePatientOtpVerification(db, data, auth) {
     throw new HttpsError('failed-precondition', 'Patient profile not found.');
   }
 
-  const sessionRef = db.collection('otp_verification_sessions').doc(sessionId);
-  const sessionSnap = await sessionRef.get();
-  if (!sessionSnap.exists) {
-    throw new HttpsError('failed-precondition', 'OTP verification session expired. Verify again.');
-  }
+  const session = await consumeOtpVerificationSessionAtomically(db, sessionId, {
+    assertSession: (sessionData) => {
+      if (sessionData.role !== userRole || sessionData.mobileVerified !== true) {
+        throw new HttpsError('failed-precondition', 'OTP verification incomplete.');
+      }
 
-  const session = sessionSnap.data() || {};
-  if (session.consumed === true) {
-    throw new HttpsError('failed-precondition', 'OTP verification session already used.');
-  }
-
-  const expiresAt = session.expiresAt?.toDate?.();
-  if (!expiresAt || Date.now() > expiresAt.getTime()) {
-    await sessionRef.delete().catch(() => {});
-    throw new HttpsError('deadline-exceeded', 'OTP verification session expired. Verify again.');
-  }
-
-  if (session.role !== userRole || session.mobileVerified !== true) {
-    throw new HttpsError('failed-precondition', 'OTP verification incomplete.');
-  }
+      const sessionMobile = normalizeMobileDigits(sessionData.mobileDigits);
+      const profileMobile = normalizeMobileDigits(userProfile.mobile);
+      if (!sessionMobile || !profileMobile || sessionMobile !== profileMobile) {
+        throw new HttpsError(
+          'permission-denied',
+          'Registered mobile does not match OTP verification.',
+        );
+      }
+    },
+  });
 
   const sessionMobile = normalizeMobileDigits(session.mobileDigits);
-  const profileMobile = normalizeMobileDigits(userProfile.mobile);
-  if (!sessionMobile || !profileMobile || sessionMobile !== profileMobile) {
-    throw new HttpsError(
-      'permission-denied',
-      'Registered mobile does not match OTP verification.',
-    );
-  }
-
   await markUserMobileVerified(db, {
     uid: auth.uid,
     mobileDigits: sessionMobile,
     role: userRole,
   });
-
-  await sessionRef.set({ consumed: true, consumedAt: FieldValue.serverTimestamp() }, { merge: true });
 
   return { ok: true, mobileVerified: true, profileId };
 }
@@ -1197,39 +1273,6 @@ async function findAmbulanceByPhone(db, phone) {
   return null;
 }
 
-async function validateAmbulancePinResetSession(db, { sessionId, mobileDigits }) {
-  const sessionRef = db.collection('otp_verification_sessions').doc(sessionId);
-  const sessionSnap = await sessionRef.get();
-  if (!sessionSnap.exists) {
-    throw new HttpsError('failed-precondition', 'OTP verification session expired. Verify again.');
-  }
-
-  const session = sessionSnap.data() || {};
-  if (session.consumed === true) {
-    throw new HttpsError('failed-precondition', 'OTP verification session already used.');
-  }
-
-  const expiresAt = session.expiresAt?.toDate?.();
-  if (!expiresAt || Date.now() > expiresAt.getTime()) {
-    await sessionRef.delete().catch(() => {});
-    throw new HttpsError('deadline-exceeded', 'OTP verification session expired. Verify again.');
-  }
-
-  if (session.role !== 'ambulance' || session.mobileVerified !== true) {
-    throw new HttpsError('failed-precondition', 'OTP verification incomplete.');
-  }
-
-  const sessionMobile = normalizeMobileDigits(session.mobileDigits);
-  if (!sessionMobile || !mobileDigits || sessionMobile !== mobileDigits) {
-    throw new HttpsError(
-      'permission-denied',
-      'Registered mobile does not match OTP verification.',
-    );
-  }
-
-  return { sessionRef, sessionMobile };
-}
-
 /** Ambulance driver login after mobile OTP — same outcome as username/PIN verify. */
 async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unknown' } = {}) {
   if (!auth?.uid) {
@@ -1248,9 +1291,8 @@ async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unk
 
   await enforceVerifyOtpRateLimits(db, { clientIp, role: 'ambulance', digits: mobileDigits });
 
-  const { sessionRef } = await validateAmbulancePinResetSession(db, {
-    sessionId,
-    mobileDigits,
+  await consumeOtpVerificationSessionAtomically(db, sessionId, {
+    assertSession: (session) => assertAmbulanceOtpSession(session, mobileDigits),
   });
 
   const found = await findAmbulanceByPhone(db, mobileDigits);
@@ -1277,8 +1319,6 @@ async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unk
       });
     }
   }
-
-  await sessionRef.set({ consumed: true, consumedAt: FieldValue.serverTimestamp() }, { merge: true });
 
   const profile = found.data;
   return {
@@ -1313,9 +1353,8 @@ async function resetAmbulanceDriverPin(db, data, auth, { clientIp = 'unknown' } 
 
   await enforcePinResetRateLimits(db, { clientIp, mobileDigits });
 
-  const { sessionRef } = await validateAmbulancePinResetSession(db, {
-    sessionId,
-    mobileDigits,
+  await consumeOtpVerificationSessionAtomically(db, sessionId, {
+    assertSession: (session) => assertAmbulanceOtpSession(session, mobileDigits),
   });
 
   const found = await findAmbulanceByPhone(db, mobileDigits);
@@ -1348,7 +1387,6 @@ async function resetAmbulanceDriverPin(db, data, auth, { clientIp = 'unknown' } 
     authUid: auth.uid,
     updatedAt: now,
   }, { merge: true });
-  batch.set(sessionRef, { consumed: true, consumedAt: now }, { merge: true });
   await batch.commit();
 
   return {
@@ -1377,41 +1415,36 @@ async function resetUserPasswordWithOtp(db, data, { clientIp = 'unknown' } = {})
 
   await enforcePasswordResetRateLimits(db, { clientIp, identifier });
 
-  // 1. Verify OTP Session and bind it to the target account
-  const sessionRef = db.collection('otp_verification_sessions').doc(sessionId);
-  const sessionSnap = await sessionRef.get();
-  if (!sessionSnap.exists) {
-    throw new HttpsError('failed-precondition', 'OTP verification session has expired. Please verify OTP again.');
-  }
-  const session = sessionSnap.data() || {};
-  if (session.consumed === true) {
-    throw new HttpsError('failed-precondition', 'This OTP session has already been used.');
-  }
-  const expiresAt = session.expiresAt?.toDate?.();
-  if (!expiresAt || Date.now() > expiresAt.getTime()) {
-    throw new HttpsError('deadline-exceeded', 'OTP session expired. Please verify OTP again.');
-  }
-
-  const sessionRole = String(session.role || '').trim();
-  if (sessionRole && sessionRole !== role) {
-    throw new HttpsError('permission-denied', 'OTP session does not match this account.');
-  }
-
   const isEmail = identifier.includes('@');
-  if (isEmail) {
-    const sessionEmail = String(session.email || session.identifier || '').trim().toLowerCase();
-    if (!sessionEmail || sessionEmail !== identifier || session.emailVerified !== true) {
-      throw new HttpsError('permission-denied', 'OTP session does not match this email address.');
-    }
-  } else {
-    const digits = normalizeMobileDigits(identifier);
-    const sessionMobile = normalizeMobileDigits(session.mobileDigits || session.identifier);
-    if (!digits || !sessionMobile || sessionMobile !== digits || session.mobileVerified !== true) {
-      throw new HttpsError('permission-denied', 'OTP session does not match this mobile number.');
-    }
-  }
+  await consumeOtpVerificationSessionAtomically(db, sessionId, {
+    messages: {
+      missing: 'OTP verification session has expired. Please verify OTP again.',
+      alreadyUsed: 'This OTP session has already been used.',
+      expired: 'OTP session expired. Please verify OTP again.',
+    },
+    assertSession: (session) => {
+      const sessionRole = String(session.role || '').trim();
+      if (sessionRole && sessionRole !== role) {
+        throw new HttpsError('permission-denied', 'OTP session does not match this account.');
+      }
 
-  // 2. Find Auth UID
+      if (isEmail) {
+        const sessionEmail = String(session.email || session.identifier || '').trim().toLowerCase();
+        if (!sessionEmail || sessionEmail !== identifier || session.emailVerified !== true) {
+          throw new HttpsError('permission-denied', 'OTP session does not match this email address.');
+        }
+        return;
+      }
+
+      const digits = normalizeMobileDigits(identifier);
+      const sessionMobile = normalizeMobileDigits(session.mobileDigits || session.identifier);
+      if (!digits || !sessionMobile || sessionMobile !== digits || session.mobileVerified !== true) {
+        throw new HttpsError('permission-denied', 'OTP session does not match this mobile number.');
+      }
+    },
+  });
+
+  // Find Auth UID
   let authUid = null;
 
   if (isEmail) {
@@ -1442,15 +1475,12 @@ async function resetUserPasswordWithOtp(db, data, { clientIp = 'unknown' } = {})
     authUid = search.uid;
   }
 
-  // 3. Update password in Firebase Auth
   try {
     await getAuth().updateUser(authUid, { password: newPassword });
   } catch (e) {
     throw new HttpsError('internal', `Failed to update password: ${e.message}`);
   }
 
-  // 4. Mark session consumed + revoke refresh tokens so old sessions die
-  await sessionRef.set({ consumed: true, consumedAt: FieldValue.serverTimestamp() }, { merge: true });
   try {
     await getAuth().revokeRefreshTokens(authUid);
   } catch (_) {
@@ -1481,29 +1511,22 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
 
   await enforceVerifyOtpRateLimits(db, { clientIp, role, digits: mobileDigits });
 
-  const sessionRef = db.collection('otp_verification_sessions').doc(sessionId);
-  const sessionSnap = await sessionRef.get();
-  if (!sessionSnap.exists) {
-    throw new HttpsError('failed-precondition', 'OTP verification session expired. Verify again.');
-  }
-  const session = sessionSnap.data() || {};
-  if (session.consumed === true) {
-    throw new HttpsError('failed-precondition', 'This OTP session has already been used.');
-  }
-  const expiresAt = session.expiresAt?.toDate?.();
-  if (!expiresAt || Date.now() > expiresAt.getTime()) {
-    await sessionRef.delete().catch(() => {});
-    throw new HttpsError('deadline-exceeded', 'OTP session expired. Please verify OTP again.');
-  }
-
-  const sessionRole = String(session.role || '').trim();
-  const sessionMobile = normalizeMobileDigits(session.mobileDigits || session.identifier);
-  if (sessionRole !== role || session.mobileVerified !== true) {
-    throw new HttpsError('permission-denied', 'OTP verification incomplete.');
-  }
-  if (!sessionMobile || sessionMobile !== mobileDigits) {
-    throw new HttpsError('permission-denied', 'OTP session does not match this mobile number.');
-  }
+  await consumeOtpVerificationSessionAtomically(db, sessionId, {
+    messages: {
+      alreadyUsed: 'This OTP session has already been used.',
+      expired: 'OTP session expired. Please verify OTP again.',
+    },
+    assertSession: (session) => {
+      const sessionRole = String(session.role || '').trim();
+      const sessionMobile = normalizeMobileDigits(session.mobileDigits || session.identifier);
+      if (sessionRole !== role || session.mobileVerified !== true) {
+        throw new HttpsError('permission-denied', 'OTP verification incomplete.');
+      }
+      if (!sessionMobile || sessionMobile !== mobileDigits) {
+        throw new HttpsError('permission-denied', 'OTP session does not match this mobile number.');
+      }
+    },
+  });
 
   const search = await findUserByMobileDigits(db, mobileDigits);
   if (!search.found || !search.uid) {
@@ -1522,8 +1545,6 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     }
     throw new HttpsError('internal', `Account lookup failed: ${e.message}`);
   }
-
-  await sessionRef.set({ consumed: true, consumedAt: FieldValue.serverTimestamp() }, { merge: true });
 
   const customToken = await getAuth().createCustomToken(authUid, { role, loginMethod: 'mobile_otp' });
   return { ok: true, customToken, uid: authUid };
@@ -1611,6 +1632,7 @@ async function lookupMobileRegistration(db, data) {
 module.exports = {
   sendUserRegistrationOtp,
   consumeOtpChallengeAtomically,
+  consumeOtpVerificationSessionAtomically,
   verifyUserRegistrationOtp,
   hashOtp,
   lookupMobileRegistration,
