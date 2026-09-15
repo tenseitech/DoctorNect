@@ -257,16 +257,50 @@ async function enforceVerifyOtpRateLimits(db, { clientIp, role, digits }) {
   });
 }
 
+function resolveLoginBuckets(data, clientIp = 'unknown') {
+  const identifier = String(data?.identifier || data?.email || '').trim().toLowerCase();
+  if (!identifier) {
+    throw new HttpsError('invalid-argument', 'Identifier is required.');
+  }
+  return {
+    identifier,
+    idBucket: `login_id_${hashRateLimitKey(identifier)}`,
+    ipBucket: `login_ip_${hashRateLimitKey(clientIp)}`,
+  };
+}
+
+async function incrementLoginFailureBucket(db, bucket) {
+  const ref = db.collection('otp_rate_limits').doc(bucket);
+  const nowMs = Date.now();
+
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.data() || {};
+    const windowStartMs = data.windowStart?.toDate?.()?.getTime() || 0;
+    const withinWindow = windowStartMs > 0 && nowMs - windowStartMs < LOGIN_WINDOW_MS;
+    const count = withinWindow ? (Number(data.count) || 0) : 0;
+
+    tx.set(ref, {
+      count: count + 1,
+      windowStart: withinWindow
+        ? data.windowStart
+        : Timestamp.fromDate(new Date(nowMs)),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+}
+
+async function clearLoginFailureBucket(db, bucket) {
+  const ref = db.collection('otp_rate_limits').doc(bucket);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return;
+    tx.delete(ref);
+  });
+}
+
 async function consumeLoginAttempt(db, data, { clientIp = 'unknown' } = {}) {
   return assertLoginAllowed(db, data, { clientIp });
-}
-
-async function recordLoginFailure(db, data, { clientIp = 'unknown' } = {}) {
-  return recordFailedLogin(db, data, { clientIp });
-}
-
-async function resetLoginAttempts(db, data) {
-  return clearFailedLogins(db, data);
 }
 
 async function enforcePasswordResetRateLimits(db, { clientIp, identifier }) {
@@ -1204,7 +1238,14 @@ async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unk
 
   const username = String(found.data.username || '').trim().toLowerCase();
   if (username) {
-    await clearFailedLogins(db, { identifier: `ambulance:${username}` }).catch(() => {});
+    try {
+      await clearFailedLogins(db, { identifier: `ambulance:${username}` });
+    } catch (err) {
+      console.error('[completeAmbulanceMobileOtpLogin] Failed to clear login attempts', {
+        username,
+        error: err,
+      });
+    }
   }
 
   await sessionRef.set({ consumed: true, consumedAt: FieldValue.serverTimestamp() }, { merge: true });
@@ -1459,14 +1500,7 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
 }
 
 async function assertLoginAllowed(db, data, { clientIp = 'unknown' } = {}) {
-  const identifier = String(data?.identifier || data?.email || '').trim().toLowerCase();
-  if (!identifier) {
-    throw new HttpsError('invalid-argument', 'Identifier is required.');
-  }
-
-  // Share buckets with consumeLoginAttempt / recordLoginFailure.
-  const idBucket = `login_id_${hashRateLimitKey(identifier)}`;
-  const ipBucket = `login_ip_${hashRateLimitKey(clientIp)}`;
+  const { idBucket, ipBucket } = resolveLoginBuckets(data, clientIp);
   const nowMs = Date.now();
 
   const [idSnap, ipSnap] = await Promise.all([
@@ -1490,12 +1524,40 @@ async function assertLoginAllowed(db, data, { clientIp = 'unknown' } = {}) {
 }
 
 async function recordFailedLogin(db, data, { clientIp = 'unknown' } = {}) {
-  return recordLoginFailure(db, data, { clientIp });
+  const { idBucket, ipBucket } = resolveLoginBuckets(data, clientIp);
+  try {
+    await incrementLoginFailureBucket(db, idBucket);
+    await incrementLoginFailureBucket(db, ipBucket);
+    return { ok: true };
+  } catch (err) {
+    console.error('[recordFailedLogin] Failed to persist login failure counter', {
+      idBucket,
+      ipBucket,
+      clientIp,
+      error: err,
+    });
+    if (err instanceof HttpsError) throw err;
+    throw new HttpsError('internal', 'Failed to record login failure.');
+  }
 }
 
 async function clearFailedLogins(db, data) {
-  return resetLoginAttempts(db, data);
+  const { idBucket } = resolveLoginBuckets(data);
+  try {
+    await clearLoginFailureBucket(db, idBucket);
+    return { ok: true };
+  } catch (err) {
+    console.error('[clearFailedLogins] Failed to reset login failure counter', {
+      idBucket,
+      error: err,
+    });
+    if (err instanceof HttpsError) throw err;
+    throw new HttpsError('internal', 'Failed to clear login attempts.');
+  }
 }
+
+const recordLoginFailure = recordFailedLogin;
+const resetLoginAttempts = clearFailedLogins;
 
 /** Read-only: which module (role) owns this mobile, if any. */
 async function lookupMobileRegistration(db, data) {

@@ -1275,7 +1275,15 @@ async function runVerifyAmbulanceDriverLogin(firestore, payload, { clientIp, req
 
   const verified = await verifyAmbulanceCredentials(firestore, username, pin);
   if (!verified.ok) {
-    await recordFailedLogin(firestore, { identifier: `ambulance:${username}` }, { clientIp }).catch(() => {});
+    try {
+      await recordFailedLogin(firestore, { identifier: `ambulance:${username}` }, { clientIp });
+    } catch (err) {
+      console.error('[verifyAmbulanceDriverLoginHttp] Failed to record login failure', {
+        username,
+        clientIp,
+        error: err,
+      });
+    }
     logAuthAttempt(requestForLimits, {
       outcome: 'failure',
       method: 'ambulance',
@@ -1285,7 +1293,15 @@ async function runVerifyAmbulanceDriverLogin(firestore, payload, { clientIp, req
     return { ok: false, pinUpgradeRequired: verified.pinUpgradeRequired === true };
   }
 
-  await clearFailedLogins(firestore, { identifier: `ambulance:${username}` }).catch(() => {});
+  try {
+    await clearFailedLogins(firestore, { identifier: `ambulance:${username}` });
+  } catch (err) {
+    console.error('[verifyAmbulanceDriverLoginHttp] Failed to clear login attempts', {
+      username,
+      clientIp,
+      error: err,
+    });
+  }
   logAuthAttempt(requestForLimits, {
     outcome: 'success',
     method: 'ambulance',

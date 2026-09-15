@@ -10,7 +10,8 @@
     "firebase-functions": "^6.3.0"
   },
   "scripts": {
-    "deploy": "firebase deploy --only firestore:rules,storage,functions"
+    "deploy": "firebase deploy --only firestore:rules,storage,functions",
+    "test": "node --test test/**/*.test.js"
   },
   "private": true
 }
