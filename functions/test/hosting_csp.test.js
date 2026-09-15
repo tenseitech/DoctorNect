@@ -36,6 +36,13 @@ test('hosting script-src allows wasm-unsafe-eval for self-hosted CanvasKit', () 
   assert.match(scriptSrc, /'self'/);
 });
 
+test('hosting script-src allows Razorpay checkout CDN and known inline hash', () => {
+  const scriptSrc = scriptSrcDirective(readHostingCsp());
+  assert.match(scriptSrc, /https:\/\/cdn\.razorpay\.com/);
+  assert.match(scriptSrc, /https:\/\/checkout\.razorpay\.com/);
+  assert.match(scriptSrc, /'sha256-wv\/MkaW\+e2bdw8mgY\/lUXEmxvFXYRbAowmoG67zWW4='/);
+});
+
 test('web/index.html has no inline script blocks', () => {
   const html = fs.readFileSync(path.join(repoRoot, 'web', 'index.html'), 'utf8');
   const inlineScripts = html.match(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/gi) || [];
