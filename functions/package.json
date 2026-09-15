@@ -9,9 +9,13 @@
     "firebase-admin": "^13.0.0",
     "firebase-functions": "^6.3.0"
   },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1"
+  },
   "scripts": {
     "deploy": "firebase deploy --only firestore:rules,storage,functions",
-    "test": "node --test test/**/*.test.js"
+    "test": "node --test test/**/*.test.js",
+    "test:storage-rules": "firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test test/storage_doctor_kyc.rules.test.js\""
   },
   "private": true
 }
