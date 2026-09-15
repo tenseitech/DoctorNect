@@ -45,6 +45,7 @@ test('hosting script-src allows Razorpay checkout CDN and printing inline hash',
 
 test('hosting CSP allows FlutterFire Trusted Types policies', () => {
   const csp = readHostingCsp();
+  assert.match(csp, /trusted-types[\s\S]*flutter-js/);
   assert.match(csp, /trusted-types[\s\S]*flutterfire-firebase_core/);
   assert.match(csp, /flutterfire-firebase_auth/);
   assert.match(csp, /flutterfire-firebase_firestore/);
