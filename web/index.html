@@ -37,6 +37,9 @@
   <!-- Force HTTPS in production (Firebase Hosting also redirects; this is defense-in-depth). -->
   <script src="scripts/force-https.js"></script>
 
+  <!-- Preload Firebase SDKs as ES modules (no inline scripts; see firebase-sdk-loader.js). -->
+  <script type="module" src="scripts/firebase-sdk-loader.js"></script>
+
   <!-- Self-hosted pdf.js for printing/PdfPreview on web (pdfjs-dist 3.2.146). -->
   <script src="scripts/pdfjs-config.js"></script>
   <!-- Instant Splash Loader Styles -->

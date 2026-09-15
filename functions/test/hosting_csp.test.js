@@ -36,12 +36,35 @@ test('hosting script-src allows wasm-unsafe-eval for self-hosted CanvasKit', () 
   assert.match(scriptSrc, /'self'/);
 });
 
-test('hosting script-src allows Razorpay checkout CDN and known inline hashes', () => {
+test('hosting script-src allows Razorpay checkout CDN and printing inline hash', () => {
   const scriptSrc = scriptSrcDirective(readHostingCsp());
   assert.match(scriptSrc, /https:\/\/cdn\.razorpay\.com/);
   assert.match(scriptSrc, /https:\/\/checkout\.razorpay\.com/);
-  assert.match(scriptSrc, /'sha256-wv\/MkaW\+e2bdw8mgY\/lUXEmxvFXYRbAowmoG67zWW4='/);
   assert.match(scriptSrc, /'sha256-\+M0fGRkOqgYlCQCff9oNQn6k6a7Si4Et8iofLMceadE='/);
+});
+
+test('hosting CSP allows FlutterFire Trusted Types policies', () => {
+  const csp = readHostingCsp();
+  assert.match(csp, /trusted-types[\s\S]*flutterfire-firebase_core/);
+  assert.match(csp, /flutterfire-firebase_auth/);
+  assert.match(csp, /flutterfire-firebase_firestore/);
+  assert.match(csp, /flutterfire-firebase_app_check/);
+});
+
+test('web bootstraps Firebase SDKs before Flutter without inline scripts', () => {
+  const html = fs.readFileSync(path.join(repoRoot, 'web', 'index.html'), 'utf8');
+  assert.match(html, /scripts\/firebase-sdk-loader\.js/);
+  const loader = fs.readFileSync(
+    path.join(repoRoot, 'web', 'scripts', 'firebase-sdk-loader.js'),
+    'utf8',
+  );
+  assert.match(loader, /firebase-app\.js/);
+  assert.doesNotMatch(loader, /createElement\('script'\)/);
+  const splash = fs.readFileSync(
+    path.join(repoRoot, 'web', 'scripts', 'splash-bootstrap.js'),
+    'utf8',
+  );
+  assert.match(splash, /__firebaseSdkReady/);
 });
 
 test('index.html does not load Razorpay checkout globally at boot', () => {
