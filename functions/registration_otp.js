@@ -708,15 +708,18 @@ async function sendMsg91SmsOtp(mobileDigits, code, otpType = 'registration') {
   }
 }
 
-const ROLE_LABELS = {
-  doctor: 'Doctor',
-  patient: 'Patient',
-  medicalStore: 'Medical Store',
-  lab: 'Diagnostic Lab',
-  ambulance: 'Ambulance',
-  super_admin: 'Super Admin',
-  superAdmin: 'Super Admin',
-};
+const REGISTRATION_MOBILE_EXISTS_MESSAGE =
+  'This mobile number may already be registered. Try logging in, or use a different number.';
+const LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE =
+  'This mobile number may be registered under a different account type. Try another login option or contact support.';
+
+/** Pure conflict resolver for mobile lookup (login vs registration intent). */
+function resolveMobileLookupConflict({ found, registeredRole, requestedRole, intent }) {
+  if (!found) return false;
+  if (intent === 'registration') return true;
+  if (!requestedRole) return true;
+  return String(registeredRole || '').trim() !== String(requestedRole || '').trim();
+}
 
 async function findUserByMobileDigits(db, digits) {
   const candidates = [digits, `+91${digits}`, `+91 ${digits}`, `+91-${digits}`, `91${digits}`, `0${digits}`];
@@ -829,11 +832,11 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   if (otpType === 'registration') {
     const search = await findUserByMobileDigits(db, digits);
     if (search.found) {
-      const displayRole = ROLE_LABELS[search.role] || search.role || 'another';
-      throw new HttpsError(
-        'already-exists',
-        `This mobile number is already registered under the ${displayRole} role. Please log in or use a different number.`
-      );
+      console.warn('[sendUserRegistrationOtp] Registration blocked: mobile already registered', {
+        mobileSuffix: digits.slice(-4),
+        existingRole: search.role,
+      });
+      throw new HttpsError('already-exists', REGISTRATION_MOBILE_EXISTS_MESSAGE);
     }
   }
 
@@ -843,8 +846,12 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
       throw new HttpsError('not-found', 'No account found for this mobile number. Please register first.');
     }
     if (search.role && search.role !== role) {
-      const displayRole = ROLE_LABELS[search.role] || search.role;
-      throw new HttpsError('failed-precondition', `This mobile number is registered under a ${displayRole} account.`);
+      console.warn('[sendUserRegistrationOtp] Login blocked: account type mismatch', {
+        mobileSuffix: digits.slice(-4),
+        requestedRole: role,
+        existingRole: search.role,
+      });
+      throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
     }
     if (search.uid && otpType === 'login') {
       await db.collection('users').doc(search.uid).set({
@@ -1148,11 +1155,12 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
       throw new HttpsError('not-found', 'No account found for this mobile number. Please register first.');
     }
     if (search.role && search.role !== role) {
-      const displayRole = ROLE_LABELS[search.role] || search.role;
-      throw new HttpsError(
-        'failed-precondition',
-        `This mobile number is registered under a ${displayRole} account.`,
-      );
+      console.warn('[verifyUserRegistrationOtp] Login blocked: account type mismatch', {
+        mobileSuffix: digits.slice(-4),
+        requestedRole: role,
+        existingRole: search.role,
+      });
+      throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
     }
     const customToken = await getAuth().createCustomToken(search.uid, { role });
     return {
@@ -1533,7 +1541,12 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     throw new HttpsError('not-found', 'No account found for this mobile number.');
   }
   if (search.role && search.role !== role) {
-    throw new HttpsError('failed-precondition', 'This mobile number is registered under a different account.');
+    console.warn('[completeAmbulanceMobileOtpLogin] Login blocked: account type mismatch', {
+      mobileSuffix: mobileDigits.slice(-4),
+      requestedRole: role,
+      existingRole: search.role,
+    });
+    throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
   }
 
   let authUid = search.uid;
@@ -1610,23 +1623,25 @@ async function clearFailedLogins(db, data) {
 const recordLoginFailure = recordFailedLogin;
 const resetLoginAttempts = clearFailedLogins;
 
-/** Read-only: which module (role) owns this mobile, if any. */
+/** Read-only: whether a mobile conflicts with login/registration intent (no role disclosure). */
 async function lookupMobileRegistration(db, data) {
   const digits = normalizeMobileDigits(data?.mobile);
   if (!digits) {
     throw new HttpsError('invalid-argument', 'Enter a valid 10-digit mobile number.');
   }
-  const search = await findUserByMobileDigits(db, digits);
-  if (!search.found) {
-    return { ok: true, found: false, role: null, roleLabel: null };
+  const intent = String(data?.intent || 'login').trim();
+  if (intent !== 'login' && intent !== 'registration') {
+    throw new HttpsError('invalid-argument', 'Invalid lookup intent.');
   }
-  const roleLabel = ROLE_LABELS[search.role] || search.role || 'Unknown';
-  return {
-    ok: true,
-    found: true,
-    role: search.role || null,
-    roleLabel,
-  };
+  const requestedRole = String(data?.role || '').trim();
+  const search = await findUserByMobileDigits(db, digits);
+  const conflict = resolveMobileLookupConflict({
+    found: search.found,
+    registeredRole: search.role,
+    requestedRole,
+    intent,
+  });
+  return { ok: true, conflict };
 }
 
 module.exports = {
@@ -1636,6 +1651,9 @@ module.exports = {
   verifyUserRegistrationOtp,
   hashOtp,
   lookupMobileRegistration,
+  resolveMobileLookupConflict,
+  REGISTRATION_MOBILE_EXISTS_MESSAGE,
+  LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE,
   finalizePatientOtpVerification,
   approveUserAccount,
   approvePatientAccount,

@@ -6,16 +6,29 @@ import '../firebase/firebase_bootstrap.dart';
 import '../security/app_check_service.dart';
 import '../validators/form_validators.dart';
 
-/// Server-side lookup: which app module owns a mobile number.
+enum MobileLookupIntent { login, registration }
+
+/// Server-side lookup: whether a mobile number conflicts with the current flow.
 class MobileRegistrationLookup {
   MobileRegistrationLookup._();
 
   static FirebaseFunctions get _functions =>
       FirebaseFunctions.instanceFor(region: 'asia-south1');
 
-  static Future<({bool found, String? role, String? roleLabel})?> check(
-    String mobile,
-  ) async {
+  static const loginConflictMessage =
+      'This mobile number may be registered under a different account type. '
+      'Try another login option or contact support.';
+
+  static const registrationConflictMessage =
+      'This mobile number may already be registered. '
+      'Try logging in, or use a different number.';
+
+  /// Returns `true` when the number conflicts, `false` when clear, `null` on skip/error.
+  static Future<bool?> check(
+    String mobile, {
+    required UserType role,
+    required MobileLookupIntent intent,
+  }) async {
     if (!FirebaseBootstrap.isReady) return null;
 
     final appCheckBlock = await AppCheckService.ensureForCallable();
@@ -33,17 +46,14 @@ class MobileRegistrationLookup {
     try {
       final result = await _functions
           .httpsCallable('lookupMobileRegistration')
-          .call<Map<String, dynamic>>({'mobile': digits});
+          .call<Map<String, dynamic>>({
+        'mobile': digits,
+        'role': _roleValue(role),
+        'intent': intent == MobileLookupIntent.login ? 'login' : 'registration',
+      });
       final data = Map<String, dynamic>.from(result.data);
       if (data['ok'] != true) return null;
-      if (data['found'] != true) {
-        return (found: false, role: null, roleLabel: null);
-      }
-      return (
-        found: true,
-        role: data['role'] as String?,
-        roleLabel: data['roleLabel'] as String?,
-      );
+      return data['conflict'] == true;
     } on FirebaseFunctionsException catch (e) {
       if (kDebugMode) {
         debugPrint(
@@ -57,32 +67,6 @@ class MobileRegistrationLookup {
       }
       return null;
     }
-  }
-
-  /// Popup message when number belongs to another module, or registration blocked.
-  static String? conflictMessage({
-    required UserType currentRole,
-    required bool isRegistration,
-    required String registeredRoleLabel,
-    String? registeredRole,
-  }) {
-    final label = registeredRoleLabel.trim().isNotEmpty
-        ? registeredRoleLabel.trim()
-        : 'another';
-    final currentRoleValue = _roleValue(currentRole);
-    final sameModule = registeredRole != null && registeredRole == currentRoleValue;
-
-    if (isRegistration) {
-      return 'This mobile number is already registered under $label. '
-          'Please log in from the $label module or use a different number.';
-    }
-
-    if (!sameModule) {
-      return 'This mobile number is registered under $label. '
-          'Please use the $label login screen.';
-    }
-
-    return null;
   }
 
   static String _roleValue(UserType role) => switch (role) {

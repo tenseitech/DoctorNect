@@ -52,9 +52,6 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
   int _otpKeyCounter = 0;
   int _resendCooldown = 0;
   Timer? _cooldownTimer;
-  Timer? _lookupDebounce;
-  String? _lastLookupDigits;
-  String? _lastLookupMessage;
 
   bool get _phoneLocked => _otpSent && !_verified;
 
@@ -62,45 +59,12 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
   void initState() {
     super.initState();
     _dialCode = widget.initialDialCode;
-    widget.mobileController.addListener(_onMobileChanged);
   }
 
   @override
   void dispose() {
-    widget.mobileController.removeListener(_onMobileChanged);
-    _lookupDebounce?.cancel();
     _cooldownTimer?.cancel();
     super.dispose();
-  }
-
-  void _onMobileChanged() {
-    if (_phoneLocked) return;
-    _lookupDebounce?.cancel();
-    _lookupDebounce = Timer(const Duration(milliseconds: 600), _lookupRegistration);
-  }
-
-  Future<void> _lookupRegistration() async {
-    final digits = _mobileDigits;
-    if (digits == null || digits == _lastLookupDigits) return;
-
-    final result = await MobileRegistrationLookup.check(digits);
-    if (!mounted || result == null || !result.found) {
-      _lastLookupDigits = digits;
-      _lastLookupMessage = null;
-      return;
-    }
-
-    final message = MobileRegistrationLookup.conflictMessage(
-      currentRole: widget.role,
-      isRegistration: true,
-      registeredRoleLabel: result.roleLabel ?? 'another module',
-      registeredRole: result.role,
-    );
-    if (message == null || message == _lastLookupMessage) return;
-
-    _lastLookupDigits = digits;
-    _lastLookupMessage = message;
-    AppToast.error(context, message);
   }
 
   @override
@@ -165,19 +129,15 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
     }
     if (_resendCooldown > 0) return;
 
-    final lookup = await MobileRegistrationLookup.check(digits);
+    final conflict = await MobileRegistrationLookup.check(
+      digits,
+      role: widget.role,
+      intent: MobileLookupIntent.registration,
+    );
     if (!mounted) return;
-    if (lookup != null && lookup.found) {
-      final message = MobileRegistrationLookup.conflictMessage(
-        currentRole: widget.role,
-        isRegistration: true,
-        registeredRoleLabel: lookup.roleLabel ?? 'another module',
-        registeredRole: lookup.role,
-      );
-      if (message != null) {
-        AppToast.error(context, message);
-        return;
-      }
+    if (conflict == true) {
+      AppToast.error(context, MobileRegistrationLookup.registrationConflictMessage);
+      return;
     }
 
     setState(() => _sending = true);

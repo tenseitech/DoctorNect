@@ -930,7 +930,7 @@ exports.sendUserRegistrationOtp = onCall(
 }),
 );
 
-/** Returns which module a mobile number is registered under (read-only). */
+/** Returns whether a mobile number conflicts with login/registration intent (no role disclosure). */
 exports.lookupMobileRegistration = onCall(
   { region: 'asia-south1' },
   withSecurityLogging('lookupMobileRegistration', async (request) => {

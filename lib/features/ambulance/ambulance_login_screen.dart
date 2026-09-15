@@ -102,22 +102,21 @@ class _AmbulanceLoginScreenState extends State<AmbulanceLoginScreen> {
     final digits = FormValidators.registrationMobileDigits(_mobileController.text);
     if (digits == null || digits == _lastLookupDigits) return;
 
-    final result = await MobileRegistrationLookup.check(digits);
+    final conflict = await MobileRegistrationLookup.check(
+      digits,
+      role: UserType.ambulance,
+      intent: MobileLookupIntent.login,
+    );
     if (!mounted) return;
 
-    if (result == null || !result.found) {
+    if (conflict != true) {
       _lastLookupDigits = digits;
       _lastLookupMessage = null;
       return;
     }
 
-    final message = MobileRegistrationLookup.conflictMessage(
-      currentRole: UserType.ambulance,
-      isRegistration: false,
-      registeredRoleLabel: result.roleLabel ?? 'another module',
-      registeredRole: result.role,
-    );
-    if (message == null || message == _lastLookupMessage) {
+    const message = MobileRegistrationLookup.loginConflictMessage;
+    if (message == _lastLookupMessage) {
       _lastLookupDigits = digits;
       return;
     }
@@ -187,19 +186,15 @@ class _AmbulanceLoginScreenState extends State<AmbulanceLoginScreen> {
       return;
     }
 
-    final lookup = await MobileRegistrationLookup.check(digits);
+    final conflict = await MobileRegistrationLookup.check(
+      digits,
+      role: UserType.ambulance,
+      intent: MobileLookupIntent.login,
+    );
     if (!mounted) return;
-    if (lookup != null && lookup.found) {
-      final message = MobileRegistrationLookup.conflictMessage(
-        currentRole: UserType.ambulance,
-        isRegistration: false,
-        registeredRoleLabel: lookup.roleLabel ?? 'another module',
-        registeredRole: lookup.role,
-      );
-      if (message != null) {
-        AppToast.error(context, message);
-        return;
-      }
+    if (conflict == true) {
+      AppToast.error(context, MobileRegistrationLookup.loginConflictMessage);
+      return;
     }
 
     setState(() => _sendingOtp = true);
