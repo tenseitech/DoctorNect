@@ -43,9 +43,11 @@ test('hosting script-src allows Razorpay checkout CDN and printing inline hash',
   assert.match(scriptSrc, /'sha256-\+M0fGRkOqgYlCQCff9oNQn6k6a7Si4Et8iofLMceadE='/);
 });
 
-test('hosting CSP allows FlutterFire Trusted Types policies', () => {
+test('hosting CSP allows Flutter and Google Sign-In Trusted Types policies', () => {
   const csp = readHostingCsp();
   assert.match(csp, /trusted-types[\s\S]*flutter-js/);
+  assert.match(csp, /flutter-engine/);
+  assert.match(csp, /gis-dart/);
   assert.match(csp, /trusted-types[\s\S]*flutterfire-firebase_core/);
   assert.match(csp, /flutterfire-firebase_auth/);
   assert.match(csp, /flutterfire-firebase_firestore/);

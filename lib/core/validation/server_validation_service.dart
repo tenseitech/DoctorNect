@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../firebase/firebase_bootstrap.dart';
@@ -109,9 +110,16 @@ abstract final class ServerValidationService {
 
   static Future<bool> _fetchRulesFromServer(SharedPreferences prefs) async {
     try {
-      final callable = _functions.httpsCallable('getValidationRules');
-      final result = await callable.call<Map<String, dynamic>>({});
-      final data = Map<String, dynamic>.from(result.data);
+      final Map<String, dynamic> data;
+      if (kIsWeb) {
+        final response = await http.get(Uri.base.resolve('/api/validation-rules'));
+        if (response.statusCode != 200) return false;
+        data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+      } else {
+        final callable = _functions.httpsCallable('getValidationRules');
+        final result = await callable.call<Map<String, dynamic>>({});
+        data = Map<String, dynamic>.from(result.data);
+      }
       final rules = data['rules'];
       final thresholds = data['vitalThresholds'];
       if (rules is Map) {

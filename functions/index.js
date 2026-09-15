@@ -859,6 +859,22 @@ exports.getValidationRules = onCall(
   }),
 );
 
+/**
+ * Same-origin web entry for validation rules (Firebase Hosting rewrite).
+ * Avoids browser CORS preflight to cloudfunctions.net when Cloud Run is not public.
+ */
+exports.getValidationRulesHttp = onRequest(
+  { region: CALLABLE_REGION },
+  (req, res) => {
+    if (req.method !== 'GET') {
+      res.status(405).json({ error: { message: 'GET required.' } });
+      return;
+    }
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({ rules: RULES, vitalThresholds: VITAL_THRESHOLDS, version: 1 });
+  },
+);
+
 /** Validates a single field server-side. */
 exports.validateField = onCall(
   { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
