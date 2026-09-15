@@ -78,6 +78,7 @@ const {
   withSecurityLogging,
 } = require('./security_logger');
 const { assertProductionSecrets } = require('./secure_config');
+const { assertProductionOtpSafety } = require('./production_otp_guard');
 const {
   enforceAbuseLimit,
   assertAppCheck,
@@ -97,6 +98,7 @@ const {
 } = require('./public_error_messages');
 
 assertProductionSecrets();
+assertProductionOtpSafety();
 
 /** Match deployed regions: Firestore triggers in asia-south2, callables in asia-south1. */
 const FIRESTORE_TRIGGER_REGION = 'asia-south2';

@@ -4,6 +4,7 @@ const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const { sendMsg91Email } = require('./msg91_email');
 const { readMsg91AuthKey } = require('./secure_config');
+const { isProductionFirebaseProject } = require('./production_otp_guard');
 const {
   GENERIC_ACCOUNT_LOOKUP_FAILED,
   GENERIC_PASSWORD_UPDATE_FAILED,
@@ -51,6 +52,9 @@ function demoPhoneDigitsForRole(role) {
 
 /** True when [digits] is the env-configured demo number for [role] only. */
 function isDemoPhone(digits, role) {
+  if (isProductionFirebaseProject()) {
+    return false;
+  }
   const expected = demoPhoneDigitsForRole(role);
   return expected != null && expected === digits;
 }
@@ -88,6 +92,9 @@ const PBKDF2_KEYLEN = 32;
 const PBKDF2_DIGEST = 'sha256';
 
 function isTestMode() {
+  if (isProductionFirebaseProject()) {
+    return false;
+  }
   const mode = String(process.env.OTP_TEST_MODE || '').trim().toLowerCase();
   return mode === 'true' || mode === '1';
 }
@@ -1681,4 +1688,5 @@ module.exports = {
   isPlayReviewMobileInput,
   isDemoMobileInput,
   isDemoPhone,
+  isTestMode,
 };
