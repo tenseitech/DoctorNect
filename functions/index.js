@@ -91,6 +91,10 @@ const {
   assertAmbulanceHttpAppCheck,
   isAmbulanceHttpAppCheckEnforced,
 } = require('./http_endpoint_security');
+const {
+  GENERIC_AMBULANCE_LOGIN_FAILED,
+  clientFacingHttpsMessage,
+} = require('./public_error_messages');
 
 assertProductionSecrets();
 
@@ -1410,7 +1414,7 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
         res.status(status).json({
           error: {
             status: String(err.code || 'internal').toUpperCase(),
-            message: err.message || 'Request failed.',
+            message: clientFacingHttpsMessage(err, GENERIC_AMBULANCE_LOGIN_FAILED),
           },
         });
         return;

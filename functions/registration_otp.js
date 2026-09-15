@@ -4,6 +4,12 @@ const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const { sendMsg91Email } = require('./msg91_email');
 const { readMsg91AuthKey } = require('./secure_config');
+const {
+  GENERIC_ACCOUNT_LOOKUP_FAILED,
+  GENERIC_PASSWORD_UPDATE_FAILED,
+  GENERIC_MOBILE_LOGIN_FAILED,
+  logInternalError,
+} = require('./public_error_messages');
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000;
 const SESSION_EXPIRY_MS = 30 * 60 * 1000;
@@ -1468,7 +1474,8 @@ async function resetUserPasswordWithOtp(db, data, { clientIp = 'unknown' } = {})
           throw new HttpsError('not-found', 'No account found with this email address.');
         }
       } else {
-        throw new HttpsError('internal', `Account lookup failed: ${e.message}`);
+        logInternalError('resetUserPasswordWithOtp', e, { identifier, stage: 'getUserByEmail' });
+        throw new HttpsError('internal', GENERIC_ACCOUNT_LOOKUP_FAILED);
       }
     }
   } else {
@@ -1486,7 +1493,8 @@ async function resetUserPasswordWithOtp(db, data, { clientIp = 'unknown' } = {})
   try {
     await getAuth().updateUser(authUid, { password: newPassword });
   } catch (e) {
-    throw new HttpsError('internal', `Failed to update password: ${e.message}`);
+    logInternalError('resetUserPasswordWithOtp', e, { authUid, stage: 'updateUser' });
+    throw new HttpsError('internal', GENERIC_PASSWORD_UPDATE_FAILED);
   }
 
   try {
@@ -1556,7 +1564,8 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     if (e.code === 'auth/user-not-found') {
       throw new HttpsError('not-found', 'No Firebase account found for this mobile number.');
     }
-    throw new HttpsError('internal', `Account lookup failed: ${e.message}`);
+    logInternalError('completeMobileOtpLogin', e, { authUid, stage: 'getUser' });
+    throw new HttpsError('internal', GENERIC_MOBILE_LOGIN_FAILED);
   }
 
   const customToken = await getAuth().createCustomToken(authUid, { role, loginMethod: 'mobile_otp' });
