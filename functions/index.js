@@ -83,6 +83,14 @@ const {
   assertAppCheck,
   withAbuseProtection,
 } = require('./abuse_rate_limit');
+const {
+  resolveAmbulanceHttpAllowedOrigins,
+  handleAmbulanceHttpPreflight,
+  isAmbulanceHttpOriginAllowed,
+  applyAmbulanceHttpCorsHeaders,
+  assertAmbulanceHttpAppCheck,
+  isAmbulanceHttpAppCheckEnforced,
+} = require('./http_endpoint_security');
 
 assertProductionSecrets();
 
@@ -107,6 +115,10 @@ const ENFORCE_ABUSE_APP_CHECK = String(
 )
   .trim()
   .toLowerCase() !== 'false';
+
+/** App Check for the public ambulance login HTTP fallback (defaults OFF for staged rollout). */
+const ENFORCE_AMBULANCE_HTTP_APP_CHECK = isAmbulanceHttpAppCheckEnforced();
+const AMBULANCE_HTTP_ALLOWED_ORIGINS = resolveAmbulanceHttpAllowedOrigins();
 
 function db() {
   return getFirestore();
@@ -1352,12 +1364,25 @@ exports.verifyAmbulanceDriverLogin = onCall(
 );
 
 /**
- * Web-friendly HTTP entry (CORS enabled). Flutter web callables can send an empty
- * Authorization header; this endpoint accepts a proper Bearer token via fetch.
+ * Web-friendly HTTP entry for ambulance username/PIN login.
+ * CORS is restricted to hosted app origins; App Check is optional until
+ * ENFORCE_AMBULANCE_HTTP_APP_CHECK=true (client must send X-Firebase-AppCheck).
  */
 exports.verifyAmbulanceDriverLoginHttp = onRequest(
-  { region: CALLABLE_REGION, cors: true, invoker: 'public' },
+  { region: CALLABLE_REGION, cors: false, invoker: 'public' },
   async (req, res) => {
+    const allowedOrigins = AMBULANCE_HTTP_ALLOWED_ORIGINS;
+    if (handleAmbulanceHttpPreflight(req, res, allowedOrigins)) return;
+
+    applyAmbulanceHttpCorsHeaders(req, res, allowedOrigins);
+
+    if (!isAmbulanceHttpOriginAllowed(req.headers.origin, allowedOrigins)) {
+      res.status(403).json({
+        error: { status: 'PERMISSION_DENIED', message: 'Origin not allowed.' },
+      });
+      return;
+    }
+
     if (req.method !== 'POST') {
       res.status(405).json({ error: { status: 'INVALID_ARGUMENT', message: 'POST required.' } });
       return;
@@ -1369,6 +1394,7 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
     const requestForLimits = { auth: null, rawRequest: req, app: null };
 
     try {
+      await assertAmbulanceHttpAppCheck(req, { enforce: ENFORCE_AMBULANCE_HTTP_APP_CHECK });
       const firestore = getFirestore();
       const payload = req.body?.data ?? req.body ?? {};
       const result = await runVerifyAmbulanceDriverLogin(

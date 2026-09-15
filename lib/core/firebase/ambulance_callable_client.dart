@@ -6,7 +6,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:firebase_app_check/firebase_app_check.dart';
+
 import '../../firebase_options.dart';
+import '../security/app_check_service.dart';
 import 'ambulance_auth_helper.dart';
 
 /// Ambulance driver Cloud Function callables.
@@ -51,7 +54,20 @@ abstract final class AmbulanceCallableClient {
       'https://$_region-$projectId.cloudfunctions.net/verifyAmbulanceDriverLoginHttp',
     );
 
+    await AppCheckService.ensureForCallable();
+
     final headers = <String, String>{'Content-Type': 'application/json'};
+    try {
+      final appCheckToken = await FirebaseAppCheck.instance.getToken();
+      if (appCheckToken != null && appCheckToken.isNotEmpty) {
+        headers['X-Firebase-AppCheck'] = appCheckToken;
+      }
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('Ambulance web login App Check token failed: $e\n$st');
+      }
+    }
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final token = await user.getIdToken(true);
