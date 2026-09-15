@@ -905,6 +905,59 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   };
 }
 
+/**
+ * Atomically validates an OTP challenge, increments failed attempts, or consumes it.
+ * Prevents concurrent verify calls from bypassing lockout or reusing a challenge.
+ */
+async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAccount }) {
+  const challengeRef = db.collection('otp_challenges').doc(challengeKey);
+
+  const outcome = await db.runTransaction(async (tx) => {
+    const challengeSnap = await tx.get(challengeRef);
+    if (!challengeSnap.exists) {
+      return { status: 'missing' };
+    }
+
+    const challenge = challengeSnap.data() || {};
+    const expiresAt = challenge.expiresAt?.toDate?.();
+    if (!expiresAt || Date.now() > expiresAt.getTime()) {
+      tx.delete(challengeRef);
+      return { status: 'expired' };
+    }
+
+    const attempts = Number(challenge.attempts) || 0;
+    if (attempts >= 5) {
+      tx.delete(challengeRef);
+      return { status: 'locked' };
+    }
+
+    const otpValid = otpHashesEqual(hashOtp(otp), challenge.otpHash)
+      || (!isDemoAccount && isTestMode() && otp === DEV_TEST_OTP);
+    if (!otpValid) {
+      tx.set(challengeRef, { attempts: attempts + 1 }, { merge: true });
+      return { status: 'invalid', attempts: attempts + 1 };
+    }
+
+    tx.delete(challengeRef);
+    return { status: 'consumed' };
+  });
+
+  switch (outcome.status) {
+    case 'missing':
+      throw new HttpsError('failed-precondition', 'Send OTP first.');
+    case 'expired':
+      throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
+    case 'locked':
+      throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
+    case 'invalid':
+      throw new HttpsError('permission-denied', 'Invalid OTP.');
+    case 'consumed':
+      return { consumed: true };
+    default:
+      throw new HttpsError('internal', 'OTP verification failed.');
+  }
+}
+
 async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' } = {}) {
   const role = String(data?.role || 'patient').trim();
   assertSupportedRole(role);
@@ -928,36 +981,13 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
   await enforceVerifyOtpRateLimits(db, { clientIp, role, digits });
 
   const challengeKey = mobileHash(role, digits);
-
-  const challengeRef = db.collection('otp_challenges').doc(challengeKey);
-  const challengeSnap = await challengeRef.get();
-  if (!challengeSnap.exists) {
-    throw new HttpsError('failed-precondition', 'Send OTP first.');
-  }
-
-  const challenge = challengeSnap.data() || {};
-  const expiresAt = challenge.expiresAt?.toDate?.();
   const isDemoAccount = isDemoPhone(digits, role);
-  if (!expiresAt || Date.now() > expiresAt.getTime()) {
-    await challengeRef.delete().catch(() => {});
-    throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
-  }
 
-  const attempts = Number(challenge.attempts) || 0;
-  if (attempts >= 5) {
-    await challengeRef.delete().catch(() => {});
-    throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
-  }
-
-  // Demo account: only DEMO_OTP (hash match). Other numbers: unchanged (+ dev test mode).
-  const otpValid = otpHashesEqual(hashOtp(otp), challenge.otpHash)
-    || (!isDemoAccount && isTestMode() && otp === DEV_TEST_OTP);
-  if (!otpValid) {
-    await challengeRef.set({ attempts: attempts + 1 }, { merge: true });
-    throw new HttpsError('permission-denied', 'Invalid OTP.');
-  }
-
-  await challengeRef.delete().catch(() => {});
+  await consumeOtpChallengeAtomically(db, {
+    challengeKey,
+    otp,
+    isDemoAccount,
+  });
 
   const verifiedAt = FieldValue.serverTimestamp();
   const sessionExpiresAt = Timestamp.fromDate(new Date(Date.now() + SESSION_EXPIRY_MS));
@@ -1580,7 +1610,9 @@ async function lookupMobileRegistration(db, data) {
 
 module.exports = {
   sendUserRegistrationOtp,
+  consumeOtpChallengeAtomically,
   verifyUserRegistrationOtp,
+  hashOtp,
   lookupMobileRegistration,
   finalizePatientOtpVerification,
   approveUserAccount,
