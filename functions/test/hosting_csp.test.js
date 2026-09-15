@@ -36,11 +36,20 @@ test('hosting script-src allows wasm-unsafe-eval for self-hosted CanvasKit', () 
   assert.match(scriptSrc, /'self'/);
 });
 
-test('hosting script-src allows Razorpay checkout CDN and known inline hash', () => {
+test('hosting script-src allows Razorpay checkout CDN and known inline hashes', () => {
   const scriptSrc = scriptSrcDirective(readHostingCsp());
   assert.match(scriptSrc, /https:\/\/cdn\.razorpay\.com/);
   assert.match(scriptSrc, /https:\/\/checkout\.razorpay\.com/);
   assert.match(scriptSrc, /'sha256-wv\/MkaW\+e2bdw8mgY\/lUXEmxvFXYRbAowmoG67zWW4='/);
+  assert.match(scriptSrc, /'sha256-\+M0fGRkOqgYlCQCff9oNQn6k6a7Si4Et8iofLMceadE='/);
+});
+
+test('index.html does not load Razorpay checkout globally at boot', () => {
+  const html = fs.readFileSync(path.join(repoRoot, 'web', 'index.html'), 'utf8');
+  assert.doesNotMatch(html, /checkout\.razorpay\.com\/v1\/checkout\.js/);
+  assert.ok(
+    fs.existsSync(path.join(repoRoot, 'web', 'scripts', 'load-razorpay-checkout.js')),
+  );
 });
 
 test('web/index.html has no inline script blocks', () => {
