@@ -100,6 +100,36 @@ service firebase.storage {
         && firestore.get(doctorProfileDocPath(doctorId)).data.get('ownerUid', '') == request.auth.uid;
     }
 
+    function pharmacyProfileDocPath(storeId) {
+      return /databases/(default)/documents/medical_stores/$(storeId);
+    }
+
+    function isPharmacyDocOwner(storeId) {
+      return isSignedIn()
+        && firestore.exists(pharmacyProfileDocPath(storeId))
+        && firestore.get(pharmacyProfileDocPath(storeId)).data.get('ownerUid', '') == request.auth.uid;
+    }
+
+    function labProfileDocPath(labId) {
+      return /databases/(default)/documents/labs/$(labId);
+    }
+
+    function isLabDocOwner(labId) {
+      return isSignedIn()
+        && firestore.exists(labProfileDocPath(labId))
+        && firestore.get(labProfileDocPath(labId)).data.get('ownerUid', '') == request.auth.uid;
+    }
+
+    function ambulanceProfileDocPath(ambulanceId) {
+      return /databases/(default)/documents/ambulances/$(ambulanceId);
+    }
+
+    function isAmbulanceDocOwner(ambulanceId) {
+      return isSignedIn()
+        && firestore.exists(ambulanceProfileDocPath(ambulanceId))
+        && firestore.get(ambulanceProfileDocPath(ambulanceId)).data.get('authUid', '') == request.auth.uid;
+    }
+
     function myLabProfileId() {
       return storageUser().get('profileId', '');
     }
@@ -162,42 +192,45 @@ service firebase.storage {
     }
 
     // ─── Pharmacy Documents (Drug Licenses & GST) ────────────────────────────
+    // KYC files are admin-review only: no patient/other-user reads.
     match /pharmacies/{storeId}/{docFolder}/{fileName} {
-      allow read: if isSuperAdminStorageUser() || isSignedIn();
-      allow create, update: if isSignedIn()
+      allow read: if isSuperAdminStorageUser();
+      allow create, update: if (isSuperAdminStorageUser() || isPharmacyDocOwner(storeId))
         && request.resource.size < 15 * 1024 * 1024
         && (
           request.resource.contentType.matches('application/pdf.*')
           || request.resource.contentType.matches('image/.*')
         )
         && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
-      allow delete: if isSuperAdminStorageUser();
+      allow delete: if isSuperAdminStorageUser() || isPharmacyDocOwner(storeId);
     }
 
     // ─── Diagnostic Lab Documents (NABL & Registration) ───────────────────────
+    // KYC files are admin-review only: no patient/other-user reads.
     match /labs/{labId}/{docFolder}/{fileName} {
-      allow read: if isSuperAdminStorageUser() || isSignedIn();
-      allow create, update: if isSignedIn()
+      allow read: if isSuperAdminStorageUser();
+      allow create, update: if (isSuperAdminStorageUser() || isLabDocOwner(labId))
         && request.resource.size < 15 * 1024 * 1024
         && (
           request.resource.contentType.matches('application/pdf.*')
           || request.resource.contentType.matches('image/.*')
         )
         && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
-      allow delete: if isSuperAdminStorageUser();
+      allow delete: if isSuperAdminStorageUser() || isLabDocOwner(labId);
     }
 
     // ─── Ambulance Documents (Permits, RC, Fitness) ──────────────────────────
+    // KYC files are admin-review only: no patient/other-user reads.
     match /ambulances/{ambulanceId}/{docFolder}/{fileName} {
-      allow read: if isSuperAdminStorageUser() || isSignedIn();
-      allow create, update: if isSignedIn()
+      allow read: if isSuperAdminStorageUser();
+      allow create, update: if (isSuperAdminStorageUser() || isAmbulanceDocOwner(ambulanceId))
         && request.resource.size < 15 * 1024 * 1024
         && (
           request.resource.contentType.matches('application/pdf.*')
           || request.resource.contentType.matches('image/.*')
         )
         && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
-      allow delete: if isSuperAdminStorageUser();
+      allow delete: if isSuperAdminStorageUser() || isAmbulanceDocOwner(ambulanceId);
     }
 
     // ─── Generic Verification KYC Folder ────────────────────────────────────

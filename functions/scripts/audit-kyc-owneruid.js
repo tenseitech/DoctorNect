@@ -41,6 +41,7 @@ const COLLECTIONS = [
     collection: 'ambulances',
     ownerField: 'authUid',
     note: 'Ambulance ownership uses authUid, not ownerUid.',
+    skipUsersDocCheck: true,
   },
 ];
 
@@ -68,6 +69,9 @@ async function auditCollection(config) {
   const mismatchedUsers = [];
 
   for (const row of rows.filter((entry) => entry.hasOwner)) {
+    if (config.skipUsersDocCheck) {
+      continue;
+    }
     const userSnap = await db.collection('users').doc(row.ownerValue).get();
     if (!userSnap.exists) {
       mismatchedUsers.push({

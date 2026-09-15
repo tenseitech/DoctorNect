@@ -15,7 +15,7 @@
   "scripts": {
     "deploy": "firebase deploy --only firestore:rules,storage,functions",
     "test": "node --test test/**/*.test.js",
-    "test:storage-rules": "firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test test/storage_doctor_kyc.rules.test.js\""
+    "test:storage-rules": "firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test test/storage_doctor_kyc.rules.test.js test/storage_provider_kyc.rules.test.js\""
   },
   "private": true
 }
