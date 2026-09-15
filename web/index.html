@@ -35,25 +35,13 @@
   <meta name="google-signin-client_id" content="658118593597-8k252ss5k33jknhqchgui8djnp91fjdg.apps.googleusercontent.com">
 
   <!-- Force HTTPS in production (Firebase Hosting also redirects; this is defense-in-depth). -->
-  <script>
-    (function () {
-      try {
-        var host = location.hostname;
-        var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '';
-        if (!isLocal && location.protocol === 'http:') {
-          location.replace('https:' + window.location.href.substring(window.location.protocol.length));
-        }
-      } catch (e) {}
-    })();
-  </script>
+  <script src="scripts/force-https.js"></script>
 
   <!-- Razorpay Web Checkout JS -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <!-- Self-hosted pdf.js for printing/PdfPreview on web (pdfjs-dist 3.2.146). -->
-  <script>
-    var dartPdfJsBaseUrl = "assets/js/pdf/3.2.146/";
-  </script>
+  <script src="scripts/pdfjs-config.js"></script>
   <!-- Instant Splash Loader Styles -->
   <style>
     html, body {
@@ -137,35 +125,6 @@
     </div>
   </div>
 
-  <script>
-    // Remove splash screen once Flutter is initialized
-    window.addEventListener('flutter-first-frame', function() {
-      var splash = document.getElementById('app-loading-splash');
-      if (splash) {
-        splash.style.opacity = '0';
-        setTimeout(function() {
-          splash.remove();
-        }, 400);
-      }
-    });
-
-    // Fallback timer to hide splash screen if event was missed
-    setTimeout(function() {
-      var splash = document.getElementById('app-loading-splash');
-      if (splash && splash.parentNode) {
-        splash.style.opacity = '0';
-        setTimeout(function() {
-          if (splash.parentNode) splash.remove();
-        }, 400);
-      }
-    }, 6000);
-
-    (function () {
-      var s = document.createElement('script');
-      s.src = 'flutter_bootstrap.js';
-      s.async = true;
-      document.body.appendChild(s);
-    })();
-  </script>
+  <script src="scripts/splash-bootstrap.js"></script>
 </body>
 </html>
