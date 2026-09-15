@@ -19,6 +19,7 @@ abstract final class FirestorePaths {
   static const healthRecords = 'health_records';
   static const familyMembers = 'family_members';
   static const reviews = 'reviews';
+  static const reviewPublic = 'review_public';
   static const referrals = 'referrals';
   static const labBookings = 'lab_bookings';
   static const labOrders = 'lab_orders';

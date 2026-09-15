@@ -464,10 +464,20 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ─── review_public/{reviewId} ──────────────────────────────────────────
+    // Public-safe projection: no patientId / appointmentId / raw patientName.
+    match /review_public/{reviewId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // ─── reviews/{reviewId} ────────────────────────────────────────────────
 
     match /reviews/{reviewId} {
-      allow read: if true;
+      allow read: if isSuperAdmin()
+        || isAccountAdmin()
+        || (isPatient() && resource.data.patientId == myPatientId())
+        || (isVerifiedDoctor() && resource.data.doctorId == myDoctorId());
       allow create: if isPatient()
         && request.resource.data.patientId == myPatientId()
         && request.resource.data.doctorId is string
@@ -478,6 +488,12 @@ service cloud.firestore {
         && resource.data.patientId == myPatientId()
         && request.resource.data.patientId == resource.data.patientId
         && request.resource.data.doctorId == resource.data.doctorId;
+      allow update: if isVerifiedDoctor()
+        && resource.data.doctorId == myDoctorId()
+        && request.resource.data.patientId == resource.data.patientId
+        && request.resource.data.doctorId == resource.data.doctorId
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['doctorReply', 'updatedAt']);
       allow delete: if false;
 
       match /votes/{voterId} {

@@ -61,7 +61,7 @@ class ReviewRepository {
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return;
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection(FirestorePaths.reviews)
+          .collection(FirestorePaths.reviewPublic)
           .where('doctorId', isEqualTo: doctorId)
           .get(const GetOptions(source: Source.server));
 
@@ -228,13 +228,13 @@ class ReviewRepository {
     try {
       final snapshot = await FirestoreReadHelper.getQuery(
         query: FirebaseFirestore.instance
-            .collection(FirestorePaths.reviews)
+            .collection(FirestorePaths.reviewPublic)
             .where('doctorId', isEqualTo: doctorId)
             .limit(limit),
         preferCache: true,
       );
 
-      final reviews = snapshot.docs.map((doc) => _reviewFromDoc(doc.id, doc.data())).toList()
+      final reviews = snapshot.docs.map((doc) => _reviewFromPublicDoc(doc.id, doc.data())).toList()
         ..sort((a, b) => b.date.compareTo(a.date));
       return reviews;
     } catch (_) {
@@ -263,6 +263,18 @@ class ReviewRepository {
     );
   }
 
+  PatientDoctorReview _reviewFromPublicDoc(String id, Map<String, dynamic> data) {
+    return PatientDoctorReview(
+      id: id,
+      maskedName: data['maskedName'] as String? ?? 'Patient',
+      rating: (data['rating'] as num?)?.toInt() ?? 5,
+      text: data['comment'] as String? ?? 'No written comment.',
+      date: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      doctorReply: data['doctorReply'] as String?,
+      helpfulCount: (data['helpfulCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+
   String _maskName(String patientName) {
     final parts = patientName.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty) return 'Patient';
@@ -281,11 +293,12 @@ class ReviewRepository {
 
     final firestore = FirebaseFirestore.instance;
     final reviewRef = firestore.collection(FirestorePaths.reviews).doc(reviewId);
+    final publicReviewRef = firestore.collection(FirestorePaths.reviewPublic).doc(reviewId);
     final voteRef = reviewRef.collection('votes').doc(patientId);
 
     try {
       return await firestore.runTransaction<bool>((tx) async {
-        final reviewSnap = await tx.get(reviewRef);
+        final reviewSnap = await tx.get(publicReviewRef);
         if (!reviewSnap.exists) return false;
 
         final voteSnap = await tx.get(voteRef);

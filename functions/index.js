@@ -32,6 +32,10 @@ const {
   lookupMobileRegistration,
 } = require('./registration_otp');
 const {
+  syncReviewPublicDoc,
+  deleteReviewPublicDoc,
+} = require('./review_public_sync');
+const {
   resolveDoctorRecipientUid,
   createInAppNotification,
   writeInAppNotification,
@@ -1564,10 +1568,16 @@ exports.aggregateDoctorRatingOnReviewWrite = onDocumentWritten(
   async (event) => {
     const before = event.data?.before?.data() || null;
     const after = event.data?.after?.data() || null;
+    const reviewId = String(event.params?.reviewId || '').trim();
     const doctorId = String((after || before)?.doctorId || '').trim();
     if (!doctorId) return;
 
     const db = getFirestore();
+    if (!after) {
+      await deleteReviewPublicDoc(db, reviewId);
+    } else {
+      await syncReviewPublicDoc(db, reviewId, after);
+    }
     const doctorRef = db.collection('doctors').doc(doctorId);
     const reviewsSnap = await db.collection('reviews').where('doctorId', '==', doctorId).get();
 
@@ -1608,6 +1618,11 @@ exports.syncReviewHelpfulCount = onDocumentWritten(
     const votesSnap = await reviewRef.collection('votes').count().get();
     const count = votesSnap.data().count || 0;
     await reviewRef.update({ helpfulCount: count });
+    const publicRef = db.collection('review_public').doc(reviewRef.id);
+    const publicSnap = await publicRef.get();
+    if (publicSnap.exists) {
+      await publicRef.update({ helpfulCount: count });
+    }
   },
 );
 
