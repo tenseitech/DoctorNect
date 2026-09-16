@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/widgets/resampled_network_image.dart';
 import '../models/doctor_profile_detail.dart';
 
 class DoctorPosterWidget extends StatelessWidget {
@@ -57,7 +58,12 @@ class DoctorPosterWidget extends StatelessWidget {
               ),
               clipBehavior: Clip.antiAlias,
               child: doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty
-                  ? Image.network(doctor.photoUrl!, fit: BoxFit.cover)
+                  ? ResampledNetworkImageWidget(
+                      url: doctor.photoUrl!,
+                      width: 140,
+                      height: 140,
+                      fit: BoxFit.cover,
+                    )
                   : const Icon(Icons.person, size: 80, color: Colors.grey),
             ),
             const SizedBox(height: 24),

@@ -48,12 +48,24 @@ function Get-FlutterDartDefines {
 
     $androidKey = $env:FIREBASE_API_KEY_ANDROID
     if ([string]::IsNullOrWhiteSpace($androidKey)) {
-        throw @"
-Missing FIREBASE_API_KEY_ANDROID.
+        $rootEnv = Join-Path (Get-ProjectRoot) '.env'
+        $hint = if (-not (Test-Path -LiteralPath $rootEnv)) {
+@"
 
-Set it in .env (copy from .env.example) or in your shell, then re-run:
-  .\scripts\release_build.ps1
+Project root .env is missing (functions/.env is for Cloud Functions only).
+Create it from the template, then set your Android Firebase API key:
+
+  Copy-Item .env.example .env
+  # Edit .env and set FIREBASE_API_KEY_ANDROID=<Android app API key from Firebase Console>
 "@
+        } else {
+@"
+
+Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or export it in your shell.
+"@
+        }
+
+        throw "Missing FIREBASE_API_KEY_ANDROID.$hint`n`nRe-run: .\scripts\release_build.ps1"
     }
     $defines.Add("--dart-define=FIREBASE_API_KEY_ANDROID=$androidKey")
 

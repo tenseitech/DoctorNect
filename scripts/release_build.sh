@@ -73,12 +73,27 @@ build_dart_defines() {
   DART_DEFINES=()
 
   if [[ -z "${FIREBASE_API_KEY_ANDROID:-}" ]]; then
-    cat >&2 <<'EOF'
+    if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
+      cat >&2 <<'EOF'
 Missing FIREBASE_API_KEY_ANDROID.
 
-Set it in .env (copy from .env.example) or in your shell, then re-run:
-  ./scripts/release_build.sh
+Project root .env is missing (functions/.env is for Cloud Functions only).
+Create it from the template, then set your Android Firebase API key:
+
+  cp .env.example .env
+  # Edit .env and set FIREBASE_API_KEY_ANDROID=<Android app API key from Firebase Console>
+
+Re-run: ./scripts/release_build.sh
 EOF
+    else
+      cat >&2 <<'EOF'
+Missing FIREBASE_API_KEY_ANDROID.
+
+Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or export it in your shell.
+
+Re-run: ./scripts/release_build.sh
+EOF
+    fi
     exit 1
   fi
 

@@ -12,14 +12,16 @@ abstract final class EdgeToEdgeBootstrap {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
+  /// Icon contrast only — avoid [SystemUiOverlayStyle.statusBarColor] /
+  /// [SystemUiOverlayStyle.systemNavigationBarColor], which call deprecated
+  /// Window APIs on Android 15+ when targeting SDK 35.
   static SystemUiOverlayStyle overlayStyleFor(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     return SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarDividerColor: Colors.transparent,
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      systemStatusBarContrastEnforced: false,
+      systemNavigationBarContrastEnforced: false,
     );
   }
 }

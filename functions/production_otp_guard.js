@@ -35,6 +35,19 @@ function isProductionFirebaseProject(
   return productionProjectIds.includes(projectId);
 }
 
+/** True when code is executing inside deployed Cloud Functions / Cloud Run. */
+function isCloudFunctionsRuntime(env = process.env) {
+  return Boolean(
+    env.K_SERVICE
+    || env.FUNCTION_TARGET
+    || env.FUNCTION_NAME,
+  );
+}
+
+function isFunctionsEmulator(env = process.env) {
+  return String(env.FUNCTIONS_EMULATOR || '').trim().toLowerCase() === 'true';
+}
+
 function isOtpTestModeConfigured(env = process.env) {
   const mode = String(env.OTP_TEST_MODE || '').trim().toLowerCase();
   return mode === 'true' || mode === '1';
@@ -78,12 +91,18 @@ function logCriticalOtpSecurityEvent(action, detail, extra = {}) {
 
 /**
  * Hard fail on cold start when test/demo OTP backdoors are configured in production.
+ * Skipped during local deploy analysis and the Functions emulator so dev `.env` files
+ * with demo numbers do not block `firebase deploy`.
  */
 function assertProductionOtpSafety(
   env = process.env,
   { productionProjectIds = PRODUCTION_PROJECT_IDS } = {},
 ) {
   const projectId = resolveFirebaseProjectId(env);
+  if (!isCloudFunctionsRuntime(env) || isFunctionsEmulator(env)) {
+    return { projectId, blocked: false, skipped: true };
+  }
+
   const violations = collectProductionOtpViolations(env, productionProjectIds);
   if (violations.length === 0) {
     return { projectId, blocked: false };
@@ -101,6 +120,8 @@ module.exports = {
   DEMO_PHONE_ENV_KEYS,
   resolveFirebaseProjectId,
   isProductionFirebaseProject,
+  isCloudFunctionsRuntime,
+  isFunctionsEmulator,
   isOtpTestModeConfigured,
   listConfiguredDemoPhoneEnvKeys,
   collectProductionOtpViolations,

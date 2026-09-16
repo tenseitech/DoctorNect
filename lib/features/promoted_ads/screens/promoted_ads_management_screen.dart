@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/widgets/resampled_network_image.dart';
 import '../../../core/models/promoted_ad_model.dart';
 import '../../../core/services/promoted_ads_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -367,7 +368,12 @@ class _PromotedAdCard extends StatelessWidget {
                   height: 120,
                   width: double.infinity,
                   child: ad.imageUrl.isNotEmpty
-                      ? Image.network(ad.imageUrl, fit: BoxFit.cover)
+                      ? ResampledNetworkImageWidget(
+                          url: ad.imageUrl,
+                          width: double.infinity,
+                          height: 120,
+                          fit: BoxFit.cover,
+                        )
                       : Container(color: AppColors.doctorBlue.withValues(alpha: 0.2)),
                 ),
               ),

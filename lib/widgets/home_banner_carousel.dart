@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
+import '../core/widgets/resampled_network_image.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 
 typedef HomeCarouselCtaHandler = void Function(String? route);
@@ -238,7 +239,14 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
             children: [
           _gradientBackground(begin: Alignment.topLeft, end: Alignment.bottomRight),
           if (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
-            Image.network(banner.imageUrl!, fit: BoxFit.cover),
+            LayoutBuilder(
+              builder: (context, constraints) => ResampledNetworkImageWidget(
+                url: banner.imageUrl!,
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                fit: BoxFit.cover,
+              ),
+            ),
           if (banner.icon != null && (banner.imageUrl == null || banner.imageUrl!.isEmpty))
             Positioned(
               right: -8,
@@ -314,7 +322,14 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
         children: [
           _gradientBackground(begin: Alignment.centerLeft, end: Alignment.centerRight),
           if (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
-            Image.network(banner.imageUrl!, fit: BoxFit.cover),
+            LayoutBuilder(
+              builder: (context, constraints) => ResampledNetworkImageWidget(
+                url: banner.imageUrl!,
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                fit: BoxFit.cover,
+              ),
+            ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: contentHorizontalInset),
             child: Row(

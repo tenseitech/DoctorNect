@@ -21,6 +21,13 @@ function baseEnv(overrides = {}) {
   };
 }
 
+function cloudRuntimeEnv(overrides = {}) {
+  return baseEnv({
+    K_SERVICE: 'getvalidationrules',
+    ...overrides,
+  });
+}
+
 test('production OTP guard allows test/demo config outside production project', () => {
   const env = baseEnv({
     OTP_TEST_MODE: 'true',
@@ -32,8 +39,18 @@ test('production OTP guard allows test/demo config outside production project', 
   assert.doesNotThrow(() => assertProductionOtpSafety(env));
 });
 
-test('production OTP guard blocks cold start when OTP_TEST_MODE is enabled', () => {
+test('production OTP guard skips local deploy analysis even with prod project env', () => {
   const env = baseEnv({
+    GCLOUD_PROJECT: PROD_PROJECT,
+    OTP_TEST_MODE: 'true',
+    DEMO_PHONE_PATIENT: '9359503874',
+  });
+
+  assert.doesNotThrow(() => assertProductionOtpSafety(env));
+});
+
+test('production OTP guard blocks cold start when OTP_TEST_MODE is enabled', () => {
+  const env = cloudRuntimeEnv({
     GCLOUD_PROJECT: PROD_PROJECT,
     OTP_TEST_MODE: 'true',
   });
@@ -46,7 +63,7 @@ test('production OTP guard blocks cold start when OTP_TEST_MODE is enabled', () 
 });
 
 test('production OTP guard blocks cold start when demo phone env is configured', () => {
-  const env = baseEnv({
+  const env = cloudRuntimeEnv({
     GCLOUD_PROJECT: PROD_PROJECT,
     DEMO_PHONE_DOCTOR: '9876543210',
   });
