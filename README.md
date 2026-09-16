@@ -55,3 +55,43 @@ flutter run -d web-server --web-port=8091 --dart-define=GOOGLE_MAPS_API_KEY=your
 ```
 
 If the key is omitted, invalid, or over quota, the app falls back to the free `geocoding` package.
+
+## Android release builds (Play Store)
+
+Release AAB builds require a unique **versionCode** (the number after `+` in `pubspec.yaml`).
+Use the release script so you do not have to bump it manually before every upload.
+
+**Setup (once):**
+
+1. Copy `.env.example` to `.env` if you have not already.
+2. Set `FIREBASE_API_KEY_ANDROID` in `.env` (required for release builds).
+
+**Windows:**
+
+```powershell
+.\scripts\release_build.ps1
+```
+
+**macOS / Linux:**
+
+```bash
+./scripts/release_build.sh
+```
+
+The script will:
+
+1. Read the current `version:` line in `pubspec.yaml` (e.g. `1.0.1+2`)
+2. Increment only the versionCode (`2` → `3`), leaving the versionName (`1.0.1`) unchanged
+3. Run `flutter build appbundle --release` with the project's `--dart-define` flags
+4. Print the final versionCode and AAB path for Play Console upload
+
+**Optional flags:**
+
+| Flag | PowerShell | Bash |
+|------|------------|------|
+| Preview bump without building | `-DryRun` | `--dry-run` |
+| Build without incrementing versionCode | `-SkipIncrement` | `--skip-increment` |
+
+To change the user-facing version name (e.g. `1.0.1` → `1.0.2`), edit `pubspec.yaml` manually before running the script.
+
+Output AAB: `build/app/outputs/bundle/release/app-release.aab`
