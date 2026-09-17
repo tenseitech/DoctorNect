@@ -8,19 +8,9 @@ class HomeSearchBar extends StatefulWidget {
   const HomeSearchBar({
     super.key,
     required this.onTap,
-    this.onCategoryTap,
   });
 
   final VoidCallback onTap;
-  final ValueChanged<String>? onCategoryTap;
-
-  static const _quickCategories = [
-    'General Physician',
-    'Dentist',
-    'Skin Specialist',
-    'Heart Specialist',
-    'Eye Specialist',
-  ];
 
   static String placeholder({required bool compact}) {
     return compact
@@ -46,25 +36,13 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
     final placeholder = HomeSearchBar.placeholder(compact: compact);
     final active = _pressed || _hovered;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SearchField(
-          compact: compact,
-          placeholder: placeholder,
-          active: active,
-          onTap: widget.onTap,
-          onHoverChanged: (value) => setState(() => _hovered = value),
-          onPressedChanged: (value) => setState(() => _pressed = value),
-        ),
-        if (widget.onCategoryTap != null) ...[
-          SizedBox(height: compact ? 10 : 14),
-          _QuickCategoriesRow(
-            compact: compact,
-            onCategoryTap: widget.onCategoryTap!,
-          ),
-        ],
-      ],
+    return _SearchField(
+      compact: compact,
+      placeholder: placeholder,
+      active: active,
+      onTap: widget.onTap,
+      onHoverChanged: (value) => setState(() => _hovered = value),
+      onPressedChanged: (value) => setState(() => _pressed = value),
     );
   }
 }
@@ -238,121 +216,6 @@ class _DesktopSearchActionState extends State<_DesktopSearchAction> {
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.surfaceOf(context),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickCategoriesRow extends StatelessWidget {
-  const _QuickCategoriesRow({
-    required this.compact,
-    required this.onCategoryTap,
-  });
-
-  final bool compact;
-  final ValueChanged<String> onCategoryTap;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!compact) {
-      return Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final category in HomeSearchBar._quickCategories)
-            _QuickCategoryChip(
-              label: category,
-              compact: false,
-              onTap: () => onCategoryTap(category),
-            ),
-        ],
-      );
-    }
-
-    return SizedBox(
-      height: 34,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        itemCount: HomeSearchBar._quickCategories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final category = HomeSearchBar._quickCategories[index];
-          return _QuickCategoryChip(
-            label: category,
-            compact: true,
-            onTap: () => onCategoryTap(category),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _QuickCategoryChip extends StatefulWidget {
-  const _QuickCategoryChip({
-    required this.label,
-    required this.compact,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool compact;
-  final VoidCallback onTap;
-
-  @override
-  State<_QuickCategoryChip> createState() => _QuickCategoryChipState();
-}
-
-class _QuickCategoryChipState extends State<_QuickCategoryChip> {
-  bool _hovered = false;
-
-  String get _label {
-    if (!widget.compact) return widget.label;
-    return switch (widget.label) {
-      'General Physician' => 'General',
-      'Skin Specialist' => 'Skin',
-      'Heart Specialist' => 'Heart',
-      'Eye Specialist' => 'Eye',
-      _ => widget.label,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          borderRadius: BorderRadius.circular(999),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-            decoration: BoxDecoration(
-              color: _hovered
-                  ? AppColors.patientTeal.withValues(alpha: 0.1)
-                  : AppColors.cardBgOf(context),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: _hovered
-                    ? AppColors.patientTeal.withValues(alpha: 0.35)
-                    : AppColors.borderOf(context),
-              ),
-            ),
-            child: Text(
-              _label,
-              style: GoogleFonts.inter(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w500,
-                color: _hovered ? AppColors.patientTeal : AppColors.textPrimaryOf(context),
-              ),
             ),
           ),
         ),

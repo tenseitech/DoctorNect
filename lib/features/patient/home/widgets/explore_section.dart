@@ -37,7 +37,7 @@ class ExploreSection extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Explore',
+                    'Specialities',
                     style: GoogleFonts.inter(
                       fontSize: isWide ? 17 : 15,
                       fontWeight: FontWeight.w700,

@@ -1206,6 +1206,111 @@ class _PatientHistoryTripCard extends StatelessWidget {
   }
 }
 
+const _kAmbulanceTypeGuideEntries = <(String, String)>[
+  ('BLS', 'Basic Life Support — non-critical, stable patient transport with basic medical support'),
+  ('ALS', 'Advanced Life Support — critical patients needing advanced medical intervention'),
+  ('ICU', 'Intensive Care Unit — fully-equipped critical/ICU-level ambulance'),
+  ('Transport', 'Non-emergency patient transport — no medical emergency, just transport'),
+];
+
+Widget _ambulanceTypeGuideContent(BuildContext context) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Ambulance type guide',
+        style: GoogleFonts.inter(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimaryOf(context),
+        ),
+      ),
+      const SizedBox(height: 12),
+      for (final (abbr, description) in _kAmbulanceTypeGuideEntries) ...[
+        RichText(
+          text: TextSpan(
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              height: 1.45,
+              color: AppColors.textSecondaryOf(context),
+            ),
+            children: [
+              TextSpan(
+                text: '$abbr = ',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryOf(context),
+                ),
+              ),
+              TextSpan(text: description),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+      ],
+    ],
+  );
+}
+
+void _showAmbulanceTypeInfo(BuildContext context) {
+  if (kIsWeb && ResponsiveLayout.isExpanded(context)) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceOf(ctx),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+        content: SizedBox(
+          width: 420,
+          child: _ambulanceTypeGuideContent(ctx),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Got it',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.surfaceOf(context),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.borderOf(ctx),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+            _ambulanceTypeGuideContent(ctx),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _AmbulanceTypeDropdown extends StatelessWidget {
   const _AmbulanceTypeDropdown({
     required this.value,
@@ -1219,6 +1324,7 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     final options = <(AmbulanceType?, String, IconData, Color)>[
       (null, 'All Types', Icons.notifications_active_outlined, const Color(0xFF6366F1)),
       (AmbulanceType.bls, 'BLS', Icons.monitor_heart_outlined, const Color(0xFF16A34A)),
@@ -1227,16 +1333,41 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
       (AmbulanceType.patientTransport, 'Transport', Icons.accessible_outlined, const Color(0xFFCA8A04)),
     ];
 
+    final unselectedBg =
+        isDark ? const Color(0xFF334155) : AppColors.cardBgOf(context);
+    final unselectedBorder =
+        isDark ? const Color(0xFF475569) : AppColors.borderOf(context);
+    final unselectedText = isDark
+        ? AppColors.darkTextPrimary.withValues(alpha: 0.78)
+        : AppColors.textPrimaryOf(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Ambulance type',
-          style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimaryOf(context),
-          ),
+        Row(
+          children: [
+            Text(
+              'Ambulance type',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimaryOf(context),
+              ),
+            ),
+            const SizedBox(width: 6),
+            InkWell(
+              onTap: () => _showAmbulanceTypeInfo(context),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: AppColors.textSecondaryOf(context),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
@@ -1258,10 +1389,10 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: selected ? color : AppColors.cardBgOf(context),
+                      color: selected ? color : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: selected ? color : AppColors.borderOf(context),
+                        color: selected ? color : unselectedBorder,
                         width: selected ? 1.5 : 1,
                       ),
                       boxShadow: selected
@@ -1288,7 +1419,7 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: selected ? AppColors.surfaceOf(context) : const Color(0xFF374151),
+                            color: selected ? AppColors.surfaceOf(context) : unselectedText,
                           ),
                         ),
                       ],
@@ -1321,43 +1452,98 @@ class _AddressRouteInputs extends StatefulWidget {
 
 class _AddressRouteInputsState extends State<_AddressRouteInputs> {
   bool _fetchingPickup = false;
-  bool _fetchingDrop = false;
+  bool _showPickupLocationError = false;
 
-  Future<void> _fetchLocation(TextEditingController controller, bool isPickup) async {
+  Future<void> _openDeviceLocationSettings() async {
+    if (kIsWeb) return;
+
+    final permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      await Geolocator.openAppSettings();
+      return;
+    }
+
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+      return;
+    }
+
+    await Geolocator.openAppSettings();
+  }
+
+  Future<String?> _resolveAddressFromPosition(Position pos) async {
+    String? resolvedAddress;
+
+    try {
+      final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      if (placemarks.isNotEmpty) {
+        final pm = placemarks.first;
+        final parts = [
+          pm.street,
+          pm.subLocality,
+          pm.locality ?? pm.subAdministrativeArea,
+          pm.administrativeArea,
+          pm.postalCode,
+        ].where((s) => s != null && s.trim().isNotEmpty).toSet().toList();
+        if (parts.isNotEmpty) {
+          resolvedAddress = parts.join(', ');
+        }
+      }
+    } catch (_) {}
+
+    if (resolvedAddress == null || resolvedAddress.trim().isEmpty) {
+      try {
+        final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
+          'lat': '${pos.latitude}',
+          'lon': '${pos.longitude}',
+          'format': 'json',
+          'addressdetails': '1',
+        });
+        final response = await http.get(
+          uri,
+          headers: const {'User-Agent': 'DoctorNect/1.0 (healthcare-app)'},
+        ).timeout(const Duration(seconds: 6));
+
+        if (response.statusCode == 200) {
+          final payload = jsonDecode(response.body) as Map<String, dynamic>;
+          final address = payload['address'] as Map<String, dynamic>?;
+          if (address != null) {
+            final road = address['road']?.toString();
+            final sub = (address['suburb'] ?? address['neighbourhood'])?.toString();
+            final city = (address['city'] ?? address['town'] ?? address['village'])?.toString();
+            final parts = [
+              if (road != null && road.isNotEmpty) road,
+              if (sub != null && sub.isNotEmpty) sub,
+              if (city != null && city.isNotEmpty) city,
+            ];
+            resolvedAddress = parts.isNotEmpty ? parts.join(', ') : (payload['display_name'] as String?);
+          }
+        }
+      } catch (_) {}
+    }
+
+    return resolvedAddress;
+  }
+
+  Future<void> _fetchPickupLocation() async {
     if (!widget.enabled) return;
     setState(() {
-      if (isPickup) {
-        _fetchingPickup = true;
-      } else {
-        _fetchingDrop = true;
-      }
+      _fetchingPickup = true;
+      _showPickupLocationError = false;
     });
 
     try {
-      if (!kIsWeb) {
-        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-        if (!serviceEnabled) {
-          if (mounted) {
-            AppToast.info(context, 'Location services are disabled. Turn on GPS to auto-fill.');
-          }
-          return;
-        }
-      }
-
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (mounted) {
-            AppToast.info(context, 'Location permission denied.');
-          }
-          return;
-        }
       }
 
-      if (permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         if (mounted) {
-          AppToast.info(context, 'Location permissions are permanently denied in settings.');
+          setState(() => _showPickupLocationError = true);
         }
         return;
       }
@@ -1369,93 +1555,24 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
         ),
       );
 
-      String? resolvedAddress;
+      final resolvedAddress = await _resolveAddressFromPosition(pos);
 
-      try {
-        final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-        if (placemarks.isNotEmpty) {
-          final pm = placemarks.first;
-          final parts = [
-            pm.street,
-            pm.subLocality,
-            pm.locality ?? pm.subAdministrativeArea,
-            pm.administrativeArea,
-            pm.postalCode,
-          ].where((s) => s != null && s.trim().isNotEmpty).toSet().toList();
-          if (parts.isNotEmpty) {
-            resolvedAddress = parts.join(', ');
-          }
-        }
-      } catch (_) {}
+      if (!mounted) return;
 
-      if (resolvedAddress == null || resolvedAddress.trim().isEmpty) {
-        try {
-          final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
-            'lat': '${pos.latitude}',
-            'lon': '${pos.longitude}',
-            'format': 'json',
-            'addressdetails': '1',
-          });
-          final response = await http.get(
-            uri,
-            headers: const {'User-Agent': 'DoctorNect/1.0 (healthcare-app)'},
-          ).timeout(const Duration(seconds: 6));
-
-          if (response.statusCode == 200) {
-            final payload = jsonDecode(response.body) as Map<String, dynamic>;
-            final address = payload['address'] as Map<String, dynamic>?;
-            if (address != null) {
-              final road = address['road']?.toString();
-              final sub = (address['suburb'] ?? address['neighbourhood'])?.toString();
-              final city = (address['city'] ?? address['town'] ?? address['village'])?.toString();
-              final parts = [
-                if (road != null && road.isNotEmpty) road,
-                if (sub != null && sub.isNotEmpty) sub,
-                if (city != null && city.isNotEmpty) city,
-              ];
-              resolvedAddress = parts.isNotEmpty ? parts.join(', ') : (payload['display_name'] as String?);
-            }
-          }
-        } catch (_) {}
+      if (resolvedAddress != null && resolvedAddress.trim().isNotEmpty) {
+        widget.pickupController.text = resolvedAddress.trim();
+      } else {
+        widget.pickupController.text =
+            '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}';
       }
-
+      setState(() => _showPickupLocationError = false);
+    } catch (_) {
       if (mounted) {
-        if (resolvedAddress != null && resolvedAddress.trim().isNotEmpty) {
-          controller.text = resolvedAddress.trim();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${isPickup ? "Pickup" : "Drop"} location auto-filled from current GPS.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        } else {
-          controller.text = '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}';
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Coordinates auto-filled from GPS.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not fetch location. Enter address manually.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        setState(() => _showPickupLocationError = true);
       }
     } finally {
       if (mounted) {
-        setState(() {
-          if (isPickup) {
-            _fetchingPickup = false;
-          } else {
-            _fetchingDrop = false;
-          }
-        });
+        setState(() => _fetchingPickup = false);
       }
     }
   }
@@ -1512,6 +1629,11 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                   controller: widget.pickupController,
                   enabled: widget.enabled,
                   textCapitalization: TextCapitalization.words,
+                  onChanged: (_) {
+                    if (_showPickupLocationError) {
+                      setState(() => _showPickupLocationError = false);
+                    }
+                  },
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -1533,9 +1655,7 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                               child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFDC2626)),
                             )
                           : const Icon(Icons.my_location, size: 20, color: Color(0xFFDC2626)),
-                      onPressed: widget.enabled && !_fetchingPickup
-                          ? () => _fetchLocation(widget.pickupController, true)
-                          : null,
+                      onPressed: widget.enabled && !_fetchingPickup ? _fetchPickupLocation : null,
                     ),
                     filled: true,
                     fillColor: AppColors.surfaceOf(context),
@@ -1556,6 +1676,50 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? 'Enter pickup location' : null,
                 ),
+                if (_showPickupLocationError) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.location_off_outlined,
+                        size: 14,
+                        color: AppColors.error.withValues(alpha: 0.9),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 4,
+                          runSpacing: 2,
+                          children: [
+                            Text(
+                              'Location access is needed to auto-fill pickup.',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                height: 1.35,
+                                color: AppColors.textSecondaryOf(context),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: _openDeviceLocationSettings,
+                              borderRadius: BorderRadius.circular(4),
+                              child: Text(
+                                'Open settings',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  height: 1.35,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFDC2626),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: widget.dropController,
@@ -1572,19 +1736,6 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                       fontSize: 14,
                       color: AppColors.textSecondaryOf(context),
                       fontWeight: FontWeight.w400,
-                    ),
-                    suffixIcon: IconButton(
-                      tooltip: 'Use current location',
-                      icon: _fetchingDrop
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFDC2626)),
-                            )
-                          : const Icon(Icons.my_location, size: 20, color: Color(0xFFDC2626)),
-                      onPressed: widget.enabled && !_fetchingDrop
-                          ? () => _fetchLocation(widget.dropController, false)
-                          : null,
                     ),
                     filled: true,
                     fillColor: AppColors.surfaceOf(context),
