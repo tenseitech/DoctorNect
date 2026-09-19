@@ -71,6 +71,7 @@ class AppNotification {
   final NotificationPriority priority;
   final List<NotificationChannelTag> channelTags;
   final AppNotificationAction? primaryAction;
+
   /// Prevents duplicate scheduled alerts (e.g. same 15-min reminder).
   final String? dedupeKey;
 

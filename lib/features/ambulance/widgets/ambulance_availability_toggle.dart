@@ -17,10 +17,12 @@ class AmbulanceAvailabilityToggle extends StatefulWidget {
   final String ambulanceId;
 
   @override
-  State<AmbulanceAvailabilityToggle> createState() => _AmbulanceAvailabilityToggleState();
+  State<AmbulanceAvailabilityToggle> createState() =>
+      _AmbulanceAvailabilityToggleState();
 }
 
-class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggle> {
+class _AmbulanceAvailabilityToggleState
+    extends State<AmbulanceAvailabilityToggle> {
   bool _saving = false;
   bool? _localValue;
 
@@ -45,7 +47,8 @@ class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggl
       return;
     }
 
-    final ok = await FirestoreService.instance.ambulance.updateAvailability(widget.ambulanceId, value);
+    final ok = await FirestoreService.instance.ambulance
+        .updateAvailability(widget.ambulanceId, value);
     if (!mounted) return;
     setState(() {
       _saving = false;
@@ -54,7 +57,8 @@ class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggl
       }
     });
     if (!ok) {
-      AppToast.info(context, 'Could not update availability. Please try again.');
+      AppToast.info(
+          context, 'Could not update availability. Please try again.');
     }
   }
 
@@ -76,7 +80,8 @@ class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggl
                   : AppColors.borderOf(context),
             ),
           ),
-          color: isOnline ? const Color(0xFFF0FDF4) : AppColors.surfaceOf(context),
+          color:
+              isOnline ? const Color(0xFFF0FDF4) : AppColors.surfaceOf(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -96,7 +101,9 @@ class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggl
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
-                          color: isOnline ? const Color(0xFF16A34A) : AppColors.textSecondaryOf(context),
+                          color: isOnline
+                              ? const Color(0xFF16A34A)
+                              : AppColors.textSecondaryOf(context),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -121,7 +128,8 @@ class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggl
                     value: isOnline,
                     onChanged: _onChanged,
                     activeThumbColor: const Color(0xFF16A34A),
-                    activeTrackColor: const Color(0xFF16A34A).withValues(alpha: 0.35),
+                    activeTrackColor:
+                        const Color(0xFF16A34A).withValues(alpha: 0.35),
                   ),
               ],
             ),

@@ -79,7 +79,8 @@ class _TagInputFieldState extends State<TagInputField> {
             runSpacing: 8,
             children: widget.tags.map((t) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.patientTeal.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -101,7 +102,8 @@ class _TagInputFieldState extends State<TagInputField> {
                     const SizedBox(width: 4),
                     GestureDetector(
                       onTap: () => widget.onRemove(t),
-                      child: Icon(Icons.close, size: 14, color: AppColors.patientTeal),
+                      child: Icon(Icons.close,
+                          size: 14, color: AppColors.patientTeal),
                     ),
                   ],
                 ),
@@ -115,7 +117,8 @@ class _TagInputFieldState extends State<TagInputField> {
             Expanded(
               child: TextField(
                 controller: _controller,
-                decoration: PatientProfileFormStyles.fieldDecoration(context, 
+                decoration: PatientProfileFormStyles.fieldDecoration(
+                  context,
                   labelText: 'Add ${widget.label}',
                   hintText: 'Type and press +',
                 ).copyWith(errorText: _errorText),
@@ -133,7 +136,8 @@ class _TagInputFieldState extends State<TagInputField> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.patientTeal,
                 foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 minimumSize: const Size(0, 40),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),

@@ -17,14 +17,26 @@ abstract final class ValidationEngine {
     'specialization': {'kind': 'required', 'requiredField': 'Specialization'},
     'qualification': {'kind': 'required', 'requiredField': 'Qualification'},
     'experience': {'kind': 'required', 'requiredField': 'Experience'},
-    'councilNumber': {'kind': 'required', 'requiredField': 'Medical Council Registration Number'},
-    'registrationNumber': {'kind': 'required', 'requiredField': 'Registration Number'},
+    'councilNumber': {
+      'kind': 'required',
+      'requiredField': 'Medical Council Registration Number'
+    },
+    'registrationNumber': {
+      'kind': 'required',
+      'requiredField': 'Registration Number'
+    },
     'drugLicense': {'kind': 'required', 'requiredField': 'Drug License Number'},
     'gstNumber': {'kind': 'required', 'requiredField': 'GST Number'},
     'labName': {'kind': 'required', 'requiredField': 'Lab Name'},
     'storeName': {'kind': 'required', 'requiredField': 'Store Name'},
-    'vehicleNumber': {'kind': 'vehicleNumber', 'requiredField': 'Vehicle Number'},
-    'drivingLicense': {'kind': 'required', 'requiredField': 'Driving License Number'},
+    'vehicleNumber': {
+      'kind': 'vehicleNumber',
+      'requiredField': 'Vehicle Number'
+    },
+    'drivingLicense': {
+      'kind': 'required',
+      'requiredField': 'Driving License Number'
+    },
     'dropdown': {'kind': 'dropdown'},
     'file': {'kind': 'file'},
     'multiSelect': {'kind': 'multiSelect'},
@@ -247,7 +259,9 @@ abstract final class ValidationEngine {
 
       case 'multiSelect':
         final selected = params?['selected'] ?? value;
-        final count = selected is Iterable ? selected.length : (selected != null && selected.toString().isNotEmpty ? 1 : 0);
+        final count = selected is Iterable
+            ? selected.length
+            : (selected != null && selected.toString().isNotEmpty ? 1 : 0);
         if (count == 0) return 'Please select at least one $field';
         return null;
 
@@ -285,10 +299,7 @@ abstract final class ValidationEngine {
         final sysMax = (rule['sysMax'] as num?)?.toInt() ?? 250;
         final diaMin = (rule['diaMin'] as num?)?.toInt() ?? 30;
         final diaMax = (rule['diaMax'] as num?)?.toInt() ?? 150;
-        if (sys < sysMin ||
-            sys > sysMax ||
-            dia < diaMin ||
-            dia > diaMax) {
+        if (sys < sysMin || sys > sysMax || dia < diaMin || dia > diaMax) {
           return rule['plausibleMessage'] as String? ??
               'Enter a plausible blood pressure';
         }

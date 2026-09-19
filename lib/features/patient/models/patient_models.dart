@@ -65,7 +65,8 @@ class HomeCarouselItem {
 typedef PatientCarouselItem = HomeCarouselItem;
 
 class ServiceItem {
-  const ServiceItem({required this.label, required this.icon, required this.route});
+  const ServiceItem(
+      {required this.label, required this.icon, required this.route});
 
   final String label;
   final IconData icon;
@@ -165,7 +166,8 @@ class DoctorListing {
     if (addressLine1.trim().isNotEmpty) parts.add(addressLine1.trim());
     if (area.trim().isNotEmpty) parts.add(area.trim());
     if (state.trim().isNotEmpty) parts.add(state.trim());
-    if (parts.isEmpty && clinicName.trim().isNotEmpty) parts.add(clinicName.trim());
+    if (parts.isEmpty && clinicName.trim().isNotEmpty)
+      parts.add(clinicName.trim());
     return parts.join(', ');
   }
 }
@@ -318,8 +320,13 @@ class DoctorPatientProfile {
   final List<PatientFile> files;
 }
 
-
 enum PatientSort { lastVisit, name, appointmentCount }
 
-
-enum PatientFilter { all, returning, newPatient, followUp, dueForVisit, abnormalLabs }
+enum PatientFilter {
+  all,
+  returning,
+  newPatient,
+  followUp,
+  dueForVisit,
+  abnormalLabs
+}

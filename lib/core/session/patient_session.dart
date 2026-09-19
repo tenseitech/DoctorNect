@@ -1,4 +1,4 @@
-﻿import 'app_session.dart';
+import 'app_session.dart';
 
 /// Active patient session for the logged-in user.
 abstract final class PatientSession {

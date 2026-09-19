@@ -49,7 +49,8 @@ abstract final class InAppNotificationFirestoreMapper {
       );
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('InAppNotificationFirestoreMapper.fromMap failed ($docId): $e\n$st');
+        debugPrint(
+            'InAppNotificationFirestoreMapper.fromMap failed ($docId): $e\n$st');
       }
       return null;
     }

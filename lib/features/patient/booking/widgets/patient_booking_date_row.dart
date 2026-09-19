@@ -36,7 +36,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
   @override
   void initState() {
     super.initState();
-    _focusedMonth = DateTime(widget.selectedDate.year, widget.selectedDate.month);
+    _focusedMonth =
+        DateTime(widget.selectedDate.year, widget.selectedDate.month);
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
 
@@ -44,7 +45,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
   void didUpdateWidget(PatientBookingDateRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!_sameMonth(_focusedMonth, widget.selectedDate)) {
-      _focusedMonth = DateTime(widget.selectedDate.year, widget.selectedDate.month);
+      _focusedMonth =
+          DateTime(widget.selectedDate.year, widget.selectedDate.month);
     }
     if (!_sameDay(oldWidget.selectedDate, widget.selectedDate)) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
@@ -60,13 +62,17 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
   static bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  static bool _sameMonth(DateTime a, DateTime b) => a.year == b.year && a.month == b.month;
+  static bool _sameMonth(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month;
 
   List<DateTime> get _daysInFocusedMonth {
     final count = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0).day;
     return List.generate(count, (i) {
       return DateTime(_focusedMonth.year, _focusedMonth.month, i + 1);
-    }).where((d) => widget.isDayEnabled(d) || (widget.isHoliday?.call(d) ?? false)).toList();
+    })
+        .where((d) =>
+            widget.isDayEnabled(d) || (widget.isHoliday?.call(d) ?? false))
+        .toList();
   }
 
   void _shiftMonth(int delta) {
@@ -121,10 +127,13 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
             );
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
               title: Text(
                 'Select month & year',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: AppTypography.headlineSmall),
               ),
               content: SizedBox(
                 width: 300,
@@ -145,21 +154,26 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                       key: ValueKey(year),
                       initialValue: year,
                       decoration: InputDecoration(
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppColors.borderOf(context)),
+                          borderSide:
+                              BorderSide(color: AppColors.borderOf(context)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: AppColors.borderOf(context)),
+                          borderSide:
+                              BorderSide(color: AppColors.borderOf(context)),
                         ),
                       ),
                       items: years
                           .map(
                             (y) => DropdownMenuItem(
                               value: y,
-                              child: Text('$y', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+                              child: Text('$y',
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.bodyMedium)),
                             ),
                           )
                           .toList(),
@@ -187,7 +201,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                       children: List.generate(12, (index) {
                         final m = index + 1;
                         final isSelected = m == month;
-                        final label = DateFormat('MMM').format(DateTime(2024, m));
+                        final label =
+                            DateFormat('MMM').format(DateTime(2024, m));
 
                         return Material(
                           color: Colors.transparent,
@@ -197,10 +212,14 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                             child: Container(
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: isSelected ? AppColors.patientTeal : AppColors.cardBgOf(context),
+                                color: isSelected
+                                    ? AppColors.patientTeal
+                                    : AppColors.cardBgOf(context),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
-                                  color: isSelected ? AppColors.patientTeal : AppColors.borderOf(context),
+                                  color: isSelected
+                                      ? AppColors.patientTeal
+                                      : AppColors.borderOf(context),
                                 ),
                               ),
                               child: Text(
@@ -208,7 +227,9 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                                 style: GoogleFonts.inter(
                                   fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w600,
-                                  color: isSelected ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
+                                  color: isSelected
+                                      ? AppColors.surfaceOf(context)
+                                      : AppColors.textPrimaryOf(context),
                                 ),
                               ),
                             ),
@@ -222,15 +243,20 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context))),
+                  child: Text('Cancel',
+                      style: GoogleFonts.inter(
+                          color: AppColors.textSecondaryOf(context))),
                 ),
                 FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.patientTeal,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
-                  onPressed: () => Navigator.pop(dialogContext, (year: year, month: month)),
-                  child: Text('Apply', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  onPressed: () =>
+                      Navigator.pop(dialogContext, (year: year, month: month)),
+                  child: Text('Apply',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                 ),
               ],
             );
@@ -315,7 +341,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                                   height: 1.1,
                                 ),
                               ),
-                              const Icon(Icons.arrow_drop_down, size: 14, color: AppColors.patientTeal),
+                              const Icon(Icons.arrow_drop_down,
+                                  size: 14, color: AppColors.patientTeal),
                             ],
                           ),
                         ),
@@ -336,7 +363,9 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                 ? Center(
                     child: Text(
                       'No dates this month',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   )
                 : SizedBox(

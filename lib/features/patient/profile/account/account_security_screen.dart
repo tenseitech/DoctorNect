@@ -31,20 +31,25 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Account & Security', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('Account & Security',
+          context: context),
       body: PatientProfileFormStyles.constrainedScrollBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 children: [
                   PatientProfileFormStyles.settingsRowCard(
-                  context: context,
-                  child: ListTile(
+                    context: context,
+                    child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.lock_outline, color: AppColors.patientTeal),
+                      leading: Icon(Icons.lock_outline,
+                          color: AppColors.patientTeal),
                       title: Text('Change password'),
-                      trailing: Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(Icons.chevron_right,
+                          color: AppColors.textSecondaryOf(context)),
                       onTap: _changePassword,
                     ),
                   ),
@@ -125,7 +130,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                 controller: _oldCtrl,
                 obscureText: true,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
-                decoration: const InputDecoration(labelText: 'Current password'),
+                decoration:
+                    const InputDecoration(labelText: 'Current password'),
                 validator: FormValidators.password,
               ),
               const SizedBox(height: 12),
@@ -134,15 +140,20 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                 obscureText: true,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 decoration: const InputDecoration(labelText: 'New password'),
-                validator: (v) => FormValidators.changePassword(v, _oldCtrl.text),
+                validator: (v) =>
+                    FormValidators.changePassword(v, _oldCtrl.text),
               ),
             ],
           ),
         ),
       ),
       actions: [
-        TextButton(onPressed: _saving ? null : () => Navigator.pop(context), child: const Text('Cancel')),
-        TextButton(onPressed: _saving ? null : _submit, child: Text(_saving ? 'Saving...' : 'Save')),
+        TextButton(
+            onPressed: _saving ? null : () => Navigator.pop(context),
+            child: const Text('Cancel')),
+        TextButton(
+            onPressed: _saving ? null : _submit,
+            child: Text(_saving ? 'Saving...' : 'Save')),
       ],
     );
   }

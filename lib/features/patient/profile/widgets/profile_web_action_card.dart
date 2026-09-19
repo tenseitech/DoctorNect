@@ -30,13 +30,16 @@ class _ProfileWebActionCardState extends State<ProfileWebActionCard> {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = widget.iconGradient ?? const [Color(0xFF0D9488), Color(0xFF0369A1)];
+    final gradient =
+        widget.iconGradient ?? const [Color(0xFF0D9488), Color(0xFF0369A1)];
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Material(
-        color: _hovered ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
+        color: _hovered
+            ? AppColors.cardBgOf(context)
+            : AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: widget.onTap,

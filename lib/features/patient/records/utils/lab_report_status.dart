@@ -87,7 +87,9 @@ abstract final class LabReportStatus {
           kind: order.status.toLowerCase() == 'declined'
               ? LabReportStatusKind.declined
               : LabReportStatusKind.cancelled,
-          label: order.status.toLowerCase() == 'declined' ? 'Declined' : 'Cancelled',
+          label: order.status.toLowerCase() == 'declined'
+              ? 'Declined'
+              : 'Cancelled',
         ),
       _ => const LabReportStatusDisplay(
           kind: LabReportStatusKind.orderedByDoctor,

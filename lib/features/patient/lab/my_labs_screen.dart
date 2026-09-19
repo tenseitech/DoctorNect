@@ -32,7 +32,8 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
     _labBookingStore.addListener(_onChanged);
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isNotEmpty) {
-      unawaited(_labBookingStore.refreshForPatient(patientId, preferCache: true));
+      unawaited(
+          _labBookingStore.refreshForPatient(patientId, preferCache: true));
     }
   }
 
@@ -59,7 +60,8 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
         centerTitle: true,
-        title: Text('My Lab', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text('My Lab',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         backgroundColor: AppColors.cardBgOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
@@ -91,7 +93,9 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
                   child: Text(
                     'No labs in your list yet. Tap Add to search registered labs or book a lab test.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodyMedium),
+                    style: GoogleFonts.inter(
+                        color: AppColors.textSecondaryOf(context),
+                        fontSize: AppTypography.bodyMedium),
                   ),
                 )
               : ListView.separated(
@@ -144,7 +148,8 @@ class _MyLabManageTile extends StatelessWidget {
                 color: AppColors.labPurple.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.biotech_outlined, color: AppColors.labPurple, size: 20),
+              child: const Icon(Icons.biotech_outlined,
+                  color: AppColors.labPurple, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -153,13 +158,17 @@ class _MyLabManageTile extends StatelessWidget {
                 children: [
                   Text(
                     lab.name,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyLarge,
+                        fontWeight: FontWeight.w600),
                   ),
                   if (lab.area.trim().isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       lab.area,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ],

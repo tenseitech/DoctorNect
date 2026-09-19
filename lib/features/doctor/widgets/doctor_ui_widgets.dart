@@ -88,10 +88,14 @@ class _StatMetricCardState extends State<StatMetricCard> {
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: _hovered ? widget.accent.withValues(alpha: 0.06) : Colors.transparent,
+          color: _hovered
+              ? widget.accent.withValues(alpha: 0.06)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: _hovered ? widget.accent.withValues(alpha: 0.45) : AppColors.borderOf(context),
+            color: _hovered
+                ? widget.accent.withValues(alpha: 0.45)
+                : AppColors.borderOf(context),
           ),
         ),
         child: Material(
@@ -135,7 +139,9 @@ class _StatMetricCardState extends State<StatMetricCard> {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w500,
-                        color: _hovered ? AppColors.textPrimaryOf(context) : AppColors.textSecondaryOf(context),
+                        color: _hovered
+                            ? AppColors.textPrimaryOf(context)
+                            : AppColors.textSecondaryOf(context),
                         height: 1.15,
                       ),
                     ),
@@ -212,10 +218,13 @@ class SharedSlotBadge extends StatelessWidget {
     if (reason == null || reason.isEmpty) return const SizedBox.shrink();
 
     final isEmergency = reason.toLowerCase() == 'emergency';
-    final color = isEmergency ? const Color(0xFFDC2626) : const Color(0xFFEA580C);
+    final color =
+        isEmergency ? const Color(0xFFDC2626) : const Color(0xFFEA580C);
     final label = isEmergency
         ? (compact ? 'Emergency' : 'Emergency slot')
-        : (compact && reason.length > 18 ? '${reason.substring(0, 16)}…' : reason);
+        : (compact && reason.length > 18
+            ? '${reason.substring(0, 16)}…'
+            : reason);
 
     return StatusBadge(
       label: label,

@@ -38,16 +38,20 @@ class DoctorAccountRepository {
     bool preferCache = false,
   }) async {
     if (!FirebaseBootstrap.isReady) {
-      return const DoctorDeactivationStatus(deactivated: false, canReactivate: false);
+      return const DoctorDeactivationStatus(
+          deactivated: false, canReactivate: false);
     }
 
     try {
       final snap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId),
+        reference: FirebaseFirestore.instance
+            .collection(FirestorePaths.doctors)
+            .doc(doctorId),
         preferCache: preferCache,
       );
       if (!snap.exists || snap.data() == null) {
-        return const DoctorDeactivationStatus(deactivated: false, canReactivate: false);
+        return const DoctorDeactivationStatus(
+            deactivated: false, canReactivate: false);
       }
 
       final data = snap.data()!;
@@ -63,7 +67,8 @@ class DoctorAccountRepository {
       }
 
       if (!deactivated) {
-        return const DoctorDeactivationStatus(deactivated: false, canReactivate: false);
+        return const DoctorDeactivationStatus(
+            deactivated: false, canReactivate: false);
       }
 
       final canReactivate =
@@ -75,12 +80,15 @@ class DoctorAccountRepository {
         reactivateBefore: reactivateBefore,
       );
     } catch (_) {
-      return const DoctorDeactivationStatus(deactivated: false, canReactivate: false);
+      return const DoctorDeactivationStatus(
+          deactivated: false, canReactivate: false);
     }
   }
 
-  Future<bool> isDeactivated(String doctorId, {bool preferCache = false}) async {
-    final status = await fetchDeactivationStatus(doctorId, preferCache: preferCache);
+  Future<bool> isDeactivated(String doctorId,
+      {bool preferCache = false}) async {
+    final status =
+        await fetchDeactivationStatus(doctorId, preferCache: preferCache);
     return status.deactivated;
   }
 
@@ -88,7 +96,9 @@ class DoctorAccountRepository {
     if (!FirebaseBootstrap.isReady) return false;
     try {
       final snap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId),
+        reference: FirebaseFirestore.instance
+            .collection(FirestorePaths.doctors)
+            .doc(doctorId),
         preferCache: preferCache,
       );
       if (!snap.exists || snap.data() == null) return false;
@@ -108,8 +118,12 @@ class DoctorAccountRepository {
 
     final reactivateBefore = DateTime.now().add(const Duration(days: 30));
     final batch = FirebaseFirestore.instance.batch();
-    final doctorRef = FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId);
-    final userRef = FirebaseFirestore.instance.collection(FirestorePaths.users).doc(ownerUid);
+    final doctorRef = FirebaseFirestore.instance
+        .collection(FirestorePaths.doctors)
+        .doc(doctorId);
+    final userRef = FirebaseFirestore.instance
+        .collection(FirestorePaths.users)
+        .doc(ownerUid);
 
     batch.update(doctorRef, {
       'deactivated': true,
@@ -141,12 +155,17 @@ class DoctorAccountRepository {
     }
 
     final batch = FirebaseFirestore.instance.batch();
-    final doctorRef = FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId);
-    final userRef = FirebaseFirestore.instance.collection(FirestorePaths.users).doc(ownerUid);
+    final doctorRef = FirebaseFirestore.instance
+        .collection(FirestorePaths.doctors)
+        .doc(doctorId);
+    final userRef = FirebaseFirestore.instance
+        .collection(FirestorePaths.users)
+        .doc(ownerUid);
 
     batch.update(doctorRef, {
       'deactivated': false,
-      'verified': false, // FIXED: reactivation must go through admin re-approval, like registration
+      'verified':
+          false, // FIXED: reactivation must go through admin re-approval, like registration
       'reactivatedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });

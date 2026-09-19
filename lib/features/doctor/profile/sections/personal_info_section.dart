@@ -54,12 +54,15 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.verified_user_outlined, color: AppColors.doctorBlue, size: 24),
+            const Icon(Icons.verified_user_outlined,
+                color: AppColors.doctorBlue, size: 24),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 'Admin Verification Required',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w700,
+                    fontSize: AppTypography.headlineSmall),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -85,19 +88,24 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                 decoration: BoxDecoration(
                   color: AppColors.doctorBlue.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.doctorBlue.withValues(alpha: 0.2)),
+                  border: Border.all(
+                      color: AppColors.doctorBlue.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.email_outlined, size: 16, color: AppColors.doctorBlue),
+                        const Icon(Icons.email_outlined,
+                            size: 16, color: AppColors.doctorBlue),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
                             'support@doctornect.com',
-                            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600, color: AppColors.doctorBlue),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodySmall,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.doctorBlue),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -106,12 +114,16 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        const Icon(Icons.phone_outlined, size: 16, color: AppColors.doctorBlue),
+                        const Icon(Icons.phone_outlined,
+                            size: 16, color: AppColors.doctorBlue),
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
                             '+91 80000 00000 (Admin Desk)',
-                            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context)),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodySmall,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimaryOf(context)),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -126,7 +138,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
         actions: [
           FilledButton(
             onPressed: () => Navigator.pop(ctx),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.doctorBlue),
+            style:
+                FilledButton.styleFrom(backgroundColor: AppColors.doctorBlue),
             child: const Text('Understood'),
           ),
         ],
@@ -147,7 +160,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
       await _store.persist(DoctorSession.loggedInDoctorId);
     } catch (_) {
       if (!mounted) return;
-      AppToast.info(context, 'Could not save changes. Please check your connection and try again.');
+      AppToast.info(context,
+          'Could not save changes. Please check your connection and try again.');
       return;
     }
     if (!mounted) return;
@@ -185,12 +199,14 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
               child: Align(
                 alignment: Alignment.topCenter,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 560),
                     child: Card(
                       elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Column(
@@ -200,12 +216,15 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                               children: [
                                 CircleAvatar(
                                   radius: 40,
-                                  backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.1),
+                                  backgroundColor: AppColors.doctorBlue
+                                      .withValues(alpha: 0.1),
                                   child: Text(
                                     _name.text.trim().isNotEmpty
                                         ? _name.text.trim()[0].toUpperCase()
-                                        : DoctorProfileStore.displayName.isNotEmpty
-                                            ? DoctorProfileStore.displayName[0].toUpperCase()
+                                        : DoctorProfileStore
+                                                .displayName.isNotEmpty
+                                            ? DoctorProfileStore.displayName[0]
+                                                .toUpperCase()
                                             : 'D',
                                     style: GoogleFonts.inter(
                                       fontSize: AppTypography.headlineLarge,
@@ -219,12 +238,14 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                                   right: 0,
                                   child: GestureDetector(
                                     onTap: () {
-                                      AppToast.info(context, 'Mock: Photo uploaded');
+                                      AppToast.info(
+                                          context, 'Mock: Photo uploaded');
                                     },
                                     child: CircleAvatar(
                                       radius: 14,
                                       backgroundColor: AppColors.doctorBlue,
-                                      child: const Icon(Icons.camera_alt, size: 16, color: AppColors.white),
+                                      child: const Icon(Icons.camera_alt,
+                                          size: 16, color: AppColors.white),
                                     ),
                                   ),
                                 ),
@@ -254,7 +275,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                               readOnly: true,
                               initialValue: _p.dateOfBirth == null
                                   ? 'Not set'
-                                  : DateFormat('dd MMM yyyy').format(_p.dateOfBirth!),
+                                  : DateFormat('dd MMM yyyy')
+                                      .format(_p.dateOfBirth!),
                               decoration: InputDecoration(
                                 labelText: 'Date of birth',
                                 filled: true,
@@ -265,9 +287,11 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                             DropdownButtonFormField<String>(
                               initialValue: _gender,
                               isExpanded: true,
-                              decoration: const InputDecoration(labelText: 'Gender'),
+                              decoration:
+                                  const InputDecoration(labelText: 'Gender'),
                               items: AppConstants.genders
-                                  .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                                  .map((g) => DropdownMenuItem(
+                                      value: g, child: Text(g)))
                                   .toList(),
                               onChanged: null,
                             ),
@@ -283,14 +307,18 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                               suffixIcon: TextButton.icon(
                                 onPressed: _showContactAdminDialog,
                                 icon: const Icon(Icons.lock_outline, size: 14),
-                                label: const Text('Contact Admin', style: TextStyle(fontSize: AppTypography.labelMedium)),
+                                label: const Text('Contact Admin',
+                                    style: TextStyle(
+                                        fontSize: AppTypography.labelMedium)),
                                 style: TextButton.styleFrom(
                                   foregroundColor: AppColors.doctorBlue,
                                   visualDensity: VisualDensity.compact,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
                                 ),
                               ),
-                              helperText: 'Doctor mobile number is locked for verification. Contact admin to request a change.',
+                              helperText:
+                                  'Doctor mobile number is locked for verification. Contact admin to request a change.',
                             ),
                             const SizedBox(height: 12),
                             TextFormField(

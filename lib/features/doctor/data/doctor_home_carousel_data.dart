@@ -27,9 +27,8 @@ abstract final class DoctorHomeCarouselData {
   static HomeCarouselItem _toCarouselItem(FeaturedDoctorEntry entry) {
     final doctor = entry.doctor;
     final rawName = doctor.name.trim();
-    final displayName = rawName.toLowerCase().startsWith('dr.')
-        ? rawName
-        : 'Dr. $rawName';
+    final displayName =
+        rawName.toLowerCase().startsWith('dr.') ? rawName : 'Dr. $rawName';
 
     final clinic = doctor.clinicName.trim();
     final location = _resolveLocation(doctor);
@@ -65,12 +64,14 @@ abstract final class DoctorHomeCarouselData {
 
   static String _resolveLocation(DoctorListing doctor) {
     if (doctor.state.trim().isNotEmpty) return doctor.state.trim();
-    if (doctor.addressLine1.trim().isNotEmpty) return doctor.addressLine1.trim();
+    if (doctor.addressLine1.trim().isNotEmpty)
+      return doctor.addressLine1.trim();
     if (doctor.area.trim().isNotEmpty) return doctor.area.trim();
     if (doctor.id == DoctorSession.loggedInDoctorId) {
       final profile = DoctorProfileStore.instance.profile;
       if (profile.state.trim().isNotEmpty) return profile.state.trim();
-      if (profile.addressLine1.trim().isNotEmpty) return profile.addressLine1.trim();
+      if (profile.addressLine1.trim().isNotEmpty)
+        return profile.addressLine1.trim();
     }
     return '';
   }

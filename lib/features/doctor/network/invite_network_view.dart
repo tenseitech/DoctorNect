@@ -46,7 +46,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
 
   Future<void> _loadLink() async {
     setState(() => _loading = true);
-    final link = await DoctorInviteService.linkForCurrentDoctor(userType: _userType);
+    final link =
+        await DoctorInviteService.linkForCurrentDoctor(userType: _userType);
     if (!mounted) return;
     setState(() {
       _link = link;
@@ -115,7 +116,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                       color: AppColors.doctorBlue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.group_add_outlined, color: AppColors.doctorBlue),
+                    child: const Icon(Icons.group_add_outlined,
+                        color: AppColors.doctorBlue),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -173,15 +175,19 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppColors.doctorBlue.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.doctorBlue.withValues(alpha: 0.2)),
+                  border: Border.all(
+                      color: AppColors.doctorBlue.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.link, size: 20, color: AppColors.doctorBlue.withValues(alpha: 0.9)),
+                    Icon(Icons.link,
+                        size: 20,
+                        color: AppColors.doctorBlue.withValues(alpha: 0.9)),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _loading
@@ -215,7 +221,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                   foregroundColor: AppColors.white,
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.cardRadius),
                   ),
                 ),
               ),
@@ -232,7 +239,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                   side: const BorderSide(color: AppColors.doctorBlue),
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.cardRadius),
                   ),
                 ),
               ),
@@ -246,7 +254,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
   InputDecoration _decoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
+      prefixIcon:
+          Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
       filled: true,
       fillColor: AppColors.cardBgOf(context),
       border: OutlineInputBorder(

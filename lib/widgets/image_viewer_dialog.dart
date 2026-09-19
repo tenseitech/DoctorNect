@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/theme/app_typography.dart';
 
-void showImageViewerDialog(BuildContext context, ImageProvider imageProvider, {String title = 'Photo'}) {
+void showImageViewerDialog(BuildContext context, ImageProvider imageProvider,
+    {String title = 'Photo'}) {
   showDialog(
     context: context,
     builder: (context) => Dialog(

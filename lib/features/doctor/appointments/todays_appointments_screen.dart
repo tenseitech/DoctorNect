@@ -21,10 +21,12 @@ class DoctorTodaysAppointmentsScreen extends StatefulWidget {
   const DoctorTodaysAppointmentsScreen({super.key});
 
   @override
-  State<DoctorTodaysAppointmentsScreen> createState() => _DoctorTodaysAppointmentsScreenState();
+  State<DoctorTodaysAppointmentsScreen> createState() =>
+      _DoctorTodaysAppointmentsScreenState();
 }
 
-class _DoctorTodaysAppointmentsScreenState extends State<DoctorTodaysAppointmentsScreen> {
+class _DoctorTodaysAppointmentsScreenState
+    extends State<DoctorTodaysAppointmentsScreen> {
   final _store = SharedAppointmentsStore.instance;
 
   List<Appointment> get _appointments =>
@@ -61,7 +63,8 @@ class _DoctorTodaysAppointmentsScreenState extends State<DoctorTodaysAppointment
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AppointmentDetailScreen(isDoctorView: true, 
+        builder: (_) => AppointmentDetailScreen(
+          isDoctorView: true,
           appointment: appointment,
           onStatusChanged: (s) => _updateStatus(appointment.id, s),
         ),
@@ -85,7 +88,9 @@ class _DoctorTodaysAppointmentsScreenState extends State<DoctorTodaysAppointment
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't accept this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't accept this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -103,7 +108,9 @@ class _DoctorTodaysAppointmentsScreenState extends State<DoctorTodaysAppointment
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't decline this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't decline this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -117,7 +124,8 @@ class _DoctorTodaysAppointmentsScreenState extends State<DoctorTodaysAppointment
     final record = _store.findRecordById(appointment.id);
     final resolvedPatientId = record?.patientId;
     if (resolvedPatientId == null || resolvedPatientId.isEmpty) {
-      AppToast.info(context, 'This patient is not registered yet — clinical tools cannot be linked to them.');
+      AppToast.info(context,
+          'This patient is not registered yet — clinical tools cannot be linked to them.');
       return;
     }
     _updateStatus(appointment.id, AppointmentStatus.inProgress);
@@ -161,7 +169,8 @@ class _DoctorTodaysAppointmentsScreenState extends State<DoctorTodaysAppointment
       body: list.isEmpty
           ? const AppointmentsEmptyState(tabLabel: 'Today')
           : ListView.builder(
-              padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 20),
+              padding: EdgeInsets.fromLTRB(
+                  horizontalPadding, 12, horizontalPadding, 20),
               itemCount: list.length,
               itemBuilder: (context, index) {
                 final appt = list[index];

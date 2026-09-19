@@ -55,7 +55,8 @@ class DoctorSearchScreen extends StatefulWidget {
 }
 
 class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
-  late final _searchController = TextEditingController(text: widget.initialQuery);
+  late final _searchController =
+      TextEditingController(text: widget.initialQuery);
   final _focusNode = FocusNode();
   final _doctorsStore = RegisteredDoctorsStore.instance;
   late final Future<LabCatalog> _catalogFuture =
@@ -102,7 +103,9 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
   bool get _showSpecialtySuggestions {
     final query = _searchController.text.trim();
-    return _searchFocused && query.isNotEmpty && _specialtySuggestions.isNotEmpty;
+    return _searchFocused &&
+        query.isNotEmpty &&
+        _specialtySuggestions.isNotEmpty;
   }
 
   bool get _showResults {
@@ -135,7 +138,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     final q = _searchController.text.trim();
     if (q.isEmpty) return const [];
 
-    final list = catalog.tests.where((t) => LabSearchMatcher.matchesTest(t, q)).toList();
+    final list =
+        catalog.tests.where((t) => LabSearchMatcher.matchesTest(t, q)).toList();
     list.sort(
       (a, b) => LabSearchMatcher.relevanceScoreTest(b, q)
           .compareTo(LabSearchMatcher.relevanceScoreTest(a, q)),
@@ -147,7 +151,9 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     final q = _searchController.text.trim();
     if (q.isEmpty) return const [];
 
-    final list = catalog.packages.where((p) => LabSearchMatcher.matchesPackage(p, q)).toList();
+    final list = catalog.packages
+        .where((p) => LabSearchMatcher.matchesPackage(p, q))
+        .toList();
     list.sort(
       (a, b) => LabSearchMatcher.relevanceScorePackage(b, q)
           .compareTo(LabSearchMatcher.relevanceScorePackage(a, q)),
@@ -159,7 +165,9 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     final q = _searchController.text.trim();
     if (q.isEmpty) return const [];
 
-    final list = catalog.partnerLabs.where((l) => LabSearchMatcher.matchesPartnerLab(l, q)).toList();
+    final list = catalog.partnerLabs
+        .where((l) => LabSearchMatcher.matchesPartnerLab(l, q))
+        .toList();
     list.sort(
       (a, b) => LabSearchMatcher.relevanceScorePartnerLab(b, q)
           .compareTo(LabSearchMatcher.relevanceScorePartnerLab(a, q)),
@@ -252,10 +260,12 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       if (q.isNotEmpty && !DoctorSearchMatcher.matches(d, q)) return false;
       if (!_matchesSpecialityFilter(d.specialization)) return false;
       if (!_matchesLocationFilter(d)) return false;
-      if (_availableToday && d.availability != DoctorAvailability.today) return false;
+      if (_availableToday && d.availability != DoctorAvailability.today)
+        return false;
       if (_minRating != null && d.rating < _minRating!) return false;
       if (_language != null &&
-          !d.languages.any((l) => l.toLowerCase() == _language!.toLowerCase())) {
+          !d.languages
+              .any((l) => l.toLowerCase() == _language!.toLowerCase())) {
         return false;
       }
       return true;
@@ -321,11 +331,12 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     final isWide = !ResponsiveLayout.isCompact(context);
     final hPad = isWide ? 24.0 : 16.0;
 
-    final hasActiveFilters = (_locationFilter != null && _locationFilter!.isNotEmpty) ||
-        _specialityCategory != null ||
-        _availableToday ||
-        _minRating != null ||
-        _language != null;
+    final hasActiveFilters =
+        (_locationFilter != null && _locationFilter!.isNotEmpty) ||
+            _specialityCategory != null ||
+            _availableToday ||
+            _minRating != null ||
+            _language != null;
 
     final searchBar = PatientDoctorSearchBar(
       controller: _searchController,
@@ -389,7 +400,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     return ColoredBox(
       color: AppColors.surfaceOf(context),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(hPad, isWide ? 18 : 14, hPad, isWide ? 14 : 12),
+        padding:
+            EdgeInsets.fromLTRB(hPad, isWide ? 18 : 14, hPad, isWide ? 14 : 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -404,11 +416,14 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: InputChip(
-                          avatar: const Icon(Icons.location_on_rounded, size: 14, color: AppColors.patientTeal),
+                          avatar: const Icon(Icons.location_on_rounded,
+                              size: 14, color: AppColors.patientTeal),
                           label: Text(_locationFilter!),
                           selected: true,
-                          selectedColor: AppColors.patientTeal.withValues(alpha: 0.12),
-                          onDeleted: () => setState(() => _locationFilter = null),
+                          selectedColor:
+                              AppColors.patientTeal.withValues(alpha: 0.12),
+                          onDeleted: () =>
+                              setState(() => _locationFilter = null),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
                             fontSize: AppTypography.labelMedium,
@@ -421,11 +436,14 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: InputChip(
-                          avatar: const Icon(Icons.medical_services_outlined, size: 14, color: AppColors.patientTeal),
+                          avatar: const Icon(Icons.medical_services_outlined,
+                              size: 14, color: AppColors.patientTeal),
                           label: Text(_specialityCategory!),
                           selected: true,
-                          selectedColor: AppColors.patientTeal.withValues(alpha: 0.12),
-                          onDeleted: () => setState(() => _specialityCategory = null),
+                          selectedColor:
+                              AppColors.patientTeal.withValues(alpha: 0.12),
+                          onDeleted: () =>
+                              setState(() => _specialityCategory = null),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
                             fontSize: AppTypography.labelMedium,
@@ -440,8 +458,10 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                         child: InputChip(
                           label: const Text('Available Today'),
                           selected: true,
-                          selectedColor: AppColors.patientTeal.withValues(alpha: 0.12),
-                          onDeleted: () => setState(() => _availableToday = false),
+                          selectedColor:
+                              AppColors.patientTeal.withValues(alpha: 0.12),
+                          onDeleted: () =>
+                              setState(() => _availableToday = false),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
                             fontSize: AppTypography.labelMedium,
@@ -454,10 +474,13 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: InputChip(
-                          avatar: const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
-                          label: Text('${_minRating!.toStringAsFixed(1)}+ Stars'),
+                          avatar: const Icon(Icons.star_rounded,
+                              size: 14, color: Color(0xFFF59E0B)),
+                          label:
+                              Text('${_minRating!.toStringAsFixed(1)}+ Stars'),
                           selected: true,
-                          selectedColor: AppColors.patientTeal.withValues(alpha: 0.12),
+                          selectedColor:
+                              AppColors.patientTeal.withValues(alpha: 0.12),
                           onDeleted: () => setState(() => _minRating = null),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
@@ -471,10 +494,12 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: InputChip(
-                          avatar: const Icon(Icons.language_rounded, size: 14, color: AppColors.patientTeal),
+                          avatar: const Icon(Icons.language_rounded,
+                              size: 14, color: AppColors.patientTeal),
                           label: Text(_language!),
                           selected: true,
-                          selectedColor: AppColors.patientTeal.withValues(alpha: 0.12),
+                          selectedColor:
+                              AppColors.patientTeal.withValues(alpha: 0.12),
                           onDeleted: () => setState(() => _language = null),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
@@ -502,7 +527,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     );
   }
 
-  Widget _buildCombinedResults(LabCatalog catalog, List<DoctorListing> doctors) {
+  Widget _buildCombinedResults(
+      LabCatalog catalog, List<DoctorListing> doctors) {
     final tests = _filteredLabTests(catalog);
     final packages = _filteredLabPackages(catalog);
     final labs = _filteredPartnerLabs(catalog);
@@ -519,7 +545,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       required List<Widget> items,
     }) {
       if (items.isEmpty) return;
-      rows.add(LabSearchSectionHeader(title: title, count: items.length, accentColor: accent));
+      rows.add(LabSearchSectionHeader(
+          title: title, count: items.length, accentColor: accent));
       rows.addAll(items);
     }
 
@@ -549,7 +576,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
         for (var i = 0; i < packages.length; i++)
           LabSearchResultTile(
             title: packages[i].name,
-            subtitle: '${packages[i].testCount} tests · ${packages[i].description}',
+            subtitle:
+                '${packages[i].testCount} tests · ${packages[i].description}',
             kind: LabSearchResultKind.package,
             showDivider: i < packages.length - 1,
             onTap: () => _openLabTest(catalog, _testFromPackage(packages[i])),
@@ -574,7 +602,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
     if (doctors.isNotEmpty) {
       if (rows.isNotEmpty) {
-        rows.add(Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)));
+        rows.add(Divider(
+            height: 1, thickness: 1, color: AppColors.borderOf(context)));
       }
       rows.add(LabSearchSectionHeader(
         title: _doctorsSectionTitle,
@@ -591,13 +620,15 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             onBook: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => BookingFlowScreen(doctorId: d.id)),
+                MaterialPageRoute(
+                    builder: (_) => BookingFlowScreen(doctorId: d.id)),
               );
             },
             onViewProfile: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => PatientDoctorProfileScreen(doctorId: d.id)),
+                MaterialPageRoute(
+                    builder: (_) => PatientDoctorProfileScreen(doctorId: d.id)),
               );
             },
           ),
@@ -614,7 +645,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     );
   }
 
-  Future<void> _addDoctorToMyList(BuildContext context, DoctorListing doctor) async {
+  Future<void> _addDoctorToMyList(
+      BuildContext context, DoctorListing doctor) async {
     await PatientFavoritesStore.instance.addDoctor(doctor.id);
   }
 
@@ -643,18 +675,22 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                 flat: true,
                 showDivider: index < doctors.length - 1,
                 isInMyDoctors: added,
-                onAddToMyDoctors:
-                    added ? null : () => unawaited(_addDoctorToMyList(context, d)),
+                onAddToMyDoctors: added
+                    ? null
+                    : () => unawaited(_addDoctorToMyList(context, d)),
                 onBook: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => BookingFlowScreen(doctorId: d.id)),
+                    MaterialPageRoute(
+                        builder: (_) => BookingFlowScreen(doctorId: d.id)),
                   );
                 },
                 onViewProfile: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => PatientDoctorProfileScreen(doctorId: d.id)),
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            PatientDoctorProfileScreen(doctorId: d.id)),
                   );
                 },
               );
@@ -697,14 +733,16 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                     onBook: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => BookingFlowScreen(doctorId: d.id)),
+                        MaterialPageRoute(
+                            builder: (_) => BookingFlowScreen(doctorId: d.id)),
                       );
                     },
                     onViewProfile: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => PatientDoctorProfileScreen(doctorId: d.id),
+                          builder: (_) =>
+                              PatientDoctorProfileScreen(doctorId: d.id),
                         ),
                       );
                     },
@@ -786,7 +824,9 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
         }
 
         final nearYouCity = widget.nearYouMode ? _locationFilter?.trim() : null;
-        final appBarTitle = nearYouCity != null && nearYouCity.isNotEmpty ? 'Citywide' : 'Search';
+        final appBarTitle = nearYouCity != null && nearYouCity.isNotEmpty
+            ? 'Citywide'
+            : 'Search';
         final appBarSubtitle = nearYouCity != null && nearYouCity.isNotEmpty
             ? 'Doctors in $nearYouCity'
             : 'Find doctors, lab tests, packages & labs';
@@ -802,10 +842,13 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(appBarTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                Text(appBarTitle,
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
                 Text(
                   appBarSubtitle,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -950,7 +993,9 @@ class _NoResultsState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No results found',
-              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(

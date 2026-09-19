@@ -68,7 +68,8 @@ class _PasswordFieldState extends State<PasswordField> {
     final hasUpper = RegExp(r'[A-Z]').hasMatch(text);
     final hasLower = RegExp(r'[a-z]').hasMatch(text);
     final hasDigit = RegExp(r'[0-9]').hasMatch(text);
-    final hasSpecial = RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\+=/\\]').hasMatch(text);
+    final hasSpecial =
+        RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\+=/\\]').hasMatch(text);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,16 +79,22 @@ class _PasswordFieldState extends State<PasswordField> {
           controller: widget.controller,
           focusNode: widget.focusNode,
           obscureText: _obscure,
-          autofillHints: const [AutofillHints.password, AutofillHints.newPassword],
+          autofillHints: const [
+            AutofillHints.password,
+            AutofillHints.newPassword
+          ],
           autocorrect: false,
           enableSuggestions: false,
           enableInteractiveSelection: true,
-          contextMenuBuilder: (context, editableTextState) => const SizedBox.shrink(),
+          contextMenuBuilder: (context, editableTextState) =>
+              const SizedBox.shrink(),
           validator: widget.validator,
           textInputAction: widget.textInputAction,
           onFieldSubmitted: widget.onFieldSubmitted,
           style: widget.accentColor != null
-              ? GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)
+              ? GoogleFonts.inter(
+                  fontSize: AppTypography.bodyMedium,
+                  fontWeight: FontWeight.w600)
               : null,
           decoration: widget.accentColor != null
               ? authLoginInputDecoration(
@@ -155,17 +162,22 @@ class _RequirementPill extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: met ? activeColor.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
+        color:
+            met ? activeColor.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: met ? activeColor.withValues(alpha: 0.4) : const Color(0xFFE2E8F0),
+          color: met
+              ? activeColor.withValues(alpha: 0.4)
+              : const Color(0xFFE2E8F0),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            met ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+            met
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked_rounded,
             size: 13,
             color: met ? activeColor : inactiveColor,
           ),

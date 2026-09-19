@@ -1,4 +1,4 @@
-﻿import 'pending_invite_store.dart';
+import 'pending_invite_store.dart';
 
 /// Captures `?lab=` invite deep links before lab or doctor registration.
 abstract final class PendingLabInviteStore {

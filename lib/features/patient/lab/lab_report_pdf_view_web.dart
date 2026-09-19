@@ -102,18 +102,24 @@ class _LabReportPdfViewState extends State<LabReportPdfView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.picture_as_pdf_outlined, size: 72, color: AppColors.labPurple),
+              const Icon(Icons.picture_as_pdf_outlined,
+                  size: 72, color: AppColors.labPurple),
               const SizedBox(height: 16),
               Text(
                 widget.fileName,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Text(
                 'Your browser works best when this report opens in a full-screen viewer.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.45),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
+                    height: 1.45),
               ),
               const SizedBox(height: 28),
               SizedBox(
@@ -135,7 +141,8 @@ class _LabReportPdfViewState extends State<LabReportPdfView> {
                   onPressed: widget.onDownload,
                   icon: const Icon(Icons.download_outlined),
                   label: const Text('Download'),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                  style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48)),
                 ),
               ),
             ],

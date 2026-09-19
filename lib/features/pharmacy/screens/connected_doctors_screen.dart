@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/session/medical_store_session.dart';
@@ -53,7 +53,8 @@ class ConnectedDoctorsScreen extends StatelessWidget {
           .toList(),
       activitySubtitleBuilder: (doctorId) {
         final count = prescStore.forStoreAndDoctor(storeId, doctorId).length;
-        final last = prescStore.forStoreAndDoctor(storeId, doctorId).firstOrNull?.sentAt;
+        final last =
+            prescStore.forStoreAndDoctor(storeId, doctorId).firstOrNull?.sentAt;
         return '$count prescriptions${last != null ? ' Â· Last: ${DateFormat('dd MMM').format(last)}' : ''}';
       },
       onApprove: (id, doctorName) {

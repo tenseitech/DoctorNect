@@ -55,7 +55,8 @@ abstract final class LocationService {
         final serviceEnabled = await Geolocator.isLocationServiceEnabled();
         if (!serviceEnabled) {
           if (context != null && context.mounted && showToast) {
-            AppToast.error(context, 'Location services are disabled. Please turn on GPS.');
+            AppToast.error(
+                context, 'Location services are disabled. Please turn on GPS.');
           }
           return null;
         }
@@ -75,7 +76,8 @@ abstract final class LocationService {
 
       if (permission == LocationPermission.deniedForever) {
         if (context != null && context.mounted && showToast) {
-          AppToast.error(context, 'Location permissions are permanently denied. Please enable in settings.');
+          AppToast.error(context,
+              'Location permissions are permanently denied. Please enable in settings.');
         }
         return null;
       }
@@ -98,7 +100,8 @@ abstract final class LocationService {
 
       // 4. Try native geocoding (iOS & Android)
       try {
-        final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+        final placemarks =
+            await placemarkFromCoordinates(pos.latitude, pos.longitude);
         if (placemarks.isNotEmpty) {
           final pm = placemarks.first;
           line1 = pm.street;
@@ -123,7 +126,9 @@ abstract final class LocationService {
           });
           final response = await http.get(
             uri,
-            headers: const {'User-Agent': 'DoctorNect/1.0 (healthcare-ecosystem-app)'},
+            headers: const {
+              'User-Agent': 'DoctorNect/1.0 (healthcare-ecosystem-app)'
+            },
           ).timeout(const Duration(seconds: 6));
 
           if (response.statusCode == 200) {
@@ -138,7 +143,9 @@ abstract final class LocationService {
                       address['suburb'] ??
                       address['county'])
                   ?.toString();
-              state ??= (address['state'] ?? address['province'] ?? address['region'])?.toString();
+              state ??=
+                  (address['state'] ?? address['province'] ?? address['region'])
+                      ?.toString();
               country ??= address['country']?.toString();
               pincode ??= address['postcode']?.toString();
 
@@ -152,7 +159,8 @@ abstract final class LocationService {
 
               if (line1 == null || line1.isEmpty) {
                 line1 = [
-                  if (houseNumber != null && houseNumber.isNotEmpty) houseNumber,
+                  if (houseNumber != null && houseNumber.isNotEmpty)
+                    houseNumber,
                   if (road != null && road.isNotEmpty) road,
                 ].join(' ');
                 if (line1.isEmpty) line1 = neighbourhood;
@@ -187,7 +195,8 @@ abstract final class LocationService {
         }
       }
 
-      final mapsUrl = 'https://www.google.com/maps/search/?api=1&query=${pos.latitude},${pos.longitude}';
+      final mapsUrl =
+          'https://www.google.com/maps/search/?api=1&query=${pos.latitude},${pos.longitude}';
 
       final result = LocationResult(
         latitude: pos.latitude,
@@ -205,7 +214,8 @@ abstract final class LocationService {
       return result;
     } catch (e) {
       if (context != null && context.mounted && showToast) {
-        AppToast.error(context, 'Failed to detect location. Please enter manually.');
+        AppToast.error(
+            context, 'Failed to detect location. Please enter manually.');
       }
       return null;
     }
@@ -214,7 +224,9 @@ abstract final class LocationService {
   static String? _matchCountry(String raw) {
     final lower = raw.trim().toLowerCase();
     for (final c in Countries.all) {
-      if (c.toLowerCase() == lower || lower.contains(c.toLowerCase()) || c.toLowerCase().contains(lower)) {
+      if (c.toLowerCase() == lower ||
+          lower.contains(c.toLowerCase()) ||
+          c.toLowerCase().contains(lower)) {
         return c;
       }
     }
@@ -225,7 +237,9 @@ abstract final class LocationService {
     final lower = raw.trim().toLowerCase();
     final states = WorldLocations.statesFor(country);
     for (final s in states) {
-      if (s.toLowerCase() == lower || lower.contains(s.toLowerCase()) || s.toLowerCase().contains(lower)) {
+      if (s.toLowerCase() == lower ||
+          lower.contains(s.toLowerCase()) ||
+          s.toLowerCase().contains(lower)) {
         return s;
       }
     }
@@ -236,7 +250,9 @@ abstract final class LocationService {
     final lower = raw.trim().toLowerCase();
     final cities = WorldLocations.citiesFor(country, state);
     for (final c in cities) {
-      if (c.toLowerCase() == lower || lower.contains(c.toLowerCase()) || c.toLowerCase().contains(lower)) {
+      if (c.toLowerCase() == lower ||
+          lower.contains(c.toLowerCase()) ||
+          c.toLowerCase().contains(lower)) {
         return c;
       }
     }

@@ -61,7 +61,10 @@ class PartnerLab {
     if (other is! PartnerLab) return false;
     final thisId = id?.trim();
     final otherId = other.id?.trim();
-    if (thisId != null && thisId.isNotEmpty && otherId != null && otherId.isNotEmpty) {
+    if (thisId != null &&
+        thisId.isNotEmpty &&
+        otherId != null &&
+        otherId.isNotEmpty) {
       return thisId == otherId;
     }
     return name.trim().toLowerCase() == other.name.trim().toLowerCase();
@@ -129,7 +132,8 @@ abstract final class LabSlotTime {
 
   static TimeOfDay? parse(String? label) => parseSlotTimeLabel(label);
 
-  static bool isInPast(DateTime date, String slotLabel, [DateTime? referenceTime]) =>
+  static bool isInPast(DateTime date, String slotLabel,
+          [DateTime? referenceTime]) =>
       isSlotTimeInPast(date, slotLabel, referenceTime);
 
   static DateTime combine(DateTime date, String slotLabel) {

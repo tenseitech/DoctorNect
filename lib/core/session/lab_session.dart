@@ -1,4 +1,4 @@
-﻿import 'app_session.dart';
+import 'app_session.dart';
 
 /// Active diagnostic-lab session for the logged-in lab user.
 abstract final class LabSession {

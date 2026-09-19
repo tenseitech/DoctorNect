@@ -10,7 +10,10 @@ class DoctorProfileRepository {
 
   Future<void> saveDoctorFcmToken(String doctorId, String token) async {
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty || token.isEmpty) return;
-    await FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId).set(
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.doctors)
+        .doc(doctorId)
+        .set(
       {
         'fcmToken': token,
         'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
@@ -21,7 +24,10 @@ class DoctorProfileRepository {
 
   Future<void> clearDoctorFcmToken(String doctorId) async {
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return;
-    await FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId).set(
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.doctors)
+        .doc(doctorId)
+        .set(
       {
         'fcmToken': FieldValue.delete(),
         'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),

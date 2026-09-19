@@ -24,8 +24,9 @@ class AmbulanceDriverProfile {
   final String? serviceName;
   final bool isAvailable;
 
-  String get displayServiceName =>
-      serviceName?.trim().isNotEmpty == true ? serviceName!.trim() : ambulanceType;
+  String get displayServiceName => serviceName?.trim().isNotEmpty == true
+      ? serviceName!.trim()
+      : ambulanceType;
 }
 
 class AmbulanceRequest {
@@ -220,7 +221,8 @@ class RegisteredAmbulance {
     AmbulanceType type = AmbulanceType.bls;
     final raw = data['ambulanceType'] as String?;
     if (raw != null) {
-      type = AmbulanceType.values.where((t) => t.name == raw).firstOrNull ?? AmbulanceType.bls;
+      type = AmbulanceType.values.where((t) => t.name == raw).firstOrNull ??
+          AmbulanceType.bls;
     }
 
     final addressData = data['address'];
@@ -250,7 +252,8 @@ class RegisteredAmbulance {
       ambulanceType: type,
       username: data['username'] as String? ?? '',
       city: aCity,
-      serviceAreas: (data['serviceAreas'] as List<dynamic>?)?.cast<String>() ?? const [],
+      serviceAreas:
+          (data['serviceAreas'] as List<dynamic>?)?.cast<String>() ?? const [],
       baseAddress: data['baseAddress'] as String? ?? '',
       licenseNumber: data['licenseNumber'] as String? ?? '',
       insuranceNumber: data['insuranceNumber'] as String? ?? '',

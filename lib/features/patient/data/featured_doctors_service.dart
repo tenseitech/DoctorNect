@@ -50,7 +50,8 @@ abstract final class FeaturedDoctorsService {
     final today = DateTime(now.year, now.month, now.day);
     return switch (period) {
       FeaturedDoctorPeriod.day => today,
-      FeaturedDoctorPeriod.week => today.subtract(Duration(days: today.weekday - DateTime.monday)),
+      FeaturedDoctorPeriod.week =>
+        today.subtract(Duration(days: today.weekday - DateTime.monday)),
       FeaturedDoctorPeriod.month => DateTime(now.year, now.month),
       FeaturedDoctorPeriod.year => DateTime(now.year),
     };
@@ -97,7 +98,8 @@ abstract final class FeaturedDoctorsService {
       }
       if (score == bestScore && score > 0 && best != null) {
         if (doctor.rating > best.rating ||
-            (doctor.rating == best.rating && doctor.reviewCount > best.reviewCount)) {
+            (doctor.rating == best.rating &&
+                doctor.reviewCount > best.reviewCount)) {
           best = doctor;
         }
       }

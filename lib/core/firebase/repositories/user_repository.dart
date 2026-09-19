@@ -242,7 +242,8 @@ class UserRepository {
     try {
       final patientId = 'p${DateTime.now().millisecondsSinceEpoch}';
       final rawName = user.displayName?.trim();
-      final displayName = (rawName != null && rawName.isNotEmpty) ? rawName : 'Patient';
+      final displayName =
+          (rawName != null && rawName.isNotEmpty) ? rawName : 'Patient';
       final rawEmail = user.email?.trim() ?? '';
       final normalizedEmail = _normalizeEmail(rawEmail);
       final photoUrl = user.photoURL;
@@ -262,7 +263,10 @@ class UserRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      await _db.collection(FirestorePaths.patients).doc(patientId).set(patientData);
+      await _db
+          .collection(FirestorePaths.patients)
+          .doc(patientId)
+          .set(patientData);
 
       await _db.collection(FirestorePaths.users).doc(user.uid).set({
         'role': 'patient',
@@ -365,7 +369,8 @@ class UserRepository {
   String? _normalizeEmail(String? email) {
     if (email == null) return null;
     final trimmed = email.trim().toLowerCase();
-    if (trimmed.isEmpty || trimmed.endsWith('@patient.doctornect.com')) return null;
+    if (trimmed.isEmpty || trimmed.endsWith('@patient.doctornect.com'))
+      return null;
     return trimmed;
   }
 
@@ -423,7 +428,8 @@ class UserRepository {
           return email.trim();
         }
       } on FirebaseException catch (e) {
-        if (e.code == 'permission-denied' || e.code == 'unauthenticated') return null;
+        if (e.code == 'permission-denied' || e.code == 'unauthenticated')
+          return null;
       } catch (_) {}
     }
 
@@ -507,7 +513,8 @@ class UserRepository {
 
       return null;
     } on FirebaseException catch (e) {
-      if (e.code == 'permission-denied' || e.code == 'unauthenticated') return null;
+      if (e.code == 'permission-denied' || e.code == 'unauthenticated')
+        return null;
       return 'Could not validate duplicate account details (${e.code}). Check your connection and try again.';
     } catch (_) {
       return null;
@@ -653,7 +660,8 @@ class UserRepository {
               .where(field, isEqualTo: candidate)
               .limit(1)
               .get(const GetOptions(source: Source.server))
-              .then<QuerySnapshot<Map<String, dynamic>>?>((s) => s, onError: (_) => null),
+              .then<QuerySnapshot<Map<String, dynamic>>?>((s) => s,
+                  onError: (_) => null),
         );
       }
     }
@@ -690,7 +698,8 @@ class UserRepository {
               .where(field, isEqualTo: candidate)
               .limit(1)
               .get(const GetOptions(source: Source.server))
-              .then<QuerySnapshot<Map<String, dynamic>>?>((s) => s, onError: (_) => null),
+              .then<QuerySnapshot<Map<String, dynamic>>?>((s) => s,
+                  onError: (_) => null),
         );
       }
     }
@@ -726,7 +735,8 @@ class UserRepository {
               .where(field, isEqualTo: candidate)
               .limit(1)
               .get(const GetOptions(source: Source.server))
-              .then<QuerySnapshot<Map<String, dynamic>>?>((s) => s, onError: (_) => null),
+              .then<QuerySnapshot<Map<String, dynamic>>?>((s) => s,
+                  onError: (_) => null),
         );
       }
     }
@@ -756,7 +766,8 @@ class UserRepository {
       UserType.ambulance: FirestorePaths.ambulances,
     };
 
-    final roleFutures = <Future<({UserType role, QuerySnapshot<Map<String, dynamic>> snap})?>>[];
+    final roleFutures = <Future<
+        ({UserType role, QuerySnapshot<Map<String, dynamic>> snap})?>>[];
     for (final entry in roleCollections.entries) {
       final role = entry.key;
       final collPath = entry.value;
@@ -769,7 +780,11 @@ class UserRepository {
                 .where(field, isEqualTo: candidate)
                 .limit(1)
                 .get(const GetOptions(source: Source.server))
-                .then<({UserType role, QuerySnapshot<Map<String, dynamic>> snap})?>(
+                .then<
+                    ({
+                      UserType role,
+                      QuerySnapshot<Map<String, dynamic>> snap
+                    })?>(
                   (s) => s.docs.isNotEmpty ? (role: role, snap: s) : null,
                   onError: (_) => null,
                 ),

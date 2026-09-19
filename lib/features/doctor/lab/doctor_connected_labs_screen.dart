@@ -26,7 +26,8 @@ class DoctorConnectedLabsScreen extends StatefulWidget {
   final String? appBarTitle;
 
   @override
-  State<DoctorConnectedLabsScreen> createState() => _DoctorConnectedLabsScreenState();
+  State<DoctorConnectedLabsScreen> createState() =>
+      _DoctorConnectedLabsScreenState();
 }
 
 class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
@@ -100,7 +101,8 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
     return DoctorConnectedPartnersBaseView(
       partnerRole: UserType.lab,
       partnerHeaderTitle: 'Diagnostic Labs',
-      partnerHeaderSubtitle: 'Connect with verified diagnostic labs to send electronic lab orders.',
+      partnerHeaderSubtitle:
+          'Connect with verified diagnostic labs to send electronic lab orders.',
       partnerTypeLabel: 'Lab',
       accentColor: AppColors.labPurple,
       showAppBar: widget.showAppBar,
@@ -155,11 +157,13 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
           ),
         );
       },
-      onDisconnect: (connectionId, _) => connStore.removeConnection(connectionId),
+      onDisconnect: (connectionId, _) =>
+          connStore.removeConnection(connectionId),
       onApprove: (connectionId, _) => connStore.approveByDoctor(connectionId),
       onReject: (connectionId, _) => connStore.rejectByDoctor(connectionId),
       onRevoke: (connectionId, _) => connStore.removeConnection(connectionId),
-      onSendRequest: (partner) => connStore.sendRequestFromDoctor(doctorId: doctorId, labId: partner.id),
+      onSendRequest: (partner) => connStore.sendRequestFromDoctor(
+          doctorId: doctorId, labId: partner.id),
       onOpenAddPartner: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
@@ -188,10 +192,13 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
             .watchOrdersForDoctor(doctorId)
             .listen(orderStore.mergeFromFirestore);
       },
-      detachFirestoreSync: () => FirestoreScreenSync.detachLabPendingConnections(),
+      detachFirestoreSync: () =>
+          FirestoreScreenSync.detachLabPendingConnections(),
       isConnected: (partnerId) => connStore.isConnected(doctorId, partnerId),
-      isPendingSent: (partnerId) => connStore.isPendingSentByDoctor(doctorId: doctorId, labId: partnerId),
-      isPendingFromPartner: (partnerId) => connStore.isPendingFromLab(doctorId: doctorId, labId: partnerId),
+      isPendingSent: (partnerId) =>
+          connStore.isPendingSentByDoctor(doctorId: doctorId, labId: partnerId),
+      isPendingFromPartner: (partnerId) =>
+          connStore.isPendingFromLab(doctorId: doctorId, labId: partnerId),
     );
   }
 }

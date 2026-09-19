@@ -14,7 +14,8 @@ import 'review_repository.dart';
 class DoctorProfileDetailRepository {
   DoctorProfileDetailRepository._();
 
-  static final DoctorProfileDetailRepository instance = DoctorProfileDetailRepository._();
+  static final DoctorProfileDetailRepository instance =
+      DoctorProfileDetailRepository._();
 
   Future<DoctorProfileDetail?> fetch(String doctorId) async {
     final listing = RegisteredDoctorsStore.instance.findById(doctorId);
@@ -23,7 +24,9 @@ class DoctorProfileDetailRepository {
     if (FirebaseBootstrap.isReady) {
       try {
         final snap = await FirestoreReadHelper.getDocument(
-          reference: FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId),
+          reference: FirebaseFirestore.instance
+              .collection(FirestorePaths.doctors)
+              .doc(doctorId),
           preferCache: true,
         );
         if (snap.exists) data = snap.data();
@@ -33,15 +36,22 @@ class DoctorProfileDetailRepository {
     if (data == null && listing == null) return null;
 
     final name = data?['name'] as String? ?? listing?.name ?? 'Doctor';
-    final specialization =
-        data?['specialization'] as String? ?? listing?.specialization ?? 'General Physician';
-    final qualification = data?['qualification'] as String? ?? listing?.qualification ?? 'MBBS';
-    final experienceYears =
-        (data?['experienceYears'] as num?)?.toInt() ?? listing?.experienceYears ?? 1;
-    final rating = (data?['rating'] as num?)?.toDouble() ?? listing?.rating ?? 0;
-    final reviewCount = (data?['reviewCount'] as num?)?.toInt() ?? listing?.reviewCount ?? 0;
+    final specialization = data?['specialization'] as String? ??
+        listing?.specialization ??
+        'General Physician';
+    final qualification =
+        data?['qualification'] as String? ?? listing?.qualification ?? 'MBBS';
+    final experienceYears = (data?['experienceYears'] as num?)?.toInt() ??
+        listing?.experienceYears ??
+        1;
+    final rating =
+        (data?['rating'] as num?)?.toDouble() ?? listing?.rating ?? 0;
+    final reviewCount =
+        (data?['reviewCount'] as num?)?.toInt() ?? listing?.reviewCount ?? 0;
     final verified = data?['verified'] as bool? ?? listing?.verified ?? false;
-    final languages = (data?['languages'] as List<dynamic>? ?? listing?.languages ?? const ['English'])
+    final languages = (data?['languages'] as List<dynamic>? ??
+            listing?.languages ??
+            const ['English'])
         .cast<String>();
     final photoUrl = data?['photoUrl'] as String? ??
         data?['photoURL'] as String? ??
@@ -79,13 +89,15 @@ class DoctorProfileDetailRepository {
         }
       } catch (_) {}
     }
-    final clinicName = data?['clinicName'] as String? ?? listing?.clinicName ?? '$name Clinic';
+    final clinicName =
+        data?['clinicName'] as String? ?? listing?.clinicName ?? '$name Clinic';
     final city = data?['city'] as String? ?? listing?.area ?? '';
-    
+
     String finalAbout;
     final isDoctorViewing = DoctorSession.loggedInDoctorId.isNotEmpty;
     if (isDoctorViewing) {
-      final stats = DoctorPatientStatsService.statsForDoctor(doctorId, DateTime(2000));
+      final stats =
+          DoctorPatientStatsService.statsForDoctor(doctorId, DateTime(2000));
       final defaultAbout = stats.patientsTreated > 0
           ? 'Dr. $name is a highly regarded $specialization who has treated ${stats.patientsTreated} patients on DoctorNect. With $experienceYears+ years of clinical experience, they are dedicated to providing excellent medical care.'
           : 'Dr. $name is a dedicated $specialization with $experienceYears+ years of clinical experience, committed to delivering high-quality healthcare.';
@@ -94,7 +106,7 @@ class DoctorProfileDetailRepository {
       finalAbout = data?['about'] as String? ??
           'Dr. $name is a registered $specialization with $experienceYears+ years of experience.';
     }
-    
+
     final about = finalAbout;
     final addressLine = data?['addressLine1'] as String?;
     final pincode = data?['pincode'] as String? ?? '';
@@ -104,7 +116,8 @@ class DoctorProfileDetailRepository {
 
     DoctorAvailability? availability;
     try {
-      availability = await DoctorAvailabilityRepository.instance.fetch(doctorId);
+      availability =
+          await DoctorAvailabilityRepository.instance.fetch(doctorId);
     } catch (_) {}
 
     var reviews = const <PatientDoctorReview>[];
@@ -113,7 +126,8 @@ class DoctorProfileDetailRepository {
     } catch (_) {}
     final computedRating = reviews.isEmpty
         ? rating
-        : reviews.fold<double>(0, (total, review) => total + review.rating) / reviews.length;
+        : reviews.fold<double>(0, (total, review) => total + review.rating) /
+            reviews.length;
     final computedReviewCount = reviews.isEmpty ? reviewCount : reviews.length;
 
     final superSpecialization = data?['superSpecialization'] as String? ?? '';
@@ -143,7 +157,8 @@ class DoctorProfileDetailRepository {
       services: const ['Consultation', 'Follow-up', 'Prescription'],
       timings: _timingsFromAvailability(availability),
       education: _educationFromData(data, qualification, certifications),
-      pastWorkplaces: _pastWorkplacesFromData(data, clinicName: clinicName, city: city),
+      pastWorkplaces:
+          _pastWorkplacesFromData(data, clinicName: clinicName, city: city),
       awards: _stringList(data?['awards']),
       publications: _stringList(data?['publications']),
       memberships: _membershipsFromData(
@@ -163,9 +178,12 @@ class DoctorProfileDetailRepository {
     );
   }
 
-  List<ClinicTiming> _timingsFromAvailability(DoctorAvailability? availability) {
+  List<ClinicTiming> _timingsFromAvailability(
+      DoctorAvailability? availability) {
     if (availability == null) {
-      return const [ClinicTiming(day: 'Schedule', hours: 'Check availability when booking')];
+      return const [
+        ClinicTiming(day: 'Schedule', hours: 'Check availability when booking')
+      ];
     }
 
     final days = availability.workingDays.join(', ');
@@ -176,7 +194,8 @@ class DoctorProfileDetailRepository {
 
     return [
       ClinicTiming(day: days, hours: 'Morning: $morning'),
-      if (availability.eveningEnabled) ClinicTiming(day: days, hours: 'Evening: $evening'),
+      if (availability.eveningEnabled)
+        ClinicTiming(day: days, hours: 'Evening: $evening'),
     ];
   }
 
@@ -202,7 +221,8 @@ class DoctorProfileDetailRepository {
       entries.add(EducationEntry(degree: qualification, college: '', year: 0));
     }
     for (final cert in certifications) {
-      entries.add(EducationEntry(degree: cert, college: 'Certification', year: 0));
+      entries
+          .add(EducationEntry(degree: cert, college: 'Certification', year: 0));
     }
     return entries;
   }
@@ -228,14 +248,18 @@ class DoctorProfileDetailRepository {
     final saved = _stringList(data?['memberships']);
     final extras = <String>[
       if (stateCouncil.trim().isNotEmpty) stateCouncil.trim(),
-      if (councilNumber.trim().isNotEmpty) 'Medical council registration: ${councilNumber.trim()}',
+      if (councilNumber.trim().isNotEmpty)
+        'Medical council registration: ${councilNumber.trim()}',
     ];
     return [...saved, ...extras];
   }
 
   List<String> _stringList(dynamic value) {
     if (value is List) {
-      return value.map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+      return value
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
     }
     if (value is String && value.trim().isNotEmpty) return [value.trim()];
     return const [];

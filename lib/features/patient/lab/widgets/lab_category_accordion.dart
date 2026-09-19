@@ -37,7 +37,9 @@ class LabCategoryAccordionSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < categoryOrder.length; i++) ...[
-          if (i > 0) Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+          if (i > 0)
+            Divider(
+                height: 1, thickness: 1, color: AppColors.borderOf(context)),
           _LabCategoryAccordionPanel(
             title: categoryOrder[i],
             tests: groupedTests[categoryOrder[i]] ?? const [],
@@ -72,7 +74,9 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Material(
-          color: expanded ? AppColors.labPurple.withValues(alpha: 0.04) : AppColors.surfaceOf(context),
+          color: expanded
+              ? AppColors.labPurple.withValues(alpha: 0.04)
+              : AppColors.surfaceOf(context),
           child: InkWell(
             onTap: onToggle,
             child: Padding(
@@ -99,7 +103,8 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.labPurple.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(999),
@@ -121,7 +126,8 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
                     child: Icon(
                       Icons.expand_more_rounded,
                       size: 22,
-                      color: AppColors.textSecondaryOf(context).withValues(alpha: 0.85),
+                      color: AppColors.textSecondaryOf(context)
+                          .withValues(alpha: 0.85),
                     ),
                   ),
                 ],
@@ -131,12 +137,14 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
         ),
         AnimatedCrossFade(
           duration: Duration(milliseconds: 220),
-          crossFadeState: expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          crossFadeState:
+              expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
           firstChild: SizedBox(width: double.infinity, height: 0),
           secondChild: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+              Divider(
+                  height: 1, thickness: 1, color: AppColors.borderOf(context)),
               for (var i = 0; i < tests.length; i++)
                 LabTestRow(
                   test: tests[i],

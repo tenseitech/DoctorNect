@@ -53,7 +53,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
   }
 
   List<DoctorPatientSummary> get _filtered {
-    var list = DoctorPatientsService.summariesForDoctor(DoctorSession.loggedInDoctorId);
+    var list = DoctorPatientsService.summariesForDoctor(
+        DoctorSession.loggedInDoctorId);
 
     final q = _searchController.text.trim().toLowerCase();
     if (q.isNotEmpty) {
@@ -106,7 +107,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PatientProfileScreen(isDoctorView: true, patientId: patient.id),
+        builder: (_) =>
+            PatientProfileScreen(isDoctorView: true, patientId: patient.id),
       ),
     );
   }
@@ -159,7 +161,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                         Expanded(
                           child: _loading
                               ? const Center(
-                                  child: CircularProgressIndicator(color: AppColors.doctorBlue),
+                                  child: CircularProgressIndicator(
+                                      color: AppColors.doctorBlue),
                                 )
                               : ListenableBuilder(
                                   listenable: _store,
@@ -182,7 +185,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                                           final p = patients[index];
                                           return PatientListCard(
                                             patient: p,
-                                            onViewProfile: () => _openProfile(p),
+                                            onViewProfile: () =>
+                                                _openProfile(p),
                                           );
                                         },
                                       ),
@@ -354,7 +358,9 @@ class _SpeedDialOption extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
-                  color: enabled ? AppColors.textPrimaryOf(context) : AppColors.textSecondaryOf(context),
+                  color: enabled
+                      ? AppColors.textPrimaryOf(context)
+                      : AppColors.textSecondaryOf(context),
                 ),
               ),
             ),
@@ -362,8 +368,12 @@ class _SpeedDialOption extends StatelessWidget {
             FloatingActionButton.small(
               heroTag: label,
               onPressed: onTap,
-              backgroundColor: enabled ? AppColors.surfaceOf(context) : AppColors.textSecondaryOf(context).withValues(alpha: 0.2),
-              foregroundColor: enabled ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
+              backgroundColor: enabled
+                  ? AppColors.surfaceOf(context)
+                  : AppColors.textSecondaryOf(context).withValues(alpha: 0.2),
+              foregroundColor: enabled
+                  ? AppColors.doctorBlue
+                  : AppColors.textSecondaryOf(context),
               elevation: 2,
               child: Icon(icon),
             ),

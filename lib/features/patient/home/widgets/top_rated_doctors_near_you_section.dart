@@ -94,7 +94,10 @@ class _TopRatedDoctorsNearYouSectionState
         .trim()
         .toLowerCase();
     final patientState = address.state.trim().toLowerCase();
-    final patientArea = '${address.addressLine1} ${address.addressLine2} ${address.landmark}'.trim().toLowerCase();
+    final patientArea =
+        '${address.addressLine1} ${address.addressLine2} ${address.landmark}'
+            .trim()
+            .toLowerCase();
 
     List<DoctorListing> nearby;
     if (patientCity.isNotEmpty) {
@@ -197,7 +200,10 @@ class _TopRatedDoctorsNearYouSectionState
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -304,9 +310,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
     if (doctor.clinicName.trim().isNotEmpty) {
       parts.add(doctor.clinicName.trim());
     }
-    final cityOrArea = doctor.area.trim().isNotEmpty
-        ? doctor.area.trim()
-        : doctor.city.trim();
+    final cityOrArea =
+        doctor.area.trim().isNotEmpty ? doctor.area.trim() : doctor.city.trim();
     if (cityOrArea.isNotEmpty) {
       parts.add(cityOrArea);
     }
@@ -363,10 +368,12 @@ class _TopRatedDoctorCard extends StatelessWidget {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.surfaceOf(context).withValues(alpha: 0.2),
+                              color: AppColors.surfaceOf(context)
+                                  .withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: AppColors.surfaceOf(context).withValues(alpha: 0.3),
+                                color: AppColors.surfaceOf(context)
+                                    .withValues(alpha: 0.3),
                               ),
                             ),
                             child: Row(
@@ -397,7 +404,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
                               style: GoogleFonts.inter(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.surfaceOf(context).withValues(alpha: 0.9),
+                                color: AppColors.surfaceOf(context)
+                                    .withValues(alpha: 0.9),
                               ),
                             ),
                           ],
@@ -420,7 +428,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.labelMedium,
-                          color: AppColors.surfaceOf(context).withValues(alpha: 0.92),
+                          color: AppColors.surfaceOf(context)
+                              .withValues(alpha: 0.92),
                         ),
                       ),
                       if (_locationText.isNotEmpty) ...[
@@ -430,7 +439,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
                             Icon(
                               Icons.location_on_outlined,
                               size: 13,
-                              color: AppColors.surfaceOf(context).withValues(alpha: 0.85),
+                              color: AppColors.surfaceOf(context)
+                                  .withValues(alpha: 0.85),
                             ),
                             const SizedBox(width: 3),
                             Expanded(
@@ -440,7 +450,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
                                   fontSize: AppTypography.labelSmall,
-                                  color: AppColors.surfaceOf(context).withValues(alpha: 0.88),
+                                  color: AppColors.surfaceOf(context)
+                                      .withValues(alpha: 0.88),
                                 ),
                               ),
                             ),
@@ -462,7 +473,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
                               style: GoogleFonts.inter(
                                 fontSize: AppTypography.labelSmall,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.surfaceOf(context).withValues(alpha: 0.95),
+                                color: AppColors.surfaceOf(context)
+                                    .withValues(alpha: 0.95),
                               ),
                             ),
                           ],
@@ -514,7 +526,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
                               style: GoogleFonts.inter(
                                 fontSize: AppTypography.labelSmall,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.surfaceOf(context).withValues(alpha: 0.95),
+                                color: AppColors.surfaceOf(context)
+                                    .withValues(alpha: 0.95),
                               ),
                             ),
                             Icon(

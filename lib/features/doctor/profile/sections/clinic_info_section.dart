@@ -94,7 +94,6 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
               'https://www.google.com/maps/search/?api=1&query=${result.latitude},${result.longitude}';
           _dirty = true;
         });
-
       }
     } finally {
       if (mounted) setState(() => _fetchingLocation = false);
@@ -144,7 +143,9 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
 
   List<String> get _countryOptions {
     final current = _country?.trim();
-    if (current != null && current.isNotEmpty && !Countries.all.contains(current)) {
+    if (current != null &&
+        current.isNotEmpty &&
+        !Countries.all.contains(current)) {
       return [current, ...Countries.all];
     }
     return Countries.all;
@@ -156,12 +157,14 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
   }
 
   List<String> get _cityOptions {
-    if (_country == null || _state == null || _state!.trim().isEmpty) return const [];
+    if (_country == null || _state == null || _state!.trim().isEmpty)
+      return const [];
     return WorldLocations.citiesWithLegacy(_country!, _state!, _city);
   }
 
   String? _validatePostal(String? value) {
-    final label = WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
+    final label =
+        WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
     final err = FormValidators.required(value, field: label);
     if (err != null) return err;
     if ((_country ?? Countries.defaultCountry) == Countries.defaultCountry) {
@@ -214,7 +217,8 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
       await DoctorProfileStore.instance.persist(DoctorSession.loggedInDoctorId);
     } catch (_) {
       if (!mounted) return; // FIXED: mounted check after await
-      AppToast.info(context, 'Could not save changes. Please check your connection and try again.');
+      AppToast.info(context,
+          'Could not save changes. Please check your connection and try again.');
       return;
     }
     if (!mounted) return; // FIXED: mounted check after await
@@ -236,7 +240,8 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
 
   @override
   Widget build(BuildContext context) {
-    final postalLabel = WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
+    final postalLabel =
+        WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Clinic Information')),
@@ -246,12 +251,14 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
             child: Align(
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Form(
@@ -266,13 +273,16 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                 'Clinic name',
                                 isRequired: true,
                               ),
-                              validator: (v) => FormValidators.required(v, field: 'Clinic name'),
+                              validator: (v) => FormValidators.required(v,
+                                  field: 'Clinic name'),
                               onChanged: (_) => _markDirty(),
                             ),
                             const SizedBox(height: 12),
                             Align(
                               alignment: Alignment.centerLeft,
-                              child: Text('Clinic type', style: Theme.of(context).textTheme.titleSmall),
+                              child: Text('Clinic type',
+                                  style:
+                                      Theme.of(context).textTheme.titleSmall),
                             ),
                             const SizedBox(height: 8),
                             Row(
@@ -307,19 +317,22 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                 decoration: RequiredFieldLabels.decorate(
                                   const InputDecoration(
                                     hintText: 'e.g. Sports Medicine Clinic',
-                                    prefixIcon: Icon(Icons.edit_outlined, size: 18),
+                                    prefixIcon:
+                                        Icon(Icons.edit_outlined, size: 18),
                                   ),
                                   'Enter clinic type',
                                   isRequired: true,
                                 ),
-                                validator: (v) => FormValidators.required(v, field: 'Clinic type'),
+                                validator: (v) => FormValidators.required(v,
+                                    field: 'Clinic type'),
                                 onChanged: (_) => _markDirty(),
                               )
                             else
                               DropdownButtonFormField<String>(
-                                initialValue: _presetClinicTypes.contains(_selectedType)
-                                    ? _selectedType
-                                    : _presetClinicTypes.first,
+                                initialValue:
+                                    _presetClinicTypes.contains(_selectedType)
+                                        ? _selectedType
+                                        : _presetClinicTypes.first,
                                 isExpanded: true,
                                 decoration: RequiredFieldLabels.decorate(
                                   const InputDecoration(),
@@ -329,40 +342,52 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                 items: _presetClinicTypes
                                     .map((t) => DropdownMenuItem(
                                           value: t,
-                                          child: Text(t, overflow: TextOverflow.ellipsis),
+                                          child: Text(t,
+                                              overflow: TextOverflow.ellipsis),
                                         ))
                                     .toList(),
-                                validator: (v) => FormValidators.dropdown(v, field: 'Clinic type'),
+                                validator: (v) => FormValidators.dropdown(v,
+                                    field: 'Clinic type'),
                                 onChanged: (v) {
                                   setState(() => _selectedType = v!);
                                   _markDirty();
                                 },
                               ),
                             const SizedBox(height: 16),
-                             Row(
-                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                               children: [
-                                 Text('Clinic address', style: Theme.of(context).textTheme.titleSmall),
-                                 TextButton.icon(
-                                   onPressed: _fetchingLocation ? null : _fetchCurrentLocation,
-                                   icon: _fetchingLocation
-                                       ? const SizedBox(
-                                           width: 14,
-                                           height: 14,
-                                           child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.doctorBlue),
-                                         )
-                                       : const Icon(Icons.my_location, size: 16, color: AppColors.doctorBlue),
-                                   label: Text(
-                                     _fetchingLocation ? 'Detecting...' : 'Use current location',
-                                     style: GoogleFonts.inter(
-                                       fontSize: 12.5,
-                                       fontWeight: FontWeight.w600,
-                                       color: AppColors.doctorBlue,
-                                     ),
-                                   ),
-                                 ),
-                               ],
-                             ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text('Clinic address',
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall),
+                                TextButton.icon(
+                                  onPressed: _fetchingLocation
+                                      ? null
+                                      : _fetchCurrentLocation,
+                                  icon: _fetchingLocation
+                                      ? const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppColors.doctorBlue),
+                                        )
+                                      : const Icon(Icons.my_location,
+                                          size: 16,
+                                          color: AppColors.doctorBlue),
+                                  label: Text(
+                                    _fetchingLocation
+                                        ? 'Detecting...'
+                                        : 'Use current location',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.doctorBlue,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _line1,
@@ -371,24 +396,30 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                 'Address line 1',
                                 isRequired: true,
                               ),
-                              validator: (v) => FormValidators.required(v, field: 'Address line 1'),
+                              validator: (v) => FormValidators.required(v,
+                                  field: 'Address line 1'),
                               onChanged: (_) => _markDirty(),
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _line2,
-                              decoration: const InputDecoration(labelText: 'Address line 2 (optional)'),
+                              decoration: const InputDecoration(
+                                  labelText: 'Address line 2 (optional)'),
                               onChanged: (_) => _markDirty(),
                             ),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<String>(
-                              initialValue:
-                                  _country != null && _countryOptions.contains(_country) ? _country : null,
+                              initialValue: _country != null &&
+                                      _countryOptions.contains(_country)
+                                  ? _country
+                                  : null,
                               isExpanded: true,
-                              decoration: const InputDecoration(labelText: 'Country (optional)'),
+                              decoration: const InputDecoration(
+                                  labelText: 'Country (optional)'),
                               hint: const Text('Select country'),
                               items: _countryOptions
-                                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                  .map((c) => DropdownMenuItem(
+                                      value: c, child: Text(c)))
                                   .toList(),
                               onChanged: (v) {
                                 setState(() {
@@ -403,13 +434,17 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                             if (_hasLocationData) ...[
                               DropdownButtonFormField<String>(
                                 key: ValueKey('state-$_country'),
-                                initialValue:
-                                    _state != null && _stateOptions.contains(_state) ? _state : null,
+                                initialValue: _state != null &&
+                                        _stateOptions.contains(_state)
+                                    ? _state
+                                    : null,
                                 isExpanded: true,
-                                decoration: const InputDecoration(labelText: 'State / Province (optional)'),
+                                decoration: const InputDecoration(
+                                    labelText: 'State / Province (optional)'),
                                 hint: const Text('Select state / province'),
                                 items: _stateOptions
-                                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                    .map((s) => DropdownMenuItem(
+                                        value: s, child: Text(s)))
                                     .toList(),
                                 onChanged: (v) {
                                   setState(() {
@@ -422,13 +457,19 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
                                 key: ValueKey('city-$_country-$_state'),
-                                initialValue:
-                                    _city != null && _cityOptions.contains(_city) ? _city : null,
+                                initialValue: _city != null &&
+                                        _cityOptions.contains(_city)
+                                    ? _city
+                                    : null,
                                 isExpanded: true,
-                                decoration: const InputDecoration(labelText: 'City (optional)'),
-                                hint: Text(_state == null ? 'Select state first' : 'Select city'),
+                                decoration: const InputDecoration(
+                                    labelText: 'City (optional)'),
+                                hint: Text(_state == null
+                                    ? 'Select state first'
+                                    : 'Select city'),
                                 items: _cityOptions
-                                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                    .map((c) => DropdownMenuItem(
+                                        value: c, child: Text(c)))
                                     .toList(),
                                 onChanged: _state == null
                                     ? null
@@ -445,7 +486,8 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(
-                                  (_country ?? Countries.defaultCountry) == Countries.defaultCountry
+                                  (_country ?? Countries.defaultCountry) ==
+                                          Countries.defaultCountry
                                       ? 6
                                       : 10,
                                 ),
@@ -461,25 +503,32 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _landmark,
-                              decoration: const InputDecoration(labelText: 'Landmark (optional)'),
+                              decoration: const InputDecoration(
+                                  labelText: 'Landmark (optional)'),
                               textCapitalization: TextCapitalization.words,
                               onChanged: (_) => _markDirty(),
                             ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _maps,
-                              decoration: const InputDecoration(labelText: 'Google Maps link (optional)'),
+                              decoration: const InputDecoration(
+                                  labelText: 'Google Maps link (optional)'),
                               onChanged: (_) => _markDirty(),
                             ),
                             const SizedBox(height: 16),
                             Row(
                               children: [
-                                Text('Clinic photos (${_photos.length}/5) — optional',
-                                    style: Theme.of(context).textTheme.titleSmall),
+                                Text(
+                                    'Clinic photos (${_photos.length}/5) — optional',
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall),
                                 const Spacer(),
                                 FilledButton.icon(
-                                  onPressed: _photos.length < 5 ? _addPhoto : null,
-                                  icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+                                  onPressed:
+                                      _photos.length < 5 ? _addPhoto : null,
+                                  icon: const Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      size: 18),
                                   label: const Text('Add'),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: AppColors.doctorBlue,
@@ -489,8 +538,11 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                               ],
                             ),
                             ..._photos.map((p) => ListTile(
-                                  leading: const Icon(Icons.image_outlined, color: AppColors.doctorBlue),
-                                  title: Text(p, style: const TextStyle(fontSize: AppTypography.bodySmall)),
+                                  leading: const Icon(Icons.image_outlined,
+                                      color: AppColors.doctorBlue),
+                                  title: Text(p,
+                                      style: const TextStyle(
+                                          fontSize: AppTypography.bodySmall)),
                                   trailing: LabeledRemoveButton(
                                     label: 'Delete',
                                     onPressed: () => _deletePhoto(p),
@@ -541,7 +593,8 @@ class _ClinicTypeModeChip extends StatelessWidget {
           style: TextStyle(
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w500,
-            color: selected ? AppColors.surfaceOf(context) : Colors.grey.shade700,
+            color:
+                selected ? AppColors.surfaceOf(context) : Colors.grey.shade700,
           ),
         ),
       ),

@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/doctor_availability.dart';
 
 abstract final class DoctorScheduleAvailabilityMapper {
-  static Map<String, dynamic> toMap(String doctorId, DoctorScheduleAvailability schedule) {
+  static Map<String, dynamic> toMap(
+      String doctorId, DoctorScheduleAvailability schedule) {
     return {
       'doctorId': doctorId,
       'workingDays': schedule.workingDays,
@@ -20,8 +21,10 @@ abstract final class DoctorScheduleAvailabilityMapper {
       'blockedDates': schedule.blockedDates
           .map((d) => Timestamp.fromDate(DateTime(d.year, d.month, d.day)))
           .toList(),
-      if (schedule.leaveStart != null) 'leaveStart': Timestamp.fromDate(schedule.leaveStart!),
-      if (schedule.leaveEnd != null) 'leaveEnd': Timestamp.fromDate(schedule.leaveEnd!),
+      if (schedule.leaveStart != null)
+        'leaveStart': Timestamp.fromDate(schedule.leaveStart!),
+      if (schedule.leaveEnd != null)
+        'leaveEnd': Timestamp.fromDate(schedule.leaveEnd!),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
@@ -38,7 +41,8 @@ abstract final class DoctorScheduleAvailabilityMapper {
       }
 
       return DoctorScheduleAvailability(
-        workingDays: (data['workingDays'] as List<dynamic>? ?? const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
+        workingDays: (data['workingDays'] as List<dynamic>? ??
+                const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
             .cast<String>(),
         morningStart: data['morningStart'] as String? ?? '09:00 AM',
         morningEnd: data['morningEnd'] as String? ?? '01:00 PM',
@@ -61,4 +65,3 @@ abstract final class DoctorScheduleAvailabilityMapper {
 }
 
 typedef DoctorAvailabilityMapper = DoctorScheduleAvailabilityMapper;
-

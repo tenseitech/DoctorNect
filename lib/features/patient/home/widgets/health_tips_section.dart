@@ -18,7 +18,8 @@ class HealthTipsSection extends StatelessWidget {
     return ColoredBox(
       color: AppColors.surfaceOf(context),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, isWide ? 20 : 12, 16, isWide ? 24 : 16),
+        padding:
+            EdgeInsets.fromLTRB(16, isWide ? 20 : 12, 16, isWide ? 24 : 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -36,7 +37,9 @@ class HealthTipsSection extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   'Quick reads for daily wellness',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -46,7 +49,8 @@ class HealthTipsSection extends StatelessWidget {
                 children: [
                   for (var i = 0; i < tips.length; i++) ...[
                     if (i > 0) const SizedBox(width: 10),
-                    Expanded(child: _HealthTipTile(tip: tips[i], compact: false)),
+                    Expanded(
+                        child: _HealthTipTile(tip: tips[i], compact: false)),
                   ],
                 ],
               )

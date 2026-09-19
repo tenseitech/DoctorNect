@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -57,19 +57,23 @@ class LabBookingConfirmedScreen extends StatelessWidget {
             children: [
               Text(
                 booking.testName,
-                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               if (booking.isHomeCollection) ...[
                 Text(
                   'Phlebotomist will arrive:',
-                  style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.labPurple),
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700, color: AppColors.labPurple),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -81,12 +85,14 @@ class LabBookingConfirmedScreen extends StatelessWidget {
               ] else ...[
                 Text(
                   'Visit lab for sample collection:',
-                  style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.labPurple),
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700, color: AppColors.labPurple),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),

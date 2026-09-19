@@ -20,10 +20,12 @@ class AmbulanceNotificationsScreen extends StatefulWidget {
   final VoidCallback? onOpenRequests;
 
   @override
-  State<AmbulanceNotificationsScreen> createState() => _AmbulanceNotificationsScreenState();
+  State<AmbulanceNotificationsScreen> createState() =>
+      _AmbulanceNotificationsScreenState();
 }
 
-class _AmbulanceNotificationsScreenState extends State<AmbulanceNotificationsScreen> {
+class _AmbulanceNotificationsScreenState
+    extends State<AmbulanceNotificationsScreen> {
   _AlertFilter _filter = _AlertFilter.all;
 
   static const _accent = Color(0xFFDC2626);
@@ -37,14 +39,16 @@ class _AmbulanceNotificationsScreenState extends State<AmbulanceNotificationsScr
     };
   }
 
-  Map<String, List<AmbulanceDriverAlert>> _groupByDay(List<AmbulanceDriverAlert> items) {
+  Map<String, List<AmbulanceDriverAlert>> _groupByDay(
+      List<AmbulanceDriverAlert> items) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
 
     final groups = <String, List<AmbulanceDriverAlert>>{};
     for (final item in items) {
-      final day = DateTime(item.createdAt.year, item.createdAt.month, item.createdAt.day);
+      final day = DateTime(
+          item.createdAt.year, item.createdAt.month, item.createdAt.day);
       final label = day == today
           ? 'Today'
           : day == yesterday
@@ -63,142 +67,154 @@ class _AmbulanceNotificationsScreenState extends State<AmbulanceNotificationsScr
       child: Builder(
         builder: (context) {
           final allItems = AmbulanceStore.instance.alertsFor(ambulanceId);
-          final unreadCount = AmbulanceStore.instance.unreadAlertCount(ambulanceId);
+          final unreadCount =
+              AmbulanceStore.instance.unreadAlertCount(ambulanceId);
           final items = _filtered(allItems);
           final groups = _groupByDay(items);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Notifications',
-                      style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      unreadCount > 0
-                          ? '$unreadCount unread · new requests & trip updates'
-                          : 'New requests, acceptances, and trip alerts',
-                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
-                    ),
-                  ],
-                ),
-              ),
-              if (unreadCount > 0)
-                OutlinedButton(
-                  onPressed: () {
-                    AmbulanceStore.instance.markAlertsRead(ambulanceId);
-                    setState(() => _filter = _AlertFilter.all);
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _accent,
-                    side: const BorderSide(color: _accent),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  ),
-                  child: Text(
-                    'Mark all read',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.surfaceOf(context),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _lineColor),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(5),
-              child: Row(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: _FilterPill(
-                      label: 'All',
-                      count: allItems.length,
-                      selected: _filter == _AlertFilter.all,
-                      onTap: () => setState(() => _filter = _AlertFilter.all),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Notifications',
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineLarge,
+                              fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          unreadCount > 0
+                              ? '$unreadCount unread · new requests & trip updates'
+                              : 'New requests, acceptances, and trip alerts',
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              color: AppColors.textSecondaryOf(context)),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _FilterPill(
-                      label: 'Unread',
-                      count: unreadCount,
-                      selected: _filter == _AlertFilter.unread,
-                      onTap: () => setState(() => _filter = _AlertFilter.unread),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: _FilterPill(
-                      label: 'Read',
-                      count: allItems.length - unreadCount,
-                      selected: _filter == _AlertFilter.read,
-                      onTap: () => setState(() => _filter = _AlertFilter.read),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: items.isEmpty
-                ? Center(
-                    child: Text(
-                      allItems.isEmpty
-                          ? 'No notifications yet. New trip requests will appear here.'
-                          : 'No ${_filter.name} notifications.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        color: AppColors.textSecondaryOf(context),
-                        height: 1.4,
+                  if (unreadCount > 0)
+                    OutlinedButton(
+                      onPressed: () {
+                        AmbulanceStore.instance.markAlertsRead(ambulanceId);
+                        setState(() => _filter = _AlertFilter.all);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _accent,
+                        side: const BorderSide(color: _accent),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                      ),
+                      child: Text(
+                        'Mark all read',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
-                  )
-                : ListView(
+                ],
+              ),
+              const SizedBox(height: 16),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceOf(context),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _lineColor),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(5),
+                  child: Row(
                     children: [
-                      for (final entry in groups.entries) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8, top: 4),
-                          child: Text(
-                            entry.key,
-                            style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondaryOf(context),
-                            ),
-                          ),
+                      Expanded(
+                        child: _FilterPill(
+                          label: 'All',
+                          count: allItems.length,
+                          selected: _filter == _AlertFilter.all,
+                          onTap: () =>
+                              setState(() => _filter = _AlertFilter.all),
                         ),
-                        for (final alert in entry.value)
-                          _AlertCard(
-                            alert: alert,
-                            onTap: () {
-                              if (!alert.isRead) {
-                                AmbulanceStore.instance.markAlertRead(ambulanceId, alert.id);
-                              }
-                              if (alert.bookingId != null) {
-                                widget.onOpenRequests?.call();
-                              }
-                            },
-                          ),
-                      ],
-                      const SizedBox(height: 24),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _FilterPill(
+                          label: 'Unread',
+                          count: unreadCount,
+                          selected: _filter == _AlertFilter.unread,
+                          onTap: () =>
+                              setState(() => _filter = _AlertFilter.unread),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _FilterPill(
+                          label: 'Read',
+                          count: allItems.length - unreadCount,
+                          selected: _filter == _AlertFilter.read,
+                          onTap: () =>
+                              setState(() => _filter = _AlertFilter.read),
+                        ),
+                      ),
                     ],
                   ),
-          ),
-        ],
-      );
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: items.isEmpty
+                    ? Center(
+                        child: Text(
+                          allItems.isEmpty
+                              ? 'No notifications yet. New trip requests will appear here.'
+                              : 'No ${_filter.name} notifications.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textSecondaryOf(context),
+                            height: 1.4,
+                          ),
+                        ),
+                      )
+                    : ListView(
+                        children: [
+                          for (final entry in groups.entries) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 8, top: 4),
+                              child: Text(
+                                entry.key,
+                                style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelMedium,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textSecondaryOf(context),
+                                ),
+                              ),
+                            ),
+                            for (final alert in entry.value)
+                              _AlertCard(
+                                alert: alert,
+                                onTap: () {
+                                  if (!alert.isRead) {
+                                    AmbulanceStore.instance
+                                        .markAlertRead(ambulanceId, alert.id);
+                                  }
+                                  if (alert.bookingId != null) {
+                                    widget.onOpenRequests?.call();
+                                  }
+                                },
+                              ),
+                          ],
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+              ),
+            ],
+          );
         },
       ),
     );
@@ -229,7 +245,9 @@ class _FilterPill extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFFDC2626).withValues(alpha: 0.1) : Colors.transparent,
+            color: selected
+                ? const Color(0xFFDC2626).withValues(alpha: 0.1)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
@@ -239,7 +257,9 @@ class _FilterPill extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w800,
-                  color: selected ? const Color(0xFFDC2626) : AppColors.textPrimaryOf(context),
+                  color: selected
+                      ? const Color(0xFFDC2626)
+                      : AppColors.textPrimaryOf(context),
                 ),
               ),
               Text(
@@ -247,7 +267,9 @@ class _FilterPill extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w600,
-                  color: selected ? const Color(0xFFDC2626) : AppColors.textSecondaryOf(context),
+                  color: selected
+                      ? const Color(0xFFDC2626)
+                      : AppColors.textSecondaryOf(context),
                 ),
               ),
             ],
@@ -269,10 +291,13 @@ class _AlertCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: alert.isRead ? AppColors.surfaceOf(context) : const Color(0xFFFFF7ED),
+        color: alert.isRead
+            ? AppColors.surfaceOf(context)
+            : const Color(0xFFFFF7ED),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: alert.isRead ? const Color(0xFFE2E8F0) : const Color(0xFFFDBA74),
+          color:
+              alert.isRead ? const Color(0xFFE2E8F0) : const Color(0xFFFDBA74),
         ),
       ),
       child: Material(
@@ -292,7 +317,8 @@ class _AlertCard extends StatelessWidget {
                     color: const Color(0xFFDC2626).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.notifications_active_outlined, color: Color(0xFFDC2626), size: 20),
+                  child: const Icon(Icons.notifications_active_outlined,
+                      color: Color(0xFFDC2626), size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -301,17 +327,24 @@ class _AlertCard extends StatelessWidget {
                     children: [
                       Text(
                         alert.title,
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodyMedium,
+                            fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         alert.body,
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.35),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textSecondaryOf(context),
+                            height: 1.35),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         DateFormat('hh:mm a').format(alert.createdAt),
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                     ],
                   ),

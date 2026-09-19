@@ -71,12 +71,11 @@ abstract final class AppointmentFilters {
       return switch (tab) {
         AppointmentListTab.today =>
           apptDay == today && a.status != AppointmentStatus.cancelled,
-        AppointmentListTab.upcoming =>
-          apptDay.isAfter(today) &&
-              (a.status == AppointmentStatus.confirmed ||
-                  a.status == AppointmentStatus.pendingRequest ||
-                  a.status == AppointmentStatus.inProgress ||
-                  a.status == AppointmentStatus.waiting),
+        AppointmentListTab.upcoming => apptDay.isAfter(today) &&
+            (a.status == AppointmentStatus.confirmed ||
+                a.status == AppointmentStatus.pendingRequest ||
+                a.status == AppointmentStatus.inProgress ||
+                a.status == AppointmentStatus.waiting),
         AppointmentListTab.pending =>
           a.status == AppointmentStatus.pendingRequest ||
               a.status == AppointmentStatus.waiting,
@@ -110,7 +109,8 @@ abstract final class AppointmentFilters {
 
     if (searchQuery.trim().isNotEmpty) {
       final q = searchQuery.trim().toLowerCase();
-      list = list.where((a) => a.patientName.toLowerCase().contains(q)).toList();
+      list =
+          list.where((a) => a.patientName.toLowerCase().contains(q)).toList();
     }
 
     list.sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));

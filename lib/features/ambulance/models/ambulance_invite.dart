@@ -92,7 +92,8 @@ class AmbulanceInvite {
     AmbulanceType type = AmbulanceType.bls;
     final rawType = data['ambulanceType'] as String?;
     if (rawType != null) {
-      type = AmbulanceType.values.where((t) => t.name == rawType).firstOrNull ?? AmbulanceType.bls;
+      type = AmbulanceType.values.where((t) => t.name == rawType).firstOrNull ??
+          AmbulanceType.bls;
     }
 
     final rawStatus = data['status'] as String? ?? 'pending';
@@ -115,7 +116,8 @@ class AmbulanceInvite {
       vehicleNumber: data['vehicleNumber'] as String? ?? '',
       ambulanceType: type,
       city: data['city'] as String? ?? '',
-      serviceAreas: (data['serviceAreas'] as List<dynamic>?)?.cast<String>() ?? const [],
+      serviceAreas:
+          (data['serviceAreas'] as List<dynamic>?)?.cast<String>() ?? const [],
       baseAddress: data['baseAddress'] as String? ?? '',
       licenseNumber: data['licenseNumber'] as String? ?? '',
       insuranceNumber: data['insuranceNumber'] as String? ?? '',

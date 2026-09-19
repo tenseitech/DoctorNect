@@ -84,7 +84,8 @@ class _ClinicalToolsShellState extends State<ClinicalToolsShell>
           labelColor: AppColors.doctorBlue,
           unselectedLabelColor: AppColors.textSecondaryOf(context),
           indicatorColor: AppColors.doctorBlue,
-          labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+          labelStyle: GoogleFonts.inter(
+              fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(text: 'Prescription'),
             Tab(text: 'Notes'),
@@ -93,7 +94,8 @@ class _ClinicalToolsShellState extends State<ClinicalToolsShell>
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
+          constraints: BoxConstraints(
+              maxWidth: ResponsiveLayout.contentMaxWidth(context)),
           child: TabBarView(
             controller: _tabController,
             children: [

@@ -185,4 +185,3 @@ abstract final class SpecialityMapper {
     return uiToBackendSpecialityMap[trimmed] ?? trimmed;
   }
 }
-

@@ -97,7 +97,8 @@ class AppointmentFiltersBar extends StatelessWidget {
               )
             : null,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       ),
     );
   }
@@ -208,14 +209,19 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppConstants.inputRadius),
             border: Border.all(
-              color: selected ? AppColors.doctorBlue : AppColors.borderOf(context),
+              color:
+                  selected ? AppColors.doctorBlue : AppColors.borderOf(context),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 14, color: selected ? AppColors.doctorBlue : AppColors.textSecondaryOf(context)),
+                Icon(icon,
+                    size: 14,
+                    color: selected
+                        ? AppColors.doctorBlue
+                        : AppColors.textSecondaryOf(context)),
                 const SizedBox(width: 4),
               ],
               Text(
@@ -223,14 +229,17 @@ class _FilterChip extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w500,
-                  color: selected ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
+                  color: selected
+                      ? AppColors.doctorBlue
+                      : AppColors.textSecondaryOf(context),
                 ),
               ),
               if (onClear != null) ...[
                 const SizedBox(width: 4),
                 GestureDetector(
                   onTap: onClear,
-                  child: Icon(Icons.close, size: 14, color: AppColors.doctorBlue),
+                  child:
+                      Icon(Icons.close, size: 14, color: AppColors.doctorBlue),
                 ),
               ],
             ],

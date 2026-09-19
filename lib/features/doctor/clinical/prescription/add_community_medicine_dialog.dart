@@ -13,7 +13,8 @@ class AddCommunityMedicineDialog extends StatefulWidget {
 
   final String initialName;
 
-  static Future<CommunityMedicine?> show(BuildContext context, String initialName) {
+  static Future<CommunityMedicine?> show(
+      BuildContext context, String initialName) {
     return showDialog<CommunityMedicine>(
       context: context,
       builder: (ctx) => AddCommunityMedicineDialog(initialName: initialName),
@@ -21,10 +22,12 @@ class AddCommunityMedicineDialog extends StatefulWidget {
   }
 
   @override
-  State<AddCommunityMedicineDialog> createState() => _AddCommunityMedicineDialogState();
+  State<AddCommunityMedicineDialog> createState() =>
+      _AddCommunityMedicineDialogState();
 }
 
-class _AddCommunityMedicineDialogState extends State<AddCommunityMedicineDialog> {
+class _AddCommunityMedicineDialogState
+    extends State<AddCommunityMedicineDialog> {
   late final TextEditingController _nameController;
   String _dosageUnit = kDosageUnits.first;
   String _form = kCommunityMedicineForms.first;
@@ -83,7 +86,8 @@ class _AddCommunityMedicineDialogState extends State<AddCommunityMedicineDialog>
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Add Medicine to Database?', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+      title: Text('Add Medicine to Database?',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -131,7 +135,8 @@ class _AddCommunityMedicineDialogState extends State<AddCommunityMedicineDialog>
               ? const SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Add to Database'),
         ),

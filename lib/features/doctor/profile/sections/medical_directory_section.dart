@@ -15,7 +15,8 @@ class MedicalDirectorySection extends StatefulWidget {
   const MedicalDirectorySection({super.key});
 
   @override
-  State<MedicalDirectorySection> createState() => _MedicalDirectorySectionState();
+  State<MedicalDirectorySection> createState() =>
+      _MedicalDirectorySectionState();
 }
 
 class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
@@ -25,7 +26,8 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
   void initState() {
     super.initState();
     _store.addListener(_onStoreChanged);
-    if (_store.forDoctor(DoctorSession.loggedInDoctorId).isEmpty && !_store.isLoading) {
+    if (_store.forDoctor(DoctorSession.loggedInDoctorId).isEmpty &&
+        !_store.isLoading) {
       _store.refreshForDoctor();
     }
   }
@@ -105,7 +107,8 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(existing == null ? 'Add Directory Entry' : 'Edit Entry'),
+              title:
+                  Text(existing == null ? 'Add Directory Entry' : 'Edit Entry'),
               content: scrollableDialogContent(
                 context: context,
                 child: Column(
@@ -113,11 +116,13 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
                   children: [
                     TextField(
                       controller: name,
-                      decoration: const InputDecoration(labelText: 'Name (Lab/Specialist)'),
+                      decoration: const InputDecoration(
+                          labelText: 'Name (Lab/Specialist)'),
                     ),
                     TextField(
                       controller: type,
-                      decoration: const InputDecoration(labelText: 'Type (e.g. Ambulance)'),
+                      decoration: const InputDecoration(
+                          labelText: 'Type (e.g. Ambulance)'),
                     ),
                     PhoneNumberField(
                       controller: phone,
@@ -129,14 +134,17 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Cancel')),
                 TextButton(
                   onPressed: () async {
                     await _saveEntry(
                       existing: existing,
                       name: name.text,
                       type: type.text,
-                      phone: FormValidators.formatFullPhone(phoneDialCode, phone.text),
+                      phone: FormValidators.formatFullPhone(
+                          phoneDialCode, phone.text),
                     );
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
@@ -174,10 +182,12 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
               : Align(
                   alignment: Alignment.topCenter,
                   child: RefreshIndicator(
-                    onRefresh: () => _store.refreshForDoctor(preferCache: false),
+                    onRefresh: () =>
+                        _store.refreshForDoctor(preferCache: false),
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 24),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 560),
                         child: Column(
@@ -185,18 +195,24 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               elevation: 2,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                               child: ListTile(
                                 title: Text(entry.name),
-                                subtitle: Text('${entry.type} • ${entry.phone}'),
-                                onTap: () => ExternalLauncher.callPhone(entry.phone, context: context),
+                                subtitle:
+                                    Text('${entry.type} • ${entry.phone}'),
+                                onTap: () => ExternalLauncher.callPhone(
+                                    entry.phone,
+                                    context: context),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
                                       icon: const Icon(Icons.phone, size: 20),
                                       onPressed: () =>
-                                          ExternalLauncher.callPhone(entry.phone, context: context),
+                                          ExternalLauncher.callPhone(
+                                              entry.phone,
+                                              context: context),
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.edit, size: 20),

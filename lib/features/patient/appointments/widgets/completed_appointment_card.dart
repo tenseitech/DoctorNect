@@ -73,7 +73,9 @@ class CompletedAppointmentCard extends StatelessWidget {
             a.diagnosis!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ],
         if (a.hasPrescription || a.hasReport) ...[
@@ -92,7 +94,8 @@ class CompletedAppointmentCard extends StatelessWidget {
               if (a.hasReport)
                 OutlinedButton.icon(
                   onPressed: () {
-                    AppToast.info(context, 'Report download is not available yet.');
+                    AppToast.info(
+                        context, 'Report download is not available yet.');
                   },
                   icon: const Icon(Icons.download_outlined, size: 14),
                   label: const Text('Report'),

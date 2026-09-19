@@ -84,7 +84,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       child: const Icon(
                         TablerIcons.speakerphone,
@@ -94,7 +95,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFDE047),
                         borderRadius: BorderRadius.circular(8),
@@ -142,13 +144,17 @@ class PromotedAdBannerCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF0F766E),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                     elevation: 2,
                   ),
                   child: Text(
                     'Book Ad',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w800),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w800),
                   ),
                 );
 
@@ -179,7 +185,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       child: const Icon(
                         TablerIcons.speakerphone,
@@ -194,7 +201,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFDE047),
                               borderRadius: BorderRadius.circular(8),

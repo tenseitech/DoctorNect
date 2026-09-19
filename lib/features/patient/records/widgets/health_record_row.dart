@@ -87,7 +87,9 @@ class HealthRecordRow extends StatelessWidget {
               _SourceChip(label: _chipLabel, color: accent),
               Text(
                 year,
-                style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelSmall,
+                    color: AppColors.textSecondaryOf(context)),
               ),
             ],
           ),
@@ -109,7 +111,9 @@ class HealthRecordRow extends StatelessWidget {
           _SourceChip(label: statusLabel, color: statusColor),
         Text(
           year,
-          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelSmall,
+              color: AppColors.textSecondaryOf(context)),
         ),
       ],
     );
@@ -169,14 +173,16 @@ class HealthRecordRow extends StatelessWidget {
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
-                    color: AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
+                    color: AppColors.textSecondaryOf(context)
+                        .withValues(alpha: 0.75),
                   ),
                 ],
               ),
             ),
           ),
         ),
-        if (showDivider) Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+        if (showDivider)
+          Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
       ],
     );
   }

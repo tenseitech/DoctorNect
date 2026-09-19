@@ -1,4 +1,4 @@
-﻿import '../../../core/firebase/firestore_service.dart';
+import '../../../core/firebase/firestore_service.dart';
 import 'dart:async'; // FIXED: for the realtime delivery subscription
 
 import 'package:flutter/material.dart';
@@ -24,7 +24,8 @@ String pharmacyDeliveryStatusLabel(PharmacyDeliveryStatus s) => switch (s) {
     };
 
 /// One entry per doctor — duplicate active connections must not break dropdowns.
-List<PharmacyConnection> uniquePharmacyDoctors(List<PharmacyConnection> doctors) {
+List<PharmacyConnection> uniquePharmacyDoctors(
+    List<PharmacyConnection> doctors) {
   final seen = <String>{};
   final unique = <PharmacyConnection>[];
   for (final doctor in doctors) {
@@ -40,11 +41,13 @@ class StoreDashboardScreen extends StatefulWidget {
   State<StoreDashboardScreen> createState() => _StoreDashboardScreenState();
 }
 
-class _StoreDashboardScreenState extends State<StoreDashboardScreen> with SingleTickerProviderStateMixin {
+class _StoreDashboardScreenState extends State<StoreDashboardScreen>
+    with SingleTickerProviderStateMixin {
   String? _selectedDoctorId;
   late final TabController _orderTabController;
   final _patientSearchController = TextEditingController();
-  StreamSubscription<List<PharmacyPrescriptionDelivery>>? _deliverySub; // FIXED: realtime delivery sync
+  StreamSubscription<List<PharmacyPrescriptionDelivery>>?
+      _deliverySub; // FIXED: realtime delivery sync
 
   @override
   void initState() {
@@ -65,8 +68,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
   // FIXED: pull-to-refresh fallback when realtime sync is unavailable
   Future<void> _refreshDeliveries() async {
     final storeId = MedicalStoreSession.loggedInStoreId;
-    final deliveries =
-        await FirestoreService.instance.pharmacyFirestore.fetchDeliveriesForStore(storeId);
+    final deliveries = await FirestoreService.instance.pharmacyFirestore
+        .fetchDeliveriesForStore(storeId);
     PharmacyPrescriptionStore.instance.mergeFromFirestore(deliveries);
   }
 
@@ -88,7 +91,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
     final search = _patientSearchController.text.trim().toLowerCase();
     if (search.isEmpty) return prescriptions;
     return prescriptions
-        .where((p) => p.draft.patient.patientName.toLowerCase().contains(search))
+        .where(
+            (p) => p.draft.patient.patientName.toLowerCase().contains(search))
         .toList();
   }
 
@@ -104,7 +108,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
         final doctors = uniquePharmacyDoctors(
           PharmacyConnectionStore.instance.activeForStore(storeId),
         );
-        final grouped = PharmacyPrescriptionStore.instance.groupedByDoctorForStore(storeId);
+        final grouped =
+            PharmacyPrescriptionStore.instance.groupedByDoctorForStore(storeId);
 
         if (doctors.isEmpty) {
           return _emptyState(
@@ -118,16 +123,20 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
                 doctors.any((d) => d.doctorId == _selectedDoctorId))
             ? _selectedDoctorId!
             : doctors.first.doctorId;
-        var prescriptions = PharmacyPrescriptionStore.instance.forStoreAndDoctor(storeId, doctorId);
+        var prescriptions = PharmacyPrescriptionStore.instance
+            .forStoreAndDoctor(storeId, doctorId);
         prescriptions = _filterPrescriptions(prescriptions);
-        final newOrders = prescriptions.where((p) => !_isDispensedOrder(p)).toList();
+        final newOrders =
+            prescriptions.where((p) => !_isDispensedOrder(p)).toList();
         final dispensedOrders = prescriptions.where(_isDispensedOrder).toList();
-        final allStorePrescriptions = PharmacyPrescriptionStore.instance.forStore(storeId);
+        final allStorePrescriptions =
+            PharmacyPrescriptionStore.instance.forStore(storeId);
 
         return LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 900;
-            final statsHeader = _buildStatsHeader(allStorePrescriptions, doctors.length, wide);
+            final statsHeader =
+                _buildStatsHeader(allStorePrescriptions, doctors.length, wide);
 
             if (wide) {
               return Column(
@@ -172,20 +181,31 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.local_pharmacy_outlined, size: 48, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.5)),
+            Icon(Icons.local_pharmacy_outlined,
+                size: 48,
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.5)),
             const SizedBox(height: 12),
-            Text(title, style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600)),
+            Text(title,
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
-            Text(subtitle, textAlign: TextAlign.center, style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context))),
+            Text(subtitle,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                    color: AppColors.textSecondaryOf(context))),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatsHeader(List<PharmacyPrescriptionDelivery> allPrescriptions, int doctorCount, bool isWide) {
+  Widget _buildStatsHeader(List<PharmacyPrescriptionDelivery> allPrescriptions,
+      int doctorCount, bool isWide) {
     final today = DateTime.now();
-    final pendingCount = allPrescriptions.where((p) => !_isDispensedOrder(p)).length;
+    final pendingCount =
+        allPrescriptions.where((p) => !_isDispensedOrder(p)).length;
     final dispensedCount = allPrescriptions.where(_isDispensedOrder).length;
     final badges = [
       _buildStatBadge(AppIcons.prescription, '$pendingCount New'),
@@ -205,9 +225,16 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
       child: isWide
           ? Row(
               children: [
-                Text('Dashboard', style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700, color: Colors.white)),
+                Text('Dashboard',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.headlineSmall,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white)),
                 const SizedBox(width: 20),
-                ...badges.expand((badge) => [badge, const SizedBox(width: 8)]).toList()..removeLast(),
+                ...badges
+                    .expand((badge) => [badge, const SizedBox(width: 8)])
+                    .toList()
+                  ..removeLast(),
                 const Spacer(),
                 const ThemeToggleButton(highlighted: true),
               ],
@@ -223,7 +250,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.surfaceOf(context).withValues(alpha: 0.9),
+                        color:
+                            AppColors.surfaceOf(context).withValues(alpha: 0.9),
                       ),
                     ),
                     const ThemeToggleButton(highlighted: true),
@@ -256,7 +284,10 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700, color: AppColors.surfaceOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                fontWeight: FontWeight.w700,
+                color: AppColors.surfaceOf(context)),
           ),
         ],
       ),
@@ -287,7 +318,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
               children: [
                 SizedBox(
                   width: 200,
-                  child: _doctorDropdown(doctors, grouped, storeId, doctorId, compact: true),
+                  child: _doctorDropdown(doctors, grouped, storeId, doctorId,
+                      compact: true),
                 ),
                 const SizedBox(width: 16),
                 SizedBox(
@@ -341,7 +373,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
         newOrders,
         isNewTab: true,
         emptyMessage: 'No new prescriptions',
-        emptySubtitle: 'Incoming orders from ${_pharmacyDoctorLabel(doctor.doctorName)} will appear here.',
+        emptySubtitle:
+            'Incoming orders from ${_pharmacyDoctorLabel(doctor.doctorName)} will appear here.',
       ),
       _prescriptionList(
         dispensedOrders,
@@ -397,9 +430,10 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
     final uniqueDoctors = uniquePharmacyDoctors(doctors);
     if (uniqueDoctors.isEmpty) return const SizedBox.shrink();
 
-    final dropdownValue = uniqueDoctors.any((d) => d.doctorId == selectedDoctorId)
-        ? selectedDoctorId
-        : uniqueDoctors.first.doctorId;
+    final dropdownValue =
+        uniqueDoctors.any((d) => d.doctorId == selectedDoctorId)
+            ? selectedDoctorId
+            : uniqueDoctors.first.doctorId;
 
     return Container(
       height: compact ? 36 : 44,
@@ -414,12 +448,14 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
           isExpanded: true,
           icon: Padding(
             padding: EdgeInsets.only(right: 12),
-            child: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondaryOf(context), size: 20),
+            child: Icon(Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textSecondaryOf(context), size: 20),
           ),
           dropdownColor: AppColors.white,
           borderRadius: BorderRadius.circular(12),
           items: uniqueDoctors.map((d) {
-            final unread = PharmacyPrescriptionStore.instance.unreadCountForStoreDoctor(storeId, d.doctorId);
+            final unread = PharmacyPrescriptionStore.instance
+                .unreadCountForStoreDoctor(storeId, d.doctorId);
             return DropdownMenuItem<String>(
               value: d.doctorId,
               child: Padding(
@@ -438,14 +474,18 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
                     ),
                     if (unread > 0)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.doctorBlue,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           '$unread',
-                          style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.surfaceOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.surfaceOf(context)),
                         ),
                       ),
                   ],
@@ -460,7 +500,6 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
       ),
     );
   }
-
 
   Widget _prescriptionList(
     List<PharmacyPrescriptionDelivery> prescriptions, {
@@ -495,7 +534,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen> with Single
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => StorePrescriptionDetailScreen(deliveryId: prescriptions[i].id),
+              builder: (_) => StorePrescriptionDetailScreen(
+                  deliveryId: prescriptions[i].id),
             ),
           );
           setState(() {});
@@ -512,8 +552,6 @@ String _pharmacyDoctorLabel(String name) {
   if (lower.startsWith('dr.') || lower.startsWith('dr ')) return trimmed;
   return 'Dr. $trimmed';
 }
-
-
 
 class _PrescriptionCard extends StatelessWidget {
   const _PrescriptionCard({
@@ -536,7 +574,10 @@ class _PrescriptionCard extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(14),
-            child: wide ? _WidePrescriptionTile(delivery: delivery, isNewTab: isNewTab) : _CompactPrescriptionTile(delivery: delivery, isNewTab: isNewTab),
+            child: wide
+                ? _WidePrescriptionTile(delivery: delivery, isNewTab: isNewTab)
+                : _CompactPrescriptionTile(
+                    delivery: delivery, isNewTab: isNewTab),
           ),
         );
       },
@@ -554,7 +595,8 @@ class _PrescriptionTileData {
       ? const [Color(0xFF2563EB), Color(0xFF1D4ED8)]
       : const [Color(0xFF059669), Color(0xFF047857)];
 
-  ({String label, Color color}) get status => _prescriptionStatusStyle(delivery.status);
+  ({String label, Color color}) get status =>
+      _prescriptionStatusStyle(delivery.status);
 
   String get day => DateFormat('dd').format(delivery.sentAt);
 
@@ -576,7 +618,8 @@ class _DateBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBgOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderOf(context).withValues(alpha: 0.5)),
+        border: Border.all(
+            color: AppColors.borderOf(context).withValues(alpha: 0.5)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -633,7 +676,8 @@ class _MedicineStrip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(AppIcons.prescription, size: 16, color: AppColors.textSecondaryOf(context)),
+          Icon(AppIcons.prescription,
+              size: 16, color: AppColors.textSecondaryOf(context)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -708,23 +752,32 @@ class _WidePrescriptionTile extends StatelessWidget {
                     patient.patientName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyMedium,
+                        fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     '${patient.age} yrs · ${patient.gender ?? '—'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.schedule, size: 13, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9)),
+                      Icon(Icons.schedule,
+                          size: 13,
+                          color: AppColors.textSecondaryOf(context)
+                              .withValues(alpha: 0.9)),
                       const SizedBox(width: 4),
                       Text(
                         data.time,
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                     ],
                   ),
@@ -757,7 +810,8 @@ class _WidePrescriptionTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(Icons.chevron_right_rounded, size: 22, color: data.gradient.first.withValues(alpha: 0.65)),
+            Icon(Icons.chevron_right_rounded,
+                size: 22, color: data.gradient.first.withValues(alpha: 0.65)),
           ],
         ),
       ),
@@ -766,7 +820,8 @@ class _WidePrescriptionTile extends StatelessWidget {
 }
 
 class _CompactPrescriptionTile extends StatelessWidget {
-  const _CompactPrescriptionTile({required this.delivery, required this.isNewTab});
+  const _CompactPrescriptionTile(
+      {required this.delivery, required this.isNewTab});
 
   final PharmacyPrescriptionDelivery delivery;
   final bool isNewTab;
@@ -810,7 +865,9 @@ class _CompactPrescriptionTile extends StatelessWidget {
                               patient.patientName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodyMedium,
+                                  fontWeight: FontWeight.w700),
                             ),
                           ),
                           _StatusChip(label: status.label, color: status.color),
@@ -821,7 +878,9 @@ class _CompactPrescriptionTile extends StatelessWidget {
                         '${patient.age} yrs · ${patient.gender ?? '—'} · ${data.time}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -848,12 +907,22 @@ class _CompactPrescriptionTile extends StatelessWidget {
   }
 }
 
-({String label, Color color}) _prescriptionStatusStyle(PharmacyDeliveryStatus status) {
+({String label, Color color}) _prescriptionStatusStyle(
+    PharmacyDeliveryStatus status) {
   return switch (status) {
     PharmacyDeliveryStatus.sent => (label: 'New', color: AppColors.doctorBlue),
-    PharmacyDeliveryStatus.viewed => (label: 'Viewed', color: const Color(0xFFD97706)),
-    PharmacyDeliveryStatus.partiallyDispensed => (label: 'Partial', color: const Color(0xFFEA580C)),
-    PharmacyDeliveryStatus.dispensed => (label: 'Dispensed', color: AppColors.pharmacyGreen),
+    PharmacyDeliveryStatus.viewed => (
+        label: 'Viewed',
+        color: const Color(0xFFD97706)
+      ),
+    PharmacyDeliveryStatus.partiallyDispensed => (
+        label: 'Partial',
+        color: const Color(0xFFEA580C)
+      ),
+    PharmacyDeliveryStatus.dispensed => (
+        label: 'Dispensed',
+        color: AppColors.pharmacyGreen
+      ),
   };
 }
 
@@ -873,7 +942,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+        style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }
@@ -900,7 +970,8 @@ class _PharmacySearchFieldState extends State<_PharmacySearchField> {
   @override
   void initState() {
     super.initState();
-    _focusNode.addListener(() => setState(() => _focused = _focusNode.hasFocus));
+    _focusNode
+        .addListener(() => setState(() => _focused = _focusNode.hasFocus));
   }
 
   @override
@@ -919,16 +990,24 @@ class _PharmacySearchFieldState extends State<_PharmacySearchField> {
           width: 40,
           height: 36,
           decoration: BoxDecoration(
-            color: _focused ? AppColors.surfaceOf(context) : const Color(0xFFF1F5F9),
+            color: _focused
+                ? AppColors.surfaceOf(context)
+                : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: _focused ? AppColors.pharmacyGreen.withValues(alpha: 0.5) : AppColors.borderOf(context),
+              color: _focused
+                  ? AppColors.pharmacyGreen.withValues(alpha: 0.5)
+                  : AppColors.borderOf(context),
             ),
           ),
           child: Stack(
             children: [
               Center(
-                child: Icon(Icons.search_rounded, size: 20, color: _focused ? AppColors.pharmacyGreen : AppColors.textSecondaryOf(context)),
+                child: Icon(Icons.search_rounded,
+                    size: 20,
+                    color: _focused
+                        ? AppColors.pharmacyGreen
+                        : AppColors.textSecondaryOf(context)),
               ),
               // Hidden text field to capture input
               SizedBox(
@@ -949,7 +1028,8 @@ class _PharmacySearchFieldState extends State<_PharmacySearchField> {
       duration: const Duration(milliseconds: 180),
       height: 44,
       decoration: BoxDecoration(
-        color: _focused ? AppColors.surfaceOf(context) : const Color(0xFFF1F5F9),
+        color:
+            _focused ? AppColors.surfaceOf(context) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: _focused
@@ -972,11 +1052,15 @@ class _PharmacySearchFieldState extends State<_PharmacySearchField> {
         style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
         decoration: InputDecoration(
           hintText: 'Search patient name',
-          hintStyle: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodyMedium),
+          hintStyle: GoogleFonts.inter(
+              color: AppColors.textSecondaryOf(context),
+              fontSize: AppTypography.bodyMedium),
           prefixIcon: Icon(
             Icons.search_rounded,
             size: 20,
-            color: _focused ? AppColors.pharmacyGreen : AppColors.textSecondaryOf(context),
+            color: _focused
+                ? AppColors.pharmacyGreen
+                : AppColors.textSecondaryOf(context),
           ),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
@@ -1076,7 +1160,8 @@ class _OrderTabPill extends StatelessWidget {
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: AppColors.textPrimaryOf(context).withValues(alpha: 0.08),
+                      color: AppColors.textPrimaryOf(context)
+                          .withValues(alpha: 0.08),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -1089,7 +1174,8 @@ class _OrderTabPill extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected ? accentColor : AppColors.textSecondaryOf(context),
+                color:
+                    selected ? accentColor : AppColors.textSecondaryOf(context),
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -1100,7 +1186,9 @@ class _OrderTabPill extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.bodySmall,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    color: selected ? AppColors.textPrimaryOf(context) : AppColors.textSecondaryOf(context),
+                    color: selected
+                        ? AppColors.textPrimaryOf(context)
+                        : AppColors.textSecondaryOf(context),
                   ),
                 ),
               ),
@@ -1110,7 +1198,8 @@ class _OrderTabPill extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: selected
                       ? accentColor.withValues(alpha: 0.1)
-                      : AppColors.textSecondaryOf(context).withValues(alpha: 0.1),
+                      : AppColors.textSecondaryOf(context)
+                          .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -1118,7 +1207,9 @@ class _OrderTabPill extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
-                    color: selected ? accentColor : AppColors.textSecondaryOf(context),
+                    color: selected
+                        ? accentColor
+                        : AppColors.textSecondaryOf(context),
                   ),
                 ),
               ),
@@ -1194,7 +1285,9 @@ class _EmptyPrescriptionsState extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(

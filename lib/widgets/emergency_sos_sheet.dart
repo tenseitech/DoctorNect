@@ -40,174 +40,178 @@ class EmergencySosSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: AppColors.borderOf(context),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFEE2E2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.emergency_rounded,
-                  color: Color(0xFFDC2626),
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Emergency SOS Assistance',
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.headlineSmall,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF991B1B),
-                      ),
-                    ),
-                    Text(
-                      '24/7 Rapid Emergency Response',
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Call 108 Emergency Banner
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _callHotline('108'),
-              borderRadius: BorderRadius.circular(16),
-              child: Ink(
-                padding: const EdgeInsets.all(16),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFDC2626), Color(0xFF991B1B)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFDC2626).withValues(alpha: 0.35),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 28),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Call 108 Emergency Hotline',
-                            style: GoogleFonts.inter(
-                              fontSize: AppTypography.headlineSmall,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Toll-free immediate trauma & cardiac response',
-                            style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
-                  ],
+                  color: AppColors.borderOf(context),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          // Book Ambulance Quick Dispatch Button
-          OutlinedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AmbulanceBookingScreen(
-                    bookedByRole: AmbulanceBookedByRole.patient,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFEE2E2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.emergency_rounded,
+                    color: Color(0xFFDC2626),
+                    size: 24,
                   ),
                 ),
-              );
-            },
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              side: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
-              foregroundColor: const Color(0xFFDC2626),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Emergency SOS Assistance',
+                        style: GoogleFonts.inter(
+                          fontSize: AppTypography.headlineSmall,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF991B1B),
+                        ),
+                      ),
+                      Text(
+                        '24/7 Rapid Emergency Response',
+                        style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Call 108 Emergency Banner
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _callHotline('108'),
+                borderRadius: BorderRadius.circular(16),
+                child: Ink(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFDC2626), Color(0xFF991B1B)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFDC2626).withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.phone_in_talk_rounded,
+                            color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Call 108 Emergency Hotline',
+                              style: GoogleFonts.inter(
+                                fontSize: AppTypography.headlineSmall,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Toll-free immediate trauma & cardiac response',
+                              style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelMedium,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded,
+                          color: Colors.white, size: 16),
+                    ],
+                  ),
+                ),
               ),
             ),
-            icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
-            label: Text(
-              'Book Nearby ICU Ambulance Dispatcher',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
+            const SizedBox(height: 14),
+            // Book Ambulance Quick Dispatch Button
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AmbulanceBookingScreen(
+                      bookedByRole: AmbulanceBookedByRole.patient,
+                    ),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                side: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+                foregroundColor: const Color(0xFFDC2626),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
+              label: Text(
+                'Book Nearby ICU Ambulance Dispatcher',
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w700),
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Emergency Trauma Services',
-            style: GoogleFonts.inter(
-              fontSize: AppTypography.bodySmall,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimaryOf(context),
+            const SizedBox(height: 20),
+            Text(
+              'Emergency Trauma Services',
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimaryOf(context),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          _SosOptionTile(
-            icon: Icons.local_hospital_rounded,
-            title: 'National Emergency Number (112)',
-            subtitle: 'Police, Fire, Medical & Disaster — All-in-One',
-            onTap: () => _callHotline('112'),
-          ),
-          const SizedBox(height: 8),
-          _SosOptionTile(
-            icon: Icons.bloodtype_rounded,
-            title: 'Health Advisory Helpline (104)',
-            subtitle: '24×7 Medical Consultation & Health Info',
-            onTap: () => _callHotline('104'),
-          ),
-        ],
+            const SizedBox(height: 8),
+            _SosOptionTile(
+              icon: Icons.local_hospital_rounded,
+              title: 'National Emergency Number (112)',
+              subtitle: 'Police, Fire, Medical & Disaster — All-in-One',
+              onTap: () => _callHotline('112'),
+            ),
+            const SizedBox(height: 8),
+            _SosOptionTile(
+              icon: Icons.bloodtype_rounded,
+              title: 'Health Advisory Helpline (104)',
+              subtitle: '24×7 Medical Consultation & Health Info',
+              onTap: () => _callHotline('104'),
+            ),
+          ],
         ),
       ),
     );
@@ -267,7 +271,8 @@ class _SosOptionTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.call_rounded, color: AppColors.textSecondaryOf(context), size: 18),
+              Icon(Icons.call_rounded,
+                  color: AppColors.textSecondaryOf(context), size: 18),
             ],
           ),
         ),

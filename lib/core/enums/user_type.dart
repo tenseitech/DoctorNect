@@ -8,4 +8,3 @@ extension UserTypeX on UserType {
   bool get isAmbulance => this == UserType.ambulance;
   bool get isSuperAdmin => this == UserType.superAdmin;
 }
-

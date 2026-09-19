@@ -24,7 +24,8 @@ class QuickActionChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: compact ? 9 : 11, horizontal: compact ? 2 : 4),
+        padding: EdgeInsets.symmetric(
+            vertical: compact ? 9 : 11, horizontal: compact ? 2 : 4),
         decoration: BoxDecoration(
           color: AppColors.cardBgOf(context),
           borderRadius: BorderRadius.circular(AppConstants.cardRadius),
@@ -39,7 +40,8 @@ class QuickActionChip extends StatelessWidget {
                 color: AppColors.doctorBlue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: AppColors.doctorBlue, size: compact ? 20 : 22),
+              child: Icon(icon,
+                  color: AppColors.doctorBlue, size: compact ? 20 : 22),
             ),
             SizedBox(height: compact ? 6 : 8),
             Text(

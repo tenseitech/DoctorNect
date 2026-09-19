@@ -11,7 +11,9 @@ abstract final class PatientLabAgeGuard {
 
   static String selfAgeLabel() {
     final profile = PatientProfileMock.profile;
-    final name = profile.name.isNotEmpty ? profile.name : PatientSession.loggedInPatientName;
+    final name = profile.name.isNotEmpty
+        ? profile.name
+        : PatientSession.loggedInPatientName;
     if (isValidAge(profile.age)) return '$name (${profile.age}y)';
     return '$name (age not set)';
   }

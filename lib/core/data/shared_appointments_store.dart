@@ -1,4 +1,4 @@
-﻿import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/firestore_service.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -97,14 +97,18 @@ class DoctorNectAppointmentRecord {
   final String? clinicalNotes;
   final String? contactNumber;
   final List<String> chiefComplaints;
+
   /// e.g. `walkin` for clinic walk-ins; null for app bookings.
   final String? source;
   final List<String> symptoms;
   final List<String> observations;
+
   /// Name of the account holder who made the booking (set only for family member appointments).
   final String? bookedByName;
+
   /// Relation to the account holder, e.g. Wife, Brother, Son.
   final String? patientRelation;
+
   /// Why this patient shares a slot with others (Emergency / custom reason).
   final String? slotShareReason;
   final bool wasRescheduled;
@@ -255,11 +259,13 @@ class SharedAppointmentsStore extends ChangeNotifier {
   Future<void> _persist(
     DoctorNectAppointmentRecord record, {
     String? patientId,
-    bool rethrowOnError = false, // FIXED: let booking flows surface write failures instead of only logging
+    bool rethrowOnError =
+        false, // FIXED: let booking flows surface write failures instead of only logging
   }) async {
     if (!FirebaseBootstrap.isReady) {
       if (rethrowOnError) {
-        throw StateError('Could not save appointment. Firebase is not available.');
+        throw StateError(
+            'Could not save appointment. Firebase is not available.');
       }
       return;
     }
@@ -274,7 +280,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('Failed to persist appointment ${record.id}: $e\n$st');
       }
-      if (rethrowOnError) rethrow; // FIXED: surface the error to the caller (e.g. booking flow)
+      if (rethrowOnError)
+        rethrow; // FIXED: surface the error to the caller (e.g. booking flow)
     }
   }
 
@@ -298,7 +305,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
 
   // FIXED: derive the appointment time from the slot label (e.g. "04:30 PM") instead of ignoring it
   static DateTime _dateTimeForSlot(DateTime date, String slotLabel) {
-    final match = RegExp(r'(\d{1,2}):(\d{2})\s*([AaPp][Mm])?').firstMatch(slotLabel);
+    final match =
+        RegExp(r'(\d{1,2}):(\d{2})\s*([AaPp][Mm])?').firstMatch(slotLabel);
     if (match != null) {
       var hour = int.tryParse(match.group(1)!) ?? 0;
       final minute = int.tryParse(match.group(2)!) ?? 0;
@@ -307,23 +315,28 @@ class SharedAppointmentsStore extends ChangeNotifier {
       if (mer == 'AM' && hour == 12) hour = 0;
       return DateTime(date.year, date.month, date.day, hour, minute);
     }
-    return DateTime(date.year, date.month, date.day, date.hour > 0 ? date.hour : 10, date.minute);
+    return DateTime(date.year, date.month, date.day,
+        date.hour > 0 ? date.hour : 10, date.minute);
   }
 
   /// Single source of truth for reschedule: derive [dateTime] from [newDate] + [slotLabel].
   /// Throws rather than saving when the slot label cannot be parsed into a concrete time.
-  static DateTime _resolveRescheduleDateTime(DateTime newDate, String slotLabel) {
+  static DateTime _resolveRescheduleDateTime(
+      DateTime newDate, String slotLabel) {
     final trimmed = slotLabel.trim();
     if (trimmed.isEmpty) {
-      throw ArgumentError.value(slotLabel, 'slotLabel', 'Cannot reschedule without a slot label.');
+      throw ArgumentError.value(
+          slotLabel, 'slotLabel', 'Cannot reschedule without a slot label.');
     }
     if (!RegExp(r'(\d{1,2}):(\d{2})\s*([AaPp][Mm])?').hasMatch(trimmed)) {
-      throw StateError('Could not parse slot label "$trimmed" into a valid appointment time.');
+      throw StateError(
+          'Could not parse slot label "$trimmed" into a valid appointment time.');
     }
     return _dateTimeForSlot(newDate, trimmed);
   }
 
-  static void _assertSlotDateTimeConsistent(DateTime dateTime, String slotLabel) {
+  static void _assertSlotDateTimeConsistent(
+      DateTime dateTime, String slotLabel) {
     final expected = _dateTimeForSlot(
       DateTime(dateTime.year, dateTime.month, dateTime.day),
       slotLabel.trim(),
@@ -370,13 +383,12 @@ class SharedAppointmentsStore extends ChangeNotifier {
   List<PatientAppointment> patientAppointments() =>
       _records.map(_toPatient).toList();
 
-  List<Appointment> doctorAppointments(String doctorId) => _records
-      .where((r) => r.doctorId == doctorId)
-      .map(_toDoctor)
-      .toList()
-    ..sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
+  List<Appointment> doctorAppointments(String doctorId) =>
+      _records.where((r) => r.doctorId == doctorId).map(_toDoctor).toList()
+        ..sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
 
-  List<Appointment> appointmentsForDoctorOnDate(String doctorId, DateTime date) {
+  List<Appointment> appointmentsForDoctorOnDate(
+      String doctorId, DateTime date) {
     return _records
         .where((r) =>
             r.doctorId == doctorId &&
@@ -442,7 +454,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     final list = _records
         .where((r) {
           if (r.doctorId != doctorId || r.isCancelled) return false;
-          final apptDay = DateTime(r.dateTime.year, r.dateTime.month, r.dateTime.day);
+          final apptDay =
+              DateTime(r.dateTime.year, r.dateTime.month, r.dateTime.day);
           if (!apptDay.isAfter(todayStart)) return false;
           return r.doctorStatus == AppointmentStatus.pendingRequest ||
               r.doctorStatus == AppointmentStatus.waiting ||
@@ -504,25 +517,29 @@ class SharedAppointmentsStore extends ChangeNotifier {
     String? patientRelation,
     String? slotShareReason,
   }) async {
-    if (bookingCountForSlot(doctorId, date, slotLabel) >= kMaxPatientsPerTimeSlot) {
+    if (bookingCountForSlot(doctorId, date, slotLabel) >=
+        kMaxPatientsPerTimeSlot) {
       return false;
     }
     if (isSlotTimeInPast(date, slotLabel)) {
       return false;
     }
     final id = 'pa${DateTime.now().millisecondsSinceEpoch}';
-    final dateTime = _dateTimeForSlot(date, slotLabel); // FIXED: apply the booked slot's time instead of ignoring slotLabel
+    final dateTime = _dateTimeForSlot(date,
+        slotLabel); // FIXED: apply the booked slot's time instead of ignoring slotLabel
     final autoAccept = DoctorProfileStore.autoAcceptForDoctor(doctorId);
-    final patientStatus =
-        autoAccept ? PatientBookingStatus.confirmed : PatientBookingStatus.pending;
-    final doctorStatus =
-        autoAccept ? AppointmentStatus.confirmed : AppointmentStatus.pendingRequest;
+    final patientStatus = autoAccept
+        ? PatientBookingStatus.confirmed
+        : PatientBookingStatus.pending;
+    final doctorStatus = autoAccept
+        ? AppointmentStatus.confirmed
+        : AppointmentStatus.pendingRequest;
     final patientId = PatientSession.loggedInPatientId;
     final visitType = _isReturningPatient(
-          patientId: patientId,
-          patientName: patientName,
-          doctorId: doctorId,
-        )
+      patientId: patientId,
+      patientName: patientName,
+      doctorId: doctorId,
+    )
         ? AppointmentType.followUp
         : AppointmentType.newVisit;
 
@@ -559,7 +576,9 @@ class SharedAppointmentsStore extends ChangeNotifier {
     );
     notifyListeners();
     try {
-      await _persist(_records.last, patientId: patientId, rethrowOnError: true); // FIXED: surface write failure
+      await _persist(_records.last,
+          patientId: patientId,
+          rethrowOnError: true); // FIXED: surface write failure
     } catch (e) {
       // FIXED: roll back the optimistic record so we never show a confirmed booking that wasn't saved
       _records.removeWhere((r) => r.id == id);
@@ -632,10 +651,10 @@ class SharedAppointmentsStore extends ChangeNotifier {
     final tokenNumber = nextTokenNumberForDoctorOnDate(doctorId, day);
 
     final visitType = _isReturningPatient(
-          patientId: patientId,
-          patientName: patientName,
-          doctorId: doctorId,
-        )
+      patientId: patientId,
+      patientName: patientName,
+      doctorId: doctorId,
+    )
         ? AppointmentType.followUp
         : AppointmentType.newVisit;
 
@@ -654,7 +673,9 @@ class SharedAppointmentsStore extends ChangeNotifier {
       visitType: visitType,
       patientStatus: PatientBookingStatus.confirmed,
       doctorStatus: AppointmentStatus.confirmed,
-      contactNumber: contactNumber?.trim().isNotEmpty == true ? contactNumber!.trim() : null,
+      contactNumber: contactNumber?.trim().isNotEmpty == true
+          ? contactNumber!.trim()
+          : null,
       chiefComplaints: _normalizeTags(chiefComplaints),
       patientId: patientId,
       source: 'walkin',
@@ -679,7 +700,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     if (old.doctorStatus == AppointmentStatus.completed ||
         old.doctorStatus == AppointmentStatus.inProgress ||
         old.doctorStatus == AppointmentStatus.noShow) {
-      throw StateError('Cannot reschedule an appointment that is already ${old.doctorStatus.name}.');
+      throw StateError(
+          'Cannot reschedule an appointment that is already ${old.doctorStatus.name}.');
     }
 
     final trimmedSlot = newSlotLabel.trim();
@@ -723,7 +745,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     );
   }
 
-  Future<void> cancelByPatient(String recordId, {required String reason}) async {
+  Future<void> cancelByPatient(String recordId,
+      {required String reason}) async {
     final i = _records.indexWhere((r) => r.id == recordId);
     if (i < 0) return;
     final old = _records[i];
@@ -731,7 +754,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     if (old.doctorStatus == AppointmentStatus.completed ||
         old.doctorStatus == AppointmentStatus.inProgress ||
         old.doctorStatus == AppointmentStatus.noShow) {
-      throw StateError('Cannot cancel an appointment that is already ${old.doctorStatus.name}.');
+      throw StateError(
+          'Cannot cancel an appointment that is already ${old.doctorStatus.name}.');
     }
 
     await _updateRecordAtIndex(
@@ -785,11 +809,13 @@ class SharedAppointmentsStore extends ChangeNotifier {
     ChimeSoundService.playAcceptChime();
   }
 
-  Future<void> declineAppointment(String recordId, {String reason = 'Declined by doctor'}) {
+  Future<void> declineAppointment(String recordId,
+      {String reason = 'Declined by doctor'}) {
     return cancelByDoctor(recordId, reason: reason);
   }
 
-  Future<void> updateDoctorStatus(String recordId, AppointmentStatus status) async {
+  Future<void> updateDoctorStatus(
+      String recordId, AppointmentStatus status) async {
     final i = _records.indexWhere((r) => r.id == recordId);
     if (i < 0) return;
     final patientStatus = switch (status) {
@@ -810,7 +836,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
   }
 
   void markPrescriptionForRecord(String recordId) {
-    unawaited(saveConsultationOutcome(recordId: recordId, hasPrescription: true));
+    unawaited(
+        saveConsultationOutcome(recordId: recordId, hasPrescription: true));
   }
 
   Future<void> saveChiefComplaints({
@@ -819,7 +846,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
   }) async {
     final i = _records.indexWhere((r) => r.id == recordId);
     if (i < 0) return;
-    _records[i] = _records[i].copyWith(chiefComplaints: _normalizeTags(chiefComplaints));
+    _records[i] =
+        _records[i].copyWith(chiefComplaints: _normalizeTags(chiefComplaints));
     notifyListeners();
     await _persist(_records[i]);
   }
@@ -830,7 +858,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
   }) async {
     final i = _records.indexWhere((r) => r.id == recordId);
     if (i < 0) return;
-    _records[i] = _records[i].copyWith(observations: _normalizeTags(observations));
+    _records[i] =
+        _records[i].copyWith(observations: _normalizeTags(observations));
     notifyListeners();
     await _persist(_records[i]);
   }
@@ -889,7 +918,9 @@ class SharedAppointmentsStore extends ChangeNotifier {
     final trimmedDiagnosis = diagnosis?.trim();
     _records[i] = old.copyWith(
       diagnosis: trimmedDiagnosis?.isNotEmpty == true ? trimmedDiagnosis : null,
-      clinicalNotes: clinicalNotes?.trim().isNotEmpty == true ? clinicalNotes!.trim() : null,
+      clinicalNotes: clinicalNotes?.trim().isNotEmpty == true
+          ? clinicalNotes!.trim()
+          : null,
       hasPrescription: hasPrescription,
       hasReport: hasReport,
       doctorStatus: markCompleted ? AppointmentStatus.completed : null,
@@ -1003,7 +1034,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
       dateTime: r.dateTime,
       tokenNumber: r.tokenNumber,
       status: r.patientStatus,
-      slotLabel: r.slotLabel, // FIXED: pass the booked slot label through to the UI
+      slotLabel:
+          r.slotLabel, // FIXED: pass the booked slot label through to the UI
       clinicName: r.clinicName,
       clinicAddress: r.clinicAddress,
       mapsUrl: r.mapsUrl,

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -77,7 +77,9 @@ class AppointmentCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 13, color: AppColors.textSecondaryOf(context)),
+                        Icon(Icons.calendar_today,
+                            size: 13,
+                            color: AppColors.textSecondaryOf(context)),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -108,7 +110,8 @@ class AppointmentCard extends StatelessWidget {
                           appointment.patientName.trim().toLowerCase()) ...[
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
@@ -126,7 +129,8 @@ class AppointmentCard extends StatelessWidget {
                   if (appointment.slotShareReason != null &&
                       appointment.slotShareReason!.trim().isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    SharedSlotBadge(slotShareReason: appointment.slotShareReason),
+                    SharedSlotBadge(
+                        slotShareReason: appointment.slotShareReason),
                   ],
                 ],
               ),
@@ -138,7 +142,9 @@ class AppointmentCard extends StatelessWidget {
             runSpacing: 6,
             children: [
               StatusBadge(
-                label: appointment.type == AppointmentType.newVisit ? 'New' : 'Follow-up',
+                label: appointment.type == AppointmentType.newVisit
+                    ? 'New'
+                    : 'Follow-up',
                 color: appointment.type == AppointmentType.newVisit
                     ? AppColors.doctorBlue
                     : const Color(0xFF7C3AED),
@@ -150,7 +156,8 @@ class AppointmentCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.notes, size: 14, color: AppColors.textSecondaryOf(context)),
+                Icon(Icons.notes,
+                    size: 14, color: AppColors.textSecondaryOf(context)),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(

@@ -34,7 +34,8 @@ abstract final class WorldLocations {
     return [value, ...base];
   }
 
-  static List<String> citiesWithLegacy(String country, String state, String? legacy) {
+  static List<String> citiesWithLegacy(
+      String country, String state, String? legacy) {
     final base = citiesFor(country, state);
     final value = legacy?.trim();
     if (value == null || value.isEmpty || base.contains(value)) return base;

@@ -40,7 +40,8 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
 
     final groups = <String, List<LabNotification>>{};
     for (final item in items) {
-      final day = DateTime(item.createdAt.year, item.createdAt.month, item.createdAt.day);
+      final day = DateTime(
+          item.createdAt.year, item.createdAt.month, item.createdAt.day);
       final label = day == today
           ? 'Today'
           : day == yesterday
@@ -59,7 +60,8 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
       listenable: LabNotificationStore.instance,
       builder: (context, _) {
         final allItems = LabNotificationStore.instance.forLab(labId);
-        final unreadCount = LabNotificationStore.instance.unreadCountForLab(labId);
+        final unreadCount =
+            LabNotificationStore.instance.unreadCountForLab(labId);
         final items = _filtered(allItems);
         final groups = _groupByDay(items);
 
@@ -76,14 +78,18 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                       children: [
                         Text(
                           'Notifications',
-                          style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineLarge,
+                              fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           unreadCount > 0
                               ? '$unreadCount unread · connection, orders & bookings'
                               : 'Connection updates, new orders, and booking alerts',
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
                       ],
                     ),
@@ -97,11 +103,14 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _labPurple,
                         side: const BorderSide(color: _labPurple),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
                       ),
                       child: Text(
                         'Mark all read',
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
                 ],
@@ -122,7 +131,8 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                           label: 'All',
                           count: allItems.length,
                           selected: _filter == _LabNotifFilter.all,
-                          onTap: () => setState(() => _filter = _LabNotifFilter.all),
+                          onTap: () =>
+                              setState(() => _filter = _LabNotifFilter.all),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -131,7 +141,8 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                           label: 'Unread',
                           count: unreadCount,
                           selected: _filter == _LabNotifFilter.unread,
-                          onTap: () => setState(() => _filter = _LabNotifFilter.unread),
+                          onTap: () =>
+                              setState(() => _filter = _LabNotifFilter.unread),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -140,7 +151,8 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                           label: 'Read',
                           count: allItems.length - unreadCount,
                           selected: _filter == _LabNotifFilter.read,
-                          onTap: () => setState(() => _filter = _LabNotifFilter.read),
+                          onTap: () =>
+                              setState(() => _filter = _LabNotifFilter.read),
                         ),
                       ),
                     ],
@@ -155,7 +167,8 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                         children: [
                           for (final entry in groups.entries) ...[
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 10, top: 4),
+                              padding:
+                                  const EdgeInsets.only(bottom: 10, top: 4),
                               child: Text(
                                 entry.key,
                                 style: GoogleFonts.inter(
@@ -170,13 +183,15 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                               if (i > 0) const SizedBox(height: 10),
                               _LabNotificationCard(
                                 notification: entry.value[i],
-                                onTap: () =>
-                                    LabNotificationStore.instance.markRead(entry.value[i].id),
+                                onTap: () => LabNotificationStore.instance
+                                    .markRead(entry.value[i].id),
                               ),
                             ],
                             const SizedBox(height: 8),
                           ],
-                          SizedBox(height: ResponsiveLayout.isCompact(context) ? 8 : 16),
+                          SizedBox(
+                              height:
+                                  ResponsiveLayout.isCompact(context) ? 8 : 16),
                         ],
                       ),
               ),
@@ -227,13 +242,16 @@ class _FilterPill extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
-                  color: selected ? AppColors.surfaceOf(context) : AppColors.textSecondaryOf(context),
+                  color: selected
+                      ? AppColors.surfaceOf(context)
+                      : AppColors.textSecondaryOf(context),
                 ),
               ),
               if (count > 0) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: selected
                         ? AppColors.white.withValues(alpha: 0.22)
@@ -245,7 +263,8 @@ class _FilterPill extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w700,
-                      color: selected ? AppColors.surfaceOf(context) : _labPurple,
+                      color:
+                          selected ? AppColors.surfaceOf(context) : _labPurple,
                     ),
                   ),
                 ),
@@ -327,8 +346,9 @@ class _LabNotificationCard extends StatelessWidget {
                               notification.title,
                               style: GoogleFonts.inter(
                                 fontSize: AppTypography.bodyMedium,
-                                fontWeight:
-                                    notification.isRead ? FontWeight.w600 : FontWeight.w700,
+                                fontWeight: notification.isRead
+                                    ? FontWeight.w600
+                                    : FontWeight.w700,
                                 height: 1.25,
                               ),
                             ),
@@ -358,7 +378,8 @@ class _LabNotificationCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: style.badgeColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
@@ -521,7 +542,9 @@ class _EmptyNotifications extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(

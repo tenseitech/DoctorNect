@@ -28,7 +28,8 @@ class SlotTimeGrid extends StatelessWidget {
       builder: (context, constraints) {
         final crossAxisCount = _columnCount(constraints.maxWidth);
         final itemWidth =
-            (constraints.maxWidth - spacing * (crossAxisCount - 1)) / crossAxisCount;
+            (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+                crossAxisCount;
 
         final rows = <Widget>[];
         for (var i = 0; i < slots.length; i += crossAxisCount) {
@@ -38,7 +39,9 @@ class SlotTimeGrid extends StatelessWidget {
 
           final chunk = slots.sublist(
             i,
-            i + crossAxisCount > slots.length ? slots.length : i + crossAxisCount,
+            i + crossAxisCount > slots.length
+                ? slots.length
+                : i + crossAxisCount,
           );
 
           rows.add(

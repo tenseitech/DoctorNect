@@ -46,7 +46,8 @@ class _SubmitDoctorReviewBody extends StatefulWidget {
   final bool isEdit;
 
   @override
-  State<_SubmitDoctorReviewBody> createState() => _SubmitDoctorReviewBodyState();
+  State<_SubmitDoctorReviewBody> createState() =>
+      _SubmitDoctorReviewBodyState();
 }
 
 class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
@@ -60,7 +61,9 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
     _rating = widget.initialRating ?? 0;
     final initialComment = widget.initialComment?.trim();
     _commentController = TextEditingController(
-      text: initialComment == null || initialComment == 'No written comment.' ? '' : initialComment,
+      text: initialComment == null || initialComment == 'No written comment.'
+          ? ''
+          : initialComment,
     );
   }
 
@@ -79,11 +82,12 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
       Navigator.pop(context, true);
     } else {
       setState(() => _submitting = false);
-      AppToast.info(context, 
-            widget.isEdit
-                ? 'Could not update review. Edits are allowed within 48 hours.'
-                : 'Could not submit review. Please try again.',
-          );
+      AppToast.info(
+        context,
+        widget.isEdit
+            ? 'Could not update review. Edits are allowed within 48 hours.'
+            : 'Could not submit review. Please try again.',
+      );
     }
   }
 
@@ -98,15 +102,21 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            widget.isEdit ? 'Edit your review' : 'Rate Dr. ${widget.doctorName}',
-            style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700),
+            widget.isEdit
+                ? 'Edit your review'
+                : 'Rate Dr. ${widget.doctorName}',
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.headlineMedium,
+                fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
             widget.isEdit
                 ? 'You can edit this review within 48 hours of posting.'
                 : 'How was your visit?',
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 16),
           Row(
@@ -116,7 +126,9 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
               final filled = starIndex <= _rating;
               return IconButton(
                 tooltip: '$starIndex star${starIndex == 1 ? '' : 's'}',
-                onPressed: _submitting ? null : () => setState(() => _rating = starIndex),
+                onPressed: _submitting
+                    ? null
+                    : () => setState(() => _rating = starIndex),
                 icon: Icon(
                   filled ? Icons.star_rounded : Icons.star_outline_rounded,
                   size: 40,
@@ -134,7 +146,8 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText: 'Share your experience (optional)',
-              hintStyle: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+              hintStyle:
+                  GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
               border: const OutlineInputBorder(),
               alignLabelWithHint: true,
             ),
@@ -151,7 +164,8 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
                 ? const SizedBox(
                     height: 22,
                     width: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.white),
                   )
                 : Text(widget.isEdit ? 'Save changes' : 'Submit'),
           ),

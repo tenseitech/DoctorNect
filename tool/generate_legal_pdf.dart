@@ -116,7 +116,9 @@ Future<void> main() async {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Medibond', style: subtitleStyle.copyWith(fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Medibond',
+                      style: subtitleStyle.copyWith(
+                          fontWeight: pw.FontWeight.bold)),
                   pw.Text(
                     'Page ${context.pageNumber}',
                     style: subtitleStyle,
@@ -131,7 +133,8 @@ Future<void> main() async {
           footer: (context) => pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text(DoctorNectLegalContent.lastUpdated, style: subtitleStyle.copyWith(fontSize: 9)),
+              pw.Text(DoctorNectLegalContent.lastUpdated,
+                  style: subtitleStyle.copyWith(fontSize: 9)),
               pw.Text(entry.$2, style: subtitleStyle.copyWith(fontSize: 9)),
             ],
           ),
@@ -175,5 +178,6 @@ Future<void> main() async {
   await outFile.writeAsBytes(bytes);
 
   // ignore: avoid_print
-  print('Generated: ${outFile.absolute.path} (${(bytes.length / 1024).toStringAsFixed(1)} KB)');
+  print(
+      'Generated: ${outFile.absolute.path} (${(bytes.length / 1024).toStringAsFixed(1)} KB)');
 }

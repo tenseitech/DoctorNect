@@ -21,13 +21,15 @@ class DoctorStorePatientsScreen extends StatelessWidget {
       d.status == PharmacyDeliveryStatus.dispensed ||
       d.status == PharmacyDeliveryStatus.partiallyDispensed;
 
-  static String _dispenseLabel(PharmacyPrescriptionDelivery d) => switch (d.status) {
+  static String _dispenseLabel(PharmacyPrescriptionDelivery d) =>
+      switch (d.status) {
         PharmacyDeliveryStatus.dispensed => 'Yes',
         PharmacyDeliveryStatus.partiallyDispensed => 'Partial',
         PharmacyDeliveryStatus.viewed || PharmacyDeliveryStatus.sent => 'No',
       };
 
-  static Color? _dispenseColor(PharmacyPrescriptionDelivery d) => switch (d.status) {
+  static Color? _dispenseColor(PharmacyPrescriptionDelivery d) =>
+      switch (d.status) {
         PharmacyDeliveryStatus.dispensed => AppColors.pharmacyGreen,
         PharmacyDeliveryStatus.partiallyDispensed => const Color(0xFFEA580C),
         _ => AppColors.textSecondary,
@@ -40,7 +42,8 @@ class DoctorStorePatientsScreen extends StatelessWidget {
     if (substituted.isEmpty) return 'No';
 
     final names = substituted
-        .map((l) => l.substituteName.isNotEmpty ? l.substituteName : l.medicineName)
+        .map((l) =>
+            l.substituteName.isNotEmpty ? l.substituteName : l.medicineName)
         .join(', ');
     return 'Yes — $names';
   }
@@ -52,7 +55,8 @@ class DoctorStorePatientsScreen extends StatelessWidget {
       sectionTitle: 'Patient prescriptions',
       accentColor: AppColors.pharmacyGreen,
       listenable: PharmacyPrescriptionStore.instance,
-      allItems: () => PharmacyPrescriptionStore.instance.forStoreAndDoctor(storeId, doctorId),
+      allItems: () => PharmacyPrescriptionStore.instance
+          .forStoreAndDoctor(storeId, doctorId),
       itemDate: (d) => d.dispensedAt ?? d.sentAt,
       searchPredicate: (d, q) {
         final patient = d.draft.patient.patientName.toLowerCase();
@@ -64,7 +68,13 @@ class DoctorStorePatientsScreen extends StatelessWidget {
       completedStatusLabel: 'dispensed',
       pendingStatusLabel: 'pending',
       emptyAllMessage: 'No prescriptions sent to this pharmacy yet.',
-      tableHeaders: const ['Date', 'Patient', 'Dispensed', 'Dispense note', 'Substitute'],
+      tableHeaders: const [
+        'Date',
+        'Patient',
+        'Dispensed',
+        'Dispense note',
+        'Substitute'
+      ],
       columnWidths: const {
         0: FixedColumnWidth(108),
         1: FixedColumnWidth(130),
@@ -75,8 +85,10 @@ class DoctorStorePatientsScreen extends StatelessWidget {
       rowBuilder: (context, d, dateFormat) => [
         DocPartnerTableBodyCell(dateFormat.format(d.dispensedAt ?? d.sentAt)),
         DocPartnerTableBodyCell(d.draft.patient.patientName, bold: true),
-        DocPartnerTableBodyCell(_dispenseLabel(d), color: _dispenseColor(d), bold: true),
-        DocPartnerTableBodyCell(d.dispensingNotes.isEmpty ? '—' : d.dispensingNotes),
+        DocPartnerTableBodyCell(_dispenseLabel(d),
+            color: _dispenseColor(d), bold: true),
+        DocPartnerTableBodyCell(
+            d.dispensingNotes.isEmpty ? '—' : d.dispensingNotes),
         DocPartnerTableBodyCell(_substituteLabel(d)),
       ],
     );

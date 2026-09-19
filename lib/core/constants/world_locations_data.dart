@@ -12,7 +12,12 @@ abstract final class WorldLocationsData {
       'Victoria': ['Melbourne', 'Geelong', 'Ballarat', 'Bendigo'],
       'Queensland': ['Brisbane', 'Gold Coast', 'Townsville', 'Cairns'],
       'Western Australia': ['Perth', 'Bunbury', 'Geraldton', 'Albany'],
-      'South Australia': ['Adelaide', 'Mount Gambier', 'Whyalla', 'Murray Bridge'],
+      'South Australia': [
+        'Adelaide',
+        'Mount Gambier',
+        'Whyalla',
+        'Murray Bridge'
+      ],
       'Tasmania': ['Hobart', 'Launceston', 'Devonport', 'Burnie'],
       'Australian Capital Territory': ['Canberra', 'Belconnen', 'Tuggeranong'],
       'Northern Territory': ['Darwin', 'Alice Springs', 'Palmerston'],
@@ -52,9 +57,24 @@ abstract final class WorldLocationsData {
       'Shandong': ['Jinan', 'Qingdao', 'Yantai', 'Weifang'],
     },
     'France': {
-      'Ile-de-France': ['Paris', 'Boulogne-Billancourt', 'Saint-Denis', 'Versailles'],
-      "Provence-Alpes-Cote d'Azur": ['Marseille', 'Nice', 'Toulon', 'Aix-en-Provence'],
-      'Auvergne-Rhone-Alpes': ['Lyon', 'Grenoble', 'Saint-Etienne', 'Clermont-Ferrand'],
+      'Ile-de-France': [
+        'Paris',
+        'Boulogne-Billancourt',
+        'Saint-Denis',
+        'Versailles'
+      ],
+      "Provence-Alpes-Cote d'Azur": [
+        'Marseille',
+        'Nice',
+        'Toulon',
+        'Aix-en-Provence'
+      ],
+      'Auvergne-Rhone-Alpes': [
+        'Lyon',
+        'Grenoble',
+        'Saint-Etienne',
+        'Clermont-Ferrand'
+      ],
       'Occitanie': ['Toulouse', 'Montpellier', 'Nimes', 'Perpignan'],
       'Nouvelle-Aquitaine': ['Bordeaux', 'Limoges', 'Poitiers', 'La Rochelle'],
       'Hauts-de-France': ['Lille', 'Amiens', 'Roubaix', 'Dunkerque'],
@@ -62,13 +82,23 @@ abstract final class WorldLocationsData {
     'Germany': {
       'Bavaria': ['Munich', 'Nuremberg', 'Augsburg', 'Regensburg'],
       'North Rhine-Westphalia': ['Cologne', 'Dusseldorf', 'Dortmund', 'Essen'],
-      'Baden-Wurttemberg': ['Stuttgart', 'Mannheim', 'Karlsruhe', 'Freiburg im Breisgau'],
+      'Baden-Wurttemberg': [
+        'Stuttgart',
+        'Mannheim',
+        'Karlsruhe',
+        'Freiburg im Breisgau'
+      ],
       'Hesse': ['Frankfurt', 'Wiesbaden', 'Darmstadt', 'Kassel'],
       'Lower Saxony': ['Hanover', 'Braunschweig', 'Osnabruck', 'Oldenburg'],
       'Berlin': ['Berlin', 'Spandau', 'Pankow', 'Neukolln'],
     },
     'Indonesia': {
-      'Jakarta Special Capital Region': ['Jakarta', 'South Jakarta', 'West Jakarta', 'East Jakarta'],
+      'Jakarta Special Capital Region': [
+        'Jakarta',
+        'South Jakarta',
+        'West Jakarta',
+        'East Jakarta'
+      ],
       'West Java': ['Bandung', 'Bekasi', 'Bogor', 'Depok'],
       'East Java': ['Surabaya', 'Malang', 'Sidoarjo', 'Kediri'],
       'Central Java': ['Semarang', 'Surakarta', 'Magelang', 'Pekalongan'],
@@ -103,7 +133,12 @@ abstract final class WorldLocationsData {
     'Malaysia': {
       'Selangor': ['Shah Alam', 'Petaling Jaya', 'Subang Jaya', 'Klang'],
       'Johor': ['Johor Bahru', 'Batu Pahat', 'Muar', 'Kluang'],
-      'Penang': ['George Town', 'Butterworth', 'Bukit Mertajam', 'Nibong Tebal'],
+      'Penang': [
+        'George Town',
+        'Butterworth',
+        'Bukit Mertajam',
+        'Nibong Tebal'
+      ],
       'Sabah': ['Kota Kinabalu', 'Sandakan', 'Tawau', 'Lahad Datu'],
       'Sarawak': ['Kuching', 'Miri', 'Sibu', 'Bintulu'],
       'Kuala Lumpur': ['Kuala Lumpur', 'Setapak', 'Cheras', 'Kepong'],
@@ -125,7 +160,12 @@ abstract final class WorldLocationsData {
       'Bagmati Province': ['Kathmandu', 'Lalitpur', 'Bhaktapur', 'Hetauda'],
       'Koshi Province': ['Biratnagar', 'Dharan', 'Itahari', 'Birtamod'],
       'Gandaki Province': ['Pokhara', 'Baglung', 'Gorkha', 'Damauli'],
-      'Lumbini Province': ['Butwal', 'Siddharthanagar', 'Nepalgunj', 'Tulsipur'],
+      'Lumbini Province': [
+        'Butwal',
+        'Siddharthanagar',
+        'Nepalgunj',
+        'Tulsipur'
+      ],
       'Madhesh Province': ['Janakpur', 'Birgunj', 'Kalaiya', 'Rajbiraj'],
       'Karnali Province': ['Birendranagar', 'Jumla', 'Dailekh', 'Salyan'],
     },
@@ -138,7 +178,12 @@ abstract final class WorldLocationsData {
     },
     'New Zealand': {
       'Auckland Region': ['Auckland', 'Manukau', 'North Shore', 'Papakura'],
-      'Wellington Region': ['Wellington', 'Lower Hutt', 'Porirua', 'Upper Hutt'],
+      'Wellington Region': [
+        'Wellington',
+        'Lower Hutt',
+        'Porirua',
+        'Upper Hutt'
+      ],
       'Canterbury Region': ['Christchurch', 'Timaru', 'Ashburton', 'Rangiora'],
       'Waikato Region': ['Hamilton', 'Tauranga', 'Cambridge', 'Te Awamutu'],
       'Otago Region': ['Dunedin', 'Queenstown', 'Oamaru', 'Balclutha'],
@@ -179,16 +224,31 @@ abstract final class WorldLocationsData {
     'South Africa': {
       'Gauteng': ['Johannesburg', 'Pretoria', 'Soweto', 'Midrand'],
       'Western Cape': ['Cape Town', 'Stellenbosch', 'Paarl', 'George'],
-      'KwaZulu-Natal': ['Durban', 'Pietermaritzburg', 'Richards Bay', 'Newcastle'],
+      'KwaZulu-Natal': [
+        'Durban',
+        'Pietermaritzburg',
+        'Richards Bay',
+        'Newcastle'
+      ],
       'Eastern Cape': ['Gqeberha', 'East London', 'Mthatha', 'Bhisho'],
       'Free State': ['Bloemfontein', 'Welkom', 'Bethlehem', 'Sasolburg'],
     },
     'Sri Lanka': {
-      'Western Province': ['Colombo', 'Sri Jayawardenepura Kotte', 'Negombo', 'Moratuwa'],
+      'Western Province': [
+        'Colombo',
+        'Sri Jayawardenepura Kotte',
+        'Negombo',
+        'Moratuwa'
+      ],
       'Central Province': ['Kandy', 'Nuwara Eliya', 'Matale', 'Gampola'],
       'Southern Province': ['Galle', 'Matara', 'Hambantota', 'Tangalle'],
       'Northern Province': ['Jaffna', 'Kilinochchi', 'Mannar', 'Vavuniya'],
-      'North Western Province': ['Kurunegala', 'Puttalam', 'Chilaw', 'Kuliyapitiya'],
+      'North Western Province': [
+        'Kurunegala',
+        'Puttalam',
+        'Chilaw',
+        'Kuliyapitiya'
+      ],
     },
     'Switzerland': {
       'Canton of Zurich': ['Zurich', 'Winterthur', 'Uster', 'Dietikon'],
@@ -199,10 +259,25 @@ abstract final class WorldLocationsData {
     },
     'Thailand': {
       'Bangkok': ['Bangkok', 'Thon Buri', 'Bang Kapi', 'Min Buri'],
-      'Chiang Mai Province': ['Chiang Mai', 'Fang', 'San Kamphaeng', 'Chom Thong'],
-      'Chon Buri Province': ['Pattaya', 'Si Racha', 'Chon Buri', 'Laem Chabang'],
+      'Chiang Mai Province': [
+        'Chiang Mai',
+        'Fang',
+        'San Kamphaeng',
+        'Chom Thong'
+      ],
+      'Chon Buri Province': [
+        'Pattaya',
+        'Si Racha',
+        'Chon Buri',
+        'Laem Chabang'
+      ],
       'Phuket Province': ['Phuket', 'Patong', 'Karon', 'Rawai'],
-      'Nakhon Ratchasima Province': ['Nakhon Ratchasima', 'Pak Chong', 'Sikhio', 'Non Sung'],
+      'Nakhon Ratchasima Province': [
+        'Nakhon Ratchasima',
+        'Pak Chong',
+        'Sikhio',
+        'Non Sung'
+      ],
       'Khon Kaen Province': ['Khon Kaen', 'Chum Phae', 'Phon', 'Nam Phong'],
     },
     'United Arab Emirates': {

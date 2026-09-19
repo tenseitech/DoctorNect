@@ -52,7 +52,8 @@ class MedicineSearchSuggestion {
 class CommunityMedicineRepository {
   CommunityMedicineRepository._();
 
-  static final CommunityMedicineRepository instance = CommunityMedicineRepository._();
+  static final CommunityMedicineRepository instance =
+      CommunityMedicineRepository._();
 
   static const _fetchLimit = 1000;
 
@@ -67,7 +68,8 @@ class CommunityMedicineRepository {
           .collection(FirestorePaths.communityMedicines)
           .orderBy('name')
           .limit(_fetchLimit);
-      final snap = await FirestoreReadHelper.getQuery(query: query, preferCache: true);
+      final snap =
+          await FirestoreReadHelper.getQuery(query: query, preferCache: true);
 
       _cache
         ..clear()
@@ -171,7 +173,9 @@ class CommunityMedicineRepository {
       throw StateError('Internet is required to add a community medicine.');
     }
 
-    final doc = await FirebaseFirestore.instance.collection(FirestorePaths.communityMedicines).add({
+    final doc = await FirebaseFirestore.instance
+        .collection(FirestorePaths.communityMedicines)
+        .add({
       'name': trimmed,
       'nameLower': trimmed.toLowerCase(),
       'dosageUnit': dosageUnit,
@@ -192,7 +196,8 @@ class CommunityMedicineRepository {
     return medicine;
   }
 
-  static CommunityMedicine _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+  static CommunityMedicine _fromDoc(
+      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     return CommunityMedicine(
       id: doc.id,

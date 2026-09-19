@@ -23,11 +23,14 @@ abstract final class UnifiedAuthNavigation {
   }) {
     final mobile = FormValidators.formatFullPhone('+91', mobileDigits);
     final screen = switch (role) {
-      UserType.patient => PatientRegistrationScreen(preVerifiedMobile: mobileDigits),
+      UserType.patient =>
+        PatientRegistrationScreen(preVerifiedMobile: mobileDigits),
       UserType.doctor => DoctorRegistrationScreen(preVerifiedMobile: mobile),
-      UserType.medicalStore => MedicalStoreRegistrationScreen(preVerifiedMobile: mobile),
+      UserType.medicalStore =>
+        MedicalStoreRegistrationScreen(preVerifiedMobile: mobile),
       UserType.lab => LabRegistrationScreen(preVerifiedMobile: mobile),
-      UserType.ambulance => AmbulanceRegistrationScreen(preVerifiedMobile: mobile),
+      UserType.ambulance =>
+        AmbulanceRegistrationScreen(preVerifiedMobile: mobile),
       _ => PatientRegistrationScreen(preVerifiedMobile: mobileDigits),
     };
     Navigator.of(context).pushReplacement(

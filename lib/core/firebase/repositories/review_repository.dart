@@ -44,12 +44,14 @@ class ReviewRepository {
         preferCache: false,
       );
       if (snapshot.docs.isNotEmpty) {
-        return _reviewFromDoc(snapshot.docs.first.id, snapshot.docs.first.data());
+        return _reviewFromDoc(
+            snapshot.docs.first.id, snapshot.docs.first.data());
       }
       return null;
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[ReviewRepository] fetchReviewForPatientAndDoctor error: $e\n$st');
+        debugPrint(
+            '[ReviewRepository] fetchReviewForPatientAndDoctor error: $e\n$st');
       }
       return null;
     }
@@ -83,7 +85,8 @@ class ReviewRepository {
       );
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[ReviewRepository] recalculateDoctorRating failed: $e\n$st');
+        debugPrint(
+            '[ReviewRepository] recalculateDoctorRating failed: $e\n$st');
       }
     }
   }
@@ -109,7 +112,8 @@ class ReviewRepository {
 
     final firestore = FirebaseFirestore.instance;
     final reviewId = existingReview?.id ?? '${patientId}_$doctorId';
-    final reviewRef = firestore.collection(FirestorePaths.reviews).doc(reviewId);
+    final reviewRef =
+        firestore.collection(FirestorePaths.reviews).doc(reviewId);
 
     final reviewData = <String, dynamic>{
       'patientId': patientId,
@@ -119,7 +123,9 @@ class ReviewRepository {
       'comment': comment.isNotEmpty ? comment : 'No written comment.',
       if (patientName.isNotEmpty) 'patientName': patientName,
       'helpfulCount': existingReview?.helpfulCount ?? 0,
-      'createdAt': existingReview?.date != null ? Timestamp.fromDate(existingReview!.date) : FieldValue.serverTimestamp(),
+      'createdAt': existingReview?.date != null
+          ? Timestamp.fromDate(existingReview!.date)
+          : FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
@@ -128,7 +134,8 @@ class ReviewRepository {
       unawaited(recalculateDoctorRating(doctorId));
     } on FirebaseException catch (e) {
       if (kDebugMode) {
-        debugPrint('[ReviewRepository] submit failed (${e.code}): ${e.message}');
+        debugPrint(
+            '[ReviewRepository] submit failed (${e.code}): ${e.message}');
       }
       return null;
     } catch (e, st) {
@@ -151,7 +158,8 @@ class ReviewRepository {
     if (rating < 1 || rating > 5) return false;
 
     final firestore = FirebaseFirestore.instance;
-    final reviewRef = firestore.collection(FirestorePaths.reviews).doc(reviewId);
+    final reviewRef =
+        firestore.collection(FirestorePaths.reviews).doc(reviewId);
 
     try {
       final reviewSnap = await reviewRef.get();
@@ -175,7 +183,8 @@ class ReviewRepository {
 
       return true;
     } catch (e, st) {
-      if (kDebugMode) debugPrint('[ReviewRepository] updateReview failed: $e\n$st');
+      if (kDebugMode)
+        debugPrint('[ReviewRepository] updateReview failed: $e\n$st');
       return false;
     }
   }
@@ -184,7 +193,9 @@ class ReviewRepository {
     required String appointmentId,
     required String patientId,
   }) async {
-    if (!FirebaseBootstrap.isReady || appointmentId.isEmpty || patientId.isEmpty) {
+    if (!FirebaseBootstrap.isReady ||
+        appointmentId.isEmpty ||
+        patientId.isEmpty) {
       return null;
     }
 
@@ -201,7 +212,9 @@ class ReviewRepository {
       if (snapshot.docs.isEmpty) return null;
       return snapshot.docs.first.id;
     } catch (e, st) {
-      if (kDebugMode) debugPrint('[ReviewRepository] findReviewIdForAppointment failed: $e\n$st');
+      if (kDebugMode)
+        debugPrint(
+            '[ReviewRepository] findReviewIdForAppointment failed: $e\n$st');
       return null;
     }
   }
@@ -222,7 +235,8 @@ class ReviewRepository {
     }
   }
 
-  Future<List<PatientDoctorReview>> fetchForDoctor(String doctorId, {int limit = 50}) async {
+  Future<List<PatientDoctorReview>> fetchForDoctor(String doctorId,
+      {int limit = 50}) async {
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return const [];
 
     try {
@@ -234,7 +248,9 @@ class ReviewRepository {
         preferCache: true,
       );
 
-      final reviews = snapshot.docs.map((doc) => _reviewFromPublicDoc(doc.id, doc.data())).toList()
+      final reviews = snapshot.docs
+          .map((doc) => _reviewFromPublicDoc(doc.id, doc.data()))
+          .toList()
         ..sort((a, b) => b.date.compareTo(a.date));
       return reviews;
     } catch (_) {
@@ -242,7 +258,8 @@ class ReviewRepository {
     }
   }
 
-  PatientDoctorReview? reviewFromSnapshot(DocumentSnapshot<Map<String, dynamic>> doc) {
+  PatientDoctorReview? reviewFromSnapshot(
+      DocumentSnapshot<Map<String, dynamic>> doc) {
     if (!doc.exists) return null;
     final data = doc.data();
     if (data == null) return null;
@@ -263,7 +280,8 @@ class ReviewRepository {
     );
   }
 
-  PatientDoctorReview _reviewFromPublicDoc(String id, Map<String, dynamic> data) {
+  PatientDoctorReview _reviewFromPublicDoc(
+      String id, Map<String, dynamic> data) {
     return PatientDoctorReview(
       id: id,
       maskedName: data['maskedName'] as String? ?? 'Patient',
@@ -292,8 +310,10 @@ class ReviewRepository {
     }
 
     final firestore = FirebaseFirestore.instance;
-    final reviewRef = firestore.collection(FirestorePaths.reviews).doc(reviewId);
-    final publicReviewRef = firestore.collection(FirestorePaths.reviewPublic).doc(reviewId);
+    final reviewRef =
+        firestore.collection(FirestorePaths.reviews).doc(reviewId);
+    final publicReviewRef =
+        firestore.collection(FirestorePaths.reviewPublic).doc(reviewId);
     final voteRef = reviewRef.collection('votes').doc(patientId);
 
     try {
@@ -315,7 +335,8 @@ class ReviewRepository {
         return true;
       });
     } catch (e, st) {
-      if (kDebugMode) debugPrint('[ReviewRepository] toggleHelpfulVote failed: $e\n$st');
+      if (kDebugMode)
+        debugPrint('[ReviewRepository] toggleHelpfulVote failed: $e\n$st');
       return null;
     }
   }
@@ -342,7 +363,9 @@ class ReviewRepository {
         if (snap.exists) liked.add(reviewId);
       }));
     } catch (e, st) {
-      if (kDebugMode) debugPrint('[ReviewRepository] likedReviewIdsForPatient failed: $e\n$st');
+      if (kDebugMode)
+        debugPrint(
+            '[ReviewRepository] likedReviewIdsForPatient failed: $e\n$st');
     }
 
     return liked;

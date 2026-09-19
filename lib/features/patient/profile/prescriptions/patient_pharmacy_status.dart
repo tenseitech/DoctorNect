@@ -19,7 +19,8 @@ class PatientPharmacyStatus {
   String get label => switch (status) {
         PharmacyDeliveryStatus.sent => 'Sent to $storeName',
         PharmacyDeliveryStatus.viewed => '$storeName is preparing your order',
-        PharmacyDeliveryStatus.partiallyDispensed => 'Partially ready at $storeName',
+        PharmacyDeliveryStatus.partiallyDispensed =>
+          'Partially ready at $storeName',
         PharmacyDeliveryStatus.dispensed => 'Ready for pickup at $storeName',
       };
 
@@ -59,7 +60,10 @@ class PatientPharmacyStatusChip extends StatelessWidget {
           Expanded(
             child: Text(
               status.label,
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600, color: status.color),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  fontWeight: FontWeight.w600,
+                  color: status.color),
             ),
           ),
         ],

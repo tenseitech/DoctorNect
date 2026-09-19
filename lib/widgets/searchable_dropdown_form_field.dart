@@ -19,11 +19,13 @@ class SearchableDropdownFormField extends FormField<String> {
           initialValue: value,
           builder: (FormFieldState<String> state) {
             final context = state.context;
-            final effectiveDecoration = (decoration ?? const InputDecoration()).copyWith(
+            final effectiveDecoration =
+                (decoration ?? const InputDecoration()).copyWith(
               errorText: state.errorText,
             );
 
-            final displayValue = value != null && value.isNotEmpty ? value : null;
+            final displayValue =
+                value != null && value.isNotEmpty ? value : null;
 
             return InkWell(
               onTap: enabled
@@ -52,7 +54,8 @@ class SearchableDropdownFormField extends FormField<String> {
                     Icons.arrow_drop_down_rounded,
                     color: enabled
                         ? AppColors.textSecondaryOf(context)
-                        : AppColors.textSecondaryOf(context).withValues(alpha: 0.4),
+                        : AppColors.textSecondaryOf(context)
+                            .withValues(alpha: 0.4),
                   ),
                 ),
                 isEmpty: false,
@@ -64,7 +67,8 @@ class SearchableDropdownFormField extends FormField<String> {
                     fontSize: AppTypography.bodyMedium,
                     color: displayValue != null
                         ? AppColors.textPrimaryOf(context)
-                        : AppColors.textSecondaryOf(context).withValues(alpha: enabled ? 0.75 : 0.4),
+                        : AppColors.textSecondaryOf(context)
+                            .withValues(alpha: enabled ? 0.75 : 0.4),
                   ),
                 ),
               ),
@@ -124,7 +128,11 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
 
           // 2. Word start match (e.g. "maha" matches "Maharashtra")
           final words = itemLower.split(RegExp(r'[\s\-_,]+'));
-          if (words.any((w) => w.startsWith(q) || (cleanQ.isNotEmpty && w.replaceAll(RegExp(r'[^a-z0-9]'), '').startsWith(cleanQ)))) return true;
+          if (words.any((w) =>
+              w.startsWith(q) ||
+              (cleanQ.isNotEmpty &&
+                  w.replaceAll(RegExp(r'[^a-z0-9]'), '').startsWith(cleanQ))))
+            return true;
 
           return false;
         }).toList();
@@ -151,7 +159,8 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
     final bg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
     final rawQuery = _searchController.text.trim();
-    final hasExactMatch = _filteredItems.any((item) => item.toLowerCase() == rawQuery.toLowerCase());
+    final hasExactMatch = _filteredItems
+        .any((item) => item.toLowerCase() == rawQuery.toLowerCase());
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -203,14 +212,17 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
               ),
               // Search Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
                   onChanged: _onSearchChanged,
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: textPrimary),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyMedium, color: textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Type to search ${widget.title.toLowerCase()}... (e.g. maha)',
+                    hintText:
+                        'Type to search ${widget.title.toLowerCase()}... (e.g. maha)',
                     hintStyle: GoogleFonts.inter(
                       fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
@@ -229,7 +241,8 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
                     fillColor: isDark
                         ? const Color(0xFF0F172A).withValues(alpha: 0.5)
                         : const Color(0xFFF1F5F9),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -244,19 +257,24 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
                 child: ListView.separated(
                   controller: scrollController,
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _filteredItems.length + (rawQuery.isNotEmpty && !hasExactMatch ? 1 : 0),
-                  separatorBuilder: (_, __) => const Divider(height: 1, indent: 16, endIndent: 16),
+                  itemCount: _filteredItems.length +
+                      (rawQuery.isNotEmpty && !hasExactMatch ? 1 : 0),
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1, indent: 16, endIndent: 16),
                   itemBuilder: (context, index) {
                     if (rawQuery.isNotEmpty && !hasExactMatch && index == 0) {
                       return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 4),
                         leading: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: AppColors.patientTeal.withValues(alpha: 0.15),
+                            color:
+                                AppColors.patientTeal.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.add_location_alt_rounded, color: AppColors.patientTeal, size: 18),
+                          child: const Icon(Icons.add_location_alt_rounded,
+                              color: AppColors.patientTeal, size: 18),
                         ),
                         title: Text(
                           'Use "$rawQuery"',
@@ -277,20 +295,23 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
                       );
                     }
 
-                    final itemIndex = rawQuery.isNotEmpty && !hasExactMatch ? index - 1 : index;
+                    final itemIndex = rawQuery.isNotEmpty && !hasExactMatch
+                        ? index - 1
+                        : index;
                     final item = _filteredItems[itemIndex];
                     final isSelected = item == widget.initialValue;
 
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 2),
                       title: Text(
                         item,
                         style: GoogleFonts.inter(
                           fontSize: 14.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected
-                              ? AppColors.patientTeal
-                              : textPrimary,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color:
+                              isSelected ? AppColors.patientTeal : textPrimary,
                         ),
                       ),
                       trailing: isSelected

@@ -42,7 +42,9 @@ class DoctorListingCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           body,
-          if (showDivider) Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+          if (showDivider)
+            Divider(
+                height: 1, thickness: 1, color: AppColors.borderOf(context)),
         ],
       );
     }
@@ -131,8 +133,11 @@ class _DoctorAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = doctor.name.trim().isNotEmpty ? doctor.name.trim()[0].toUpperCase() : 'D';
-    final hasPhoto = doctor.photoUrl != null && doctor.photoUrl!.trim().isNotEmpty;
+    final initial = doctor.name.trim().isNotEmpty
+        ? doctor.name.trim()[0].toUpperCase()
+        : 'D';
+    final hasPhoto =
+        doctor.photoUrl != null && doctor.photoUrl!.trim().isNotEmpty;
 
     return CircleAvatar(
       radius: radius,
@@ -244,7 +249,8 @@ class _LocationRow extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(Icons.location_on_outlined, size: 14, color: AppColors.textSecondaryOf(context)),
+        Icon(Icons.location_on_outlined,
+            size: 14, color: AppColors.textSecondaryOf(context)),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -342,8 +348,10 @@ class _ActionRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             minimumSize: const Size(0, 40),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            textStyle: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
           ),
           child: const Text('Book Appointment'),
         ),
@@ -355,8 +363,10 @@ class _ActionRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             minimumSize: const Size(0, 40),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            textStyle: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
           ),
           child: const Text('View Profile'),
         ),
@@ -367,13 +377,18 @@ class _ActionRow extends StatelessWidget {
               foregroundColor: AppColors.patientTeal,
               disabledForegroundColor: AppColors.textSecondaryOf(context),
               side: BorderSide(
-                color: isInMyDoctors ? AppColors.borderOf(context) : AppColors.patientTeal,
+                color: isInMyDoctors
+                    ? AppColors.borderOf(context)
+                    : AppColors.patientTeal,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               minimumSize: const Size(0, 40),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              textStyle: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  fontWeight: FontWeight.w600),
             ),
             child: Text(isInMyDoctors ? 'Added' : 'Add to My Doctors'),
           ),
@@ -408,8 +423,11 @@ class _ActionColumn extends StatelessWidget {
               backgroundColor: AppColors.patientTeal,
               foregroundColor: AppColors.white,
               minimumSize: const Size(double.infinity, 42),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              textStyle: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  fontWeight: FontWeight.w600),
             ),
             child: const Text('Book'),
           ),
@@ -420,8 +438,11 @@ class _ActionColumn extends StatelessWidget {
               foregroundColor: AppColors.patientTeal,
               side: const BorderSide(color: AppColors.patientTeal),
               minimumSize: const Size(double.infinity, 42),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              textStyle: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  fontWeight: FontWeight.w600),
             ),
             child: const Text('View Profile'),
           ),
@@ -433,11 +454,16 @@ class _ActionColumn extends StatelessWidget {
                 foregroundColor: AppColors.patientTeal,
                 disabledForegroundColor: AppColors.textSecondaryOf(context),
                 side: BorderSide(
-                  color: isInMyDoctors ? AppColors.borderOf(context) : AppColors.patientTeal,
+                  color: isInMyDoctors
+                      ? AppColors.borderOf(context)
+                      : AppColors.patientTeal,
                 ),
                 minimumSize: const Size(double.infinity, 42),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+                textStyle: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600),
               ),
               child: Text(isInMyDoctors ? 'Added' : 'Add to My Doctors'),
             ),

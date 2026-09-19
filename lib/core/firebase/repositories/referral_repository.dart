@@ -17,7 +17,10 @@ class ReferralRepository {
   Future<void> save(DoctorReferral referral) async {
     if (!FirebaseBootstrap.isReady) return;
 
-    await FirebaseFirestore.instance.collection(FirestorePaths.referrals).doc(referral.referralId).set({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.referrals)
+        .doc(referral.referralId)
+        .set({
       ...ReferralFirestoreMapper.toMap(referral),
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -25,7 +28,8 @@ class ReferralRepository {
 
     if (referral.patientId.isNotEmpty &&
         PatientProfileRepository.isRegisteredPatientId(referral.patientId)) {
-      final linkOk = await PatientProfileRepository.instance.ensureDoctorPatientLink(
+      final linkOk =
+          await PatientProfileRepository.instance.ensureDoctorPatientLink(
         patientId: referral.patientId,
         doctorId: referral.toDoctorId,
         source: 'referral',
@@ -104,7 +108,10 @@ class ReferralRepository {
     return snapshot.docs
         .map((doc) => ReferralFirestoreMapper.fromMap(doc.data()))
         .whereType<DoctorReferral>()
-        .where((r) => r.status == 'sent' || r.status == 'complete' || r.status == 'completed')
+        .where((r) =>
+            r.status == 'sent' ||
+            r.status == 'complete' ||
+            r.status == 'completed')
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }

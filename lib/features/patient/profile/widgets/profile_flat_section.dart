@@ -24,7 +24,8 @@ class ProfileFlatSection extends StatelessWidget {
     final isWide = !ResponsiveLayout.isCompact(context);
 
     return ColoredBox(
-      color: shaded ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
+      color:
+          shaded ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           isWide ? 20 : 16,

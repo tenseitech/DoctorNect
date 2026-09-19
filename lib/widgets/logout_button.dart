@@ -52,7 +52,10 @@ class LogoutTextButton extends StatelessWidget {
       onPressed: () => AppLogout.confirmAndSignOut(context),
       child: Text(
         'Log out',
-        style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600, color: AppColors.error),
+        style: GoogleFonts.inter(
+            fontSize: AppTypography.headlineSmall,
+            fontWeight: FontWeight.w600,
+            color: AppColors.error),
       ),
     );
   }
@@ -68,9 +71,11 @@ class LogoutRailTile extends StatelessWidget {
     return InkWell(
       onTap: () => AppLogout.confirmAndSignOut(context),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: extended ? 16 : 12, vertical: 12),
+        padding:
+            EdgeInsets.symmetric(horizontal: extended ? 16 : 12, vertical: 12),
         child: Row(
-          mainAxisAlignment: extended ? MainAxisAlignment.start : MainAxisAlignment.center,
+          mainAxisAlignment:
+              extended ? MainAxisAlignment.start : MainAxisAlignment.center,
           children: [
             const Icon(Icons.logout, color: AppColors.error, size: 22),
             if (extended) ...[

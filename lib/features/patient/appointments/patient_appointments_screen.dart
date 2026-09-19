@@ -16,7 +16,8 @@ class PatientAppointmentsScreen extends StatefulWidget {
   final bool openedFromProfile;
 
   @override
-  State<PatientAppointmentsScreen> createState() => _PatientAppointmentsScreenState();
+  State<PatientAppointmentsScreen> createState() =>
+      _PatientAppointmentsScreenState();
 }
 
 class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
@@ -47,7 +48,8 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
   void _openDetail(PatientAppointment a) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => AppointmentDetailScreen(appointment: a)),
+      MaterialPageRoute(
+          builder: (_) => AppointmentDetailScreen(appointment: a)),
     );
   }
 
@@ -107,7 +109,8 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
     if (widget.openedFromProfile) {
       return Scaffold(
         backgroundColor: AppColors.cardBgOf(context),
-        appBar: PatientProfileFormStyles.profileAppBar('My Appointments', context: context),
+        appBar: PatientProfileFormStyles.profileAppBar('My Appointments',
+            context: context),
         body: Column(
           children: [
             PatientSegmentedTabBar(
@@ -119,7 +122,8 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
               ],
               accentColor: Color(0xFF117554),
             ),
-            Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+            Divider(
+                height: 1, thickness: 1, color: AppColors.borderOf(context)),
             Expanded(
               child: TabBarView(
                 controller: _tabController,

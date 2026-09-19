@@ -9,7 +9,8 @@ import '../models/ambulance_models.dart';
 import '../../../core/theme/app_typography.dart';
 
 class AmbulanceFormSectionTitle extends StatelessWidget {
-  const AmbulanceFormSectionTitle({super.key, required this.title, required this.icon});
+  const AmbulanceFormSectionTitle(
+      {super.key, required this.title, required this.icon});
 
   final String title;
   final IconData icon;
@@ -70,7 +71,8 @@ class AmbulanceFormField extends StatelessWidget {
       decoration: RequiredFieldLabels.decorate(
         InputDecoration(
           hintText: hint,
-          prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
+          prefixIcon:
+              Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
           filled: true,
           fillColor: AppColors.surfaceOf(context),
           border: OutlineInputBorder(
@@ -85,7 +87,8 @@ class AmbulanceFormField extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
         label,
         isRequired: validator != null,
@@ -95,7 +98,8 @@ class AmbulanceFormField extends StatelessWidget {
 }
 
 class AmbulanceTypeField extends StatelessWidget {
-  const AmbulanceTypeField({super.key, required this.value, required this.onChanged});
+  const AmbulanceTypeField(
+      {super.key, required this.value, required this.onChanged});
 
   final AmbulanceType value;
   final ValueChanged<AmbulanceType> onChanged;
@@ -106,7 +110,8 @@ class AmbulanceTypeField extends StatelessWidget {
       initialValue: value,
       decoration: RequiredFieldLabels.decorate(
         InputDecoration(
-          prefixIcon: Icon(Icons.emergency_outlined, size: 20, color: AppColors.textSecondaryOf(context)),
+          prefixIcon: Icon(Icons.emergency_outlined,
+              size: 20, color: AppColors.textSecondaryOf(context)),
           filled: true,
           fillColor: AppColors.surfaceOf(context),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -165,7 +170,9 @@ class AmbulanceFormToggleRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodyMedium,
+                  fontWeight: FontWeight.w500),
             ),
           ),
           Switch(
@@ -182,7 +189,8 @@ class AmbulanceFormToggleRow extends StatelessWidget {
 String? ambulanceRequiredField(String? v) =>
     v == null || v.trim().isEmpty ? 'This field is required' : null;
 
-String? ambulanceVehicleNumberField(String? value) => FormValidators.vehicleNumber(value);
+String? ambulanceVehicleNumberField(String? value) =>
+    FormValidators.vehicleNumber(value);
 
 final ambulanceVehicleNumberFormatters = [
   FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\-]')),
@@ -220,7 +228,8 @@ RegisteredAmbulance buildAmbulanceDraftFromControllers({
     ownerName: ownerNameCtrl.text.trim(),
     driverName: driverNameCtrl.text.trim(),
     phone: formattedPhone ?? phoneCtrl.text.trim(),
-    vehicleNumber: FormValidators.normalizeVehicleNumber(vehicleNumberCtrl.text),
+    vehicleNumber:
+        FormValidators.normalizeVehicleNumber(vehicleNumberCtrl.text),
     ambulanceType: ambulanceType,
     city: cityCtrl.text.trim(),
     serviceAreas: areas,

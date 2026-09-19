@@ -26,19 +26,28 @@ abstract final class LabTestIcon {
 
     if (name.contains('urine')) return Icons.water_drop_rounded;
     if (name.contains('stool')) return Icons.biotech_rounded;
-    if (name.contains('thyroid') || name.contains('tsh')) return Icons.medication_rounded;
-    if (name.contains('liver') || name.contains('lft')) return Icons.healing_rounded;
-    if (name.contains('renal') || name.contains('kidney') || name.contains('kft')) {
+    if (name.contains('thyroid') || name.contains('tsh'))
+      return Icons.medication_rounded;
+    if (name.contains('liver') || name.contains('lft'))
+      return Icons.healing_rounded;
+    if (name.contains('renal') ||
+        name.contains('kidney') ||
+        name.contains('kft')) {
       return Icons.water_drop_rounded;
     }
     if (name.contains('lipid') || name.contains('cholesterol')) {
       return Icons.monitor_heart_rounded;
     }
-    if (name.contains('vitamin') || name.contains('vit d')) return Icons.wb_sunny_rounded;
-    if (name.contains('sugar') || name.contains('glucose') || name.contains('hba1c')) {
+    if (name.contains('vitamin') || name.contains('vit d'))
+      return Icons.wb_sunny_rounded;
+    if (name.contains('sugar') ||
+        name.contains('glucose') ||
+        name.contains('hba1c')) {
       return Icons.analytics_rounded;
     }
-    if (name.contains('blood') || name.contains('cbc') || name.contains('haem')) {
+    if (name.contains('blood') ||
+        name.contains('cbc') ||
+        name.contains('haem')) {
       return Icons.bloodtype_rounded;
     }
 

@@ -8,13 +8,41 @@ abstract final class DoctorSearchMatcher {
   DoctorSearchMatcher._();
 
   static const _knownLanguages = [
-    'hindi', 'english', 'marathi', 'bengali', 'telugu', 'tamil',
-    'gujarati', 'kannada', 'malayalam', 'punjabi', 'urdu', 'odia',
+    'hindi',
+    'english',
+    'marathi',
+    'bengali',
+    'telugu',
+    'tamil',
+    'gujarati',
+    'kannada',
+    'malayalam',
+    'punjabi',
+    'urdu',
+    'odia',
   ];
 
   static const _stopWords = {
-    'a', 'an', 'the', 'in', 'at', 'on', 'for', 'with', 'and', 'or', 'of', 'to',
-    'doctor', 'dr', 'dr.', 'specialist', 'speciality', 'specialty', 'near', 'me',
+    'a',
+    'an',
+    'the',
+    'in',
+    'at',
+    'on',
+    'for',
+    'with',
+    'and',
+    'or',
+    'of',
+    'to',
+    'doctor',
+    'dr',
+    'dr.',
+    'specialist',
+    'speciality',
+    'specialty',
+    'near',
+    'me',
   };
 
   static bool matches(DoctorListing doctor, String rawQuery) {
@@ -27,7 +55,8 @@ abstract final class DoctorSearchMatcher {
     if (minRating != null && doctor.rating < minRating) return false;
 
     final minExperience = _parseMinExperience(normalized);
-    if (minExperience != null && doctor.experienceYears < minExperience) return false;
+    if (minExperience != null && doctor.experienceYears < minExperience)
+      return false;
 
     if (_wantsAvailableToday(normalized) &&
         doctor.availability != DoctorAvailability.today) {
@@ -70,7 +99,8 @@ abstract final class DoctorSearchMatcher {
       if (spec.contains(token)) score += 18;
       if (doctor.clinicName.toLowerCase().contains(token)) score += 12;
       if (doctor.area.toLowerCase().contains(token)) score += 12;
-      if (doctor.languages.any((l) => l.toLowerCase().contains(token))) score += 10;
+      if (doctor.languages.any((l) => l.toLowerCase().contains(token)))
+        score += 10;
       if (doctor.qualification.toLowerCase().contains(token)) score += 8;
       if ('${doctor.experienceYears}'.contains(token)) score += 6;
       if (doctor.rating.toStringAsFixed(1).contains(token)) score += 6;
@@ -85,9 +115,14 @@ abstract final class DoctorSearchMatcher {
 
   static List<String> _searchTokens(String normalizedQuery) {
     var withoutPatterns = normalizedQuery
-        .replaceAll(RegExp(r'\b\d+(?:\.\d+)?\s*(?:\+|\*)?\s*(?:star|stars|rating|★)\b'), ' ')
+        .replaceAll(
+            RegExp(r'\b\d+(?:\.\d+)?\s*(?:\+|\*)?\s*(?:star|stars|rating|★)\b'),
+            ' ')
         .replaceAll(RegExp(r'\b(?:rating|stars?)\s*\d+(?:\.\d+)?\b'), ' ')
-        .replaceAll(RegExp(r'\b\d+\s*(?:\+|\s*)?(?:years?|yrs?|y\.?o\.?|exp(?:erience)?)\b'), ' ')
+        .replaceAll(
+            RegExp(
+                r'\b\d+\s*(?:\+|\s*)?(?:years?|yrs?|y\.?o\.?|exp(?:erience)?)\b'),
+            ' ')
         .replaceAll(RegExp(r'\b(?:available|open)\s+today\b'), ' ')
         .replaceAll(RegExp(r'\btoday\s+(?:available|open)\b'), ' ')
         .replaceAll(RegExp(r'\bverified\b'), ' ')
@@ -170,7 +205,8 @@ abstract final class DoctorSearchMatcher {
 
   static int? _parseMinExperience(String query) {
     final patterns = [
-      RegExp(r'(\d+)\s*(?:\+|\s*)?(?:years?|yrs?|y\.?o\.?)\s*(?:exp(?:erience)?)?'),
+      RegExp(
+          r'(\d+)\s*(?:\+|\s*)?(?:years?|yrs?|y\.?o\.?)\s*(?:exp(?:erience)?)?'),
       RegExp(r'(\d+)\s*(?:\+|\s*)?(?:exp(?:erience)?|experience)'),
       RegExp(r'(?:exp(?:erience)?|experience)\s*(\d+)'),
     ];

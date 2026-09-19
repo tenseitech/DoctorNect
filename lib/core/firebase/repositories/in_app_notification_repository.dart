@@ -9,7 +9,8 @@ import '../mappers/in_app_notification_firestore_mapper.dart';
 class InAppNotificationRepository {
   InAppNotificationRepository._();
 
-  static final InAppNotificationRepository instance = InAppNotificationRepository._();
+  static final InAppNotificationRepository instance =
+      InAppNotificationRepository._();
 
   Stream<List<AppNotification>> watchForRecipient(String recipientUid) {
     if (!FirebaseBootstrap.isReady || recipientUid.isEmpty) {
@@ -45,7 +46,8 @@ class InAppNotificationRepository {
     if (ids.isEmpty) return;
 
     final batch = FirebaseFirestore.instance.batch();
-    final collection = FirebaseFirestore.instance.collection(FirestorePaths.inAppNotifications);
+    final collection = FirebaseFirestore.instance
+        .collection(FirestorePaths.inAppNotifications);
     for (final id in ids) {
       batch.update(collection.doc(id), {'isRead': true});
     }
@@ -56,7 +58,8 @@ class InAppNotificationRepository {
     QuerySnapshot<Map<String, dynamic>> snapshot,
   ) {
     return snapshot.docs
-        .map((doc) => InAppNotificationFirestoreMapper.fromMap(doc.id, doc.data()))
+        .map((doc) =>
+            InAppNotificationFirestoreMapper.fromMap(doc.id, doc.data()))
         .whereType<AppNotification>()
         .toList();
   }

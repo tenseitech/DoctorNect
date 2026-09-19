@@ -1,12 +1,16 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 abstract final class PatientLabBookingFilters {
   PatientLabBookingFilters._();
 
-  static DateTime _dayOnly(DateTime value) => DateTime(value.year, value.month, value.day);
+  static DateTime _dayOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
 
   static bool isUpcoming(LabBookingRecord booking) {
     final status = booking.status.toLowerCase();
-    if (status == 'completed' || status == 'declined' || status == 'cancelled') {
+    if (status == 'completed' ||
+        status == 'declined' ||
+        status == 'cancelled') {
       return false;
     }
 

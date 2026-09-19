@@ -43,7 +43,9 @@ class AuthRegistrationSection extends StatelessWidget {
           child,
           if (showDivider) ...[
             const SizedBox(height: 24),
-            Divider(color: AppColors.borderOf(context).withValues(alpha: 0.7), height: 1),
+            Divider(
+                color: AppColors.borderOf(context).withValues(alpha: 0.7),
+                height: 1),
             const SizedBox(height: 8),
           ],
         ],
@@ -55,7 +57,8 @@ class AuthRegistrationSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderOf(context).withValues(alpha: 0.85)),
+        border: Border.all(
+            color: AppColors.borderOf(context).withValues(alpha: 0.85)),
         boxShadow: [
           BoxShadow(
             color: accentColor.withValues(alpha: 0.06),
@@ -185,7 +188,9 @@ class AuthRegistrationStepIndicator extends StatelessWidget {
                         : AppColors.cardBgOf(context),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: i <= activeIndex ? accentColor : AppColors.borderOf(context),
+                      color: i <= activeIndex
+                          ? accentColor
+                          : AppColors.borderOf(context),
                     ),
                   ),
                   child: Center(

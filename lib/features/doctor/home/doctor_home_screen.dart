@@ -41,6 +41,7 @@ import 'widgets/doctor_date_patient_list.dart';
 import 'widgets/doctor_referred_patients_screen.dart';
 import 'widgets/patient_picker_sheet.dart';
 import 'widgets/doctor_global_search_sheet.dart';
+
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({
     super.key,
@@ -54,7 +55,8 @@ class DoctorHomeScreen extends StatefulWidget {
   State<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
 }
 
-class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBindingObserver {
+class _DoctorHomeScreenState extends State<DoctorHomeScreen>
+    with WidgetsBindingObserver {
   final _store = SharedAppointmentsStore.instance;
   DateTime _selectedDate = DateTime(
     DateTime.now().year,
@@ -151,18 +153,21 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
   Future<void> _openPrescriptionWithSearch() async {
     await DoctorPatientsService.refreshOnTabOpen();
     if (!mounted) return;
-    final summaries = DoctorPatientsService.summariesForDoctor(DoctorSession.loggedInDoctorId);
-    final mapped = summaries.map((s) => Appointment(
-      id: s.id,
-      tokenNumber: 0,
-      patientName: s.name,
-      age: s.age,
-      gender: s.gender,
-      appointmentDate: s.lastVisitDate,
-      timeSlot: '',
-      status: AppointmentStatus.confirmed,
-      type: AppointmentType.newVisit,
-    )).toList();
+    final summaries = DoctorPatientsService.summariesForDoctor(
+        DoctorSession.loggedInDoctorId);
+    final mapped = summaries
+        .map((s) => Appointment(
+              id: s.id,
+              tokenNumber: 0,
+              patientName: s.name,
+              age: s.age,
+              gender: s.gender,
+              appointmentDate: s.lastVisitDate,
+              timeSlot: '',
+              status: AppointmentStatus.confirmed,
+              type: AppointmentType.newVisit,
+            ))
+        .toList();
 
     final picked = await PatientPickerSheet.show(
       context,
@@ -171,10 +176,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
       appointments: mapped,
     );
     if (picked == null || !mounted) return;
-    
-    final resolvedPatientId = DoctorPatientsService.resolveRealPatientId(picked.id);
+
+    final resolvedPatientId =
+        DoctorPatientsService.resolveRealPatientId(picked.id);
     if (resolvedPatientId.isEmpty) {
-      AppToast.info(context, 'This patient is not registered yet — the prescription cannot be linked to them.');
+      AppToast.info(context,
+          'This patient is not registered yet — the prescription cannot be linked to them.');
       return;
     }
     await ClinicalToolsShell.open(
@@ -193,18 +200,21 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
   Future<void> _openLabOrderWithSearch() async {
     await DoctorPatientsService.refreshOnTabOpen();
     if (!mounted) return;
-    final summaries = DoctorPatientsService.summariesForDoctor(DoctorSession.loggedInDoctorId);
-    final mapped = summaries.map((s) => Appointment(
-      id: s.id,
-      tokenNumber: 0,
-      patientName: s.name,
-      age: s.age,
-      gender: s.gender,
-      appointmentDate: s.lastVisitDate,
-      timeSlot: '',
-      status: AppointmentStatus.confirmed,
-      type: AppointmentType.newVisit,
-    )).toList();
+    final summaries = DoctorPatientsService.summariesForDoctor(
+        DoctorSession.loggedInDoctorId);
+    final mapped = summaries
+        .map((s) => Appointment(
+              id: s.id,
+              tokenNumber: 0,
+              patientName: s.name,
+              age: s.age,
+              gender: s.gender,
+              appointmentDate: s.lastVisitDate,
+              timeSlot: '',
+              status: AppointmentStatus.confirmed,
+              type: AppointmentType.newVisit,
+            ))
+        .toList();
 
     final picked = await PatientPickerSheet.show(
       context,
@@ -214,16 +224,18 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
     );
     if (picked == null || !mounted) return;
 
-    final resolvedPatientId = DoctorPatientsService.resolveRealPatientId(picked.id);
+    final resolvedPatientId =
+        DoctorPatientsService.resolveRealPatientId(picked.id);
     if (resolvedPatientId.isEmpty) {
-      AppToast.info(context, 'This patient is not registered yet — the lab order cannot be linked to them.');
+      AppToast.info(context,
+          'This patient is not registered yet — the lab order cannot be linked to them.');
       return;
     }
 
     final patient = PatientClinicalContext(
       patientName: picked.patientName,
       age: picked.age,
-            gender: AppConstants.normalizePatientGender(picked.gender),
+      gender: AppConstants.normalizePatientGender(picked.gender),
       patientId: resolvedPatientId,
       appointmentId: '',
     );
@@ -259,9 +271,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
     await DoctorGlobalSearchScreen.show(
       context,
       onPatientSelected: (picked) async {
-        final resolvedPatientId = DoctorPatientsService.resolveRealPatientId(picked.id);
+        final resolvedPatientId =
+            DoctorPatientsService.resolveRealPatientId(picked.id);
         if (resolvedPatientId.isEmpty) {
-          AppToast.info(context, 'This patient is not registered yet — cannot open records.');
+          AppToast.info(context,
+              'This patient is not registered yet — cannot open records.');
           return;
         }
         await ClinicalToolsShell.open(
@@ -271,7 +285,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
             age: picked.age,
             gender: AppConstants.normalizePatientGender(picked.gender),
             patientId: resolvedPatientId,
-            appointmentId: '', 
+            appointmentId: '',
           ),
           initialTab: 0,
         );
@@ -384,7 +398,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
   }
 
   List<DoctorHomeServiceItem> _networkServices() {
-    final isVerified = DoctorProfileStore.instance.dashboardVerificationStatus == VerificationStatus.verified;
+    final isVerified =
+        DoctorProfileStore.instance.dashboardVerificationStatus ==
+            VerificationStatus.verified;
 
     return [
       DoctorHomeServiceItem(
@@ -560,7 +576,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
                 if (carouselItems.isEmpty) return const SizedBox.shrink();
                 final isWide = MediaQuery.sizeOf(context).width >= 600;
                 return Padding(
-                  padding: EdgeInsets.fromLTRB(isWide ? 0 : 16, isWide ? 16 : 4, isWide ? 0 : 16, 0),
+                  padding: EdgeInsets.fromLTRB(
+                      isWide ? 0 : 16, isWide ? 16 : 4, isWide ? 0 : 16, 0),
                   child: HomeBannerCarousel(
                     items: carouselItems,
                     dotActiveColor: AppColors.doctorBlue,
@@ -578,12 +595,18 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
                   title: 'Grow your practice',
                   services: _networkServices(),
                 ),
-                Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.borderOf(context)),
                 DoctorHomeServicesSection(
                   title: 'Clinical tools',
                   services: _clinicalServices(),
                 ),
-                Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.borderOf(context)),
               ],
             ),
           ),
@@ -595,9 +618,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
                 children: [
                   DoctorHomeSectionHeader(
                     title: 'Today\'s patients',
-                    subtitle: 'Patients scheduled for ${DateFormat('EEE, dd MMM').format(_selectedDate)}',
+                    subtitle:
+                        'Patients scheduled for ${DateFormat('EEE, dd MMM').format(_selectedDate)}',
                     secondaryActionLabel: 'Calendar',
-                    secondaryActionSubtitle: DateFormat('d MMM yyyy').format(_selectedDate),
+                    secondaryActionSubtitle:
+                        DateFormat('d MMM yyyy').format(_selectedDate),
                     onSecondaryAction: _openCalendarPopup,
                     actionLabel: 'View all',
                     actionFilled: true,
@@ -627,7 +652,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
             ),
           ),
           SliverToBoxAdapter(
-            child: Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+            child: Divider(
+                height: 1, thickness: 1, color: AppColors.borderOf(context)),
           ),
           SliverToBoxAdapter(
             child: DoctorHomeSectionHeader(
@@ -659,9 +685,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
   void _openTodaysAppointments() {
     final date = _selectedDate;
     final now = DateTime.now();
-    final isToday = date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+    final isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
     final title = isToday
         ? 'Today\'s Appointments'
         : 'Appointments · ${DateFormat('EEE, d MMM yyyy').format(date)}';
@@ -690,7 +715,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't accept this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't accept this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -712,7 +739,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't accept these appointments. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't accept these appointments. Please check your connection and try again."),
           ),
         ),
       );
@@ -728,7 +757,9 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't decline this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't decline this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -738,7 +769,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
 
   Future<void> _startConsultation(Appointment appointment) async {
     try {
-      await _store.updateDoctorStatus(appointment.id, AppointmentStatus.inProgress);
+      await _store.updateDoctorStatus(
+          appointment.id, AppointmentStatus.inProgress);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -746,7 +778,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't start consultation. Please check your connection and try again.",
+              fallback:
+                  "Couldn't start consultation. Please check your connection and try again.",
             ),
           ),
         ),
@@ -794,7 +827,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AppointmentDetailScreen(isDoctorView: true, appointment: appointment),
+        builder: (_) => AppointmentDetailScreen(
+            isDoctorView: true, appointment: appointment),
       ),
     );
   }
@@ -836,7 +870,8 @@ class _UpcomingSliverList extends StatelessWidget {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        final upcoming = store.upcomingForDoctor(DoctorSession.loggedInDoctorId);
+        final upcoming =
+            store.upcomingForDoctor(DoctorSession.loggedInDoctorId);
         if (upcoming.isEmpty) {
           return SliverToBoxAdapter(
             child: Padding(

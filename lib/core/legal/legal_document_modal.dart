@@ -69,8 +69,8 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
   @override
   Widget build(BuildContext context) {
     final title = DoctorNectLegalContent.title(widget.type);
-    final sections =
-        DoctorNectLegalContent.sections(type: widget.type, audience: widget.audience);
+    final sections = DoctorNectLegalContent.sections(
+        type: widget.type, audience: widget.audience);
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -98,7 +98,8 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close, color: AppColors.textSecondaryOf(context)),
+                    icon: Icon(Icons.close,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
               ),
@@ -172,7 +173,8 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
               width: double.infinity,
               padding: EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.borderOf(context))),
+                border:
+                    Border(top: BorderSide(color: AppColors.borderOf(context))),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -188,7 +190,9 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                     ),
                   if (!_reachedBottom) const SizedBox(height: 8),
                   FilledButton(
-                    onPressed: _reachedBottom ? () => Navigator.of(context).pop() : null,
+                    onPressed: _reachedBottom
+                        ? () => Navigator.of(context).pop()
+                        : null,
                     style: FilledButton.styleFrom(
                       backgroundColor: widget.accentColor,
                       disabledBackgroundColor:

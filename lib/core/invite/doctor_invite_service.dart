@@ -45,7 +45,8 @@ abstract final class DoctorInviteService {
     return Uri.parse(inviteBaseUrl).replace(queryParameters: params).toString();
   }
 
-  static String inviteMessage({required String doctorName, required String link}) {
+  static String inviteMessage(
+      {required String doctorName, required String link}) {
     return networkInviteMessage(
       doctorName: doctorName,
       link: link,
@@ -76,7 +77,10 @@ abstract final class DoctorInviteService {
   static Future<void> ensureInviteMetadata(String doctorId) async {
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return;
 
-    await FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId).set({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.doctors)
+        .doc(doctorId)
+        .set({
       'inviteCode': doctorId,
       'inviteLink': buildInviteLink(doctorId),
       'inviteUpdatedAt': FieldValue.serverTimestamp(),

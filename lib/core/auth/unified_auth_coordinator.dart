@@ -6,6 +6,7 @@ import 'mobile_registration_lookup.dart';
 enum UnifiedAuthPath {
   login,
   register,
+
   /// Mobile is registered under a different role — block and show support message.
   blockedWrongRole,
 }

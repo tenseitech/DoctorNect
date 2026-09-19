@@ -11,12 +11,16 @@ import '../models/firestore_page.dart';
 class MedicalDirectoryRepository {
   MedicalDirectoryRepository._();
 
-  static final MedicalDirectoryRepository instance = MedicalDirectoryRepository._();
+  static final MedicalDirectoryRepository instance =
+      MedicalDirectoryRepository._();
 
   Future<void> save(DoctorMedicalDirectoryEntry entry) async {
     if (!FirebaseBootstrap.isReady) return;
 
-    await FirebaseFirestore.instance.collection(FirestorePaths.medicalDirectory).doc(entry.entryId).set({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.medicalDirectory)
+        .doc(entry.entryId)
+        .set({
       ...MedicalDirectoryFirestoreMapper.toMap(entry),
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -26,7 +30,10 @@ class MedicalDirectoryRepository {
   Future<void> update(DoctorMedicalDirectoryEntry entry) async {
     if (!FirebaseBootstrap.isReady) return;
 
-    await FirebaseFirestore.instance.collection(FirestorePaths.medicalDirectory).doc(entry.entryId).set({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.medicalDirectory)
+        .doc(entry.entryId)
+        .set({
       ...MedicalDirectoryFirestoreMapper.toMap(entry),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
@@ -34,7 +41,10 @@ class MedicalDirectoryRepository {
 
   Future<void> delete(String entryId) async {
     if (!FirebaseBootstrap.isReady) return;
-    await FirebaseFirestore.instance.collection(FirestorePaths.medicalDirectory).doc(entryId).delete();
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.medicalDirectory)
+        .doc(entryId)
+        .delete();
   }
 
   Future<FirestorePage<DoctorMedicalDirectoryEntry>> fetchForDoctor(
@@ -52,8 +62,11 @@ class MedicalDirectoryRepository {
         .where('doctorId', isEqualTo: doctorId)
         .limit(limit);
 
-    final query = startAfter == null ? baseQuery : baseQuery.startAfterDocument(startAfter);
-    final snapshot = await FirestoreReadHelper.getQuery(query: query, preferCache: preferCache);
+    final query = startAfter == null
+        ? baseQuery
+        : baseQuery.startAfterDocument(startAfter);
+    final snapshot = await FirestoreReadHelper.getQuery(
+        query: query, preferCache: preferCache);
 
     final items = snapshot.docs
         .map((doc) => MedicalDirectoryFirestoreMapper.fromMap(doc.data()))

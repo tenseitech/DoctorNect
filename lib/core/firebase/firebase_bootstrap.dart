@@ -46,7 +46,8 @@ abstract final class FirebaseBootstrap {
       isReady = false;
       lastInitError = describeUserFacingError(
         e,
-        fallback: 'Could not connect to Firebase. Refresh the page or use Chrome.',
+        fallback:
+            'Could not connect to Firebase. Refresh the page or use Chrome.',
       );
       if (kDebugMode) {
         debugPrint('Firebase init failed: $e\n$st');

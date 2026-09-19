@@ -144,8 +144,10 @@ class FormValidators {
 
     final missing = <String>[];
     if (str.length < 8) missing.add('8+ characters');
-    if (!RegExp(r'[A-Z]').hasMatch(str)) missing.add('1 uppercase letter (A-Z)');
-    if (!RegExp(r'[a-z]').hasMatch(str)) missing.add('1 lowercase letter (a-z)');
+    if (!RegExp(r'[A-Z]').hasMatch(str))
+      missing.add('1 uppercase letter (A-Z)');
+    if (!RegExp(r'[a-z]').hasMatch(str))
+      missing.add('1 lowercase letter (a-z)');
     if (!RegExp(r'[0-9]').hasMatch(str)) missing.add('1 number (0-9)');
     if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\+=/\\]').hasMatch(str)) {
       missing.add('1 special character (!@#\$%^&*)');
@@ -170,7 +172,8 @@ class FormValidators {
   static String? pincode(String? value, {String? country}) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'PIN / postal code is required';
-    final isIndia = country == null || country.isEmpty || country.toLowerCase() == 'india';
+    final isIndia =
+        country == null || country.isEmpty || country.toLowerCase() == 'india';
     if (isIndia) {
       if (!RegExp(r'^\d{6}$').hasMatch(trimmed)) {
         return 'Enter a valid 6-digit PIN code';
@@ -202,9 +205,7 @@ class FormValidators {
   static String? councilNumber(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'Council registration number is required';
-    if (!RegExp(
-            r'^[A-Z0-9-\/]{4,20}$',
-            caseSensitive: false)
+    if (!RegExp(r'^[A-Z0-9-\/]{4,20}$', caseSensitive: false)
         .hasMatch(trimmed)) {
       return 'Enter a valid council registration number, e.g. MCI-12345 or MH2020123456';
     }
@@ -265,8 +266,7 @@ class FormValidators {
     if (trimmed.isEmpty) {
       return 'Ambulance permit / fitness certificate number is required';
     }
-    if (!RegExp(
-            r'^(?:PERMIT|AMB|FIT|FC|CERT)[A-Z0-9\-\/]{3,20}$',
+    if (!RegExp(r'^(?:PERMIT|AMB|FIT|FC|CERT)[A-Z0-9\-\/]{3,20}$',
             caseSensitive: false)
         .hasMatch(trimmed)) {
       return 'Enter a valid permit/fitness certificate number, e.g. AMB-12345/2026';

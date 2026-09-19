@@ -22,7 +22,8 @@ abstract final class HealthRecordFileStore {
   static String _sanitizeFileName(String name) =>
       name.replaceAll(RegExp(r'[^\w.\-]'), '_');
 
-  static String storagePath(String patientId, String recordId, String fileName) =>
+  static String storagePath(
+          String patientId, String recordId, String fileName) =>
       'health_records/$patientId/$recordId/${_sanitizeFileName(fileName)}';
 
   static String? mimeTypeFor(String fileName) {
@@ -127,7 +128,8 @@ abstract final class HealthRecordFileStore {
         }
       }
 
-      final fromPath = await downloadFromPath(storagePath(patientId, recordId, fileName));
+      final fromPath =
+          await downloadFromPath(storagePath(patientId, recordId, fileName));
       if (fromPath != null && fromPath.isNotEmpty) {
         _webBytes[_cacheKey(patientId, recordId, fileName)] =
             await FileEncryptionService.encryptForMemoryCache(fromPath);
@@ -155,7 +157,8 @@ abstract final class HealthRecordFileStore {
       }
     }
 
-    final fromPath = await downloadFromPath(storagePath(patientId, recordId, fileName));
+    final fromPath =
+        await downloadFromPath(storagePath(patientId, recordId, fileName));
     if (fromPath != null && fromPath.isNotEmpty) {
       await saveFile(
         patientId: patientId,
@@ -197,7 +200,9 @@ abstract final class HealthRecordFileStore {
     required String fileName,
     required Uint8List bytes,
   }) async {
-    if (!FirebaseBootstrap.isReady || bytes.isEmpty || bytes.length > maxFileBytes) {
+    if (!FirebaseBootstrap.isReady ||
+        bytes.isEmpty ||
+        bytes.length > maxFileBytes) {
       return null;
     }
 
@@ -214,7 +219,8 @@ abstract final class HealthRecordFileStore {
       return await ref.getDownloadURL().timeout(const Duration(seconds: 15));
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('HealthRecordFileStore.uploadToFirebaseStorage failed: $e\n$st');
+        debugPrint(
+            'HealthRecordFileStore.uploadToFirebaseStorage failed: $e\n$st');
       }
       return null;
     }

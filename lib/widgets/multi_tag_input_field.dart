@@ -169,30 +169,38 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
                           isDense: true,
                           filled: true,
                           fillColor: AppColors.surfaceOf(context),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: AppColors.borderOf(context)),
+                            borderSide:
+                                BorderSide(color: AppColors.borderOf(context)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: AppColors.borderOf(context)),
+                            borderSide:
+                                BorderSide(color: AppColors.borderOf(context)),
                           ),
                         ),
                         onTap: _hasAutocomplete ? _refreshSuggestions : null,
                         onSubmitted: _add,
                       ),
-                      if (_hasAutocomplete && _showSuggestions && _filteredSuggestions.isNotEmpty)
+                      if (_hasAutocomplete &&
+                          _showSuggestions &&
+                          _filteredSuggestions.isNotEmpty)
                         Container(
                           margin: const EdgeInsets.only(top: 4),
-                          constraints: BoxConstraints(maxHeight: widget.maxSuggestionsHeight),
+                          constraints: BoxConstraints(
+                              maxHeight: widget.maxSuggestionsHeight),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceOf(context),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.borderOf(context)),
+                            border:
+                                Border.all(color: AppColors.borderOf(context)),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.textPrimaryOf(context).withValues(alpha: 0.06),
+                                color: AppColors.textPrimaryOf(context)
+                                    .withValues(alpha: 0.06),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -214,7 +222,8 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
                                 child: InkWell(
                                   onTap: () => _selectSuggestion(suggestion),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 10),
                                     child: Text(
                                       suggestion,
                                       style: GoogleFonts.inter(
@@ -239,13 +248,17 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
               icon: const Icon(Icons.add_rounded, size: 18),
               label: Text(
                 _addLabel,
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600),
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: widget.accentColor,
                 foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
             ),
           ],
@@ -254,7 +267,9 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
           const SizedBox(height: 12),
           Text(
             widget.quickAddTitle,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -263,13 +278,17 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
             children: widget.quickAddLabels.map((label) {
               final selected = _hasTag(label);
               return ActionChip(
-                label: Text(label, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
+                label: Text(label,
+                    style:
+                        GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
                 onPressed: selected ? null : () => _add(label),
                 backgroundColor: selected
                     ? widget.accentColor.withValues(alpha: 0.15)
                     : AppColors.white,
                 side: BorderSide(
-                  color: selected ? widget.accentColor : AppColors.borderOf(context),
+                  color: selected
+                      ? widget.accentColor
+                      : AppColors.borderOf(context),
                 ),
               );
             }).toList(),
@@ -282,11 +301,14 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
             runSpacing: 6,
             children: widget.tags.map((tag) {
               return InputChip(
-                label: Text(tag, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
+                label: Text(tag,
+                    style:
+                        GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
                 deleteIcon: const Icon(Icons.close, size: 16),
                 onDeleted: () => widget.onRemove(tag),
                 backgroundColor: widget.accentColor.withValues(alpha: 0.1),
-                side: BorderSide(color: widget.accentColor.withValues(alpha: 0.3)),
+                side: BorderSide(
+                    color: widget.accentColor.withValues(alpha: 0.3)),
               );
             }).toList(),
           ),

@@ -178,19 +178,22 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
       _locationError = (_country == null || _state == null || _city == null)
           ? 'Please select Country, State, and City'
           : null;
-      _mobileError = !_mobileVerified
-          ? 'Please verify your mobile number with OTP'
-          : null;
+      _mobileError =
+          !_mobileVerified ? 'Please verify your mobile number with OTP' : null;
     });
 
     final isFormValid = _formKey.currentState!.validate();
 
-    if (!isFormValid || _dobError != null || _locationError != null || _mobileError != null) {
+    if (!isFormValid ||
+        _dobError != null ||
+        _locationError != null ||
+        _mobileError != null) {
       FormScrollHelper.scrollToFirstError(context);
       return;
     }
     if (!_legalAccepted) {
-      AppToast.info(context, 'Please accept the Terms of Service and Privacy Policy');
+      AppToast.info(
+          context, 'Please accept the Terms of Service and Privacy Policy');
       return;
     }
 
@@ -314,6 +317,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
       if (mounted) setState(() => _prefillingGoogle = false);
     }
   }
+
   @override
   Widget build(BuildContext context) {
     const accent = AppColors.patientTeal;
@@ -479,12 +483,14 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     TextFormField(
                       controller: _weightController,
                       focusNode: _weightFocusNode,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       autofillHints: const <String>[],
                       autocorrect: false,
                       enableSuggestions: false,
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\.?\d*')),
                         LengthLimitingTextInputFormatter(6),
                       ],
                       validator: (v) =>
@@ -496,9 +502,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       decoration: _fieldDecoration(
                         label: 'Weight (kg) *',
                         hintText: 'e.g. 65',
-                        prefixIcon: const Icon(
-                            Icons.monitor_weight_outlined,
-                            size: 20),
+                        prefixIcon:
+                            const Icon(Icons.monitor_weight_outlined, size: 20),
                       ),
                     ),
                   ],
@@ -507,7 +512,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
               AuthRegistrationSection(
                 key: _mobileFieldKey,
                 icon: Icons.sms_outlined,
-                title: _otpAlreadyVerified ? 'Mobile number' : 'Mobile verification',
+                title: _otpAlreadyVerified
+                    ? 'Mobile number'
+                    : 'Mobile verification',
                 subtitle: _otpAlreadyVerified
                     ? 'Verified during sign-in'
                     : 'One-time SMS code',
@@ -519,7 +526,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       InputDecorator(
                         decoration: _fieldDecoration(
                           label: 'Mobile number *',
-                          prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                          prefixIcon:
+                              const Icon(Icons.phone_outlined, size: 20),
                         ),
                         child: Row(
                           children: [
@@ -535,7 +543,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                                 ),
                               ),
                             ),
-                            Icon(Icons.verified_rounded, size: 18, color: accent),
+                            Icon(Icons.verified_rounded,
+                                size: 18, color: accent),
                           ],
                         ),
                       )
@@ -549,7 +558,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                         accentColor: accent,
                         phoneDecoration: _fieldDecoration(
                           label: 'Mobile number *',
-                          prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                          prefixIcon:
+                              const Icon(Icons.phone_outlined, size: 20),
                         ).copyWith(errorText: _mobileError),
                         onVerifiedChanged: (v) => setState(() {
                           _mobileVerified = v;
@@ -579,7 +589,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                 child: Column(
                   children: [
                     GoogleSignInButton(
-                      onPressed: (_submitting || _prefillingGoogle) ? null : _prefillFromGoogle,
+                      onPressed: (_submitting || _prefillingGoogle)
+                          ? null
+                          : _prefillFromGoogle,
                       isLoading: _prefillingGoogle,
                       text: 'Continue with Google',
                     ),

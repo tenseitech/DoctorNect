@@ -37,7 +37,8 @@ abstract final class DoctorNectLegalContent {
     };
   }
 
-  static List<LegalSection> _terms(LegalAudience audience) => switch (audience) {
+  static List<LegalSection> _terms(LegalAudience audience) =>
+      switch (audience) {
         LegalAudience.patient => _patientTerms(),
         LegalAudience.pharmacy => _pharmacyTerms(),
         LegalAudience.lab => _labTerms(),
@@ -45,7 +46,8 @@ abstract final class DoctorNectLegalContent {
         LegalAudience.doctor => _doctorTerms(),
       };
 
-  static List<LegalSection> _privacy(LegalAudience audience) => switch (audience) {
+  static List<LegalSection> _privacy(LegalAudience audience) =>
+      switch (audience) {
         LegalAudience.patient => _patientPrivacy(),
         LegalAudience.pharmacy => _pharmacyPrivacy(),
         LegalAudience.lab => _labPrivacy(),

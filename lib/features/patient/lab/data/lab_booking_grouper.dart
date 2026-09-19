@@ -43,7 +43,8 @@ abstract final class LabBookingGrouper {
   }
 
   static LabBookingRecord _mergeLegacy(List<LabBookingRecord> items) {
-    final sorted = [...items]..sort((a, b) => a.bookingId.compareTo(b.bookingId));
+    final sorted = [...items]
+      ..sort((a, b) => a.bookingId.compareTo(b.bookingId));
     final primary = sorted.first;
     final reportSource = _reportSource(sorted);
     final names = <String>{};
@@ -63,9 +64,11 @@ abstract final class LabBookingGrouper {
       labName: primary.labName,
       patientId: primary.patientId,
       patientName: primary.patientName,
-      testName: PatientSelectedInvestigationsMapper.summaryFromNames(orderedNames),
+      testName:
+          PatientSelectedInvestigationsMapper.summaryFromNames(orderedNames),
       testNames: orderedNames,
-      groupedBookingIds: sorted.map((item) => item.bookingId).toList(growable: false),
+      groupedBookingIds:
+          sorted.map((item) => item.bookingId).toList(growable: false),
       dateTime: primary.dateTime,
       slotLabel: primary.slotLabel,
       collectionType: primary.collectionType,
@@ -93,15 +96,18 @@ abstract final class LabBookingGrouper {
       final withNameOnly = items.where((item) => item.hasReport).toList();
       if (withNameOnly.isEmpty) return null;
       withNameOnly.sort(
-        (a, b) => (b.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
-            .compareTo(a.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0)),
+        (a, b) => (b.reportSubmittedAt ??
+                DateTime.fromMillisecondsSinceEpoch(0))
+            .compareTo(
+                a.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0)),
       );
       return withNameOnly.first;
     }
 
     withReport.sort(
       (a, b) => (b.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
-          .compareTo(a.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0)),
+          .compareTo(
+              a.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0)),
     );
     return withReport.first;
   }

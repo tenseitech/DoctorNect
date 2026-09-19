@@ -26,7 +26,10 @@ class FamilyMemberRepository {
   Future<void> saveMember(String patientId, FamilyProfileMember member) async {
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) return;
 
-    await FirebaseFirestore.instance.collection(FirestorePaths.familyMembers).doc(member.id).set({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.familyMembers)
+        .doc(member.id)
+        .set({
       'patientId': patientId,
       'name': member.name,
       'relation': member.relation.name,
@@ -36,7 +39,8 @@ class FamilyMemberRepository {
       'allergies': member.allergies,
       'conditions': member.conditions,
       'insuranceCovered': member.insuranceCovered,
-      if (member.dateOfBirth != null) 'dateOfBirth': Timestamp.fromDate(member.dateOfBirth!),
+      if (member.dateOfBirth != null)
+        'dateOfBirth': Timestamp.fromDate(member.dateOfBirth!),
       if (member.photoInitial != null) 'photoInitial': member.photoInitial,
       'updatedAt': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
@@ -45,20 +49,27 @@ class FamilyMemberRepository {
 
   Future<void> deleteMember(String memberId) async {
     if (!FirebaseBootstrap.isReady || memberId.isEmpty) return;
-    await FirebaseFirestore.instance.collection(FirestorePaths.familyMembers).doc(memberId).delete();
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.familyMembers)
+        .doc(memberId)
+        .delete();
   }
 
-  FamilyProfileMember _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+  FamilyProfileMember _fromDoc(
+      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     return FamilyProfileMember(
       id: doc.id,
       name: data['name'] as String? ?? 'Member',
-      relation: FamilyRelation.values.byName(data['relation'] as String? ?? 'other'),
+      relation:
+          FamilyRelation.values.byName(data['relation'] as String? ?? 'other'),
       age: (data['age'] as num?)?.toInt() ?? 0,
       gender: data['gender'] as String? ?? '',
       bloodGroup: data['bloodGroup'] as String? ?? '',
-      allergies: (data['allergies'] as List<dynamic>? ?? const []).cast<String>(),
-      conditions: (data['conditions'] as List<dynamic>? ?? const []).cast<String>(),
+      allergies:
+          (data['allergies'] as List<dynamic>? ?? const []).cast<String>(),
+      conditions:
+          (data['conditions'] as List<dynamic>? ?? const []).cast<String>(),
       insuranceCovered: data['insuranceCovered'] as bool? ?? false,
       dateOfBirth: (data['dateOfBirth'] as Timestamp?)?.toDate(),
       photoInitial: data['photoInitial'] as String?,

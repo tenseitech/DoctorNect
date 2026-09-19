@@ -66,14 +66,17 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Help & Support', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('Help & Support',
+          context: context),
       body: Form(
         key: _formKey,
         child: PatientProfileFormStyles.constrainedScrollBody(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              PatientProfileFormStyles.contentSurface(context: context, child: Column(
+              PatientProfileFormStyles.contentSurface(
+                context: context,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     PatientProfileFormStyles.sectionHeader('FAQs'),
@@ -83,13 +86,17 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.borderOf(context), width: 0.5),
+                          border: Border.all(
+                              color: AppColors.borderOf(context), width: 0.5),
                         ),
                         child: ExpansionTile(
-                          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                          tilePadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
                           title: Text(
                             e.value.question,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: AppTypography.bodyMedium),
+                            style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w500,
+                                fontSize: AppTypography.bodyMedium),
                           ),
                           children: [
                             Padding(
@@ -98,7 +105,10 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   e.value.answer,
-                                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.bodySmall,
+                                      color:
+                                          AppColors.textSecondaryOf(context)),
                                 ),
                               ),
                             ),
@@ -110,7 +120,9 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              PatientProfileFormStyles.contentSurface(context: context, child: Column(
+              PatientProfileFormStyles.contentSurface(
+                context: context,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     PatientProfileFormStyles.sectionHeader('Report an issue'),
@@ -127,7 +139,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                       controller: _issueController,
                       maxLines: 4,
                       maxLength: 500,
-                      decoration: PatientProfileFormStyles.fieldDecoration(context, 
+                      decoration: PatientProfileFormStyles.fieldDecoration(
+                        context,
                         labelText: 'Description',
                         alignLabelWithHint: true,
                       ),
@@ -145,7 +158,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                         },
                         icon: const Icon(Icons.upload),
                         label: Text(_screenshot ?? 'Upload screenshot'),
-                        style: OutlinedButton.styleFrom(foregroundColor: AppColors.patientTeal),
+                        style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.patientTeal),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -158,15 +172,20 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              PatientProfileFormStyles.contentSurface(context: context, child: ListTile(
+              PatientProfileFormStyles.contentSurface(
+                context: context,
+                child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.history, color: AppColors.patientTeal),
+                  leading:
+                      const Icon(Icons.history, color: AppColors.patientTeal),
                   title: Text('Raised tickets history'),
                   subtitle: Text('View status of your submitted tickets'),
-                  trailing: Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context)),
+                  trailing: Icon(Icons.chevron_right,
+                      color: AppColors.textSecondaryOf(context)),
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const SupportTicketsHistoryScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const SupportTicketsHistoryScreen()),
                   ),
                 ),
               ),

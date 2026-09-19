@@ -15,16 +15,19 @@ abstract final class LabReportFileStore {
 
   static final Map<String, Uint8List> _webBytes = {};
 
-  static String _cacheKey(String patientId, String bookingId, String fileName) =>
+  static String _cacheKey(
+          String patientId, String bookingId, String fileName) =>
       '$patientId/$bookingId/${_sanitizeFileName(fileName)}';
 
   static String _sanitizeFileName(String name) =>
       name.replaceAll(RegExp(r'[^\w.\-]'), '_');
 
-  static String storagePath(String patientId, String bookingId, String fileName) =>
+  static String storagePath(
+          String patientId, String bookingId, String fileName) =>
       'lab_reports/$patientId/$bookingId/${_sanitizeFileName(fileName)}';
 
-  static Future<String> _localDirPath(String patientId, String bookingId) async {
+  static Future<String> _localDirPath(
+      String patientId, String bookingId) async {
     final root = await getApplicationDocumentsDirectory();
     return '${root.path}/lab_reports/$patientId/$bookingId';
   }
@@ -84,7 +87,9 @@ abstract final class LabReportFileStore {
 
   static bool isImageFile(String fileName) {
     final lower = fileName.toLowerCase();
-    return lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg');
+    return lower.endsWith('.png') ||
+        lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg');
   }
 
   static Future<String?> uploadToStorage({
@@ -93,7 +98,9 @@ abstract final class LabReportFileStore {
     required String fileName,
     required Uint8List bytes,
   }) async {
-    if (!FirebaseBootstrap.isReady || bytes.isEmpty || bytes.length > maxFileBytes) {
+    if (!FirebaseBootstrap.isReady ||
+        bytes.isEmpty ||
+        bytes.length > maxFileBytes) {
       return null;
     }
 

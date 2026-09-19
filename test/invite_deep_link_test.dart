@@ -62,7 +62,8 @@ void main() {
         'https://doctornect.com/download?store=store-1&role=doctor',
       );
       expect(
-        AmbulanceInviteService.buildInviteLink(inviteId: 'inv-1', token: 'tok-1'),
+        AmbulanceInviteService.buildInviteLink(
+            inviteId: 'inv-1', token: 'tok-1'),
         'https://doctornect.com/ambulance-setup?invite=inv-1&token=tok-1',
       );
     });
@@ -86,7 +87,8 @@ void main() {
 
     test('pharmacy join link opens pharmacy unified auth', () {
       PendingDoctorInviteStore.captureFromUri(
-        Uri.parse('https://doctornect.com/join?doctor=d1784185736978&role=pharmacy'),
+        Uri.parse(
+            'https://doctornect.com/join?doctor=d1784185736978&role=pharmacy'),
       );
       expectUnifiedAuth(
         UserType.medicalStore,
@@ -106,7 +108,8 @@ void main() {
 
     test('doctor join link opens doctor unified auth', () {
       PendingDoctorInviteStore.captureFromUri(
-        Uri.parse('https://doctornect.com/join?doctor=d1784185736978&role=doctor'),
+        Uri.parse(
+            'https://doctornect.com/join?doctor=d1784185736978&role=doctor'),
       );
       expectUnifiedAuth(
         UserType.doctor,
@@ -116,7 +119,8 @@ void main() {
 
     test('ambulance join link opens ambulance unified auth', () {
       PendingDoctorInviteStore.captureFromUri(
-        Uri.parse('https://doctornect.com/join?doctor=d1784185736978&role=ambulance'),
+        Uri.parse(
+            'https://doctornect.com/join?doctor=d1784185736978&role=ambulance'),
       );
       expectUnifiedAuth(
         UserType.ambulance,

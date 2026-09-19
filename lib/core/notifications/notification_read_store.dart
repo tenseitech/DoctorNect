@@ -17,7 +17,9 @@ abstract final class NotificationReadStore {
   }) async {
     if (userId.isEmpty) return {};
     final prefs = await SharedPreferences.getInstance();
-    return (prefs.getStringList(_prefsKey(audience, userId)) ?? const <String>[]).toSet();
+    return (prefs.getStringList(_prefsKey(audience, userId)) ??
+            const <String>[])
+        .toSet();
   }
 
   static Future<void> markRead({

@@ -115,7 +115,7 @@ class _PatientShellState extends State<PatientShell> {
       PatientAppointmentWatcher.start(patientId);
     }
     _openFromPushIfNeeded();
-    
+
     if (mounted) {
       ProfileCompletionDialog.showIfNeeded(context);
     }
@@ -125,7 +125,8 @@ class _PatientShellState extends State<PatientShell> {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return;
     await SharedAppointmentsStore.instance.refreshForPatient(patientId);
-    await PatientLabBookingStore.instance.refreshForPatient(patientId, preferCache: true);
+    await PatientLabBookingStore.instance
+        .refreshForPatient(patientId, preferCache: true);
   }
 
   void _openFromPushIfNeeded() {
@@ -215,7 +216,8 @@ class _PatientShellState extends State<PatientShell> {
       child: ListenableBuilder(
         listenable: InAppNotificationService.instance,
         builder: (context, _) {
-          final hasUnread = InAppNotificationService.instance.unreadPatientCount > 0;
+          final hasUnread =
+              InAppNotificationService.instance.unreadPatientCount > 0;
           // Home tab (index 0) hosts the notification bell — flag it when
           // anything new (appointment, lab, etc.) has been received.
           final requestDots = [hasUnread, false, false, false, false];

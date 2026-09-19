@@ -22,7 +22,8 @@ class ProfileMenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = iconGradient ?? const [Color(0xFF0D9488), Color(0xFF0369A1)];
+    final gradient =
+        iconGradient ?? const [Color(0xFF0D9488), Color(0xFF0369A1)];
 
     return Material(
       color: Colors.transparent,
@@ -68,7 +69,8 @@ class ProfileMenuTile extends StatelessWidget {
                   Icon(
                     Icons.chevron_right,
                     size: 20,
-                    color: AppColors.textSecondaryOf(context).withValues(alpha: 0.85),
+                    color: AppColors.textSecondaryOf(context)
+                        .withValues(alpha: 0.85),
                   ),
             ],
           ),

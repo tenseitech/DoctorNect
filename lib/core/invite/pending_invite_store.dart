@@ -72,13 +72,17 @@ abstract final class PendingInviteStore {
 
     final invite = uri.queryParameters['invite']?.trim();
     final token = uri.queryParameters['token']?.trim();
-    if (invite != null && invite.isNotEmpty && token != null && token.isNotEmpty) {
+    if (invite != null &&
+        invite.isNotEmpty &&
+        token != null &&
+        token.isNotEmpty) {
       ambulanceInviteId = invite;
       ambulanceToken = token;
     } else {
       final segments = uri.pathSegments;
       if (segments.isNotEmpty &&
-          (segments.first == 'ambulance-setup' || segments.last == 'ambulance-setup')) {
+          (segments.first == 'ambulance-setup' ||
+              segments.last == 'ambulance-setup')) {
         final fromPathInvite = uri.queryParameters['invite']?.trim();
         final fromPathToken = uri.queryParameters['token']?.trim();
         if (fromPathInvite != null &&

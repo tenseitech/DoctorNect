@@ -32,12 +32,14 @@ abstract final class AmbulanceNotificationEmitter {
 
   static String bookerDisplayName(AmbulanceBookedByRole role) {
     return switch (role) {
-      AmbulanceBookedByRole.doctor => DoctorSession.loggedInDoctorName.isNotEmpty
-          ? DoctorSession.loggedInDoctorName
-          : 'Doctor',
-      AmbulanceBookedByRole.patient => PatientSession.loggedInPatientName.isNotEmpty
-          ? PatientSession.loggedInPatientName
-          : 'Patient',
+      AmbulanceBookedByRole.doctor =>
+        DoctorSession.loggedInDoctorName.isNotEmpty
+            ? DoctorSession.loggedInDoctorName
+            : 'Doctor',
+      AmbulanceBookedByRole.patient =>
+        PatientSession.loggedInPatientName.isNotEmpty
+            ? PatientSession.loggedInPatientName
+            : 'Patient',
     };
   }
 

@@ -10,7 +10,8 @@ import 'pharmacy_notification_store.dart';
 class PharmacyPrescriptionStore extends ChangeNotifier {
   PharmacyPrescriptionStore._();
 
-  static final PharmacyPrescriptionStore instance = PharmacyPrescriptionStore._();
+  static final PharmacyPrescriptionStore instance =
+      PharmacyPrescriptionStore._();
 
   final List<PharmacyPrescriptionDelivery> _deliveries = [];
 
@@ -39,7 +40,9 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
   }) {
     return _deliveries.where((d) {
       if (d.prescriptionId != prescriptionId) return false;
-      if (patientId != null && patientId.isNotEmpty && d.draft.patientId != patientId) {
+      if (patientId != null &&
+          patientId.isNotEmpty &&
+          d.draft.patientId != patientId) {
         return false;
       }
       return true;
@@ -47,33 +50,39 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
       ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
   }
 
-  Future<void> refreshForPatient(String patientId, {bool preferCache = true}) async {
+  Future<void> refreshForPatient(String patientId,
+      {bool preferCache = true}) async {
     if (patientId.isEmpty) return;
-    final remote = await FirestoreService.instance.pharmacyFirestore.fetchDeliveriesForPatient(
+    final remote = await FirestoreService.instance.pharmacyFirestore
+        .fetchDeliveriesForPatient(
       patientId,
       preferCache: preferCache,
     );
     mergeFromFirestore(remote);
   }
 
-  Future<void> refreshForDoctor(String doctorId, {bool preferCache = true}) async {
+  Future<void> refreshForDoctor(String doctorId,
+      {bool preferCache = true}) async {
     if (doctorId.isEmpty) return;
     if (preferCache && forDoctor(doctorId).isNotEmpty) return;
 
-    final remote = await FirestoreService.instance.pharmacyFirestore.fetchDeliveriesForDoctor(
+    final remote = await FirestoreService.instance.pharmacyFirestore
+        .fetchDeliveriesForDoctor(
       doctorId,
       preferCache: preferCache,
     );
     mergeFromFirestore(remote);
   }
 
-  List<PharmacyPrescriptionDelivery> forStoreAndDoctor(String storeId, String doctorId) =>
+  List<PharmacyPrescriptionDelivery> forStoreAndDoctor(
+          String storeId, String doctorId) =>
       _deliveries
           .where((d) => d.storeId == storeId && d.doctorId == doctorId)
           .toList()
         ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
 
-  Map<String, List<PharmacyPrescriptionDelivery>> groupedByDoctorForStore(String storeId) {
+  Map<String, List<PharmacyPrescriptionDelivery>> groupedByDoctorForStore(
+      String storeId) {
     final map = <String, List<PharmacyPrescriptionDelivery>>{};
     for (final d in forStore(storeId)) {
       map.putIfAbsent(d.doctorId, () => []).add(d);
@@ -93,14 +102,16 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
     return null;
   }
 
-  Future<List<PharmacyPrescriptionDelivery>> sendToStores({ // FIXED: async so Firestore writes are awaited and failures surface
+  Future<List<PharmacyPrescriptionDelivery>> sendToStores({
+    // FIXED: async so Firestore writes are awaited and failures surface
     required PrescriptionDraft draft,
     required List<String> storeIds,
     required String doctorId,
     required String doctorName,
   }) async {
     final connectedIds = storeIds
-        .where((id) => PharmacyConnectionStore.instance.isConnected(doctorId, id))
+        .where(
+            (id) => PharmacyConnectionStore.instance.isConnected(doctorId, id))
         .toList();
 
     final created = <PharmacyPrescriptionDelivery>[];
@@ -125,37 +136,43 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
         sentAt: DateTime.now(),
         medicineLines: PharmacyPrescriptionDelivery.linesFromDraft(draft),
       );
-      await FirestoreService.instance.pharmacyFirestore.saveDelivery(delivery); // FIXED: await; rethrows on failure
+      await FirestoreService.instance.pharmacyFirestore
+          .saveDelivery(delivery); // FIXED: await; rethrows on failure
       _deliveries.insert(0, delivery);
       created.add(delivery);
 
       PharmacyNotificationStore.instance.addStore(
         storeId: storeId,
         title: 'New prescription',
-        message: 'New prescription from Dr. $doctorName — ${draft.patient.patientName}',
+        message:
+            'New prescription from Dr. $doctorName — ${draft.patient.patientName}',
         referenceId: delivery.id,
       );
     }
 
     if (connectedIds.isNotEmpty && created.isEmpty) {
-      throw StateError('Could not send to the selected medical store(s). Please try again.');
+      throw StateError(
+          'Could not send to the selected medical store(s). Please try again.');
     }
 
     if (created.isNotEmpty) notifyListeners();
     return created;
   }
 
-  Future<void> markViewed(String deliveryId) async { // FIXED: async + awaited write
+  Future<void> markViewed(String deliveryId) async {
+    // FIXED: async + awaited write
     final d = findById(deliveryId);
     if (d == null || d.status != PharmacyDeliveryStatus.sent) return;
     d.status = PharmacyDeliveryStatus.viewed;
     d.viewedAt = DateTime.now();
 
-    await FirestoreService.instance.pharmacyFirestore.updateDelivery(d); // FIXED: await; rethrows on failure
+    await FirestoreService.instance.pharmacyFirestore
+        .updateDelivery(d); // FIXED: await; rethrows on failure
     notifyListeners();
   }
 
-  Future<void> updateMedicineLine({ // FIXED: async so per-medicine availability is persisted to Firestore
+  Future<void> updateMedicineLine({
+    // FIXED: async so per-medicine availability is persisted to Firestore
     required String deliveryId,
     required String medicineEntryId,
     required MedicineAvailability availability,
@@ -170,11 +187,13 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
         break;
       }
     }
-    await FirestoreService.instance.pharmacyFirestore.updateDelivery(d); // FIXED: persist medicineLines availability/substitute to Firestore
+    await FirestoreService.instance.pharmacyFirestore.updateDelivery(
+        d); // FIXED: persist medicineLines availability/substitute to Firestore
     notifyListeners();
   }
 
-  Future<void> markDispensed(String deliveryId, {required String notes}) async { // FIXED: async + awaited write
+  Future<void> markDispensed(String deliveryId, {required String notes}) async {
+    // FIXED: async + awaited write
     final d = findById(deliveryId);
     if (d == null) return;
 
@@ -183,11 +202,14 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
           l.availability == MedicineAvailability.outOfStock ||
           l.availability == MedicineAvailability.substituted,
     );
-    d.status = hasPartial ? PharmacyDeliveryStatus.partiallyDispensed : PharmacyDeliveryStatus.dispensed;
+    d.status = hasPartial
+        ? PharmacyDeliveryStatus.partiallyDispensed
+        : PharmacyDeliveryStatus.dispensed;
     d.dispensedAt = DateTime.now();
     d.dispensingNotes = notes;
 
-    await FirestoreService.instance.pharmacyFirestore.updateDelivery(d); // FIXED: await; rethrows on failure
+    await FirestoreService.instance.pharmacyFirestore
+        .updateDelivery(d); // FIXED: await; rethrows on failure
 
     notifyListeners();
   }

@@ -87,14 +87,16 @@ class LabSearchResultTile extends StatelessWidget {
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
-                    color: AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
+                    color: AppColors.textSecondaryOf(context)
+                        .withValues(alpha: 0.75),
                   ),
                 ],
               ),
             ),
           ),
         ),
-        if (showDivider) Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+        if (showDivider)
+          Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
       ],
     );
   }

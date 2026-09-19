@@ -16,10 +16,12 @@ class PatientProfileAvatarButton extends StatefulWidget {
   final double radius;
 
   @override
-  State<PatientProfileAvatarButton> createState() => _PatientProfileAvatarButtonState();
+  State<PatientProfileAvatarButton> createState() =>
+      _PatientProfileAvatarButtonState();
 }
 
-class _PatientProfileAvatarButtonState extends State<PatientProfileAvatarButton> {
+class _PatientProfileAvatarButtonState
+    extends State<PatientProfileAvatarButton> {
   Uint8List? _localPhotoBytes;
   bool _pressed = false;
 
@@ -52,7 +54,8 @@ class _PatientProfileAvatarButtonState extends State<PatientProfileAvatarButton>
 
   ImageProvider? _avatarImage(String? photoUrl) {
     final patientId = PatientSession.loggedInPatientId;
-    final bytes = _localPhotoBytes ?? PatientPhotoLocalStore.readCached(patientId);
+    final bytes =
+        _localPhotoBytes ?? PatientPhotoLocalStore.readCached(patientId);
     if (bytes != null && bytes.isNotEmpty) {
       return MemoryImage(bytes);
     }
@@ -65,7 +68,9 @@ class _PatientProfileAvatarButtonState extends State<PatientProfileAvatarButton>
   @override
   Widget build(BuildContext context) {
     final profile = PatientProfileMock.profile;
-    final name = profile.name.isNotEmpty ? profile.name : PatientSession.loggedInPatientName;
+    final name = profile.name.isNotEmpty
+        ? profile.name
+        : PatientSession.loggedInPatientName;
     final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'P';
     final avatarImage = _avatarImage(profile.photoUrl);
 
@@ -89,7 +94,8 @@ class _PatientProfileAvatarButtonState extends State<PatientProfileAvatarButton>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.patientTeal.withValues(alpha: _pressed ? 0.16 : 0.22),
+                color: AppColors.patientTeal
+                    .withValues(alpha: _pressed ? 0.16 : 0.22),
                 blurRadius: _pressed ? 4 : 6,
                 offset: Offset(0, _pressed ? 1 : 2),
               ),

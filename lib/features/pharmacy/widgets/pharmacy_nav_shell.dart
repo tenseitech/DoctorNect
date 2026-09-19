@@ -138,8 +138,7 @@ class PharmacyNavShell extends StatelessWidget {
     }
   }
 
-  int? _badgeFor(int index) =>
-      index < badges.length ? badges[index] : null;
+  int? _badgeFor(int index) => index < badges.length ? badges[index] : null;
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +147,8 @@ class PharmacyNavShell extends StatelessWidget {
     if (compact) {
       return PopScope(
         canPop: selectedIndex == 0 && !Navigator.of(context).canPop(),
-        onPopInvokedWithResult: (didPop, _) => _handleBackInvoked(context, didPop),
+        onPopInvokedWithResult: (didPop, _) =>
+            _handleBackInvoked(context, didPop),
         child: MobileScaffold(
           padding: EdgeInsets.zero,
           extendBody: true,
@@ -170,7 +170,8 @@ class PharmacyNavShell extends StatelessWidget {
 
     return PopScope(
       canPop: selectedIndex == 0 && !Navigator.of(context).canPop(),
-      onPopInvokedWithResult: (didPop, _) => _handleBackInvoked(context, didPop),
+      onPopInvokedWithResult: (didPop, _) =>
+          _handleBackInvoked(context, didPop),
       child: Scaffold(
         backgroundColor: AppColors.cardBgOf(context),
         body: SafeArea(
@@ -259,7 +260,9 @@ class _PharmacySidebar extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Divider(height: 1, color: AppColors.borderOf(context).withValues(alpha: 0.9)),
+            child: Divider(
+                height: 1,
+                color: AppColors.borderOf(context).withValues(alpha: 0.9)),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -282,7 +285,9 @@ class _PharmacySidebar extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            child: Divider(height: 1, color: AppColors.borderOf(context).withValues(alpha: 0.9)),
+            child: Divider(
+                height: 1,
+                color: AppColors.borderOf(context).withValues(alpha: 0.9)),
           ),
           const Padding(
             padding: EdgeInsets.fromLTRB(8, 0, 8, 16),
@@ -418,8 +423,10 @@ class _PharmacyNavTileState extends State<_PharmacyNavTile> {
   @override
   Widget build(BuildContext context) {
     final icon = widget.selected ? widget.selectedIcon : widget.icon;
-    final iconColor = _PharmacyNavActiveStyle.iconColor(widget.selected, context);
-    final labelColor = _PharmacyNavActiveStyle.labelColor(widget.selected, context);
+    final iconColor =
+        _PharmacyNavActiveStyle.iconColor(widget.selected, context);
+    final labelColor =
+        _PharmacyNavActiveStyle.labelColor(widget.selected, context);
     final bg = widget.selected
         ? null
         : _hovered
@@ -453,7 +460,8 @@ class _PharmacyNavTileState extends State<_PharmacyNavTile> {
                     widget.label,
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.bodyLarge,
-                      fontWeight: widget.selected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight:
+                          widget.selected ? FontWeight.w700 : FontWeight.w500,
                       color: labelColor,
                     ),
                   ),
@@ -461,7 +469,8 @@ class _PharmacyNavTileState extends State<_PharmacyNavTile> {
                 if (widget.badge != null && widget.badge! > 0)
                   widget.label == 'Connect'
                       ? const NavRequestDot(color: AppColors.pharmacyGreen)
-                      : _NavBadge(count: widget.badge!, inverted: widget.selected),
+                      : _NavBadge(
+                          count: widget.badge!, inverted: widget.selected),
               ],
             ),
           ),
@@ -484,7 +493,8 @@ class _NavBadge extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 22),
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: inverted ? AppColors.surfaceOf(context) : AppColors.pharmacyGreen,
+        color:
+            inverted ? AppColors.surfaceOf(context) : AppColors.pharmacyGreen,
         borderRadius: BorderRadius.circular(10),
       ),
       alignment: Alignment.center,
@@ -493,7 +503,8 @@ class _NavBadge extends StatelessWidget {
         style: GoogleFonts.inter(
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
-          color: inverted ? AppColors.pharmacyGreen : AppColors.surfaceOf(context),
+          color:
+              inverted ? AppColors.pharmacyGreen : AppColors.surfaceOf(context),
         ),
       ),
     );
@@ -511,8 +522,7 @@ class _PharmacyBottomNav extends StatelessWidget {
   final ValueChanged<int> onSelected;
   final List<int?> badges;
 
-  int? _badgeFor(int index) =>
-      index < badges.length ? badges[index] : null;
+  int? _badgeFor(int index) => index < badges.length ? badges[index] : null;
 
   @override
   Widget build(BuildContext context) {
@@ -535,8 +545,11 @@ class _PharmacyBottomNav extends StatelessWidget {
                   final tab = pharmacyNavTabs[index];
                   final selected = index == selectedIndex;
                   final icon = selected ? tab.selectedIcon : tab.icon;
-                  final iconColor = _PharmacyNavActiveStyle.iconColor(selected, context);
-                  final labelColor = selected ? AppColors.pharmacyGreen : AppColors.textSecondaryOf(context);
+                  final iconColor =
+                      _PharmacyNavActiveStyle.iconColor(selected, context);
+                  final labelColor = selected
+                      ? AppColors.pharmacyGreen
+                      : AppColors.textSecondaryOf(context);
                   final badge = _badgeFor(index);
 
                   return Expanded(
@@ -556,8 +569,10 @@ class _PharmacyBottomNav extends StatelessWidget {
                                   vertical: 5,
                                 ),
                                 decoration: selected
-                                    ? _PharmacyNavActiveStyle.decoration(selected: true)
-                                    : const BoxDecoration(color: Colors.transparent),
+                                    ? _PharmacyNavActiveStyle.decoration(
+                                        selected: true)
+                                    : const BoxDecoration(
+                                        color: Colors.transparent),
                                 child: Icon(icon, size: 22, color: iconColor),
                               ),
                               if (badge != null && badge > 0)
@@ -565,7 +580,8 @@ class _PharmacyBottomNav extends StatelessWidget {
                                   right: 4,
                                   top: -2,
                                   child: index == 1
-                                      ? const NavRequestDot(color: AppColors.pharmacyGreen)
+                                      ? const NavRequestDot(
+                                          color: AppColors.pharmacyGreen)
                                       : Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 5,
@@ -573,14 +589,16 @@ class _PharmacyBottomNav extends StatelessWidget {
                                           ),
                                           decoration: BoxDecoration(
                                             color: AppColors.pharmacyGreen,
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
                                           child: Text(
                                             badge > 9 ? '9+' : '$badge',
                                             style: GoogleFonts.inter(
                                               fontSize: 9,
                                               fontWeight: FontWeight.w700,
-                                              color: AppColors.surfaceOf(context),
+                                              color:
+                                                  AppColors.surfaceOf(context),
                                             ),
                                           ),
                                         ),
@@ -592,7 +610,8 @@ class _PharmacyBottomNav extends StatelessWidget {
                             label: compactBottomNavLabel(tab.label),
                             style: GoogleFonts.inter(
                               fontSize: 10,
-                              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
                               color: labelColor,
                             ),
                           ),

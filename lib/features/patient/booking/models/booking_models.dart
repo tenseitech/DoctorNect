@@ -11,7 +11,8 @@ const kMaxPatientsPerTimeSlot = 3;
 final _slotParseFormat = DateFormat('hh:mm a');
 
 /// True when [slotLabel] on [date] is today and its start time has already passed.
-bool isSlotTimeInPast(DateTime date, String slotLabel, [DateTime? referenceTime]) {
+bool isSlotTimeInPast(DateTime date, String slotLabel,
+    [DateTime? referenceTime]) {
   final now = referenceTime ?? DateTime.now();
   final day = DateTime(date.year, date.month, date.day);
   final today = DateTime(now.year, now.month, now.day);
@@ -19,7 +20,8 @@ bool isSlotTimeInPast(DateTime date, String slotLabel, [DateTime? referenceTime]
   if (day.isAfter(today)) return false;
   try {
     final parsed = _slotParseFormat.parse(slotLabel.trim());
-    final slotStart = DateTime(day.year, day.month, day.day, parsed.hour, parsed.minute);
+    final slotStart =
+        DateTime(day.year, day.month, day.day, parsed.hour, parsed.minute);
     return !slotStart.isAfter(now);
   } catch (_) {
     return false;

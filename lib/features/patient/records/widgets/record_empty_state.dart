@@ -33,13 +33,17 @@ class RecordEmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No $filter yet',
-              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               'Shared $filter from your doctor or lab will appear here.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ],
         ),

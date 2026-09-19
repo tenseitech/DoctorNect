@@ -79,19 +79,24 @@ void main() {
     });
 
     test('registrationMobileDigits normalizes Indian formats', () {
-      expect(FormValidators.registrationMobileDigits('9876543210'), '9876543210');
-      expect(FormValidators.registrationMobileDigits('+919876543210'), '9876543210');
-      expect(FormValidators.registrationMobileDigits('09876543210'), '9876543210');
-      expect(FormValidators.registrationMobileDigits('919876543210'), '9876543210');
+      expect(
+          FormValidators.registrationMobileDigits('9876543210'), '9876543210');
+      expect(FormValidators.registrationMobileDigits('+919876543210'),
+          '9876543210');
+      expect(
+          FormValidators.registrationMobileDigits('09876543210'), '9876543210');
+      expect(FormValidators.registrationMobileDigits('919876543210'),
+          '9876543210');
     });
 
-    test('registrationMobileDigits rejects wrong length only', () {
+    test('registrationMobileDigits rejects wrong length or invalid prefix', () {
       expect(FormValidators.registrationMobileDigits('12345'), isNull);
-      expect(FormValidators.registrationMobileDigits('5876543210'), '5876543210');
+      expect(FormValidators.registrationMobileDigits('5876543210'), isNull);
     });
 
     test('phoneLocal rejects invalid Indian prefix', () {
-      expect(FormValidators.phoneLocal('5876543210', dialCode: '+91'), isNotNull);
+      expect(
+          FormValidators.phoneLocal('5876543210', dialCode: '+91'), isNotNull);
     });
 
     test('parsePhone handles E.164 and local formats', () {
@@ -106,7 +111,8 @@ void main() {
 
     test('phoneLocal validates 10-digit Indian mobile', () {
       expect(FormValidators.phoneLocal(validMobile, dialCode: '+91'), isNull);
-      expect(FormValidators.phoneLocal('1234567890', dialCode: '+91'), isNotNull);
+      expect(
+          FormValidators.phoneLocal('1234567890', dialCode: '+91'), isNotNull);
     });
 
     test('otp requires exactly six digits', () {
@@ -173,59 +179,27 @@ void main() {
     });
   });
 
-  group('RegistrationOtpService — local debug OTP flow', () {
-    test('send, verify, and finalize local session', () async {
-      expect(kDebugMode, isTrue, reason: 'Local OTP fallback is debug-only');
-
-      FirebaseBootstrap.isReady = true;
-      RegistrationOtpService.clearPending(validMobile);
-
-      final send = await RegistrationOtpService.sendOtp(validMobile);
-      expect(send.error, isNull);
-      expect(send.debugOtp, '123456');
-
-      final badOtp = await RegistrationOtpService.verify(validMobile, '000000');
-      expect(badOtp, 'Invalid OTP.');
-
-      final ok = await RegistrationOtpService.verify(validMobile, '123456');
-      expect(ok, isNull);
-
-      final sessionId = RegistrationOtpService.verificationSessionId;
-      expect(sessionId, isNotNull);
-      expect(
-        RegistrationOtpService.isLocalVerificationSession(sessionId),
-        isTrue,
-      );
-
-      final finalize =
-          await RegistrationOtpService.finalizePatientVerification(sessionId!);
-      expect(finalize, isNull);
-      expect(RegistrationOtpService.verificationSessionId, isNull);
-    });
-
-    test('verify without prior send is blocked', () async {
+  group('RegistrationOtpService — cloud OTP flow', () {
+    test('requires Firebase before calling Cloud Functions', () async {
       FirebaseBootstrap.isReady = false;
       RegistrationOtpService.clearPending(validMobile);
 
-      final error = await RegistrationOtpService.verify(validMobile, '123456');
-      expect(error, 'Firebase is not available.');
+      final send = await RegistrationOtpService.sendOtp(validMobile);
+      expect(send.error, 'Firebase is not available.');
+
+      final verify = await RegistrationOtpService.verify(validMobile, '123456');
+      expect(verify, 'Firebase is not available.');
     });
 
-    test('clearPending removes local session state', () async {
-      FirebaseBootstrap.isReady = true;
-
-      await RegistrationOtpService.sendOtp(validMobile);
-      await RegistrationOtpService.verify(validMobile, '123456');
-      expect(RegistrationOtpService.verificationSessionId, isNotNull);
-
+    test('clearPending clears cached verification session', () {
       RegistrationOtpService.clearPending(validMobile);
       expect(RegistrationOtpService.verificationSessionId, isNull);
     });
 
-    test('isLocalVerificationSession is false outside debug', () {
+    test('isLocalVerificationSession is always false', () {
       expect(
         RegistrationOtpService.isLocalVerificationSession('local:9876543210'),
-        kDebugMode,
+        isFalse,
       );
     });
   });

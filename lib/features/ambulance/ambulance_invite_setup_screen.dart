@@ -27,10 +27,12 @@ class AmbulanceInviteSetupScreen extends StatefulWidget {
   final String token;
 
   @override
-  State<AmbulanceInviteSetupScreen> createState() => _AmbulanceInviteSetupScreenState();
+  State<AmbulanceInviteSetupScreen> createState() =>
+      _AmbulanceInviteSetupScreenState();
 }
 
-class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen> {
+class _AmbulanceInviteSetupScreenState
+    extends State<AmbulanceInviteSetupScreen> {
   static const _accentColor = Color(0xFFDC2626);
 
   final _formKey = GlobalKey<FormState>();
@@ -70,7 +72,8 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
     if (!signedIn) {
       setState(() {
         _loading = false;
-        _error = 'Could not start a secure session. Sign out of other accounts and try again.';
+        _error =
+            'Could not start a secure session. Sign out of other accounts and try again.';
       });
       return;
     }
@@ -125,7 +128,8 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
   String _suggestedUsername(AmbulanceInvite invite) {
     final phone = invite.phone.replaceAll(RegExp(r'[^0-9]'), '');
     if (phone.length >= 4) return 'driver$phone';
-    final name = invite.driverName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+    final name =
+        invite.driverName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
     if (name.length >= 3) return name;
     return '';
   }
@@ -196,7 +200,8 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
             child: Text(
               _error!,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+              style:
+                  GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
             ),
           ),
         ),
@@ -233,18 +238,24 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
                       children: [
                         Text(
                           invite.serviceName,
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.bodyLarge),
+                          style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w700,
+                              fontSize: AppTypography.bodyLarge),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Driver: ${invite.driverName} · ${invite.city}',
-                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
                         if (invite.doctorName.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             'Invited by Dr. ${invite.doctorName}',
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelMedium,
+                                color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ],
@@ -253,13 +264,16 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
                   const SizedBox(height: 20),
                   TextFormField(
                     controller: _usernameCtrl,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyMedium,
+                        fontWeight: FontWeight.w600),
                     decoration: authLoginInputDecoration(
                       context: context,
                       accentColor: _accentColor,
                       labelText: 'Username',
                       hintText: 'Choose a username',
-                      prefixIcon: const Icon(Icons.person_pin_outlined, size: 20),
+                      prefixIcon:
+                          const Icon(Icons.person_pin_outlined, size: 20),
                     ),
                     validator: FormValidators.username,
                   ),
@@ -282,10 +296,13 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
                       prefixIcon: const Icon(Icons.lock_outlined, size: 20),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          _obscurePin
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
                           size: 20,
                         ),
-                        onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                        onPressed: () =>
+                            setState(() => _obscurePin = !_obscurePin),
                       ),
                     ),
                     validator: FormValidators.securityPin,
@@ -309,13 +326,17 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
                       prefixIcon: const Icon(Icons.lock_outlined, size: 20),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          _obscureConfirm
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
                           size: 20,
                         ),
-                        onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                        onPressed: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
                       ),
                     ),
-                    validator: (v) => FormValidators.confirmSecurityPin(v, _pinCtrl.text.trim()),
+                    validator: (v) => FormValidators.confirmSecurityPin(
+                        v, _pinCtrl.text.trim()),
                   ),
                   const SizedBox(height: 24),
                   AuthLoginPrimaryButton(

@@ -56,7 +56,9 @@ class FileUploadTile extends StatelessWidget {
               color: AppColors.cardBgOf(context),
               borderRadius: BorderRadius.circular(AppConstants.inputRadius),
               border: Border.all(
-                color: errorText != null ? AppColors.error : AppColors.borderOf(context),
+                color: errorText != null
+                    ? AppColors.error
+                    : AppColors.borderOf(context),
               ),
             ),
             child: Row(
@@ -75,7 +77,9 @@ class FileUploadTile extends StatelessWidget {
                     hasFile
                         ? Icons.check_circle_outline
                         : Icons.cloud_upload_outlined,
-                    color: hasFile ? accentColor : AppColors.textSecondaryOf(context),
+                    color: hasFile
+                        ? accentColor
+                        : AppColors.textSecondaryOf(context),
                   ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -93,7 +97,8 @@ class FileUploadTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context)),
+                Icon(Icons.chevron_right,
+                    color: AppColors.textSecondaryOf(context)),
               ],
             ),
           ),
@@ -102,7 +107,8 @@ class FileUploadTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             errorText!,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.error),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium, color: AppColors.error),
           ),
         ],
       ],

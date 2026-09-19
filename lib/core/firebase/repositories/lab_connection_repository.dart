@@ -32,7 +32,8 @@ class LabConnectionRepository {
     }, SetOptions(merge: true));
   }
 
-  Stream<List<LabConnection>> watchPendingConnectionsForDoctor(String doctorId) {
+  Stream<List<LabConnection>> watchPendingConnectionsForDoctor(
+      String doctorId) {
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
     return FirebaseFirestore.instance
@@ -113,7 +114,8 @@ class LabConnectionRepository {
       query = query.startAfterDocument(startAfter);
     }
 
-    final snapshot = await FirestoreReadHelper.getQuery(query: query, preferCache: preferCache);
+    final snapshot = await FirestoreReadHelper.getQuery(
+        query: query, preferCache: preferCache);
     final items = _mapConnectionDocs(snapshot.docs);
 
     return FirestorePage(
@@ -147,11 +149,13 @@ class LabConnectionRepository {
         doctorName: data['doctorName'] as String? ?? '',
         labId: data['labId'] as String? ?? '',
         labName: data['labName'] as String? ?? '',
-        status: ConnectionStatus.values.byName(data['status'] as String? ?? 'pending'),
+        status: ConnectionStatus.values
+            .byName(data['status'] as String? ?? 'pending'),
         requestedBy: LabConnectionRequester.values.byName(
           data['requestedBy'] as String? ?? LabConnectionRequester.lab.name,
         ),
-        requestedAt: (data['requestedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        requestedAt:
+            (data['requestedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         respondedAt: (data['respondedAt'] as Timestamp?)?.toDate(),
       );
     } catch (_) {

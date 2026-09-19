@@ -131,7 +131,6 @@ class _LoginBackgroundPainter extends CustomPainter {
   bool shouldRepaint(_LoginBackgroundPainter old) => old.color != color;
 }
 
-
 class AuthLoginPageShell extends StatelessWidget {
   const AuthLoginPageShell({
     super.key,
@@ -154,6 +153,7 @@ class AuthLoginPageShell extends StatelessWidget {
   final bool loading;
   final String welcomeTitle;
   final double maxWidth;
+
   /// When set, uses split desktop + branded mobile layouts (login screens).
   final AuthLoginBranding? branding;
 
@@ -251,14 +251,16 @@ class _SplitLoginScaffold extends StatelessWidget {
                 ),
                 SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.arrow_back_rounded),
                           onPressed: () => Navigator.maybePop(context),
-                          style: IconButton.styleFrom(foregroundColor: Colors.white),
+                          style: IconButton.styleFrom(
+                              foregroundColor: Colors.white),
                         ),
                         const ThemeToggleButton(),
                       ],
@@ -303,7 +305,8 @@ class _LoginBrandingPanel extends StatelessWidget {
         children: [
           Positioned.fill(
             child: CustomPaint(
-              painter: _LoginBackgroundPainter(color: AppColors.surfaceOf(context).withValues(alpha: 0.15)),
+              painter: _LoginBackgroundPainter(
+                  color: AppColors.surfaceOf(context).withValues(alpha: 0.15)),
             ),
           ),
           SafeArea(
@@ -312,7 +315,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(48, 40, 48, 40),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -324,7 +328,9 @@ class _LoginBrandingPanel extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.16),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                                border: Border.all(
+                                    color:
+                                        Colors.white.withValues(alpha: 0.25)),
                               ),
                               child: Icon(icon, color: Colors.white, size: 24),
                             ),
@@ -376,15 +382,18 @@ class _LoginBrandingPanel extends StatelessWidget {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.16),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.16),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: Icon(f.icon, color: Colors.white, size: 20),
+                                    child: Icon(f.icon,
+                                        color: Colors.white, size: 20),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           f.title,
@@ -402,7 +411,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                                           overflow: TextOverflow.ellipsis,
                                           style: GoogleFonts.inter(
                                             fontSize: AppTypography.bodySmall,
-                                            color: Colors.white.withValues(alpha: 0.85),
+                                            color: Colors.white
+                                                .withValues(alpha: 0.85),
                                           ),
                                         ),
                                       ],
@@ -414,7 +424,9 @@ class _LoginBrandingPanel extends StatelessWidget {
                         const SizedBox(height: 32),
                         Row(
                           children: [
-                            Icon(Icons.verified_user_outlined, size: 16, color: Colors.white.withValues(alpha: 0.8)),
+                            Icon(Icons.verified_user_outlined,
+                                size: 16,
+                                color: Colors.white.withValues(alpha: 0.8)),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -522,7 +534,8 @@ class _MobileBrandedLoginScaffold extends StatelessWidget {
                       16,
                       24 + MediaQuery.viewInsetsOf(context).bottom,
                     ),
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     child: _AuthLoginFormCard(
                       accentColor: accentColor,
                       compact: true,
@@ -576,7 +589,8 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.arrow_back_rounded),
                       onPressed: () => Navigator.maybePop(context),
-                      style: IconButton.styleFrom(foregroundColor: Colors.white),
+                      style:
+                          IconButton.styleFrom(foregroundColor: Colors.white),
                     ),
                     const ThemeToggleButton(),
                   ],
@@ -593,7 +607,8 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25)),
                       ),
                       child: Icon(icon, color: Colors.white, size: 26),
                     ),
@@ -678,7 +693,8 @@ class _StackedLoginScaffold extends StatelessWidget {
     );
 
     final horizontalPadding = compact ? 16.0 : 24.0;
-    final formMaxWidth = isMedium ? 480.0 : (compact ? double.infinity : maxWidth);
+    final formMaxWidth =
+        isMedium ? 480.0 : (compact ? double.infinity : maxWidth);
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
@@ -719,7 +735,8 @@ class _StackedLoginScaffold extends StatelessWidget {
                       horizontalPadding,
                       compact ? 24 : 32,
                     ),
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: formMaxWidth),
                       child: Column(
@@ -733,7 +750,9 @@ class _StackedLoginScaffold extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: AppColors.surfaceOf(context),
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: accentColor.withValues(alpha: 0.12)),
+                                  border: Border.all(
+                                      color:
+                                          accentColor.withValues(alpha: 0.12)),
                                 ),
                                 child: Icon(icon, color: accentColor, size: 28),
                               ),
@@ -742,7 +761,8 @@ class _StackedLoginScaffold extends StatelessWidget {
                           ],
                           Text(
                             welcomeTitle,
-                            textAlign: compact ? TextAlign.center : TextAlign.left,
+                            textAlign:
+                                compact ? TextAlign.center : TextAlign.left,
                             style: GoogleFonts.inter(
                               fontSize: compact ? 22 : 24,
                               fontWeight: FontWeight.w800,
@@ -753,7 +773,8 @@ class _StackedLoginScaffold extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             subtitle,
-                            textAlign: compact ? TextAlign.center : TextAlign.left,
+                            textAlign:
+                                compact ? TextAlign.center : TextAlign.left,
                             style: GoogleFonts.inter(
                               fontSize: AppTypography.bodyMedium,
                               color: AppColors.textSecondaryOf(context),
@@ -908,7 +929,8 @@ class AuthLoginPrimaryButton extends StatelessWidget {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 52),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),
         child: loading
@@ -919,7 +941,8 @@ class AuthLoginPrimaryButton extends StatelessWidget {
                   const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.4, color: Colors.white),
                   ),
                   if (loadingText != null && loadingText!.isNotEmpty) ...[
                     const SizedBox(width: 10),
@@ -957,7 +980,8 @@ class AuthLoginPrimaryButton extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_rounded, size: 18, color: Colors.white),
+                  const Icon(Icons.arrow_forward_rounded,
+                      size: 18, color: Colors.white),
                 ],
               ),
       ),
@@ -992,7 +1016,8 @@ class AuthLoginRegisterButton extends StatelessWidget {
           backgroundColor: Colors.transparent,
           minimumSize: const Size(double.infinity, 50),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

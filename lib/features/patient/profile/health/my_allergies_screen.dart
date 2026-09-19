@@ -129,7 +129,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
               child: TextField(
                 controller: _controller,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: PatientProfileFormStyles.fieldDecoration(context, 
+                decoration: PatientProfileFormStyles.fieldDecoration(
+                  context,
                   labelText: 'Allergy name',
                   hintText: 'e.g. Penicillin, Peanuts',
                 ).copyWith(errorText: _errorText),
@@ -147,32 +148,39 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.patientTeal,
                 foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 minimumSize: const Size(0, 48),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
           ],
         ),
-        if (_suggestions.any((s) => !_items.any((i) => i.toLowerCase() == s.toLowerCase()))) ...[
+        if (_suggestions.any(
+            (s) => !_items.any((i) => i.toLowerCase() == s.toLowerCase()))) ...[
           const SizedBox(height: 12),
           Text(
             'Quick add',
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: _suggestions
-                .where((s) => !_items.any((i) => i.toLowerCase() == s.toLowerCase()))
+                .where((s) =>
+                    !_items.any((i) => i.toLowerCase() == s.toLowerCase()))
                 .map(
                   (s) => ActionChip(
                     label: Text(s),
                     onPressed: () => _add(s),
                     backgroundColor: AppColors.surfaceOf(context),
                     side: BorderSide(color: AppColors.borderOf(context)),
-                    labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context)),
+                    labelStyle: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textPrimaryOf(context)),
                   ),
                 )
                 .toList(),
@@ -205,7 +213,9 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           Text(
             'Add any medicine or food allergies above',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ],
       ),
@@ -257,12 +267,15 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('My Allergies', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('My Allergies',
+          context: context),
       body: PatientProfileFormStyles.constrainedScrollBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildInfoBanner(),
@@ -272,7 +285,9 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   PatientProfileFormStyles.sectionHeader(

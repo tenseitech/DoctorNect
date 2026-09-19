@@ -40,7 +40,8 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
       await DoctorProfileStore.instance.persist(DoctorSession.loggedInDoctorId);
     } catch (_) {
       if (!mounted) return;
-      AppToast.info(context, 'Could not save changes. Please check your connection and try again.');
+      AppToast.info(context,
+          'Could not save changes. Please check your connection and try again.');
       return;
     }
     if (!mounted) return;
@@ -71,12 +72,14 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
             child: Align(
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Form(
@@ -99,8 +102,11 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
                                 decoration: const InputDecoration(
                                   labelText: 'Recovery email (optional)',
                                   hintText: 'e.g. backup@example.com',
-                                  prefixIcon: Icon(Icons.alternate_email_outlined, size: 20),
-                                  helperText: 'Used for account recovery if you lose access',
+                                  prefixIcon: Icon(
+                                      Icons.alternate_email_outlined,
+                                      size: 20),
+                                  helperText:
+                                      'Used for account recovery if you lose access',
                                 ),
                                 validator: FormValidators.optionalEmail,
                                 onChanged: (_) => _markDirty(),
@@ -179,8 +185,11 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       Navigator.of(context).pop();
     } on FirebaseAuthException catch (e) {
       final msg = switch (e.code) {
-        'wrong-password' || 'invalid-credential' => 'Current password is incorrect.',
-        'weak-password' => 'New password is too weak. Use at least 6 characters.',
+        'wrong-password' ||
+        'invalid-credential' =>
+          'Current password is incorrect.',
+        'weak-password' =>
+          'New password is too weak. Use at least 6 characters.',
         'too-many-requests' => 'Too many attempts. Please try again later.',
         _ => e.message ?? 'Password change failed.',
       };
@@ -207,7 +216,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             child: Text(
               'Change Password',
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w700,
+                  fontSize: AppTypography.headlineSmall),
             ),
           ),
         ],
@@ -226,11 +237,14 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFEDED),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.4)),
+                    border: Border.all(
+                        color: const Color(0xFFDC2626).withValues(alpha: 0.4)),
                   ),
                   child: Text(
                     _errorMsg!,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: const Color(0xFFDC2626)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: const Color(0xFFDC2626)),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -242,10 +256,13 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   labelText: 'Current password',
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _showCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _showCurrent
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       size: 20,
                     ),
-                    onPressed: () => setState(() => _showCurrent = !_showCurrent),
+                    onPressed: () =>
+                        setState(() => _showCurrent = !_showCurrent),
                   ),
                 ),
                 validator: FormValidators.currentPassword,
@@ -258,13 +275,16 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   labelText: 'New password',
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _showNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _showNew
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       size: 20,
                     ),
                     onPressed: () => setState(() => _showNew = !_showNew),
                   ),
                 ),
-                validator: (v) => FormValidators.changePassword(v, _currentCtrl.text),
+                validator: (v) =>
+                    FormValidators.changePassword(v, _currentCtrl.text),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -274,13 +294,17 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   labelText: 'Confirm new password',
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _showConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _showConfirm
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       size: 20,
                     ),
-                    onPressed: () => setState(() => _showConfirm = !_showConfirm),
+                    onPressed: () =>
+                        setState(() => _showConfirm = !_showConfirm),
                   ),
                 ),
-                validator: (v) => FormValidators.confirmNewPassword(v, _newCtrl.text),
+                validator: (v) =>
+                    FormValidators.confirmNewPassword(v, _newCtrl.text),
               ),
             ],
           ),
@@ -301,7 +325,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Update'),
         ),

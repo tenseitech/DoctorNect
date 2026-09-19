@@ -22,7 +22,8 @@ class AmbulanceDriverHomeScreen extends StatefulWidget {
   const AmbulanceDriverHomeScreen({super.key});
 
   @override
-  AmbulanceDriverHomeScreenState createState() => AmbulanceDriverHomeScreenState();
+  AmbulanceDriverHomeScreenState createState() =>
+      AmbulanceDriverHomeScreenState();
 }
 
 enum AmbulanceDriverTab { pending, accepted, completed, cancelled }
@@ -32,7 +33,8 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
 
   static const _accent = Color(0xFFDC2626);
 
-  void openPendingTab() => setState(() => _selectedTab = AmbulanceDriverTab.pending);
+  void openPendingTab() =>
+      setState(() => _selectedTab = AmbulanceDriverTab.pending);
 
   @override
   void initState() {
@@ -57,7 +59,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
 
     await AmbulanceAuthHelper.ensureSignedIn();
     await FirestoreService.instance.ambulance.linkDriverAuth(driverId);
-    
+
     // Self-healing: pull missing ratings from broadcasts for old trips
     try {
       final firestore = FirebaseFirestore.instance;
@@ -70,7 +72,10 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
         if (doc.data()['rating'] == null) {
           final broadcastId = doc.data()['broadcastId'] as String?;
           if (broadcastId != null) {
-            final bDoc = await firestore.collection(FirestorePaths.ambulanceBroadcasts).doc(broadcastId).get();
+            final bDoc = await firestore
+                .collection(FirestorePaths.ambulanceBroadcasts)
+                .doc(broadcastId)
+                .get();
             if (bDoc.exists && bDoc.data()?['rating'] != null) {
               await doc.reference.update({
                 'rating': bDoc.data()!['rating'],
@@ -116,9 +121,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
             )
             .toList();
         final completed = bookings
-            .where((b) =>
-                b.isCompleted &&
-                b.acceptedAmbulanceId == ambulanceId)
+            .where((b) => b.isCompleted && b.acceptedAmbulanceId == ambulanceId)
             .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         final cancelled = bookings
@@ -311,7 +314,8 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     await AmbulanceAuthHelper.ensureSignedIn();
     await FirestoreService.instance.ambulance.linkDriverAuth(ambulanceId);
 
-    final ok = await FirestoreService.instance.ambulance.cancelAcceptedBroadcast(
+    final ok =
+        await FirestoreService.instance.ambulance.cancelAcceptedBroadcast(
       broadcastId: bookingId,
       driverId: ambulanceId,
     );
@@ -319,8 +323,9 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     if (ok) {
       setState(() => _selectedTab = AmbulanceDriverTab.cancelled);
     } else {
-      final message = FirestoreService.instance.ambulance.lastCancelFailureUserMessage ??
-          'Could not cancel this trip. Please try again.';
+      final message =
+          FirestoreService.instance.ambulance.lastCancelFailureUserMessage ??
+              'Could not cancel this trip. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
@@ -342,12 +347,14 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     await AmbulanceAuthHelper.ensureSignedIn();
 
     final ambulance = AmbulanceStore.instance.findAmbulance(ambulanceId) ??
-        await FirestoreService.instance.ambulance.fetchAmbulanceById(ambulanceId);
+        await FirestoreService.instance.ambulance
+            .fetchAmbulanceById(ambulanceId);
 
     final ok = await FirestoreService.instance.ambulance.acceptBroadcast(
       broadcastId: bookingId,
       driverId: ambulanceId,
-      ambulanceName: ambulance?.serviceName ?? AmbulanceSession.loggedInAmbulanceName,
+      ambulanceName:
+          ambulance?.serviceName ?? AmbulanceSession.loggedInAmbulanceName,
     );
     if (!context.mounted) return;
     if (ok) {
@@ -355,7 +362,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     } else {
       final message =
           FirestoreService.instance.ambulance.lastAcceptFailureUserMessage ??
-          'Could not accept this trip. Please try again.';
+              'Could not accept this trip. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -398,7 +405,10 @@ class _RequestsHeader extends StatelessWidget {
               children: [
                 Text(
                   'Trip Requests',
-                  style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700, color: AppColors.surfaceOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineMedium,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.surfaceOf(context)),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -425,12 +435,18 @@ class _RequestsHeader extends StatelessWidget {
                 isVerified: true,
               );
             },
-            icon: const Icon(Icons.campaign_rounded, size: 16, color: Colors.white),
-            label: const Text('Promote Ad', style: TextStyle(color: Colors.white, fontSize: AppTypography.labelMedium, fontWeight: FontWeight.bold)),
+            icon: const Icon(Icons.campaign_rounded,
+                size: 16, color: Colors.white),
+            label: const Text('Promote Ad',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: AppTypography.labelMedium,
+                    fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.white),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ],
@@ -529,10 +545,16 @@ class _TripTabPill extends StatelessWidget {
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
-              color: selected ? AppColors.surfaceOf(context) : Colors.transparent,
+              color:
+                  selected ? AppColors.surfaceOf(context) : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               boxShadow: selected
-                  ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))]
+                  ? [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2))
+                    ]
                   : null,
             ),
             child: Column(
@@ -542,7 +564,8 @@ class _TripTabPill extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w800,
-                    color: selected ? color : AppColors.textSecondaryOf(context),
+                    color:
+                        selected ? color : AppColors.textSecondaryOf(context),
                   ),
                 ),
                 Text(
@@ -550,7 +573,8 @@ class _TripTabPill extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: selected ? color : AppColors.textSecondaryOf(context),
+                    color:
+                        selected ? color : AppColors.textSecondaryOf(context),
                   ),
                 ),
               ],
@@ -587,7 +611,8 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             title,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
           ),
           const SizedBox(width: 8),
           Container(
@@ -625,12 +650,16 @@ class _EmptyHint extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.5)),
+          Icon(icon,
+              size: 16,
+              color: AppColors.textSecondaryOf(context).withValues(alpha: 0.5)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ),
         ],
@@ -698,7 +727,8 @@ class _RequestCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: highlight ? const Color(0xFFEFF6FF) : AppColors.surfaceOf(context),
+        color:
+            highlight ? const Color(0xFFEFF6FF) : AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor.withValues(alpha: highlight ? 0.3 : 0.4),
@@ -760,7 +790,8 @@ class _RequestCard extends StatelessWidget {
                 ),
                 if (alreadyTaken)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(6),
@@ -779,19 +810,25 @@ class _RequestCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondaryOf(context)),
+                Icon(Icons.phone_outlined,
+                    size: 14, color: AppColors.textSecondaryOf(context)),
                 const SizedBox(width: 4),
                 Text(
                   booking.contactPhone,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(width: 12),
-                Icon(Icons.person_outline, size: 14, color: AppColors.textSecondaryOf(context)),
+                Icon(Icons.person_outline,
+                    size: 14, color: AppColors.textSecondaryOf(context)),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     'by ${booking.bookedByName}',
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -802,22 +839,27 @@ class _RequestCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.notes_outlined, size: 14, color: AppColors.textSecondaryOf(context)),
+                  Icon(Icons.notes_outlined,
+                      size: 14, color: AppColors.textSecondaryOf(context)),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       booking.notes!,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   ),
                 ],
               ),
             ],
-            if (booking.isAccepted && booking.acceptedAmbulanceName != null) ...[
+            if (booking.isAccepted &&
+                booking.acceptedAmbulanceName != null) ...[
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.check_circle, size: 14, color: Color(0xFF2563EB)),
+                  const Icon(Icons.check_circle,
+                      size: 14, color: Color(0xFF2563EB)),
                   const SizedBox(width: 4),
                   Text(
                     'Assigned: ${booking.acceptedAmbulanceName}',
@@ -833,11 +875,16 @@ class _RequestCard extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.access_time, size: 13, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.6)),
+                Icon(Icons.access_time,
+                    size: 13,
+                    color: AppColors.textSecondaryOf(context)
+                        .withValues(alpha: 0.6)),
                 const SizedBox(width: 4),
                 Text(
                   DateFormat('dd MMM · hh:mm a').format(booking.createdAt),
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -853,11 +900,15 @@ class _RequestCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.info_outline, size: 12, color: Color(0xFFDC2626)),
+                    const Icon(Icons.info_outline,
+                        size: 12, color: Color(0xFFDC2626)),
                     const SizedBox(width: 4),
                     Text(
                       _getCancelledByText(),
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: const Color(0xFFDC2626)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFDC2626)),
                     ),
                   ],
                 ),
@@ -940,13 +991,15 @@ class _RequestCard extends StatelessWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  ...List.generate(5, (i) => Icon(
-                    i < booking.rating!
-                        ? Icons.star_rounded
-                        : Icons.star_outline_rounded,
-                    size: 16,
-                    color: const Color(0xFFF59E0B),
-                  )),
+                  ...List.generate(
+                      5,
+                      (i) => Icon(
+                            i < booking.rating!
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: 16,
+                            color: const Color(0xFFF59E0B),
+                          )),
                   const SizedBox(width: 6),
                   Text(
                     '${booking.rating}/5',

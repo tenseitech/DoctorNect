@@ -38,7 +38,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
   ];
 
   static const _kVirtualBase = 10000; // start mid-way so left swipe works too
-  final PageController _pageController = PageController(initialPage: _kVirtualBase);
+  final PageController _pageController =
+      PageController(initialPage: _kVirtualBase);
   int _currentPage = _kVirtualBase;
   Timer? _autoTimer;
   int _entryCount = 4; // updated each build
@@ -83,16 +84,20 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
 
   static List<FeaturedDoctorEntry> _demoEntries() {
     final demos = [
-      _makeDemoDoctor('Dr. Aryan Mehta', 'Cardiologist', 'Heart Care Clinic', 'Mumbai', FeaturedDoctorPeriod.day),
-      _makeDemoDoctor('Dr. Priya Sharma', 'Dermatologist', 'Skin & Glow Clinic', 'Delhi', FeaturedDoctorPeriod.week),
-      _makeDemoDoctor('Dr. Rohit Verma', 'Orthopedic', 'Bone & Joint Centre', 'Pune', FeaturedDoctorPeriod.month),
-      _makeDemoDoctor('Dr. Sneha Rao', 'Gynecologist', 'Wellness Hospital', 'Bangalore', FeaturedDoctorPeriod.year),
+      _makeDemoDoctor('Dr. Aryan Mehta', 'Cardiologist', 'Heart Care Clinic',
+          'Mumbai', FeaturedDoctorPeriod.day),
+      _makeDemoDoctor('Dr. Priya Sharma', 'Dermatologist', 'Skin & Glow Clinic',
+          'Delhi', FeaturedDoctorPeriod.week),
+      _makeDemoDoctor('Dr. Rohit Verma', 'Orthopedic', 'Bone & Joint Centre',
+          'Pune', FeaturedDoctorPeriod.month),
+      _makeDemoDoctor('Dr. Sneha Rao', 'Gynecologist', 'Wellness Hospital',
+          'Bangalore', FeaturedDoctorPeriod.year),
     ];
     return demos;
   }
 
-  static FeaturedDoctorEntry _makeDemoDoctor(
-      String name, String spec, String clinic, String city, FeaturedDoctorPeriod period) {
+  static FeaturedDoctorEntry _makeDemoDoctor(String name, String spec,
+      String clinic, String city, FeaturedDoctorPeriod period) {
     return FeaturedDoctorEntry(
       period: period,
       doctor: DoctorListing(
@@ -138,7 +143,9 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
       children: [
         Text(
           'Featured Doctors',
-          style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.headlineSmall,
+              fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -235,8 +242,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                 const SizedBox(height: 2),
                                 Row(children: [
                                   const Icon(Icons.star,
-                                      size: 13,
-                                      color: Color(0xFFFDE047)),
+                                      size: 13, color: Color(0xFFFDE047)),
                                   Flexible(
                                     child: Text(
                                       ' ${doctor.rating} · ${entry.subtitle}',
@@ -244,7 +250,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
                                         fontSize: AppTypography.labelSmall,
-                                        color: Colors.white.withValues(alpha: 0.9),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.9),
                                       ),
                                     ),
                                   ),
@@ -288,7 +295,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.3)),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.3)),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -366,10 +374,12 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
   }
 
   String _resolveAddress(DoctorListing doctor) {
-    if (doctor.addressLine1.trim().isNotEmpty) return doctor.addressLine1.trim();
+    if (doctor.addressLine1.trim().isNotEmpty)
+      return doctor.addressLine1.trim();
     if (doctor.id == DoctorSession.loggedInDoctorId) {
       final profile = DoctorProfileStore.instance.profile;
-      if (profile.addressLine1.trim().isNotEmpty) return profile.addressLine1.trim();
+      if (profile.addressLine1.trim().isNotEmpty)
+        return profile.addressLine1.trim();
       if (profile.landmark.trim().isNotEmpty) return profile.landmark.trim();
     }
     if (doctor.area.trim().isNotEmpty) return doctor.area.trim();
@@ -381,7 +391,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
     if (doctor.id == DoctorSession.loggedInDoctorId) {
       final profile = DoctorProfileStore.instance.profile;
       if (profile.state.trim().isNotEmpty) return profile.state.trim();
-      if (profile.stateCouncil.trim().isNotEmpty) return profile.stateCouncil.trim();
+      if (profile.stateCouncil.trim().isNotEmpty)
+        return profile.stateCouncil.trim();
     }
     return '';
   }
@@ -423,14 +434,17 @@ class _FeaturedDoctorPhoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final image = _provider;
-    final initial = displayName.trim().isNotEmpty ? displayName.trim()[0].toUpperCase() : 'D';
+    final initial = displayName.trim().isNotEmpty
+        ? displayName.trim()[0].toUpperCase()
+        : 'D';
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 2),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.35), width: 2),
         color: Colors.white.withValues(alpha: 0.15),
       ),
       clipBehavior: Clip.antiAlias,

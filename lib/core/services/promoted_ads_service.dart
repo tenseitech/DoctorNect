@@ -30,14 +30,17 @@ abstract final class PromotedAdsService {
   static Future<int> getDynamicPlanPrice(int durationHours) async {
     try {
       final config = await BannerConfigService.fetchConfig();
-      return config.pricingTiers[durationHours] ?? defaultPricingTiers[durationHours] ?? 300;
+      return config.pricingTiers[durationHours] ??
+          defaultPricingTiers[durationHours] ??
+          300;
     } catch (_) {
       return defaultPricingTiers[durationHours] ?? 300;
     }
   }
 
   /// Uploads ad banner image bytes to Firebase Storage and returns public URL.
-  static Future<String> uploadAdImage(String providerId, String adId, Uint8List bytes) async {
+  static Future<String> uploadAdImage(
+      String providerId, String adId, Uint8List bytes) async {
     if (!FirebaseBootstrap.isReady) {
       throw StateError('Firebase is not initialized.');
     }
@@ -47,10 +50,11 @@ abstract final class PromotedAdsService {
       field: 'Banner image',
     );
     if (sizeErr != null) throw ArgumentError(sizeErr);
-    final safeProvider = InputSanitize.fileName(providerId, fallback: 'provider');
+    final safeProvider =
+        InputSanitize.fileName(providerId, fallback: 'provider');
     final safeAd = InputSanitize.fileName(adId, fallback: 'ad');
-    final ref = FirebaseStorage.instance
-        .ref('promoted_ads/$safeProvider/$safeAd.jpg');
+    final ref =
+        FirebaseStorage.instance.ref('promoted_ads/$safeProvider/$safeAd.jpg');
     await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
     return await ref.getDownloadURL();
   }
@@ -106,7 +110,6 @@ abstract final class PromotedAdsService {
             .where((c) => c.isNotEmpty)
             .take(20)
             .toList(),
-
       'paymentStatus': 'pending',
       'status': 'draft',
       'createdAt': FieldValue.serverTimestamp(),
@@ -175,7 +178,8 @@ abstract final class PromotedAdsService {
       activeAds.shuffle();
       return activeAds;
     } catch (e) {
-      if (kDebugMode) debugPrint('[PromotedAdsService] fetchActiveAds error: $e');
+      if (kDebugMode)
+        debugPrint('[PromotedAdsService] fetchActiveAds error: $e');
       return [];
     }
   }
@@ -196,7 +200,9 @@ abstract final class PromotedAdsService {
       final now = DateTime.now();
       final active = lastAds
           .where((ad) => ad.endTime == null || ad.endTime!.isAfter(now))
-          .take(lastConfig.maxActiveBanners > 0 ? lastConfig.maxActiveBanners : 10)
+          .take(lastConfig.maxActiveBanners > 0
+              ? lastConfig.maxActiveBanners
+              : 10)
           .toList();
       active.shuffle();
       controller.add(active);
@@ -216,7 +222,8 @@ abstract final class PromotedAdsService {
         .snapshots()
         .listen(
       (snap) {
-        lastAds = snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
+        lastAds =
+            snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
         emit();
       },
       onError: (_) => emit(),
@@ -232,14 +239,17 @@ abstract final class PromotedAdsService {
 
   /// 5. Query provider's own ads for "My Ads" dashboard view
   static Stream<List<PromotedAdModel>> streamProviderAds(String providerId) {
-    if (!FirebaseBootstrap.isReady || providerId.isEmpty) return Stream.value([]);
+    if (!FirebaseBootstrap.isReady || providerId.isEmpty)
+      return Stream.value([]);
     return _firestore
         .collection(_collection)
         .where('providerId', isEqualTo: providerId)
         .snapshots()
         .map((snap) {
-      final list = snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
-      list.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+      final list =
+          snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
+      list.sort((a, b) => (b.createdAt ?? DateTime.now())
+          .compareTo(a.createdAt ?? DateTime.now()));
       return list;
     });
   }

@@ -36,7 +36,8 @@ abstract final class DoctorNotificationEmitter {
     );
   }
 
-  static void emit(AppNotification n) => InAppNotificationService.instance.addDoctor(n);
+  static void emit(AppNotification n) =>
+      InAppNotificationService.instance.addDoctor(n);
 
   static AppNotification newAppointmentBooked({
     required String patientName,
@@ -77,7 +78,7 @@ abstract final class DoctorNotificationEmitter {
     required String timeLabel,
     required AppointmentType visitType,
     String? appointmentId,
-  }  ) {
+  }) {
     emit(_build(
       trigger: DoctorNotificationTrigger.newAppointmentBooked,
       title: 'New request',
@@ -102,7 +103,8 @@ abstract final class DoctorNotificationEmitter {
         type: AppNotificationType.cancellation,
         target: AppNotificationTarget.appointments,
         targetId: appointmentId,
-        dedupeKey: appointmentId != null ? 'd_appt_cancel_$appointmentId' : null,
+        dedupeKey:
+            appointmentId != null ? 'd_appt_cancel_$appointmentId' : null,
       ));
 
   static void notifyAppointmentRescheduledByPatient({
@@ -118,7 +120,8 @@ abstract final class DoctorNotificationEmitter {
         type: AppNotificationType.appointment,
         target: AppNotificationTarget.appointmentDetail,
         targetId: appointmentId,
-        dedupeKey: appointmentId != null ? 'd_appt_reschedule_$appointmentId' : null,
+        dedupeKey:
+            appointmentId != null ? 'd_appt_reschedule_$appointmentId' : null,
       ));
 
   static void notifyTomorrowSummary({required String summary}) => emit(_build(
@@ -127,7 +130,8 @@ abstract final class DoctorNotificationEmitter {
         body: summary,
         type: AppNotificationType.reminder,
         target: AppNotificationTarget.appointments,
-        dedupeKey: 'reminder_tomorrow_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        dedupeKey:
+            'reminder_tomorrow_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
       ));
 
   static void notifyTodaySchedule({required String summary}) => emit(_build(
@@ -136,7 +140,8 @@ abstract final class DoctorNotificationEmitter {
         body: summary,
         type: AppNotificationType.reminder,
         target: AppNotificationTarget.appointments,
-        dedupeKey: 'reminder_today_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        dedupeKey:
+            'reminder_today_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
       ));
 
   static void notifyNextPatient({
@@ -152,7 +157,8 @@ abstract final class DoctorNotificationEmitter {
         type: AppNotificationType.reminder,
         target: AppNotificationTarget.appointmentDetail,
         targetId: appointmentId,
-        dedupeKey: 'next_patient_${appointmentId}_${appointmentTime.millisecondsSinceEpoch ~/ 60000}',
+        dedupeKey:
+            'next_patient_${appointmentId}_${appointmentTime.millisecondsSinceEpoch ~/ 60000}',
       ));
 
   static AppNotification patientNoShowAlert({
@@ -167,7 +173,8 @@ abstract final class DoctorNotificationEmitter {
         type: AppNotificationType.appointment,
         target: AppNotificationTarget.appointmentDetail,
         targetId: appointmentId,
-        primaryAction: const AppNotificationAction(label: 'Mark as no-show', actionKey: 'mark_no_show'),
+        primaryAction: const AppNotificationAction(
+            label: 'Mark as no-show', actionKey: 'mark_no_show'),
         dedupeKey: 'no_show_$appointmentId',
       );
 
@@ -177,7 +184,8 @@ abstract final class DoctorNotificationEmitter {
         body: 'Account approved.',
         type: AppNotificationType.kyc,
         target: AppNotificationTarget.profile,
-        primaryAction: const AppNotificationAction(label: 'Complete profile', actionKey: 'open_profile'),
+        primaryAction: const AppNotificationAction(
+            label: 'Complete profile', actionKey: 'open_profile'),
         dedupeKey: 'kyc_approved',
       );
 
@@ -187,8 +195,10 @@ abstract final class DoctorNotificationEmitter {
         body: '$percentBooked% booked.',
         type: AppNotificationType.system,
         target: AppNotificationTarget.schedule,
-        primaryAction: const AppNotificationAction(label: 'Add slots', actionKey: 'add_slots'),
-        dedupeKey: 'slots_80_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        primaryAction: const AppNotificationAction(
+            label: 'Add slots', actionKey: 'add_slots'),
+        dedupeKey:
+            'slots_80_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
       ));
 
   static AppNotification patientMarkedNoShow(String appointmentId) => _build(

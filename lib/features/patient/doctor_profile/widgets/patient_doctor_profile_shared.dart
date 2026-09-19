@@ -66,7 +66,9 @@ class PatientDoctorTagWrap extends StatelessWidget {
     if (labels.isEmpty) {
       return Text(
         'Not added yet',
-        style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
+        style: GoogleFonts.inter(
+            fontSize: AppTypography.bodyMedium,
+            color: AppColors.textSecondaryOf(context)),
       );
     }
 
@@ -115,7 +117,10 @@ class PatientDoctorMetaRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context), height: 1.4),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyMedium,
+                color: AppColors.textSecondaryOf(context),
+                height: 1.4),
           ),
         ),
       ],
@@ -137,11 +142,14 @@ class PatientDoctorBulletItem extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.only(top: 8),
-            child: Icon(Icons.circle, size: 5, color: AppColors.textSecondaryOf(context)),
+            child: Icon(Icons.circle,
+                size: 5, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(text, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.45)),
+            child: Text(text,
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium, height: 1.45)),
           ),
         ],
       ),
@@ -182,12 +190,16 @@ class PatientDoctorTimelineTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium),
+                  style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      fontSize: AppTypography.bodyMedium),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),

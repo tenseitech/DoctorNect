@@ -55,7 +55,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
     if (patientId.isNotEmpty) {
       try {
         if (logs.isEmpty) {
-          final records = await FirestoreService.instance.patientProfile.fetchHealthRecords(patientId);
+          final records = await FirestoreService.instance.patientProfile
+              .fetchHealthRecords(patientId);
           HealthRecordsMock.applyFromFirestore(records);
           logs = HealthRecordsMock.vitalsHistory();
         }
@@ -122,7 +123,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
 
     return HealthRecord(
       id: log.id,
-      title: 'Vitals log — ${DateFormat('dd MMM yyyy, hh:mm a').format(log.dateTime)}',
+      title:
+          'Vitals log — ${DateFormat('dd MMM yyyy, hh:mm a').format(log.dateTime)}',
       type: HealthRecordType.other,
       date: log.dateTime,
       source: RecordSource.selfUploaded,
@@ -146,7 +148,9 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
       spo2: int.tryParse(_spo2Controller.text),
       steps: int.tryParse(_stepsController.text),
       sleepHours: double.tryParse(_sleepController.text),
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
     );
 
     final patientId = PatientSession.loggedInPatientId;
@@ -169,7 +173,6 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
       _logs.insert(0, log);
       _showForm = false;
     });
-
   }
 
   List<FlSpot> _spotsForTrend() {
@@ -190,7 +193,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
     if (_loading) {
       return Scaffold(
         backgroundColor: AppColors.cardBgOf(context),
-        appBar: PatientProfileFormStyles.profileAppBar('Vitals Tracker', context: context),
+        appBar: PatientProfileFormStyles.profileAppBar('Vitals Tracker',
+            context: context),
         body: const Center(
           child: CircularProgressIndicator(color: AppColors.patientTeal),
         ),
@@ -198,32 +202,41 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
     }
 
     final spots = _spotsForTrend();
-    final maxY = spots.isEmpty ? 100.0 : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.15;
+    final maxY = spots.isEmpty
+        ? 100.0
+        : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b) * 1.15;
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Vitals Tracker', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('Vitals Tracker',
+          context: context),
       body: PatientProfileFormStyles.constrainedScrollBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // UI FIX: constrained layout
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     'Track your health metrics',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 16),
                   Align(
                     alignment: Alignment.centerRight,
                     child: _showForm
                         ? OutlinedButton.icon(
-                            onPressed: () => setState(() => _showForm = !_showForm),
+                            onPressed: () =>
+                                setState(() => _showForm = !_showForm),
                             icon: const Icon(Icons.close, size: 18),
                             label: const Text('Close'),
-                            style: OutlinedButton.styleFrom(foregroundColor: AppColors.patientTeal),
+                            style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.patientTeal),
                           )
                         : FilledButton.icon(
                             onPressed: () => setState(() => _showForm = true),
@@ -244,10 +257,13 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
             ),
             const SizedBox(height: 16),
             // UI FIX: constrained layout
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  PatientProfileFormStyles.sectionHeader('Trends (last 30 days)'),
+                  PatientProfileFormStyles.sectionHeader(
+                      'Trends (last 30 days)'),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 8,
@@ -263,15 +279,23 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                         label: Text(label),
                         selected: selected,
                         onSelected: (_) => setState(() => _trend = trend),
-                        selectedColor: AppColors.patientTeal.withValues(alpha: 0.15),
+                        selectedColor:
+                            AppColors.patientTeal.withValues(alpha: 0.15),
                         checkmarkColor: AppColors.patientTeal,
                         labelStyle: GoogleFonts.inter(
                           fontSize: AppTypography.bodySmall,
-                          color: selected ? AppColors.patientTeal : AppColors.textSecondaryOf(context),
-                          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                          color: selected
+                              ? AppColors.patientTeal
+                              : AppColors.textSecondaryOf(context),
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w400,
                         ),
-                        side: BorderSide(color: selected ? AppColors.patientTeal : AppColors.borderOf(context)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        side: BorderSide(
+                            color: selected
+                                ? AppColors.patientTeal
+                                : AppColors.borderOf(context)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)),
                       );
                     }).toList(),
                   ),
@@ -282,10 +306,14 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.cardBgOf(context),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.borderOf(context), width: 0.5),
+                      border: Border.all(
+                          color: AppColors.borderOf(context), width: 0.5),
                     ),
                     child: spots.isEmpty
-                        ? Center(child: Text('No data yet', style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context))))
+                        ? Center(
+                            child: Text('No data yet',
+                                style: GoogleFonts.inter(
+                                    color: AppColors.textSecondaryOf(context))))
                         : LineChart(
                             LineChartData(
                               minY: _trend == VitalsTrend.glucose ? 70 : 0,
@@ -293,11 +321,15 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                               gridData: FlGridData(
                                 show: true,
                                 drawVerticalLine: false,
-                                getDrawingHorizontalLine: (_) => FlLine(color: AppColors.borderOf(context), strokeWidth: 1),
+                                getDrawingHorizontalLine: (_) => FlLine(
+                                    color: AppColors.borderOf(context),
+                                    strokeWidth: 1),
                               ),
                               titlesData: const FlTitlesData(
-                                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                rightTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
+                                topTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false)),
                               ),
                               borderData: FlBorderData(show: false),
                               lineBarsData: [
@@ -309,7 +341,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                                   dotData: const FlDotData(show: true),
                                   belowBarData: BarAreaData(
                                     show: true,
-                                    color: AppColors.patientTeal.withValues(alpha: 0.08),
+                                    color: AppColors.patientTeal
+                                        .withValues(alpha: 0.08),
                                   ),
                                 ),
                               ],
@@ -321,7 +354,9 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
             ),
             const SizedBox(height: 16),
             // UI FIX: constrained layout
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   PatientProfileFormStyles.sectionHeader('History'),
@@ -332,9 +367,14 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Column(
                           children: [
-                            Icon(Icons.monitor_heart_outlined, size: 48, color: AppColors.patientTeal.withValues(alpha: 0.4)),
+                            Icon(Icons.monitor_heart_outlined,
+                                size: 48,
+                                color: AppColors.patientTeal
+                                    .withValues(alpha: 0.4)),
                             const SizedBox(height: 12),
-                            Text('No vitals logged yet', style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context))),
+                            Text('No vitals logged yet',
+                                style: GoogleFonts.inter(
+                                    color: AppColors.textSecondaryOf(context))),
                           ],
                         ),
                       ),
@@ -385,7 +425,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
               child: TextField(
                 controller: _sysController,
                 keyboardType: TextInputType.number,
-                decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'BP Sys'),
+                decoration: PatientProfileFormStyles.fieldDecoration(context,
+                    labelText: 'BP Sys'),
               ),
             ),
             const SizedBox(width: 8),
@@ -393,7 +434,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
               child: TextField(
                 controller: _diaController,
                 keyboardType: TextInputType.number,
-                decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'BP Dia'),
+                decoration: PatientProfileFormStyles.fieldDecoration(context,
+                    labelText: 'BP Dia'),
               ),
             ),
           ],
@@ -402,7 +444,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
         TextField(
           controller: _pulseController,
           keyboardType: TextInputType.number,
-          decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'Pulse (bpm)'),
+          decoration: PatientProfileFormStyles.fieldDecoration(context,
+              labelText: 'Pulse (bpm)'),
         ),
         const SizedBox(height: 12),
         Row(
@@ -412,7 +455,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
               child: TextField(
                 controller: _glucoseController,
                 keyboardType: TextInputType.number,
-                decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'Blood glucose'),
+                decoration: PatientProfileFormStyles.fieldDecoration(context,
+                    labelText: 'Blood glucose'),
               ),
             ),
             const SizedBox(width: 8),
@@ -420,11 +464,17 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
               child: DropdownButtonFormField<GlucoseReadingType>(
                 initialValue: _glucoseType,
                 isExpanded: true,
-                decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'Type'),
+                decoration: PatientProfileFormStyles.fieldDecoration(context,
+                    labelText: 'Type'),
                 items: const [
-                  DropdownMenuItem(value: GlucoseReadingType.fasting, child: Text('Fasting')),
-                  DropdownMenuItem(value: GlucoseReadingType.postPrandial, child: Text('PP')),
-                  DropdownMenuItem(value: GlucoseReadingType.random, child: Text('Random')),
+                  DropdownMenuItem(
+                      value: GlucoseReadingType.fasting,
+                      child: Text('Fasting')),
+                  DropdownMenuItem(
+                      value: GlucoseReadingType.postPrandial,
+                      child: Text('PP')),
+                  DropdownMenuItem(
+                      value: GlucoseReadingType.random, child: Text('Random')),
                 ],
                 onChanged: (v) => setState(() => _glucoseType = v!),
               ),
@@ -435,65 +485,78 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
         TextField(
           controller: _weightController,
           keyboardType: TextInputType.number,
-          decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'Weight (kg)'),
+          decoration: PatientProfileFormStyles.fieldDecoration(context,
+              labelText: 'Weight (kg)'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _heightController,
           keyboardType: TextInputType.number,
-          decoration: PatientProfileFormStyles.fieldDecoration(context, 
+          decoration: PatientProfileFormStyles.fieldDecoration(
+            context,
             labelText: 'Height (cm)',
-            hintText: HealthRecordsMock.patientHeightCm() != null ? 'Saved from profile' : null,
+            hintText: HealthRecordsMock.patientHeightCm() != null
+                ? 'Saved from profile'
+                : null,
           ),
         ),
         if (_bmi != null)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text('BMI: ${_bmi!.toStringAsFixed(1)}', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppColors.patientTeal)),
+            child: Text('BMI: ${_bmi!.toStringAsFixed(1)}',
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600, color: AppColors.patientTeal)),
           ),
         const SizedBox(height: 12),
         TextField(
           controller: _tempController,
           keyboardType: TextInputType.number,
-          decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'Temperature (°F)'),
+          decoration: PatientProfileFormStyles.fieldDecoration(context,
+              labelText: 'Temperature (°F)'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _spo2Controller,
           keyboardType: TextInputType.number,
-          decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'SpO2 (%)'),
+          decoration: PatientProfileFormStyles.fieldDecoration(context,
+              labelText: 'SpO2 (%)'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _stepsController,
           keyboardType: TextInputType.number,
-          decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'Steps today'),
+          decoration: PatientProfileFormStyles.fieldDecoration(context,
+              labelText: 'Steps today'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _sleepController,
           keyboardType: TextInputType.number,
-          decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'Sleep (hours)'),
+          decoration: PatientProfileFormStyles.fieldDecoration(context,
+              labelText: 'Sleep (hours)'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _notesController,
           maxLines: 2,
-          decoration: PatientProfileFormStyles.fieldDecoration(context, labelText: 'Notes', alignLabelWithHint: true),
+          decoration: PatientProfileFormStyles.fieldDecoration(context,
+              labelText: 'Notes', alignLabelWithHint: true),
         ),
         const SizedBox(height: 16),
-        PatientProfileFormStyles.cardActionButton(onPressed: _saveLog, label: 'Save log'),
+        PatientProfileFormStyles.cardActionButton(
+            onPressed: _saveLog, label: 'Save log'),
       ],
     );
   }
 
   Widget _historyTile(VitalsLog log) {
     return PatientProfileFormStyles.recordItemCard(
-        context: context,
-        child: Row(
+      context: context,
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.favorite_outline, color: AppColors.patientTeal, size: 20),
+          const Icon(Icons.favorite_outline,
+              color: AppColors.patientTeal, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -501,17 +564,22 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
               children: [
                 Text(
                   DateFormat('dd MMM yyyy, hh:mm a').format(log.dateTime),
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   [
-                    if (log.systolic != null) 'BP ${log.systolic}/${log.diastolic}',
+                    if (log.systolic != null)
+                      'BP ${log.systolic}/${log.diastolic}',
                     if (log.glucose != null) 'Glucose ${log.glucose} mg/dL',
                     if (log.weightKg != null) 'Weight ${log.weightKg} kg',
                     if (log.pulse != null) 'Pulse ${log.pulse}',
                   ].join(' · '),
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),

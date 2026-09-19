@@ -1,4 +1,4 @@
-﻿import 'pending_invite_store.dart';
+import 'pending_invite_store.dart';
 
 /// Captures `?store=&role=doctor` invite deep links before doctor registration.
 abstract final class PendingPharmacyInviteStore {

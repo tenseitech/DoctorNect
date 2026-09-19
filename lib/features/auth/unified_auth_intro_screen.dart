@@ -241,8 +241,7 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
       };
 
   /// Role-specific value props on the desktop brand panel (same styling for all).
-  List<_DesktopFeatureItem> get _desktopFeatureBullets =>
-      switch (widget.role) {
+  List<_DesktopFeatureItem> get _desktopFeatureBullets => switch (widget.role) {
         UserType.doctor => const [
             (
               icon: Icons.lock_outline_rounded,
@@ -255,7 +254,10 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
             (icon: Icons.bolt_outlined, label: 'Instant consultations'),
           ],
         UserType.patient => const [
-            (icon: Icons.event_available_outlined, label: 'Book appointments easily'),
+            (
+              icon: Icons.event_available_outlined,
+              label: 'Book appointments easily'
+            ),
             (
               icon: Icons.medication_outlined,
               label: 'Access prescriptions anytime',
@@ -735,8 +737,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
               children: [
                 Center(
                   child: SingleChildScrollView(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 48, vertical: 56),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 48, vertical: 56),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 440),
                       child: _FadeSlideIn(
@@ -990,8 +992,7 @@ class _MobileIntroThemeToggle extends StatelessWidget {
       listenable: AppThemeController.instance,
       builder: (context, _) {
         final isDark = AppThemeController.instance.isDarkMode;
-        final tooltip =
-            isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        final tooltip = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
 
         return Tooltip(
           message: tooltip,
@@ -1012,9 +1013,7 @@ class _MobileIntroThemeToggle extends StatelessWidget {
                     child: child,
                   ),
                   child: Icon(
-                    isDark
-                        ? Icons.dark_mode_rounded
-                        : Icons.light_mode_rounded,
+                    isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                     key: ValueKey(isDark),
                     color: Colors.white,
                     size: 18,
@@ -1595,8 +1594,7 @@ class _DesktopIntroThemeToggle extends StatelessWidget {
       listenable: AppThemeController.instance,
       builder: (context, _) {
         final isDark = AppThemeController.instance.isDarkMode;
-        final tooltip =
-            isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        final tooltip = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
         final iconColor = isDark
             ? const Color(0xFFFDE047)
             : AppColors.textSecondaryOf(context);
@@ -1631,9 +1629,7 @@ class _DesktopIntroThemeToggle extends StatelessWidget {
                     child: child,
                   ),
                   child: Icon(
-                    isDark
-                        ? Icons.dark_mode_rounded
-                        : Icons.light_mode_rounded,
+                    isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                     key: ValueKey(isDark),
                     color: iconColor,
                     size: 18,
@@ -1896,7 +1892,8 @@ class _DesktopFeatureBulletState extends State<_DesktopFeatureBullet> {
                   ),
                   borderRadius: BorderRadius.circular(11),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: _hovered ? 0.36 : 0.20),
+                    color:
+                        Colors.white.withValues(alpha: _hovered ? 0.36 : 0.20),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -2055,9 +2052,7 @@ class _DesktopPrimaryButtonState extends State<_DesktopPrimaryButton> {
           ];
 
     return MouseRegion(
-      cursor: interactive
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
+      cursor: interactive ? SystemMouseCursors.click : SystemMouseCursors.basic,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() {
         _hovered = false;
@@ -2332,8 +2327,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: isMobileStep
-                  ? _buildMobileStep(context)
-                  : _buildOtpStep(context),
+                    ? _buildMobileStep(context)
+                    : _buildOtpStep(context),
               ),
             ),
             const SizedBox(height: 26),
@@ -2342,9 +2337,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
               loadingLabel: isMobileStep ? 'Sending OTP...' : 'Verifying...',
               accent: widget.accent,
               enabled: isMobileStep ? _mobileValid : widget.flow.otpValid,
-              loading: isMobileStep
-                  ? widget.flow.sendingOtp
-                  : widget.flow.verifying,
+              loading:
+                  isMobileStep ? widget.flow.sendingOtp : widget.flow.verifying,
               onPressed: _submit,
             ),
             const SizedBox(height: 20),

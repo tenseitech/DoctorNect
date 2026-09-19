@@ -1,4 +1,4 @@
-﻿import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../enums/user_type.dart';
@@ -10,7 +10,8 @@ import '../firebase/firestore_service.dart';
 /// Safety validator to guarantee that the currently signed-in Firebase user's
 /// Firestore profile matches the role of the dashboard/shell being rendered.
 abstract final class RoleSessionGuard {
-  static Future<bool> verifyRole(BuildContext context, UserType expectedRole) async {
+  static Future<bool> verifyRole(
+      BuildContext context, UserType expectedRole) async {
     if (expectedRole == UserType.ambulance) {
       return verifyAmbulanceSession(
         context,

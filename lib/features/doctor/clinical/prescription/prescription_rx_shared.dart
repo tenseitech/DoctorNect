@@ -31,7 +31,8 @@ class RxEmptyState extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderOf(context).withValues(alpha: 0.7)),
+        border: Border.all(
+            color: AppColors.borderOf(context).withValues(alpha: 0.7)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -101,7 +102,9 @@ class RxMedicineSearchBar extends StatelessWidget {
                 decoration: InputDecoration(
                   labelText: 'Search & add medicine',
                   isDense: true,
-                  prefixIcon: Icon(Icons.search_rounded, size: 20, color: AppColors.doctorBlue.withValues(alpha: 0.85)),
+                  prefixIcon: Icon(Icons.search_rounded,
+                      size: 20,
+                      color: AppColors.doctorBlue.withValues(alpha: 0.85)),
                   suffixIcon: searchQuery.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.close_rounded, size: 18),
@@ -123,9 +126,11 @@ class RxMedicineSearchBar extends StatelessWidget {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.doctorBlue, width: 1.5),
+                    borderSide: const BorderSide(
+                        color: AppColors.doctorBlue, width: 1.5),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
                 onChanged: onChanged,
               ),
@@ -157,39 +162,50 @@ class RxMedicineSearchBar extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: results.isEmpty
                   ? Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 16),
                       child: Text(
                         'No medicines found',
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                     )
                   : ListView.separated(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: results.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1, indent: 12, endIndent: 12),
-                    itemBuilder: (context, i) {
-                      final item = results[i];
-                      return ListTile(
-                        dense: true,
-                        leading: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.1),
-                          child: Icon(AppIcons.prescription, size: 16, color: AppColors.doctorBlue),
-                        ),
-                        title: Text(
-                          item.name,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          _formatSuggestion(item),
-                          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
-                        ),
-                        trailing: Icon(Icons.add_circle_outline, size: 20, color: AppColors.doctorBlue),
-                        onTap: () => onSelect(item),
-                      );
-                    },
-                  ),
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      itemCount: results.length,
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 1, indent: 12, endIndent: 12),
+                      itemBuilder: (context, i) {
+                        final item = results[i];
+                        return ListTile(
+                          dense: true,
+                          leading: CircleAvatar(
+                            radius: 16,
+                            backgroundColor:
+                                AppColors.doctorBlue.withValues(alpha: 0.1),
+                            child: Icon(AppIcons.prescription,
+                                size: 16, color: AppColors.doctorBlue),
+                          ),
+                          title: Text(
+                            item.name,
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodySmall,
+                                fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            _formatSuggestion(item),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelSmall,
+                                color: AppColors.textSecondaryOf(context)),
+                          ),
+                          trailing: Icon(Icons.add_circle_outline,
+                              size: 20, color: AppColors.doctorBlue),
+                          onTap: () => onSelect(item),
+                        );
+                      },
+                    ),
             ),
           ),
       ],
@@ -256,7 +272,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
     _strengthController = TextEditingController(text: entry.dosageAmount);
     _durationController = TextEditingController(text: entry.durationAmount);
     _qtyController = TextEditingController(text: entry.quantity);
-    _specialInstructionsController = TextEditingController(text: entry.specialInstructions);
+    _specialInstructionsController =
+        TextEditingController(text: entry.specialInstructions);
   }
 
   @override
@@ -288,7 +305,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
         isDense: true,
         filled: true,
         fillColor: AppColors.surfaceOf(context),
-        labelStyle: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+        labelStyle: GoogleFonts.inter(
+            fontSize: AppTypography.labelSmall,
+            color: AppColors.textSecondaryOf(context)),
         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -323,7 +342,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: selected ? AppColors.doctorBlue : AppColors.borderOf(context),
+                color: selected
+                    ? AppColors.doctorBlue
+                    : AppColors.borderOf(context),
               ),
             ),
             alignment: Alignment.center,
@@ -335,7 +356,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w700,
-                    color: selected ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
+                    color: selected
+                        ? AppColors.surfaceOf(context)
+                        : AppColors.textPrimaryOf(context),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -343,7 +366,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                   label,
                   style: GoogleFonts.inter(
                     fontSize: 10,
-                    color: selected ? AppColors.surfaceOf(context).withValues(alpha: 0.9) : AppColors.textSecondaryOf(context),
+                    color: selected
+                        ? AppColors.surfaceOf(context).withValues(alpha: 0.9)
+                        : AppColors.textSecondaryOf(context),
                   ),
                 ),
               ],
@@ -360,7 +385,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
       height: 22,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: active ? AppColors.doctorBlue : AppColors.borderOf(context).withValues(alpha: 0.35),
+        color: active
+            ? AppColors.doctorBlue
+            : AppColors.borderOf(context).withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -368,7 +395,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
         style: GoogleFonts.inter(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: active ? AppColors.surfaceOf(context) : AppColors.textSecondaryOf(context),
+          color: active
+              ? AppColors.surfaceOf(context)
+              : AppColors.textSecondaryOf(context),
         ),
       ),
     );
@@ -380,7 +409,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
     final freq = entry.frequencyLabel;
 
     return Material(
-      color: widget.isExpanded ? AppColors.doctorBlue.withValues(alpha: 0.04) : AppColors.surfaceOf(context),
+      color: widget.isExpanded
+          ? AppColors.doctorBlue.withValues(alpha: 0.04)
+          : AppColors.surfaceOf(context),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: widget.onExpandToggle,
@@ -404,7 +435,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
-                    color: widget.isExpanded ? AppColors.surfaceOf(context) : AppColors.doctorBlue,
+                    color: widget.isExpanded
+                        ? AppColors.surfaceOf(context)
+                        : AppColors.doctorBlue,
                   ),
                 ),
               ),
@@ -436,17 +469,26 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               if (dosage.isNotEmpty)
                                 Text(
                                   dosage,
-                                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelSmall,
+                                      color:
+                                          AppColors.textSecondaryOf(context)),
                                 ),
                               if (dosage.isNotEmpty && duration.isNotEmpty)
                                 Text(
                                   ' · ',
-                                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelSmall,
+                                      color:
+                                          AppColors.textSecondaryOf(context)),
                                 ),
                               if (duration.isNotEmpty)
                                 Text(
                                   duration,
-                                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelSmall,
+                                      color:
+                                          AppColors.textSecondaryOf(context)),
                                 ),
                               if (entry.isSos) ...[
                                 const SizedBox(width: 6),
@@ -464,7 +506,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                         ] else if (entry.form.isNotEmpty)
                           Text(
                             entry.form,
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelSmall,
+                                color: AppColors.textSecondaryOf(context)),
                           ),
                       ],
                     );
@@ -481,11 +525,15 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                 if (freq == 'As directed')
                   Text(
                     freq,
-                    style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
               ],
               Icon(
-                widget.isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                widget.isExpanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
                 size: 20,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -495,7 +543,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                 icon: Icon(
                   Icons.close_rounded,
                   size: 18,
-                  color: widget.canDelete ? AppColors.textSecondaryOf(context) : AppColors.borderOf(context),
+                  color: widget.canDelete
+                      ? AppColors.textSecondaryOf(context)
+                      : AppColors.borderOf(context),
                 ),
                 tooltip: 'Remove medicine',
               ),
@@ -526,196 +576,91 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
           _buildCollapsedHeader(),
           if (widget.isExpanded)
             Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: TextField(
-                        controller: _strengthController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: const [
-                          DecimalInputFormatter(maxIntegerDigits: 4, maxDecimalDigits: 2),
-                        ],
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
-                        decoration: _fieldDecoration(label: 'Strength'),
-                        onChanged: (v) => entry.dosageAmount = v,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _dosageUnits.contains(entry.dosageUnit)
-                            ? entry.dosageUnit
-                            : _dosageUnits.first,
-                        isExpanded: true,
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
-                        decoration: _fieldDecoration(label: 'Unit'),
-                        items: _dosageUnits
-                            .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                            .toList(),
-                        onChanged: (v) {
-                          if (v == null) return;
-                          setState(() => entry.dosageUnit = v);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _durationController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: const [DigitsMaxInputFormatter(3)],
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
-                        decoration: _fieldDecoration(label: 'Duration'),
-                        onChanged: (v) {
-                          entry.durationAmount = v;
-                          _refreshAutoQuantity();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: DropdownButtonFormField<String>(
-                        initialValue: ClinicalMockData.durationUnits.contains(entry.durationUnit)
-                            ? entry.durationUnit
-                            : ClinicalMockData.durationUnits.first,
-                        isExpanded: true,
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
-                        decoration: _fieldDecoration(label: 'Period'),
-                        items: ClinicalMockData.durationUnits
-                            .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                            .toList(),
-                        onChanged: (v) {
-                          if (v == null) return;
-                          setState(() {
-                            entry.durationUnit = v;
-                            _refreshAutoQuantity();
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: _qtyController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: const [DigitsMaxInputFormatter(4)],
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
-                        decoration: _fieldDecoration(label: 'Qty'),
-                        onChanged: (v) => entry.quantity = v,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Frequency',
-                  style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelSmall,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondaryOf(context),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    _freqChip(
-                      label: 'Morning',
-                      short: 'M',
-                      selected: entry.morning,
-                      onSelected: (v) => entry.morning = v,
-                    ),
-                    const SizedBox(width: 8),
-                    _freqChip(
-                      label: 'Afternoon',
-                      short: 'A',
-                      selected: entry.afternoon,
-                      onSelected: (v) => entry.afternoon = v,
-                    ),
-                    const SizedBox(width: 8),
-                    _freqChip(
-                      label: 'Night',
-                      short: 'N',
-                      selected: entry.night,
-                      onSelected: (v) => entry.night = v,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    FilterChip(
-                      label: Text('SOS', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
-                      selected: entry.isSos,
-                      selectedColor: AppColors.error.withValues(alpha: 0.12),
-                      checkmarkColor: AppColors.error,
-                      visualDensity: VisualDensity.compact,
-                      onSelected: (v) => setState(() => entry.isSos = v),
-                    ),
-                    FilterChip(
-                      label: Text('Substitute OK', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
-                      selected: entry.substituteAllowed,
-                      selectedColor: AppColors.doctorBlue.withValues(alpha: 0.12),
-                      checkmarkColor: AppColors.doctorBlue,
-                      visualDensity: VisualDensity.compact,
-                      onSelected: (v) => setState(() => entry.substituteAllowed = v),
-                    ),
-                  ],
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: widget.onToggleInstruction,
-                    icon: Icon(
-                      widget.showInstruction ? Icons.expand_less : Icons.expand_more,
-                      size: 18,
-                    ),
-                    label: Text(
-                      widget.showInstruction ? 'Hide instructions' : 'Add instructions',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.doctorBlue,
-                      padding: const EdgeInsets.symmetric(horizontal: 0),
-                    ),
-                  ),
-                ),
-                if (widget.showInstruction) ...[
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: entry.instructions.isEmpty ||
-                                  !ClinicalMockData.instructionOptions.contains(entry.instructions)
-                              ? ''
-                              : entry.instructions,
-                          isExpanded: true,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context)),
-                          decoration: _fieldDecoration(label: 'Timing'),
-                          items: [
-                            DropdownMenuItem<String>(
-                              value: '',
-                              child: Text('None', style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context))),
-                            ),
-                            ...ClinicalMockData.instructionOptions
-                                .map((i) => DropdownMenuItem(value: i, child: Text(i))),
+                        flex: 3,
+                        child: TextField(
+                          controller: _strengthController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          inputFormatters: const [
+                            DecimalInputFormatter(
+                                maxIntegerDigits: 4, maxDecimalDigits: 2),
                           ],
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall),
+                          decoration: _fieldDecoration(label: 'Strength'),
+                          onChanged: (v) => entry.dosageAmount = v,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _dosageUnits.contains(entry.dosageUnit)
+                              ? entry.dosageUnit
+                              : _dosageUnits.first,
+                          isExpanded: true,
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall),
+                          decoration: _fieldDecoration(label: 'Unit'),
+                          items: _dosageUnits
+                              .map((u) =>
+                                  DropdownMenuItem(value: u, child: Text(u)))
+                              .toList(),
                           onChanged: (v) {
-                            setState(() => entry.instructions = v ?? '');
+                            if (v == null) return;
+                            setState(() => entry.dosageUnit = v);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _durationController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: const [DigitsMaxInputFormatter(3)],
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall),
+                          decoration: _fieldDecoration(label: 'Duration'),
+                          onChanged: (v) {
+                            entry.durationAmount = v;
+                            _refreshAutoQuantity();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: ClinicalMockData.durationUnits
+                                  .contains(entry.durationUnit)
+                              ? entry.durationUnit
+                              : ClinicalMockData.durationUnits.first,
+                          isExpanded: true,
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall),
+                          decoration: _fieldDecoration(label: 'Period'),
+                          items: ClinicalMockData.durationUnits
+                              .map((d) =>
+                                  DropdownMenuItem(value: d, child: Text(d)))
+                              .toList(),
+                          onChanged: (v) {
+                            if (v == null) return;
+                            setState(() {
+                              entry.durationUnit = v;
+                              _refreshAutoQuantity();
+                            });
                           },
                         ),
                       ),
@@ -723,38 +668,175 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                       Expanded(
                         flex: 2,
                         child: TextField(
-                          controller: _specialInstructionsController,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
-                          decoration: _fieldDecoration(label: 'Special instructions'),
-                          onChanged: (v) => entry.specialInstructions = v,
+                          controller: _qtyController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: const [DigitsMaxInputFormatter(4)],
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall),
+                          decoration: _fieldDecoration(label: 'Qty'),
+                          onChanged: (v) => entry.quantity = v,
                         ),
                       ),
                     ],
                   ),
-                ],
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _handleConfirm,
-                    icon: const Icon(Icons.check_rounded, size: 18),
-                    label: Text(
-                      'Add to Rx',
-                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Frequency',
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondaryOf(context),
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.doctorBlue,
-                      foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      _freqChip(
+                        label: 'Morning',
+                        short: 'M',
+                        selected: entry.morning,
+                        onSelected: (v) => entry.morning = v,
+                      ),
+                      const SizedBox(width: 8),
+                      _freqChip(
+                        label: 'Afternoon',
+                        short: 'A',
+                        selected: entry.afternoon,
+                        onSelected: (v) => entry.afternoon = v,
+                      ),
+                      const SizedBox(width: 8),
+                      _freqChip(
+                        label: 'Night',
+                        short: 'N',
+                        selected: entry.night,
+                        onSelected: (v) => entry.night = v,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      FilterChip(
+                        label: Text('SOS',
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelMedium)),
+                        selected: entry.isSos,
+                        selectedColor: AppColors.error.withValues(alpha: 0.12),
+                        checkmarkColor: AppColors.error,
+                        visualDensity: VisualDensity.compact,
+                        onSelected: (v) => setState(() => entry.isSos = v),
+                      ),
+                      FilterChip(
+                        label: Text('Substitute OK',
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelMedium)),
+                        selected: entry.substituteAllowed,
+                        selectedColor:
+                            AppColors.doctorBlue.withValues(alpha: 0.12),
+                        checkmarkColor: AppColors.doctorBlue,
+                        visualDensity: VisualDensity.compact,
+                        onSelected: (v) =>
+                            setState(() => entry.substituteAllowed = v),
+                      ),
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: widget.onToggleInstruction,
+                      icon: Icon(
+                        widget.showInstruction
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        size: 18,
+                      ),
+                      label: Text(
+                        widget.showInstruction
+                            ? 'Hide instructions'
+                            : 'Add instructions',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.doctorBlue,
+                        padding: const EdgeInsets.symmetric(horizontal: 0),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  if (widget.showInstruction) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: entry.instructions.isEmpty ||
+                                    !ClinicalMockData.instructionOptions
+                                        .contains(entry.instructions)
+                                ? ''
+                                : entry.instructions,
+                            isExpanded: true,
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodySmall,
+                                color: AppColors.textPrimaryOf(context)),
+                            decoration: _fieldDecoration(label: 'Timing'),
+                            items: [
+                              DropdownMenuItem<String>(
+                                value: '',
+                                child: Text('None',
+                                    style: GoogleFonts.inter(
+                                        color: AppColors.textSecondaryOf(
+                                            context))),
+                              ),
+                              ...ClinicalMockData.instructionOptions.map((i) =>
+                                  DropdownMenuItem(value: i, child: Text(i))),
+                            ],
+                            onChanged: (v) {
+                              setState(() => entry.instructions = v ?? '');
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: TextField(
+                            controller: _specialInstructionsController,
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodySmall),
+                            decoration:
+                                _fieldDecoration(label: 'Special instructions'),
+                            onChanged: (v) => entry.specialInstructions = v,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _handleConfirm,
+                      icon: const Icon(Icons.check_rounded, size: 18),
+                      label: Text(
+                        'Add to Rx',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.doctorBlue,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -784,7 +866,8 @@ class RxMedicineList extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFF9FAFB),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.borderOf(context).withValues(alpha: 0.7)),
+          border: Border.all(
+              color: AppColors.borderOf(context).withValues(alpha: 0.7)),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),

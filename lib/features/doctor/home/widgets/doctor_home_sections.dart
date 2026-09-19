@@ -28,7 +28,8 @@ class DoctorHomeTopBar extends StatelessWidget {
     final compact = ResponsiveLayout.isCompact(context);
     final rawName = displayName.trim();
     final cleanName = rawName.isEmpty ? 'Doctor' : rawName;
-    final greetingText = (cleanName.toLowerCase().startsWith('dr.') || cleanName.toLowerCase().startsWith('dr '))
+    final greetingText = (cleanName.toLowerCase().startsWith('dr.') ||
+            cleanName.toLowerCase().startsWith('dr '))
         ? 'Hi, $cleanName'
         : 'Hi, Dr. $cleanName';
     final verified = verificationStatus == VerificationStatus.verified;
@@ -38,7 +39,8 @@ class DoctorHomeTopBar extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(compact ? 16 : 20, compact ? 6 : 12, compact ? 16 : 20, compact ? 6 : 0),
+          padding: EdgeInsets.fromLTRB(compact ? 16 : 20, compact ? 6 : 12,
+              compact ? 16 : 20, compact ? 6 : 0),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -61,14 +63,16 @@ class DoctorHomeTopBar extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    _DoctorVerificationBadge(verified: verified, compact: compact),
+                    _DoctorVerificationBadge(
+                        verified: verified, compact: compact),
                   ],
                 ),
               ),
               const SizedBox(width: 4),
               const ThemeToggleButton(),
               const SizedBox(width: 2),
-              const NotificationBellButton(audience: NotificationAudience.doctor),
+              const NotificationBellButton(
+                  audience: NotificationAudience.doctor),
               const HeaderOverflowMenu(userType: UserType.doctor),
             ],
           ),
@@ -146,7 +150,9 @@ class _DoctorVerificationBadge extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    verified ? Icons.verified_rounded : Icons.hourglass_top_rounded,
+                    verified
+                        ? Icons.verified_rounded
+                        : Icons.hourglass_top_rounded,
                     color: accent,
                     size: 26,
                   ),
@@ -157,7 +163,9 @@ class _DoctorVerificationBadge extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        verified ? 'Verified Doctor Account' : 'Verification Under Review',
+                        verified
+                            ? 'Verified Doctor Account'
+                            : 'Verification Under Review',
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
@@ -166,7 +174,9 @@ class _DoctorVerificationBadge extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        verified ? 'Medical Council Credentials Confirmed' : 'KYC Verification Pending Admin Approval',
+                        verified
+                            ? 'Medical Council Credentials Confirmed'
+                            : 'KYC Verification Pending Admin Approval',
                         style: GoogleFonts.inter(
                           fontSize: 12.5,
                           color: AppColors.textSecondaryOf(context),
@@ -180,13 +190,27 @@ class _DoctorVerificationBadge extends StatelessWidget {
             const SizedBox(height: 18),
             const Divider(height: 1),
             const SizedBox(height: 14),
-            _KycInfoRow(label: 'Doctor Name', value: profile.fullName.isEmpty ? 'Not set' : profile.fullName),
+            _KycInfoRow(
+                label: 'Doctor Name',
+                value: profile.fullName.isEmpty ? 'Not set' : profile.fullName),
             const SizedBox(height: 10),
-            _KycInfoRow(label: 'Council Reg. Number', value: profile.councilNumber.isEmpty ? 'Pending' : profile.councilNumber),
+            _KycInfoRow(
+                label: 'Council Reg. Number',
+                value: profile.councilNumber.isEmpty
+                    ? 'Pending'
+                    : profile.councilNumber),
             const SizedBox(height: 10),
-            _KycInfoRow(label: 'State Medical Council', value: profile.stateCouncil.isEmpty ? 'Pending' : profile.stateCouncil),
+            _KycInfoRow(
+                label: 'State Medical Council',
+                value: profile.stateCouncil.isEmpty
+                    ? 'Pending'
+                    : profile.stateCouncil),
             const SizedBox(height: 10),
-            _KycInfoRow(label: 'Specialization', value: profile.specialization.isEmpty ? 'General' : profile.specialization),
+            _KycInfoRow(
+                label: 'Specialization',
+                value: profile.specialization.isEmpty
+                    ? 'General'
+                    : profile.specialization),
             const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.all(12),
@@ -197,14 +221,18 @@ class _DoctorVerificationBadge extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 18, color: AppColors.doctorBlue),
+                  const Icon(Icons.info_outline,
+                      size: 18, color: AppColors.doctorBlue),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       verified
                           ? 'Your medical registration & credentials are fully verified. All clinical features & prescription signing are active.'
                           : 'Your registration credentials are currently being cross-referenced with State Medical Council records.',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context), height: 1.35),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                          height: 1.35),
                     ),
                   ),
                 ],
@@ -216,7 +244,8 @@ class _DoctorVerificationBadge extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.doctorBlue,
                 minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('Close'),
             ),
@@ -240,7 +269,10 @@ class _KycInfoRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), fontWeight: FontWeight.w500),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textSecondaryOf(context),
+              fontWeight: FontWeight.w500),
         ),
         Flexible(
           child: Text(
@@ -248,7 +280,10 @@ class _KycInfoRow extends StatelessWidget {
             textAlign: TextAlign.end,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context), fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textPrimaryOf(context),
+                fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -292,7 +327,8 @@ class DoctorHomeStatsStrip extends StatelessWidget {
     return BoxDecoration(
       color: AppColors.surfaceOf(context),
       borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: AppColors.borderOf(context).withValues(alpha: 0.55)),
+      border: Border.all(
+          color: AppColors.borderOf(context).withValues(alpha: 0.55)),
       boxShadow: [
         BoxShadow(
           color: AppColors.isDark(context)
@@ -319,14 +355,16 @@ class DoctorHomeStatsStrip extends StatelessWidget {
     return ColoredBox(
       color: AppColors.cardBgOf(context),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(compact ? 16 : 20, compact ? 4 : 10, compact ? 16 : 20, compact ? 6 : 16),
-        child: compact ? _buildMobileLayout(context) : _buildDesktopLayout(context),
+        padding: EdgeInsets.fromLTRB(compact ? 16 : 20, compact ? 4 : 10,
+            compact ? 16 : 20, compact ? 6 : 16),
+        child: compact
+            ? _buildMobileLayout(context)
+            : _buildDesktopLayout(context),
       ),
     );
   }
 
   Widget _buildMobileLayout(BuildContext context) {
-
     return Container(
       decoration: _elevatedCard(context),
       child: ClipRRect(
@@ -334,7 +372,6 @@ class DoctorHomeStatsStrip extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 68),
               child: Row(
@@ -352,14 +389,17 @@ class DoctorHomeStatsStrip extends StatelessWidget {
                       Container(
                         width: 1,
                         height: 40,
-                        color: AppColors.borderOf(context).withValues(alpha: 0.85),
+                        color:
+                            AppColors.borderOf(context).withValues(alpha: 0.85),
                       ),
                   ],
                 ],
               ),
             ),
             if (onSearchTap != null) ...[
-              Container(height: 1, color: AppColors.borderOf(context).withValues(alpha: 0.85)),
+              Container(
+                  height: 1,
+                  color: AppColors.borderOf(context).withValues(alpha: 0.85)),
               _DoctorMobileInlineSearch(onTap: onSearchTap!),
             ],
           ],
@@ -394,7 +434,8 @@ class DoctorHomeStatsStrip extends StatelessWidget {
                         Container(
                           width: 1,
                           height: statsHeight,
-                          color: AppColors.borderOf(context).withValues(alpha: 0.85),
+                          color: AppColors.borderOf(context)
+                              .withValues(alpha: 0.85),
                         ),
                     ],
                   ],
@@ -583,14 +624,17 @@ class _DoctorMobileInlineSearch extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.search_rounded, color: AppColors.textSecondaryOf(context), size: 20),
+                Icon(Icons.search_rounded,
+                    color: AppColors.textSecondaryOf(context), size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Search for patient, medical, lab and ambulance',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                 ),
                 Container(
@@ -600,7 +644,8 @@ class _DoctorMobileInlineSearch extends StatelessWidget {
                     color: AppColors.doctorBlue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(Icons.arrow_forward_rounded, color: AppColors.doctorBlue, size: 18),
+                  child: const Icon(Icons.arrow_forward_rounded,
+                      color: AppColors.doctorBlue, size: 18),
                 ),
               ],
             ),
@@ -626,7 +671,8 @@ class DoctorHomePatientSearchBar extends StatelessWidget {
     return ColoredBox(
       color: AppColors.surfaceOf(context),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(compact ? 16 : 20, 0, compact ? 16 : 20, compact ? 12 : 14),
+        padding: EdgeInsets.fromLTRB(
+            compact ? 16 : 20, 0, compact ? 16 : 20, compact ? 12 : 14),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -634,14 +680,16 @@ class DoctorHomePatientSearchBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             child: Ink(
               height: compact ? 50 : 54,
-              padding: EdgeInsets.only(left: compact ? 14 : 16, right: compact ? 6 : 8),
+              padding: EdgeInsets.only(
+                  left: compact ? 14 : 16, right: compact ? 6 : 8),
               decoration: BoxDecoration(
                 color: AppColors.surfaceOf(context),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: AppColors.borderOf(context)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.textPrimaryOf(context).withValues(alpha: 0.03),
+                    color: AppColors.textPrimaryOf(context)
+                        .withValues(alpha: 0.03),
                     blurRadius: 8,
                     offset: Offset(0, 2),
                   ),
@@ -657,7 +705,9 @@ class DoctorHomePatientSearchBar extends StatelessWidget {
                   SizedBox(width: compact ? 10 : 12),
                   Expanded(
                     child: Text(
-                      compact ? 'Search for patient, medical, lab and ambulance' : 'Search for patient, medical, lab and ambulance',
+                      compact
+                          ? 'Search for patient, medical, lab and ambulance'
+                          : 'Search for patient, medical, lab and ambulance',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
@@ -719,7 +769,8 @@ class DoctorHomeServicesSection extends StatefulWidget {
   final List<DoctorHomeServiceItem> services;
 
   @override
-  State<DoctorHomeServicesSection> createState() => _DoctorHomeServicesSectionState();
+  State<DoctorHomeServicesSection> createState() =>
+      _DoctorHomeServicesSectionState();
 }
 
 class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
@@ -765,7 +816,8 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
                     onTap: _openDrawer,
                     borderRadius: BorderRadius.circular(6),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1087,7 +1139,8 @@ class _DoctorServiceTileState extends State<_DoctorServiceTile> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _ServiceIconBox(service: widget.service, size: 44, iconSize: 20),
+                _ServiceIconBox(
+                    service: widget.service, size: 44, iconSize: 20),
                 const SizedBox(height: 6),
                 Text(
                   _label,
@@ -1162,7 +1215,8 @@ class _DoctorServiceTileState extends State<_DoctorServiceTile> {
               Icon(
                 Icons.chevron_right,
                 size: 18,
-                color: AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
               ),
             ],
           ),
@@ -1233,11 +1287,13 @@ class DoctorHomeSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = ResponsiveLayout.isCompact(context);
-    final hasSecondary = secondaryActionLabel != null && onSecondaryAction != null;
+    final hasSecondary =
+        secondaryActionLabel != null && onSecondaryAction != null;
     final hasPrimary = actionLabel != null && onAction != null;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(compact ? 16 : 20, compact ? 14 : 18, compact ? 16 : 20, 0),
+      padding: EdgeInsets.fromLTRB(
+          compact ? 16 : 20, compact ? 14 : 18, compact ? 16 : 20, 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -1280,7 +1336,8 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                       onTap: onSecondaryAction,
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 8),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -1291,12 +1348,16 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                                 gradient: const LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
-                                  colors: [AppColors.doctorBlue, Color(0xFF0F4A82)],
+                                  colors: [
+                                    AppColors.doctorBlue,
+                                    Color(0xFF0F4A82)
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(9),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.doctorBlue.withValues(alpha: 0.28),
+                                    color: AppColors.doctorBlue
+                                        .withValues(alpha: 0.28),
                                     blurRadius: 6,
                                     offset: Offset(0, 2),
                                   ),
@@ -1366,13 +1427,16 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                           onPressed: onAction,
                           style: TextButton.styleFrom(
                             foregroundColor: AppColors.doctorBlue,
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 8),
                             minimumSize: const Size(0, 36),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           child: Text(
                             actionLabel!,
-                            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodySmall,
+                                fontWeight: FontWeight.w600),
                           ),
                         ),
               ],
@@ -1406,7 +1470,8 @@ class ClinicalToolsDrawer extends StatelessWidget {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (ctx) => _ClinicalToolsBottomSheet(title: title, services: services),
+        builder: (ctx) =>
+            _ClinicalToolsBottomSheet(title: title, services: services),
       );
     } else {
       showGeneralDialog(
@@ -1427,7 +1492,8 @@ class ClinicalToolsDrawer extends StatelessWidget {
             position: Tween<Offset>(
               begin: const Offset(1, 0),
               end: Offset.zero,
-            ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+            ).animate(
+                CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
             child: child,
           );
         },
@@ -1491,7 +1557,8 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.grid_view_rounded, color: Colors.white, size: 22),
+                    child: const Icon(Icons.grid_view_rounded,
+                        color: Colors.white, size: 22),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -1510,9 +1577,11 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.doctorBlue.withValues(alpha: 0.12),
+                                color: AppColors.doctorBlue
+                                    .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -1618,7 +1687,8 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.grid_view_rounded, color: Colors.white, size: 20),
+                  child: const Icon(Icons.grid_view_rounded,
+                      color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1641,9 +1711,11 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.doctorBlue.withValues(alpha: 0.12),
+                              color:
+                                  AppColors.doctorBlue.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -1740,7 +1812,8 @@ class _DrawerToolTileState extends State<_DrawerToolTile> {
             boxShadow: _hovered
                 ? [
                     BoxShadow(
-                      color: widget.service.gradient.first.withValues(alpha: 0.12),
+                      color:
+                          widget.service.gradient.first.withValues(alpha: 0.12),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     )

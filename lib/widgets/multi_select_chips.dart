@@ -46,13 +46,16 @@ class MultiSelectChips extends StatelessWidget {
               checkmarkColor: accentColor,
               labelStyle: GoogleFonts.inter(
                 fontSize: AppTypography.bodySmall,
-                color: isSelected ? accentColor : AppColors.textSecondaryOf(context),
+                color: isSelected
+                    ? accentColor
+                    : AppColors.textSecondaryOf(context),
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
               side: BorderSide(
                 color: isSelected ? accentColor : AppColors.borderOf(context),
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
             );
           }).toList(),
         ),
@@ -60,7 +63,8 @@ class MultiSelectChips extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             errorText!,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.error),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium, color: AppColors.error),
           ),
         ],
       ],

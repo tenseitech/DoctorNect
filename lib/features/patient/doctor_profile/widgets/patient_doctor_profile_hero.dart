@@ -62,12 +62,17 @@ class PatientDoctorProfileHero extends StatelessWidget {
                 backgroundColor: AppColors.patientTeal,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                textStyle: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyLarge,
+                    fontWeight: FontWeight.w600),
               ),
             ),
           ],
-          if (isPatientView && reviewableVisit != null && onRateDoctor != null) ...[
+          if (isPatientView &&
+              reviewableVisit != null &&
+              onRateDoctor != null) ...[
             const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: onRateDoctor,
@@ -77,8 +82,11 @@ class PatientDoctorProfileHero extends StatelessWidget {
                 foregroundColor: AppColors.patientTeal,
                 side: const BorderSide(color: AppColors.patientTeal),
                 minimumSize: const Size(double.infinity, 44),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                textStyle: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -255,7 +263,8 @@ class _DoctorIdentity extends StatelessWidget {
             ),
             if (doctor.verified) ...[
               const SizedBox(width: 6),
-              const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 22),
+              const Icon(Icons.verified_rounded,
+                  color: Color(0xFF16A34A), size: 22),
             ],
           ],
         ),
@@ -278,7 +287,9 @@ class _DoctorIdentity extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ],
       ],
@@ -303,7 +314,8 @@ class _MetaStrip extends StatelessWidget {
       child: Column(
         children: [
           if (doctor.area.trim().isNotEmpty)
-            PatientDoctorMetaRow(icon: Icons.location_on_outlined, text: doctor.area),
+            PatientDoctorMetaRow(
+                icon: Icons.location_on_outlined, text: doctor.area),
           if (doctor.languages.isNotEmpty) ...[
             if (doctor.area.trim().isNotEmpty) const SizedBox(height: 8),
             PatientDoctorMetaRow(
@@ -388,7 +400,9 @@ class _StatCell extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelSmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 4),
           Row(
@@ -419,7 +433,8 @@ class _StatCell extends StatelessWidget {
               subtitle!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: 10, color: AppColors.textSecondaryOf(context)),
               textAlign: TextAlign.center,
             ),
           ],
@@ -462,7 +477,8 @@ class PatientDoctorProfileBottomBar extends StatelessWidget {
           alignment: Alignment.topCenter,
           heightFactor: 1.0,
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: patientDoctorProfileMaxWidth(context)),
+            constraints:
+                BoxConstraints(maxWidth: patientDoctorProfileMaxWidth(context)),
             child: Row(
               children: [
                 if (secondaryLabel != null && onSecondary != null) ...[
@@ -473,8 +489,11 @@ class PatientDoctorProfileBottomBar extends StatelessWidget {
                         foregroundColor: AppColors.patientTeal,
                         side: const BorderSide(color: AppColors.patientTeal),
                         minimumSize: const Size(0, 48),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        textStyle: GoogleFonts.inter(
+                            fontSize: AppTypography.bodyMedium,
+                            fontWeight: FontWeight.w600),
                       ),
                       child: Text(
                         secondaryLabel!,
@@ -495,8 +514,11 @@ class PatientDoctorProfileBottomBar extends StatelessWidget {
                       backgroundColor: AppColors.patientTeal,
                       foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      textStyle: GoogleFonts.inter(
+                          fontSize: AppTypography.bodyLarge,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),

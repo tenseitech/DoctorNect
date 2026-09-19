@@ -50,7 +50,8 @@ class WritePrescriptionScreen extends StatefulWidget {
   final bool showPreviousPrescriptions;
 
   @override
-  State<WritePrescriptionScreen> createState() => _WritePrescriptionScreenState();
+  State<WritePrescriptionScreen> createState() =>
+      _WritePrescriptionScreenState();
 }
 
 class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
@@ -98,7 +99,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
       }
       _initMedicineControllers();
       _prefillAppointmentDetails();
-      WidgetsBinding.instance.addPostFrameCallback((_) => _prefillAppointmentDetails());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _prefillAppointmentDetails());
       unawaited(_prefillPatientBaseline());
     }
     PrescriptionClinicalAssets.scheduleIdleLoad(() {
@@ -110,10 +112,12 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
     final appointmentId = widget.patient.appointmentId;
     if (appointmentId == null || appointmentId.isEmpty) return;
 
-    final record = SharedAppointmentsStore.instance.findRecordById(appointmentId);
+    final record =
+        SharedAppointmentsStore.instance.findRecordById(appointmentId);
     if (record == null) return;
 
-    if (_chiefComplaintController.text.trim().isEmpty && record.chiefComplaints.isNotEmpty) {
+    if (_chiefComplaintController.text.trim().isEmpty &&
+        record.chiefComplaints.isNotEmpty) {
       final joined = record.chiefComplaints.join(', ');
       _chiefComplaintController.text = joined;
       _draft.chiefComplaint = joined;
@@ -131,7 +135,9 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
     if (patientId.isEmpty) return;
 
     try {
-      final baseline = await PatientClinicalBaselineLoader.fetchLatestBaselineDraft(patientId);
+      final baseline =
+          await PatientClinicalBaselineLoader.fetchLatestBaselineDraft(
+              patientId);
       if (!mounted) return;
 
       if (baseline != null) {
@@ -144,7 +150,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
 
       if (_allergiesController.text.trim().isEmpty) {
         final profileAllergies =
-            await PatientClinicalBaselineLoader.fetchProfileAllergiesText(patientId);
+            await PatientClinicalBaselineLoader.fetchProfileAllergiesText(
+                patientId);
         if (!mounted) return;
         if (profileAllergies != null && profileAllergies.isNotEmpty) {
           _allergiesController.text = profileAllergies;
@@ -155,7 +162,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
       if (mounted) setState(() {});
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('WritePrescriptionScreen._prefillPatientBaseline failed: $e\n$st');
+        debugPrint(
+            'WritePrescriptionScreen._prefillPatientBaseline failed: $e\n$st');
       }
     }
   }
@@ -371,7 +379,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
   }
 
   Future<void> _pickNextVisitDate() async {
-    final initial = _draft.nextVisit ?? DateTime.now().add(const Duration(days: 7));
+    final initial =
+        _draft.nextVisit ?? DateTime.now().add(const Duration(days: 7));
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -409,7 +418,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
     }
     if (!_draft.hasResolvedPatientId) {
       // FIXED: block save when the patient id is unresolved instead of writing a record the patient can never read
-      AppToast.info(context, 'This patient is not registered yet — the prescription cannot be saved to their record.');
+      AppToast.info(context,
+          'This patient is not registered yet — the prescription cannot be saved to their record.');
       return;
     }
     final doctorName = DoctorProfileStore.displayName;
@@ -430,7 +440,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
       await ClinicalPrescriptionStore.instance.save(_draft);
     } catch (_) {
       if (!mounted) return;
-      AppToast.info(context, 'Failed to save prescription. Please check your connection and try again.');
+      AppToast.info(context,
+          'Failed to save prescription. Please check your connection and try again.');
       return;
     }
 
@@ -455,7 +466,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
       );
     }
     if (!mounted) return;
-    PatientProfileMock.syncPrescriptionFromDraft(_draft, doctorName: doctorName);
+    PatientProfileMock.syncPrescriptionFromDraft(_draft,
+        doctorName: doctorName);
 
     final appointmentId = widget.patient.appointmentId;
     if (appointmentId != null && appointmentId.isNotEmpty) {
@@ -468,11 +480,13 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
         );
       } catch (_) {
         if (!mounted) return;
-        AppToast.info(context, 'Prescription saved, but appointment record not updated. Please retry.');
+        AppToast.info(context,
+            'Prescription saved, but appointment record not updated. Please retry.');
       }
     }
 
-    final connections = PharmacyConnectionStore.instance.activeForDoctor(doctorId);
+    final connections =
+        PharmacyConnectionStore.instance.activeForDoctor(doctorId);
     if (!mounted) return;
     final storeIds = connections.isEmpty
         ? <String>[]
@@ -480,7 +494,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
     if (!mounted) return;
     if (storeIds != null && storeIds.isNotEmpty) {
       try {
-        await PharmacyPrescriptionStore.instance.sendToStores( // FIXED: await so send failures surface
+        await PharmacyPrescriptionStore.instance.sendToStores(
+          // FIXED: await so send failures surface
           draft: _draft,
           storeIds: storeIds,
           doctorId: doctorId,
@@ -490,7 +505,9 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Prescription saved, but sending to the pharmacy failed. Please retry from Send.')), // FIXED
+          const SnackBar(
+              content: Text(
+                  'Prescription saved, but sending to the pharmacy failed. Please retry from Send.')), // FIXED
         );
       }
     }
@@ -520,7 +537,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PatientPrescriptionHistoryScreen(patient: widget.patient),
+        builder: (_) =>
+            PatientPrescriptionHistoryScreen(patient: widget.patient),
       ),
     );
   }
@@ -556,9 +574,12 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
   Widget build(BuildContext context) {
     final compact = ResponsiveLayout.isCompact(context);
     final doctorSummary = DoctorProfileStore.displayNameWithPrefix;
-    final patientSummary = '${widget.patient.patientName} · ${widget.patient.age} yrs';
+    final patientSummary =
+        '${widget.patient.patientName} · ${widget.patient.age} yrs';
     final medCount = namedMedicineEntries(_draft.medicines).length;
-    final medSummary = medCount == 0 ? 'Add from catalog' : '$medCount medicine${medCount == 1 ? '' : 's'}';
+    final medSummary = medCount == 0
+        ? 'Add from catalog'
+        : '$medCount medicine${medCount == 1 ? '' : 's'}';
 
     return Form(
       key: _formKey,
@@ -572,15 +593,18 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: AppColors.doctorBlue.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.doctorBlue.withValues(alpha: 0.25)),
+                      border: Border.all(
+                          color: AppColors.doctorBlue.withValues(alpha: 0.25)),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.edit_outlined, size: 18, color: AppColors.doctorBlue),
+                        Icon(Icons.edit_outlined,
+                            size: 18, color: AppColors.doctorBlue),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -731,7 +755,10 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
           Container(
             decoration: BoxDecoration(
               color: AppColors.surfaceOf(context),
-              border: Border(top: BorderSide(color: AppColors.borderOf(context).withValues(alpha: 0.65))),
+              border: Border(
+                  top: BorderSide(
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.65))),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
@@ -773,10 +800,12 @@ class _PreviousPrescriptionsSection extends StatefulWidget {
   final ValueChanged<PrescriptionDraft> onEdit;
 
   @override
-  State<_PreviousPrescriptionsSection> createState() => _PreviousPrescriptionsSectionState();
+  State<_PreviousPrescriptionsSection> createState() =>
+      _PreviousPrescriptionsSectionState();
 }
 
-class _PreviousPrescriptionsSectionState extends State<_PreviousPrescriptionsSection> {
+class _PreviousPrescriptionsSectionState
+    extends State<_PreviousPrescriptionsSection> {
   String get _patientId => widget.patient.patientId ?? '';
 
   @override
@@ -784,7 +813,8 @@ class _PreviousPrescriptionsSectionState extends State<_PreviousPrescriptionsSec
     return ListenableBuilder(
       listenable: ClinicalPrescriptionStore.instance,
       builder: (context, _) {
-        final records = ClinicalPrescriptionStore.instance.forPatient(_patientId);
+        final records =
+            ClinicalPrescriptionStore.instance.forPatient(_patientId);
         if (records.isEmpty) return const SizedBox.shrink();
 
         final latestRecords = records.take(2).toList();
@@ -801,10 +831,15 @@ class _PreviousPrescriptionsSectionState extends State<_PreviousPrescriptionsSec
           child: Column(
             children: [
               for (var i = 0; i < latestRecords.length; i++) ...[
-                if (i > 0) Divider(height: 1, color: AppColors.borderOf(context).withValues(alpha: 0.5)),
+                if (i > 0)
+                  Divider(
+                      height: 1,
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.5)),
                 _PrevRxCard(
                   draft: latestRecords[i],
-                  isActive: latestRecords[i].prescriptionId == widget.activePrescriptionId,
+                  isActive: latestRecords[i].prescriptionId ==
+                      widget.activePrescriptionId,
                   onEdit: () => widget.onEdit(latestRecords[i].copy()),
                 ),
               ],
@@ -855,7 +890,9 @@ class _PrevRxCard extends StatelessWidget {
                     dx,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
                 if (meds.isNotEmpty) ...[
@@ -868,7 +905,9 @@ class _PrevRxCard extends StatelessWidget {
                     }).join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
                 if (tests.isNotEmpty) ...[
@@ -880,7 +919,9 @@ class _PrevRxCard extends StatelessWidget {
                         .join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
               ],
@@ -909,26 +950,33 @@ class _PrevRxCard extends StatelessWidget {
                     onPressed: onEdit,
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
                       'Edit',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                   TextButton(
-                    onPressed: () => PrescriptionPreviewModal.show(context, draft: draft),
+                    onPressed: () =>
+                        PrescriptionPreviewModal.show(context, draft: draft),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
                       'View',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -964,13 +1012,15 @@ class _SendToSheetState extends State<_SendToSheet> {
       return;
     }
     if (!widget.draft.hasResolvedPatientId) {
-      AppToast.info(context, 'This patient is not registered yet — the prescription cannot be sent.');
+      AppToast.info(context,
+          'This patient is not registered yet — the prescription cannot be sent.');
       return;
     }
 
     final doctorId = DoctorSession.loggedInDoctorId.trim();
     if (doctorId.isEmpty) {
-      AppToast.info(context, 'Doctor session expired. Sign in again and retry.');
+      AppToast.info(
+          context, 'Doctor session expired. Sign in again and retry.');
       return;
     }
 
@@ -986,12 +1036,14 @@ class _SendToSheetState extends State<_SendToSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _sending = false);
-      AppToast.info(context, 'Failed to send prescription. Please check your connection and try again.');
+      AppToast.info(context,
+          'Failed to send prescription. Please check your connection and try again.');
       return;
     }
 
     if (_toPatient) {
-      PatientProfileMock.syncPrescriptionFromDraft(widget.draft, doctorName: doctorName);
+      PatientProfileMock.syncPrescriptionFromDraft(widget.draft,
+          doctorName: doctorName);
       final diagnosis = widget.draft.primaryDiagnosis.trim();
       PatientNotificationEmitter.notifyPrescriptionFromDoctor(
         doctorName: doctorName,
@@ -1015,7 +1067,8 @@ class _SendToSheetState extends State<_SendToSheet> {
     if (_toMedical) {
       try {
         await MedicalStoreRegistry.refreshFromFirestore();
-        final connections = PharmacyConnectionStore.instance.activeForDoctor(doctorId);
+        final connections =
+            PharmacyConnectionStore.instance.activeForDoctor(doctorId);
         if (connections.isEmpty) {
           warnings.add('No connected medical store');
         } else {
@@ -1048,7 +1101,8 @@ class _SendToSheetState extends State<_SendToSheet> {
         if (labTests.isEmpty) {
           warnings.add('No lab tests on this prescription');
         } else {
-          final connections = LabConnectionStore.instance.activeForDoctor(doctorId);
+          final connections =
+              LabConnectionStore.instance.activeForDoctor(doctorId);
           if (connections.isEmpty) {
             warnings.add('Connect a lab first from the Labs tab');
           } else {
@@ -1114,14 +1168,18 @@ class _SendToSheetState extends State<_SendToSheet> {
               const SizedBox(width: 10),
               Text(
                 'Send Prescription to',
-                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             'Select all recipients for ${widget.patient.patientName}\'s prescription',
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 16),
           const Divider(),
@@ -1154,8 +1212,10 @@ class _SendToSheetState extends State<_SendToSheet> {
               onPressed: _sending ? null : _send,
               icon: _sending
                   ? const SizedBox(
-                      width: 16, height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.send_rounded, size: 18),
               label: Text(_sending ? 'Sending…' : 'Send Now'),
@@ -1163,7 +1223,9 @@ class _SendToSheetState extends State<_SendToSheet> {
                 backgroundColor: AppColors.doctorBlue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                textStyle: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyLarge,
+                    fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -1200,12 +1262,18 @@ class _RecipientTile extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: AppColors.doctorBlue),
           const SizedBox(width: 10),
-          Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
+          Text(label,
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  fontSize: AppTypography.bodyMedium)),
         ],
       ),
       subtitle: Padding(
         padding: const EdgeInsets.only(left: 28),
-        child: Text(subtitle, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
+        child: Text(subtitle,
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context))),
       ),
     );
   }

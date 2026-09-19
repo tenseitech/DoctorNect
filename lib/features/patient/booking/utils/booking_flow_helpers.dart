@@ -28,7 +28,8 @@ abstract final class BookingFlowHelpers {
 
   /// Legacy pattern that caused same-day booking collisions before Issue #16.
   @visibleForTesting
-  static bool isLegacyAppointmentId(String id) => RegExp(r'^APT\d+$').hasMatch(id);
+  static bool isLegacyAppointmentId(String id) =>
+      RegExp(r'^APT\d+$').hasMatch(id);
 
   @visibleForTesting
   static void debugReset() {

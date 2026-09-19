@@ -61,10 +61,12 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
         final labId = LabSession.loggedInLabId;
         final lab = LabRegistry.findById(labId);
         if (lab == null) {
-          return const Center(child: CircularProgressIndicator(color: _labPurple));
+          return const Center(
+              child: CircularProgressIndicator(color: _labPurple));
         }
 
-        final connectedDoctors = LabConnectionStore.instance.activeForLab(labId).length;
+        final connectedDoctors =
+            LabConnectionStore.instance.activeForLab(labId).length;
 
         return LabPageLayout(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -72,12 +74,16 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
             children: [
               Text(
                 'Profile',
-                style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.headlineLarge,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
                 'Lab details, contact info & account settings',
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 20),
               _LabHeroCard(lab: lab, connectedDoctors: connectedDoctors),
@@ -103,7 +109,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                     value: lab.address,
                     onEdit: () => showDialog(
                       context: context,
-                      builder: (context) => _AddressEditDialog(labId: labId, lab: lab),
+                      builder: (context) =>
+                          _AddressEditDialog(labId: labId, lab: lab),
                     ),
                   ),
                   _LabInfoTile(
@@ -245,7 +252,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
     bool optional = false,
   }) async {
     final parsedPhone = FormValidators.parsePhone(currentValue);
-    final initialText = field == 'Phone' ? parsedPhone.localNumber : currentValue;
+    final initialText =
+        field == 'Phone' ? parsedPhone.localNumber : currentValue;
     final controller = TextEditingController(text: initialText);
     var dialCode = parsedPhone.dialCode;
     var saving = false;
@@ -270,7 +278,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                 }
               }
               if (field == 'Phone') {
-                final phoneError = FormValidators.phoneLocal(controller.text, dialCode: dialCode);
+                final phoneError = FormValidators.phoneLocal(controller.text,
+                    dialCode: dialCode);
                 if (phoneError != null) {
                   setDialogState(() => errorText = phoneError);
                   return;
@@ -288,7 +297,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                   : null;
 
               if (field == 'Phone' &&
-                  !ContactChangeVerification.mobilesEqual(phoneValue!, currentValue)) {
+                  !ContactChangeVerification.mobilesEqual(
+                      phoneValue!, currentValue)) {
                 final verified = await ContactChangeVerification.verifyIfNeeded(
                   context: context,
                   channel: ContactVerificationChannel.mobile,
@@ -302,7 +312,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
               }
 
               if (field == 'Email' &&
-                  !ContactChangeVerification.emailsEqual(emailValue!, currentValue)) {
+                  !ContactChangeVerification.emailsEqual(
+                      emailValue!, currentValue)) {
                 final verified = await ContactChangeVerification.verifyIfNeeded(
                   context: context,
                   channel: ContactVerificationChannel.email,
@@ -325,8 +336,12 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                 labName: field == 'Lab name' ? trimmed : null,
                 phone: phoneValue,
                 email: emailValue,
-                gstNumber: field == 'GST number (optional)' && trimmed.isNotEmpty ? trimmed : null,
-                clearGstNumber: field == 'GST number (optional)' && trimmed.isEmpty,
+                gstNumber:
+                    field == 'GST number (optional)' && trimmed.isNotEmpty
+                        ? trimmed
+                        : null,
+                clearGstNumber:
+                    field == 'GST number (optional)' && trimmed.isEmpty,
               );
 
               if (!context.mounted) return;
@@ -342,8 +357,10 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
             }
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Text('Edit $field', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: Text('Edit $field',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -352,7 +369,9 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                     if (errorText != null) ...[
                       Text(
                         errorText!,
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.error),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.error),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -363,7 +382,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                         onDialCodeChanged: (code) => dialCode = code,
                         decoration: const InputDecoration(
                           labelText: 'Phone',
-                          helperText: 'OTP verification required when changing your number',
+                          helperText:
+                              'OTP verification required when changing your number',
                           border: OutlineInputBorder(),
                         ),
                       )
@@ -372,13 +392,16 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                         controller: controller,
                         maxLines: field == 'Address' ? 4 : 1,
                         minLines: field == 'Address' ? 2 : 1,
-                        keyboardType: field == 'Email' ? TextInputType.emailAddress : TextInputType.text,
+                        keyboardType: field == 'Email'
+                            ? TextInputType.emailAddress
+                            : TextInputType.text,
                         textCapitalization: field == 'GST number (optional)'
                             ? TextCapitalization.characters
                             : TextCapitalization.sentences,
                         decoration: InputDecoration(
                           labelText: field,
-                          hintText: optional ? 'Leave blank if not applicable' : null,
+                          hintText:
+                              optional ? 'Leave blank if not applicable' : null,
                           helperText: field == 'Email'
                               ? 'OTP verification required when changing your email'
                               : null,
@@ -401,7 +424,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Text('Save'),
                 ),
@@ -456,7 +480,9 @@ class _LabHeroCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.surfaceOf(context).withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.surfaceOf(context).withValues(alpha: 0.28)),
+                  border: Border.all(
+                      color:
+                          AppColors.surfaceOf(context).withValues(alpha: 0.28)),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -488,7 +514,8 @@ class _LabHeroCard extends StatelessWidget {
                         lab.area,
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.bodySmall,
-                          color: AppColors.surfaceOf(context).withValues(alpha: 0.88),
+                          color: AppColors.surfaceOf(context)
+                              .withValues(alpha: 0.88),
                         ),
                       ),
                     ],
@@ -499,7 +526,8 @@ class _LabHeroCard extends StatelessWidget {
                       children: [
                         _HeroChip(
                           icon: Icons.verified_outlined,
-                          label: lab.verified ? 'Verified lab' : 'Diagnostic Lab',
+                          label:
+                              lab.verified ? 'Verified lab' : 'Diagnostic Lab',
                         ),
                         if (connectedDoctors > 0)
                           _HeroChip(
@@ -524,7 +552,8 @@ class _LabHeroCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.badge_outlined, size: 16, color: Colors.white.withValues(alpha: 0.9)),
+                  Icon(Icons.badge_outlined,
+                      size: 16, color: Colors.white.withValues(alpha: 0.9)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -532,7 +561,8 @@ class _LabHeroCard extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.surfaceOf(context).withValues(alpha: 0.95),
+                        color: AppColors.surfaceOf(context)
+                            .withValues(alpha: 0.95),
                       ),
                     ),
                   ),
@@ -595,11 +625,16 @@ class _LabProfileSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700)),
+        Text(title,
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyLarge,
+                fontWeight: FontWeight.w700)),
         const SizedBox(height: 3),
         Text(
           subtitle,
-          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 10),
         Container(
@@ -667,7 +702,10 @@ class _LabInfoTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -675,7 +713,9 @@ class _LabInfoTile extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
-                    color: isPlaceholder ? AppColors.textSecondaryOf(context) : AppColors.textPrimaryOf(context),
+                    color: isPlaceholder
+                        ? AppColors.textSecondaryOf(context)
+                        : AppColors.textPrimaryOf(context),
                     height: 1.35,
                   ),
                 ),
@@ -754,17 +794,24 @@ class _LabActionTile extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
-                        color: destructive ? AppColors.error : AppColors.textPrimaryOf(context),
+                        color: destructive
+                            ? AppColors.error
+                            : AppColors.textPrimaryOf(context),
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, size: 20, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.7)),
+              Icon(Icons.chevron_right,
+                  size: 20,
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.7)),
             ],
           ),
         ),
@@ -822,7 +869,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text('Change password', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+      title: Text('Change password',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
       content: scrollableDialogContent(
         context: context,
         child: Column(
@@ -830,7 +878,10 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (_error != null) ...[
-              Text(_error!, style: GoogleFonts.inter(color: AppColors.error, fontSize: AppTypography.bodySmall)),
+              Text(_error!,
+                  style: GoogleFonts.inter(
+                      color: AppColors.error,
+                      fontSize: AppTypography.bodySmall)),
               const SizedBox(height: 12),
             ],
             TextField(
@@ -865,7 +916,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Update'),
         ),
@@ -885,11 +937,15 @@ class _AddressEditDialog extends StatefulWidget {
 }
 
 class _AddressEditDialogState extends State<_AddressEditDialog> {
-  late final _address1Controller = TextEditingController(text: widget.lab.addressLine1);
-  late final _address2Controller = TextEditingController(text: widget.lab.addressLine2);
-  late final _pincodeController = TextEditingController(text: widget.lab.pincode);
-  
-  late String? _country = widget.lab.country.isNotEmpty ? widget.lab.country : null;
+  late final _address1Controller =
+      TextEditingController(text: widget.lab.addressLine1);
+  late final _address2Controller =
+      TextEditingController(text: widget.lab.addressLine2);
+  late final _pincodeController =
+      TextEditingController(text: widget.lab.pincode);
+
+  late String? _country =
+      widget.lab.country.isNotEmpty ? widget.lab.country : null;
   late String? _state = widget.lab.state.isNotEmpty ? widget.lab.state : null;
   late String? _city = widget.lab.city.isNotEmpty ? widget.lab.city : null;
 
@@ -907,7 +963,11 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
   Future<void> _save() async {
     final a1 = _address1Controller.text.trim();
     final pc = _pincodeController.text.trim();
-    if (a1.isEmpty || pc.isEmpty || _city == null || _state == null || _country == null) {
+    if (a1.isEmpty ||
+        pc.isEmpty ||
+        _city == null ||
+        _state == null ||
+        _country == null) {
       setState(() => _errorText = 'Please fill all required address fields.');
       return;
     }
@@ -942,7 +1002,8 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Edit Address', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+      title: Text('Edit Address',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -951,7 +1012,8 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
             if (_errorText != null) ...[
               Text(
                 _errorText!,
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.error),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall, color: AppColors.error),
               ),
               const SizedBox(height: 12),
             ],
@@ -982,7 +1044,8 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Save'),
         ),
@@ -990,4 +1053,3 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
     );
   }
 }
-

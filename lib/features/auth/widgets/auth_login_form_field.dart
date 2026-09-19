@@ -15,7 +15,8 @@ InputDecoration authLoginFieldDecoration({
   String? counterText,
   bool readOnly = false,
 }) {
-  OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
+  OutlineInputBorder border(Color color, [double width = 1]) =>
+      OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: color, width: width),
       );
@@ -31,7 +32,8 @@ InputDecoration authLoginFieldDecoration({
     suffixIcon: suffixIcon,
     counterText: counterText,
     filled: true,
-    fillColor: readOnly ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
+    fillColor:
+        readOnly ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
     isDense: true,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
     border: border(AppColors.borderOf(context)),
@@ -40,7 +42,10 @@ InputDecoration authLoginFieldDecoration({
     errorBorder: border(AppColors.error),
     focusedErrorBorder: border(AppColors.error, 1.6),
     disabledBorder: border(AppColors.borderOf(context)),
-    errorStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.error, height: 1.2),
+    errorStyle: GoogleFonts.inter(
+        fontSize: AppTypography.labelMedium,
+        color: AppColors.error,
+        height: 1.2),
     errorMaxLines: 4,
   );
 }
@@ -288,7 +293,9 @@ class AuthLoginFormField extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w500,
-            color: readOnly ? AppColors.textSecondaryOf(context) : AppColors.textPrimaryOf(context),
+            color: readOnly
+                ? AppColors.textSecondaryOf(context)
+                : AppColors.textPrimaryOf(context),
           ),
           decoration: authLoginFieldDecoration(
             context: context,

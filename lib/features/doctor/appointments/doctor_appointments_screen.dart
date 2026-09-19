@@ -41,7 +41,13 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
   DateTime? _filterDate;
   AppointmentType? _typeFilter;
   final _searchController = TextEditingController();
-  static const _tabLabels = ['Today', 'Upcoming', 'Pending', 'Completed', 'Cancelled'];
+  static const _tabLabels = [
+    'Today',
+    'Upcoming',
+    'Pending',
+    'Completed',
+    'Cancelled'
+  ];
   static const _tabs = [
     AppointmentListTab.today,
     AppointmentListTab.upcoming,
@@ -115,7 +121,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AppointmentDetailScreen(isDoctorView: true, 
+        builder: (_) => AppointmentDetailScreen(
+          isDoctorView: true,
           appointment: appointment,
           onStatusChanged: (s) => _updateStatus(appointment.id, s),
         ),
@@ -139,7 +146,9 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't accept this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't accept this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -157,7 +166,9 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't decline this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't decline this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -171,7 +182,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     final record = _store.findRecordById(appointment.id);
     final resolvedPatientId = record?.patientId;
     if (resolvedPatientId == null || resolvedPatientId.isEmpty) {
-      AppToast.info(context, 'This patient is not registered yet — clinical tools cannot be linked to them.');
+      AppToast.info(context,
+          'This patient is not registered yet — clinical tools cannot be linked to them.');
       return;
     }
     _updateStatus(appointment.id, AppointmentStatus.inProgress);
@@ -224,10 +236,14 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                         isScrollable: true,
                         tabAlignment: TabAlignment.start,
                         labelColor: AppColors.doctorBlue,
-                        unselectedLabelColor: AppColors.textSecondaryOf(context),
+                        unselectedLabelColor:
+                            AppColors.textSecondaryOf(context),
                         indicatorColor: AppColors.doctorBlue,
-                        labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
-                        unselectedLabelStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+                        labelStyle: GoogleFonts.inter(
+                            fontSize: AppTypography.bodyMedium,
+                            fontWeight: FontWeight.w600),
+                        unselectedLabelStyle: GoogleFonts.inter(
+                            fontSize: AppTypography.bodyMedium),
                         tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
                         onTap: (_) => setState(() {}),
                       ),
@@ -251,7 +267,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                             children: _tabs.map((tab) {
                               final list = _filteredForTab(tab);
                               if (list.isEmpty) {
-                                return AppointmentsEmptyState(tabLabel: _tabLabels[_tabs.indexOf(tab)]);
+                                return AppointmentsEmptyState(
+                                    tabLabel: _tabLabels[_tabs.indexOf(tab)]);
                               }
                               return ListView.builder(
                                 padding: EdgeInsets.fromLTRB(
@@ -271,7 +288,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                                     onStart: () => _startConsultation(appt),
                                     onView: () => _openDetail(appt),
                                     onCancel: () => _cancelAppointment(appt),
-                                    onReschedule: () => DoctorAppointmentActions.reschedule(
+                                    onReschedule: () =>
+                                        DoctorAppointmentActions.reschedule(
                                       context,
                                       appointment: appt,
                                       onComplete: () => setState(() {}),

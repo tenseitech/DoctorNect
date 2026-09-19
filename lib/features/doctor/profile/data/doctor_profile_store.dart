@@ -50,7 +50,8 @@ class DoctorProfileStore extends ChangeNotifier {
         .listen((snap) {
       if (!snap.exists || snap.data() == null) return;
       final data = snap.data()!;
-      final url = (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
+      final url =
+          (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
       if (url != null && url.isNotEmpty && url != profile.photoUrl) {
         profile.photoUrl = url;
         notifyListeners();
@@ -73,7 +74,9 @@ class DoctorProfileStore extends ChangeNotifier {
 
   Future<void> _loadNotificationPrefs(String doctorId) async {
     try {
-      final ref = FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId);
+      final ref = FirebaseFirestore.instance
+          .collection(FirestorePaths.doctors)
+          .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(
         reference: ref,
         preferCache: false,
@@ -89,14 +92,16 @@ class DoctorProfileStore extends ChangeNotifier {
   void _applyNotificationPrefsFromMap(Map<String, dynamic> data) {
     profile.appointmentReminders =
         data['appointmentReminders'] as bool? ?? profile.appointmentReminders;
-    profile.remindHoursBefore =
-        (data['remindHoursBefore'] as num?)?.toInt() ?? profile.remindHoursBefore;
+    profile.remindHoursBefore = (data['remindHoursBefore'] as num?)?.toInt() ??
+        profile.remindHoursBefore;
     final channels = data['notificationChannels'] as List<dynamic>?;
-    if (channels != null) profile.notificationChannels = channels.cast<String>();
+    if (channels != null)
+      profile.notificationChannels = channels.cast<String>();
   }
 
   /// Badge status for the logged-in doctor dashboard (from Firestore `verified`).
-  VerificationStatus get dashboardVerificationStatus => profile.verificationStatus;
+  VerificationStatus get dashboardVerificationStatus =>
+      profile.verificationStatus;
 
   static bool _isVerifiedValue(dynamic value) {
     if (value == true) return true;
@@ -231,11 +236,13 @@ class DoctorProfileStore extends ChangeNotifier {
 
     if (FirebaseBootstrap.isReady) {
       try {
-        final ref = FirebaseStorage.instance.ref('doctor_profiles/$doctorId/profile.jpg');
+        final ref = FirebaseStorage.instance
+            .ref('doctor_profiles/$doctorId/profile.jpg');
         await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
         storageUrl = await ref.getDownloadURL();
       } catch (e) {
-        if (kDebugMode) debugPrint('[DoctorProfileStore] storage upload failed: $e');
+        if (kDebugMode)
+          debugPrint('[DoctorProfileStore] storage upload failed: $e');
       }
 
       final finalUrl = storageUrl ?? dataUrl;
@@ -246,7 +253,9 @@ class DoctorProfileStore extends ChangeNotifier {
             .doc(doctorId)
             .update({'photoUrl': finalUrl, 'photoURL': finalUrl});
       } catch (e) {
-        if (kDebugMode) debugPrint('[DoctorProfileStore] firestore doc photo update failed: $e');
+        if (kDebugMode)
+          debugPrint(
+              '[DoctorProfileStore] firestore doc photo update failed: $e');
       }
       notifyListeners();
       return finalUrl;
@@ -277,7 +286,8 @@ class DoctorProfileStore extends ChangeNotifier {
           'photoURL': FieldValue.delete(),
         });
       } catch (e) {
-        if (kDebugMode) debugPrint('[DoctorProfileStore] remove photo failed: $e');
+        if (kDebugMode)
+          debugPrint('[DoctorProfileStore] remove photo failed: $e');
       }
     }
   }
@@ -304,7 +314,8 @@ class DoctorProfileStore extends ChangeNotifier {
       'mobile': p.mobile,
       'email': p.email,
       'gender': p.gender,
-      if (p.dateOfBirth != null) 'dateOfBirth': Timestamp.fromDate(p.dateOfBirth!),
+      if (p.dateOfBirth != null)
+        'dateOfBirth': Timestamp.fromDate(p.dateOfBirth!),
       'languages': p.languages,
       'qualification': p.qualification,
       'councilNumber': p.councilNumber,
@@ -355,7 +366,8 @@ class DoctorProfileStore extends ChangeNotifier {
   // FIXED: reviews were never fetched, so the Reviews screen was always empty.
   Future<void> loadReviews(String doctorId) async {
     if (doctorId.isEmpty) return;
-    final fetched = await FirestoreService.instance.review.fetchForDoctor(doctorId);
+    final fetched =
+        await FirestoreService.instance.review.fetchForDoctor(doctorId);
     profile.reviews = fetched
         .map((r) => PatientReview(
               id: r.id,
@@ -372,26 +384,31 @@ class DoctorProfileStore extends ChangeNotifier {
       final ref = FirebaseFirestore.instance
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
-      final snap = await FirestoreReadHelper.getDocument(reference: ref, preferCache: true);
+      final snap = await FirestoreReadHelper.getDocument(
+          reference: ref, preferCache: true);
       final data = snap.data();
       if (data != null) {
         profile.rating = (data['rating'] as num?)?.toDouble() ?? profile.rating;
-        profile.reviewCount = (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
+        profile.reviewCount =
+            (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
       } else if (fetched.isNotEmpty) {
         profile.reviewCount = fetched.length;
-        profile.rating = fetched.fold<double>(0, (acc, r) => acc + r.rating) / fetched.length;
+        profile.rating = fetched.fold<double>(0, (acc, r) => acc + r.rating) /
+            fetched.length;
       }
     } catch (_) {
       if (fetched.isNotEmpty) {
         profile.reviewCount = fetched.length;
-        profile.rating = fetched.fold<double>(0, (acc, r) => acc + r.rating) / fetched.length;
+        profile.rating = fetched.fold<double>(0, (acc, r) => acc + r.rating) /
+            fetched.length;
       }
     }
   }
 
   /// Persists a doctor's reply to a review document.
   // FIXED: replies were only kept in memory; now they are written to the review doc.
-  Future<void> saveReply({required String reviewId, required String reply}) async {
+  Future<void> saveReply(
+      {required String reviewId, required String reply}) async {
     if (reviewId.isEmpty) {
       throw StateError('Missing review id — reply cannot be saved.');
     }
@@ -413,23 +430,30 @@ class DoctorProfileStore extends ChangeNotifier {
         }
       }
 
-      final ref = FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId);
-      final snap = await FirestoreReadHelper.getDocument(reference: ref, preferCache: true);
+      final ref = FirebaseFirestore.instance
+          .collection(FirestorePaths.doctors)
+          .doc(doctorId);
+      final snap = await FirestoreReadHelper.getDocument(
+          reference: ref, preferCache: true);
       final data = snap.data();
       if (data == null) return;
 
       profile.fullName = data['name'] as String? ?? profile.fullName;
-      profile.specialization = data['specialization'] as String? ?? profile.specialization;
-      final url = (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
+      profile.specialization =
+          data['specialization'] as String? ?? profile.specialization;
+      final url =
+          (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
       if (url != null && url.isNotEmpty) profile.photoUrl = url;
       profile.yearsExperience =
           (data['experienceYears'] as num?)?.toInt() ?? profile.yearsExperience;
-      profile.registrationYear =
-          (data['registrationYear'] as num?)?.toInt() ?? profile.registrationYear;
+      profile.registrationYear = (data['registrationYear'] as num?)?.toInt() ??
+          profile.registrationYear;
       profile.mobile = data['mobile'] as String? ?? profile.mobile;
       profile.email = data['email'] as String? ?? profile.email;
-      profile.councilNumber = data['councilNumber'] as String? ?? profile.councilNumber;
-      profile.stateCouncil = data['stateCouncil'] as String? ?? profile.stateCouncil;
+      profile.councilNumber =
+          data['councilNumber'] as String? ?? profile.councilNumber;
+      profile.stateCouncil =
+          data['stateCouncil'] as String? ?? profile.stateCouncil;
       profile.clinicName = data['clinicName'] as String? ?? profile.clinicName;
       final nestedCity = readNestedAddressCity(data);
       if (nestedCity != null) {
@@ -438,13 +462,16 @@ class DoctorProfileStore extends ChangeNotifier {
         profile.city = data['city'] as String? ?? profile.city;
       }
       profile.rating = (data['rating'] as num?)?.toDouble() ?? profile.rating;
-      profile.reviewCount = (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
-      profile.verificationStatus = _verificationStatusFromFirestore(data['verified']);
+      profile.reviewCount =
+          (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
+      profile.verificationStatus =
+          _verificationStatusFromFirestore(data['verified']);
       final langs = data['languages'] as List<dynamic>?;
       if (langs != null) {
         profile.languages = langs.cast<String>();
       }
-      profile.qualification = data['qualification'] as String? ?? profile.qualification;
+      profile.qualification =
+          data['qualification'] as String? ?? profile.qualification;
 
       // FIXED: map the remaining editable fields so saved edits survive reload.
       profile.gender = data['gender'] as String? ?? profile.gender;
@@ -458,8 +485,10 @@ class DoctorProfileStore extends ChangeNotifier {
       final pubs = data['publications'] as List<dynamic>?;
       if (pubs != null) profile.publications = pubs.cast<String>();
       profile.clinicType = data['clinicType'] as String? ?? profile.clinicType;
-      profile.addressLine1 = data['addressLine1'] as String? ?? profile.addressLine1;
-      profile.addressLine2 = data['addressLine2'] as String? ?? profile.addressLine2;
+      profile.addressLine1 =
+          data['addressLine1'] as String? ?? profile.addressLine1;
+      profile.addressLine2 =
+          data['addressLine2'] as String? ?? profile.addressLine2;
       final address = data['address'];
       if (address is Map) {
         final nestedLine1 = address['addressLine1'];
@@ -483,16 +512,21 @@ class DoctorProfileStore extends ChangeNotifier {
       profile.avgDurationMins =
           (data['avgDurationMins'] as num?)?.toInt() ?? profile.avgDurationMins;
       profile.maxPatientsPerDay =
-          (data['maxPatientsPerDay'] as num?)?.toInt() ?? profile.maxPatientsPerDay;
+          (data['maxPatientsPerDay'] as num?)?.toInt() ??
+              profile.maxPatientsPerDay;
       profile.advanceBookingDays =
-          (data['advanceBookingDays'] as num?)?.toInt() ?? profile.advanceBookingDays;
+          (data['advanceBookingDays'] as num?)?.toInt() ??
+              profile.advanceBookingDays;
       profile.autoAcceptAppointments =
-          data['autoAcceptAppointments'] as bool? ?? profile.autoAcceptAppointments;
+          data['autoAcceptAppointments'] as bool? ??
+              profile.autoAcceptAppointments;
       _applyNotificationPrefsFromMap(data);
       profile.newBookingAlert = true;
       profile.cancellationAlert = true;
-      profile.twoFactorEnabled = data['twoFactorEnabled'] as bool? ?? profile.twoFactorEnabled;
-      profile.recoveryEmail = data['recoveryEmail'] as String? ?? profile.recoveryEmail;
+      profile.twoFactorEnabled =
+          data['twoFactorEnabled'] as bool? ?? profile.twoFactorEnabled;
+      profile.recoveryEmail =
+          data['recoveryEmail'] as String? ?? profile.recoveryEmail;
     } finally {
       notifyListeners();
     }

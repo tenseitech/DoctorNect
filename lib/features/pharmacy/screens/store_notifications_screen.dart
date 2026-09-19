@@ -20,7 +20,8 @@ class StoreNotificationsScreen extends StatelessWidget {
         title: const Text('Notifications'),
         actions: [
           TextButton(
-            onPressed: () => PharmacyNotificationStore.instance.markAllReadForStore(storeId),
+            onPressed: () =>
+                PharmacyNotificationStore.instance.markAllReadForStore(storeId),
             child: const Text('Mark all read'),
           ),
         ],
@@ -31,7 +32,9 @@ class StoreNotificationsScreen extends StatelessWidget {
           final items = PharmacyNotificationStore.instance.forStore(storeId);
           if (items.isEmpty) {
             return Center(
-              child: Text('No notifications', style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context))),
+              child: Text('No notifications',
+                  style: GoogleFonts.inter(
+                      color: AppColors.textSecondaryOf(context))),
             );
           }
           return ListView.separated(
@@ -41,25 +44,32 @@ class StoreNotificationsScreen extends StatelessWidget {
             itemBuilder: (context, i) {
               final n = items[i];
               return ListTile(
-                tileColor: n.isRead ? null : AppColors.pharmacyGreen.withValues(alpha: 0.06),
-                title: Text(n.title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                tileColor: n.isRead
+                    ? null
+                    : AppColors.pharmacyGreen.withValues(alpha: 0.06),
+                title: Text(n.title,
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(n.message),
                     Text(
                       DateFormat('dd MMM yyyy, hh:mm a').format(n.createdAt),
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),
                 onTap: () {
                   PharmacyNotificationStore.instance.markRead(n.id);
-                  if (n.referenceId != null && n.title.contains('prescription')) {
+                  if (n.referenceId != null &&
+                      n.title.contains('prescription')) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => StorePrescriptionDetailScreen(deliveryId: n.referenceId!),
+                        builder: (_) => StorePrescriptionDetailScreen(
+                            deliveryId: n.referenceId!),
                       ),
                     );
                   }

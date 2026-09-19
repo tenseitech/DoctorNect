@@ -120,13 +120,11 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
         ? (_isHovered ? const Color(0xFF1E293B) : const Color(0xFF151C2C))
         : (_isHovered ? const Color(0xFFF8FAFC) : Colors.white);
 
-    final borderColor = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFCBD5E1);
+    final borderColor =
+        isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1);
 
-    final textColor = isDark
-        ? const Color(0xFFF1F5F9)
-        : const Color(0xFF1E293B);
+    final textColor =
+        isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -214,9 +212,8 @@ class AuthOrDivider extends StatelessWidget {
     final lineColor = isDark
         ? const Color(0xFF334155).withValues(alpha: 0.8)
         : const Color(0xFFE2E8F0);
-    final textColor = isDark
-        ? const Color(0xFF94A3B8)
-        : const Color(0xFF64748B);
+    final textColor =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),

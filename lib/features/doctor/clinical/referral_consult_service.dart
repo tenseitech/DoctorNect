@@ -9,7 +9,8 @@ import 'models/clinical_models.dart';
 /// Opens a referred registered patient for the receiving specialist (Doctor B).
 abstract final class ReferralConsultService {
   /// Self-grants care-team access when [patients/{id}/doctor_links/{B}] exists (C1/C2).
-  static Future<bool> prepareReceivingDoctorAccess(DoctorReferral referral) async {
+  static Future<bool> prepareReceivingDoctorAccess(
+      DoctorReferral referral) async {
     if (!PatientProfileRepository.isRegisteredPatientId(referral.patientId)) {
       return false;
     }
@@ -19,13 +20,15 @@ abstract final class ReferralConsultService {
       return false;
     }
 
-    final granted = await FirestoreService.instance.patientProfile.grantDoctorCareTeamAccess(
+    final granted = await FirestoreService.instance.patientProfile
+        .grantDoctorCareTeamAccess(
       patientId: referral.patientId,
       doctorId: doctorId,
     );
     if (!granted) return false;
 
-    final profile = await FirestoreService.instance.patientProfile.fetchPatientDocumentForDoctor(
+    final profile = await FirestoreService.instance.patientProfile
+        .fetchPatientDocumentForDoctor(
       referral.patientId,
       preferCache: false,
     );

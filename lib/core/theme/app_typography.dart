@@ -50,7 +50,8 @@ abstract final class AppTypography {
       displayMedium: token(base.displayMedium, displayMedium, FontWeight.w700),
       displaySmall: token(base.displaySmall, displaySmall, FontWeight.w600),
       headlineLarge: token(base.headlineLarge, headlineLarge, FontWeight.w700),
-      headlineMedium: token(base.headlineMedium, headlineMedium, FontWeight.w600),
+      headlineMedium:
+          token(base.headlineMedium, headlineMedium, FontWeight.w600),
       headlineSmall: token(base.headlineSmall, headlineSmall, FontWeight.w600),
       titleLarge: token(base.titleLarge, titleLarge, FontWeight.w600),
       titleMedium: token(base.titleMedium, titleMedium, FontWeight.w600),

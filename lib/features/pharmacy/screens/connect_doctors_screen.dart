@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -25,7 +25,8 @@ class ConnectDoctorsScreen extends StatelessWidget {
   final String? appBarTitle;
 
   String? _pharmacyCityLabel() {
-    final store = MedicalStoreRegistry.findById(MedicalStoreSession.loggedInStoreId);
+    final store =
+        MedicalStoreRegistry.findById(MedicalStoreSession.loggedInStoreId);
     if (store == null) return null;
     return pharmacyCityFilter(city: store.city, address: store.address);
   }
@@ -84,17 +85,21 @@ class ConnectDoctorsScreen extends StatelessWidget {
       ),
       activitySubtitleBuilder: (doctorId) {
         final count = prescStore.forStoreAndDoctor(storeId, doctorId).length;
-        final last = prescStore.forStoreAndDoctor(storeId, doctorId).firstOrNull?.sentAt;
+        final last =
+            prescStore.forStoreAndDoctor(storeId, doctorId).firstOrNull?.sentAt;
         return '$count prescriptions${last != null ? ' Â· Last: ${DateFormat('dd MMM').format(last)}' : ''}';
       },
       onApproveConnection: (id, doctorName) => connStore.approveByStore(id),
       onRejectConnection: (id, doctorName) => connStore.rejectByStore(id),
       onRevokeConnection: (id, doctorName) => connStore.removeConnection(id),
       onRemoveConnection: (id, doctorName) => connStore.removeConnection(id),
-      onSendRequest: (doctor) => connStore.sendRequest(storeId: storeId, doctorId: doctor.id),
+      onSendRequest: (doctor) =>
+          connStore.sendRequest(storeId: storeId, doctorId: doctor.id),
       isConnected: (doctorId) => connStore.isConnected(doctorId, storeId),
-      isPendingSent: (doctorId) => connStore.isPendingSentByStore(storeId: storeId, doctorId: doctorId),
-      isPendingFromDoctor: (doctorId) => connStore.isPendingFromDoctor(storeId: storeId, doctorId: doctorId),
+      isPendingSent: (doctorId) =>
+          connStore.isPendingSentByStore(storeId: storeId, doctorId: doctorId),
+      isPendingFromDoctor: (doctorId) =>
+          connStore.isPendingFromDoctor(storeId: storeId, doctorId: doctorId),
       attachFirestoreSync: () {
         FirestoreScreenSync.attachPendingConnections(
           role: UserType.medicalStore,

@@ -24,12 +24,15 @@ class FirestoreSnapshotBuilder extends StatefulWidget {
   final Query<Map<String, dynamic>> query;
   final bool realtime;
   final bool preferCache;
-  final Widget Function(BuildContext context, QuerySnapshot<Map<String, dynamic>> snapshot) builder;
+  final Widget Function(
+          BuildContext context, QuerySnapshot<Map<String, dynamic>> snapshot)
+      builder;
   final Widget Function(BuildContext context)? loading;
   final Widget Function(BuildContext context, Object error)? error;
 
   @override
-  State<FirestoreSnapshotBuilder> createState() => _FirestoreSnapshotBuilderState();
+  State<FirestoreSnapshotBuilder> createState() =>
+      _FirestoreSnapshotBuilderState();
 }
 
 class _FirestoreSnapshotBuilderState extends State<FirestoreSnapshotBuilder> {
@@ -104,7 +107,8 @@ class _FirestoreSnapshotBuilderState extends State<FirestoreSnapshotBuilder> {
     }
 
     if (_loading || _snapshot == null) {
-      return widget.loading?.call(context) ?? const Center(child: CircularProgressIndicator());
+      return widget.loading?.call(context) ??
+          const Center(child: CircularProgressIndicator());
     }
 
     return widget.builder(context, _snapshot!);

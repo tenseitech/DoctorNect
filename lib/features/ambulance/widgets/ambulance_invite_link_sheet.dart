@@ -68,7 +68,8 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondaryOf(context).withValues(alpha: 0.3),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -76,12 +77,17 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Invite link created',
-              style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.headlineMedium,
+                  fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
               'Share this link with $driverName. They can download DoctorNect, open the link, set a username & PIN, and login to the ambulance dashboard.',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context),
+                  height: 1.4),
             ),
             const SizedBox(height: 16),
             Container(
@@ -93,7 +99,9 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
               ),
               child: SelectableText(
                 link,
-                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textPrimaryOf(context)),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textPrimaryOf(context)),
               ),
             ),
             const SizedBox(height: 16),
@@ -104,7 +112,8 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFDC2626),
                 minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 10),
@@ -116,7 +125,8 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
                 foregroundColor: const Color(0xFFDC2626),
                 side: const BorderSide(color: Color(0xFFDC2626)),
                 minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],

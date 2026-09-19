@@ -24,7 +24,8 @@ class EditProfileSection extends StatefulWidget {
 
 class _EditProfileSectionState extends State<EditProfileSection> {
   late final _name = TextEditingController(text: _p.fullName);
-  late String _specialization = AppConstants.normalizeSpecialization(_p.specialization);
+  late String _specialization =
+      AppConstants.normalizeSpecialization(_p.specialization);
   late String _qualification = _p.qualification.trim();
   bool _dirty = false;
 
@@ -81,12 +82,14 @@ class _EditProfileSectionState extends State<EditProfileSection> {
       },
     );
     if (picked == null || !picked.hasImage) {
-      if (mounted) AppToast.error(context, 'No photo selected or picker failed.');
+      if (mounted)
+        AppToast.error(context, 'No photo selected or picker failed.');
       return;
     }
     final doctorId = DoctorSession.activeDoctorId;
     setState(() {
-      DoctorProfileStore.instance.updatePhoto(path: picked.path, bytes: picked.bytes);
+      DoctorProfileStore.instance
+          .updatePhoto(path: picked.path, bytes: picked.bytes);
     });
     final bytes = picked.bytes;
     if (bytes != null && bytes.isNotEmpty && doctorId.isNotEmpty) {
@@ -109,7 +112,8 @@ class _EditProfileSectionState extends State<EditProfileSection> {
       await DoctorProfileStore.instance.persist(DoctorSession.loggedInDoctorId);
     } catch (_) {
       if (!mounted) return;
-      AppToast.info(context, 'Could not save changes. Please check your connection and try again.');
+      AppToast.info(context,
+          'Could not save changes. Please check your connection and try again.');
       return;
     }
     if (!mounted) return;
@@ -129,12 +133,14 @@ class _EditProfileSectionState extends State<EditProfileSection> {
             child: Align(
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Column(
@@ -145,12 +151,20 @@ class _EditProfileSectionState extends State<EditProfileSection> {
                               children: [
                                 CircleAvatar(
                                   radius: 48,
-                                  backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                                  backgroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.15),
                                   backgroundImage: avatarImage,
                                   child: avatarImage == null
                                       ? Text(
-                                          _name.text.isNotEmpty ? _name.text[0].toUpperCase() : 'D',
-                                          style: const TextStyle(fontSize: AppTypography.displayLarge, fontWeight: FontWeight.bold),
+                                          _name.text.isNotEmpty
+                                              ? _name.text[0].toUpperCase()
+                                              : 'D',
+                                          style: const TextStyle(
+                                              fontSize:
+                                                  AppTypography.displayLarge,
+                                              fontWeight: FontWeight.bold),
                                         )
                                       : null,
                                 ),
@@ -161,8 +175,11 @@ class _EditProfileSectionState extends State<EditProfileSection> {
                                     onTap: _pickPhoto,
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
-                                      decoration: const BoxDecoration(color: Color(0xFF185FA5), shape: BoxShape.circle),
-                                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                                      decoration: const BoxDecoration(
+                                          color: Color(0xFF185FA5),
+                                          shape: BoxShape.circle),
+                                      child: const Icon(Icons.camera_alt,
+                                          color: Colors.white, size: 18),
                                     ),
                                   ),
                                 ),
@@ -179,7 +196,9 @@ class _EditProfileSectionState extends State<EditProfileSection> {
                               fillColor: AppColors.cardBgOf(context),
                               suffixIcon: Tooltip(
                                 message: 'Name cannot be changed',
-                                child: Icon(Icons.lock_outline, size: 18, color: AppColors.textSecondaryOf(context)),
+                                child: Icon(Icons.lock_outline,
+                                    size: 18,
+                                    color: AppColors.textSecondaryOf(context)),
                               ),
                             ),
                           ),

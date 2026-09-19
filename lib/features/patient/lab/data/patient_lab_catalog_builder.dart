@@ -32,7 +32,9 @@ abstract final class PatientLabCatalogBuilder {
   };
 
   static List<LabTestItem> allTests() {
-    return MedicalTestsCatalog.labTests.map(_fromCatalogItem).toList(growable: false);
+    return MedicalTestsCatalog.labTests
+        .map(_fromCatalogItem)
+        .toList(growable: false);
   }
 
   static LabTestItem _fromCatalogItem(TestCatalogItem item) {
@@ -101,7 +103,9 @@ abstract final class PatientLabCatalogBuilder {
   static Map<String, List<LabTestItem>> grouped(List<LabTestItem> tests) {
     final groups = <String, List<LabTestItem>>{};
     for (final test in tests) {
-      final key = test.category?.trim().isNotEmpty == true ? test.category!.trim() : 'Other';
+      final key = test.category?.trim().isNotEmpty == true
+          ? test.category!.trim()
+          : 'Other';
       groups.putIfAbsent(key, () => []).add(test);
     }
     return groups;

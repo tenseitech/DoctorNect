@@ -20,7 +20,8 @@ class NotificationsInboxScreen extends StatefulWidget {
   final NotificationAudience audience;
 
   @override
-  State<NotificationsInboxScreen> createState() => _NotificationsInboxScreenState();
+  State<NotificationsInboxScreen> createState() =>
+      _NotificationsInboxScreenState();
 }
 
 class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
@@ -95,12 +96,15 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
               children: [
                 Text(
                   'Notifications',
-                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700),
                 ),
                 if (unreadCount > 0) ...[
                   const SizedBox(width: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: _accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
@@ -125,11 +129,14 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                   onPressed: unreadCount > 0 ? _markAllRead : null,
                   style: TextButton.styleFrom(
                     foregroundColor: _accent,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   child: Text(
                     'Mark all read',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -146,14 +153,16 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                       label: 'New',
                       selected: _filter == _InboxFilter.newAlerts,
                       accent: _accent,
-                      onTap: () => setState(() => _filter = _InboxFilter.newAlerts),
+                      onTap: () =>
+                          setState(() => _filter = _InboxFilter.newAlerts),
                     ),
                     const SizedBox(width: 12),
                     _FilterPill(
                       label: 'Unread',
                       selected: _filter == _InboxFilter.unread,
                       accent: _accent,
-                      onTap: () => setState(() => _filter = _InboxFilter.unread),
+                      onTap: () =>
+                          setState(() => _filter = _InboxFilter.unread),
                     ),
                   ],
                 ),
@@ -173,7 +182,8 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                           child: ListView.separated(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                             itemCount: items.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 10),
                             itemBuilder: (context, index) {
                               final n = items[index];
                               return _NotificationTile(
@@ -268,10 +278,14 @@ class _NotificationTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Ink(
           decoration: BoxDecoration(
-            color: n.isRead ? AppColors.surfaceOf(context) : accent.withValues(alpha: 0.035),
+            color: n.isRead
+                ? AppColors.surfaceOf(context)
+                : accent.withValues(alpha: 0.035),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: n.isRead ? AppColors.borderOf(context) : accent.withValues(alpha: 0.28),
+              color: n.isRead
+                  ? AppColors.borderOf(context)
+                  : accent.withValues(alpha: 0.28),
               width: n.isRead ? 1.0 : 1.2,
             ),
             boxShadow: [
@@ -295,7 +309,8 @@ class _NotificationTile extends StatelessWidget {
                     width: 4,
                     decoration: BoxDecoration(
                       color: accent,
-                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
+                      borderRadius: const BorderRadius.horizontal(
+                          right: Radius.circular(4)),
                     ),
                   ),
                 ),
@@ -316,13 +331,15 @@ class _NotificationTile extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: palette.gradient.last.withValues(alpha: 0.22),
+                            color:
+                                palette.gradient.last.withValues(alpha: 0.22),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      child: Icon(palette.icon, size: 22, color: AppColors.white),
+                      child:
+                          Icon(palette.icon, size: 22, color: AppColors.white),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -336,7 +353,9 @@ class _NotificationTile extends StatelessWidget {
                                 child: Text(
                                   n.title,
                                   style: GoogleFonts.inter(
-                                    fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w700,
+                                    fontWeight: n.isRead
+                                        ? FontWeight.w600
+                                        : FontWeight.w700,
                                     fontSize: AppTypography.bodyMedium,
                                     height: 1.25,
                                     color: AppColors.textPrimaryOf(context),
@@ -346,11 +365,13 @@ class _NotificationTile extends StatelessWidget {
                               if (!n.isRead) ...[
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: accent.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: accent.withValues(alpha: 0.25)),
+                                    border: Border.all(
+                                        color: accent.withValues(alpha: 0.25)),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -358,7 +379,9 @@ class _NotificationTile extends StatelessWidget {
                                       Container(
                                         width: 5,
                                         height: 5,
-                                        decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                                        decoration: BoxDecoration(
+                                            color: accent,
+                                            shape: BoxShape.circle),
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
@@ -388,7 +411,9 @@ class _NotificationTile extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             time,
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelSmall,
+                                color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ),
@@ -504,18 +529,24 @@ class _EmptyInbox extends StatelessWidget {
                     color: accent.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.notifications_none_outlined, size: 32, color: accent),
+                  child: Icon(Icons.notifications_none_outlined,
+                      size: 32, color: accent),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   title,
-                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.45),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      color: AppColors.textSecondaryOf(context),
+                      height: 1.45),
                 ),
               ],
             ),

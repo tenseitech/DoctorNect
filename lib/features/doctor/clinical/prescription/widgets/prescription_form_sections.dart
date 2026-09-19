@@ -37,7 +37,8 @@ class PrescriptionHeaderSection extends StatefulWidget {
   final bool dense;
 
   @override
-  State<PrescriptionHeaderSection> createState() => _PrescriptionHeaderSectionState();
+  State<PrescriptionHeaderSection> createState() =>
+      _PrescriptionHeaderSectionState();
 }
 
 class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
@@ -63,7 +64,8 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
     final qualifications = PrescriptionHeaderHelper.qualificationsLine(p);
     final doctorName = DoctorProfileStore.displayNameWithPrefix;
     final contact = p.mobile.trim().isEmpty ? 'Not set' : p.mobile.trim();
-    final regNo = p.councilNumber.trim().isEmpty ? 'Not set' : p.councilNumber.trim();
+    final regNo =
+        p.councilNumber.trim().isEmpty ? 'Not set' : p.councilNumber.trim();
 
     return ClinicalSectionCard(
       title: 'Doctor & clinic',
@@ -86,7 +88,9 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
             const SizedBox(height: 2),
             Text(
               qualifications,
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ],
           const SizedBox(height: 10),
@@ -94,7 +98,8 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
             _DetailRow(label: 'Specialization', value: p.specialization.trim()),
           _DetailRow(
             label: 'Clinic',
-            value: p.clinicName.trim().isEmpty ? 'Not set' : p.clinicName.trim(),
+            value:
+                p.clinicName.trim().isEmpty ? 'Not set' : p.clinicName.trim(),
             muted: p.clinicName.trim().isEmpty,
           ),
           _DetailRow(
@@ -103,14 +108,17 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
             muted: address.trim().isEmpty,
             maxLines: 3,
           ),
-          _DetailRow(label: 'Contact', value: contact, muted: contact == 'Not set'),
-          _DetailRow(label: 'Registration', value: regNo, muted: regNo == 'Not set'),
+          _DetailRow(
+              label: 'Contact', value: contact, muted: contact == 'Not set'),
+          _DetailRow(
+              label: 'Registration', value: regNo, muted: regNo == 'Not set'),
           _DetailRow(label: 'Timings', value: _timings, maxLines: 2),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
             child: Divider(height: 1),
           ),
-          _DetailRow(label: 'Prescription ID', value: widget.draft.prescriptionId),
+          _DetailRow(
+              label: 'Prescription ID', value: widget.draft.prescriptionId),
         ],
       ),
     );
@@ -141,7 +149,9 @@ class _DetailRow extends StatelessWidget {
             width: 104,
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ),
           Expanded(
@@ -152,7 +162,9 @@ class _DetailRow extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w500,
-                color: muted ? AppColors.textSecondaryOf(context) : AppColors.textPrimaryOf(context),
+                color: muted
+                    ? AppColors.textSecondaryOf(context)
+                    : AppColors.textPrimaryOf(context),
                 fontStyle: muted ? FontStyle.italic : FontStyle.normal,
               ),
             ),
@@ -188,13 +200,15 @@ class PrescriptionPatientSection extends StatelessWidget {
     final patient = draft.patient;
     final gender = patient.gender ?? '—';
     final date = DateFormat('dd MMM yyyy').format(draft.prescriptionDate);
-    final patientId = draft.patientId.trim().isNotEmpty ? draft.patientId : 'Not linked';
+    final patientId =
+        draft.patientId.trim().isNotEmpty ? draft.patientId : 'Not linked';
 
     return ClinicalSectionCard(
       title: 'Patient',
       collapsible: collapsible,
       initiallyExpanded: initiallyExpanded,
-      collapsedSummary: collapsedSummary ?? '${patient.patientName} · ${patient.age} yrs',
+      collapsedSummary:
+          collapsedSummary ?? '${patient.patientName} · ${patient.age} yrs',
       dense: dense,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -210,7 +224,9 @@ class PrescriptionPatientSection extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             '$gender · ${patient.age} yrs · $date',
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 10),
           _DetailRow(
@@ -222,27 +238,35 @@ class PrescriptionPatientSection extends StatelessWidget {
           TextFormField(
             controller: weightController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: const [DecimalInputFormatter(maxIntegerDigits: 3, maxDecimalDigits: 1)],
+            inputFormatters: const [
+              DecimalInputFormatter(maxIntegerDigits: 3, maxDecimalDigits: 1)
+            ],
             style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
             decoration: InputDecoration(
               labelText: 'Weight (kg)',
               isDense: true,
               filled: true,
               fillColor: AppColors.cardBgOf(context),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.borderOf(context).withValues(alpha: 0.8)),
+                borderSide: BorderSide(
+                    color: AppColors.borderOf(context).withValues(alpha: 0.8)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: AppColors.borderOf(context).withValues(alpha: 0.8)),
+                borderSide: BorderSide(
+                    color: AppColors.borderOf(context).withValues(alpha: 0.8)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.doctorBlue, width: 1.2),
+                borderSide:
+                    const BorderSide(color: AppColors.doctorBlue, width: 1.2),
               ),
-              labelStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+              labelStyle: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
             ),
             onChanged: (_) => onChanged(),
           ),
@@ -302,7 +326,8 @@ class PrescriptionClinicalSection extends StatelessWidget {
     if (collapsedSummary != null && collapsedSummary!.trim().isNotEmpty) {
       return collapsedSummary!;
     }
-    if (primaryDxController.text.trim().isNotEmpty) return primaryDxController.text.trim();
+    if (primaryDxController.text.trim().isNotEmpty)
+      return primaryDxController.text.trim();
     if (chiefComplaintController.text.trim().isNotEmpty) {
       return chiefComplaintController.text.trim();
     }
@@ -320,7 +345,10 @@ class PrescriptionClinicalSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Vitals (optional)', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
+          Text('Vitals (optional)',
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -340,8 +368,12 @@ class PrescriptionClinicalSection extends StatelessWidget {
                 child: _VitalField(
                   controller: tempController,
                   label: 'Temp °F',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  formatters: const [DecimalInputFormatter(maxIntegerDigits: 3, maxDecimalDigits: 1)],
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  formatters: const [
+                    DecimalInputFormatter(
+                        maxIntegerDigits: 3, maxDecimalDigits: 1)
+                  ],
                   validator: PrescriptionVitalValidators.temperature,
                   advisory: PrescriptionVitalValidators.temperatureAdvisory,
                   onChanged: onChanged,
@@ -462,7 +494,8 @@ class PrescriptionClinicalSection extends StatelessWidget {
           TextFormField(
             controller: pastHistoryController,
             maxLines: 2,
-            decoration: const InputDecoration(labelText: 'Past medical history', alignLabelWithHint: true),
+            decoration: const InputDecoration(
+                labelText: 'Past medical history', alignLabelWithHint: true),
             onChanged: (_) => onChanged(),
           ),
           const SizedBox(height: 12),
@@ -473,17 +506,23 @@ class PrescriptionClinicalSection extends StatelessWidget {
               labelText: 'Known allergies',
               alignLabelWithHint: true,
               filled: true,
-              fillColor: AppColors.isDark(context) ? const Color(0xFF2D1515) : const Color(0xFFFEF2F2),
+              fillColor: AppColors.isDark(context)
+                  ? const Color(0xFF2D1515)
+                  : const Color(0xFFFEF2F2),
               border: OutlineInputBorder(
-                borderSide: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
+                borderSide:
+                    BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
               ),
               enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: AppColors.error.withValues(alpha: 0.35)),
+                borderSide:
+                    BorderSide(color: AppColors.error.withValues(alpha: 0.35)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: AppColors.error.withValues(alpha: 0.6)),
+                borderSide:
+                    BorderSide(color: AppColors.error.withValues(alpha: 0.6)),
               ),
-              prefixIcon: Icon(Icons.warning_amber_rounded, color: AppColors.error.withValues(alpha: 0.8)),
+              prefixIcon: Icon(Icons.warning_amber_rounded,
+                  color: AppColors.error.withValues(alpha: 0.8)),
             ),
             onChanged: (_) => onChanged(),
           ),
@@ -491,7 +530,6 @@ class PrescriptionClinicalSection extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _VitalField extends StatefulWidget {
@@ -567,7 +605,8 @@ class _VitalFieldState extends State<_VitalField> {
             : null,
         enabledBorder: advisoryColor != null
             ? OutlineInputBorder(
-                borderSide: BorderSide(color: advisoryColor.withValues(alpha: 0.55)),
+                borderSide:
+                    BorderSide(color: advisoryColor.withValues(alpha: 0.55)),
               )
             : null,
         focusedBorder: advisoryColor != null
@@ -694,13 +733,16 @@ class _DiagnosisSearchField extends StatelessWidget {
                     onPressed: () => _addCustomDiagnosis(context),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
                       '+ Save diagnosis',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -736,7 +778,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
   final bool dense;
 
   String get _authorId {
-    if (customAuthorId != null && customAuthorId!.isNotEmpty) return customAuthorId!;
+    if (customAuthorId != null && customAuthorId!.isNotEmpty)
+      return customAuthorId!;
     return DoctorSession.loggedInDoctorId;
   }
 
@@ -744,18 +787,21 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
     return draft.investigations.length + draft.bodyParts.length;
   }
 
-  List<InvestigationEntry> get _labEntries =>
-      draft.investigations.where((e) => e.type == InvestigationType.lab).toList();
+  List<InvestigationEntry> get _labEntries => draft.investigations
+      .where((e) => e.type == InvestigationType.lab)
+      .toList();
 
   List<InvestigationEntry> get _labCustom => draft.investigations
       .where((e) => e.type == InvestigationType.custom && e.group == 'lab')
       .toList();
 
-  List<InvestigationEntry> get _radiologyEntries =>
-      draft.investigations.where((e) => e.type == InvestigationType.radiology).toList();
+  List<InvestigationEntry> get _radiologyEntries => draft.investigations
+      .where((e) => e.type == InvestigationType.radiology)
+      .toList();
 
   List<InvestigationEntry> get _radiologyCustom => draft.investigations
-      .where((e) => e.type == InvestigationType.custom && e.group == 'radiology')
+      .where(
+          (e) => e.type == InvestigationType.custom && e.group == 'radiology')
       .toList();
 
   Future<void> _pickLabTests(BuildContext context) async {
@@ -763,7 +809,9 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
         .where((e) => e.catalogId != null)
         .map((e) => e.catalogId!)
         .toSet();
-    final customNames = allowCustomTests ? _labCustom.map((e) => e.name).toList() : const <String>[];
+    final customNames = allowCustomTests
+        ? _labCustom.map((e) => e.name).toList()
+        : const <String>[];
 
     final result = await MultiSelectTestPicker.show(
       context,
@@ -775,7 +823,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
       allowCustomAdd: allowCustomTests,
       onPersistCustom: allowCustomTests
           ? (name) async {
-              final test = await CommunityInvestigationsRepository.instance.addLabTest(
+              final test =
+                  await CommunityInvestigationsRepository.instance.addLabTest(
                 name: name,
                 group: 'Custom',
                 doctorId: _authorId,
@@ -805,7 +854,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
         (e.type == InvestigationType.custom && e.group == 'lab'));
 
     for (final id in result.selectedIds) {
-      final item = CommunityInvestigationsRepository.instance.resolveLabCatalogItem(id);
+      final item =
+          CommunityInvestigationsRepository.instance.resolveLabCatalogItem(id);
       if (item == null) continue;
       final prev = existingByCatalog[id];
       draft.investigations.add(InvestigationEntry(
@@ -833,19 +883,23 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
         .where((e) => e.catalogId != null)
         .map((e) => e.catalogId!)
         .toSet();
-    final customNames = allowCustomTests ? _radiologyCustom.map((e) => e.name).toList() : const <String>[];
+    final customNames = allowCustomTests
+        ? _radiologyCustom.map((e) => e.name).toList()
+        : const <String>[];
 
     final result = await MultiSelectTestPicker.show(
       context,
       title: 'Select Radiology Tests',
-      catalog: CommunityInvestigationsRepository.instance.mergedRadiologyCatalog(),
+      catalog:
+          CommunityInvestigationsRepository.instance.mergedRadiologyCatalog(),
       initiallySelectedIds: selectedIds,
       initiallyCustomNames: customNames,
       customAddLabel: '+ Add Radiology Test',
       allowCustomAdd: allowCustomTests,
       onPersistCustom: allowCustomTests
           ? (name) async {
-              final test = await CommunityInvestigationsRepository.instance.addRadiologyTest(
+              final test = await CommunityInvestigationsRepository.instance
+                  .addRadiologyTest(
                 name: name,
                 group: 'Custom',
                 doctorId: _authorId,
@@ -875,7 +929,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
         (e.type == InvestigationType.custom && e.group == 'radiology'));
 
     for (final id in result.selectedIds) {
-      final item = CommunityInvestigationsRepository.instance.resolveRadiologyCatalogItem(id);
+      final item = CommunityInvestigationsRepository.instance
+          .resolveRadiologyCatalogItem(id);
       if (item == null) continue;
       final prev = existingByCatalog[id];
       draft.investigations.add(InvestigationEntry(
@@ -907,7 +962,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
       allowCustomAdd: allowCustomTests,
       onPersistCustom: allowCustomTests
           ? (name) async {
-              final part = await CommunityInvestigationsRepository.instance.addBodyPart(
+              final part =
+                  await CommunityInvestigationsRepository.instance.addBodyPart(
                 name: name,
                 doctorId: _authorId,
               );
@@ -947,7 +1003,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
 
     for (final id in ids) {
       if (draft.investigations.any((e) => e.catalogId == id)) continue;
-      final lab = CommunityInvestigationsRepository.instance.resolveLabCatalogItem(id);
+      final lab =
+          CommunityInvestigationsRepository.instance.resolveLabCatalogItem(id);
       if (lab != null) {
         draft.investigations.add(InvestigationEntry(
           type: InvestigationType.lab,
@@ -957,7 +1014,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
         ));
         continue;
       }
-      final rad = CommunityInvestigationsRepository.instance.resolveRadiologyCatalogItem(id);
+      final rad = CommunityInvestigationsRepository.instance
+          .resolveRadiologyCatalogItem(id);
       if (rad != null) {
         draft.investigations.add(InvestigationEntry(
           type: InvestigationType.radiology,
@@ -972,14 +1030,22 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleLabEntries = [..._labEntries, if (allowCustomTests) ..._labCustom];
-    final visibleRadiologyEntries = [..._radiologyEntries, if (allowCustomTests) ..._radiologyCustom];
+    final visibleLabEntries = [
+      ..._labEntries,
+      if (allowCustomTests) ..._labCustom
+    ];
+    final visibleRadiologyEntries = [
+      ..._radiologyEntries,
+      if (allowCustomTests) ..._radiologyCustom
+    ];
 
     return ClinicalSectionCard(
       title: 'Tests',
       collapsible: collapsible,
       initiallyExpanded: initiallyExpanded,
-      collapsedSummary: _totalCount > 0 ? '$_totalCount selected' : 'Lab, radiology & body parts',
+      collapsedSummary: _totalCount > 0
+          ? '$_totalCount selected'
+          : 'Lab, radiology & body parts',
       dense: dense,
       trailing: _totalCount > 0
           ? Container(
@@ -1020,20 +1086,26 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
                 avatar: Icon(
                   Icons.flash_on,
                   size: 14,
-                  color: active ? AppColors.surfaceOf(context) : AppColors.doctorBlue,
+                  color: active
+                      ? AppColors.surfaceOf(context)
+                      : AppColors.doctorBlue,
                 ),
                 label: Text(
                   t,
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelSmall,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    color: active ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
+                    color: active
+                        ? AppColors.surfaceOf(context)
+                        : AppColors.textPrimaryOf(context),
                   ),
                 ),
                 backgroundColor: active ? AppColors.doctorBlue : null,
                 side: active
                     ? BorderSide.none
-                    : BorderSide(color: AppColors.borderOf(context).withValues(alpha: 0.8)),
+                    : BorderSide(
+                        color:
+                            AppColors.borderOf(context).withValues(alpha: 0.8)),
                 onPressed: () => _applyTemplate(t),
               );
             }).toList(),
@@ -1098,7 +1170,9 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
               runSpacing: 6,
               children: draft.bodyParts.map((bp) {
                 return InputChip(
-                  label: Text(bp, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
+                  label: Text(bp,
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium)),
                   backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.08),
                   onDeleted: () {
                     draft.bodyParts.remove(bp);
@@ -1154,8 +1228,11 @@ class _PickerField extends StatelessWidget {
                       label,
                       style: GoogleFonts.inter(
                         fontSize: count > 0 ? 12 : 13,
-                        color: count > 0 ? AppColors.textSecondaryOf(context) : AppColors.textPrimaryOf(context),
-                        fontWeight: count > 0 ? FontWeight.w500 : FontWeight.w600,
+                        color: count > 0
+                            ? AppColors.textSecondaryOf(context)
+                            : AppColors.textPrimaryOf(context),
+                        fontWeight:
+                            count > 0 ? FontWeight.w500 : FontWeight.w600,
                       ),
                     ),
                     if (count > 0) ...[
@@ -1174,7 +1251,8 @@ class _PickerField extends StatelessWidget {
               ),
               if (count > 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   margin: const EdgeInsets.only(right: 6),
                   decoration: BoxDecoration(
                     color: AppColors.doctorBlue,
@@ -1189,7 +1267,8 @@ class _PickerField extends StatelessWidget {
                     ),
                   ),
                 ),
-              Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context)),
+              Icon(Icons.chevron_right,
+                  color: AppColors.textSecondaryOf(context)),
             ],
           ),
         ),
@@ -1215,7 +1294,9 @@ class _SelectedTestList extends StatelessWidget {
   Widget build(BuildContext context) {
     final groups = <String, List<InvestigationEntry>>{};
     for (final e in entries) {
-      final key = e.type == InvestigationType.custom ? 'Custom' : (e.group.isEmpty ? 'Other' : e.group);
+      final key = e.type == InvestigationType.custom
+          ? 'Custom'
+          : (e.group.isEmpty ? 'Other' : e.group);
       groups.putIfAbsent(key, () => []).add(e);
     }
 
@@ -1317,30 +1398,35 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                 ),
                 if (widget.allowClinicalNotes)
                   IconButton(
-                    onPressed: () => setState(() => _notesExpanded = !_notesExpanded),
+                    onPressed: () =>
+                        setState(() => _notesExpanded = !_notesExpanded),
                     icon: Icon(
                       _notesExpanded ? Icons.note : Icons.note_add_outlined,
                       size: 18,
                       color: AppColors.doctorBlue,
                     ),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
                     visualDensity: VisualDensity.compact,
                     tooltip: 'Add notes / reason',
                   ),
                 if (widget.allowClinicalNotes)
                   IconButton(
                     onPressed: widget.onRemove,
-                    icon: const Icon(Icons.close, size: 18, color: Color(0xFFDC2626)),
+                    icon: const Icon(Icons.close,
+                        size: 18, color: Color(0xFFDC2626)),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    constraints:
+                        const BoxConstraints(minWidth: 28, minHeight: 28),
                     visualDensity: VisualDensity.compact,
                     tooltip: 'Remove',
                   )
                 else
                   FilledButton.icon(
                     onPressed: widget.onRemove,
-                    icon: const Icon(Icons.close, size: 14, color: Colors.white),
+                    icon:
+                        const Icon(Icons.close, size: 14, color: Colors.white),
                     label: Text(
                       'Remove',
                       style: GoogleFonts.inter(
@@ -1352,10 +1438,12 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFDC2626),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
               ],
@@ -1369,7 +1457,8 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                 decoration: const InputDecoration(
                   labelText: 'Notes / reason',
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
                 style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
                 onChanged: widget.onNotesChanged,
@@ -1424,31 +1513,46 @@ class PrescriptionAdviceSection extends StatelessWidget {
           TextFormField(
             controller: dietController,
             maxLines: 2,
-            decoration: const InputDecoration(labelText: 'Diet advice', alignLabelWithHint: true, isDense: true),
+            decoration: const InputDecoration(
+                labelText: 'Diet advice',
+                alignLabelWithHint: true,
+                isDense: true),
             onChanged: (_) => onChanged(),
           ),
           const SizedBox(height: 8),
           TextFormField(
             controller: activityController,
             maxLines: 2,
-            decoration: const InputDecoration(labelText: 'Rest & activity restrictions', alignLabelWithHint: true, isDense: true),
+            decoration: const InputDecoration(
+                labelText: 'Rest & activity restrictions',
+                alignLabelWithHint: true,
+                isDense: true),
             onChanged: (_) => onChanged(),
           ),
           const SizedBox(height: 8),
           TextFormField(
             controller: lifestyleController,
             maxLines: 2,
-            decoration: const InputDecoration(labelText: 'Lifestyle changes', alignLabelWithHint: true, isDense: true),
+            decoration: const InputDecoration(
+                labelText: 'Lifestyle changes',
+                alignLabelWithHint: true,
+                isDense: true),
             onChanged: (_) => onChanged(),
           ),
           const SizedBox(height: 8),
           TextFormField(
             controller: generalAdviceController,
             maxLines: 2,
-            decoration: const InputDecoration(labelText: 'General advice', alignLabelWithHint: true, isDense: true),
+            decoration: const InputDecoration(
+                labelText: 'General advice',
+                alignLabelWithHint: true,
+                isDense: true),
             onChanged: (_) => onChanged(),
           ),
-          if (includeFollowUp && draft != null && followUpNoteController != null && onPickNextVisit != null) ...[
+          if (includeFollowUp &&
+              draft != null &&
+              followUpNoteController != null &&
+              onPickNextVisit != null) ...[
             const SizedBox(height: 10),
             const Divider(height: 1),
             const SizedBox(height: 10),
@@ -1482,7 +1586,8 @@ class PrescriptionFollowUpFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final next = draft.nextVisit;
-    final nextLabel = next == null ? 'Not set' : DateFormat('dd MMM yyyy').format(next);
+    final nextLabel =
+        next == null ? 'Not set' : DateFormat('dd MMM yyyy').format(next);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1539,7 +1644,9 @@ class PrescriptionFollowUpSection extends StatelessWidget {
       title: '7. Follow-up',
       collapsible: collapsible,
       initiallyExpanded: initiallyExpanded,
-      collapsedSummary: draft.nextVisit == null ? 'Schedule next visit' : DateFormat('dd MMM yyyy').format(draft.nextVisit!),
+      collapsedSummary: draft.nextVisit == null
+          ? 'Schedule next visit'
+          : DateFormat('dd MMM yyyy').format(draft.nextVisit!),
       dense: dense,
       child: PrescriptionFollowUpFields(
         draft: draft,
@@ -1598,11 +1705,13 @@ class PrescriptionReferralsSection extends StatelessWidget {
             for (var i = 0; i < draft.referrals.length; i++) ...[
               if (i > 0) const SizedBox(height: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.doctorBlue.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.doctorBlue.withValues(alpha: 0.15)),
+                  border: Border.all(
+                      color: AppColors.doctorBlue.withValues(alpha: 0.15)),
                 ),
                 child: Row(
                   children: [
@@ -1640,9 +1749,11 @@ class PrescriptionReferralsSection extends StatelessWidget {
                     else
                       IconButton(
                         onPressed: () => onRemoveReferral(i),
-                        icon: const Icon(Icons.close, size: 18, color: Color(0xFFDC2626)),
+                        icon: const Icon(Icons.close,
+                            size: 18, color: Color(0xFFDC2626)),
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        constraints:
+                            const BoxConstraints(minWidth: 28, minHeight: 28),
                         visualDensity: VisualDensity.compact,
                       ),
                   ],
@@ -1674,7 +1785,8 @@ class PrescriptionPractoActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compactText = GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600);
+    final compactText = GoogleFonts.inter(
+        fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600);
     final filledStyle = ElevatedButton.styleFrom(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       minimumSize: const Size(0, 40),
@@ -1700,7 +1812,8 @@ class PrescriptionPractoActions extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onPreview,
             style: filledStyle,
-            child: const Text('Preview', maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: const Text('Preview',
+                maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
         const SizedBox(width: 6),
@@ -1709,7 +1822,8 @@ class PrescriptionPractoActions extends StatelessWidget {
             onPressed: onShare,
             style: outlinedStyle,
             icon: const Icon(Icons.send_outlined, size: 16),
-            label: const Text('Send', maxLines: 1, overflow: TextOverflow.ellipsis),
+            label: const Text('Send',
+                maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
         const SizedBox(width: 6),
@@ -1717,7 +1831,8 @@ class PrescriptionPractoActions extends StatelessWidget {
           child: OutlinedButton(
             onPressed: onHistory,
             style: outlinedStyle,
-            child: const Text('History', maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: const Text('History',
+                maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
         const SizedBox(width: 6),
@@ -1725,7 +1840,8 @@ class PrescriptionPractoActions extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onSave,
             style: saveStyle,
-            child: Text(saveLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
+            child:
+                Text(saveLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
       ],

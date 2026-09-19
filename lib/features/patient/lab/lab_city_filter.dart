@@ -18,7 +18,8 @@ abstract final class LabCityFilter {
     return lab.name.trim().toLowerCase();
   }
 
-  static bool registeredLabInCity(RegisteredLabProfile lab, String patientCity) {
+  static bool registeredLabInCity(
+      RegisteredLabProfile lab, String patientCity) {
     return registeredLabMatchesCity(lab, patientCity);
   }
 

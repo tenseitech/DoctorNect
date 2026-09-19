@@ -17,7 +17,8 @@ class PatientLabBookingsScreen extends StatefulWidget {
   final int initialTab;
 
   @override
-  State<PatientLabBookingsScreen> createState() => _PatientLabBookingsScreenState();
+  State<PatientLabBookingsScreen> createState() =>
+      _PatientLabBookingsScreenState();
 }
 
 class _PatientLabBookingsScreenState extends State<PatientLabBookingsScreen>
@@ -54,7 +55,8 @@ class _PatientLabBookingsScreenState extends State<PatientLabBookingsScreen>
     await _store.refreshForPatient(patientId, preferCache: false);
   }
 
-  List<LabBookingRecord> _bookings() => _store.forPatient(PatientSession.loggedInPatientId);
+  List<LabBookingRecord> _bookings() =>
+      _store.forPatient(PatientSession.loggedInPatientId);
 
   void _openBooking(LabBookingRecord booking) {
     PatientBloodTestSheet.show(context, booking);
@@ -66,7 +68,8 @@ class _PatientLabBookingsScreenState extends State<PatientLabBookingsScreen>
     final upcoming = PatientLabBookingFilters.upcoming(all);
     final history = PatientLabBookingFilters.history(all);
     final compact = ResponsiveLayout.isCompact(context);
-    final maxWidth = ResponsiveLayout.contentMaxWidth(context).clamp(0.0, 720.0);
+    final maxWidth =
+        ResponsiveLayout.contentMaxWidth(context).clamp(0.0, 720.0);
 
     final tabBodies = [
       _LabBookingsTabBody(
@@ -76,7 +79,8 @@ class _PatientLabBookingsScreenState extends State<PatientLabBookingsScreen>
         empty: const PatientTabEmptyState(
           icon: Icons.biotech_outlined,
           title: 'No lab bookings',
-          message: 'Book a test from the Lab tab and your requests will appear here.',
+          message:
+              'Book a test from the Lab tab and your requests will appear here.',
           accentColor: AppColors.labPurple,
         ),
       ),
@@ -112,12 +116,17 @@ class _PatientLabBookingsScreenState extends State<PatientLabBookingsScreen>
                   PatientSegmentedTabBar(
                     controller: _tabController,
                     labels: [
-                      compact ? 'Bookings (${upcoming.length})' : 'Lab bookings (${upcoming.length})',
+                      compact
+                          ? 'Bookings (${upcoming.length})'
+                          : 'Lab bookings (${upcoming.length})',
                       'History (${history.length})',
                     ],
                     accentColor: AppColors.labPurple,
                   ),
-                  Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderOf(context)),
                 ],
               ),
             ),
@@ -165,7 +174,8 @@ class _LabBookingsHeader extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(top: compact ? 6 : 10, right: compact ? 0 : 8),
+              padding: EdgeInsets.only(
+                  top: compact ? 6 : 10, right: compact ? 0 : 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -226,7 +236,8 @@ class _LabBookingsTabBody extends StatelessWidget {
         onRefresh: onRefresh,
         child: ListView.separated(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(hPad, vPad, hPad, vPad + MediaQuery.paddingOf(context).bottom),
+          padding: EdgeInsets.fromLTRB(
+              hPad, vPad, hPad, vPad + MediaQuery.paddingOf(context).bottom),
           itemCount: bookings.length,
           separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {

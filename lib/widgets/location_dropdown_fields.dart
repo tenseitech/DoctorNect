@@ -116,7 +116,8 @@ class LocationDropdownFields extends StatelessWidget {
           title: 'Country',
           value: selectedCountry,
           items: _countryOptions,
-          decoration: _decoration(context, 'Country', isRequired: countryRequired),
+          decoration:
+              _decoration(context, 'Country', isRequired: countryRequired),
           hintText: 'Select country',
           validator: countryRequired
               ? (v) => FormValidators.dropdown(v, field: 'Country')
@@ -130,7 +131,8 @@ class LocationDropdownFields extends StatelessWidget {
             title: 'State',
             value: selectedState,
             items: _stateOptions,
-            decoration: _decoration(context, 'State', isRequired: stateRequired),
+            decoration:
+                _decoration(context, 'State', isRequired: stateRequired),
             hintText: 'Select state',
             validator: stateRequired
                 ? (v) => FormValidators.dropdown(v, field: 'State')

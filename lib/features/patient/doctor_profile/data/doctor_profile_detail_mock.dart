@@ -20,16 +20,30 @@ class DoctorProfileDetailMock {
       phone: '+91 98765 43210',
       about:
           'Dr. ${listing.name} is a compassionate ${listing.specialization.toLowerCase()} with over ${listing.experienceYears} years of experience. Focused on evidence-based care and patient education.',
-      specialities: [listing.specialization, 'General Checkup', 'Chronic Disease Management'],
-      services: ['Consultation', 'Follow-up', 'Health Screening', 'Prescription'],
+      specialities: [
+        listing.specialization,
+        'General Checkup',
+        'Chronic Disease Management'
+      ],
+      services: [
+        'Consultation',
+        'Follow-up',
+        'Health Screening',
+        'Prescription'
+      ],
       timings: const [
-        ClinicTiming(day: 'Mon – Fri', hours: '9:00 AM – 1:00 PM, 4:00 – 8:00 PM'),
+        ClinicTiming(
+            day: 'Mon – Fri', hours: '9:00 AM – 1:00 PM, 4:00 – 8:00 PM'),
         ClinicTiming(day: 'Saturday', hours: '10:00 AM – 2:00 PM'),
         ClinicTiming(day: 'Sunday', hours: 'Closed'),
       ],
       education: [
-        EducationEntry(degree: 'MBBS', college: 'Seth GS Medical College', year: 2008),
-        EducationEntry(degree: listing.qualification.contains('MD') ? 'MD' : 'DNB', college: 'KEM Hospital', year: 2012),
+        EducationEntry(
+            degree: 'MBBS', college: 'Seth GS Medical College', year: 2008),
+        EducationEntry(
+            degree: listing.qualification.contains('MD') ? 'MD' : 'DNB',
+            college: 'KEM Hospital',
+            year: 2012),
       ],
       pastWorkplaces: [
         'Lilavati Hospital, Mumbai (2012–2018)',
@@ -37,7 +51,10 @@ class DoctorProfileDetailMock {
       ],
       awards: ['Best Physician Award 2024 — Mumbai Medical Association'],
       publications: ['Published research on preventive healthcare (2022)'],
-      memberships: ['Indian Medical Association', 'Maharashtra Medical Council'],
+      memberships: [
+        'Indian Medical Association',
+        'Maharashtra Medical Council'
+      ],
       reviews: [
         PatientDoctorReview(
           id: 'pr1',
@@ -67,7 +84,8 @@ class DoctorProfileDetailMock {
       ],
       address: '${listing.clinicName}, ${listing.area}, Mumbai 400050',
       landmark: 'Opposite Bandra Station',
-      mapsUrl: 'https://maps.google.com/?q=${listing.clinicName}+${listing.area}',
+      mapsUrl:
+          'https://maps.google.com/?q=${listing.clinicName}+${listing.area}',
       nearbyLandmarks: ['Bandra Station (5 min walk)', 'Linking Road (10 min)'],
       clinicName: listing.clinicName,
       area: listing.area,

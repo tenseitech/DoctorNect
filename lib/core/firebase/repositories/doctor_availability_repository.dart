@@ -12,15 +12,19 @@ import '../models/doctor_availability.dart';
 class DoctorAvailabilityRepository {
   DoctorAvailabilityRepository._();
 
-  static final DoctorAvailabilityRepository instance = DoctorAvailabilityRepository._();
+  static final DoctorAvailabilityRepository instance =
+      DoctorAvailabilityRepository._();
 
   static final _timeFormat = DateFormat('hh:mm a');
 
-  Future<DoctorAvailability?> fetch(String doctorId, {bool preferCache = true}) async {
+  Future<DoctorAvailability?> fetch(String doctorId,
+      {bool preferCache = true}) async {
     if (!FirebaseBootstrap.isReady) return null;
 
     final snap = await FirestoreReadHelper.getDocument(
-      reference: FirebaseFirestore.instance.collection(FirestorePaths.doctorAvailability).doc(doctorId),
+      reference: FirebaseFirestore.instance
+          .collection(FirestorePaths.doctorAvailability)
+          .doc(doctorId),
       preferCache: preferCache,
     );
     if (!snap.exists) return null;
@@ -37,7 +41,8 @@ class DoctorAvailabilityRepository {
 
   List<DateTime> nextBookableDays({int count = 7}) {
     final now = DateTime.now();
-    return List.generate(count, (i) => DateTime(now.year, now.month, now.day + i));
+    return List.generate(
+        count, (i) => DateTime(now.year, now.month, now.day + i));
   }
 
   Future<List<TimeSlot>> slotsForDate({

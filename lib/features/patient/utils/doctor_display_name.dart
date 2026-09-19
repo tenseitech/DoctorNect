@@ -6,7 +6,9 @@ String formatDoctorDisplayName(String name) {
 
   final lower = trimmed.toLowerCase();
   if (lower.startsWith('dr.') || lower.startsWith('dr ')) {
-    final withoutPrefix = trimmed.replaceFirst(RegExp(r'^dr\.?\s*', caseSensitive: false), '').trim();
+    final withoutPrefix = trimmed
+        .replaceFirst(RegExp(r'^dr\.?\s*', caseSensitive: false), '')
+        .trim();
     if (withoutPrefix.isEmpty) return 'Doctor';
     return 'Dr. $withoutPrefix';
   }
@@ -19,7 +21,8 @@ String formatExperienceYears(int years) {
   return '$years years experience';
 }
 
-String formatAvailabilityLabel(DoctorAvailability availability, String nextSlot) {
+String formatAvailabilityLabel(
+    DoctorAvailability availability, String nextSlot) {
   final slot = nextSlot.trim();
   if (slot.isNotEmpty && slot.toLowerCase() != 'check availability') {
     return slot;

@@ -16,7 +16,8 @@ class DoctorProfileAvatarButton extends StatefulWidget {
   final double radius;
 
   @override
-  State<DoctorProfileAvatarButton> createState() => _DoctorProfileAvatarButtonState();
+  State<DoctorProfileAvatarButton> createState() =>
+      _DoctorProfileAvatarButtonState();
 }
 
 class _DoctorProfileAvatarButtonState extends State<DoctorProfileAvatarButton> {
@@ -50,7 +51,8 @@ class _DoctorProfileAvatarButtonState extends State<DoctorProfileAvatarButton> {
     setState(() => _localPhotoBytes = bytes);
   }
 
-  ImageProvider? _avatarImage(String? photoUrl, Uint8List? profileBytes, BuildContext context) {
+  ImageProvider? _avatarImage(
+      String? photoUrl, Uint8List? profileBytes, BuildContext context) {
     final doctorId = DoctorSession.activeDoctorId;
     final bytes = profileBytes ??
         _localPhotoBytes ??
@@ -77,7 +79,8 @@ class _DoctorProfileAvatarButtonState extends State<DoctorProfileAvatarButton> {
         ? DoctorProfileStore.displayName
         : DoctorSession.loggedInDoctorName;
     final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'D';
-    final avatarImage = _avatarImage(profile.photoUrl, profile.photoBytes, context);
+    final avatarImage =
+        _avatarImage(profile.photoUrl, profile.photoBytes, context);
 
     return Material(
       color: Colors.transparent,
@@ -99,7 +102,8 @@ class _DoctorProfileAvatarButtonState extends State<DoctorProfileAvatarButton> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.patientTeal.withValues(alpha: _pressed ? 0.16 : 0.22),
+                color: AppColors.patientTeal
+                    .withValues(alpha: _pressed ? 0.16 : 0.22),
                 blurRadius: _pressed ? 4 : 6,
                 offset: Offset(0, _pressed ? 1 : 2),
               ),

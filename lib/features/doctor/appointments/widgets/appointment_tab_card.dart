@@ -44,7 +44,9 @@ class AppointmentTabCard extends StatelessWidget {
         AppointmentStatusStyle.isUpcomingActionable(appointment.status);
     final symptoms = appointment.symptoms.isNotEmpty
         ? appointment.symptoms
-        : (SharedAppointmentsStore.instance.findRecordById(appointment.id)?.symptoms ??
+        : (SharedAppointmentsStore.instance
+                .findRecordById(appointment.id)
+                ?.symptoms ??
             const []);
     final wide = !ResponsiveLayout.isCompact(context);
 
@@ -64,7 +66,8 @@ class AppointmentTabCard extends StatelessWidget {
                     foregroundColor: AppColors.white,
                     icon: AppIcons.reschedule,
                     label: 'Reschedule',
-                    borderRadius: BorderRadius.circular(AppConstants.inputRadius),
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.inputRadius),
                   ),
                   SlidableAction(
                     onPressed: (_) => onCancel(),
@@ -72,7 +75,8 @@ class AppointmentTabCard extends StatelessWidget {
                     foregroundColor: AppColors.white,
                     icon: Icons.close,
                     label: 'Cancel',
-                    borderRadius: BorderRadius.circular(AppConstants.inputRadius),
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.inputRadius),
                   ),
                 ],
               )
@@ -322,12 +326,16 @@ class _AppointmentDetails extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)} · $typeLabel',
-          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 4),
         Text(
           '${DateFormat('dd MMM yyyy').format(appointment.appointmentDate)} · ${appointment.timeSlot}',
-          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context)),
         ),
         if (appointment.bookedByName != null &&
             appointment.bookedByName!.trim().isNotEmpty &&
@@ -354,7 +362,9 @@ class _AppointmentDetails extends StatelessWidget {
             'Reason: ${appointment.reasonForVisit}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ],
         if (symptoms.isNotEmpty) ...[

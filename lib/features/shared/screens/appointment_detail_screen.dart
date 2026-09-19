@@ -43,7 +43,6 @@ import 'package:medibond/features/patient/widgets/submit_doctor_review_sheet.dar
 import 'package:medibond/widgets/labeled_remove_button.dart';
 import '../../../core/theme/app_typography.dart';
 
-
 class AppointmentDetailScreen extends StatelessWidget {
   const AppointmentDetailScreen({
     super.key,
@@ -70,8 +69,6 @@ class AppointmentDetailScreen extends StatelessWidget {
 
 // --- DOCTOR VIEW IMPLEMENTATION ---
 
-
-
 class _DoctorAppointmentDetailScreen extends StatefulWidget {
   const _DoctorAppointmentDetailScreen({
     super.key,
@@ -83,10 +80,12 @@ class _DoctorAppointmentDetailScreen extends StatefulWidget {
   final ValueChanged<AppointmentStatus>? onStatusChanged;
 
   @override
-  State<_DoctorAppointmentDetailScreen> createState() => _DoctorAppointmentDetailScreenState();
+  State<_DoctorAppointmentDetailScreen> createState() =>
+      _DoctorAppointmentDetailScreenState();
 }
 
-class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetailScreen> {
+class _DoctorAppointmentDetailScreenState
+    extends State<_DoctorAppointmentDetailScreen> {
   final _store = SharedAppointmentsStore.instance;
   bool _canViewClinicalData = true;
 
@@ -102,7 +101,8 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
     final patientKey = record?.patientId?.trim();
     if (patientKey == null || patientKey.isEmpty) return;
 
-    final canView = await DoctorPatientsService.canViewClinicalHistoryForKey(patientKey);
+    final canView =
+        await DoctorPatientsService.canViewClinicalHistoryForKey(patientKey);
     if (!mounted) return;
     setState(() => _canViewClinicalData = canView);
   }
@@ -134,7 +134,9 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't accept this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't accept this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -153,7 +155,9 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't decline this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't decline this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -172,7 +176,8 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
   Future<void> _openBookAmbulance(Appointment appt) async {
     final record = _store.findRecordById(appt.id);
     var name = appt.patientName.trim();
-    var phone = appt.contactNumber?.trim() ?? record?.contactNumber?.trim() ?? '';
+    var phone =
+        appt.contactNumber?.trim() ?? record?.contactNumber?.trim() ?? '';
 
     final patientKey = record?.patientId;
     if (patientKey != null && patientKey.isNotEmpty) {
@@ -193,7 +198,8 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
 
       if (phone.isEmpty || name.isEmpty) {
         try {
-          final data = await FirestoreService.instance.patientProfile.fetchPatientDocumentForDoctor(
+          final data = await FirestoreService.instance.patientProfile
+              .fetchPatientDocumentForDoctor(
             patientKey,
           );
           if (data != null) {
@@ -245,7 +251,8 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
+          constraints: BoxConstraints(
+              maxWidth: ResponsiveLayout.contentMaxWidth(context)),
           child: Column(
             children: [
               Expanded(
@@ -267,7 +274,8 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                         title: 'Reason for Visit',
                         child: Text(
                           appt.reasonForVisit!,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodyMedium, height: 1.4),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -281,13 +289,16 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SharedSlotBadge(slotShareReason: appt.slotShareReason),
+                            SharedSlotBadge(
+                                slotShareReason: appt.slotShareReason),
                             if (!appt.isSharedSlotEmergency) ...[
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   appt.slotShareReason!.trim(),
-                                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4),
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.bodyMedium,
+                                      height: 1.4),
                                 ),
                               ),
                             ],
@@ -298,7 +309,8 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                     ],
                     AppointmentChiefComplaintsSection(
                       recordId: appt.id,
-                      initialComplaints: record?.chiefComplaints ?? appt.chiefComplaints,
+                      initialComplaints:
+                          record?.chiefComplaints ?? appt.chiefComplaints,
                     ),
                     const SizedBox(height: 16),
                     AppointmentSymptomsSection(
@@ -317,7 +329,8 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                         title: 'Diagnosis',
                         child: Text(
                           record.diagnosis!,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodyMedium, height: 1.4),
                         ),
                       ),
                     ],
@@ -329,7 +342,8 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                         title: 'Clinical Notes',
                         child: Text(
                           record.clinicalNotes!,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodyMedium, height: 1.4),
                         ),
                       ),
                     ],
@@ -347,7 +361,9 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                                     : Icons.image_outlined,
                                 color: AppColors.doctorBlue,
                               ),
-                              title: Text(r.name, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+                              title: Text(r.name,
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.bodyMedium)),
                               trailing: TextButton(
                                 onPressed: () => DoctorReportOpener.open(
                                   context,
@@ -450,32 +466,40 @@ class _PatientHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                  Text(
-                    '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)}',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${DateFormat('dd MMM yyyy').format(appointment.appointmentDate)} · ${appointment.timeSlot}',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context), fontWeight: FontWeight.w500),
-                  ),
-                  if (appointment.slotShareReason != null &&
-                      appointment.slotShareReason!.trim().isNotEmpty) ...[
-                    SizedBox(height: 6),
-                    SharedSlotBadge(slotShareReason: appointment.slotShareReason),
-                  ],
-                  if (appointment.contactNumber != null) ...[
+                Text(
+                  '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)}',
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      color: AppColors.textSecondaryOf(context)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${DateFormat('dd MMM yyyy').format(appointment.appointmentDate)} · ${appointment.timeSlot}',
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      color: AppColors.textPrimaryOf(context),
+                      fontWeight: FontWeight.w500),
+                ),
+                if (appointment.slotShareReason != null &&
+                    appointment.slotShareReason!.trim().isNotEmpty) ...[
+                  SizedBox(height: 6),
+                  SharedSlotBadge(slotShareReason: appointment.slotShareReason),
+                ],
+                if (appointment.contactNumber != null) ...[
                   SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.phone_outlined, size: 14, color: AppColors.textSecondaryOf(context)),
+                      Icon(Icons.phone_outlined,
+                          size: 14, color: AppColors.textSecondaryOf(context)),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           appointment.contactNumber!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.doctorBlue),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              color: AppColors.doctorBlue),
                         ),
                       ),
                     ],
@@ -567,7 +591,8 @@ class _VisitTimeline extends StatelessWidget {
                   ),
                 ),
                 if (!isLast)
-                  Container(width: 2, height: 40, color: AppColors.borderOf(context)),
+                  Container(
+                      width: 2, height: 40, color: AppColors.borderOf(context)),
               ],
             ),
             const SizedBox(width: 12),
@@ -652,13 +677,17 @@ class _VitalsGrid extends StatelessWidget {
                       item.$1,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                     Text(
                       item.$2,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodySmall,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -681,7 +710,8 @@ class _ActionGrid extends StatelessWidget {
   final ValueChanged<AppointmentStatus>? onStatusChanged;
 
   PatientClinicalContext _patientContext() {
-    final record = SharedAppointmentsStore.instance.findRecordById(appointment.id);
+    final record =
+        SharedAppointmentsStore.instance.findRecordById(appointment.id);
     double? weight;
     final w = appointment.lastVitals?.weight;
     if (w != null) {
@@ -706,7 +736,8 @@ class _ActionGrid extends StatelessWidget {
   }
 
   Future<void> _markComplete(BuildContext context) async {
-    final record = SharedAppointmentsStore.instance.findRecordById(appointment.id);
+    final record =
+        SharedAppointmentsStore.instance.findRecordById(appointment.id);
     final controller = TextEditingController(
       text: record?.diagnosis ?? appointment.reasonForVisit ?? '',
     );
@@ -723,8 +754,12 @@ class _ActionGrid extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Complete')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Complete')),
         ],
       ),
     );
@@ -755,12 +790,14 @@ class _ActionGrid extends StatelessWidget {
         _ActionTile(
           icon: Icons.edit_note_outlined,
           label: 'Write Prescription',
-          onTap: () => ClinicalToolsShell.open(context, patient: ctx, initialTab: 0),
+          onTap: () =>
+              ClinicalToolsShell.open(context, patient: ctx, initialTab: 0),
         ),
         _ActionTile(
           icon: Icons.note_add_outlined,
           label: 'Add Clinical Notes',
-          onTap: () => ClinicalToolsShell.open(context, patient: ctx, initialTab: 1),
+          onTap: () =>
+              ClinicalToolsShell.open(context, patient: ctx, initialTab: 1),
         ),
         _ActionTile(
           icon: Icons.person_add_alt_1_outlined,
@@ -791,7 +828,8 @@ class _ActionGrid extends StatelessWidget {
             onTap: () => DoctorAppointmentActions.cancel(
               context,
               appointment: appointment,
-              onComplete: () => onStatusChanged?.call(AppointmentStatus.cancelled),
+              onComplete: () =>
+                  onStatusChanged?.call(AppointmentStatus.cancelled),
               popAfter: true,
             ),
           ),
@@ -823,7 +861,8 @@ class _ActionTile extends StatelessWidget {
         icon: Icon(icon, size: 18, color: c),
         label: Text(
           label,
-          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: c),
+          style:
+              GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: c),
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: c,
@@ -836,9 +875,7 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-
 // --- PATIENT VIEW IMPLEMENTATION ---
-
 
 class _PatientAppointmentDetailScreen extends StatelessWidget {
   const _PatientAppointmentDetailScreen({super.key, required this.appointment});
@@ -855,16 +892,20 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
   bool _isCancelled(PatientAppointment a) => a.cancellationReason != null;
 
   bool _isUpcoming(PatientAppointment a) =>
-      !_isCancelled(a) && a.dateTime.isAfter(DateTime.now().subtract(const Duration(hours: 1)));
+      !_isCancelled(a) &&
+      a.dateTime.isAfter(DateTime.now().subtract(const Duration(hours: 1)));
 
   void _reschedule(BuildContext context, PatientAppointment a) {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Reschedule', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-        content: Text('Pick a new slot for your visit with ${formatDoctorDisplayName(a.doctorName)}.'),
+        title: Text('Reschedule',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        content: Text(
+            'Pick a new slot for your visit with ${formatDoctorDisplayName(a.doctorName)}.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -878,7 +919,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                 ),
               );
             },
-            style: FilledButton.styleFrom(backgroundColor: AppColors.patientTeal),
+            style:
+                FilledButton.styleFrom(backgroundColor: AppColors.patientTeal),
             child: const Text('Pick new slot'),
           ),
         ],
@@ -890,10 +932,13 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Cancel appointment?', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text('Cancel appointment?',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         content: const Text('Cancellation may be subject to clinic policy.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
@@ -923,7 +968,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't cancel this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't cancel this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -934,7 +981,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
     final patientId = PatientSession.loggedInPatientId;
     PatientDoctorReview? existingReview;
     if (patientId.isNotEmpty) {
-      existingReview = await FirestoreService.instance.review.fetchReviewForPatientAndDoctor(
+      existingReview =
+          await FirestoreService.instance.review.fetchReviewForPatientAndDoctor(
         patientId: patientId,
         doctorId: a.doctorId,
       );
@@ -948,7 +996,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
       isEdit: isEdit,
       initialRating: existingReview?.rating ?? a.reviewRating,
       initialComment: existingReview?.text,
-      onSubmit: (rating, comment) => SharedAppointmentsStore.instance.submitReview(
+      onSubmit: (rating, comment) =>
+          SharedAppointmentsStore.instance.submitReview(
         recordId: a.id,
         rating: rating,
         comment: comment,
@@ -960,7 +1009,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
   Future<void> _editReview(BuildContext context, PatientAppointment a) async {
     String? initialComment;
     if (a.reviewId != null && a.reviewId!.isNotEmpty) {
-      final review = await FirestoreService.instance.review.fetchReview(a.reviewId!);
+      final review =
+          await FirestoreService.instance.review.fetchReview(a.reviewId!);
       initialComment = review?.text;
     }
     if (!context.mounted) return;
@@ -971,7 +1021,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
       isEdit: true,
       initialRating: a.reviewRating,
       initialComment: initialComment,
-      onSubmit: (rating, comment) => SharedAppointmentsStore.instance.updateReview(
+      onSubmit: (rating, comment) =>
+          SharedAppointmentsStore.instance.updateReview(
         recordId: a.id,
         rating: rating,
         comment: comment,
@@ -997,7 +1048,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Appointment Details', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('Appointment Details',
+          context: context),
       body: PatientProfileFormStyles.constrainedScrollBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1008,7 +1060,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
               upcoming: upcoming,
             ),
             const SizedBox(height: 16),
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
@@ -1054,7 +1108,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                     label: 'Visit type',
                     value: 'In-clinic visit',
                   ),
-                  if (a.clinicName != null && a.clinicName!.trim().isNotEmpty) ...[
+                  if (a.clinicName != null &&
+                      a.clinicName!.trim().isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _DetailRow(
                       icon: Icons.apartment_outlined,
@@ -1062,7 +1117,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                       value: a.clinicName!,
                     ),
                   ],
-                  if (a.clinicAddress != null && a.clinicAddress!.trim().isNotEmpty) ...[
+                  if (a.clinicAddress != null &&
+                      a.clinicAddress!.trim().isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _DetailRow(
                       icon: Icons.location_on_outlined,
@@ -1074,7 +1130,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            PatientProfileFormStyles.contentSurface(context: context, child: Row(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Row(
                 children: [
                   appointmentDoctorAvatar(a.doctorName),
                   const SizedBox(width: 12),
@@ -1093,9 +1151,12 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           a.specialization,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
-                        if (appointmentDoctorRatingBadge(a.doctorId) != null) ...[
+                        if (appointmentDoctorRatingBadge(a.doctorId) !=
+                            null) ...[
                           const SizedBox(height: 6),
                           appointmentDoctorRatingBadge(a.doctorId)!,
                         ],
@@ -1107,14 +1168,16 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => PatientDoctorProfileScreen(doctorId: a.doctorId),
+                          builder: (_) =>
+                              PatientDoctorProfileScreen(doctorId: a.doctorId),
                         ),
                       );
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.patientTeal,
                       side: const BorderSide(color: AppColors.patientTeal),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
@@ -1154,12 +1217,16 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
             ],
             if (a.labReports.isNotEmpty) ...[
               const SizedBox(height: 16),
-              PatientProfileFormStyles.contentSurface(context: context, child: Column(
+              PatientProfileFormStyles.contentSurface(
+                context: context,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Lab reports',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium),
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTypography.bodyMedium),
                     ),
                     const SizedBox(height: 8),
                     ...a.labReports.map(
@@ -1167,9 +1234,13 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
                           children: [
-                            const Icon(Icons.biotech_outlined, size: 18, color: AppColors.patientTeal),
+                            const Icon(Icons.biotech_outlined,
+                                size: 18, color: AppColors.patientTeal),
                             const SizedBox(width: 8),
-                            Expanded(child: Text(r, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall))),
+                            Expanded(
+                                child: Text(r,
+                                    style: GoogleFonts.inter(
+                                        fontSize: AppTypography.bodySmall))),
                             TextButton(
                               onPressed: () {},
                               child: const Text('View'),
@@ -1182,9 +1253,11 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                 ),
               ),
             ],
-            if (a.clinicalNotes != null && a.clinicalNotes!.trim().isNotEmpty) ...[
+            if (a.clinicalNotes != null &&
+                a.clinicalNotes!.trim().isNotEmpty) ...[
               const SizedBox(height: 16),
-              _SectionCard(title: 'Clinical notes (shared)', body: a.clinicalNotes!),
+              _SectionCard(
+                  title: 'Clinical notes (shared)', body: a.clinicalNotes!),
             ],
             const SizedBox(height: 16),
             if (upcoming)
@@ -1258,7 +1331,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => BookingFlowScreen(doctorId: a.doctorId)),
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              BookingFlowScreen(doctorId: a.doctorId)),
                     );
                   },
                   style: FilledButton.styleFrom(
@@ -1277,7 +1352,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => BookingFlowScreen(doctorId: a.doctorId)),
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  BookingFlowScreen(doctorId: a.doctorId)),
                         );
                       },
                       style: FilledButton.styleFrom(
@@ -1300,7 +1377,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
     AppToast.info(context, msg);
   }
 
-  Future<void> _downloadPrescription(BuildContext context, PatientAppointment a) async {
+  Future<void> _downloadPrescription(
+      BuildContext context, PatientAppointment a) async {
     try {
       final draft = await PatientPrescriptionOpener.loadDraft(a);
       if (!context.mounted) return;
@@ -1315,7 +1393,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
     }
   }
 
-  Future<void> _sharePrescription(BuildContext context, PatientAppointment a) async {
+  Future<void> _sharePrescription(
+      BuildContext context, PatientAppointment a) async {
     try {
       final draft = await PatientPrescriptionOpener.loadDraft(a);
       if (!context.mounted) return;
@@ -1345,9 +1424,15 @@ class _StatusHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color, bg) = switch ((cancelled, upcoming)) {
-      (true, _) => ('Cancelled', const Color(0xFFDC2626), const Color(0xFFFEF2F2)),
+      (true, _) => (
+          'Cancelled',
+          const Color(0xFFDC2626),
+          const Color(0xFFFEF2F2)
+        ),
       (false, true) => (
-          appointment.status == PatientBookingStatus.confirmed ? 'Confirmed' : 'Pending',
+          appointment.status == PatientBookingStatus.confirmed
+              ? 'Confirmed'
+              : 'Pending',
           appointment.status == PatientBookingStatus.confirmed
               ? const Color(0xFF16A34A)
               : const Color(0xFFD97706),
@@ -1358,14 +1443,17 @@ class _StatusHeader extends StatelessWidget {
       _ => ('Completed', const Color(0xFF2563EB), const Color(0xFFEFF6FF)),
     };
 
-    return PatientProfileFormStyles.contentSurface(context: context, child: Row(
+    return PatientProfileFormStyles.contentSurface(
+      context: context,
+      child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: bg,
                     borderRadius: BorderRadius.circular(20),
@@ -1384,14 +1472,18 @@ class _StatusHeader extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     'ID: ${appointment.appointmentId}',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
                 if (cancelled && appointment.cancellationReason != null) ...[
                   const SizedBox(height: 8),
                   Text(
                     appointment.cancellationReason!,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
               ],
@@ -1443,7 +1535,9 @@ class _DetailRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 2),
               Text(
@@ -1475,12 +1569,19 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PatientProfileFormStyles.contentSurface(context: context, child: Column(
+    return PatientProfileFormStyles.contentSurface(
+      context: context,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
+          Text(title,
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  fontSize: AppTypography.bodyMedium)),
           const SizedBox(height: 8),
-          Text(body, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, height: 1.4)),
+          Text(body,
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall, height: 1.4)),
           if (actions.isNotEmpty) ...[
             const SizedBox(height: 4),
             Row(children: actions),
@@ -1498,7 +1599,9 @@ class _ActionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PatientProfileFormStyles.contentSurface(context: context, child: Column(
+    return PatientProfileFormStyles.contentSurface(
+      context: context,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
       ),

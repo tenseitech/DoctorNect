@@ -84,157 +84,162 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
           curve: Curves.easeOutCubic,
           offset: Offset(0, lift / 120),
           child: Material(
-          color: AppColors.surfaceOf(context),
-          elevation: 0,
-          borderRadius: BorderRadius.circular(radius),
-          child: InkWell(
-            onTap: widget.onTap,
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapUp: (_) => setState(() => _pressed = false),
-            onTapCancel: () => setState(() => _pressed = false),
+            color: AppColors.surfaceOf(context),
+            elevation: 0,
             borderRadius: BorderRadius.circular(radius),
-            child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
+            child: InkWell(
+              onTap: widget.onTap,
+              onTapDown: (_) => setState(() => _pressed = true),
+              onTapUp: (_) => setState(() => _pressed = false),
+              onTapCancel: () => setState(() => _pressed = false),
               borderRadius: BorderRadius.circular(radius),
-              border: Border.all(
-                color: _hovered && isWeb
-                    ? color.withValues(alpha: 0.45)
-                    : AppColors.borderOf(context),
-                width: _hovered && isWeb ? 1.5 : 1,
-              ),
-              boxShadow: isMobile
-                  ? [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.07),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : _hovered
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(radius),
+                  border: Border.all(
+                    color: _hovered && isWeb
+                        ? color.withValues(alpha: 0.45)
+                        : AppColors.borderOf(context),
+                    width: _hovered && isWeb ? 1.5 : 1,
+                  ),
+                  boxShadow: isMobile
                       ? [
                           BoxShadow(
-                            color: color.withValues(alpha: 0.16),
-                            blurRadius: 22,
-                            offset: const Offset(0, 8),
-                          ),
-                          BoxShadow(
-                            color: AppColors.textPrimary.withValues(alpha: 0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            color: color.withValues(alpha: 0.07),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ]
-                      : [
-                          BoxShadow(
-                            color: AppColors.textPrimary.withValues(alpha: 0.05),
-                            blurRadius: 14,
-                            offset: const Offset(0, 3),
-                          ),
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-              color: _hovered && isWeb
-                  ? color.withValues(alpha: 0.035)
-                  : AppColors.surfaceOf(context),
-            ),
-            child: Row(
-              children: [
-                if (isMobile)
-                  Container(
-                    width: 4,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-                    ),
-                  ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 14 : 16,
-                      vertical: isMobile ? 14 : 14,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: isMobile ? 48 : 46,
-                          height: isMobile ? 48 : 46,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                color,
-                                Color.lerp(color, Colors.white, 0.22)!,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(isMobile ? 13 : 11),
-                            boxShadow: [
+                      : _hovered
+                          ? [
                               BoxShadow(
-                                color: color.withValues(alpha: 0.25),
+                                color: color.withValues(alpha: 0.16),
+                                blurRadius: 22,
+                                offset: const Offset(0, 8),
+                              ),
+                              BoxShadow(
+                                color: AppColors.textPrimary
+                                    .withValues(alpha: 0.06),
                                 blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: AppColors.textPrimary
+                                    .withValues(alpha: 0.05),
+                                blurRadius: 14,
                                 offset: const Offset(0, 3),
                               ),
-                            ],
-                          ),
-                          child: Icon(
-                            widget.icon,
-                            color: AppColors.surfaceOf(context),
-                            size: isMobile ? 23 : 22,
-                          ),
-                        ),
-                        SizedBox(width: isMobile ? 14 : 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontSize: isMobile
-                                      ? AppTypography.headlineSmall
-                                      : AppTypography.bodyLarge,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimaryOf(context),
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                widget.subtitle,
-                                maxLines: isMobile ? 2 : 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelMedium,
-                                  height: 1.35,
-                                  color: AppColors.textSecondaryOf(context),
-                                ),
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 1),
                               ),
                             ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 22,
-                          color: _hovered || isMobile
-                              ? color
-                              : AppColors.textSecondaryOf(context).withValues(alpha: 0.55),
-                        ),
-                      ],
-                    ),
-                  ),
+                  color: _hovered && isWeb
+                      ? color.withValues(alpha: 0.035)
+                      : AppColors.surfaceOf(context),
                 ),
-              ],
+                child: Row(
+                  children: [
+                    if (isMobile)
+                      Container(
+                        width: 4,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: color,
+                          borderRadius: const BorderRadius.horizontal(
+                              left: Radius.circular(16)),
+                        ),
+                      ),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 14 : 16,
+                          vertical: isMobile ? 14 : 14,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: isMobile ? 48 : 46,
+                              height: isMobile ? 48 : 46,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    color,
+                                    Color.lerp(color, Colors.white, 0.22)!,
+                                  ],
+                                ),
+                                borderRadius:
+                                    BorderRadius.circular(isMobile ? 13 : 11),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: color.withValues(alpha: 0.25),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                widget.icon,
+                                color: AppColors.surfaceOf(context),
+                                size: isMobile ? 23 : 22,
+                              ),
+                            ),
+                            SizedBox(width: isMobile ? 14 : 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: isMobile
+                                          ? AppTypography.headlineSmall
+                                          : AppTypography.bodyLarge,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimaryOf(context),
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    widget.subtitle,
+                                    maxLines: isMobile ? 2 : 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelMedium,
+                                      height: 1.35,
+                                      color: AppColors.textSecondaryOf(context),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 22,
+                              color: _hovered || isMobile
+                                  ? color
+                                  : AppColors.textSecondaryOf(context)
+                                      .withValues(alpha: 0.55),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
         ),
       ),
     );

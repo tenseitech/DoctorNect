@@ -53,7 +53,8 @@ class PatientAppointment {
   final String? clinicalNotes;
   final String? reasonForVisit;
 
-  bool get isUpcoming => dateTime.isAfter(DateTime.now().subtract(const Duration(hours: 1)));
+  bool get isUpcoming =>
+      dateTime.isAfter(DateTime.now().subtract(const Duration(hours: 1)));
 
   bool get canEditReview {
     if (!hasReview || reviewCreatedAt == null) return false;
@@ -65,10 +66,12 @@ class PatientAppointment {
   String get countdownLabel {
     final d = timeUntilStart;
     if (d.isNegative) return 'In progress';
-    if (d.inDays > 0) return 'Starts in ${d.inDays} day${d.inDays > 1 ? 's' : ''}';
+    if (d.inDays > 0)
+      return 'Starts in ${d.inDays} day${d.inDays > 1 ? 's' : ''}';
     if (d.inHours > 0) {
       final mins = d.inMinutes % 60;
-      return 'Starts in ${d.inHours} hr${d.inHours > 1 ? 's' : ''} ${mins > 0 ? '$mins mins' : ''}'.trim();
+      return 'Starts in ${d.inHours} hr${d.inHours > 1 ? 's' : ''} ${mins > 0 ? '$mins mins' : ''}'
+          .trim();
     }
     if (d.inMinutes > 0) return 'Starts in ${d.inMinutes} mins';
     return 'Starting soon';

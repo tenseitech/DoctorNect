@@ -111,9 +111,11 @@ class RecordsTabStyle {
           accentColor: AppColors.patientTeal,
           icon: Icons.science_outlined,
           summaryLabel: 'test',
-          summaryHint: 'Lab orders, bookings and reports from your doctor or partner labs',
+          summaryHint:
+              'Lab orders, bookings and reports from your doctor or partner labs',
           emptyTitle: 'No tests yet',
-          emptyMessage: 'Lab test orders and blood test bookings will appear here.',
+          emptyMessage:
+              'Lab test orders and blood test bookings will appear here.',
         ),
       'Blood Tests' => const RecordsTabStyle(
           accentColor: Color(0xFFDC2626),

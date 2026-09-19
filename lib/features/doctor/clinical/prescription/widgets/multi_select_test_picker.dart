@@ -96,7 +96,9 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
 
   List<TestCatalogItem> get _filtered {
     if (_query.isEmpty) return _allCatalog;
-    return _allCatalog.where((t) => t.name.toLowerCase().contains(_query)).toList();
+    return _allCatalog
+        .where((t) => t.name.toLowerCase().contains(_query))
+        .toList();
   }
 
   Map<String, List<TestCatalogItem>> get _grouped {
@@ -124,7 +126,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
         if (id != null) {
           setState(() {
             _selectedIds.add(id);
-            _extraItems.add(TestCatalogItem(id: id, name: name, group: 'Custom'));
+            _extraItems
+                .add(TestCatalogItem(id: id, name: name, group: 'Custom'));
           });
           return;
         }
@@ -139,8 +142,7 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
     setState(() {
       if (!_customNames.contains(name)) _customNames.add(name);
     });
-    if (mounted) {
-    }
+    if (mounted) {}
   }
 
   @override
@@ -208,7 +210,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.doctorBlue,
                       foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       textStyle: GoogleFonts.inter(
@@ -235,7 +238,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                           onPressed: () => _searchController.clear(),
                         ),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
               ),
             ),
@@ -321,7 +325,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textPrimaryOf(context),
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w400,
                       ),
                     ),
                   ),
@@ -429,7 +434,8 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
         if (!mounted) return;
         if (savedName != null) {
           setState(() {
-            if (!_allOptions.any((o) => o.toLowerCase() == savedName.toLowerCase())) {
+            if (!_allOptions
+                .any((o) => o.toLowerCase() == savedName.toLowerCase())) {
               _extraOptions.add(savedName);
             }
             if (!_selected.contains(savedName)) _selected.add(savedName);
@@ -447,8 +453,7 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
     setState(() {
       if (!_selected.contains(name)) _selected.add(name);
     });
-    if (mounted) {
-    }
+    if (mounted) {}
   }
 
   @override
@@ -507,7 +512,8 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.doctorBlue,
                       foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       textStyle: GoogleFonts.inter(
@@ -534,7 +540,8 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                           onPressed: () => _searchController.clear(),
                         ),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
               ),
             ),
@@ -570,7 +577,8 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                               value: selected,
                               activeColor: AppColors.doctorBlue,
                               visualDensity: VisualDensity.compact,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
                               onChanged: (_) {
                                 setState(() {
                                   if (selected) {
@@ -588,7 +596,9 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                                 style: GoogleFonts.inter(
                                   fontSize: AppTypography.bodySmall,
                                   color: AppColors.textPrimaryOf(context),
-                                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                                  fontWeight: selected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
                                 ),
                               ),
                             ),
@@ -627,7 +637,8 @@ class _AddCustomSearchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Icon(Icons.add_circle_outline, color: AppColors.doctorBlue, size: 22),
+      leading:
+          Icon(Icons.add_circle_outline, color: AppColors.doctorBlue, size: 22),
       title: RichText(
         text: TextSpan(
           style: GoogleFonts.inter(

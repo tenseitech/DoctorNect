@@ -47,7 +47,8 @@ abstract final class ServerValidationService {
 
     final now = DateTime.now();
     final lastRetry = _lastValidateTriggeredRetry;
-    if (lastRetry != null && now.difference(lastRetry) < _validateRetryCooldown) {
+    if (lastRetry != null &&
+        now.difference(lastRetry) < _validateRetryCooldown) {
       return;
     }
     _lastValidateTriggeredRetry = now;
@@ -101,7 +102,8 @@ abstract final class ServerValidationService {
             Map<String, dynamic>.from(jsonDecode(cachedThresholds) as Map);
       } catch (e, st) {
         if (kDebugMode) {
-          debugPrint('ServerValidationService: invalid thresholds cache: $e\n$st');
+          debugPrint(
+              'ServerValidationService: invalid thresholds cache: $e\n$st');
         }
         _vitalThresholds = null;
       }
@@ -112,7 +114,8 @@ abstract final class ServerValidationService {
     try {
       final Map<String, dynamic> data;
       if (kIsWeb) {
-        final response = await http.get(Uri.base.resolve('/api/validation-rules'));
+        final response =
+            await http.get(Uri.base.resolve('/api/validation-rules'));
         if (response.statusCode != 200) return false;
         data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
       } else {
@@ -128,7 +131,8 @@ abstract final class ServerValidationService {
       }
       if (thresholds is Map) {
         _vitalThresholds = Map<String, dynamic>.from(thresholds);
-        await prefs.setString(_thresholdsCacheKey, jsonEncode(_vitalThresholds));
+        await prefs.setString(
+            _thresholdsCacheKey, jsonEncode(_vitalThresholds));
       }
       return _rules != null;
     } catch (e, st) {
@@ -168,7 +172,8 @@ abstract final class ServerValidationService {
     if (!FirebaseBootstrap.isReady) return {};
     try {
       final callable = _functions.httpsCallable('validateFormFields');
-      final result = await callable.call<Map<String, dynamic>>({'checks': checks});
+      final result =
+          await callable.call<Map<String, dynamic>>({'checks': checks});
       final errorsRaw = result.data['errors'];
       if (errorsRaw is! Map) return {};
       return errorsRaw.map(

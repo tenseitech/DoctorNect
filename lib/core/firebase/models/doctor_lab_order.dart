@@ -32,7 +32,8 @@ class DoctorLabOrder {
   final String? appointmentId;
   final List<String> testIds;
   final List<String> testNames;
-  final String? labId; // FIXED: registered lab id (when selected from verified labs / directory)
+  final String?
+      labId; // FIXED: registered lab id (when selected from verified labs / directory)
   final String? labName;
   final String? indication;
   final String urgency;

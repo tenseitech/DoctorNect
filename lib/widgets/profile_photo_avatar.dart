@@ -5,7 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/media/gallery_image_picker.dart';
 import '../core/theme/app_colors.dart';
-import 'profile_photo_image_io.dart' if (dart.library.html) 'profile_photo_image_stub.dart';
+import 'profile_photo_image_io.dart'
+    if (dart.library.html) 'profile_photo_image_stub.dart';
 import '../core/theme/app_typography.dart';
 
 class PickedProfilePhoto {
@@ -14,7 +15,9 @@ class PickedProfilePhoto {
   final String? path;
   final Uint8List? bytes;
 
-  bool get hasImage => (bytes != null && bytes!.isNotEmpty) || (path != null && path!.isNotEmpty);
+  bool get hasImage =>
+      (bytes != null && bytes!.isNotEmpty) ||
+      (path != null && path!.isNotEmpty);
 }
 
 Future<PickedProfilePhoto?> pickProfilePhoto(
@@ -46,15 +49,19 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
           ),
           if (hasExisting && onView != null)
             ListTile(
-              leading: const Icon(Icons.fullscreen, color: AppColors.doctorBlue),
-              title: Text('View photo', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+              leading:
+                  const Icon(Icons.fullscreen, color: AppColors.doctorBlue),
+              title: Text('View photo',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
               onTap: () {
                 Navigator.pop(ctx, 'view');
               },
             ),
           ListTile(
-            leading: const Icon(Icons.photo_library_outlined, color: AppColors.doctorBlue),
-            title: Text('Choose from gallery', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+            leading: const Icon(Icons.photo_library_outlined,
+                color: AppColors.doctorBlue),
+            title: Text('Choose from gallery',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
             onTap: () async {
               try {
                 final picked = await GalleryImagePicker.pickSingle();
@@ -66,10 +73,12 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
           ),
           if (hasExisting && onRemove != null)
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              leading:
+                  const Icon(Icons.delete_outline_rounded, color: Colors.red),
               title: Text(
                 'Remove photo',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: Colors.red),
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500, color: Colors.red),
               ),
               onTap: () {
                 Navigator.pop(ctx, 'remove');
@@ -94,7 +103,8 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
   }
 
   if (result is PickedGalleryImage) {
-    return PickedProfilePhoto(path: result.path ?? result.name, bytes: result.bytes);
+    return PickedProfilePhoto(
+        path: result.path ?? result.name, bytes: result.bytes);
   }
 
   return null;
@@ -122,7 +132,8 @@ class ProfilePhotoAvatar extends StatelessWidget {
   final Color? fallbackColor;
 
   ImageProvider? _networkImageProvider(String url, BuildContext context) {
-    final cachePx = (radius * 2 * MediaQuery.devicePixelRatioOf(context)).round();
+    final cachePx =
+        (radius * 2 * MediaQuery.devicePixelRatioOf(context)).round();
     return ResizeImage(
       NetworkImage(url),
       width: cachePx,
@@ -145,7 +156,9 @@ class ProfilePhotoAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final image = _imageProvider(context);
-    final initial = displayName.trim().isNotEmpty ? displayName.trim()[0].toUpperCase() : 'D';
+    final initial = displayName.trim().isNotEmpty
+        ? displayName.trim()[0].toUpperCase()
+        : 'D';
     final bg = backgroundColor ?? AppColors.doctorBlue.withValues(alpha: 0.15);
     final fg = fallbackColor ?? AppColors.doctorBlue;
 

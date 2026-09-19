@@ -14,7 +14,8 @@ abstract final class BannerConfigService {
   static FirebaseFirestore get _db => FirebaseFirestore.instance;
 
   static Stream<BannerConfigModel> streamConfig() {
-    if (!FirebaseBootstrap.isReady) return Stream.value(const BannerConfigModel());
+    if (!FirebaseBootstrap.isReady)
+      return Stream.value(const BannerConfigModel());
 
     return _db
         .collection(_configCollection)
@@ -27,7 +28,8 @@ abstract final class BannerConfigService {
     if (!FirebaseBootstrap.isReady) return const BannerConfigModel();
 
     try {
-      final snap = await _db.collection(_configCollection).doc(_configDoc).get();
+      final snap =
+          await _db.collection(_configCollection).doc(_configDoc).get();
       return BannerConfigModel.fromFirestore(snap);
     } catch (e) {
       if (kDebugMode) debugPrint('[BannerConfigService] fetchConfig error: $e');

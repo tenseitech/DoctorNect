@@ -58,7 +58,8 @@ class Icd10DiagnosesDatabase {
       _buildIndex(parsed);
       debugPrint('Icd10DiagnosesDatabase: loaded ${parsed.length} diagnoses');
     } catch (error, stackTrace) {
-      debugPrint('Icd10DiagnosesDatabase: load failed, using fallback list. $error');
+      debugPrint(
+          'Icd10DiagnosesDatabase: load failed, using fallback list. $error');
       debugPrint('$stackTrace');
       _useFallback();
     }
@@ -109,7 +110,8 @@ class Icd10DiagnosesDatabase {
       );
     }
 
-    final match = RegExp(r'^([A-Za-z]\d{2}(?:\.\d+)?)\s+(.+)$').firstMatch(line);
+    final match =
+        RegExp(r'^([A-Za-z]\d{2}(?:\.\d+)?)\s+(.+)$').firstMatch(line);
     if (match != null) {
       return _Icd10Entry(match.group(1)!, match.group(2)!.trim());
     }

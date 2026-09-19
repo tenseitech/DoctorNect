@@ -39,7 +39,10 @@ abstract final class PatientSelectedInvestigationsMapper {
       id: entry.catalogId ?? entry.id,
       name: entry.name.trim(),
       parameters: [
-        if (entry.group.trim().isNotEmpty) entry.group.trim() else entry.categoryLabel,
+        if (entry.group.trim().isNotEmpty)
+          entry.group.trim()
+        else
+          entry.categoryLabel,
       ],
       fastingRequired: false,
       sampleType: sampleType,
@@ -49,12 +52,18 @@ abstract final class PatientSelectedInvestigationsMapper {
   }
 
   static String summaryLabel(Iterable<LabTestItem> tests) {
-    final names = tests.map((test) => test.name).where((name) => name.isNotEmpty).toList();
+    final names = tests
+        .map((test) => test.name)
+        .where((name) => name.isNotEmpty)
+        .toList();
     return summaryFromNames(names);
   }
 
   static String summaryFromNames(List<String> names) {
-    final cleaned = names.map((name) => name.trim()).where((name) => name.isNotEmpty).toList();
+    final cleaned = names
+        .map((name) => name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
     if (cleaned.isEmpty) return 'Lab tests';
     if (cleaned.length == 1) return cleaned.first;
     if (cleaned.length == 2) return '${cleaned[0]}, ${cleaned[1]}';

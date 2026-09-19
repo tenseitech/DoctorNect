@@ -168,7 +168,8 @@ class _HelpOptionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
-            Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+            Divider(
+                height: 1, thickness: 1, color: AppColors.borderOf(context)),
             InkWell(
               onTap: onCtaTap,
               borderRadius: const BorderRadius.vertical(

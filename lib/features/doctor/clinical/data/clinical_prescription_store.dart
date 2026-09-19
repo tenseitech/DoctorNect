@@ -3,25 +3,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flutter/foundation.dart';
 
-
-
 import '../../../../core/session/doctor_session.dart';
 import '../models/clinical_models.dart';
 import '../../profile/data/doctor_profile_store.dart';
 
-
-
 /// In-memory EMR store for saved prescriptions (single source of truth).
 
 class ClinicalPrescriptionStore extends ChangeNotifier {
-
   ClinicalPrescriptionStore._();
 
-
-
-  static final ClinicalPrescriptionStore instance = ClinicalPrescriptionStore._();
-
-
+  static final ClinicalPrescriptionStore instance =
+      ClinicalPrescriptionStore._();
 
   final List<PrescriptionDraft> _records = [];
 
@@ -32,8 +24,6 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
   bool _hasMoreDoctor = true;
 
   bool _hasMorePatient = true;
-
-
 
   List<PrescriptionDraft> get all => List.unmodifiable(_records);
 
@@ -50,32 +40,17 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
   PrescriptionDraft? findById(String prescriptionId) {
-
     for (final draft in _records) {
-
       if (draft.prescriptionId == prescriptionId) return draft;
-
     }
 
     return null;
-
   }
 
-
-
   List<PrescriptionDraft> forPatient(String patientId) {
-
-    return _records
-
-        .where((d) => d.patientId == patientId)
-
-        .toList()
-
+    return _records.where((d) => d.patientId == patientId).toList()
       ..sort((a, b) => b.prescriptionDate.compareTo(a.prescriptionDate));
-
   }
 
   bool _hasPatientRecords(String patientId) =>
@@ -89,10 +64,12 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     if (hadRecords) notifyListeners();
   }
 
-  Future<bool> _isPatientVisibleToDoctor(String patientId, {bool preferCache = true}) async {
+  Future<bool> _isPatientVisibleToDoctor(String patientId,
+      {bool preferCache = true}) async {
     if (!_isDoctorContext) return true;
     if (patientId.isEmpty) return true;
-    return FirestoreService.instance.patientProfile.isPatientSharingClinicalDataWithDoctors(
+    return FirestoreService.instance.patientProfile
+        .isPatientSharingClinicalDataWithDoctors(
       patientId,
       preferCache: preferCache,
     );
@@ -121,7 +98,8 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
         continue;
       }
 
-      final allowed = await _isPatientVisibleToDoctor(patientId, preferCache: preferCache);
+      final allowed =
+          await _isPatientVisibleToDoctor(patientId, preferCache: preferCache);
       decided[patientId] = allowed;
       if (allowed) {
         visible.add(draft);
@@ -133,9 +111,8 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     return visible;
   }
 
-
-
-  Future<void> save(PrescriptionDraft draft) async { // FIXED: now async + awaited so Firestore failures surface to the caller
+  Future<void> save(PrescriptionDraft draft) async {
+    // FIXED: now async + awaited so Firestore failures surface to the caller
 
     final copy = draft.copy();
 
@@ -172,25 +149,18 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     _records.insert(0, copy);
 
     notifyListeners();
-
   }
 
-
-
   void mergeFirestoreRecords(List<PrescriptionDraft> remoteRecords) {
-
     for (final remote in remoteRecords) {
-
       _records.removeWhere((d) => d.prescriptionId == remote.prescriptionId);
 
       _records.add(remote);
-
     }
 
     _records.sort((a, b) => b.prescriptionDate.compareTo(a.prescriptionDate));
 
     notifyListeners();
-
   }
 
   /// Applies sharing gate before merging doctor-facing Firestore payloads.
@@ -205,13 +175,10 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     mergeFirestoreRecords(visible);
   }
 
-
-
   bool _hasDoctorRecords(String doctorId) =>
       doctorId.isNotEmpty && _records.any((r) => r.doctorId == doctorId);
 
   Future<void> refreshForDoctor({bool preferCache = true}) async {
-
     final doctorId = DoctorSession.loggedInDoctorId;
     if (preferCache && _hasDoctorRecords(doctorId)) return;
 
@@ -220,38 +187,29 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     _hasMoreDoctor = true;
 
     await loadMoreForDoctor(preferCache: preferCache);
-
   }
 
-
-
   Future<void> loadMoreForDoctor({bool preferCache = true}) async {
-
     if (!_hasMoreDoctor) return;
 
     final page = await FirestoreService.instance.prescription.fetchForDoctor(
-
       DoctorSession.loggedInDoctorId,
-
       startAfter: _lastDoctorPage,
-
       preferCache: preferCache,
-
     );
 
-    final visible = await _filterPrescriptionsForDoctor(page.items, preferCache: preferCache);
+    final visible = await _filterPrescriptionsForDoctor(page.items,
+        preferCache: preferCache);
 
     mergeFirestoreRecords(visible);
 
     _lastDoctorPage = page.lastDocument;
 
     _hasMoreDoctor = page.hasMore;
-
   }
 
-
-
-  Future<void> refreshForPatient(String patientId, {bool preferCache = true}) async {
+  Future<void> refreshForPatient(String patientId,
+      {bool preferCache = true}) async {
     if (_isDoctorContext &&
         !await _isPatientVisibleToDoctor(patientId, preferCache: preferCache)) {
       _purgePatientPrescriptions(patientId);
@@ -267,13 +225,10 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     _hasMorePatient = true;
 
     await loadMoreForPatient(patientId, preferCache: preferCache);
-
   }
 
-
-
-  Future<void> loadMoreForPatient(String patientId, {bool preferCache = true}) async {
-
+  Future<void> loadMoreForPatient(String patientId,
+      {bool preferCache = true}) async {
     if (!_hasMorePatient) return;
 
     if (_isDoctorContext &&
@@ -285,7 +240,8 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
 
     try {
       final page = _isDoctorContext
-          ? await FirestoreService.instance.prescription.fetchForPatientForDoctor(
+          ? await FirestoreService.instance.prescription
+              .fetchForPatientForDoctor(
               patientId,
               startAfter: _lastPatientPage,
               preferCache: preferCache,
@@ -303,13 +259,10 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
       _hasMorePatient = page.hasMore;
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('ClinicalPrescriptionStore.loadMoreForPatient failed: $e\n$st');
+        debugPrint(
+            'ClinicalPrescriptionStore.loadMoreForPatient failed: $e\n$st');
       }
       _hasMorePatient = false;
     }
-
   }
-
 }
-
-

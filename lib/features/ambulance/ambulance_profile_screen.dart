@@ -160,9 +160,11 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       return;
     }
 
-    final newPhone = FormValidators.formatFullPhone(_phoneDialCode, _phoneCtrl.text.trim());
+    final newPhone =
+        FormValidators.formatFullPhone(_phoneDialCode, _phoneCtrl.text.trim());
     if (!ContactChangeVerification.mobilesEqual(newPhone, current.phone)) {
-      final phoneErr = FormValidators.phoneLocal(_phoneCtrl.text.trim(), dialCode: _phoneDialCode);
+      final phoneErr = FormValidators.phoneLocal(_phoneCtrl.text.trim(),
+          dialCode: _phoneDialCode);
       if (phoneErr != null) {
         AppToast.info(context, phoneErr);
         return;
@@ -178,7 +180,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       );
       if (!mounted) return;
       if (!verified) {
-        AppToast.info(context, 'Verify your new mobile number with OTP before saving.');
+        AppToast.info(
+            context, 'Verify your new mobile number with OTP before saving.');
         return;
       }
     }
@@ -215,8 +218,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       pincode: _pincodeCtrl.text.trim(),
     );
 
-    final ok =
-        await FirestoreService.instance.ambulance.updateAmbulanceProfile(updated);
+    final ok = await FirestoreService.instance.ambulance
+        .updateAmbulanceProfile(updated);
     if (!mounted) return;
 
     setState(() {
@@ -259,7 +262,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
             ? Center(
                 child: Text(
                   'Profile not found',
-                  style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               )
             : Builder(
@@ -290,7 +294,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                       'Service details, availability & account',
                                       style: GoogleFonts.inter(
                                           fontSize: AppTypography.bodySmall,
-                                          color: AppColors.textSecondaryOf(context)),
+                                          color: AppColors.textSecondaryOf(
+                                              context)),
                                     ),
                                   ],
                                 ),
@@ -435,14 +440,19 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                 title: 'Advertising',
                                 children: [
                                   ListTile(
-                                    leading: const Icon(Icons.campaign_rounded, color: Color(0xFFDC2626)),
+                                    leading: const Icon(Icons.campaign_rounded,
+                                        color: Color(0xFFDC2626)),
                                     title: Text(
                                       'Promote Banner Ad',
-                                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.bodyMedium),
+                                      style: GoogleFonts.inter(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: AppTypography.bodyMedium),
                                     ),
                                     subtitle: Text(
                                       'Advertise ambulance service on Patient Home',
-                                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: Colors.grey),
+                                      style: GoogleFonts.inter(
+                                          fontSize: AppTypography.labelMedium,
+                                          color: Colors.grey),
                                     ),
                                     trailing: const Icon(Icons.chevron_right),
                                     onTap: () {
@@ -660,7 +670,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
             Text(
               'Username: ${amb.username}',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ],
         ),
@@ -696,7 +707,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
+      prefixIcon:
+          Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
       filled: true,
       fillColor: AppColors.surfaceOf(context),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -836,7 +848,8 @@ class _AboutSection extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context)),
+              Icon(Icons.chevron_right,
+                  color: AppColors.textSecondaryOf(context)),
             ],
           ),
         ),
@@ -948,28 +961,32 @@ class _EquipmentToggles extends StatelessWidget {
       children: [
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Oxygen', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+          title: Text('Oxygen',
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
           value: hasOxygen,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onOxygen,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Ventilator', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+          title: Text('Ventilator',
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
           value: hasVentilator,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onVentilator,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Stretcher', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+          title: Text('Stretcher',
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
           value: hasStretcher,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onStretcher,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('24×7 service', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+          title: Text('24×7 service',
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
           value: is24x7,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: on24x7,

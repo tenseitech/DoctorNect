@@ -135,8 +135,10 @@ class AppointmentActionButtons extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           minimumSize: Size.zero,
           fixedSize: Size(_buttonWidth(label, fontSize), height),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_radius)),
-          textStyle: GoogleFonts.inter(fontSize: fontSize, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(_radius)),
+          textStyle: GoogleFonts.inter(
+              fontSize: fontSize, fontWeight: FontWeight.w600),
         ),
         child: Text(label),
       ),
@@ -161,8 +163,10 @@ class AppointmentActionButtons extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14),
           minimumSize: Size.zero,
           fixedSize: Size(_buttonWidth(label, fontSize), height),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_radius)),
-          textStyle: GoogleFonts.inter(fontSize: fontSize, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(_radius)),
+          textStyle: GoogleFonts.inter(
+              fontSize: fontSize, fontWeight: FontWeight.w600),
         ),
         child: Text(label),
       ),

@@ -42,28 +42,32 @@ class WelcomeScreen extends StatelessWidget {
           subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.doctor),
           color: AppColors.doctorBlue,
           icon: Icons.medical_services_rounded,
-          onTap: () => _openUnifiedAuth(context, UserType.doctor, AppColors.doctorBlue),
+          onTap: () =>
+              _openUnifiedAuth(context, UserType.doctor, AppColors.doctorBlue),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.patient),
           subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.patient),
           color: AppColors.patientTeal,
           icon: Icons.person_rounded,
-          onTap: () => _openUnifiedAuth(context, UserType.patient, AppColors.patientTeal),
+          onTap: () => _openUnifiedAuth(
+              context, UserType.patient, AppColors.patientTeal),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.medicalStore),
           subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.medicalStore),
           color: AppColors.pharmacyGreen,
           icon: Icons.local_pharmacy_rounded,
-          onTap: () => _openUnifiedAuth(context, UserType.medicalStore, AppColors.pharmacyGreen),
+          onTap: () => _openUnifiedAuth(
+              context, UserType.medicalStore, AppColors.pharmacyGreen),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.lab),
           subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.lab),
           color: AppColors.labPurple,
           icon: Icons.biotech_rounded,
-          onTap: () => _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
+          onTap: () =>
+              _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
@@ -83,7 +87,8 @@ class WelcomeScreen extends StatelessWidget {
               );
               return;
             }
-            _openUnifiedAuth(context, UserType.ambulance, const Color(0xFFDC2626));
+            _openUnifiedAuth(
+                context, UserType.ambulance, const Color(0xFFDC2626));
           },
         ),
       ];
@@ -91,7 +96,8 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final roles = _roleOptions(context);
-    final isWebDesktop = ResponsiveLayout.isWeb && !ResponsiveLayout.isCompact(context);
+    final isWebDesktop =
+        ResponsiveLayout.isWeb && !ResponsiveLayout.isCompact(context);
 
     if (isWebDesktop) {
       return _WebWelcomeScaffold(roles: roles);
@@ -460,8 +466,7 @@ class _WebWelcomeDotLatticePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.07);
+    final paint = Paint()..color = Colors.white.withValues(alpha: 0.07);
 
     for (var y = _spacing; y < size.height; y += _spacing) {
       for (var x = _spacing; x < size.width; x += _spacing) {
@@ -619,8 +624,7 @@ class _WebWelcomeThemeToggle extends StatelessWidget {
       listenable: AppThemeController.instance,
       builder: (context, _) {
         final isDark = AppThemeController.instance.isDarkMode;
-        final tooltip =
-            isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        final tooltip = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
         final iconColor = isDark
             ? const Color(0xFFFDE047)
             : AppColors.textSecondaryOf(context);
@@ -655,9 +659,7 @@ class _WebWelcomeThemeToggle extends StatelessWidget {
                     child: child,
                   ),
                   child: Icon(
-                    isDark
-                        ? Icons.dark_mode_rounded
-                        : Icons.light_mode_rounded,
+                    isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                     key: ValueKey(isDark),
                     color: iconColor,
                     size: 18,
@@ -812,8 +814,11 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                   height: compactHeight ? 44 : 52,
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.16),
-                                    borderRadius: BorderRadius.circular(compactHeight ? 12 : 15),
-                                    border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+                                    borderRadius: BorderRadius.circular(
+                                        compactHeight ? 12 : 15),
+                                    border: Border.all(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.22)),
                                   ),
                                   child: Icon(
                                     Icons.local_hospital_rounded,
@@ -865,7 +870,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(26)),
                             boxShadow: const [
                               BoxShadow(
                                 color: Color(0x26000000),
@@ -889,7 +895,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                 ),
                               ),
                               Padding(
-                                padding: EdgeInsets.fromLTRB(20, compactHeight ? 12 : 16, 20, 10),
+                                padding: EdgeInsets.fromLTRB(
+                                    20, compactHeight ? 12 : 16, 20, 10),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -907,7 +914,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                       'Tap a card to sign in',
                                       style: GoogleFonts.inter(
                                         fontSize: AppTypography.bodySmall,
-                                        color: AppColors.textSecondaryOf(context),
+                                        color:
+                                            AppColors.textSecondaryOf(context),
                                       ),
                                     ),
                                   ],
@@ -915,7 +923,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                               ),
                               Expanded(
                                 child: ListView(
-                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                  padding:
+                                      const EdgeInsets.fromLTRB(16, 0, 16, 16),
                                   children: [
                                     for (var i = 0; i < roles.length; i++) ...[
                                       RoleCard(
@@ -926,23 +935,28 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                         onTap: roles[i].onTap,
                                         variant: RoleCardVariant.mobile,
                                       ),
-                                      if (i < roles.length - 1) const SizedBox(height: 10),
+                                      if (i < roles.length - 1)
+                                        const SizedBox(height: 10),
                                     ],
                                     const SizedBox(height: 14),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           Icons.verified_user_outlined,
                                           size: 14,
-                                          color: AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
+                                          color:
+                                              AppColors.textSecondaryOf(context)
+                                                  .withValues(alpha: 0.8),
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
                                           'Secure & encrypted sign-in',
                                           style: GoogleFonts.inter(
                                             fontSize: AppTypography.labelSmall,
-                                            color: AppColors.textSecondaryOf(context),
+                                            color: AppColors.textSecondaryOf(
+                                                context),
                                           ),
                                         ),
                                       ],

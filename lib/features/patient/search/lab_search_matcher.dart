@@ -5,8 +5,26 @@ abstract final class LabSearchMatcher {
   LabSearchMatcher._();
 
   static const _stopWords = {
-    'a', 'an', 'the', 'in', 'at', 'on', 'for', 'with', 'and', 'or', 'of', 'to',
-    'lab', 'labs', 'test', 'tests', 'package', 'packages', 'diagnostic', 'diagnostics',
+    'a',
+    'an',
+    'the',
+    'in',
+    'at',
+    'on',
+    'for',
+    'with',
+    'and',
+    'or',
+    'of',
+    'to',
+    'lab',
+    'labs',
+    'test',
+    'tests',
+    'package',
+    'packages',
+    'diagnostic',
+    'diagnostics',
   };
 
   static bool matchesTest(LabTestItem test, String rawQuery) {
@@ -26,7 +44,8 @@ abstract final class LabSearchMatcher {
   }
 
   static int relevanceScoreTest(LabTestItem test, String rawQuery) {
-    return _score(_testHaystack(test), test.name, rawQuery, test.popular ? 8 : 0);
+    return _score(
+        _testHaystack(test), test.name, rawQuery, test.popular ? 8 : 0);
   }
 
   static int relevanceScorePackage(LabHealthPackage package, String rawQuery) {
@@ -79,7 +98,8 @@ abstract final class LabSearchMatcher {
     return tokens.every((token) => haystack.contains(token));
   }
 
-  static int _score(String haystack, String primaryName, String rawQuery, int bonus) {
+  static int _score(
+      String haystack, String primaryName, String rawQuery, int bonus) {
     final query = rawQuery.trim().toLowerCase();
     if (query.isEmpty) return 0;
 

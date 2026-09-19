@@ -30,7 +30,8 @@ abstract final class AppColors {
       Theme.of(context).colorScheme.surface;
 
   static Color cardBgOf(BuildContext context) =>
-      Theme.of(context).cardTheme.color ?? Theme.of(context).colorScheme.surface;
+      Theme.of(context).cardTheme.color ??
+      Theme.of(context).colorScheme.surface;
 
   static Color textPrimaryOf(BuildContext context) =>
       Theme.of(context).colorScheme.onSurface;

@@ -41,7 +41,8 @@ class PatientNotificationScheduler {
     return all
         .where((a) =>
             a.cancellationReason == null &&
-            a.dateTime.isAfter(DateTime.now().subtract(const Duration(minutes: 30))))
+            a.dateTime
+                .isAfter(DateTime.now().subtract(const Duration(minutes: 30))))
         .toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
@@ -101,7 +102,8 @@ class PatientNotificationScheduler {
     for (final a in _upcoming) {
       final diff = a.dateTime.difference(now);
       if (diff.inMinutes >= 28 && diff.inMinutes <= 32) {
-        PatientNotificationEmitter.notifyReminderThirtyMin(doctorName: a.doctorName);
+        PatientNotificationEmitter.notifyReminderThirtyMin(
+            doctorName: a.doctorName);
       }
     }
   }
@@ -165,19 +167,18 @@ class PatientNotificationScheduler {
   }
 
   void _checkSundayVitals(DateTime now) {
-    if (now.weekday != DateTime.sunday || now.hour != 9 || now.minute > 5) return;
+    if (now.weekday != DateTime.sunday || now.hour != 9 || now.minute > 5)
+      return;
     PatientNotificationEmitter.notifyVitalsReminder();
   }
 
   void _checkVaccinationDue(DateTime now) {
     if (now.hour != 10) return;
     // FIXED: only notify when a real vaccination record has an upcoming due date — no hardcoded Influenza.
-    final upcoming = PatientProfileMock.vaccinations
-        .where((v) {
-          final daysUntil = v.date.difference(now).inDays;
-          return daysUntil >= 0 && daysUntil <= 7;
-        })
-        .toList()
+    final upcoming = PatientProfileMock.vaccinations.where((v) {
+      final daysUntil = v.date.difference(now).inDays;
+      return daysUntil >= 0 && daysUntil <= 7;
+    }).toList()
       ..sort((a, b) => a.date.compareTo(b.date));
     if (upcoming.isEmpty) return;
     final next = upcoming.first;

@@ -21,10 +21,10 @@ class PharmacyDataSection extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Pharmacy Data'),
           bottom: TabBar(
-            labelStyle:
-                GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
-            unselectedLabelStyle:
-                GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w400),
+            labelStyle: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w400),
             indicatorColor: AppColors.pharmacyGreen,
             labelColor: AppColors.pharmacyGreen,
             unselectedLabelColor: Colors.grey[600],
@@ -50,8 +50,7 @@ class PharmacyDataSection extends StatelessWidget {
 
             return TabBarView(
               children: [
-                _ConnectedStoresTab(
-                    active: activeConns, pending: pendingConns),
+                _ConnectedStoresTab(active: activeConns, pending: pendingConns),
                 _PrescriptionsTab(deliveries: deliveries),
               ],
             );
@@ -65,8 +64,7 @@ class PharmacyDataSection extends StatelessWidget {
 // ── Connected stores tab ──────────────────────────────────────────────────────
 
 class _ConnectedStoresTab extends StatelessWidget {
-  const _ConnectedStoresTab(
-      {required this.active, required this.pending});
+  const _ConnectedStoresTab({required this.active, required this.pending});
 
   final List<PharmacyConnection> active;
   final List<PharmacyConnection> pending;
@@ -141,19 +139,20 @@ class _StoreCard extends StatelessWidget {
               children: [
                 Text(conn.storeName,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)),
+                        fontSize: AppTypography.bodyMedium,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Text(
                   'Since ${df.format(conn.requestedAt)}',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
+                      fontSize: AppTypography.labelSmall,
+                      color: Colors.grey[500]),
                 ),
               ],
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: isActive
                   ? AppColors.pharmacyGreen.withValues(alpha: 0.1)
@@ -165,9 +164,7 @@ class _StoreCard extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
-                color: isActive
-                    ? AppColors.pharmacyGreen
-                    : Colors.orange[700],
+                color: isActive ? AppColors.pharmacyGreen : Colors.orange[700],
               ),
             ),
           ),
@@ -254,18 +251,19 @@ class _DeliveryRow extends StatelessWidget {
               children: [
                 Text(delivery.storeName,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600)),
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w600)),
                 Text(
                   '${delivery.medicineLines.length} medicine(s)  •  ${df.format(delivery.sentAt)} ${tf.format(delivery.sentAt)}',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
+                      fontSize: AppTypography.labelSmall,
+                      color: Colors.grey[500]),
                 ),
               ],
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: _statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
@@ -317,7 +315,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(message,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyMedium, color: Colors.grey[500])),
+                    fontSize: AppTypography.bodyMedium,
+                    color: Colors.grey[500])),
           ],
         ),
       );

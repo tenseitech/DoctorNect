@@ -56,7 +56,11 @@ class SearchSpecialtySuggestionsPanel extends StatelessWidget {
                 ),
               ),
               for (var i = 0; i < suggestions.length; i++) ...[
-                if (i > 0) Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                if (i > 0)
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderOf(context)),
                 _SuggestionTile(
                   suggestion: suggestions[i],
                   onTap: () => onSelected(suggestions[i]),
@@ -94,7 +98,9 @@ class _SuggestionTileState extends State<_SuggestionTile> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Material(
-        color: _hovered ? AppColors.patientTeal.withValues(alpha: 0.06) : Colors.transparent,
+        color: _hovered
+            ? AppColors.patientTeal.withValues(alpha: 0.06)
+            : Colors.transparent,
         child: InkWell(
           onTap: widget.onTap,
           child: Padding(
@@ -109,7 +115,9 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                     borderRadius: BorderRadius.circular(9),
                   ),
                   child: Icon(
-                    s.isCategory ? Icons.category_outlined : Icons.medical_services_outlined,
+                    s.isCategory
+                        ? Icons.category_outlined
+                        : Icons.medical_services_outlined,
                     size: 18,
                     color: AppColors.patientTeal,
                   ),
@@ -147,7 +155,8 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                 Icon(
                   Icons.north_west_rounded,
                   size: 16,
-                  color: AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
                 ),
               ],
             ),

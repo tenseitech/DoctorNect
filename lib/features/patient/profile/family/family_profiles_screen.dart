@@ -68,7 +68,8 @@ class _FamilyProfilesScreenState extends State<FamilyProfilesScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Family Profiles', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('Family Profiles',
+          context: context),
       body: PatientProfileFormStyles.constrainedListWithBottom(
         listBuilder: (context) => ListView(
           padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
@@ -120,17 +121,23 @@ class _EmptyFamilyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         children: [
-          Icon(Icons.people_outline, size: 48, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.5)),
+          Icon(Icons.people_outline,
+              size: 48,
+              color: AppColors.textSecondaryOf(context).withValues(alpha: 0.5)),
           const SizedBox(height: 12),
           Text(
             'No family members yet',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyLarge),
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600, fontSize: AppTypography.bodyLarge),
           ),
           const SizedBox(height: 6),
           Text(
             'Add spouse, children, or parents to book on their behalf.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+                height: 1.4),
           ),
           const SizedBox(height: 16),
           TextButton.icon(
@@ -138,7 +145,8 @@ class _EmptyFamilyState extends StatelessWidget {
             icon: const Icon(Icons.add, color: AppColors.patientTeal),
             label: Text(
               'Add first member',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppColors.patientTeal),
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600, color: AppColors.patientTeal),
             ),
           ),
         ],
@@ -197,7 +205,8 @@ class _MemberCard extends StatelessWidget {
                         backgroundColor: AppColors.surfaceOf(context),
                         child: CircleAvatar(
                           radius: 20,
-                          backgroundColor: AppColors.patientTeal.withValues(alpha: 0.12),
+                          backgroundColor:
+                              AppColors.patientTeal.withValues(alpha: 0.12),
                           child: Text(
                             initial,
                             style: GoogleFonts.inter(
@@ -215,14 +224,19 @@ class _MemberCard extends StatelessWidget {
                         children: [
                           Text(
                             member.name,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
+                            style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w700,
+                                fontSize: AppTypography.headlineSmall),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${member.relationLabel} · ${member.age} yrs · ${member.bloodGroup}',
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelMedium,
+                                color: AppColors.textSecondaryOf(context)),
                           ),
-                          if (member.allergies.isNotEmpty || member.conditions.isNotEmpty) ...[
+                          if (member.allergies.isNotEmpty ||
+                              member.conditions.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Wrap(
                               spacing: 6,
@@ -231,12 +245,14 @@ class _MemberCard extends StatelessWidget {
                                 if (member.allergies.isNotEmpty)
                                   _InfoChip(
                                     icon: Icons.coronavirus_outlined,
-                                    label: '${member.allergies.length} allergies',
+                                    label:
+                                        '${member.allergies.length} allergies',
                                   ),
                                 if (member.conditions.isNotEmpty)
                                   _InfoChip(
                                     icon: Icons.monitor_heart_outlined,
-                                    label: '${member.conditions.length} conditions',
+                                    label:
+                                        '${member.conditions.length} conditions',
                                   ),
                               ],
                             ),
@@ -244,7 +260,8 @@ class _MemberCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Icon(Icons.chevron_right_rounded, color: AppColors.textSecondaryOf(context), size: 22),
+                    Icon(Icons.chevron_right_rounded,
+                        color: AppColors.textSecondaryOf(context), size: 22),
                   ],
                 ),
               ),
@@ -285,7 +302,10 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: AppColors.patientTeal),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelSmall,
+                fontWeight: FontWeight.w600,
+                color: AppColors.patientTeal),
           ),
         ],
       ),

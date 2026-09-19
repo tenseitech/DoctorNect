@@ -96,7 +96,8 @@ class AmbulanceBookingSync {
         }
       },
       onError: (e, st) {
-        if (kDebugMode) debugPrint('Ambulance patient history sync error: $e\n$st');
+        if (kDebugMode)
+          debugPrint('Ambulance patient history sync error: $e\n$st');
       },
     );
   }
@@ -152,27 +153,38 @@ class AmbulanceBookingSync {
 
     final booking = AmbulanceBooking(
       id: broadcastId,
-      patientName: data['patientName'] as String? ?? existing?.patientName ?? 'Patient',
-      pickupLocation: data['pickupLocation'] as String? ?? existing?.pickupLocation ?? '',
-      contactPhone: data['contactPhone'] as String? ?? existing?.contactPhone ?? '',
+      patientName:
+          data['patientName'] as String? ?? existing?.patientName ?? 'Patient',
+      pickupLocation:
+          data['pickupLocation'] as String? ?? existing?.pickupLocation ?? '',
+      contactPhone:
+          data['contactPhone'] as String? ?? existing?.contactPhone ?? '',
       notes: existing?.notes ?? 'Destination: ${data['dropLocation'] ?? ''}',
       bookedByRole: _parseRole(data['bookedByRole'] as String?),
-      bookedByName: data['patientName'] as String? ?? existing?.bookedByName ?? 'Patient',
+      bookedByName:
+          data['patientName'] as String? ?? existing?.bookedByName ?? 'Patient',
       bookedById: data['patientId'] as String? ?? existing?.bookedById ?? '',
-      createdAt: _parseDate(data['createdAt']) ?? existing?.createdAt ?? DateTime.now(),
+      createdAt: _parseDate(data['createdAt']) ??
+          existing?.createdAt ??
+          DateTime.now(),
       status: _patientBookingStatus(statusRaw),
       acceptedAmbulanceId: data['acceptedDriverId'] as String?,
       acceptedAmbulanceName: data['acceptedAmbulanceName'] as String?,
-      acceptedDriverName: data['acceptedDriverName'] as String? ?? existing?.acceptedDriverName,
-      acceptedDriverPhone: data['acceptedDriverPhone'] as String? ?? existing?.acceptedDriverPhone,
-      acceptedVehicleNumber:
-          data['acceptedVehicleNumber'] as String? ?? existing?.acceptedVehicleNumber,
-      acceptedAmbulanceType:
-          data['acceptedAmbulanceType'] as String? ?? existing?.acceptedAmbulanceType,
+      acceptedDriverName:
+          data['acceptedDriverName'] as String? ?? existing?.acceptedDriverName,
+      acceptedDriverPhone: data['acceptedDriverPhone'] as String? ??
+          existing?.acceptedDriverPhone,
+      acceptedVehicleNumber: data['acceptedVehicleNumber'] as String? ??
+          existing?.acceptedVehicleNumber,
+      acceptedAmbulanceType: data['acceptedAmbulanceType'] as String? ??
+          existing?.acceptedAmbulanceType,
       acceptedAt: _parseDate(data['acceptedAt']),
       rating: (data['rating'] as num?)?.toInt() ?? existing?.rating,
       review: data['review'] as String? ?? existing?.review,
-      rawStatus: (statusRaw == 'cancelled' && data['cancelledByRole'] == 'driver') ? 'rejected' : statusRaw,
+      rawStatus:
+          (statusRaw == 'cancelled' && data['cancelledByRole'] == 'driver')
+              ? 'rejected'
+              : statusRaw,
     );
 
     store.upsertBooking(booking);
@@ -190,17 +202,25 @@ class AmbulanceBookingSync {
     return AmbulanceBooking(
       id: broadcastId,
       firestoreRequestId: requestDocId,
-      patientName: data['patientName'] as String? ?? existing?.patientName ?? 'Patient',
-      pickupLocation: data['pickupLocation'] as String? ?? existing?.pickupLocation ?? '',
-      contactPhone: data['contactPhone'] as String? ?? existing?.contactPhone ?? '',
+      patientName:
+          data['patientName'] as String? ?? existing?.patientName ?? 'Patient',
+      pickupLocation:
+          data['pickupLocation'] as String? ?? existing?.pickupLocation ?? '',
+      contactPhone:
+          data['contactPhone'] as String? ?? existing?.contactPhone ?? '',
       notes: drop.isNotEmpty ? 'Destination: $drop' : existing?.notes,
       bookedByRole: _parseRole(data['bookedByRole'] as String?),
-      bookedByName: data['patientName'] as String? ?? existing?.bookedByName ?? 'Patient',
+      bookedByName:
+          data['patientName'] as String? ?? existing?.bookedByName ?? 'Patient',
       bookedById: data['patientId'] as String? ?? existing?.bookedById ?? '',
-      createdAt: _parseDate(data['createdAt']) ?? existing?.createdAt ?? DateTime.now(),
+      createdAt: _parseDate(data['createdAt']) ??
+          existing?.createdAt ??
+          DateTime.now(),
       status: forceStatus,
-      acceptedAmbulanceId: _acceptedDriverId(data, forceStatus, existing?.acceptedAmbulanceId),
-      acceptedAmbulanceName: data['acceptedAmbulanceName'] as String? ?? existing?.acceptedAmbulanceName,
+      acceptedAmbulanceId:
+          _acceptedDriverId(data, forceStatus, existing?.acceptedAmbulanceId),
+      acceptedAmbulanceName: data['acceptedAmbulanceName'] as String? ??
+          existing?.acceptedAmbulanceName,
       acceptedAt: _parseDate(data['acceptedAt']) ?? existing?.acceptedAt,
       rating: (data['rating'] as num?)?.toInt() ?? existing?.rating,
       review: data['review'] as String? ?? existing?.review,

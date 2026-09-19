@@ -151,14 +151,18 @@ class _MetaLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9)),
+        Icon(icon,
+            size: 14,
+            color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],
@@ -212,7 +216,8 @@ class _PatientBmiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bmi = PatientBmiUtils.calculate(heightCm: heightCm, weightKg: weightKg);
+    final bmi =
+        PatientBmiUtils.calculate(heightCm: heightCm, weightKg: weightKg);
     final category = PatientBmiUtils.categoryFor(bmi);
     if (bmi == null || category == null) return const SizedBox.shrink();
 
@@ -280,9 +285,11 @@ class _PatientBmiCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              _StatPill(label: 'Height', value: '${heightCm.toStringAsFixed(0)} cm'),
+              _StatPill(
+                  label: 'Height', value: '${heightCm.toStringAsFixed(0)} cm'),
               const SizedBox(width: 8),
-              _StatPill(label: 'Weight', value: '${weightKg.toStringAsFixed(0)} kg'),
+              _StatPill(
+                  label: 'Weight', value: '${weightKg.toStringAsFixed(0)} kg'),
             ],
           ),
         ],

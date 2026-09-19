@@ -49,7 +49,8 @@ abstract final class AppCheckService {
       return 'Firebase is not available.';
     }
 
-    if (!_warmUpAttempted || (!_warmUpSucceeded && !FirebaseBootstrap.appCheckReady)) {
+    if (!_warmUpAttempted ||
+        (!_warmUpSucceeded && !FirebaseBootstrap.appCheckReady)) {
       _warmUpAttempted = true;
       await warmUp();
     }
@@ -60,8 +61,8 @@ abstract final class AppCheckService {
   static String _buildSetupHint(Object error) {
     final err = error.toString();
     final configured = AppConstants.appCheckDebugToken.trim();
-    final attestationFailed = err.contains('403') ||
-        err.toLowerCase().contains('attestation failed');
+    final attestationFailed =
+        err.contains('403') || err.toLowerCase().contains('attestation failed');
     final rateLimited = err.toLowerCase().contains('too many attempts');
 
     if (configured.isNotEmpty && attestationFailed) {

@@ -40,12 +40,14 @@ class PromotedAdModel {
   final String? razorpayOrderId;
   final String? razorpayPaymentId;
   final String paymentStatus; // 'pending', 'verified', 'failed'
-  final String status; // 'draft', 'pending_payment', 'active', 'expired', 'rejected'
+  final String
+      status; // 'draft', 'pending_payment', 'active', 'expired', 'rejected'
   final DateTime? startTime;
   final DateTime? endTime;
   final DateTime? createdAt;
 
-  bool get isActive => status == 'active' && endTime != null && endTime!.isAfter(DateTime.now());
+  bool get isActive =>
+      status == 'active' && endTime != null && endTime!.isAfter(DateTime.now());
 
   int get remainingMinutes {
     if (!isActive || endTime == null) return 0;
@@ -79,7 +81,8 @@ class PromotedAdModel {
 
     return PromotedAdModel(
       adId: doc.id,
-      providerType: (data['providerType'] as String?)?.toLowerCase() ?? 'doctor',
+      providerType:
+          (data['providerType'] as String?)?.toLowerCase() ?? 'doctor',
       providerId: data['providerId'] as String? ?? '',
       title: data['title'] as String? ?? '',
       description: data['description'] as String? ?? '',
@@ -90,7 +93,8 @@ class PromotedAdModel {
       targetCity: data['targetCity'] as String?,
       razorpayOrderId: data['razorpayOrderId'] as String?,
       razorpayPaymentId: data['razorpayPaymentId'] as String?,
-      paymentStatus: (data['paymentStatus'] as String?)?.toLowerCase() ?? 'pending',
+      paymentStatus:
+          (data['paymentStatus'] as String?)?.toLowerCase() ?? 'pending',
       status: (data['status'] as String?)?.toLowerCase() ?? 'draft',
       startTime: parseDate(data['startTime']),
       endTime: parseDate(data['endTime']),
@@ -115,7 +119,9 @@ class PromotedAdModel {
       'status': status,
       if (startTime != null) 'startTime': Timestamp.fromDate(startTime!),
       if (endTime != null) 'endTime': Timestamp.fromDate(endTime!),
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
     };
   }
 }

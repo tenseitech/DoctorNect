@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -38,10 +38,12 @@ class PatientBookingConfirmedBase extends StatefulWidget {
   final bool centerCard;
 
   @override
-  State<PatientBookingConfirmedBase> createState() => _PatientBookingConfirmedBaseState();
+  State<PatientBookingConfirmedBase> createState() =>
+      _PatientBookingConfirmedBaseState();
 }
 
-class _PatientBookingConfirmedBaseState extends State<PatientBookingConfirmedBase>
+class _PatientBookingConfirmedBaseState
+    extends State<PatientBookingConfirmedBase>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
@@ -80,12 +82,15 @@ class _PatientBookingConfirmedBaseState extends State<PatientBookingConfirmedBas
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: widget.primaryAccent.withValues(alpha: widget.centerCard ? 0.12 : 1.0),
+                color: widget.primaryAccent
+                    .withValues(alpha: widget.centerCard ? 0.12 : 1.0),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 iconData,
-                color: widget.centerCard ? widget.primaryAccent : AppColors.surfaceOf(context),
+                color: widget.centerCard
+                    ? widget.primaryAccent
+                    : AppColors.surfaceOf(context),
                 size: 44,
               ),
             ),
@@ -94,7 +99,9 @@ class _PatientBookingConfirmedBaseState extends State<PatientBookingConfirmedBas
         const SizedBox(height: 20),
         Text(
           widget.title,
-          style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.headlineLarge,
+              fontWeight: FontWeight.w700),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
@@ -108,7 +115,10 @@ class _PatientBookingConfirmedBaseState extends State<PatientBookingConfirmedBas
           Text(
             widget.subMessage!,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.45),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+                height: 1.45),
           ),
         ],
         const SizedBox(height: 20),
@@ -134,20 +144,24 @@ class _PatientBookingConfirmedBaseState extends State<PatientBookingConfirmedBas
             backgroundColor: widget.primaryAccent,
             foregroundColor: AppColors.white,
             minimumSize: const Size(double.infinity, 48),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
           child: Text(
             widget.primaryActionLabel,
             style: GoogleFonts.inter(fontWeight: FontWeight.w600),
           ),
         ),
-        if (widget.onSecondaryAction != null && widget.secondaryActionLabel != null) ...[
+        if (widget.onSecondaryAction != null &&
+            widget.secondaryActionLabel != null) ...[
           const SizedBox(height: 8),
           TextButton(
             onPressed: widget.onSecondaryAction,
             child: Text(
               widget.secondaryActionLabel!,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ),
         ],

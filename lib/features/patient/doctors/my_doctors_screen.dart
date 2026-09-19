@@ -50,7 +50,8 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
         centerTitle: true,
-        title: Text('My Doctor', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text('My Doctor',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         backgroundColor: AppColors.cardBgOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
@@ -59,7 +60,8 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: FilledButton(
-              onPressed: () => PatientFavoritesSheets.showAddDoctorSheet(context),
+              onPressed: () =>
+                  PatientFavoritesSheets.showAddDoctorSheet(context),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.patientTeal,
                 minimumSize: const Size(0, 36),
@@ -82,7 +84,9 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                   child: Text(
                     'No doctors in your list yet. Tap Add to search registered doctors or book a visit.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodyMedium),
+                    style: GoogleFonts.inter(
+                        color: AppColors.textSecondaryOf(context),
+                        fontSize: AppTypography.bodyMedium),
                   ),
                 )
               : ListView.separated(
@@ -95,7 +99,8 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                       doctor: doctor,
                       onRemove: () async {
                         final confirmed =
-                            await PatientFavoritesSheets.confirmRemoveDoctor(context, doctor);
+                            await PatientFavoritesSheets.confirmRemoveDoctor(
+                                context, doctor);
                         if (!confirmed || !context.mounted) return;
                         await _favoritesStore.removeDoctor(doctor.id);
                       },
@@ -103,7 +108,8 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => PatientDoctorProfileScreen(doctorId: doctor.id),
+                            builder: (_) =>
+                                PatientDoctorProfileScreen(doctorId: doctor.id),
                           ),
                         );
                       },
@@ -111,7 +117,8 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => BookingFlowScreen(doctorId: doctor.id),
+                            builder: (_) =>
+                                BookingFlowScreen(doctorId: doctor.id),
                           ),
                         );
                       },
@@ -159,18 +166,24 @@ class _MyDoctorManageTile extends StatelessWidget {
                   children: [
                     Text(
                       'Dr. ${doctor.name}',
-                      style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodyLarge,
+                          fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       doctor.specialization,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                     if (doctor.city.trim().isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         doctor.city,
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                     ],
                   ],

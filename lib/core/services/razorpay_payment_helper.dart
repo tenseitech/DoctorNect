@@ -21,7 +21,8 @@ class RazorpayPaymentResult {
 
 class RazorpayPaymentHelper {
   static RazorpayPaymentHelper? _instance;
-  static RazorpayPaymentHelper get instance => _instance ??= RazorpayPaymentHelper._();
+  static RazorpayPaymentHelper get instance =>
+      _instance ??= RazorpayPaymentHelper._();
 
   RazorpayPaymentHelper._() {
     _initRazorpay();
@@ -55,14 +56,17 @@ class RazorpayPaymentHelper {
       _completer!.complete(
         RazorpayPaymentResult(
           success: false,
-          errorMessage: response.message ?? 'Payment failed or cancelled (code: ${response.code})',
+          errorMessage: response.message ??
+              'Payment failed or cancelled (code: ${response.code})',
         ),
       );
     }
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
-    if (kDebugMode) debugPrint('[RazorpayPaymentHelper] External wallet selected: ${response.walletName}');
+    if (kDebugMode)
+      debugPrint(
+          '[RazorpayPaymentHelper] External wallet selected: ${response.walletName}');
   }
 
   /// Opens Razorpay Checkout modal with order parameters and returns result.
@@ -95,7 +99,8 @@ class RazorpayPaymentHelper {
     try {
       _razorpay.open(options);
     } catch (e) {
-      if (kDebugMode) debugPrint('[RazorpayPaymentHelper] Error launching Checkout: $e');
+      if (kDebugMode)
+        debugPrint('[RazorpayPaymentHelper] Error launching Checkout: $e');
       return RazorpayPaymentResult(
         success: false,
         errorMessage: 'Could not open Razorpay Checkout: $e',

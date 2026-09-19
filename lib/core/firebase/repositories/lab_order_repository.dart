@@ -20,7 +20,10 @@ class LabOrderRepository {
   Future<void> save(DoctorLabOrder order) async {
     if (!FirebaseBootstrap.isReady) return;
 
-    await FirebaseFirestore.instance.collection(FirestorePaths.labOrders).doc(order.orderId).set({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.labOrders)
+        .doc(order.orderId)
+        .set({
       ...LabOrderFirestoreMapper.toMap(order),
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -43,8 +46,11 @@ class LabOrderRepository {
         .orderBy('createdAt', descending: true)
         .limit(limit);
 
-    final query = startAfter == null ? baseQuery : baseQuery.startAfterDocument(startAfter);
-    final snapshot = await FirestoreReadHelper.getQuery(query: query, preferCache: preferCache);
+    final query = startAfter == null
+        ? baseQuery
+        : baseQuery.startAfterDocument(startAfter);
+    final snapshot = await FirestoreReadHelper.getQuery(
+        query: query, preferCache: preferCache);
 
     final items = snapshot.docs
         .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
@@ -74,8 +80,11 @@ class LabOrderRepository {
         .where('patientId', isEqualTo: patientId)
         .limit(limit);
 
-    final query = startAfter == null ? baseQuery : baseQuery.startAfterDocument(startAfter);
-    final snapshot = await FirestoreReadHelper.getQuery(query: query, preferCache: preferCache);
+    final query = startAfter == null
+        ? baseQuery
+        : baseQuery.startAfterDocument(startAfter);
+    final snapshot = await FirestoreReadHelper.getQuery(
+        query: query, preferCache: preferCache);
 
     final items = snapshot.docs
         .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
@@ -100,7 +109,8 @@ class LabOrderRepository {
     if (patientId.isEmpty) {
       return const FirestorePage(items: [], hasMore: false);
     }
-    if (!await PatientProfileRepository.instance.isPatientSharingClinicalDataWithDoctors(
+    if (!await PatientProfileRepository.instance
+        .isPatientSharingClinicalDataWithDoctors(
       patientId,
       preferCache: preferCache,
     )) {
@@ -126,12 +136,17 @@ class LabOrderRepository {
 
     final baseQuery = FirebaseFirestore.instance
         .collection(FirestorePaths.labOrders)
-        .where('labId', isEqualTo: labId) // FIXED: lab operators only see orders addressed to them
+        .where('labId',
+            isEqualTo:
+                labId) // FIXED: lab operators only see orders addressed to them
         .orderBy('createdAt', descending: true)
         .limit(limit);
 
-    final query = startAfter == null ? baseQuery : baseQuery.startAfterDocument(startAfter);
-    final snapshot = await FirestoreReadHelper.getQuery(query: query, preferCache: preferCache);
+    final query = startAfter == null
+        ? baseQuery
+        : baseQuery.startAfterDocument(startAfter);
+    final snapshot = await FirestoreReadHelper.getQuery(
+        query: query, preferCache: preferCache);
 
     final items = snapshot.docs
         .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
@@ -146,7 +161,8 @@ class LabOrderRepository {
   }
 
   Stream<List<DoctorLabOrder>> watchForLab(String labId) {
-    if (!FirebaseBootstrap.isReady || labId.isEmpty) return const Stream.empty();
+    if (!FirebaseBootstrap.isReady || labId.isEmpty)
+      return const Stream.empty();
 
     return FirebaseFirestore.instance
         .collection(FirestorePaths.labOrders)
@@ -161,7 +177,8 @@ class LabOrderRepository {
   }
 
   Stream<List<DoctorLabOrder>> watchForDoctor(String doctorId) {
-    if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return const Stream.empty();
+    if (!FirebaseBootstrap.isReady || doctorId.isEmpty)
+      return const Stream.empty();
 
     return FirebaseFirestore.instance
         .collection(FirestorePaths.labOrders)
@@ -170,20 +187,24 @@ class LabOrderRepository {
         .limit(FirestoreQueryLimits.labOrdersPage)
         .snapshots()
         .map((snap) {
-          final items = snap.docs
-              .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-              .whereType<DoctorLabOrder>()
-              .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return items;
-        });
+      final items = snap.docs
+          .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
+          .whereType<DoctorLabOrder>()
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return items;
+    });
   }
 
-  Stream<List<DoctorLabOrder>> watchOrdersForDoctor(String doctorId) => watchForDoctor(doctorId);
+  Stream<List<DoctorLabOrder>> watchOrdersForDoctor(String doctorId) =>
+      watchForDoctor(doctorId);
 
   Future<void> updateOrderStatus(String orderId, String status) async {
     if (!FirebaseBootstrap.isReady || orderId.isEmpty) return;
-    await FirebaseFirestore.instance.collection(FirestorePaths.labOrders).doc(orderId).update({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.labOrders)
+        .doc(orderId)
+        .update({
       'status': status,
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -221,7 +242,10 @@ class LabOrderRepository {
       bytes: bytes,
     );
 
-    await FirebaseFirestore.instance.collection(FirestorePaths.labOrders).doc(orderId).update({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.labOrders)
+        .doc(orderId)
+        .update({
       'status': 'completed',
       'reportFileName': fileName,
       'reportStorageUrl': storageUrl,

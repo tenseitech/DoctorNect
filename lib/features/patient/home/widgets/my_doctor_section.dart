@@ -35,8 +35,10 @@ class MyDoctorSection extends StatelessWidget {
       ]),
       builder: (context, _) {
         final compact = ResponsiveLayout.isCompact(context);
-        final doctors =
-            PatientFavoritesStore.instance.visibleDoctors().take(_maxDoctors).toList();
+        final doctors = PatientFavoritesStore.instance
+            .visibleDoctors()
+            .take(_maxDoctors)
+            .toList();
         final subtitle = doctors.isEmpty
             ? 'Doctors you have added'
             : doctors.length == 1
@@ -46,7 +48,8 @@ class MyDoctorSection extends StatelessWidget {
         return ColoredBox(
           color: AppColors.surfaceOf(context),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(16, compact ? 12 : 20, 16, compact ? 12 : 20),
+            padding: EdgeInsets.fromLTRB(
+                16, compact ? 12 : 20, 16, compact ? 12 : 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -89,7 +92,9 @@ class MyDoctorSection extends StatelessWidget {
                       ),
                       child: Text(
                         'Add',
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -98,7 +103,8 @@ class MyDoctorSection extends StatelessWidget {
                 if (doctors.isEmpty)
                   const HomeDoctorInlineMessage(
                     icon: Icons.person_add_outlined,
-                    text: 'No doctors in your list yet. Tap Add to add your doctors.',
+                    text:
+                        'No doctors in your list yet. Tap Add to add your doctors.',
                   )
                 else
                   SizedBox(
@@ -128,7 +134,8 @@ class MyDoctorSection extends StatelessWidget {
   }
 
   Future<void> _confirmRemoveDoctor(BuildContext context, MyDoc doctor) async {
-    final confirmed = await PatientFavoritesSheets.confirmRemoveDoctor(context, doctor);
+    final confirmed =
+        await PatientFavoritesSheets.confirmRemoveDoctor(context, doctor);
     if (!confirmed || !context.mounted) return;
     await PatientFavoritesStore.instance.removeDoctor(doctor.id);
   }

@@ -40,9 +40,8 @@ abstract final class AmbulanceCallableClient {
       await _prepareAuth();
     }
 
-    final result = await _functions
-        .httpsCallable(name)
-        .call<Map<String, dynamic>>(data);
+    final result =
+        await _functions.httpsCallable(name).call<Map<String, dynamic>>(data);
     return Map<String, dynamic>.from(result.data);
   }
 

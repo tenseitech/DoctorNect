@@ -114,7 +114,9 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                 controller: _searchController,
                 autofocus: false,
                 onChanged: (v) => setState(() => _query = v),
-                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textPrimaryOf(context)),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    color: AppColors.textPrimaryOf(context)),
                 decoration: InputDecoration(
                   hintText: 'Search patient by name…',
                   hintStyle: GoogleFonts.inter(
@@ -135,7 +137,8 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                       : null,
                   filled: true,
                   fillColor: AppColors.cardBgOf(context),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(color: AppColors.borderOf(context)),
@@ -146,7 +149,8 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: AppColors.doctorBlue, width: 1.5),
+                    borderSide:
+                        BorderSide(color: AppColors.doctorBlue, width: 1.5),
                   ),
                 ),
               ),
@@ -160,7 +164,8 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                         Icon(
                           Icons.person_off_outlined,
                           size: 36,
-                          color: AppColors.textSecondaryOf(context).withValues(alpha: 0.6),
+                          color: AppColors.textSecondaryOf(context)
+                              .withValues(alpha: 0.6),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -213,7 +218,8 @@ class _PatientRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat('dd MMM yyyy').format(appointment.appointmentDate);
+    final dateLabel =
+        DateFormat('dd MMM yyyy').format(appointment.appointmentDate);
     final details = showAppointmentDate
         ? '$dateLabel · ${appointment.timeSlot}'
         : '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)} · ${appointment.timeSlot}';
@@ -232,7 +238,8 @@ class _PatientRow extends StatelessWidget {
           ),
           child: Row(
             children: [
-              PatientAvatar(name: appointment.patientName, gender: appointment.gender),
+              PatientAvatar(
+                  name: appointment.patientName, gender: appointment.gender),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -259,7 +266,9 @@ class _PatientRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.6)),
+              Icon(Icons.chevron_right,
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.6)),
             ],
           ),
         ),

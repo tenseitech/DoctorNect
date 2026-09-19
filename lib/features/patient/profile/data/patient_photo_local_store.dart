@@ -18,7 +18,8 @@ abstract final class PatientPhotoLocalStore {
       LocalAvatarStore.clear('patient', patientId);
 
   /// Uploads in-memory bytes to Firebase Storage and returns the download URL.
-  static Future<String?> uploadToFirebaseStorage(String patientId, [Uint8List? bytes]) =>
+  static Future<String?> uploadToFirebaseStorage(String patientId,
+          [Uint8List? bytes]) =>
       LocalAvatarStore.uploadToFirebaseStorage(
         storagePath: 'patients/$patientId/profile_photo.jpg',
         role: 'patient',

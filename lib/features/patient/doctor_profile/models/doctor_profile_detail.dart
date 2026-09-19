@@ -101,7 +101,9 @@ class PatientDoctorReview {
   int helpfulCount;
 
   bool canBeEditedBy(String currentPatientId) {
-    if (currentPatientId.isEmpty || patientId == null || patientId != currentPatientId) {
+    if (currentPatientId.isEmpty ||
+        patientId == null ||
+        patientId != currentPatientId) {
       return false;
     }
     return ReviewEditPolicy.withinEditWindow(date);

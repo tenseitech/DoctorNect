@@ -134,7 +134,9 @@ class _RegistrationAddressSectionState
         TextFormField(
           controller: widget.pinCodeController,
           decoration: _decor(WorldLocations.postalCodeLabel(_selectedCountry)),
-          keyboardType: _selectedCountry.toLowerCase() == 'india' ? TextInputType.number : TextInputType.text,
+          keyboardType: _selectedCountry.toLowerCase() == 'india'
+              ? TextInputType.number
+              : TextInputType.text,
           textInputAction: TextInputAction.next,
           inputFormatters: _selectedCountry.toLowerCase() == 'india'
               ? [
@@ -144,7 +146,8 @@ class _RegistrationAddressSectionState
               : [
                   LengthLimitingTextInputFormatter(10),
                 ],
-          validator: (v) => FormValidators.pincode(v, country: _selectedCountry),
+          validator: (v) =>
+              FormValidators.pincode(v, country: _selectedCountry),
         ),
         const SizedBox(height: 16),
         TextFormField(

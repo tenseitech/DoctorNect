@@ -30,7 +30,9 @@ class SafeIconTextRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: mainAxisAlignment,
       children: [
-        Icon(icon, size: iconSize, color: iconColor ?? AppColors.textSecondaryOf(context)),
+        Icon(icon,
+            size: iconSize,
+            color: iconColor ?? AppColors.textSecondaryOf(context)),
         const SizedBox(width: 6),
         Flexible(
           child: Text(
@@ -39,7 +41,9 @@ class SafeIconTextRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: style ??
-                GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                GoogleFonts.inter(
+                    fontSize: AppTypography.labelSmall,
+                    color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],

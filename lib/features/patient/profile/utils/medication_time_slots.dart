@@ -37,11 +37,14 @@ abstract final class MedicationTimeSlots {
   static bool isValid(MedicationTimeSlot slot, TimeOfDay time) {
     final totalMinutes = time.hour * 60 + time.minute;
     return switch (slot) {
-      MedicationTimeSlot.morning => totalMinutes >= 6 * 60 && totalMinutes < 12 * 60,
-      MedicationTimeSlot.afternoon => totalMinutes >= 12 * 60 && totalMinutes < 16 * 60,
-      MedicationTimeSlot.evening => totalMinutes >= 16 * 60 && totalMinutes < 20 * 60,
+      MedicationTimeSlot.morning =>
+        totalMinutes >= 6 * 60 && totalMinutes < 12 * 60,
+      MedicationTimeSlot.afternoon =>
+        totalMinutes >= 12 * 60 && totalMinutes < 16 * 60,
+      MedicationTimeSlot.evening =>
+        totalMinutes >= 16 * 60 && totalMinutes < 20 * 60,
       MedicationTimeSlot.night =>
-          totalMinutes >= 20 * 60 || totalMinutes < 6 * 60,
+        totalMinutes >= 20 * 60 || totalMinutes < 6 * 60,
     };
   }
 
@@ -81,7 +84,8 @@ abstract final class MedicationTimeSlots {
     String? current,
   }) async {
     final parsed = parseFormattedTime(current);
-    var selected = parsed != null && isValid(slot, parsed) ? parsed : defaultTime(slot);
+    var selected =
+        parsed != null && isValid(slot, parsed) ? parsed : defaultTime(slot);
     final hours = hoursFor(slot);
 
     return showModalBottomSheet<String>(
@@ -123,12 +127,16 @@ abstract final class MedicationTimeSlots {
                     const SizedBox(height: 14),
                     Text(
                       '${label(slot)} time',
-                      style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.headlineSmall,
+                          fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Select between ${rangeLabel(slot)}',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -136,7 +144,8 @@ abstract final class MedicationTimeSlots {
                         Expanded(
                           child: DropdownButtonFormField<int>(
                             initialValue: selected.hour,
-                            decoration: const InputDecoration(labelText: 'Hour'),
+                            decoration:
+                                const InputDecoration(labelText: 'Hour'),
                             items: [
                               for (final hour in hours)
                                 DropdownMenuItem(
@@ -146,7 +155,8 @@ abstract final class MedicationTimeSlots {
                             ],
                             onChanged: (hour) {
                               if (hour == null) return;
-                              setSheetState(() => selected = TimeOfDay(hour: hour, minute: selected.minute));
+                              setSheetState(() => selected = TimeOfDay(
+                                  hour: hour, minute: selected.minute));
                             },
                           ),
                         ),
@@ -154,17 +164,20 @@ abstract final class MedicationTimeSlots {
                         Expanded(
                           child: DropdownButtonFormField<int>(
                             initialValue: selected.minute,
-                            decoration: const InputDecoration(labelText: 'Minute'),
+                            decoration:
+                                const InputDecoration(labelText: 'Minute'),
                             items: [
                               for (var minute = 0; minute < 60; minute++)
                                 DropdownMenuItem(
                                   value: minute,
-                                  child: Text(minute.toString().padLeft(2, '0')),
+                                  child:
+                                      Text(minute.toString().padLeft(2, '0')),
                                 ),
                             ],
                             onChanged: (minute) {
                               if (minute == null) return;
-                              setSheetState(() => selected = TimeOfDay(hour: selected.hour, minute: minute));
+                              setSheetState(() => selected = TimeOfDay(
+                                  hour: selected.hour, minute: minute));
                             },
                           ),
                         ),
@@ -184,9 +197,11 @@ abstract final class MedicationTimeSlots {
                           child: FilledButton(
                             onPressed: () {
                               if (!isValid(slot, selected)) return;
-                              Navigator.pop(sheetContext, selected.format(context));
+                              Navigator.pop(
+                                  sheetContext, selected.format(context));
                             },
-                            style: FilledButton.styleFrom(backgroundColor: AppColors.patientTeal),
+                            style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.patientTeal),
                             child: const Text('Done'),
                           ),
                         ),

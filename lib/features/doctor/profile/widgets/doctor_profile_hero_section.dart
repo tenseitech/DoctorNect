@@ -174,14 +174,18 @@ class _MetaLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9)),
+        Icon(icon,
+            size: 14,
+            color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9)),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],

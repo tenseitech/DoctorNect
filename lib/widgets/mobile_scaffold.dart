@@ -10,6 +10,7 @@ class MobileScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.padding = const EdgeInsets.symmetric(horizontal: 20),
     this.extendBody = false,
+
     /// When true, wraps [child] in a scroll view to avoid vertical overflow
     /// on small screens / large text scale / keyboard.
     this.scrollable = false,

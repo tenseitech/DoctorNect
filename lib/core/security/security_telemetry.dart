@@ -15,7 +15,9 @@ abstract final class SecurityTelemetry {
     final id = identifier.trim().toLowerCase();
     if (id.isEmpty) return;
     try {
-      await _functions.httpsCallable('clearFailedLogins').call({'identifier': id});
+      await _functions
+          .httpsCallable('clearFailedLogins')
+          .call({'identifier': id});
     } catch (e) {
       if (kDebugMode) debugPrint('[SecurityTelemetry] recordLoginSuccess: $e');
     }
@@ -27,7 +29,9 @@ abstract final class SecurityTelemetry {
     final id = identifier.trim().toLowerCase();
     if (id.isEmpty) return;
     try {
-      await _functions.httpsCallable('recordFailedLogin').call({'identifier': id});
+      await _functions
+          .httpsCallable('recordFailedLogin')
+          .call({'identifier': id});
     } catch (e) {
       if (kDebugMode) debugPrint('[SecurityTelemetry] recordLoginFailure: $e');
     }

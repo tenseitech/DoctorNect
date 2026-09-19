@@ -23,8 +23,10 @@ class PatientLabBookingStore extends ChangeNotifier {
 
   LabBookingRecord? findById(String bookingId) {
     if (bookingId.isEmpty) return null;
-    for (final grouped in LabBookingGrouper.group(List<LabBookingRecord>.from(_bookings))) {
-      if (grouped.bookingId == bookingId || grouped.groupedBookingIds.contains(bookingId)) {
+    for (final grouped
+        in LabBookingGrouper.group(List<LabBookingRecord>.from(_bookings))) {
+      if (grouped.bookingId == bookingId ||
+          grouped.groupedBookingIds.contains(bookingId)) {
         return grouped;
       }
     }
@@ -47,7 +49,8 @@ class PatientLabBookingStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> refreshForPatient(String patientId, {bool preferCache = true}) async {
+  Future<void> refreshForPatient(String patientId,
+      {bool preferCache = true}) async {
     if (patientId.isEmpty) return;
     final items = await FirestoreService.instance.labBooking.fetchForPatient(
       patientId,

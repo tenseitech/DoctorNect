@@ -56,7 +56,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
     final q = _searchController.text.toLowerCase();
     return _allTests.where((t) {
       final category = _categoryFor(t);
-      final matchCategory = _categoryFilter == 'All' || category == _categoryFilter;
+      final matchCategory =
+          _categoryFilter == 'All' || category == _categoryFilter;
       final matchSearch = q.isEmpty || t.name.toLowerCase().contains(q);
       return matchCategory && matchSearch;
     }).toList();
@@ -112,13 +113,18 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
       AppToast.info(context, 'Select at least one lab test');
       return;
     }
-    if (_labOptions.isEmpty || _selectedLabId == null || _selectedLabId!.isEmpty) {
+    if (_labOptions.isEmpty ||
+        _selectedLabId == null ||
+        _selectedLabId!.isEmpty) {
       AppToast.info(context, 'Connect a lab first before sending orders');
       return;
     }
 
-    final selectedTests = _allTests.where((t) => _selectedTestIds.contains(t.id)).toList();
-    final selected = _labOptions.where((o) => o.name == _labController.text.trim()).firstOrNull;
+    final selectedTests =
+        _allTests.where((t) => _selectedTestIds.contains(t.id)).toList();
+    final selected = _labOptions
+        .where((o) => o.name == _labController.text.trim())
+        .firstOrNull;
     final lab = _labController.text.trim();
 
     setState(() => _sending = true);
@@ -127,7 +133,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
         patient: widget.patient,
         testIds: selectedTests.map((t) => t.id).toList(),
         testNames: selectedTests.map((t) => t.name).toList(),
-        labId: selected?.id ?? _selectedLabId, // FIXED: pass registered lab id when selected
+        labId: selected?.id ??
+            _selectedLabId, // FIXED: pass registered lab id when selected
         labName: lab.isNotEmpty ? lab : null,
         indication: _indicationController.text.trim(),
         urgency: _urgency,
@@ -183,7 +190,9 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
           title: 'Patient',
           child: Text(
             '${widget.patient.patientName} · ${widget.patient.age} yrs',
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyMedium,
+                fontWeight: FontWeight.w500),
           ),
         ),
         ClinicalSectionCard(
@@ -212,10 +221,14 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: FilterChip(
-                          label: Text(cat, style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
+                          label: Text(cat,
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelSmall)),
                           selected: selected,
-                          onSelected: (_) => setState(() => _categoryFilter = cat),
-                          selectedColor: AppColors.doctorBlue.withValues(alpha: 0.15),
+                          onSelected: (_) =>
+                              setState(() => _categoryFilter = cat),
+                          selectedColor:
+                              AppColors.doctorBlue.withValues(alpha: 0.15),
                           checkmarkColor: AppColors.doctorBlue,
                         ),
                       );
@@ -226,7 +239,9 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
               if (_filteredTests.isEmpty)
                 Text(
                   'No tests found in catalog',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 )
               else
                 ..._filteredTests.map((test) {
@@ -235,10 +250,14 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                     value: selected,
-                    title: Text(test.name, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
+                    title: Text(test.name,
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall)),
                     subtitle: Text(
                       _categoryFor(test),
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                     activeColor: AppColors.doctorBlue,
                     onChanged: (v) => setState(() {
@@ -307,12 +326,16 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                 DropdownButtonFormField<String>(
                   isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Connected lab'),
-                  initialValue: _labController.text.trim().isNotEmpty ? _labController.text.trim() : null,
+                  initialValue: _labController.text.trim().isNotEmpty
+                      ? _labController.text.trim()
+                      : null,
                   items: _labOptions
-                      .map((l) => DropdownMenuItem(value: l.name, child: Text(l.name)))
+                      .map((l) =>
+                          DropdownMenuItem(value: l.name, child: Text(l.name)))
                       .toList(),
                   onChanged: (v) {
-                    final picked = _labOptions.where((o) => o.name == v).firstOrNull;
+                    final picked =
+                        _labOptions.where((o) => o.name == v).firstOrNull;
                     setState(() {
                       _labController.text = v ?? '';
                       _selectedLabId = picked?.id;
@@ -338,14 +361,18 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'Connect a diagnostic lab to send test orders.',
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const DoctorConnectedLabsScreen()),
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const DoctorConnectedLabsScreen()),
                           ).then((_) => _loadCatalog());
                         },
                         icon: const Icon(Icons.biotech_outlined, size: 18),
@@ -367,7 +394,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
               ? const SizedBox(
                   width: 22,
                   height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Text('Send Order'),
         ),
@@ -411,13 +439,16 @@ class _LabOrderSentSheet extends StatelessWidget {
                         color: const Color(0xFF16A34A).withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 28),
+                      child: const Icon(Icons.check_circle,
+                          color: Color(0xFF16A34A), size: 28),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Lab order sent successfully',
-                        style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.headlineSmall,
+                            fontWeight: FontWeight.w700),
                       ),
                     ),
                   ],
@@ -432,26 +463,36 @@ class _LabOrderSentSheet extends StatelessWidget {
                 const SizedBox(height: 12),
                 _SentTo(
                   icon: Icons.biotech_outlined,
-                  label: labName != null ? 'Lab order saved' : 'Lab (not selected)',
+                  label: labName != null
+                      ? 'Lab order saved'
+                      : 'Lab (not selected)',
                   name: labName ?? 'No lab selected',
-                  color: labName != null ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
+                  color: labName != null
+                      ? AppColors.doctorBlue
+                      : AppColors.textSecondaryOf(context),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   'Tests ordered (${testNames.length})',
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
                 SizedBox(height: 8),
                 ...testNames.map((t) => Padding(
                       padding: EdgeInsets.only(bottom: 4),
                       child: Row(
                         children: [
-                          Icon(Icons.circle, size: 6, color: AppColors.textSecondaryOf(context)),
+                          Icon(Icons.circle,
+                              size: 6,
+                              color: AppColors.textSecondaryOf(context)),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               t,
-                              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodySmall),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -464,7 +505,8 @@ class _LabOrderSentSheet extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.doctorBlue),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.doctorBlue),
                     child: const Text('Done'),
                   ),
                 ),
@@ -500,8 +542,15 @@ class _SentTo extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context))),
-              Text(name, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600, color: color)),
+              Text(label,
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      color: AppColors.textSecondaryOf(context))),
+              Text(name,
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w600,
+                      color: color)),
             ],
           ),
         ),

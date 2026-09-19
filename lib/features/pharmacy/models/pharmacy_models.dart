@@ -159,7 +159,9 @@ class PharmacyPrescriptionDelivery {
 
   static List<MedicineDispenseLine> linesFromDraft(PrescriptionDraft draft) {
     return draft.validMedicines.map((m) {
-      final dur = '${m.durationAmount}${m.durationAmount.isNotEmpty ? ' ${m.durationUnit}' : ''}'.trim();
+      final dur =
+          '${m.durationAmount}${m.durationAmount.isNotEmpty ? ' ${m.durationUnit}' : ''}'
+              .trim();
       return MedicineDispenseLine(
         medicineEntryId: m.id,
         medicineName: m.name,

@@ -116,7 +116,9 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
               children: [
                 Text(
                   'Add family member',
-                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -146,7 +148,8 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                 const SizedBox(height: 12),
                 Autocomplete<String>(
                   optionsBuilder: (value) => _relationSuggestions(value.text),
-                  onSelected: (selection) => _relationController.text = selection,
+                  onSelected: (selection) =>
+                      _relationController.text = selection,
                   optionsViewBuilder: (context, onSelected, options) {
                     return Align(
                       alignment: Alignment.topLeft,
@@ -155,17 +158,21 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                         borderRadius: BorderRadius.circular(8),
                         clipBehavior: Clip.antiAlias,
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 180, maxWidth: 280),
+                          constraints: const BoxConstraints(
+                              maxHeight: 180, maxWidth: 280),
                           child: ListView.separated(
                             padding: EdgeInsets.zero,
                             shrinkWrap: true,
                             itemCount: options.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final option = options.elementAt(index);
                               return ListTile(
                                 dense: true,
-                                title: Text(option, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+                                title: Text(option,
+                                    style: GoogleFonts.inter(
+                                        fontSize: AppTypography.bodyMedium)),
                                 onTap: () => onSelected(option),
                               );
                             },
@@ -174,7 +181,8 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                       ),
                     );
                   },
-                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onFieldSubmitted) {
                     return TextFormField(
                       controller: controller,
                       focusNode: focusNode,
@@ -186,7 +194,8 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                         'Relation',
                         isRequired: true,
                       ),
-                      validator: (v) => FormValidators.tagText(v, field: 'Relation'),
+                      validator: (v) =>
+                          FormValidators.tagText(v, field: 'Relation'),
                       onChanged: (v) => _relationController.text = v,
                       onFieldSubmitted: (_) => onFieldSubmitted(),
                     );

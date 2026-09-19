@@ -39,7 +39,9 @@ class _PatientBloodTestSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
-    final labName = booking.labName?.trim().isNotEmpty == true ? booking.labName!.trim() : 'Lab';
+    final labName = booking.labName?.trim().isNotEmpty == true
+        ? booking.labName!.trim()
+        : 'Lab';
     final tests = booking.allTestNames;
 
     return SafeArea(
@@ -71,7 +73,8 @@ class _PatientBloodTestSheet extends StatelessWidget {
                       color: const Color(0xFFDC2626).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.bloodtype_outlined, color: Color(0xFFDC2626)),
+                    child: const Icon(Icons.bloodtype_outlined,
+                        color: Color(0xFFDC2626)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -80,12 +83,17 @@ class _PatientBloodTestSheet extends StatelessWidget {
                       children: [
                         Text(
                           booking.displayTestName,
-                          style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineSmall,
+                              fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          DateFormat('dd MMM yyyy · hh:mm a').format(booking.dateTime),
-                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                          DateFormat('dd MMM yyyy · hh:mm a')
+                              .format(booking.dateTime),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
                       ],
                     ),
@@ -109,12 +117,16 @@ class _PatientBloodTestSheet extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.check_circle_outline, size: 16, color: AppColors.labPurple),
+                        const Icon(Icons.check_circle_outline,
+                            size: 16, color: AppColors.labPurple),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             name,
-                            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context), height: 1.35),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodySmall,
+                                color: AppColors.textPrimaryOf(context),
+                                height: 1.35),
                           ),
                         ),
                       ],
@@ -131,7 +143,9 @@ class _PatientBloodTestSheet extends StatelessWidget {
               _InfoRow(label: 'Slot', value: booking.slotLabel),
               _InfoRow(
                 label: 'Collection',
-                value: booking.collectionType == 'home' ? 'Home collection' : 'Walk-in',
+                value: booking.collectionType == 'home'
+                    ? 'Home collection'
+                    : 'Walk-in',
               ),
               if (booking.address.trim().isNotEmpty)
                 _InfoRow(label: 'Address', value: booking.address),
@@ -149,14 +163,17 @@ class _PatientBloodTestSheet extends StatelessWidget {
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.patientTeal),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.patientTeal),
                     child: const Text('View report'),
                   ),
                 )
               else
                 Text(
                   'Your lab will share the report here once it is ready.',
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               const SizedBox(height: 12),
               SizedBox(
@@ -191,13 +208,17 @@ class _InfoRow extends StatelessWidget {
             width: 96,
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  fontWeight: FontWeight.w600),
             ),
           ),
         ],

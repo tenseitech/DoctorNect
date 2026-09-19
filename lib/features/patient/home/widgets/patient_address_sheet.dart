@@ -25,8 +25,10 @@ class PatientAddressSheet extends StatefulWidget {
       return showDialog<bool>(
         context: context,
         builder: (ctx) => Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
             child: const PatientAddressSheet(),
@@ -72,7 +74,9 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
     _line2Controller = TextEditingController(text: address.addressLine2);
     _pincodeController = TextEditingController(text: address.pincode);
     _landmarkController = TextEditingController(text: address.landmark);
-    _country = address.country.trim().isNotEmpty ? address.country.trim() : Countries.defaultCountry;
+    _country = address.country.trim().isNotEmpty
+        ? address.country.trim()
+        : Countries.defaultCountry;
     _state = address.state.trim().isNotEmpty ? address.state.trim() : null;
     _city = address.city.trim().isNotEmpty ? address.city.trim() : null;
   }
@@ -87,7 +91,8 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
   }
 
   String? _validatePincode(String? value) {
-    final label = WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
+    final label =
+        WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
     final err = FormValidators.required(value, field: label);
     if (err != null) return err;
     if ((_country ?? Countries.defaultCountry) == Countries.defaultCountry) {
@@ -124,7 +129,8 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final postalLabel = WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
+    final postalLabel =
+        WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -148,21 +154,26 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                     ),
                   ),
                   IconButton(
-                    onPressed: _submitting ? null : () => Navigator.pop(context),
+                    onPressed:
+                        _submitting ? null : () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
                   ),
                 ],
               ),
               Text(
                 'Enter your full address for home visits, lab collection, and nearby doctor search.',
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
+                    height: 1.4),
               ),
               const SizedBox(height: 20),
               _field(
                 controller: _line1Controller,
                 label: 'House / Flat no. & Street',
                 hint: 'e.g. 12, MG Road',
-                validator: (v) => FormValidators.required(v, field: 'Address line 1'),
+                validator: (v) =>
+                    FormValidators.required(v, field: 'Address line 1'),
                 textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: 12),
@@ -206,7 +217,10 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(
-                          (_country ?? Countries.defaultCountry) == Countries.defaultCountry ? 6 : 10,
+                          (_country ?? Countries.defaultCountry) ==
+                                  Countries.defaultCountry
+                              ? 6
+                              : 10,
                         ),
                       ],
                     ),
@@ -231,18 +245,22 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                     backgroundColor: AppColors.patientTeal,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.inputRadius),
+                      borderRadius:
+                          BorderRadius.circular(AppConstants.inputRadius),
                     ),
                   ),
                   child: _submitting
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
                           'Save location',
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodyLarge,
+                              fontWeight: FontWeight.w600),
                         ),
                 ),
               ),

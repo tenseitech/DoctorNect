@@ -64,7 +64,8 @@ class IndianMedicinesDatabase {
       _buildIndex(lines);
       _names = lines;
     } catch (error, stackTrace) {
-      debugPrint('IndianMedicinesDatabase: asset load failed, using fallback list. $error');
+      debugPrint(
+          'IndianMedicinesDatabase: asset load failed, using fallback list. $error');
       debugPrint('$stackTrace');
       final fallback = List<String>.from(ClinicalMockData.drugSuggestions);
       _buildIndex(fallback);
@@ -112,8 +113,7 @@ class IndianMedicinesDatabase {
 
     final results = <String>[];
     for (final n in bucket) {
-      if (n.length >= q.length &&
-          n.substring(0, q.length).toLowerCase() == q) {
+      if (n.length >= q.length && n.substring(0, q.length).toLowerCase() == q) {
         results.add(n);
         if (results.length >= limit) break;
       }

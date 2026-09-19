@@ -8,7 +8,8 @@ import '../models/clinical_models.dart';
 /// Shared lab-order flow for Investigations tab and prescription Send to Lab.
 abstract final class LabOrderService {
   static String resolvePatientId(PatientClinicalContext patient) =>
-      patient.patientId ?? ''; // FIXED: never fabricate a PAT-{hash} id; empty means unresolved
+      patient.patientId ??
+      ''; // FIXED: never fabricate a PAT-{hash} id; empty means unresolved
 
   static Future<DoctorLabOrder> sendOrder({
     required PatientClinicalContext patient,
@@ -22,7 +23,8 @@ abstract final class LabOrderService {
     bool homeCollection = false,
     String source = 'investigations',
   }) async {
-    final trimmedNames = testNames.map((n) => n.trim()).where((n) => n.isNotEmpty).toList();
+    final trimmedNames =
+        testNames.map((n) => n.trim()).where((n) => n.isNotEmpty).toList();
     if (trimmedNames.isEmpty) {
       throw ArgumentError('At least one lab test is required');
     }
@@ -48,9 +50,12 @@ abstract final class LabOrderService {
       appointmentId: patient.appointmentId,
       testIds: testIds,
       testNames: trimmedNames,
-      labId: labId?.trim().isNotEmpty == true ? labId!.trim() : null, // FIXED: persist labId on the order
+      labId: labId?.trim().isNotEmpty == true
+          ? labId!.trim()
+          : null, // FIXED: persist labId on the order
       labName: labName?.trim().isNotEmpty == true ? labName!.trim() : null,
-      indication: indication?.trim().isNotEmpty == true ? indication!.trim() : null,
+      indication:
+          indication?.trim().isNotEmpty == true ? indication!.trim() : null,
       urgency: urgency,
       fastingRequired: fastingRequired,
       homeCollection: homeCollection,
@@ -58,7 +63,8 @@ abstract final class LabOrderService {
       createdAt: DateTime.now(),
     );
 
-    await LabOrderStore.instance.add(order); // FIXED: await so a Firestore save failure propagates to the caller
+    await LabOrderStore.instance.add(
+        order); // FIXED: await so a Firestore save failure propagates to the caller
 
     final appointmentId = patient.appointmentId;
     if (appointmentId != null && appointmentId.isNotEmpty) {

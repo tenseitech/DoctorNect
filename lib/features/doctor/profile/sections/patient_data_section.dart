@@ -70,7 +70,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
   }
 
   bool _clinicalDataBlockedFor(DoctorNectAppointmentRecord record) {
-    return _blockedPatientKeys.contains(DoctorPatientsService.patientGroupKey(record));
+    return _blockedPatientKeys
+        .contains(DoctorPatientsService.patientGroupKey(record));
   }
 
   Future<Map<String, bool>> _clinicalSharingByPatientKey(
@@ -79,7 +80,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
     final sharing = <String, bool>{};
     for (final record in records) {
       final key = DoctorPatientsService.patientGroupKey(record);
-      sharing[key] ??= await DoctorPatientsService.canViewClinicalHistoryForKey(key);
+      sharing[key] ??=
+          await DoctorPatientsService.canViewClinicalHistoryForKey(key);
     }
     return sharing;
   }
@@ -104,7 +106,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
     DateTime cutoff;
     switch (_period) {
       case _Period.weekly:
-        cutoff = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 7));
+        cutoff = DateTime(now.year, now.month, now.day)
+            .subtract(const Duration(days: 7));
       case _Period.monthly:
         cutoff = DateTime(now.year, now.month, 1);
       case _Period.yearly:
@@ -122,9 +125,13 @@ class _PatientDataSectionState extends State<PatientDataSection> {
       case _CardFilter.all:
         return base;
       case _CardFilter.newVisit:
-        return base.where((r) => r.visitType == AppointmentType.newVisit).toList();
+        return base
+            .where((r) => r.visitType == AppointmentType.newVisit)
+            .toList();
       case _CardFilter.followUp:
-        return base.where((r) => r.visitType == AppointmentType.followUp).toList();
+        return base
+            .where((r) => r.visitType == AppointmentType.followUp)
+            .toList();
     }
   }
 
@@ -154,8 +161,10 @@ class _PatientDataSectionState extends State<PatientDataSection> {
       uniquePatients.add(key);
     }
 
-    final newVisits = records.where((r) => r.visitType == AppointmentType.newVisit).length;
-    final followUps = records.where((r) => r.visitType == AppointmentType.followUp).length;
+    final newVisits =
+        records.where((r) => r.visitType == AppointmentType.newVisit).length;
+    final followUps =
+        records.where((r) => r.visitType == AppointmentType.followUp).length;
 
     pdf.addPage(
       pw.MultiPage(
@@ -181,7 +190,9 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                     pw.SizedBox(height: 4),
                     pw.Text(
                       'Dr. $doctorName',
-                      style: pw.TextStyle(fontSize: AppTypography.bodySmall, color: PdfColors.grey700),
+                      style: pw.TextStyle(
+                          fontSize: AppTypography.bodySmall,
+                          color: PdfColors.grey700),
                     ),
                   ],
                 ),
@@ -199,11 +210,13 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                     pw.SizedBox(height: 4),
                     pw.Text(
                       dateRange,
-                      style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                      style:
+                          pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
                     ),
                     pw.Text(
                       'Generated: ${df.format(now)}',
-                      style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                      style:
+                          pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
                     ),
                   ],
                 ),
@@ -231,7 +244,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                 padding: const pw.EdgeInsets.all(40),
                 child: pw.Text(
                   'No patient records found for this period.',
-                      style: pw.TextStyle(color: PdfColors.grey600),
+                  style: pw.TextStyle(color: PdfColors.grey600),
                 ),
               ),
             )
@@ -273,14 +286,19 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                       _pdfCell('${i + 1}', center: true),
                       _pdfCell(r.patientName),
                       _pdfCell('${r.patientAge}', center: true),
-                      _pdfCell(AppConstants.patientGenderLabel(r.patientGender), center: true),
-                      _pdfCell('${df.format(r.dateTime)}\n${tf.format(r.dateTime)}'),
+                      _pdfCell(AppConstants.patientGenderLabel(r.patientGender),
+                          center: true),
                       _pdfCell(
-                        r.visitType == AppointmentType.followUp ? 'Follow-up' : 'New Visit',
+                          '${df.format(r.dateTime)}\n${tf.format(r.dateTime)}'),
+                      _pdfCell(
+                        r.visitType == AppointmentType.followUp
+                            ? 'Follow-up'
+                            : 'New Visit',
                         center: true,
                       ),
                       _pdfCell(
-                        sharing[DoctorPatientsService.patientGroupKey(r)] == true
+                        sharing[DoctorPatientsService.patientGroupKey(r)] ==
+                                true
                             ? (r.diagnosis ?? '-')
                             : '—',
                       ),
@@ -309,7 +327,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
 
     await Printing.layoutPdf(
       onLayout: (format) async => pdf.save(),
-      name: 'patient_data_${periodLabel.toLowerCase()}_${DateFormat('yyyyMMdd').format(now)}.pdf',
+      name:
+          'patient_data_${periodLabel.toLowerCase()}_${DateFormat('yyyyMMdd').format(now)}.pdf',
     );
   }
 
@@ -331,7 +350,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
               color: PdfColors.teal800,
             ),
           ),
-          pw.Text(label, style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+          pw.Text(label,
+              style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
         ],
       ),
     );
@@ -375,7 +395,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
     DateTime from;
     switch (_period) {
       case _Period.weekly:
-        from = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 7));
+        from = DateTime(now.year, now.month, now.day)
+            .subtract(const Duration(days: 7));
       case _Period.monthly:
         from = DateTime(now.year, now.month, 1);
       case _Period.yearly:
@@ -433,10 +454,12 @@ class _PatientDataSectionState extends State<PatientDataSection> {
           final records = _filtered;
           final displayRecords = _displayRecords;
           final total = _allRecords.length;
-          final newVisits =
-              records.where((r) => r.visitType == AppointmentType.newVisit).length;
-          final followUps =
-              records.where((r) => r.visitType == AppointmentType.followUp).length;
+          final newVisits = records
+              .where((r) => r.visitType == AppointmentType.newVisit)
+              .length;
+          final followUps = records
+              .where((r) => r.visitType == AppointmentType.followUp)
+              .length;
 
           return Column(
             children: [
@@ -459,7 +482,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
 
               // Date range label
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: Row(
                   children: [
                     Text(
@@ -498,7 +522,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                       icon: Icons.calendar_today_outlined,
                       color: Colors.blue[700]!,
                       isActive: _cardFilter == _CardFilter.all,
-                      onTap: () => setState(() => _cardFilter = _CardFilter.all),
+                      onTap: () =>
+                          setState(() => _cardFilter = _CardFilter.all),
                     ),
                     const SizedBox(width: 8),
                     _StatCard(
@@ -535,16 +560,21 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                   decoration: BoxDecoration(
                     color: AppColors.practoTeal.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.practoTeal.withValues(alpha: 0.18)),
+                    border: Border.all(
+                        color: AppColors.practoTeal.withValues(alpha: 0.18)),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     children: [
-                      Icon(Icons.bar_chart_rounded, color: AppColors.practoTeal, size: 20),
+                      Icon(Icons.bar_chart_rounded,
+                          color: AppColors.practoTeal, size: 20),
                       const SizedBox(width: 10),
                       Text(
                         'All-time total visits: ',
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: Colors.grey[700]),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            color: Colors.grey[700]),
                       ),
                       Text(
                         '$total',
@@ -577,7 +607,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                           _CardFilter.all => '',
                         }} (${displayRecords.length})',
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium, color: Colors.grey[600]),
+                            fontSize: AppTypography.labelMedium,
+                            color: Colors.grey[600]),
                       ),
                       const Spacer(),
                       GestureDetector(
@@ -609,7 +640,8 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                             Text(
                               'No patient records for this filter',
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.bodyMedium, color: Colors.grey[500]),
+                                  fontSize: AppTypography.bodyMedium,
+                                  color: Colors.grey[500]),
                             ),
                           ],
                         ),
@@ -621,13 +653,14 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                           child: ListView.separated(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                             itemCount: displayRecords.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1),
-                            itemBuilder: (context, i) =>
-                                _PatientRow(
-                                  record: displayRecords[i],
-                                  index: i,
-                                  hideClinicalData: _clinicalDataBlockedFor(displayRecords[i]),
-                                ),
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, i) => _PatientRow(
+                              record: displayRecords[i],
+                              index: i,
+                              hideClinicalData:
+                                  _clinicalDataBlockedFor(displayRecords[i]),
+                            ),
                           ),
                         ),
                       ),
@@ -686,7 +719,9 @@ class _PeriodSelector extends StatelessWidget {
                       if (icon != null) ...[
                         Icon(icon,
                             size: 13,
-                            color: isActive ? AppColors.surfaceOf(context) : Colors.grey[600]),
+                            color: isActive
+                                ? AppColors.surfaceOf(context)
+                                : Colors.grey[600]),
                         const SizedBox(width: 3),
                       ],
                       Text(
@@ -695,7 +730,9 @@ class _PeriodSelector extends StatelessWidget {
                           fontSize: AppTypography.labelMedium,
                           fontWeight:
                               isActive ? FontWeight.w600 : FontWeight.w500,
-                          color: isActive ? AppColors.surfaceOf(context) : Colors.grey[600],
+                          color: isActive
+                              ? AppColors.surfaceOf(context)
+                              : Colors.grey[600],
                         ),
                       ),
                     ],
@@ -737,14 +774,19 @@ class _StatCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
-            color: isActive ? color.withValues(alpha: 0.18) : color.withValues(alpha: 0.07),
+            color: isActive
+                ? color.withValues(alpha: 0.18)
+                : color.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isActive ? color : color.withValues(alpha: 0.18),
               width: isActive ? 1.8 : 1.0,
             ),
             boxShadow: isActive
-                ? [BoxShadow(color: color.withValues(alpha: 0.18), blurRadius: 6)]
+                ? [
+                    BoxShadow(
+                        color: color.withValues(alpha: 0.18), blurRadius: 6)
+                  ]
                 : [],
           ),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
@@ -762,7 +804,8 @@ class _StatCard extends StatelessWidget {
               ),
               Text(
                 label,
-                style: GoogleFonts.inter(fontSize: 9.5, color: Colors.grey[600]),
+                style:
+                    GoogleFonts.inter(fontSize: 9.5, color: Colors.grey[600]),
                 textAlign: TextAlign.center,
                 maxLines: 2,
               ),
@@ -803,7 +846,8 @@ class _PatientRow extends StatelessWidget {
             width: 28,
             child: Text(
               '${index + 1}.',
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: Colors.grey[500]),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium, color: Colors.grey[500]),
             ),
           ),
           // Avatar
@@ -832,12 +876,13 @@ class _PatientRow extends StatelessWidget {
                       child: Text(
                         record.patientName,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                            fontSize: AppTypography.bodySmall,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: isFollowUp
                             ? Colors.orange.withValues(alpha: 0.12)
@@ -861,7 +906,8 @@ class _PatientRow extends StatelessWidget {
                 Text(
                   '${record.patientAge} yrs · ${AppConstants.patientGenderLabel(record.patientGender)}',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium, color: Colors.grey[600]),
+                      fontSize: AppTypography.labelMedium,
+                      color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 2),
                 Row(
@@ -872,7 +918,8 @@ class _PatientRow extends StatelessWidget {
                     Text(
                       '${df.format(record.dateTime)}  ${tf.format(record.dateTime)}',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
+                          fontSize: AppTypography.labelSmall,
+                          color: Colors.grey[500]),
                     ),
                   ],
                 ),
@@ -889,7 +936,8 @@ class _PatientRow extends StatelessWidget {
                         child: Text(
                           record.diagnosis!,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
+                              fontSize: AppTypography.labelSmall,
+                              color: Colors.grey[500]),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -951,8 +999,7 @@ class _CustomRangeDialogState extends State<_CustomRangeDialog> {
             Container(
               decoration: BoxDecoration(
                 color: AppColors.practoTeal,
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
               padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
               child: Row(
@@ -1052,8 +1099,9 @@ class _CustomRangeDialogState extends State<_CustomRangeDialog> {
                       context,
                       DateTimeRange(start: _start, end: _end),
                     ),
-                    child:
-                        Text('Apply', style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
+                    child: Text('Apply',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall)),
                   ),
                 ],
               ),
@@ -1100,7 +1148,8 @@ class _RangeCalendarState extends State<_RangeCalendar> {
 
   void _prevMonth() {
     final prev = DateTime(_viewMonth.year, _viewMonth.month - 1);
-    if (!prev.isBefore(DateTime(widget.firstDate.year, widget.firstDate.month))) {
+    if (!prev
+        .isBefore(DateTime(widget.firstDate.year, widget.firstDate.month))) {
       setState(() => _viewMonth = prev);
     }
   }
@@ -1152,7 +1201,8 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                   monthLabel,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
@@ -1205,8 +1255,7 @@ class _RangeCalendarState extends State<_RangeCalendar> {
 
               // Range strip: left half, right half, or full
               final isFirst = day == 1 || date.weekday % 7 == 0;
-              final isLast =
-                  day == daysInMonth || (date.weekday % 7) == 6;
+              final isLast = day == daysInMonth || (date.weekday % 7) == 6;
 
               return GestureDetector(
                 onTap: disabled ? null : () => widget.onDateTapped(date),
@@ -1228,7 +1277,8 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                         top: 4,
                         bottom: 4,
                         child: Container(
-                            color: AppColors.practoTeal.withValues(alpha: 0.12)),
+                            color:
+                                AppColors.practoTeal.withValues(alpha: 0.12)),
                       ),
                     // End: left half strip
                     if (isEnd && !_isSameDay(widget.start, widget.end))
@@ -1238,7 +1288,8 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                         top: 4,
                         bottom: 4,
                         child: Container(
-                            color: AppColors.practoTeal.withValues(alpha: 0.12)),
+                            color:
+                                AppColors.practoTeal.withValues(alpha: 0.12)),
                       ),
                     // Endpoint circle
                     if (isEndpoint)
@@ -1255,9 +1306,8 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                       '$day',
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
-                        fontWeight: isEndpoint
-                            ? FontWeight.w700
-                            : FontWeight.w400,
+                        fontWeight:
+                            isEndpoint ? FontWeight.w700 : FontWeight.w400,
                         color: isEndpoint
                             ? Colors.white
                             : disabled

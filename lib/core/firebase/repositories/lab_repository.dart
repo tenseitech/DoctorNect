@@ -86,30 +86,37 @@ class LabRepository {
   Future<bool> isLabVerified(String labId) async {
     if (!FirebaseBootstrap.isReady || labId.isEmpty) return false;
     final snap = await FirestoreReadHelper.getDocument(
-      reference: FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),
+      reference:
+          FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),
       preferCache: false,
     );
     if (!snap.exists || snap.data() == null) return false;
-    return snap.data()!['verified'] as bool? ?? false; // FIXED: gate login on admin verification
+    return snap.data()!['verified'] as bool? ??
+        false; // FIXED: gate login on admin verification
   }
 
-  Future<RegisteredLabProfile?> fetchLabById(String labId, {bool preferCache = true}) async {
+  Future<RegisteredLabProfile?> fetchLabById(String labId,
+      {bool preferCache = true}) async {
     if (!FirebaseBootstrap.isReady || labId.isEmpty) return null;
     final snap = await FirestoreReadHelper.getDocument(
-      reference: FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),
+      reference:
+          FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),
       preferCache: preferCache,
     );
     if (!snap.exists || snap.data() == null) return null;
     return _fromMap(snap.id, snap.data()!);
   }
 
-  Future<List<RegisteredLabProfile>> fetchVerifiedLabs({bool preferCache = true}) async {
+  Future<List<RegisteredLabProfile>> fetchVerifiedLabs(
+      {bool preferCache = true}) async {
     if (!FirebaseBootstrap.isReady) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
       query: FirebaseFirestore.instance
           .collection(FirestorePaths.labs)
-          .where('verified', isEqualTo: true) // FIXED: only surface admin-verified labs to doctors/patients
+          .where('verified',
+              isEqualTo:
+                  true) // FIXED: only surface admin-verified labs to doctors/patients
           .limit(FirestoreQueryLimits.verifiedDirectoryListingCap),
       preferCache: preferCache,
     );
@@ -138,8 +145,9 @@ class LabRepository {
         aLine1 = addressData['addressLine1'] as String? ?? '';
         aLine2 = addressData['addressLine2'] as String? ?? '';
         aPinCode = addressData['pinCode'] as String? ?? '';
-        
-        final parts = [aLine1, aLine2, aCity, aState, aPinCode].where((e) => e.isNotEmpty);
+
+        final parts = [aLine1, aLine2, aCity, aState, aPinCode]
+            .where((e) => e.isNotEmpty);
         addressStr = parts.join(', ');
       } else if (addressData is String) {
         addressStr = addressData;
@@ -160,7 +168,9 @@ class LabRepository {
         email: data['email'] as String? ?? '',
         gstNumber: _optionalGst(data['gstNumber'] as String?),
         rating: (data['rating'] as num?)?.toDouble() ?? 0,
-        area: aCity.isNotEmpty ? aCity : (data['area'] as String? ?? data['city'] as String? ?? ''),
+        area: aCity.isNotEmpty
+            ? aCity
+            : (data['area'] as String? ?? data['city'] as String? ?? ''),
         verified: data['verified'] as bool? ?? false,
       );
     } catch (_) {

@@ -70,7 +70,8 @@ abstract final class LocalAvatarStore {
   }
 
   static Future<bool> save(String role, String id, Uint8List bytes) async {
-    if (id.isEmpty || bytes.isEmpty || bytes.length > maxFileBytes) return false;
+    if (id.isEmpty || bytes.isEmpty || bytes.length > maxFileBytes)
+      return false;
     final key = _key(role, id);
     _memory[key] = bytes;
 
@@ -128,7 +129,8 @@ abstract final class LocalAvatarStore {
       await ref.putData(data, SettableMetadata(contentType: 'image/jpeg'));
       return await ref.getDownloadURL();
     } catch (e) {
-      if (kDebugMode) debugPrint('[LocalAvatarStore] storage upload failed: $e');
+      if (kDebugMode)
+        debugPrint('[LocalAvatarStore] storage upload failed: $e');
       return null;
     }
   }

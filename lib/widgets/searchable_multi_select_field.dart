@@ -107,7 +107,8 @@ class SearchableMultiSelectField extends StatelessWidget {
               return Chip(
                 label: Text(
                   item,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: accentColor),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium, color: accentColor),
                 ),
                 deleteIcon: Icon(Icons.close, size: 14, color: accentColor),
                 onDeleted: () {
@@ -143,10 +144,12 @@ class _SearchableMultiSelectSheet extends StatefulWidget {
   final Color accentColor;
 
   @override
-  State<_SearchableMultiSelectSheet> createState() => _SearchableMultiSelectSheetState();
+  State<_SearchableMultiSelectSheet> createState() =>
+      _SearchableMultiSelectSheetState();
 }
 
-class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet> {
+class _SearchableMultiSelectSheetState
+    extends State<_SearchableMultiSelectSheet> {
   late Set<String> _selected;
   final _searchController = TextEditingController();
   String _query = '';
@@ -168,7 +171,9 @@ class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet
 
   List<String> get _filtered {
     if (_query.isEmpty) return widget.options;
-    return widget.options.where((o) => o.toLowerCase().contains(_query)).toList();
+    return widget.options
+        .where((o) => o.toLowerCase().contains(_query))
+        .toList();
   }
 
   void _toggle(String item, bool value) {
@@ -251,7 +256,8 @@ class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet
                           onPressed: _searchController.clear,
                         ),
                   isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
               ),
             ),
@@ -261,7 +267,8 @@ class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet
                   ? Center(
                       child: Text(
                         'No results for "${_searchController.text.trim()}"',
-                        style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                     )
                   : ListView.builder(
@@ -281,8 +288,10 @@ class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet
                                   value: isSelected,
                                   activeColor: widget.accentColor,
                                   visualDensity: VisualDensity.compact,
-                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  onChanged: (value) => _toggle(item, value ?? false),
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  onChanged: (value) =>
+                                      _toggle(item, value ?? false),
                                 ),
                                 const SizedBox(width: 4),
                                 Expanded(
@@ -291,7 +300,9 @@ class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet
                                     style: GoogleFonts.inter(
                                       fontSize: AppTypography.bodyMedium,
                                       color: AppColors.textPrimaryOf(context),
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
                                     ),
                                   ),
                                 ),

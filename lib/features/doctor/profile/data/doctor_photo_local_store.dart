@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/data/local_avatar_store.dart';
 
 /// Persists a doctor\'s profile photo locally (on-device) keyed by doctorId.

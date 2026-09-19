@@ -21,6 +21,7 @@ class SlotTimeButton extends StatelessWidget {
   final bool booked;
   final int bookingCount;
   final VoidCallback? onTap;
+
   /// Tighter full-width layout for native phone grids.
   final bool compact;
 

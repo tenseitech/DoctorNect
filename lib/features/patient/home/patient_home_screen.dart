@@ -86,7 +86,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           initialCategory: category,
           initialLocationFilter: locationFilter,
           nearYouMode: nearYouMode,
-          autofocus: query.isEmpty && category == null && locationFilter == null,
+          autofocus:
+              query.isEmpty && category == null && locationFilter == null,
         ),
       ),
     );
@@ -123,7 +124,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   void _openLab() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const LabHomeScreen()));
+    Navigator.push(
+        context, MaterialPageRoute(builder: (_) => const LabHomeScreen()));
   }
 
   void _openMyLabs() {
@@ -188,7 +190,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     final address = PatientProfileMock.profileAddress;
     final p = PatientContext(
       name: name,
-      city: address.shortLabel.isNotEmpty ? address.shortLabel : PatientProfileMock.profileCity,
+      city: address.shortLabel.isNotEmpty
+          ? address.shortLabel
+          : PatientProfileMock.profileCity,
     );
     final compact = MediaQuery.sizeOf(context).width < 600;
 
@@ -196,120 +200,137 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1200),
         child: CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, compact ? 12 : 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Hi, ${p.name.trim().isEmpty ? "Patient" : p.name.trim()}',
-                              maxLines: compact ? 2 : 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                fontSize: compact ? 18 : 22,
-                                fontWeight: FontWeight.w700,
-                                height: 1.15,
-                                color: Theme.of(context).colorScheme.onSurface,
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 12, 16, compact ? 12 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Hi, ${p.name.trim().isEmpty ? "Patient" : p.name.trim()}',
+                                maxLines: compact ? 2 : 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: compact ? 18 : 22,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.15,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
                               ),
-                            ),
-                            SizedBox(height: compact ? 2 : 4),
-                            _PatientLocationRow(
-                              address: address,
-                              onTap: () => unawaited(_openAddressForm()),
-                            ),
-                          ],
+                              SizedBox(height: compact ? 2 : 4),
+                              _PatientLocationRow(
+                                address: address,
+                                onTap: () => unawaited(_openAddressForm()),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      const ThemeToggleButton(),
-                      const SizedBox(width: 4),
-                      const NotificationBellButton(audience: NotificationAudience.patient),
-                    ],
-                  ),
-                SizedBox(height: compact ? 12 : 16),
-                HomeSearchBar(
-                  onTap: () => _openSearch(),
+                        const SizedBox(width: 4),
+                        const ThemeToggleButton(),
+                        const SizedBox(width: 4),
+                        const NotificationBellButton(
+                            audience: NotificationAudience.patient),
+                      ],
+                    ),
+                    SizedBox(height: compact ? 12 : 16),
+                    HomeSearchBar(
+                      onTap: () => _openSearch(),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: LayoutBuilder(
-            builder: (context, _) {
-              return StreamBuilder<List<PromotedAdModel>>(
-                  stream: PromotedAdsService.streamActiveAds(),
-                  builder: (context, snapshot) {
-                    final activeAds = snapshot.data ?? [];
-                    final carouselItems = _buildCarouselItems(activeAds, patientCity: _patientCity());
-                    return HomeBannerCarousel(
-                      items: carouselItems,
-                      dotActiveColor: AppColors.patientTeal,
-                      interactive: false,
-                      cardHorizontalInsetFraction: 0.09,
-                    );
-                  },
-                );
-            },
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ExploreSection(),
-              Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
-              ServicesSection(onServiceTap: _handleServiceTap),
-              Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
-              MyDoctorSection(
-                onAdd: () => PatientFavoritesSheets.showAddDoctorSheet(context),
-                onDoctorTap: (d) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PatientDoctorProfileScreen(doctorId: d.id),
-                    ),
-                  );
-                },
-                onBook: (d) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BookingFlowScreen(doctorId: d.id),
-                    ),
+            SliverToBoxAdapter(
+              child: LayoutBuilder(
+                builder: (context, _) {
+                  return StreamBuilder<List<PromotedAdModel>>(
+                    stream: PromotedAdsService.streamActiveAds(),
+                    builder: (context, snapshot) {
+                      final activeAds = snapshot.data ?? [];
+                      final carouselItems = _buildCarouselItems(activeAds,
+                          patientCity: _patientCity());
+                      return HomeBannerCarousel(
+                        items: carouselItems,
+                        dotActiveColor: AppColors.patientTeal,
+                        interactive: false,
+                        cardHorizontalInsetFraction: 0.09,
+                      );
+                    },
                   );
                 },
               ),
-              Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
-              AppointmentsSection(
-                onViewAll: () {
-                  if (widget.onSelectTab != null) {
-                    widget.onSelectTab!(1);
-                  } else {
-                    widget.onOpenAppointments?.call();
-                  }
-                },
-                onFindDoctor: _openSearch,
+            ),
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ExploreSection(),
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderOf(context)),
+                  ServicesSection(onServiceTap: _handleServiceTap),
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderOf(context)),
+                  MyDoctorSection(
+                    onAdd: () =>
+                        PatientFavoritesSheets.showAddDoctorSheet(context),
+                    onDoctorTap: (d) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              PatientDoctorProfileScreen(doctorId: d.id),
+                        ),
+                      );
+                    },
+                    onBook: (d) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BookingFlowScreen(doctorId: d.id),
+                        ),
+                      );
+                    },
+                  ),
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderOf(context)),
+                  AppointmentsSection(
+                    onViewAll: () {
+                      if (widget.onSelectTab != null) {
+                        widget.onSelectTab!(1);
+                      } else {
+                        widget.onOpenAppointments?.call();
+                      }
+                    },
+                    onFindDoctor: _openSearch,
+                  ),
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.borderOf(context)),
+                  const HealthTipsSection(),
+                ],
               ),
-              Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
-              const HealthTipsSection(),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
-    ),
-  ),
-);
+      ),
+    );
   }
 }
 
@@ -336,7 +357,8 @@ class _PatientLocationRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 1),
           child: Row(
             children: [
-              const Icon(Icons.location_on_outlined, size: 15, color: AppColors.patientTeal),
+              const Icon(Icons.location_on_outlined,
+                  size: 15, color: AppColors.patientTeal),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
@@ -347,7 +369,9 @@ class _PatientLocationRow extends StatelessWidget {
                     fontSize: AppTypography.bodySmall,
                     fontWeight: hasAddress ? FontWeight.w500 : FontWeight.w600,
                     height: 1.2,
-                    color: hasAddress ? AppColors.textSecondaryOf(context) : AppColors.patientTeal,
+                    color: hasAddress
+                        ? AppColors.textSecondaryOf(context)
+                        : AppColors.patientTeal,
                   ),
                 ),
               ),
@@ -359,7 +383,8 @@ class _PatientLocationRow extends StatelessWidget {
   }
 }
 
-List<HomeCarouselItem> _buildCarouselItems(List<PromotedAdModel> activeAds, {String? patientCity}) {
+List<HomeCarouselItem> _buildCarouselItems(List<PromotedAdModel> activeAds,
+    {String? patientCity}) {
   final baseItems = List<HomeCarouselItem>.from(PatientMockData.carouselItems);
   if (activeAds.isEmpty) return baseItems;
 

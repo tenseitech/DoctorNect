@@ -52,7 +52,8 @@ class SimpleRoleRegistrationForm extends StatefulWidget {
       _SimpleRoleRegistrationFormState();
 }
 
-class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm> {
+class _SimpleRoleRegistrationFormState
+    extends State<SimpleRoleRegistrationForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _mobileController = TextEditingController();
@@ -112,7 +113,8 @@ class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm>
       return;
     }
     if (!_legalAccepted) {
-      AppToast.info(context, 'Please accept the Terms of Service and Privacy Policy');
+      AppToast.info(
+          context, 'Please accept the Terms of Service and Privacy Policy');
       return;
     }
 
@@ -144,7 +146,8 @@ class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm>
   Widget build(BuildContext context) {
     return Theme(
       data: Theme.of(context).copyWith(
-        colorScheme: Theme.of(context).colorScheme.copyWith(primary: widget.accentColor),
+        colorScheme:
+            Theme.of(context).colorScheme.copyWith(primary: widget.accentColor),
       ),
       child: AuthLoginPageShell(
         appBarTitle: widget.appBarTitle,
@@ -167,7 +170,8 @@ class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm>
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      validator: (v) => FormValidators.required(v, field: 'Name'),
+                      validator: (v) =>
+                          FormValidators.required(v, field: 'Name'),
                       textInputAction: TextInputAction.next,
                       textCapitalization: TextCapitalization.words,
                       style: GoogleFonts.inter(
@@ -201,12 +205,15 @@ class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm>
                         accentColor: widget.accentColor,
                         mobileController: _mobileController,
                         initialDialCode: _mobileDialCode,
-                        onDialCodeChanged: (v) => setState(() => _mobileDialCode = v),
+                        onDialCodeChanged: (v) =>
+                            setState(() => _mobileDialCode = v),
                         phoneDecoration: _fieldDecoration(
                           'Mobile number *',
-                          prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                          prefixIcon:
+                              const Icon(Icons.phone_outlined, size: 20),
                         ),
-                        onVerifiedChanged: (v) => setState(() => _mobileVerified = v),
+                        onVerifiedChanged: (v) =>
+                            setState(() => _mobileVerified = v),
                       ),
                   ],
                 ),

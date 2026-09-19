@@ -66,7 +66,8 @@ class PatientFiltersBar extends StatelessWidget {
                       ),
                     ),
                   ),
-                if (onAddWalkIn != null && onInviteViaLink != null) const SizedBox(width: 10),
+                if (onAddWalkIn != null && onInviteViaLink != null)
+                  const SizedBox(width: 10),
                 if (onInviteViaLink != null)
                   Expanded(
                     child: OutlinedButton.icon(
@@ -170,18 +171,22 @@ class PatientFiltersBar extends StatelessWidget {
             PatientFilter.followUp => 'Follow Up',
             PatientFilter.returning => 'Returning',
             _ => 'Unknown',
-};
+          };
           final selected = filter == f;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(label, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
+              label: Text(label,
+                  style:
+                      GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
               selected: selected,
               onSelected: (_) => onFilterChanged(f),
               selectedColor: AppColors.doctorBlue.withValues(alpha: 0.15),
               checkmarkColor: AppColors.doctorBlue,
               side: BorderSide(
-                color: selected ? AppColors.doctorBlue : AppColors.borderOf(context),
+                color: selected
+                    ? AppColors.doctorBlue
+                    : AppColors.borderOf(context),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.inputRadius),
@@ -197,7 +202,10 @@ class PatientFiltersBar extends StatelessWidget {
     return Row(
       children: [
         if (!compact)
-          Text('Sort:', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
+          Text('Sort:',
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context))),
         if (!compact) const SizedBox(width: 8),
         Expanded(
           child: DropdownButtonFormField<PatientSort>(
@@ -218,9 +226,11 @@ class PatientFiltersBar extends StatelessWidget {
               ),
             ),
             items: const [
-              DropdownMenuItem(value: PatientSort.lastVisit, child: Text('Last visit')),
+              DropdownMenuItem(
+                  value: PatientSort.lastVisit, child: Text('Last visit')),
               DropdownMenuItem(value: PatientSort.name, child: Text('Name')),
-              DropdownMenuItem(value: PatientSort.appointmentCount, child: Text('Visits')),
+              DropdownMenuItem(
+                  value: PatientSort.appointmentCount, child: Text('Visits')),
             ],
             onChanged: (v) {
               if (v != null) onSortChanged(v);

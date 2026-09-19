@@ -21,7 +21,8 @@ class AppointmentsMockData {
           contactNumber: '+91 98765 43210',
           chiefComplaints: ['Persistent headache and fatigue for 2 weeks'],
           reports: const [
-            PatientReport(id: 'r1', name: 'Blood Test Report.pdf', fileType: 'pdf'),
+            PatientReport(
+                id: 'r1', name: 'Blood Test Report.pdf', fileType: 'pdf'),
             PatientReport(id: 'r2', name: 'MRI Scan.jpg', fileType: 'image'),
           ],
           pastVisits: [
@@ -197,7 +198,8 @@ class AppointmentsMockData {
           age: 33,
           gender: 'M',
           timeSlot: '03:30 PM',
-          appointmentDate: DateTime(_now.year, _now.month, _now.day - 1, 15, 30),
+          appointmentDate:
+              DateTime(_now.year, _now.month, _now.day - 1, 15, 30),
           type: AppointmentType.followUp,
           status: AppointmentStatus.noShow,
           contactNumber: '+91 82211 00998',

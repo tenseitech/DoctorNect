@@ -13,7 +13,8 @@ void main() {
         state: 'Maharashtra',
         country: 'India',
         pincode: '400001',
-        mapsUrl: 'https://www.google.com/maps/search/?api=1&query=19.076,72.8777',
+        mapsUrl:
+            'https://www.google.com/maps/search/?api=1&query=19.076,72.8777',
       );
 
       expect(result.latitude, 19.0760);

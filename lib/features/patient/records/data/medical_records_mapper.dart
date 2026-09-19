@@ -14,7 +14,8 @@ abstract final class MedicalRecordsMapper {
   static List<HealthRecord> mergeForPatient(String patientId) {
     if (patientId.isEmpty) return const [];
 
-    final prescriptions = ClinicalPrescriptionStore.instance.forPatient(patientId);
+    final prescriptions =
+        ClinicalPrescriptionStore.instance.forPatient(patientId);
     final labOrders = LabOrderStore.instance.forPatient(patientId);
     final bloodTests = PatientLabBookingStore.instance.forPatient(patientId);
 
@@ -27,14 +28,19 @@ abstract final class MedicalRecordsMapper {
     return records;
   }
 
-  static List<HealthRecord> filter(List<HealthRecord> records, MedicalRecordFilter filter) {
+  static List<HealthRecord> filter(
+      List<HealthRecord> records, MedicalRecordFilter filter) {
     return switch (filter) {
       MedicalRecordFilter.all => records,
-      MedicalRecordFilter.prescription => records.where((r) => r.prescriptionId != null).toList(),
-      MedicalRecordFilter.labTest => records.where((r) => r.labOrderId != null).toList(),
-      MedicalRecordFilter.bloodTest => records.where((r) => r.labBookingId != null).toList(),
-      MedicalRecordFilter.tests =>
-        records.where((r) => r.labOrderId != null || r.labBookingId != null).toList(),
+      MedicalRecordFilter.prescription =>
+        records.where((r) => r.prescriptionId != null).toList(),
+      MedicalRecordFilter.labTest =>
+        records.where((r) => r.labOrderId != null).toList(),
+      MedicalRecordFilter.bloodTest =>
+        records.where((r) => r.labBookingId != null).toList(),
+      MedicalRecordFilter.tests => records
+          .where((r) => r.labOrderId != null || r.labBookingId != null)
+          .toList(),
     };
   }
 
@@ -51,7 +57,9 @@ abstract final class MedicalRecordsMapper {
       source: RecordSource.doctorSent,
       fileName: '',
       doctorName: _doctorNameForAppointment(draft.patient.appointmentId),
-      notes: draft.chiefComplaint.trim().isEmpty ? null : draft.chiefComplaint.trim(),
+      notes: draft.chiefComplaint.trim().isEmpty
+          ? null
+          : draft.chiefComplaint.trim(),
       prescriptionId: draft.prescriptionId,
     );
   }
@@ -107,8 +115,10 @@ abstract final class MedicalRecordsMapper {
   static String _doctorNameForAppointment(String? appointmentId) {
     if (appointmentId == null || appointmentId.isEmpty) return 'Your doctor';
 
-    for (final appointment in SharedAppointmentsStore.instance.patientAppointments()) {
-      if (appointment.id == appointmentId || appointment.appointmentId == appointmentId) {
+    for (final appointment
+        in SharedAppointmentsStore.instance.patientAppointments()) {
+      if (appointment.id == appointmentId ||
+          appointment.appointmentId == appointmentId) {
         final name = appointment.doctorName.trim();
         if (name.isNotEmpty) return name.startsWith('Dr.') ? name : 'Dr. $name';
       }

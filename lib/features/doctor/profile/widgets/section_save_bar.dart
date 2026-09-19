@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class SectionSaveBar extends StatelessWidget {
-  const SectionSaveBar({super.key, required this.visible, required this.onSave});
+  const SectionSaveBar(
+      {super.key, required this.visible, required this.onSave});
 
   final bool visible;
   final VoidCallback onSave;

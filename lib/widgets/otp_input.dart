@@ -169,7 +169,8 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
   }
 
   KeyEventResult _onKeyEvent(int index, KeyEvent event) {
-    if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.backspace) {
+    if (event is! KeyDownEvent ||
+        event.logicalKey != LogicalKeyboardKey.backspace) {
       return KeyEventResult.ignored;
     }
     if (_controllers[index].text.isEmpty && index > 0) {

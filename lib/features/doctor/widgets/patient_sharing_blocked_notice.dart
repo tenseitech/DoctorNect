@@ -99,7 +99,9 @@ class PatientSharingBlockedEmptyState extends StatelessWidget {
             Text(
               PatientSharingMessages.dataNotSharedSubtitle,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ],
         ),

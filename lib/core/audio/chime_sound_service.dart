@@ -9,7 +9,8 @@ abstract final class ChimeSoundService {
     try {
       playAcceptChimePlatform();
     } catch (e) {
-      if (kDebugMode) debugPrint('[ChimeSoundService] playAcceptChime error: $e');
+      if (kDebugMode)
+        debugPrint('[ChimeSoundService] playAcceptChime error: $e');
     }
   }
 }

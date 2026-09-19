@@ -248,7 +248,8 @@ class _ServiceTileState extends State<_ServiceTile> {
               Icon(
                 Icons.chevron_right,
                 size: 18,
-                color: AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
               ),
             ],
           ),

@@ -105,7 +105,9 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
             onPressed: () => AppLogout.confirmAndSignOut(context),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 52),
-              side: BorderSide(color: AppColors.textSecondaryOf(context).withValues(alpha: 0.35)),
+              side: BorderSide(
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.35)),
               foregroundColor: AppColors.textSecondaryOf(context),
             ),
             child: const Text('Log out'),

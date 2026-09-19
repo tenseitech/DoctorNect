@@ -26,10 +26,12 @@ class DoctorConnectedStoresScreen extends StatefulWidget {
   final String? appBarTitle;
 
   @override
-  State<DoctorConnectedStoresScreen> createState() => _DoctorConnectedStoresScreenState();
+  State<DoctorConnectedStoresScreen> createState() =>
+      _DoctorConnectedStoresScreenState();
 }
 
-class _DoctorConnectedStoresScreenState extends State<DoctorConnectedStoresScreen> {
+class _DoctorConnectedStoresScreenState
+    extends State<DoctorConnectedStoresScreen> {
   List<DoctorPartnerProfileItem> _searchResults = [];
   StreamSubscription<List<PharmacyPrescriptionDelivery>>? _deliverySub;
 
@@ -100,7 +102,8 @@ class _DoctorConnectedStoresScreenState extends State<DoctorConnectedStoresScree
     return DoctorConnectedPartnersBaseView(
       partnerRole: UserType.medicalStore,
       partnerHeaderTitle: 'Medical Stores',
-      partnerHeaderSubtitle: 'Connect with verified pharmacies to send digital prescriptions.',
+      partnerHeaderSubtitle:
+          'Connect with verified pharmacies to send digital prescriptions.',
       partnerTypeLabel: 'Medical Store',
       accentColor: AppColors.pharmacyGreen,
       showAppBar: widget.showAppBar,
@@ -155,11 +158,13 @@ class _DoctorConnectedStoresScreenState extends State<DoctorConnectedStoresScree
           ),
         );
       },
-      onDisconnect: (connectionId, _) => connStore.removeConnection(connectionId),
+      onDisconnect: (connectionId, _) =>
+          connStore.removeConnection(connectionId),
       onApprove: (connectionId, _) => connStore.approveByDoctor(connectionId),
       onReject: (connectionId, _) => connStore.rejectByDoctor(connectionId),
       onRevoke: (connectionId, _) => connStore.removeConnection(connectionId),
-      onSendRequest: (partner) => connStore.sendRequestFromDoctor(doctorId: doctorId, storeId: partner.id),
+      onSendRequest: (partner) => connStore.sendRequestFromDoctor(
+          doctorId: doctorId, storeId: partner.id),
       onOpenAddPartner: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
@@ -190,8 +195,10 @@ class _DoctorConnectedStoresScreenState extends State<DoctorConnectedStoresScree
       },
       detachFirestoreSync: () => FirestoreScreenSync.detachPendingConnections(),
       isConnected: (partnerId) => connStore.isConnected(doctorId, partnerId),
-      isPendingSent: (partnerId) => connStore.isPendingSentByDoctor(doctorId: doctorId, storeId: partnerId),
-      isPendingFromPartner: (partnerId) => connStore.isPendingFromStore(doctorId: doctorId, storeId: partnerId),
+      isPendingSent: (partnerId) => connStore.isPendingSentByDoctor(
+          doctorId: doctorId, storeId: partnerId),
+      isPendingFromPartner: (partnerId) =>
+          connStore.isPendingFromStore(doctorId: doctorId, storeId: partnerId),
     );
   }
 }

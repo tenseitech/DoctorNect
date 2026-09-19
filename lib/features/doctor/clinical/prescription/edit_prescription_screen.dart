@@ -50,7 +50,8 @@ class EditPrescriptionScreen extends StatelessWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
+          constraints: BoxConstraints(
+              maxWidth: ResponsiveLayout.contentMaxWidth(context)),
           child: WritePrescriptionScreen(
             patient: patient,
             existingDraft: draft,

@@ -10,7 +10,8 @@ enum PatientBmiCategory {
 }
 
 abstract final class PatientBmiUtils {
-  static double? calculate({required double heightCm, required double weightKg}) {
+  static double? calculate(
+      {required double heightCm, required double weightKg}) {
     if (heightCm <= 0 || weightKg <= 0) return null;
     final heightM = heightCm / 100;
     return weightKg / (heightM * heightM);
@@ -39,12 +40,17 @@ abstract final class PatientBmiUtils {
 
   static String messageFor(PatientBmiCategory category) {
     return switch (category) {
-      PatientBmiCategory.underweight => 'Your body needs more nourishment — let\'s fix that.',
+      PatientBmiCategory.underweight =>
+        'Your body needs more nourishment — let\'s fix that.',
       PatientBmiCategory.healthy => 'Perfect balance — keep up the great work!',
-      PatientBmiCategory.overweight => 'Small changes now will make a big difference.',
-      PatientBmiCategory.obeseClassI => 'Your health needs attention — let\'s take action.',
-      PatientBmiCategory.obeseClassII => 'Please consult a doctor for a healthier you.',
-      PatientBmiCategory.obeseClassIII => 'See a doctor right away — your health matters.',
+      PatientBmiCategory.overweight =>
+        'Small changes now will make a big difference.',
+      PatientBmiCategory.obeseClassI =>
+        'Your health needs attention — let\'s take action.',
+      PatientBmiCategory.obeseClassII =>
+        'Please consult a doctor for a healthier you.',
+      PatientBmiCategory.obeseClassIII =>
+        'See a doctor right away — your health matters.',
     };
   }
 

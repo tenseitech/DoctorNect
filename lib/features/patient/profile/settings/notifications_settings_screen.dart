@@ -21,10 +21,12 @@ class NotificationsSettingsScreen extends StatefulWidget {
   final VoidCallback onChanged;
 
   @override
-  State<NotificationsSettingsScreen> createState() => _NotificationsSettingsScreenState();
+  State<NotificationsSettingsScreen> createState() =>
+      _NotificationsSettingsScreenState();
 }
 
-class _NotificationsSettingsScreenState extends State<NotificationsSettingsScreen> {
+class _NotificationsSettingsScreenState
+    extends State<NotificationsSettingsScreen> {
   NotificationPrefs get _p => PatientProfileMock.notificationPrefs;
 
   void _persist() {
@@ -32,7 +34,8 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
     unawaited(PatientProfileMock.persistCurrentProfile());
     InAppNotificationService.instance.onPatientNotificationPrefsChanged();
     if (_p.medicationReminders) {
-      unawaited(MedicationReminderService.updateScheduledReminders(_p.medications));
+      unawaited(
+          MedicationReminderService.updateScheduledReminders(_p.medications));
     } else {
       unawaited(MedicationReminderService.cancelAllReminders());
     }
@@ -51,7 +54,8 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
         final nameCtrl = TextEditingController();
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            Widget buildTimeRow(MedicationTimeSlot slot, String? time, ValueChanged<String?> onChanged) {
+            Widget buildTimeRow(MedicationTimeSlot slot, String? time,
+                ValueChanged<String?> onChanged) {
               final title = MedicationTimeSlots.label(slot);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -62,7 +66,8 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                       value: time != null,
                       onChanged: (checked) {
                         if (checked == true) {
-                          onChanged(MedicationTimeSlots.defaultTime(slot).format(context));
+                          onChanged(MedicationTimeSlots.defaultTime(slot)
+                              .format(context));
                         } else {
                           onChanged(null);
                         }
@@ -73,10 +78,15 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)),
+                          Text(title,
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodyMedium,
+                                  fontWeight: FontWeight.w600)),
                           Text(
                             MedicationTimeSlots.rangeLabel(slot),
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelSmall,
+                                color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ),
@@ -91,8 +101,11 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                           );
                           if (picked != null) onChanged(picked);
                         },
-                        style: TextButton.styleFrom(foregroundColor: AppColors.patientTeal),
-                        child: Text(time, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                        style: TextButton.styleFrom(
+                            foregroundColor: AppColors.patientTeal),
+                        child: Text(time,
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w600)),
                       ),
                   ],
                 ),
@@ -109,8 +122,10 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                     children: [
                       TextFormField(
                         controller: nameCtrl,
-                        decoration: const InputDecoration(labelText: 'Medicine name'),
-                        validator: (v) => FormValidators.tagText(v, field: 'Medicine name'),
+                        decoration:
+                            const InputDecoration(labelText: 'Medicine name'),
+                        validator: (v) =>
+                            FormValidators.tagText(v, field: 'Medicine name'),
                       ),
                       const SizedBox(height: 16),
                       buildTimeRow(
@@ -140,7 +155,8 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: TextButton.styleFrom(foregroundColor: AppColors.textSecondaryOf(context)),
+                  style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondaryOf(context)),
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
@@ -150,7 +166,8 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                         afternoonTime == null &&
                         eveningTime == null &&
                         nightTime == null) {
-                      AppToast.info(context, 'Please select at least one time.');
+                      AppToast.info(
+                          context, 'Please select at least one time.');
                       return;
                     }
                     setState(() {
@@ -183,17 +200,22 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Notifications', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('Notifications',
+          context: context),
       body: PatientProfileFormStyles.constrainedScrollBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     'All alerts are delivered inside DoctorNect. Push/SMS/WhatsApp tags show alert type only — nothing is sent outside the app.',
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 16),
                   SwitchListTile(
@@ -247,7 +269,9 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
               ),
             ),
             const SizedBox(height: 16),
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SwitchListTile(
@@ -264,22 +288,32 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                     const SizedBox(height: 8),
                     ..._p.medications.map(
                       (m) => PatientProfileFormStyles.recordItemCard(
-        context: context,
-        child: Row(
+                        context: context,
+                        child: Row(
                           children: [
-                            const Icon(Icons.medication_outlined, color: AppColors.patientTeal, size: 20),
+                            const Icon(Icons.medication_outlined,
+                                color: AppColors.patientTeal, size: 20),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(m.name),
-                                  Text([
-                                    if (m.morningTime != null) 'Morning (${m.morningTime})',
-                                    if (m.afternoonTime != null) 'Afternoon (${m.afternoonTime})',
-                                    if (m.eveningTime != null) 'Evening (${m.eveningTime})',
-                                    if (m.nightTime != null) 'Night (${m.nightTime})',
-                                  ].join(' • '), style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
+                                  Text(
+                                      [
+                                        if (m.morningTime != null)
+                                          'Morning (${m.morningTime})',
+                                        if (m.afternoonTime != null)
+                                          'Afternoon (${m.afternoonTime})',
+                                        if (m.eveningTime != null)
+                                          'Evening (${m.eveningTime})',
+                                        if (m.nightTime != null)
+                                          'Night (${m.nightTime})',
+                                      ].join(' • '),
+                                      style: GoogleFonts.inter(
+                                          fontSize: AppTypography.labelMedium,
+                                          color: AppColors.textSecondaryOf(
+                                              context))),
                                 ],
                               ),
                             ),

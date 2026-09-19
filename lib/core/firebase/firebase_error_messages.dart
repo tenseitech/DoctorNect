@@ -52,17 +52,17 @@ String describeFirebaseAuthError(
       'This sign-in method is not enabled in Firebase. Contact support.',
     'network-request-failed' =>
       'Network error. Check your internet connection and try again.',
-    'internal-error' =>
-      error.message != null && error.message!.isNotEmpty && !error.message!.toLowerCase().contains('internal-error')
-          ? error.message!.trim()
-          : 'Sign-in service error. Check Firebase Authentication settings.',
+    'internal-error' => error.message != null &&
+            error.message!.isNotEmpty &&
+            !error.message!.toLowerCase().contains('internal-error')
+        ? error.message!.trim()
+        : 'Sign-in service error. Check Firebase Authentication settings.',
     'invalid-api-key' ||
     'api-key-not-valid.-please-pass-a-valid-api-key.' =>
       'App configuration error. Redeploy the latest web build.',
     'app-not-authorized' =>
       'This app is not authorized for Firebase. Contact support.',
-    'user-disabled' =>
-      'This account has been disabled. Contact support.',
+    'user-disabled' => 'This account has been disabled. Contact support.',
     'requires-recent-login' =>
       'For security, sign out and sign in again, then retry.',
     _ => null,

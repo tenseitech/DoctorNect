@@ -33,6 +33,9 @@ abstract final class LabWalkInTestSuggestions {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
 
-    return all.where((name) => name.toLowerCase().contains(q)).take(limit).toList();
+    return all
+        .where((name) => name.toLowerCase().contains(q))
+        .take(limit)
+        .toList();
   }
 }

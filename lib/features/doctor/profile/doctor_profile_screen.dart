@@ -114,7 +114,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     );
     if (picked == null || !picked.hasImage || !mounted) return;
     setState(() {
-      DoctorProfileStore.instance.updatePhoto(path: picked.path, bytes: picked.bytes);
+      DoctorProfileStore.instance
+          .updatePhoto(path: picked.path, bytes: picked.bytes);
       _localPhotoBytes = picked.bytes;
     });
 
@@ -125,13 +126,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     if (bytes != null && bytes.isNotEmpty && doctorId.isNotEmpty) {
       await DoctorPhotoLocalStore.save(doctorId, bytes);
       await DoctorProfileStore.instance.uploadPhotoToServer(doctorId, bytes);
-      if (mounted) {
-      }
+      if (mounted) {}
     }
   }
 
   Future<void> _openSection(Widget screen) async {
-    final updated = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => screen));
+    final updated = await Navigator.push<bool>(
+        context, MaterialPageRoute(builder: (_) => screen));
     if (updated == true) _refresh();
   }
 
@@ -149,8 +150,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         _localPhotoBytes ??
         DoctorPhotoLocalStore.readCached(DoctorSession.loggedInDoctorId);
     final hasLocalPhoto = localBytes != null && localBytes.isNotEmpty;
-    final hasNetworkPhoto =
-        !hasLocalPhoto && profile.photoUrl != null && profile.photoUrl!.trim().isNotEmpty;
+    final hasNetworkPhoto = !hasLocalPhoto &&
+        profile.photoUrl != null &&
+        profile.photoUrl!.trim().isNotEmpty;
 
     ImageProvider? avatarImage;
     if (hasLocalPhoto) {
@@ -204,7 +206,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               decoration: BoxDecoration(
                 color: AppColors.patientTeal,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surfaceOf(context), width: 2),
+                border:
+                    Border.all(color: AppColors.surfaceOf(context), width: 2),
               ),
               child: Icon(
                 Icons.camera_alt_outlined,
@@ -315,7 +318,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       ProfileWebActionData(
         icon: Icons.star_outline,
         label: 'Reviews',
-        subtitle: '${p.reviewCount} reviews · ${p.rating.toStringAsFixed(1)}★ avg',
+        subtitle:
+            '${p.reviewCount} reviews · ${p.rating.toStringAsFixed(1)}★ avg',
         iconGradient: const [Color(0xFFCA8A04), Color(0xFFA16207)],
         onTap: () => _push(const ReviewsSection()),
       ),
@@ -340,7 +344,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         body: DoctorProfileWebLayout(
           profile: p,
           displayName: DoctorProfileStore.displayNameWithPrefix,
-          verificationStatus: DoctorProfileStore.instance.dashboardVerificationStatus,
+          verificationStatus:
+              DoctorProfileStore.instance.dashboardVerificationStatus,
           avatar: _buildProfileAvatar(radius: 52),
           onPickPhoto: _pickPhoto,
           onEdit: () => _openSection(const EditProfileSection()),
@@ -367,7 +372,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildMobileProfileHeader(context),
-              Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+              Divider(
+                  height: 1, thickness: 1, color: AppColors.borderOf(context)),
               Expanded(
                 child: ListView(
                   padding: EdgeInsets.zero,
@@ -375,19 +381,32 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     DoctorProfileHeroSection(
                       profile: p,
                       displayName: DoctorProfileStore.displayNameWithPrefix,
-                      verificationStatus: DoctorProfileStore.instance.dashboardVerificationStatus,
+                      verificationStatus: DoctorProfileStore
+                          .instance.dashboardVerificationStatus,
                       avatar: _buildProfileAvatar(),
                       onPickPhoto: _pickPhoto,
                       onEdit: () => _openSection(EditProfileSection()),
                     ),
-                    Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.borderOf(context)),
                     _buildProfileSection(shaded: true),
-                    Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.borderOf(context)),
                     _buildAccountSection(shaded: false),
-                    Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.borderOf(context)),
                     _buildAdvertisingSection(shaded: true),
                     _buildNetworkSection(shaded: false),
-                    Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.borderOf(context)),
                     _buildInsightsSection(shaded: false),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -539,15 +558,18 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   DoctorProfileMenuTile(
                     icon: TablerIcons.speakerphone,
                     label: 'Promote Banner Ad (Paid Ads)',
-                    subtitle: 'Create & manage paid promotional ads on Patient Home',
+                    subtitle:
+                        'Create & manage paid promotional ads on Patient Home',
                     iconGradient: const [Color(0xFF0F766E), Color(0xFF0D9488)],
                     onTap: () {
                       PromotedAdsManagementScreen.open(
                         context,
                         providerType: 'doctor',
                         providerId: DoctorSession.loggedInDoctorId,
-                        providerEmail: DoctorProfileStore.instance.profile.email,
-                        providerContact: DoctorProfileStore.instance.profile.mobile,
+                        providerEmail:
+                            DoctorProfileStore.instance.profile.email,
+                        providerContact:
+                            DoctorProfileStore.instance.profile.mobile,
                         isVerified: true,
                       );
                     },
@@ -555,7 +577,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                 ],
               ),
             ),
-            Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+            Divider(
+                height: 1, thickness: 1, color: AppColors.borderOf(context)),
           ],
         );
       },
@@ -606,7 +629,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           DoctorProfileMenuTile(
             icon: Icons.star_outline,
             label: 'Reviews',
-            subtitle: '${p.reviewCount} patient reviews · ${p.rating.toStringAsFixed(1)}★ avg',
+            subtitle:
+                '${p.reviewCount} patient reviews · ${p.rating.toStringAsFixed(1)}★ avg',
             iconGradient: const [Color(0xFFCA8A04), Color(0xFFA16207)],
             onTap: () => _push(const ReviewsSection()),
           ),
@@ -627,7 +651,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Account'),
-        content: const Text('Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),

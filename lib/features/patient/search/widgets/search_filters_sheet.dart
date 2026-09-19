@@ -48,7 +48,8 @@ class SearchFiltersSheet extends StatefulWidget {
         context: context,
         builder: (ctx) => Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: ConstrainedBox(
@@ -132,7 +133,8 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
     _availableToday = widget.availableToday;
     _minRating = widget.minRating;
     _language = widget.language;
-    if (_locationFilter != null && !widget.locationOptions.contains(_locationFilter)) {
+    if (_locationFilter != null &&
+        !widget.locationOptions.contains(_locationFilter)) {
       _showCustomLocation = true;
       _searchCity = _locationFilter;
     }
@@ -220,7 +222,8 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                       spacing: 8,
                       runSpacing: 8,
                       children: widget.specialityOptions.map((chip) {
-                        final selected = _specialityCategory == chip.categoryKey;
+                        final selected =
+                            _specialityCategory == chip.categoryKey;
                         return _OptionChip(
                           label: chip.label,
                           selected: selected,
@@ -242,7 +245,9 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            if (_locationFilter != null && !widget.locationOptions.contains(_locationFilter))
+                            if (_locationFilter != null &&
+                                !widget.locationOptions
+                                    .contains(_locationFilter))
                               _OptionChip(
                                 label: '📍 $_locationFilter',
                                 selected: true,
@@ -266,14 +271,17 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                         ),
                         const SizedBox(height: 10),
                         InkWell(
-                          onTap: () => setState(() => _showCustomLocation = !_showCustomLocation),
+                          onTap: () => setState(
+                              () => _showCustomLocation = !_showCustomLocation),
                           borderRadius: BorderRadius.circular(8),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
                               children: [
                                 Icon(
-                                  _showCustomLocation ? Icons.keyboard_arrow_up : Icons.public,
+                                  _showCustomLocation
+                                      ? Icons.keyboard_arrow_up
+                                      : Icons.public,
                                   size: 18,
                                   color: AppColors.patientTeal,
                                 ),
@@ -333,14 +341,18 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                           label: '4★ & above',
                           selected: _minRating != null && _minRating! >= 4,
                           onTap: () => setState(() {
-                            _minRating = _minRating != null && _minRating! >= 4 ? null : 4.0;
+                            _minRating = _minRating != null && _minRating! >= 4
+                                ? null
+                                : 4.0;
                           }),
                         ),
                         _OptionChip(
                           label: '3★ & above',
                           selected: _minRating != null && _minRating! < 4,
                           onTap: () => setState(() {
-                            _minRating = _minRating != null && _minRating! < 4 ? null : 3.0;
+                            _minRating = _minRating != null && _minRating! < 4
+                                ? null
+                                : 3.0;
                           }),
                         ),
                       ],
@@ -409,7 +421,9 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                 ),
                 child: Text(
                   'Apply filters',
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyLarge,
+                      fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -468,10 +482,13 @@ class _OptionChip extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? AppColors.patientTeal : AppColors.cardBgOf(context),
+            color:
+                selected ? AppColors.patientTeal : AppColors.cardBgOf(context),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? AppColors.patientTeal : AppColors.borderOf(context),
+              color: selected
+                  ? AppColors.patientTeal
+                  : AppColors.borderOf(context),
             ),
           ),
           child: Text(
@@ -479,7 +496,9 @@ class _OptionChip extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
-              color: selected ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
+              color: selected
+                  ? AppColors.surfaceOf(context)
+                  : AppColors.textPrimaryOf(context),
             ),
           ),
         ),

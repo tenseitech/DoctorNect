@@ -22,12 +22,14 @@ class DoctorVerificationGate extends StatelessWidget {
   Widget build(BuildContext context) {
     if (doctorId.isEmpty) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppColors.doctorBlue)),
+        body: Center(
+            child: CircularProgressIndicator(color: AppColors.doctorBlue)),
       );
     }
 
     return StreamBuilder<bool>(
-      stream: FirestoreService.instance.doctorVerification.watchVerified(doctorId),
+      stream:
+          FirestoreService.instance.doctorVerification.watchVerified(doctorId),
       builder: (context, snapshot) {
         final verified = snapshot.data ?? false;
         return verifiedChildOverride ??

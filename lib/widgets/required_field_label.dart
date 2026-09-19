@@ -38,7 +38,8 @@ class RequiredFieldLabel extends StatelessWidget {
 /// Helpers for applying required-field labels across the app.
 abstract final class RequiredFieldLabels {
   /// Strips a trailing ` *` from legacy label strings.
-  static String clean(String label) => label.replaceFirst(RegExp(r'\s*\*$'), '');
+  static String clean(String label) =>
+      label.replaceFirst(RegExp(r'\s*\*$'), '');
 
   static InputDecoration decorate(
     InputDecoration decoration,
@@ -54,7 +55,9 @@ abstract final class RequiredFieldLabels {
     }
     return decoration.copyWith(
       labelText: null,
-      label: text.isNotEmpty ? RequiredFieldLabel(text, style: decoration.labelStyle) : null,
+      label: text.isNotEmpty
+          ? RequiredFieldLabel(text, style: decoration.labelStyle)
+          : null,
     );
   }
 

@@ -74,9 +74,11 @@ class _PatientRecordsScreenState extends State<PatientRecordsScreen>
 
     try {
       await Future.wait([
-        ClinicalPrescriptionStore.instance.refreshForPatient(patientId, preferCache: false),
+        ClinicalPrescriptionStore.instance
+            .refreshForPatient(patientId, preferCache: false),
         LabOrderStore.instance.refreshForPatient(patientId, preferCache: false),
-        PatientLabBookingStore.instance.refreshForPatient(patientId, preferCache: false),
+        PatientLabBookingStore.instance
+            .refreshForPatient(patientId, preferCache: false),
       ]);
     } catch (_) {
       if (mounted) {
@@ -90,9 +92,11 @@ class _PatientRecordsScreenState extends State<PatientRecordsScreen>
 
   void _openRecord(HealthRecord record) {
     if (record.prescriptionId != null) {
-      final draft = ClinicalPrescriptionStore.instance.findById(record.prescriptionId!);
+      final draft =
+          ClinicalPrescriptionStore.instance.findById(record.prescriptionId!);
       if (draft == null) {
-        AppToast.info(context, 'Prescription not found. Pull to refresh and try again.');
+        AppToast.info(
+            context, 'Prescription not found. Pull to refresh and try again.');
         return;
       }
       PrescriptionPreviewModal.show(context, draft: draft);
@@ -102,7 +106,8 @@ class _PatientRecordsScreenState extends State<PatientRecordsScreen>
     if (record.labOrderId != null) {
       final order = LabOrderStore.instance.findById(record.labOrderId!);
       if (order == null) {
-        AppToast.info(context, 'Lab test not found. Pull to refresh and try again.');
+        AppToast.info(
+            context, 'Lab test not found. Pull to refresh and try again.');
         return;
       }
       PatientLabOrderSheet.show(context, order);
@@ -110,9 +115,11 @@ class _PatientRecordsScreenState extends State<PatientRecordsScreen>
     }
 
     if (record.labBookingId != null) {
-      final booking = PatientLabBookingStore.instance.findById(record.labBookingId!);
+      final booking =
+          PatientLabBookingStore.instance.findById(record.labBookingId!);
       if (booking == null) {
-        AppToast.info(context, 'Blood test not found. Pull to refresh and try again.');
+        AppToast.info(
+            context, 'Blood test not found. Pull to refresh and try again.');
         return;
       }
       PatientBloodTestSheet.show(context, booking);
@@ -207,7 +214,8 @@ class _PatientRecordsScreenState extends State<PatientRecordsScreen>
           tabController: _tabController,
           accentColor: activeStyle.accentColor,
           tabLabels: [
-            for (var i = 0; i < _tabs.length; i++) '${_tabs[i].$2} (${counts[i]})',
+            for (var i = 0; i < _tabs.length; i++)
+              '${_tabs[i].$2} (${counts[i]})',
           ],
           tabBodies: [
             for (final tab in _tabs) _buildTabBody(tab.$1, tab.$2),

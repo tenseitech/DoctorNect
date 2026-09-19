@@ -1,5 +1,4 @@
 import '../../core/firebase/firestore_service.dart';
-import '../../core/notifications/app_toast.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -97,7 +96,9 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
   AmbulanceBooking? _findRestorableBooking(String patientId) {
     final mine = _store.bookings
         .where(
-          (b) => b.bookedById == patientId && b.bookedByRole == widget.bookedByRole,
+          (b) =>
+              b.bookedById == patientId &&
+              b.bookedByRole == widget.bookedByRole,
         )
         .toList();
 
@@ -105,7 +106,9 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     if (inProgress.isNotEmpty) return inProgress.first;
 
-    final unratedDone = mine.where((b) => b.isCompleted && !b.isRated && !b.isRatingSkipped).toList()
+    final unratedDone = mine
+        .where((b) => b.isCompleted && !b.isRated && !b.isRatingSkipped)
+        .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     if (unratedDone.isNotEmpty) return unratedDone.first;
 
@@ -113,7 +116,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
   }
 
   void _restoreActiveBooking() {
-    final patientId = AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
+    final patientId =
+        AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
     if (patientId.isEmpty) return;
 
     final existing = _findRestorableBooking(patientId);
@@ -247,7 +251,10 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
     } else if (widget.bookedByRole == AmbulanceBookedByRole.doctor) {
       if (!FirebaseBootstrap.isReady) return null;
       try {
-        final doc = await FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(bookerId).get();
+        final doc = await FirebaseFirestore.instance
+            .collection(FirestorePaths.doctors)
+            .doc(bookerId)
+            .get();
         if (doc.exists && doc.data() != null) {
           return readNestedAddressCity(doc.data()!);
         }
@@ -271,7 +278,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
     final pickupLocation = _pickupController.text.trim();
     setState(() => _submitting = true);
 
-    final patientId = AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
+    final patientId =
+        AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
     if (patientId.isEmpty) {
       setState(() => _submitting = false);
       _showBookingError(
@@ -287,7 +295,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
         ? userCity!.trim()
         : pickupLocation.trim();
 
-    final onlineDrivers = await _repository.fetchAllOnlineDrivers(userCity: requestCity);
+    final onlineDrivers =
+        await _repository.fetchAllOnlineDrivers(userCity: requestCity);
     if (!mounted) return;
 
     if (onlineDrivers.isEmpty) {
@@ -339,7 +348,6 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
       );
       return;
     }
-
   }
 
   AmbulanceBooking? get _activeBooking {
@@ -359,7 +367,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
       builder: (context, _) {
         final active = _activeBooking;
         final canInteract = active == null && !_submitting;
-        final patientId = AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
+        final patientId =
+            AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
         return Scaffold(
           backgroundColor: AppColors.cardBgOf(context),
           appBar: AppBar(
@@ -382,7 +391,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: AmbulanceIcons.gradient.last.withValues(alpha: 0.28),
+                        color: AmbulanceIcons.gradient.last
+                            .withValues(alpha: 0.28),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -420,7 +430,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                   patientId: patientId,
                   role: widget.bookedByRole,
                   activeBookingId: _activeBookingId,
-                  onTap: () => _openAmbulanceHistory(context, patientId, widget.bookedByRole),
+                  onTap: () => _openAmbulanceHistory(
+                      context, patientId, widget.bookedByRole),
                 ),
               const SizedBox(width: 8),
             ],
@@ -447,10 +458,12 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                           decoration: BoxDecoration(
                             color: AppColors.surfaceOf(context),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.borderOf(context)),
+                            border:
+                                Border.all(color: AppColors.borderOf(context)),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.textPrimaryOf(context).withValues(alpha: 0.04),
+                                color: AppColors.textPrimaryOf(context)
+                                    .withValues(alpha: 0.04),
                                 blurRadius: 18,
                                 offset: const Offset(0, 6),
                               ),
@@ -467,7 +480,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                   _AmbulanceTypeDropdown(
                                     value: _selectedType,
                                     enabled: canInteract,
-                                    onChanged: (v) => setState(() => _selectedType = v),
+                                    onChanged: (v) =>
+                                        setState(() => _selectedType = v),
                                   ),
                                   if (active != null) ...[
                                     const SizedBox(height: 14),
@@ -486,21 +500,26 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               !active.isRatingSkipped
                                           ? () => _rateTrip(context, active)
                                           : null,
-                                      onCancel: active.isPending || active.isAccepted
+                                      onCancel: active.isPending ||
+                                              active.isAccepted
                                           ? () async {
-                                              final ok = await _repository.cancelBroadcast(
+                                              final ok = await _repository
+                                                  .cancelBroadcast(
                                                 active.id,
                                               );
                                               if (!mounted) return;
                                               if (ok) {
                                                 _sync.stopPatientWatch();
-                                                setState(() => _activeBookingId = null);
+                                                setState(() =>
+                                                    _activeBookingId = null);
                                               } else {
-                                                final message =
-                                                    _repository.lastCancelFailureUserMessage ??
+                                                final message = _repository
+                                                        .lastCancelFailureUserMessage ??
                                                     'Could not cancel this request. Please try again.';
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(content: Text(message)),
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                      content: Text(message)),
                                                 );
                                               }
                                             }
@@ -512,17 +531,19 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                     TextFormField(
                                       controller: _patientNameController,
                                       enabled: canInteract,
-                                      decoration:
-                                          _fieldDecoration('Patient name', Icons.person_outline),
-                                      validator: (v) => v == null || v.trim().isEmpty
-                                          ? 'Enter patient name'
-                                          : null,
+                                      decoration: _fieldDecoration(
+                                          'Patient name', Icons.person_outline),
+                                      validator: (v) =>
+                                          v == null || v.trim().isEmpty
+                                              ? 'Enter patient name'
+                                              : null,
                                     ),
                                     const SizedBox(height: 10),
                                     PhoneNumberField(
                                       controller: _phoneController,
                                       initialDialCode: _phoneDialCode,
-                                      onDialCodeChanged: (code) => _phoneDialCode = code,
+                                      onDialCodeChanged: (code) =>
+                                          _phoneDialCode = code,
                                       enabled: canInteract,
                                       decoration: _fieldDecoration(
                                         'Contact phone',
@@ -539,16 +560,21 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                   const SizedBox(height: 18),
                                   if (active == null) ...[
                                     FilledButton(
-                                      onPressed:
-                                          canInteract && !_submitting ? _bookAmbulance : null,
+                                      onPressed: canInteract && !_submitting
+                                          ? _bookAmbulance
+                                          : null,
                                       style: FilledButton.styleFrom(
-                                        backgroundColor: const Color(0xFFDC2626),
+                                        backgroundColor:
+                                            const Color(0xFFDC2626),
                                         disabledBackgroundColor:
-                                            const Color(0xFFDC2626).withValues(alpha: 0.35),
+                                            const Color(0xFFDC2626)
+                                                .withValues(alpha: 0.35),
                                         foregroundColor: AppColors.white,
-                                        minimumSize: const Size(double.infinity, 54),
+                                        minimumSize:
+                                            const Size(double.infinity, 54),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14),
+                                          borderRadius:
+                                              BorderRadius.circular(14),
                                         ),
                                       ),
                                       child: _submitting
@@ -557,18 +583,22 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               height: 22,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2.5,
-                                                color: AppColors.surfaceOf(context),
+                                                color: AppColors.surfaceOf(
+                                                    context),
                                               ),
                                             )
                                           : Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
-                                                const AmbulancePlusSign(size: 22),
+                                                const AmbulancePlusSign(
+                                                    size: 22),
                                                 const SizedBox(width: 10),
                                                 Text(
                                                   'Book Ambulance',
                                                   style: GoogleFonts.inter(
-                                                    fontSize: AppTypography.headlineSmall,
+                                                    fontSize: AppTypography
+                                                        .headlineSmall,
                                                     fontWeight: FontWeight.w700,
                                                   ),
                                                 ),
@@ -582,7 +612,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.inter(
                                         fontSize: AppTypography.labelMedium,
-                                        color: AppColors.textSecondaryOf(context),
+                                        color:
+                                            AppColors.textSecondaryOf(context),
                                         height: 1.4,
                                       ),
                                     ),
@@ -601,15 +632,20 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               }
                                             : null,
                                         style: OutlinedButton.styleFrom(
-                                          foregroundColor: const Color(0xFFDC2626),
-                                          side: const BorderSide(color: Color(0xFFDC2626)),
-                                          minimumSize: const Size(double.infinity, 48),
+                                          foregroundColor:
+                                              const Color(0xFFDC2626),
+                                          side: const BorderSide(
+                                              color: Color(0xFFDC2626)),
+                                          minimumSize:
+                                              const Size(double.infinity, 48),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                           ),
                                         ),
                                         child: Row(
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             const AmbulancePlusSign(
                                               size: 18,
@@ -631,7 +667,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                         textAlign: TextAlign.center,
                                         style: GoogleFonts.inter(
                                           fontSize: AppTypography.labelSmall,
-                                          color: AppColors.textSecondaryOf(context),
+                                          color: AppColors.textSecondaryOf(
+                                              context),
                                           height: 1.35,
                                         ),
                                       ),
@@ -654,14 +691,16 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
     );
   }
 
-  void _openAmbulanceHistory(BuildContext context, String patientId, AmbulanceBookedByRole role) {
+  void _openAmbulanceHistory(
+      BuildContext context, String patientId, AmbulanceBookedByRole role) {
     showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: _AmbulanceHistoryDialog(
             patientId: patientId,
             role: role,
@@ -690,7 +729,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
         color: AppColors.textSecondaryOf(context),
         fontWeight: FontWeight.w500,
       ),
-      prefixIcon: Icon(icon, size: 19, color: AppColors.textSecondaryOf(context)),
+      prefixIcon:
+          Icon(icon, size: 19, color: AppColors.textSecondaryOf(context)),
       filled: true,
       fillColor: AppColors.cardBgOf(context),
       border: OutlineInputBorder(
@@ -723,10 +763,14 @@ class _EmergencyInfoStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.isDark(context) ? const Color(0xFF2D1515) : const Color(0xFFFEF2F2),
+        color: AppColors.isDark(context)
+            ? const Color(0xFF2D1515)
+            : const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.isDark(context) ? const Color(0xFF5C1D1D) : const Color(0xFFFECACA),
+          color: AppColors.isDark(context)
+              ? const Color(0xFF5C1D1D)
+              : const Color(0xFFFECACA),
         ),
       ),
       child: Padding(
@@ -741,7 +785,8 @@ class _EmergencyInfoStrip extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: AmbulancePlusSign(size: 18, color: AppColors.surfaceOf(context)),
+                child: AmbulancePlusSign(
+                    size: 18, color: AppColors.surfaceOf(context)),
               ),
             ),
             const SizedBox(width: 12),
@@ -868,115 +913,119 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: ListenableBuilder(
-          listenable: AmbulanceStore.instance,
-          builder: (context, _) {
-            final trips = AmbulanceStore.instance.bookings
-                .where(
-                  (b) =>
-                      b.bookedById == patientId &&
-                      b.bookedByRole == role &&
-                      (b.isCompleted || b.isCancelled) &&
-                      b.id != activeBookingId,
-                )
-                .toList()
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            listenable: AmbulanceStore.instance,
+            builder: (context, _) {
+              final trips = AmbulanceStore.instance.bookings
+                  .where(
+                    (b) =>
+                        b.bookedById == patientId &&
+                        b.bookedByRole == role &&
+                        (b.isCompleted || b.isCancelled) &&
+                        b.id != activeBookingId,
+                  )
+                  .toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 12, 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: AmbulanceIcons.gradient),
-                          borderRadius: BorderRadius.circular(12),
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 12, 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                                colors: AmbulanceIcons.gradient),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child:
+                              const Center(child: AmbulancePlusSign(size: 18)),
                         ),
-                        child: const Center(child: AmbulancePlusSign(size: 18)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ambulance History',
-                              style: GoogleFonts.inter(
-                                fontSize: AppTypography.headlineSmall,
-                                fontWeight: FontWeight.w700,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Ambulance History',
+                                style: GoogleFonts.inter(
+                                  fontSize: AppTypography.headlineSmall,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                            Text(
-                              trips.isEmpty
-                                  ? 'No past trips yet'
-                                  : '${trips.length} past trip${trips.length == 1 ? '' : 's'}',
-                              style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                color: AppColors.textSecondaryOf(context),
+                              Text(
+                                trips.isEmpty
+                                    ? 'No past trips yet'
+                                    : '${trips.length} past trip${trips.length == 1 ? '' : 's'}',
+                                style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelMedium,
+                                  color: AppColors.textSecondaryOf(context),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: Icon(Icons.close_rounded),
-                        color: AppColors.textSecondaryOf(context),
-                      ),
-                    ],
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: Icon(Icons.close_rounded),
+                          color: AppColors.textSecondaryOf(context),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Divider(height: 1, color: AppColors.borderOf(context)),
-                Expanded(
-                  child: trips.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(28),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 52,
-                                  height: 52,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFDC2626).withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Center(
-                                    child: AmbulancePlusSign(
-                                      size: 24,
-                                      color: Color(0xFFDC2626),
+                  Divider(height: 1, color: AppColors.borderOf(context)),
+                  Expanded(
+                    child: trips.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(28),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 52,
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDC2626)
+                                          .withValues(alpha: 0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: AmbulancePlusSign(
+                                        size: 24,
+                                        color: Color(0xFFDC2626),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Your completed trips will show here.',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.inter(
-                                    fontSize: AppTypography.bodyMedium,
-                                    color: AppColors.textSecondaryOf(context),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Your completed trips will show here.',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.inter(
+                                      fontSize: AppTypography.bodyMedium,
+                                      color: AppColors.textSecondaryOf(context),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            ),
+                          )
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+                            child: Column(
+                              children: trips
+                                  .map((trip) =>
+                                      _PatientHistoryTripCard(trip: trip))
+                                  .toList(),
                             ),
                           ),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
-                          child: Column(
-                            children: trips
-                                .map((trip) => _PatientHistoryTripCard(trip: trip))
-                                .toList(),
-                          ),
-                        ),
-                ),
-              ],
-            );
-          },
-        ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1001,7 +1050,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDone = trip.isCompleted;
-    final statusColor = isDone ? const Color(0xFF0D9488) : const Color(0xFFDC2626);
+    final statusColor =
+        isDone ? const Color(0xFF0D9488) : const Color(0xFFDC2626);
     final statusLabel = isDone ? 'Completed' : 'Cancelled';
 
     return Container(
@@ -1051,20 +1101,27 @@ class _PatientHistoryTripCard extends StatelessWidget {
               trip.notes!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ],
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.access_time, size: 13, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.7)),
+              Icon(Icons.access_time,
+                  size: 13,
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.7)),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
                   DateFormat('dd MMM yyyy · hh:mm a').format(trip.createdAt),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ),
             ],
@@ -1082,12 +1139,15 @@ class _PatientHistoryTripCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.local_hospital_outlined, size: 14, color: AppColors.textSecondaryOf(context)),
+                      Icon(Icons.local_hospital_outlined,
+                          size: 14, color: AppColors.textSecondaryOf(context)),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           trip.acceptedAmbulanceName!,
-                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelMedium,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -1098,18 +1158,24 @@ class _PatientHistoryTripCard extends StatelessWidget {
                       'Driver: ${trip.acceptedDriverName!} • ${trip.acceptedVehicleNumber ?? ""}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                   if (trip.acceptedDriverPhone != null) ...[
                     SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.phone_outlined, size: 12, color: AppColors.textSecondaryOf(context)),
+                        Icon(Icons.phone_outlined,
+                            size: 12,
+                            color: AppColors.textSecondaryOf(context)),
                         const SizedBox(width: 4),
                         Text(
                           trip.acceptedDriverPhone!,
-                          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelSmall,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
                       ],
                     ),
@@ -1167,13 +1233,16 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   icon: const Icon(Icons.star_rounded, size: 16),
                   label: Text(
                     'Rate & Review',
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        fontWeight: FontWeight.w600),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFF59E0B),
                     foregroundColor: Colors.white,
                     minimumSize: const Size(0, 38),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
               ),
@@ -1185,10 +1254,19 @@ class _PatientHistoryTripCard extends StatelessWidget {
 }
 
 const _kAmbulanceTypeGuideEntries = <(String, String)>[
-  ('BLS', 'Basic Life Support — non-critical, stable patient transport with basic medical support'),
-  ('ALS', 'Advanced Life Support — critical patients needing advanced medical intervention'),
+  (
+    'BLS',
+    'Basic Life Support — non-critical, stable patient transport with basic medical support'
+  ),
+  (
+    'ALS',
+    'Advanced Life Support — critical patients needing advanced medical intervention'
+  ),
   ('ICU', 'Intensive Care Unit — fully-equipped critical/ICU-level ambulance'),
-  ('Transport', 'Non-emergency patient transport — no medical emergency, just transport'),
+  (
+    'Transport',
+    'Non-emergency patient transport — no medical emergency, just transport'
+  ),
 ];
 
 Widget _ambulanceTypeGuideContent(BuildContext context) {
@@ -1304,11 +1382,36 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark(context);
     final options = <(AmbulanceType?, String, IconData, Color)>[
-      (null, 'All Types', Icons.notifications_active_outlined, const Color(0xFF6366F1)),
-      (AmbulanceType.bls, 'BLS', Icons.monitor_heart_outlined, const Color(0xFF16A34A)),
-      (AmbulanceType.als, 'ALS', Icons.medication_outlined, const Color(0xFF0284C7)),
-      (AmbulanceType.icu, 'ICU', Icons.emergency_outlined, const Color(0xFFDC2626)),
-      (AmbulanceType.patientTransport, 'Transport', Icons.accessible_outlined, const Color(0xFFCA8A04)),
+      (
+        null,
+        'All Types',
+        Icons.notifications_active_outlined,
+        const Color(0xFF6366F1)
+      ),
+      (
+        AmbulanceType.bls,
+        'BLS',
+        Icons.monitor_heart_outlined,
+        const Color(0xFF16A34A)
+      ),
+      (
+        AmbulanceType.als,
+        'ALS',
+        Icons.medication_outlined,
+        const Color(0xFF0284C7)
+      ),
+      (
+        AmbulanceType.icu,
+        'ICU',
+        Icons.emergency_outlined,
+        const Color(0xFFDC2626)
+      ),
+      (
+        AmbulanceType.patientTransport,
+        'Transport',
+        Icons.accessible_outlined,
+        const Color(0xFFCA8A04)
+      ),
     ];
 
     final unselectedBg =
@@ -1350,7 +1453,9 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Optional — leave on All Types for fastest match',
-          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelSmall,
+              color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 10),
         SingleChildScrollView(
@@ -1365,7 +1470,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                   onTap: enabled ? () => onChanged(type) : null,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: selected ? color : unselectedBg,
                       borderRadius: BorderRadius.circular(12),
@@ -1389,7 +1495,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                         Icon(
                           icon,
                           size: 16,
-                          color: selected ? AppColors.surfaceOf(context) : color,
+                          color:
+                              selected ? AppColors.surfaceOf(context) : color,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -1397,7 +1504,9 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w700,
-                            color: selected ? AppColors.surfaceOf(context) : unselectedText,
+                            color: selected
+                                ? AppColors.surfaceOf(context)
+                                : unselectedText,
                           ),
                         ),
                       ],
@@ -1455,7 +1564,8 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
     String? resolvedAddress;
 
     try {
-      final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      final placemarks =
+          await placemarkFromCoordinates(pos.latitude, pos.longitude);
       if (placemarks.isNotEmpty) {
         final pm = placemarks.first;
         final parts = [
@@ -1489,14 +1599,19 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
           final address = payload['address'] as Map<String, dynamic>?;
           if (address != null) {
             final road = address['road']?.toString();
-            final sub = (address['suburb'] ?? address['neighbourhood'])?.toString();
-            final city = (address['city'] ?? address['town'] ?? address['village'])?.toString();
+            final sub =
+                (address['suburb'] ?? address['neighbourhood'])?.toString();
+            final city =
+                (address['city'] ?? address['town'] ?? address['village'])
+                    ?.toString();
             final parts = [
               if (road != null && road.isNotEmpty) road,
               if (sub != null && sub.isNotEmpty) sub,
               if (city != null && city.isNotEmpty) city,
             ];
-            resolvedAddress = parts.isNotEmpty ? parts.join(', ') : (payload['display_name'] as String?);
+            resolvedAddress = parts.isNotEmpty
+                ? parts.join(', ')
+                : (payload['display_name'] as String?);
           }
         }
       } catch (_) {}
@@ -1591,7 +1706,8 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                   height: 14,
                   decoration: BoxDecoration(
                     color: AppColors.surfaceOf(context),
-                    border: Border.all(color: const Color(0xFFDC2626), width: 2.5),
+                    border:
+                        Border.all(color: const Color(0xFFDC2626), width: 2.5),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -1630,29 +1746,38 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFDC2626)),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Color(0xFFDC2626)),
                             )
-                          : const Icon(Icons.my_location, size: 20, color: Color(0xFFDC2626)),
-                      onPressed: widget.enabled && !_fetchingPickup ? _fetchPickupLocation : null,
+                          : const Icon(Icons.my_location,
+                              size: 20, color: Color(0xFFDC2626)),
+                      onPressed: widget.enabled && !_fetchingPickup
+                          ? _fetchPickupLocation
+                          : null,
                     ),
                     filled: true,
                     fillColor: AppColors.surfaceOf(context),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppColors.borderOf(context)),
+                      borderSide:
+                          BorderSide(color: AppColors.borderOf(context)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppColors.borderOf(context)),
+                      borderSide:
+                          BorderSide(color: AppColors.borderOf(context)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+                      borderSide: const BorderSide(
+                          color: Color(0xFFDC2626), width: 1.5),
                     ),
                   ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Enter pickup location' : null,
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Enter pickup location'
+                      : null,
                 ),
                 if (_showPickupLocationError) ...[
                   const SizedBox(height: 6),
@@ -1717,22 +1842,27 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                     ),
                     filled: true,
                     fillColor: AppColors.surfaceOf(context),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppColors.borderOf(context)),
+                      borderSide:
+                          BorderSide(color: AppColors.borderOf(context)),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppColors.borderOf(context)),
+                      borderSide:
+                          BorderSide(color: AppColors.borderOf(context)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.5),
+                      borderSide: const BorderSide(
+                          color: Color(0xFFDC2626), width: 1.5),
                     ),
                   ),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Enter destination' : null,
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Enter destination'
+                      : null,
                 ),
               ],
             ),
@@ -1811,7 +1941,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.booking.id != widget.booking.id ||
         oldWidget.booking.status != widget.booking.status ||
-        oldWidget.booking.acceptedAmbulanceId != widget.booking.acceptedAmbulanceId) {
+        oldWidget.booking.acceptedAmbulanceId !=
+            widget.booking.acceptedAmbulanceId) {
       _hydrateDriverDetails();
       _subscribeRejectedCount();
     }
@@ -1842,7 +1973,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
     if (driverId == null || driverId.isEmpty) return;
 
     setState(() => _loadingDetails = true);
-    final amb = await FirestoreService.instance.ambulance.fetchAmbulanceById(driverId);
+    final amb =
+        await FirestoreService.instance.ambulance.fetchAmbulanceById(driverId);
     if (!mounted) return;
     setState(() {
       _loadingDetails = false;
@@ -1870,13 +2002,15 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
         color = const Color(0xFFCA8A04);
         icon = Icons.hourglass_top;
         title = 'Waiting for acceptance';
-        subtitle = 'All online drivers were notified. First to accept gets your trip.';
+        subtitle =
+            'All online drivers were notified. First to accept gets your trip.';
         break;
       case AmbulanceBookingStatus.accepted:
         color = const Color(0xFF16A34A);
         icon = Icons.check_circle;
         title = 'Ambulance assigned';
-        subtitle = '${booking.acceptedAmbulanceName ?? "Ambulance"} is on the way.';
+        subtitle =
+            '${booking.acceptedAmbulanceName ?? "Ambulance"} is on the way.';
         break;
       case AmbulanceBookingStatus.completed:
         color = const Color(0xFF0D9488);
@@ -1889,7 +2023,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
         icon = Icons.cancel;
         if (booking.rawStatus == 'rejected') {
           title = 'Cancelled by Ambulance';
-          subtitle = 'The assigned ambulance driver has cancelled this request.';
+          subtitle =
+              'The assigned ambulance driver has cancelled this request.';
         } else {
           title = 'Request Cancelled';
           subtitle = 'Your ambulance request was cancelled.';
@@ -1901,7 +2036,9 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: widget.embedded ? AppColors.surfaceOf(context) : AppColors.cardBgOf(context),
+        color: widget.embedded
+            ? AppColors.surfaceOf(context)
+            : AppColors.cardBgOf(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
@@ -1936,37 +2073,46 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                   ],
                 ),
               ),
-              if (status == AmbulanceBookingStatus.completed && !booking.isRated && !booking.isRatingSkipped && widget.onDismiss != null)
+              if (status == AmbulanceBookingStatus.completed &&
+                  !booking.isRated &&
+                  !booking.isRatingSkipped &&
+                  widget.onDismiss != null)
                 GestureDetector(
                   onTap: () {
-                    FirestoreService.instance.ambulance.rateBroadcast(broadcastId: booking.id, stars: -1);
+                    FirestoreService.instance.ambulance
+                        .rateBroadcast(broadcastId: booking.id, stars: -1);
                     widget.onDismiss?.call();
                   },
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.textSecondaryOf(context).withValues(alpha: 0.1),
+                      color: AppColors.textSecondaryOf(context)
+                          .withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close_rounded, size: 16, color: AppColors.textSecondaryOf(context)),
+                    child: Icon(Icons.close_rounded,
+                        size: 16, color: AppColors.textSecondaryOf(context)),
                   ),
                 ),
             ],
           ),
           if ((status == AmbulanceBookingStatus.accepted ||
                   status == AmbulanceBookingStatus.completed) &&
-              (booking.acceptedAmbulanceId != null || _serviceName != null)) ...[
+              (booking.acceptedAmbulanceId != null ||
+                  _serviceName != null)) ...[
             const SizedBox(height: 14),
             _AcceptedDriverDetails(
               loading: _loadingDetails,
-              serviceName: _serviceName ?? booking.acceptedAmbulanceName ?? 'Ambulance',
+              serviceName:
+                  _serviceName ?? booking.acceptedAmbulanceName ?? 'Ambulance',
               driverName: _driverName,
               driverPhone: _driverPhone,
               vehicleNumber: _vehicleNumber,
               ambulanceType: _ambulanceType,
             ),
           ],
-          if (widget.remainingTimeLabel != null && status == AmbulanceBookingStatus.pending) ...[
+          if (widget.remainingTimeLabel != null &&
+              status == AmbulanceBookingStatus.pending) ...[
             const SizedBox(height: 12),
             // ── Rapido-style skipped drivers row ──────────────────────────
             if (_totalNotified > 0) ...[
@@ -1979,7 +2125,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
             Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -2005,7 +2152,9 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
               ),
             ),
           ],
-          if ((status == AmbulanceBookingStatus.pending || status == AmbulanceBookingStatus.accepted) && widget.onCancel != null) ...[
+          if ((status == AmbulanceBookingStatus.pending ||
+                  status == AmbulanceBookingStatus.accepted) &&
+              widget.onCancel != null) ...[
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
@@ -2031,25 +2180,31 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                if (status == AmbulanceBookingStatus.completed && !booking.isRated && !booking.isRatingSkipped) ...[
+                if (status == AmbulanceBookingStatus.completed &&
+                    !booking.isRated &&
+                    !booking.isRatingSkipped) ...[
                   FilledButton.icon(
                     onPressed: widget.onRate ??
                         () {
                           showAmbulanceRatingDialog(
                             context: context,
                             bookingId: booking.id,
-                            ambulanceName: booking.acceptedAmbulanceName ?? 'Ambulance',
+                            ambulanceName:
+                                booking.acceptedAmbulanceName ?? 'Ambulance',
                           );
                         },
                     icon: const Icon(Icons.star_rounded, size: 18),
                     label: Text(
                       'Rate Driver',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          fontWeight: FontWeight.w600),
                     ),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFF59E0B),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       minimumSize: const Size(0, 36),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -2058,10 +2213,12 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                   ),
                   const SizedBox(width: 10),
                 ],
-                if (status == AmbulanceBookingStatus.completed && booking.isRated) ...[
+                if (status == AmbulanceBookingStatus.completed &&
+                    booking.isRated) ...[
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
+                      const Icon(Icons.star_rounded,
+                          color: Color(0xFFF59E0B), size: 16),
                       const SizedBox(width: 4),
                       Text(
                         'Rated ${booking.rating}★',
@@ -2075,17 +2232,22 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                   ),
                   const Spacer(),
                 ],
-                if (status != AmbulanceBookingStatus.completed || booking.isRated || booking.isRatingSkipped) ...[
+                if (status != AmbulanceBookingStatus.completed ||
+                    booking.isRated ||
+                    booking.isRatingSkipped) ...[
                   TextButton(
                     onPressed: widget.onDismiss,
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondaryOf(context),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       minimumSize: const Size(0, 36),
                     ),
                     child: Text(
                       'Done',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -2160,7 +2322,8 @@ class _AcceptedDriverDetails extends StatelessWidget {
                     value: driverName!,
                   ),
                 ],
-                if (ambulanceType != null && ambulanceType!.trim().isNotEmpty) ...[
+                if (ambulanceType != null &&
+                    ambulanceType!.trim().isNotEmpty) ...[
                   const SizedBox(height: 6),
                   _DetailRow(
                     icon: Icons.medical_services_outlined,
@@ -2168,7 +2331,8 @@ class _AcceptedDriverDetails extends StatelessWidget {
                     value: ambulanceType!,
                   ),
                 ],
-                if (vehicleNumber != null && vehicleNumber!.trim().isNotEmpty) ...[
+                if (vehicleNumber != null &&
+                    vehicleNumber!.trim().isNotEmpty) ...[
                   const SizedBox(height: 6),
                   _DetailRow(
                     icon: Icons.directions_car_outlined,
@@ -2181,8 +2345,9 @@ class _AcceptedDriverDetails extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () =>
-                          ExternalLauncher.callPhone(driverPhone!.trim(), context: context),
+                      onPressed: () => ExternalLauncher.callPhone(
+                          driverPhone!.trim(),
+                          context: context),
                       icon: const Icon(Icons.phone, size: 18),
                       label: Text(
                         'Call ${driverPhone!.trim()}',
@@ -2225,9 +2390,13 @@ class _DetailRow extends StatelessWidget {
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
               children: [
-                TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w600)),
+                TextSpan(
+                    text: '$label: ',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 TextSpan(
                   text: value,
                   style: TextStyle(
@@ -2250,7 +2419,8 @@ class DigitsOnlyFormatter extends TextInputFormatter {
   final int? maxLength;
 
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
     var digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (maxLength != null && digits.length > maxLength!) {
       digits = digits.substring(0, maxLength!);
@@ -2281,13 +2451,15 @@ class _SkippedDriversRow extends StatelessWidget {
     final String message;
     final Color barColor;
     if (skipped == 0) {
-      message = '$total driver${total == 1 ? '' : 's'} notified — waiting for response';
+      message =
+          '$total driver${total == 1 ? '' : 's'} notified — waiting for response';
       barColor = const Color(0xFF16A34A);
     } else if (accepted > 0) {
       message = '$skipped of $total driver${total == 1 ? '' : 's'} skipped';
       barColor = const Color(0xFFCA8A04);
     } else {
-      message = '$skipped of $total driver${total == 1 ? '' : 's'} skipped your request';
+      message =
+          '$skipped of $total driver${total == 1 ? '' : 's'} skipped your request';
       barColor = const Color(0xFFDC2626);
     }
 

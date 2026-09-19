@@ -1,4 +1,4 @@
-﻿import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/firestore_service.dart';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -17,7 +17,8 @@ import '../../features/doctor/profile/data/doctor_profile_store.dart';
 abstract final class AmbulanceInviteService {
   static const inviteBaseUrl = 'https://doctornect.com/ambulance-setup';
 
-  static String buildInviteLink({required String inviteId, required String token}) {
+  static String buildInviteLink(
+      {required String inviteId, required String token}) {
     return '$inviteBaseUrl?invite=${Uri.encodeComponent(inviteId)}&token=${Uri.encodeComponent(token)}';
   }
 
@@ -26,8 +27,10 @@ abstract final class AmbulanceInviteService {
     required String serviceName,
     required String link,
   }) {
-    final doctor = doctorName.trim().isEmpty ? 'Your doctor' : doctorName.trim();
-    final service = serviceName.trim().isEmpty ? 'ambulance service' : serviceName.trim();
+    final doctor =
+        doctorName.trim().isEmpty ? 'Your doctor' : doctorName.trim();
+    final service =
+        serviceName.trim().isEmpty ? 'ambulance service' : serviceName.trim();
     return '$doctor invited you to join DoctorNect as the driver for $service. '
         'Download the app, open this link, set your PIN and login:\n$link';
   }
@@ -49,9 +52,8 @@ abstract final class AmbulanceInviteService {
     // Unguessable IDs — never use timestamps (enumerable IDOR).
     final inviteId = 'amb-inv-${_generateToken()}';
     final token = _generateToken();
-    final ambulanceId = draft.id.isNotEmpty
-        ? draft.id
-        : 'amb-reg-${_generateToken()}';
+    final ambulanceId =
+        draft.id.isNotEmpty ? draft.id : 'amb-reg-${_generateToken()}';
     final expiresAt = DateTime.now().add(const Duration(days: 30));
 
     final invite = AmbulanceInvite(
@@ -82,7 +84,10 @@ abstract final class AmbulanceInviteService {
     );
 
     try {
-      await FirebaseFirestore.instance.collection(FirestorePaths.ambulanceInvites).doc(inviteId).set({
+      await FirebaseFirestore.instance
+          .collection(FirestorePaths.ambulanceInvites)
+          .doc(inviteId)
+          .set({
         ...invite.toMap(),
         'createdAt': FieldValue.serverTimestamp(),
         'expiresAt': Timestamp.fromDate(expiresAt),
@@ -140,9 +145,11 @@ abstract final class AmbulanceInviteService {
     }
 
     final cleanUsername = username.trim().toLowerCase();
-    if (cleanUsername.length < 3) return 'Username must be at least 3 characters';
+    if (cleanUsername.length < 3)
+      return 'Username must be at least 3 characters';
 
-    final taken = await FirestoreService.instance.ambulance.fetchAmbulanceByUsername(
+    final taken =
+        await FirestoreService.instance.ambulance.fetchAmbulanceByUsername(
       cleanUsername,
       preferCache: false,
     );
@@ -155,20 +162,25 @@ abstract final class AmbulanceInviteService {
       pinHash: AmbulancePin.hash(pin),
     );
 
-    final result = await FirestoreService.instance.ambulance.registerAmbulance(ambulance);
+    final result =
+        await FirestoreService.instance.ambulance.registerAmbulance(ambulance);
     if (!result.ok) {
       return result.error ??
           'Could not create ambulance profile. Check connection.';
     }
 
     try {
-      await FirebaseFirestore.instance.collection(FirestorePaths.ambulanceInvites).doc(inviteId).set({
+      await FirebaseFirestore.instance
+          .collection(FirestorePaths.ambulanceInvites)
+          .doc(inviteId)
+          .set({
         'status': AmbulanceInviteStatus.completed.name,
         'username': cleanUsername,
         'completedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
-      if (kDebugMode) debugPrint('completeInviteSetup mark completed failed: $e');
+      if (kDebugMode)
+        debugPrint('completeInviteSetup mark completed failed: $e');
     }
 
     return null;

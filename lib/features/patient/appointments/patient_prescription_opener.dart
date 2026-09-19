@@ -8,7 +8,8 @@ import '../../doctor/clinical/prescription/prescription_preview_modal.dart';
 import 'models/patient_appointment_models.dart';
 
 abstract final class PatientPrescriptionOpener {
-  static Future<PrescriptionDraft?> loadDraft(PatientAppointment appointment) async {
+  static Future<PrescriptionDraft?> loadDraft(
+      PatientAppointment appointment) async {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return null;
 
@@ -81,7 +82,9 @@ abstract final class PatientPrescriptionOpener {
     if (diagnosis != null && diagnosis.isNotEmpty) {
       for (final draft in drafts) {
         final primary = draft.primaryDiagnosis.trim();
-        if (primary == diagnosis || primary.contains(diagnosis) || diagnosis.contains(primary)) {
+        if (primary == diagnosis ||
+            primary.contains(diagnosis) ||
+            diagnosis.contains(primary)) {
           return draft;
         }
       }

@@ -60,7 +60,7 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
   Future<void> _pickDateTime() async {
     final now = DateTime.now();
     final initialDate = _dateTime.isBefore(now) ? now : _dateTime;
-    
+
     final date = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -101,7 +101,7 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     final name = _nameController.text.trim();
     final age = int.tryParse(_ageController.text.trim());
     if (age == null) return;
@@ -152,7 +152,8 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat('EEE, dd MMM yyyy · hh:mm a').format(_dateTime);
+    final dateLabel =
+        DateFormat('EEE, dd MMM yyyy · hh:mm a').format(_dateTime);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -176,12 +177,16 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
               const SizedBox(height: 16),
               Text(
                 'Add Walk-in Patient',
-                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
                 'Register a patient who is at the clinic without an app booking.',
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -248,7 +253,8 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
                 onDialCodeChanged: (code) => _phoneDialCode = code,
                 labelText: 'Phone Number',
                 isRequired: true,
-                validator: (v) => FormValidators.phoneLocal(v, dialCode: _phoneDialCode),
+                validator: (v) =>
+                    FormValidators.phoneLocal(v, dialCode: _phoneDialCode),
               ),
               const SizedBox(height: 12),
               MultiTagInputField(
@@ -257,7 +263,8 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
                 addButtonLabel: '+ Add Entry',
                 tags: _chiefComplaints,
                 onAdd: (value) => setState(() {
-                  if (!_chiefComplaints.any((c) => c.toLowerCase() == value.toLowerCase())) {
+                  if (!_chiefComplaints
+                      .any((c) => c.toLowerCase() == value.toLowerCase())) {
                     _chiefComplaints.add(value);
                   }
                 }),
@@ -275,7 +282,8 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.doctorBlue,
                   side: const BorderSide(color: AppColors.doctorBlue),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                   alignment: Alignment.centerLeft,
                 ),
               ),

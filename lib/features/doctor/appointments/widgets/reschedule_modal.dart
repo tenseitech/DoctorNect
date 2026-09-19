@@ -24,7 +24,8 @@ class RescheduleModal extends StatefulWidget {
   });
 
   final Appointment appointment;
-  final void Function(DateTime date, String slot, String reason, bool notify) onConfirm;
+  final void Function(DateTime date, String slot, String reason, bool notify)
+      onConfirm;
   final bool showDragHandle;
 
   static const rescheduleReasons = [
@@ -38,7 +39,9 @@ class RescheduleModal extends StatefulWidget {
   static Future<void> show(
     BuildContext context, {
     required Appointment appointment,
-    required void Function(DateTime date, String slot, String reason, bool notify) onConfirm,
+    required void Function(
+            DateTime date, String slot, String reason, bool notify)
+        onConfirm,
   }) {
     final compact = ResponsiveLayout.isCompact(context);
 
@@ -108,7 +111,8 @@ class _RescheduleModalState extends State<RescheduleModal> {
 
   Future<void> _loadSlots() async {
     setState(() => _loadingSlots = true);
-    final slots = await FirestoreService.instance.doctorAvailability.slotsForDate(
+    final slots =
+        await FirestoreService.instance.doctorAvailability.slotsForDate(
       doctorId: DoctorSession.loggedInDoctorId,
       date: _selectedDate,
     );
@@ -118,7 +122,8 @@ class _RescheduleModalState extends State<RescheduleModal> {
           .where((s) => s.status == SlotStatus.available)
           .map((s) => s.label)
           .toList();
-      _selectedSlot = _availableSlots.contains(_selectedSlot) ? _selectedSlot : null;
+      _selectedSlot =
+          _availableSlots.contains(_selectedSlot) ? _selectedSlot : null;
       _loadingSlots = false;
     });
   }
@@ -177,7 +182,8 @@ class _RescheduleModalState extends State<RescheduleModal> {
             ),
           Row(
             children: [
-              const Icon(AppIcons.reschedule, size: 22, color: AppColors.doctorBlue),
+              const Icon(AppIcons.reschedule,
+                  size: 22, color: AppColors.doctorBlue),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -238,7 +244,9 @@ class _RescheduleModalState extends State<RescheduleModal> {
               ),
               child: Text(
                 'No slots available on this date. Update your availability schedule first.',
-                style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodySmall),
+                style: GoogleFonts.inter(
+                    color: AppColors.textSecondaryOf(context),
+                    fontSize: AppTypography.bodySmall),
               ),
             )
           else
@@ -264,7 +272,8 @@ class _RescheduleModalState extends State<RescheduleModal> {
               hintText: 'Select a reason',
               filled: true,
               fillColor: AppColors.cardBgOf(context),
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.inputRadius),
                 borderSide: BorderSide(color: AppColors.borderOf(context)),
@@ -282,10 +291,13 @@ class _RescheduleModalState extends State<RescheduleModal> {
           const SizedBox(height: 8),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text('Notify patient', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+            title: Text('Notify patient',
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
             subtitle: Text(
               'Send SMS & app notification',
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
             ),
             value: _notifyPatient,
             activeTrackColor: AppColors.doctorBlue.withValues(alpha: 0.5),
@@ -343,7 +355,9 @@ class _PatientSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = patientName.trim().isNotEmpty ? patientName.trim()[0].toUpperCase() : '?';
+    final initial = patientName.trim().isNotEmpty
+        ? patientName.trim()[0].toUpperCase()
+        : '?';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -417,7 +431,8 @@ class _DatePickerTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.doctorBlue),
+              Icon(Icons.calendar_today_outlined,
+                  size: 18, color: AppColors.doctorBlue),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -429,7 +444,8 @@ class _DatePickerTile extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right, size: 20, color: AppColors.textSecondaryOf(context)),
+              Icon(Icons.chevron_right,
+                  size: 20, color: AppColors.textSecondaryOf(context)),
             ],
           ),
         ),
@@ -464,7 +480,8 @@ class _SlotChip extends StatelessWidget {
                 : AppColors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: selected ? AppColors.doctorBlue : AppColors.borderOf(context),
+              color:
+                  selected ? AppColors.doctorBlue : AppColors.borderOf(context),
             ),
           ),
           child: Text(
@@ -472,7 +489,9 @@ class _SlotChip extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: AppTypography.labelMedium,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              color: selected ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
+              color: selected
+                  ? AppColors.doctorBlue
+                  : AppColors.textSecondaryOf(context),
             ),
           ),
         ),

@@ -21,7 +21,8 @@ abstract final class VitalsLogMapper {
 
       return VitalsLog(
         id: record.id,
-        dateTime: DateTime.tryParse(map['dateTime'] as String? ?? '') ?? record.date,
+        dateTime:
+            DateTime.tryParse(map['dateTime'] as String? ?? '') ?? record.date,
         systolic: (map['systolic'] as num?)?.toInt(),
         diastolic: (map['diastolic'] as num?)?.toInt(),
         pulse: (map['pulse'] as num?)?.toInt(),

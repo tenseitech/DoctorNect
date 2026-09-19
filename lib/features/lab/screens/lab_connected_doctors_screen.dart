@@ -53,7 +53,10 @@ class LabConnectedDoctorsScreen extends StatelessWidget {
           .toList(),
       activitySubtitleBuilder: (doctorId) {
         final count = worklistStore.forLabAndDoctor(labId, doctorId).length;
-        final last = worklistStore.forLabAndDoctor(labId, doctorId).firstOrNull?.createdAt;
+        final last = worklistStore
+            .forLabAndDoctor(labId, doctorId)
+            .firstOrNull
+            ?.createdAt;
         return '$count test orders${last != null ? ' · Last: ${DateFormat('dd MMM').format(last)}' : ''}';
       },
       onApprove: (id, doctorName) {

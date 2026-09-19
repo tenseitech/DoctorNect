@@ -18,7 +18,8 @@ import 'utils/patient_selected_investigations_mapper.dart';
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
 import '../../../core/theme/app_typography.dart';
 
-Future<void> showMyLabTestPickerAndBook(BuildContext context, SavedLabEntry lab) async {
+Future<void> showMyLabTestPickerAndBook(
+    BuildContext context, SavedLabEntry lab) async {
   final patientId = PatientSession.loggedInPatientId;
   if (patientId.isEmpty) {
     AppToast.info(context, 'Please sign in as a patient to book a lab test.');
@@ -49,7 +50,9 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
     final profile = PatientProfileMock.profile;
     _investigationsDraft = PrescriptionDraft(
       patient: PatientClinicalContext(
-        patientName: profile.name.isNotEmpty ? profile.name : PatientSession.loggedInPatientName,
+        patientName: profile.name.isNotEmpty
+            ? profile.name
+            : PatientSession.loggedInPatientName,
         age: profile.age,
         gender: profile.gender,
         patientId: PatientSession.loggedInPatientId,
@@ -59,11 +62,13 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
   }
 
   int _selectedInvestigationCount() {
-    return _investigationsDraft.validInvestigations.length + _investigationsDraft.bodyParts.length;
+    return _investigationsDraft.validInvestigations.length +
+        _investigationsDraft.bodyParts.length;
   }
 
   void _proceedWithSelectedTests() {
-    final tests = PatientSelectedInvestigationsMapper.toLabTests(_investigationsDraft);
+    final tests =
+        PatientSelectedInvestigationsMapper.toLabTests(_investigationsDraft);
     if (tests.isEmpty) {
       AppToast.info(context, 'Select at least one test to continue.');
       return;
@@ -106,7 +111,8 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: LabPageLayout.contentWidth(context)),
+          constraints:
+              BoxConstraints(maxWidth: LabPageLayout.contentWidth(context)),
           child: ListView(
             padding: EdgeInsets.fromLTRB(
               compact ? 16 : 20,
@@ -117,12 +123,17 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
             children: [
               Text(
                 labName.isEmpty ? 'Book lab tests' : 'Book at $labName',
-                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
                 'Choose tests below, then continue to complete your booking request.',
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
+                    height: 1.4),
               ),
               const SizedBox(height: 16),
               Container(
@@ -139,12 +150,17 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
                     if (!profileAgeValid) ...[
                       Text(
                         'Booking for ${PatientLabAgeGuard.selfAgeLabel()}',
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         PatientLabAgeGuard.missingAgeHint,
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.error, height: 1.4),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.error,
+                            height: 1.4),
                       ),
                       const SizedBox(height: 12),
                     ],

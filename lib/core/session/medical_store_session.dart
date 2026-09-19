@@ -1,4 +1,4 @@
-﻿import 'app_session.dart';
+import 'app_session.dart';
 
 /// Active medical store session for the logged-in pharmacy user.
 abstract final class MedicalStoreSession {

@@ -40,6 +40,7 @@ class AdaptiveAppShell extends StatelessWidget {
   final Widget? trailingFooter;
   final bool showMobileLogout;
   final bool showMobileTopBar;
+
   /// Per-tab request indicator dots (true = show dot).
   final List<bool> requestDots;
 
@@ -72,7 +73,8 @@ class AdaptiveAppShell extends StatelessWidget {
     if (compact) {
       return PopScope(
         canPop: Navigator.of(context).canPop() || selectedIndex == 0,
-        onPopInvokedWithResult: (didPop, _) => _handleBackInvoked(context, didPop),
+        onPopInvokedWithResult: (didPop, _) =>
+            _handleBackInvoked(context, didPop),
         child: MobileScaffold(
           padding: EdgeInsets.zero,
           extendBody: glassmorphic,
@@ -92,8 +94,10 @@ class AdaptiveAppShell extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
-                          Expanded(child: leadingHeader ?? const SizedBox.shrink()),
-                          if (showMobileLogout) LogoutIconButton(color: accentColor),
+                          Expanded(
+                              child: leadingHeader ?? const SizedBox.shrink()),
+                          if (showMobileLogout)
+                            LogoutIconButton(color: accentColor),
                         ],
                       ),
                     ),
@@ -112,7 +116,8 @@ class AdaptiveAppShell extends StatelessWidget {
 
     return PopScope(
       canPop: selectedIndex == 0 && !Navigator.of(context).canPop(),
-      onPopInvokedWithResult: (didPop, _) => _handleBackInvoked(context, didPop),
+      onPopInvokedWithResult: (didPop, _) =>
+          _handleBackInvoked(context, didPop),
       child: Scaffold(
         body: SafeArea(
           child: Row(
@@ -122,12 +127,14 @@ class AdaptiveAppShell extends StatelessWidget {
                 width: railWidth,
                 child: _CustomSidebar(
                   selectedIndex: selectedIndex,
-                  onDestinationSelected: (index) => _handleDestinationSelected(context, index),
+                  onDestinationSelected: (index) =>
+                      _handleDestinationSelected(context, index),
                   destinations: destinations,
                   extended: extended,
                   accentColor: primary,
                   filledActiveTabs: filledActiveTabs,
-                  leadingHeader: leadingHeader ?? SidebarDoctorNectLogo(extended: extended),
+                  leadingHeader: leadingHeader ??
+                      SidebarDoctorNectLogo(extended: extended),
                   trailingFooter: trailingFooter,
                   requestDots: requestDots,
                 ),
@@ -143,9 +150,11 @@ class AdaptiveAppShell extends StatelessWidget {
 }
 
 abstract final class _FilledNavActiveStyle {
-  static Color _activeEnd(Color accent) => Color.lerp(accent, const Color(0xFF0B1F33), 0.35)!;
+  static Color _activeEnd(Color accent) =>
+      Color.lerp(accent, const Color(0xFF0B1F33), 0.35)!;
 
-  static BoxDecoration decoration({required bool selected, required Color accent}) {
+  static BoxDecoration decoration(
+      {required bool selected, required Color accent}) {
     if (!selected) {
       return const BoxDecoration(color: Colors.transparent);
     }
@@ -213,8 +222,7 @@ class _CustomSidebar extends StatefulWidget {
   final Widget? trailingFooter;
   final List<bool> requestDots;
 
-  bool _showDot(int index) =>
-      index < requestDots.length && requestDots[index];
+  bool _showDot(int index) => index < requestDots.length && requestDots[index];
 
   @override
   State<_CustomSidebar> createState() => _CustomSidebarState();
@@ -272,9 +280,8 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                     duration: const Duration(milliseconds: 200),
                     curve: Curves.easeOutCubic,
                     padding: EdgeInsets.symmetric(
-                      horizontal: widget.extended ? 16 : 0, 
-                      vertical: widget.extended ? 12 : 12
-                    ),
+                        horizontal: widget.extended ? 16 : 0,
+                        vertical: widget.extended ? 12 : 12),
                     decoration: widget.filledActiveTabs
                         ? (selected
                             ? _FilledNavActiveStyle.decoration(
@@ -283,20 +290,24 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                               )
                             : BoxDecoration(
                                 color: isHovered
-                                    ? AppColors.textSecondaryOf(context).withValues(alpha: 0.06)
+                                    ? AppColors.textSecondaryOf(context)
+                                        .withValues(alpha: 0.06)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(12),
                               ))
                         : BoxDecoration(
-                            color: selected 
-                                ? widget.accentColor.withValues(alpha: 0.12) 
-                                : isHovered 
-                                    ? AppColors.textSecondaryOf(context).withValues(alpha: 0.05)
+                            color: selected
+                                ? widget.accentColor.withValues(alpha: 0.12)
+                                : isHovered
+                                    ? AppColors.textSecondaryOf(context)
+                                        .withValues(alpha: 0.05)
                                     : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                     child: Row(
-                      mainAxisAlignment: widget.extended ? MainAxisAlignment.start : MainAxisAlignment.center,
+                      mainAxisAlignment: widget.extended
+                          ? MainAxisAlignment.start
+                          : MainAxisAlignment.center,
                       children: [
                         Stack(
                           clipBehavior: Clip.none,
@@ -314,9 +325,10 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                                 top: -1,
                                 child: NavRequestDot(
                                   color: widget.accentColor,
-                                  borderColor: selected && widget.filledActiveTabs
-                                      ? widget.accentColor
-                                      : Colors.white,
+                                  borderColor:
+                                      selected && widget.filledActiveTabs
+                                          ? widget.accentColor
+                                          : Colors.white,
                                 ),
                               ),
                           ],
@@ -328,7 +340,9 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                               d.label,
                               style: GoogleFonts.inter(
                                 fontSize: AppTypography.bodyLarge,
-                                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                                fontWeight: selected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
                                 color: labelColor,
                               ),
                             ),
@@ -378,8 +392,7 @@ class _CompactBottomNavBar extends StatefulWidget {
   final bool filledActiveTabs;
   final List<bool> requestDots;
 
-  bool _showDot(int index) =>
-      index < requestDots.length && requestDots[index];
+  bool _showDot(int index) => index < requestDots.length && requestDots[index];
 
   @override
   State<_CompactBottomNavBar> createState() => _CompactBottomNavBarState();
@@ -447,7 +460,8 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
             children: List.generate(widget.destinations.length, (i) {
               final selected = i == widget.selectedIndex;
               final dest = widget.destinations[i];
-              final iconWidget = selected ? (dest.selectedIcon ?? dest.icon) : dest.icon;
+              final iconWidget =
+                  selected ? (dest.selectedIcon ?? dest.icon) : dest.icon;
               final iconData = _iconData(iconWidget);
               final iconColor = _FilledNavActiveStyle.iconColor(
                 selected: selected,
@@ -479,14 +493,20 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                               AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeOutCubic,
-                                width: widget.filledActiveTabs && selected ? 40 : null,
-                                height: widget.filledActiveTabs && selected ? 40 : null,
+                                width: widget.filledActiveTabs && selected
+                                    ? 40
+                                    : null,
+                                height: widget.filledActiveTabs && selected
+                                    ? 40
+                                    : null,
                                 alignment: Alignment.center,
                                 padding: widget.filledActiveTabs && selected
                                     ? EdgeInsets.zero
                                     : EdgeInsets.symmetric(
-                                        horizontal: widget.filledActiveTabs ? 14 : 12,
-                                        vertical: widget.filledActiveTabs ? 5 : 4,
+                                        horizontal:
+                                            widget.filledActiveTabs ? 14 : 12,
+                                        vertical:
+                                            widget.filledActiveTabs ? 5 : 4,
                                       ),
                                 decoration: widget.filledActiveTabs
                                     ? _FilledNavActiveStyle.decoration(
@@ -495,53 +515,64 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                                       )
                                     : BoxDecoration(
                                         color: selected
-                                            ? widget.accentColor.withValues(alpha: 0.12)
+                                            ? widget.accentColor
+                                                .withValues(alpha: 0.12)
                                             : Colors.transparent,
                                         borderRadius: BorderRadius.circular(14),
                                       ),
                                 child: iconData != null
                                     ? Icon(
                                         iconData,
-                                        size: widget.filledActiveTabs && selected
-                                            ? 22
-                                            : _iconSize(iconWidget, selected: selected),
+                                        size:
+                                            widget.filledActiveTabs && selected
+                                                ? 22
+                                                : _iconSize(iconWidget,
+                                                    selected: selected),
                                         color: iconColor,
                                       )
                                     : IconTheme(
                                         data: IconThemeData(
                                           color: iconColor,
-                                          size: widget.filledActiveTabs && selected
+                                          size: widget.filledActiveTabs &&
+                                                  selected
                                               ? 22
-                                              : _iconSize(iconWidget, selected: selected),
+                                              : _iconSize(iconWidget,
+                                                  selected: selected),
                                         ),
                                         child: iconWidget,
                                       ),
                               ),
                               if (widget._showDot(i))
                                 Positioned(
-                                  right: widget.filledActiveTabs && selected ? 2 : 6,
-                                  top: widget.filledActiveTabs && selected ? 2 : 0,
+                                  right: widget.filledActiveTabs && selected
+                                      ? 2
+                                      : 6,
+                                  top: widget.filledActiveTabs && selected
+                                      ? 2
+                                      : 0,
                                   child: NavRequestDot(
                                     color: widget.accentColor,
-                                    borderColor: selected && widget.filledActiveTabs
-                                        ? widget.accentColor
-                                        : Colors.white,
+                                    borderColor:
+                                        selected && widget.filledActiveTabs
+                                            ? widget.accentColor
+                                            : Colors.white,
                                   ),
                                 ),
                             ],
                           ),
-                        const SizedBox(height: 2),
-                        SafeBottomNavLabel(
-                          label: _navLabel(dest.label),
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            height: 1.1,
-                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                            color: labelColor,
+                          const SizedBox(height: 2),
+                          SafeBottomNavLabel(
+                            label: _navLabel(dest.label),
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              height: 1.1,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                              color: labelColor,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -556,9 +587,8 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
     final navBg = isDark
         ? AppColors.darkSurface.withValues(alpha: 0.92)
         : Colors.white.withValues(alpha: 0.76);
-    final borderClr = isDark
-        ? AppColors.darkBorder
-        : Colors.black.withValues(alpha: 0.08);
+    final borderClr =
+        isDark ? AppColors.darkBorder : Colors.black.withValues(alpha: 0.08);
 
     if (widget.glassmorphic) {
       return ClipRect(

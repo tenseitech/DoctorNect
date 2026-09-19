@@ -34,7 +34,8 @@ class MobileRegistrationLookup {
     final appCheckBlock = await AppCheckService.ensureForCallable();
     if (appCheckBlock != null) {
       if (kDebugMode) {
-        debugPrint('[MobileRegistrationLookup] App Check blocked: $appCheckBlock');
+        debugPrint(
+            '[MobileRegistrationLookup] App Check blocked: $appCheckBlock');
       }
       return null;
     }

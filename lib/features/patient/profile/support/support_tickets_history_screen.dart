@@ -15,7 +15,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Ticket History', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('Ticket History',
+          context: context),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('support_tickets')
@@ -134,7 +135,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
 
                   String formattedDate = '';
                   if (timestamp != null) {
-                    formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(timestamp.toDate());
+                    formattedDate = DateFormat('dd MMM yyyy, hh:mm a')
+                        .format(timestamp.toDate());
                   } else {
                     formattedDate = 'Just now';
                   }
@@ -148,103 +150,112 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.borderOf(context), width: 0.5),
+                          border: Border.all(
+                              color: AppColors.borderOf(context), width: 0.5),
                         ),
                         child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.patientTeal.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      issueType,
-                                      style: GoogleFonts.inter(
-                                        fontSize: AppTypography.labelMedium,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.patientTeal,
-                                      ),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.patientTeal
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    issueType,
+                                    style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelMedium,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.patientTeal,
                                     ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: statusBg,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      statusLabel,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: statusColor,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                message,
-                                style: GoogleFonts.inter(
-                                  fontSize: AppTypography.bodyMedium,
-                                  color: AppColors.textPrimaryOf(context),
-                                  height: 1.4,
                                 ),
-                              ),
-                              if (screenshot != null) ...[
-                                SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Icon(Icons.attach_file, size: 14, color: AppColors.textSecondaryOf(context)),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        screenshot,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
-                                          fontSize: AppTypography.labelMedium,
-                                          color: AppColors.textSecondaryOf(context),
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: statusBg,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    statusLabel,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: statusColor,
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ],
-                              SizedBox(height: 12),
-                              Divider(height: 1, color: AppColors.borderOf(context)),
-                              const SizedBox(height: 8),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              message,
+                              style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodyMedium,
+                                color: AppColors.textPrimaryOf(context),
+                                height: 1.4,
+                              ),
+                            ),
+                            if (screenshot != null) ...[
+                              SizedBox(height: 8),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    'Ticket ID: ${doc.id.substring(0, doc.id.length > 8 ? 8 : doc.id.length).toUpperCase()}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: AppTypography.labelSmall,
-                                      color: AppColors.textSecondaryOf(context),
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    formattedDate,
-                                    style: GoogleFonts.inter(
-                                      fontSize: AppTypography.labelSmall,
-                                      color: AppColors.textSecondaryOf(context),
+                                  Icon(Icons.attach_file,
+                                      size: 14,
+                                      color:
+                                          AppColors.textSecondaryOf(context)),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      screenshot,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        fontSize: AppTypography.labelMedium,
+                                        color:
+                                            AppColors.textSecondaryOf(context),
+                                        fontStyle: FontStyle.italic,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ],
-                          ),
+                            SizedBox(height: 12),
+                            Divider(
+                                height: 1, color: AppColors.borderOf(context)),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Ticket ID: ${doc.id.substring(0, doc.id.length > 8 ? 8 : doc.id.length).toUpperCase()}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.labelSmall,
+                                    color: AppColors.textSecondaryOf(context),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  formattedDate,
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.labelSmall,
+                                    color: AppColors.textSecondaryOf(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
+                    ),
                   );
                 }),
               ],

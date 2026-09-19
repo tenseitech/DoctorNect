@@ -86,7 +86,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
     setState(() => _submitting = true);
 
     try {
-      final booking = await FirestoreService.instance.labBooking.saveWalkInBooking(
+      final booking =
+          await FirestoreService.instance.labBooking.saveWalkInBooking(
         labId: labId,
         labName: labName.isNotEmpty ? labName : 'Lab',
         patientName: _nameController.text.trim(),
@@ -112,7 +113,10 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      AppToast.info(context, describeUserFacingError(e, fallback: 'Could not add walk-in patient. Please try again.'));
+      AppToast.info(
+          context,
+          describeUserFacingError(e,
+              fallback: 'Could not add walk-in patient. Please try again.'));
     }
   }
 
@@ -142,7 +146,9 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       Expanded(
                         child: Text(
                           'Walk-in Patient',
-                          style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineLarge,
+                              fontWeight: FontWeight.w700),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -150,227 +156,251 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const LabAllPatientsScreen()),
+                            MaterialPageRoute(
+                                builder: (_) => const LabAllPatientsScreen()),
                           );
                         },
-                        style: FilledButton.styleFrom(backgroundColor: _labPurple),
+                        style:
+                            FilledButton.styleFrom(backgroundColor: _labPurple),
                         child: Text(
                           'View all patients',
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
                   ),
-              const SizedBox(height: 4),
-              Text(
-                'Register a patient at the lab counter without an app booking.',
-                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
-              ),
-              const SizedBox(height: 20),
-              Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: _nameController,
-                      textCapitalization: TextCapitalization.words,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s\.\-']")),
-                      ],
-                      decoration: RequiredFieldLabels.decorate(
-                        InputDecoration(
-                          filled: true,
-                          fillColor: AppColors.surfaceOf(context),
-                        ),
-                        'Patient Name',
-                        isRequired: true,
-                      ),
-                      validator: FormValidators.patientName,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _ageController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(3),
-                            ],
-                            decoration: RequiredFieldLabels.decorate(
-                              InputDecoration(
-                                filled: true,
-                                fillColor: AppColors.surfaceOf(context),
-                              ),
-                              'Age',
-                              isRequired: true,
-                            ),
-                            validator: FormValidators.walkInAge,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _gender,
-                            decoration: RequiredFieldLabels.decorate(
-                              InputDecoration(
-                                filled: true,
-                                fillColor: AppColors.surfaceOf(context),
-                              ),
-                              'Gender',
-                              isRequired: true,
-                            ),
-                            items: AppConstants.genders
-                                .map(
-                                  (gender) => DropdownMenuItem(
-                                    value: gender,
-                                    child: Text(gender),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (v) {
-                              if (v != null) setState(() => _gender = v);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    PhoneNumberField(
-                      controller: _phoneController,
-                      initialDialCode: _phoneDialCode,
-                      onDialCodeChanged: (code) => _phoneDialCode = code,
-                      labelText: 'Phone Number',
-                      isRequired: true,
-                    ),
-                    const SizedBox(height: 12),
-                    MultiTagInputField(
-                      label: 'Tests',
-                      hintText: 'e.g. CBC, Lipid profile',
-                      addButtonLabel: '+ Add test',
-                      tags: _tests,
-                      suggestionFetcher: LabWalkInTestSuggestions.matching,
-                      onAdd: (value) => setState(() {
-                        if (!_tests.any((t) => t.toLowerCase() == value.toLowerCase())) {
-                          _tests.add(value);
-                        }
-                      }),
-                      onRemove: (value) => setState(
-                        () => _tests.removeWhere((t) => t.toLowerCase() == value.toLowerCase()),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: _submitting ? null : _submit,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _labPurple,
-                        minimumSize: const Size(double.infinity, 48),
-                      ),
-                      child: _submitting
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Text('Add Walk-in'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-              Row(
-                children: [
-                  Container(width: 3, height: 14, color: _labPurple),
-                  const SizedBox(width: 8),
+                  const SizedBox(height: 4),
                   Text(
-                    "Today's walk-ins",
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
+                    'Register a patient at the lab counter without an app booking.',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '(${walkIns.length})',
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (walkIns.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: Text(
-                      'No walk-in patients registered today',
-                      style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
-                    ),
-                  ),
-                )
-              else
-                ...walkIns.map(
-                  (booking) => Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceOf(context),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.borderOf(context)),
-                    ),
+                  const SizedBox(height: 20),
+                  Form(
+                    key: _formKey,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          booking.patientName,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                        TextFormField(
+                          controller: _nameController,
+                          textCapitalization: TextCapitalization.words,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r"[a-zA-Z\s\.\-']")),
+                          ],
+                          decoration: RequiredFieldLabels.decorate(
+                            InputDecoration(
+                              filled: true,
+                              fillColor: AppColors.surfaceOf(context),
+                            ),
+                            'Patient Name',
+                            isRequired: true,
+                          ),
+                          validator: FormValidators.patientName,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          booking.displayTestName,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context)),
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _ageController,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(3),
+                                ],
+                                decoration: RequiredFieldLabels.decorate(
+                                  InputDecoration(
+                                    filled: true,
+                                    fillColor: AppColors.surfaceOf(context),
+                                  ),
+                                  'Age',
+                                  isRequired: true,
+                                ),
+                                validator: FormValidators.walkInAge,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                initialValue: _gender,
+                                decoration: RequiredFieldLabels.decorate(
+                                  InputDecoration(
+                                    filled: true,
+                                    fillColor: AppColors.surfaceOf(context),
+                                  ),
+                                  'Gender',
+                                  isRequired: true,
+                                ),
+                                items: AppConstants.genders
+                                    .map(
+                                      (gender) => DropdownMenuItem(
+                                        value: gender,
+                                        child: Text(gender),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (v) {
+                                  if (v != null) setState(() => _gender = v);
+                                },
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${DateFormat('hh:mm a').format(booking.dateTime)} · ${booking.status}',
-                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                        const SizedBox(height: 12),
+                        PhoneNumberField(
+                          controller: _phoneController,
+                          initialDialCode: _phoneDialCode,
+                          onDialCodeChanged: (code) => _phoneDialCode = code,
+                          labelText: 'Phone Number',
+                          isRequired: true,
                         ),
-                        if (booking.hasReport) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.check_circle_outline, size: 15, color: AppColors.pharmacyGreen),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Report sent',
-                                style: GoogleFonts.inter(
+                        const SizedBox(height: 12),
+                        MultiTagInputField(
+                          label: 'Tests',
+                          hintText: 'e.g. CBC, Lipid profile',
+                          addButtonLabel: '+ Add test',
+                          tags: _tests,
+                          suggestionFetcher: LabWalkInTestSuggestions.matching,
+                          onAdd: (value) => setState(() {
+                            if (!_tests.any((t) =>
+                                t.toLowerCase() == value.toLowerCase())) {
+                              _tests.add(value);
+                            }
+                          }),
+                          onRemove: (value) => setState(
+                            () => _tests.removeWhere(
+                                (t) => t.toLowerCase() == value.toLowerCase()),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton(
+                          onPressed: _submitting ? null : _submit,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _labPurple,
+                            minimumSize: const Size(double.infinity, 48),
+                          ),
+                          child: _submitting
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Text('Add Walk-in'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      Container(width: 3, height: 14, color: _labPurple),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Today's walk-ins",
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodyMedium,
+                            fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '(${walkIns.length})',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (walkIns.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          'No walk-in patients registered today',
+                          style: GoogleFonts.inter(
+                              color: AppColors.textSecondaryOf(context)),
+                        ),
+                      ),
+                    )
+                  else
+                    ...walkIns.map(
+                      (booking) => Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceOf(context),
+                          borderRadius: BorderRadius.circular(12),
+                          border:
+                              Border.all(color: AppColors.borderOf(context)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              booking.patientName,
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodyLarge,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              booking.displayTestName,
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodySmall,
+                                  color: AppColors.textPrimaryOf(context)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${DateFormat('hh:mm a').format(booking.dateTime)} · ${booking.status}',
+                              style: GoogleFonts.inter(
                                   fontSize: AppTypography.labelMedium,
-                                  color: AppColors.pharmacyGreen,
-                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondaryOf(context)),
+                            ),
+                            if (booking.hasReport) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(Icons.check_circle_outline,
+                                      size: 15, color: AppColors.pharmacyGreen),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Report sent',
+                                    style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelMedium,
+                                      color: AppColors.pharmacyGreen,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              const SizedBox(height: 10),
+                              FilledButton.icon(
+                                onPressed: () => _shareReport(booking),
+                                icon: const Icon(Icons.upload_file_outlined,
+                                    size: 18),
+                                label: const Text('Share report'),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: _labPurple,
+                                  minimumSize: const Size(double.infinity, 40),
                                 ),
                               ),
                             ],
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 10),
-                          FilledButton.icon(
-                            onPressed: () => _shareReport(booking),
-                            icon: const Icon(Icons.upload_file_outlined, size: 18),
-                            label: const Text('Share report'),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: _labPurple,
-                              minimumSize: const Size(double.infinity, 40),
-                            ),
-                          ),
-                        ],
-                      ],
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      );
+        );
       },
     );
   }

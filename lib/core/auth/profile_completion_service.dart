@@ -35,7 +35,9 @@ class ProfileCompletionService extends ChangeNotifier {
 
     try {
       final userSnap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid),
+        reference: FirebaseFirestore.instance
+            .collection(FirestorePaths.users)
+            .doc(uid),
         preferCache: false,
       );
       final userData = userSnap.data();
@@ -78,7 +80,8 @@ class ProfileCompletionService extends ChangeNotifier {
       _isComplete = flag is bool ? flag : true;
       notifyListeners();
     } catch (e) {
-      if (kDebugMode) debugPrint('ProfileCompletionService ambulance refresh: $e');
+      if (kDebugMode)
+        debugPrint('ProfileCompletionService ambulance refresh: $e');
     }
   }
 
@@ -164,15 +167,18 @@ class ProfileCompletionService extends ChangeNotifier {
 
     try {
       final snap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance.collection(collection).doc(profileId),
+        reference:
+            FirebaseFirestore.instance.collection(collection).doc(profileId),
         preferCache: false,
       );
       final data = snap.data();
       final complete = switch (role) {
         UserType.doctor => ProfileCompletionChecker.isDoctorDocComplete(data),
-        UserType.medicalStore => ProfileCompletionChecker.isPharmacyDocComplete(data),
+        UserType.medicalStore =>
+          ProfileCompletionChecker.isPharmacyDocComplete(data),
         UserType.lab => ProfileCompletionChecker.isLabDocComplete(data),
-        UserType.ambulance => ProfileCompletionChecker.isAmbulanceDocComplete(data),
+        UserType.ambulance =>
+          ProfileCompletionChecker.isAmbulanceDocComplete(data),
         _ => false,
       };
       if (!complete) return;

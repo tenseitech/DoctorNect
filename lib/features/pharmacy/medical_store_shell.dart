@@ -83,7 +83,12 @@ class _MedicalStoreShellState extends State<MedicalStoreShell> {
     final unreadNotifications =
         PharmacyNotificationStore.instance.unreadCountForStore(storeId);
 
-    return [newRx > 0 ? newRx : null, connectPending > 0 ? connectPending : null, unreadNotifications > 0 ? unreadNotifications : null, null];
+    return [
+      newRx > 0 ? newRx : null,
+      connectPending > 0 ? connectPending : null,
+      unreadNotifications > 0 ? unreadNotifications : null,
+      null
+    ];
   }
 
   @override

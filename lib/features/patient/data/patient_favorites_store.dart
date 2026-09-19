@@ -22,9 +22,11 @@ class SavedLabEntry {
   final double rating;
   final String area;
 
-  String get key => (id?.trim().isNotEmpty == true ? id! : name.trim().toLowerCase());
+  String get key =>
+      (id?.trim().isNotEmpty == true ? id! : name.trim().toLowerCase());
 
-  PartnerLab toPartnerLab() => PartnerLab(id: id, name: name, rating: rating, area: area);
+  PartnerLab toPartnerLab() =>
+      PartnerLab(id: id, name: name, rating: rating, area: area);
 
   Map<String, dynamic> toMap() => {
         if (id != null && id!.trim().isNotEmpty) 'id': id,
@@ -100,8 +102,10 @@ class SavedDoctorEntry {
         'rating': rating,
         'reviewCount': reviewCount,
         'city': city,
-        if (photoUrl != null && photoUrl!.trim().isNotEmpty) 'photoUrl': photoUrl,
-        if (photoPath != null && photoPath!.trim().isNotEmpty) 'photoPath': photoPath,
+        if (photoUrl != null && photoUrl!.trim().isNotEmpty)
+          'photoUrl': photoUrl,
+        if (photoPath != null && photoPath!.trim().isNotEmpty)
+          'photoPath': photoPath,
       };
 
   factory SavedDoctorEntry.fromMap(Map<String, dynamic> data) {
@@ -155,6 +159,7 @@ class PatientFavoritesStore extends ChangeNotifier {
     _addedLabs.clear();
     notifyListeners();
   }
+
   List<Map<String, dynamic>> get addedDoctorsForPersist => _addedDoctorIds
       .map((id) => _addedDoctorSnapshots[id]?.toMap())
       .whereType<Map<String, dynamic>>()
@@ -178,10 +183,12 @@ class PatientFavoritesStore extends ChangeNotifier {
       );
 
     final localAddedDoctorIds = List<String>.from(_addedDoctorIds);
-    final localDoctorSnapshots = Map<String, SavedDoctorEntry>.from(_addedDoctorSnapshots);
-    final remoteAddedDoctorIds = (data?['addedDoctorIds'] as List<dynamic>? ?? const [])
-        .map((item) => item.toString())
-        .where((id) => id.trim().isNotEmpty);
+    final localDoctorSnapshots =
+        Map<String, SavedDoctorEntry>.from(_addedDoctorSnapshots);
+    final remoteAddedDoctorIds =
+        (data?['addedDoctorIds'] as List<dynamic>? ?? const [])
+            .map((item) => item.toString())
+            .where((id) => id.trim().isNotEmpty);
 
     _addedDoctorIds
       ..clear()
@@ -194,7 +201,8 @@ class PatientFavoritesStore extends ChangeNotifier {
         Map<String, SavedDoctorEntry>.fromEntries(
           (data?['addedDoctors'] as List<dynamic>? ?? const [])
               .whereType<Map>()
-              .map((item) => SavedDoctorEntry.fromMap(Map<String, dynamic>.from(item)))
+              .map((item) =>
+                  SavedDoctorEntry.fromMap(Map<String, dynamic>.from(item)))
               .where((entry) => entry.id.trim().isNotEmpty)
               .map((entry) => MapEntry(entry.id, entry)),
         ),
@@ -207,9 +215,8 @@ class PatientFavoritesStore extends ChangeNotifier {
     _addedLabs
       ..clear()
       ..addAll(
-        (data?['addedLabs'] as List<dynamic>? ?? const [])
-            .whereType<Map>()
-            .map((item) => SavedLabEntry.fromMap(Map<String, dynamic>.from(item))),
+        (data?['addedLabs'] as List<dynamic>? ?? const []).whereType<Map>().map(
+            (item) => SavedLabEntry.fromMap(Map<String, dynamic>.from(item))),
       );
     notifyListeners();
   }
@@ -244,7 +251,8 @@ class PatientFavoritesStore extends ChangeNotifier {
 
     final labs = <SavedLabEntry>[];
     final seen = <String>{};
-    for (final booking in PatientLabBookingStore.instance.forPatient(patientId)) {
+    for (final booking
+        in PatientLabBookingStore.instance.forPatient(patientId)) {
       final name = booking.labName?.trim() ?? '';
       if (name.isEmpty) continue;
       final entry = SavedLabEntry(
@@ -291,7 +299,8 @@ class PatientFavoritesStore extends ChangeNotifier {
     return labs;
   }
 
-  bool isDoctorVisible(String doctorId) => _visibleDoctorIds().contains(doctorId);
+  bool isDoctorVisible(String doctorId) =>
+      _visibleDoctorIds().contains(doctorId);
 
   bool isLabVisible(SavedLabEntry lab) {
     if (_hiddenLabKeys.contains(lab.key)) return false;
@@ -343,7 +352,9 @@ class PatientFavoritesStore extends ChangeNotifier {
   }
 
   List<SavedLabEntry> visibleLabs() {
-    return _allLabEntries().where((lab) => !_hiddenLabKeys.contains(lab.key)).toList();
+    return _allLabEntries()
+        .where((lab) => !_hiddenLabKeys.contains(lab.key))
+        .toList();
   }
 
   Future<void> addDoctor(String doctorId) async {
@@ -386,7 +397,8 @@ class PatientFavoritesStore extends ChangeNotifier {
       changed = true;
       _addedDoctorSnapshots.remove(doctorId);
     }
-    if (visitedDoctorIds().contains(doctorId) && _hiddenDoctorIds.add(doctorId)) {
+    if (visitedDoctorIds().contains(doctorId) &&
+        _hiddenDoctorIds.add(doctorId)) {
       changed = true;
     }
     if (!changed) return;
@@ -431,17 +443,22 @@ class PatientFavoritesStore extends ChangeNotifier {
   Future<List<SavedLabEntry>> registeredLabsForSearch() async {
     final registered = await FirestoreService.instance.lab.fetchVerifiedLabs();
     if (registered.isNotEmpty) {
-      return registered.map(SavedLabEntry.fromRegisteredLab).toList(growable: false);
+      return registered
+          .map(SavedLabEntry.fromRegisteredLab)
+          .toList(growable: false);
     }
 
     final catalog = await FirestoreService.instance.labCatalog.fetchCatalog();
-    return catalog.partnerLabs.map(SavedLabEntry.fromPartnerLab).toList(growable: false);
+    return catalog.partnerLabs
+        .map(SavedLabEntry.fromPartnerLab)
+        .toList(growable: false);
   }
 
   Future<void> _persist() async {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return;
-    await FirestoreService.instance.patientProfile.savePatientDocument(patientId, {
+    await FirestoreService.instance.patientProfile
+        .savePatientDocument(patientId, {
       'hiddenDoctorIds': _hiddenDoctorIds.toList(),
       'hiddenLabKeys': _hiddenLabKeys.toList(),
       'addedDoctorIds': _addedDoctorIds,

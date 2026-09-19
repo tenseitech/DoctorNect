@@ -77,7 +77,9 @@ class HealthRecordCard extends StatelessWidget {
               ),
             ),
           ),
-          if (showDivider) Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+          if (showDivider)
+            Divider(
+                height: 1, thickness: 1, color: AppColors.borderOf(context)),
         ],
       );
     }
@@ -128,14 +130,18 @@ class HealthRecordCard extends StatelessWidget {
                 record.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 2),
               Text(
                 _provider,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 6),
               Container(
@@ -188,20 +194,28 @@ class HealthRecordCard extends StatelessWidget {
                 children: [
                   Text(
                     record.title,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyLarge,
+                        fontWeight: FontWeight.w600),
                   ),
                   Text(
                     _provider,
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                   Text(
                     DateFormat('dd MMM yyyy').format(record.date),
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                   if (record.notes != null && record.notes!.trim().isNotEmpty)
                     Text(
                       record.notes!,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                 ],
               ),
@@ -227,11 +241,13 @@ class HealthRecordCard extends StatelessWidget {
         Row(
           children: [
             TextButton(onPressed: onTap, child: const Text('View')),
-            if (onShare != null) TextButton(onPressed: onShare, child: const Text('Share')),
+            if (onShare != null)
+              TextButton(onPressed: onShare, child: const Text('Share')),
             if (onDelete != null)
               TextButton(
                 onPressed: onDelete,
-                child: Text('Delete', style: GoogleFonts.inter(color: AppColors.error)),
+                child: Text('Delete',
+                    style: GoogleFonts.inter(color: AppColors.error)),
               ),
           ],
         ),

@@ -22,7 +22,8 @@ abstract final class DoctorReportOpener {
     }
 
     try {
-      if (!await FirestoreService.instance.patientProfile.isPatientSharingClinicalDataWithDoctors(
+      if (!await FirestoreService.instance.patientProfile
+          .isPatientSharingClinicalDataWithDoctors(
         patientId,
       )) {
         if (!context.mounted) return;
@@ -34,8 +35,8 @@ abstract final class DoctorReportOpener {
         return;
       }
 
-      final records =
-          await FirestoreService.instance.patientProfile.fetchHealthRecordsForDoctor(patientId);
+      final records = await FirestoreService.instance.patientProfile
+          .fetchHealthRecordsForDoctor(patientId);
       final match = _findRecord(records, reportName);
 
       if (match != null && match.hasUploadedFile) {
@@ -111,7 +112,8 @@ abstract final class DoctorReportOpener {
     }
   }
 
-  static HealthRecord? _findRecord(List<HealthRecord> records, String reportName) {
+  static HealthRecord? _findRecord(
+      List<HealthRecord> records, String reportName) {
     final normalized = reportName.trim().toLowerCase();
     for (final record in records) {
       final fileName = record.fileName.trim().toLowerCase();
@@ -138,7 +140,8 @@ abstract final class DoctorReportOpener {
         title: Text(title),
         content: Text(message),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
         ],
       ),
     );

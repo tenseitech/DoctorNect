@@ -93,7 +93,8 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                                 ),
                               ),
                             ),
-                            _StatusChip(label: status.label, color: status.color),
+                            _StatusChip(
+                                label: status.label, color: status.color),
                           ],
                         ),
                         const SizedBox(height: 3),
@@ -101,7 +102,9 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                           a.specialization,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -109,7 +112,8 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                             Icon(
                               Icons.schedule_outlined,
                               size: 14,
-                              color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9),
+                              color: AppColors.textSecondaryOf(context)
+                                  .withValues(alpha: 0.9),
                             ),
                             const SizedBox(width: 4),
                             Expanded(
@@ -117,7 +121,9 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                                 time,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                                style: GoogleFonts.inter(
+                                    fontSize: AppTypography.labelMedium,
+                                    color: AppColors.textSecondaryOf(context)),
                               ),
                             ),
                           ],
@@ -154,14 +160,16 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
-                    color: AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
+                    color: AppColors.textSecondaryOf(context)
+                        .withValues(alpha: 0.75),
                   ),
                 ],
               ),
             ),
           ),
         ),
-        if (widget.showDivider) Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+        if (widget.showDivider)
+          Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
       ],
     );
   }
@@ -199,7 +207,8 @@ class _DateBadge extends StatelessWidget {
       width: 48,
       height: 52,
       decoration: BoxDecoration(
-        color: highlight ? const Color(0xFF0F766E) : color.withValues(alpha: 0.85),
+        color:
+            highlight ? const Color(0xFF0F766E) : color.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -246,7 +255,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+        style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }

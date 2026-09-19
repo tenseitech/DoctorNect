@@ -118,10 +118,13 @@ class Appointment {
   final List<PatientReport> reports;
   final List<PastVisit> pastVisits;
   final PatientVitals? lastVitals;
+
   /// Account holder who booked on behalf of this patient (family member bookings only).
   final String? bookedByName;
+
   /// Relation to the account holder, e.g. Wife, Brother, Son.
   final String? patientRelation;
+
   /// Why patient shares this time slot with others (Emergency / custom).
   final String? slotShareReason;
 

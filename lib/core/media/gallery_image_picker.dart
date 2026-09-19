@@ -43,7 +43,8 @@ abstract final class GalleryImagePicker {
     return _pick(source: ImageSource.camera, imageQuality: imageQuality);
   }
 
-  static Future<List<PickedGalleryImage>> pickMultiple({int imageQuality = 85}) async {
+  static Future<List<PickedGalleryImage>> pickMultiple(
+      {int imageQuality = 85}) async {
     enableAndroidPhotoPicker();
     final files = await _picker.pickMultiImage(imageQuality: imageQuality);
     if (files.isEmpty) return const [];

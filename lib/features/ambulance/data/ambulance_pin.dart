@@ -60,7 +60,8 @@ abstract final class AmbulancePin {
         final iterations = int.tryParse(parts[1]) ?? 0;
         final salt = _fromHex(parts[2]);
         final expected = _fromHex(parts[3]);
-        if (iterations < 10000 || salt.isEmpty || expected.isEmpty) return false;
+        if (iterations < 10000 || salt.isEmpty || expected.isEmpty)
+          return false;
         final actual = _pbkdf2(
           password: utf8.encode(entered),
           salt: salt,
@@ -83,7 +84,8 @@ abstract final class AmbulancePin {
 
   static Uint8List _randomSalt(int length) {
     final random = Random.secure();
-    return Uint8List.fromList(List<int>.generate(length, (_) => random.nextInt(256)));
+    return Uint8List.fromList(
+        List<int>.generate(length, (_) => random.nextInt(256)));
   }
 
   static String _toHex(List<int> bytes) =>
@@ -122,7 +124,12 @@ abstract final class AmbulancePin {
     for (var block = 1; block <= blockCount; block++) {
       final blockSalt = BytesBuilder(copy: false)
         ..add(salt)
-        ..add([(block >> 24) & 0xff, (block >> 16) & 0xff, (block >> 8) & 0xff, block & 0xff]);
+        ..add([
+          (block >> 24) & 0xff,
+          (block >> 16) & 0xff,
+          (block >> 8) & 0xff,
+          block & 0xff
+        ]);
       var u = Uint8List.fromList(hmac.convert(blockSalt.toBytes()).bytes);
       final t = Uint8List.fromList(u);
       for (var i = 1; i < iterations; i++) {

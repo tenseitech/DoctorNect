@@ -26,12 +26,41 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
   static const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _slotDurations = [10, 15, 20, 30];
   static const _times = [
-    '06:00 AM', '06:30 AM', '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM',
-    '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-    '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
-    '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM',
-    '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM',
-    '09:00 PM', '09:30 PM', '10:00 PM', '10:30 PM', '11:00 PM',
+    '06:00 AM',
+    '06:30 AM',
+    '07:00 AM',
+    '07:30 AM',
+    '08:00 AM',
+    '08:30 AM',
+    '09:00 AM',
+    '09:30 AM',
+    '10:00 AM',
+    '10:30 AM',
+    '11:00 AM',
+    '11:30 AM',
+    '12:00 PM',
+    '12:30 PM',
+    '01:00 PM',
+    '01:30 PM',
+    '02:00 PM',
+    '02:30 PM',
+    '03:00 PM',
+    '03:30 PM',
+    '04:00 PM',
+    '04:30 PM',
+    '05:00 PM',
+    '05:30 PM',
+    '06:00 PM',
+    '06:30 PM',
+    '07:00 PM',
+    '07:30 PM',
+    '08:00 PM',
+    '08:30 PM',
+    '09:00 PM',
+    '09:30 PM',
+    '10:00 PM',
+    '10:30 PM',
+    '11:00 PM',
   ];
 
   final _formKey = GlobalKey<FormState>();
@@ -83,7 +112,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       _breakEnd = _breakStart;
       return;
     }
-    if (_timeSortKey(_breakEnd) <= _timeSortKey(_breakStart) || !endOptions.contains(_breakEnd)) {
+    if (_timeSortKey(_breakEnd) <= _timeSortKey(_breakStart) ||
+        !endOptions.contains(_breakEnd)) {
       _breakEnd = endOptions.first;
     }
   }
@@ -214,7 +244,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       builder: _datePickerTheme,
     );
     if (picked != null) {
-      setState(() => _blockedDates.add(DateTime(picked.year, picked.month, picked.day)));
+      setState(() =>
+          _blockedDates.add(DateTime(picked.year, picked.month, picked.day)));
     }
   }
 
@@ -307,10 +338,12 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         elevation: 0,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.doctorBlue))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.doctorBlue))
           : Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
+                constraints: BoxConstraints(
+                    maxWidth: ResponsiveLayout.contentMaxWidth(context)),
                 child: Form(
                   key: _formKey,
                   child: ListView(
@@ -333,14 +366,20 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                   _workingDays.remove(day);
                                 }
                               }),
-                              selectedColor: AppColors.doctorBlue.withValues(alpha: 0.15),
+                              selectedColor:
+                                  AppColors.doctorBlue.withValues(alpha: 0.15),
                               checkmarkColor: AppColors.doctorBlue,
                               labelStyle: GoogleFonts.inter(
-                                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                                color: active ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
+                                fontWeight:
+                                    active ? FontWeight.w600 : FontWeight.w400,
+                                color: active
+                                    ? AppColors.doctorBlue
+                                    : AppColors.textSecondaryOf(context),
                               ),
                               side: BorderSide(
-                                color: active ? AppColors.doctorBlue : AppColors.borderOf(context),
+                                color: active
+                                    ? AppColors.doctorBlue
+                                    : AppColors.borderOf(context),
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -359,19 +398,23 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 label: 'Opens At',
                                 value: _morningStart,
                                 times: _times,
-                                onChanged: (v) => setState(() => _morningStart = v!),
+                                onChanged: (v) =>
+                                    setState(() => _morningStart = v!),
                               ),
                             ),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 8),
-                              child: Icon(Icons.arrow_forward, size: 18, color: AppColors.textSecondaryOf(context)),
+                              child: Icon(Icons.arrow_forward,
+                                  size: 18,
+                                  color: AppColors.textSecondaryOf(context)),
                             ),
                             Expanded(
                               child: _TimeDropdown(
                                 label: 'Closes At',
                                 value: _morningEnd,
                                 times: _times,
-                                onChanged: (v) => setState(() => _morningEnd = v!),
+                                onChanged: (v) =>
+                                    setState(() => _morningEnd = v!),
                                 errorText: _clinicTimeError,
                               ),
                             ),
@@ -383,7 +426,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         title: 'Break Time',
                         trailing: Switch(
                           value: _breakEnabled,
-                          activeTrackColor: AppColors.doctorBlue.withValues(alpha: 0.5),
+                          activeTrackColor:
+                              AppColors.doctorBlue.withValues(alpha: 0.5),
                           activeThumbColor: AppColors.doctorBlue,
                           onChanged: (v) => setState(() {
                             _breakEnabled = v;
@@ -402,22 +446,28 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                           label: 'Start',
                                           value: _breakStart,
                                           times: _timesBefore(_breakEnd).isEmpty
-                                              ? _times.sublist(0, _times.length - 1)
+                                              ? _times.sublist(
+                                                  0, _times.length - 1)
                                               : _timesBefore(_breakEnd),
                                           onChanged: _onBreakStartChanged,
                                         ),
                                       ),
                                       Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 8),
-                                        child: Icon(Icons.arrow_forward, size: 18, color: AppColors.textSecondaryOf(context)),
+                                        padding:
+                                            EdgeInsets.symmetric(horizontal: 8),
+                                        child: Icon(Icons.arrow_forward,
+                                            size: 18,
+                                            color: AppColors.textSecondaryOf(
+                                                context)),
                                       ),
                                       Expanded(
                                         child: _TimeDropdown(
                                           label: 'End',
                                           value: _breakEnd,
-                                          times: _timesAfter(_breakStart).isEmpty
-                                              ? [_breakEnd]
-                                              : _timesAfter(_breakStart),
+                                          times:
+                                              _timesAfter(_breakStart).isEmpty
+                                                  ? [_breakEnd]
+                                                  : _timesAfter(_breakStart),
                                           onChanged: _onBreakEndChanged,
                                           errorText: _breakTimeError,
                                         ),
@@ -428,7 +478,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               )
                             : Text(
                                 'No break scheduled',
-                                style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodyMedium),
+                                style: GoogleFonts.inter(
+                                    color: AppColors.textSecondaryOf(context),
+                                    fontSize: AppTypography.bodyMedium),
                               ),
                       ),
                       const SizedBox(height: 16),
@@ -442,16 +494,25 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                             return ChoiceChip(
                               label: Text('$mins mins'),
                               selected: selected,
-                              onSelected: (_) => setState(() => _slotDuration = mins),
-                              selectedColor: AppColors.doctorBlue.withValues(alpha: 0.15),
+                              onSelected: (_) =>
+                                  setState(() => _slotDuration = mins),
+                              selectedColor:
+                                  AppColors.doctorBlue.withValues(alpha: 0.15),
                               labelStyle: GoogleFonts.inter(
-                                color: selected ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
-                                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                                color: selected
+                                    ? AppColors.doctorBlue
+                                    : AppColors.textSecondaryOf(context),
+                                fontWeight: selected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                               ),
                               side: BorderSide(
-                                color: selected ? AppColors.doctorBlue : AppColors.borderOf(context),
+                                color: selected
+                                    ? AppColors.doctorBlue
+                                    : AppColors.borderOf(context),
                               ),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
                             );
                           }).toList(),
                         ),
@@ -467,10 +528,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                             LengthLimitingTextInputFormatter(4),
                           ],
                           validator: FormValidators.maxAppointments,
-                          decoration: const InputDecoration(hintText: 'e.g. 20'),
+                          decoration:
+                              const InputDecoration(hintText: 'e.g. 20'),
                         ),
                       ),
-
                       const SizedBox(height: 16),
                       _card(
                         title: 'Block Specific Dates',
@@ -479,7 +540,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                           children: [
                             FilledButton.icon(
                               onPressed: () => _pickDates(range: false),
-                              icon: const Icon(Icons.event_busy_outlined, size: 18),
+                              icon: const Icon(Icons.event_busy_outlined,
+                                  size: 18),
                               label: const Text('Add Blocked Date'),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.doctorBlue,
@@ -492,11 +554,17 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: _blockedDates.map((d) {
-                                  final label = DateFormat('dd MMM yyyy').format(d);
+                                  final label =
+                                      DateFormat('dd MMM yyyy').format(d);
                                   return InputChip(
-                                    label: Text(label, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
-                                    onDeleted: () => setState(() => _blockedDates.remove(d)),
-                                    deleteIconColor: AppColors.textSecondaryOf(context),
+                                    label: Text(label,
+                                        style: GoogleFonts.inter(
+                                            fontSize:
+                                                AppTypography.labelMedium)),
+                                    onDeleted: () =>
+                                        setState(() => _blockedDates.remove(d)),
+                                    deleteIconColor:
+                                        AppColors.textSecondaryOf(context),
                                   );
                                 }).toList(),
                               ),
@@ -512,7 +580,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                           children: [
                             OutlinedButton.icon(
                               onPressed: () => _pickDates(range: true),
-                              icon: const Icon(Icons.date_range_outlined, size: 18),
+                              icon: const Icon(Icons.date_range_outlined,
+                                  size: 18),
                               label: Text(
                                 _leaveStart == null
                                     ? 'Select Leave Range'
@@ -520,7 +589,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               ),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.doctorBlue,
-                                side: const BorderSide(color: AppColors.doctorBlue),
+                                side: const BorderSide(
+                                    color: AppColors.doctorBlue),
                               ),
                             ),
                             if (_leaveStart != null)
@@ -541,7 +611,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: AppColors.white),
                               )
                             : const Text('Save Schedule'),
                       ),
@@ -616,20 +687,27 @@ class _TimeDropdown extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           initialValue: value,
           isExpanded: true,
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             filled: true,
             fillColor: AppColors.surfaceOf(context),
             errorText: errorText,
           ),
           items: items
-              .map((t) => DropdownMenuItem(value: t, child: Text(t, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall))))
+              .map((t) => DropdownMenuItem(
+                  value: t,
+                  child: Text(t,
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodySmall))))
               .toList(),
           onChanged: onChanged,
           validator: errorText != null ? (_) => errorText : null,

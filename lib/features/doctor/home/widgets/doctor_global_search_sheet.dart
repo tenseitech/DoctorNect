@@ -41,7 +41,8 @@ class DoctorGlobalSearchScreen extends StatefulWidget {
   }
 
   @override
-  State<DoctorGlobalSearchScreen> createState() => _DoctorGlobalSearchScreenState();
+  State<DoctorGlobalSearchScreen> createState() =>
+      _DoctorGlobalSearchScreenState();
 }
 
 class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
@@ -57,8 +58,9 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
   List<Appointment> get _filteredPatients {
     if (_query.trim().isEmpty) return [];
     final q = _query.trim().toLowerCase();
-    
-    final summaries = DoctorPatientsService.summariesForDoctor(DoctorSession.loggedInDoctorId);
+
+    final summaries = DoctorPatientsService.summariesForDoctor(
+        DoctorSession.loggedInDoctorId);
     return summaries
         .where((s) => s.name.toLowerCase().contains(q))
         .map((s) => Appointment(
@@ -82,14 +84,15 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
       city: DoctorProfileStore.instance.profile.city,
       address: DoctorProfileStore.instance.profile.addressLine1,
     );
-    
+
     // If user types 'medical', 'pharmacy' etc, show all stores (filtered by city)
-    final isCategorySearch = q == 'medical' || q == 'medical store' || q == 'pharmacy';
+    final isCategorySearch =
+        q == 'medical' || q == 'medical store' || q == 'pharmacy';
     final stores = PharmacyConnectionStore.instance.searchStores(
       isCategorySearch ? '' : q,
       cityFilter: doctorCity,
     );
-    
+
     return stores;
   }
 
@@ -100,14 +103,14 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
       city: DoctorProfileStore.instance.profile.city,
       address: DoctorProfileStore.instance.profile.addressLine1,
     );
-    
+
     // If user types 'lab', 'labs', 'pathology', show all labs (filtered by city)
     final isCategorySearch = q == 'lab' || q == 'labs' || q == 'pathology';
     final labs = LabConnectionStore.instance.searchLabs(
       isCategorySearch ? '' : q,
       cityFilter: doctorCity,
     );
-    
+
     return labs;
   }
 
@@ -121,7 +124,10 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
     final patients = _filteredPatients;
     final stores = _filteredStores;
     final labs = _filteredLabs;
-    final hasResults = patients.isNotEmpty || stores.isNotEmpty || labs.isNotEmpty || _showAmbulance;
+    final hasResults = patients.isNotEmpty ||
+        stores.isNotEmpty ||
+        labs.isNotEmpty ||
+        _showAmbulance;
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
@@ -133,7 +139,9 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
           controller: _searchController,
           autofocus: true,
           onChanged: (v) => setState(() => _query = v),
-          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textPrimaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.bodyMedium,
+              color: AppColors.textPrimaryOf(context)),
           decoration: InputDecoration(
             hintText: 'Search for patient, medical, lab...',
             hintStyle: GoogleFonts.inter(
@@ -168,7 +176,8 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                   Icon(
                     Icons.search_rounded,
                     size: 64,
-                    color: AppColors.textSecondaryOf(context).withValues(alpha: 0.2),
+                    color: AppColors.textSecondaryOf(context)
+                        .withValues(alpha: 0.2),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -190,7 +199,8 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                       Icon(
                         Icons.search_off_rounded,
                         size: 48,
-                        color: AppColors.textSecondaryOf(context).withValues(alpha: 0.4),
+                        color: AppColors.textSecondaryOf(context)
+                            .withValues(alpha: 0.4),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -204,7 +214,8 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                   ),
                 )
               : ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                   children: [
                     if (patients.isNotEmpty) ...[
                       _SectionHeader(title: 'Patients', count: patients.length),
@@ -221,7 +232,10 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                       const SizedBox(height: 16),
                     ],
                     if (stores.isNotEmpty) ...[
-                      _SectionHeader(title: 'Medical Stores', count: stores.length, color: AppColors.pharmacyGreen),
+                      _SectionHeader(
+                          title: 'Medical Stores',
+                          count: stores.length,
+                          color: AppColors.pharmacyGreen),
                       ...stores.map((s) => Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _MedicalStoreRow(store: s),
@@ -229,7 +243,10 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                       const SizedBox(height: 16),
                     ],
                     if (labs.isNotEmpty) ...[
-                      _SectionHeader(title: 'Labs', count: labs.length, color: Color(0xFF8B5CF6)),
+                      _SectionHeader(
+                          title: 'Labs',
+                          count: labs.length,
+                          color: Color(0xFF8B5CF6)),
                       ...labs.map((l) => Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _LabRow(lab: l),
@@ -237,7 +254,8 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                       const SizedBox(height: 16),
                     ],
                     if (_showAmbulance) ...[
-                      const _SectionHeader(title: 'Services', count: 1, color: Colors.red),
+                      const _SectionHeader(
+                          title: 'Services', count: 1, color: Colors.red),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: _AmbulanceRow(
@@ -263,7 +281,10 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.count, this.color = AppColors.doctorBlue});
+  const _SectionHeader(
+      {required this.title,
+      required this.count,
+      this.color = AppColors.doctorBlue});
 
   final String title;
   final int count;
@@ -277,9 +298,15 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Container(width: 3, height: 14, color: color),
           const SizedBox(width: 8),
-          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700)),
+          Text(title,
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodyMedium,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(width: 8),
-          Text('($count)', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
+          Text('($count)',
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context))),
         ],
       ),
     );
@@ -297,7 +324,8 @@ class _PatientRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final details = '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)} · Last visit: ${DateFormat('dd MMM').format(appointment.appointmentDate)}';
+    final details =
+        '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)} · Last visit: ${DateFormat('dd MMM').format(appointment.appointmentDate)}';
 
     return Material(
       color: AppColors.cardBgOf(context),
@@ -313,7 +341,8 @@ class _PatientRow extends StatelessWidget {
           ),
           child: Row(
             children: [
-              PatientAvatar(name: appointment.patientName, gender: appointment.gender),
+              PatientAvatar(
+                  name: appointment.patientName, gender: appointment.gender),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -340,7 +369,9 @@ class _PatientRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.6)),
+              Icon(Icons.chevron_right,
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.6)),
             ],
           ),
         ),
@@ -373,18 +404,24 @@ class _MedicalStoreRow extends StatelessWidget {
               color: AppColors.pharmacyGreen.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.local_pharmacy_outlined, color: AppColors.pharmacyGreen, size: 20),
+            child: const Icon(Icons.local_pharmacy_outlined,
+                color: AppColors.pharmacyGreen, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(store.storeName, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
+                Text(store.storeName,
+                    style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: AppTypography.bodyMedium)),
                 const SizedBox(height: 2),
                 Text(
                   store.address,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -421,18 +458,24 @@ class _LabRow extends StatelessWidget {
               color: _labPurple.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.biotech_outlined, color: _labPurple, size: 20),
+            child:
+                const Icon(Icons.biotech_outlined, color: _labPurple, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(lab.labName, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
+                Text(lab.labName,
+                    style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: AppTypography.bodyMedium)),
                 const SizedBox(height: 2),
                 Text(
                   lab.address,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -472,23 +515,31 @@ class _AmbulanceRow extends StatelessWidget {
                   color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.emergency_outlined, color: Colors.red, size: 20),
+                child: const Icon(Icons.emergency_outlined,
+                    color: Colors.red, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Ambulance Service', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
+                    Text('Ambulance Service',
+                        style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: AppTypography.bodyMedium)),
                     const SizedBox(height: 2),
                     Text(
                       'Book an emergency ambulance',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.6)),
+              Icon(Icons.chevron_right,
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.6)),
             ],
           ),
         ),

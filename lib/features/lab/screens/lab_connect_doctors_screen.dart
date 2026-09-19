@@ -84,17 +84,23 @@ class LabConnectDoctorsScreen extends StatelessWidget {
       ),
       activitySubtitleBuilder: (doctorId) {
         final count = worklistStore.forLabAndDoctor(labId, doctorId).length;
-        final last = worklistStore.forLabAndDoctor(labId, doctorId).firstOrNull?.createdAt;
+        final last = worklistStore
+            .forLabAndDoctor(labId, doctorId)
+            .firstOrNull
+            ?.createdAt;
         return '$count test orders${last != null ? ' · Last: ${DateFormat('dd MMM').format(last)}' : ''}';
       },
       onApproveConnection: (id, doctorName) => connStore.approveByLab(id),
       onRejectConnection: (id, doctorName) => connStore.rejectByLab(id),
       onRevokeConnection: (id, doctorName) => connStore.removeConnection(id),
       onRemoveConnection: (id, doctorName) => connStore.removeConnection(id),
-      onSendRequest: (doctor) => connStore.sendRequest(labId: labId, doctorId: doctor.id),
+      onSendRequest: (doctor) =>
+          connStore.sendRequest(labId: labId, doctorId: doctor.id),
       isConnected: (doctorId) => connStore.isConnected(doctorId, labId),
-      isPendingSent: (doctorId) => connStore.isPendingSentByLab(labId: labId, doctorId: doctorId),
-      isPendingFromDoctor: (doctorId) => connStore.isPendingFromDoctor(labId: labId, doctorId: doctorId),
+      isPendingSent: (doctorId) =>
+          connStore.isPendingSentByLab(labId: labId, doctorId: doctorId),
+      isPendingFromDoctor: (doctorId) =>
+          connStore.isPendingFromDoctor(labId: labId, doctorId: doctorId),
       attachFirestoreSync: () {
         FirestoreScreenSync.attachLabPendingConnections(
           role: UserType.lab,
@@ -108,7 +114,8 @@ class LabConnectDoctorsScreen extends StatelessWidget {
           ),
         );
       },
-      detachFirestoreSync: () => FirestoreScreenSync.detachLabPendingConnections(),
+      detachFirestoreSync: () =>
+          FirestoreScreenSync.detachLabPendingConnections(),
       pageLayoutBuilder: (context, child) => LabPageLayout(child: child),
     );
   }

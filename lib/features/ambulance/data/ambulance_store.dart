@@ -14,7 +14,8 @@ class AmbulanceStore extends ChangeNotifier {
   final Map<String, List<AmbulanceDriverAlert>> _driverAlerts = {};
   final Map<String, Set<String>> _driverRejectedBookings = {};
 
-  List<RegisteredAmbulance> get registeredAmbulances => List.unmodifiable(_providers);
+  List<RegisteredAmbulance> get registeredAmbulances =>
+      List.unmodifiable(_providers);
   List<AmbulanceBooking> get bookings => List.unmodifiable(_bookings);
 
   void clear() {
@@ -114,8 +115,7 @@ class AmbulanceStore extends ChangeNotifier {
     final list = _driverAlerts[ambulanceId];
     if (list == null || list.isEmpty) return;
     _driverAlerts[ambulanceId] = [
-      for (final a in list)
-        a.id == alertId ? a.copyWith(isRead: true) : a,
+      for (final a in list) a.id == alertId ? a.copyWith(isRead: true) : a,
     ];
     notifyListeners();
   }
@@ -133,11 +133,14 @@ class AmbulanceStore extends ChangeNotifier {
   bool isPendingForDriver(AmbulanceBooking booking, String ambulanceId) =>
       booking.isPending &&
       booking.acceptedAmbulanceId == null &&
-      !hasDriverRejectedBooking(ambulanceId: ambulanceId, bookingId: booking.id);
+      !hasDriverRejectedBooking(
+          ambulanceId: ambulanceId, bookingId: booking.id);
 
   /// Driver-declined booking for the cancelled tab (offline fallback).
-  bool isDriverRejectedBookingView(AmbulanceBooking booking, String ambulanceId) =>
-      hasDriverRejectedBooking(ambulanceId: ambulanceId, bookingId: booking.id) &&
+  bool isDriverRejectedBookingView(
+          AmbulanceBooking booking, String ambulanceId) =>
+      hasDriverRejectedBooking(
+          ambulanceId: ambulanceId, bookingId: booking.id) &&
       booking.isPending &&
       booking.acceptedAmbulanceId == null;
 
@@ -152,13 +155,16 @@ class AmbulanceStore extends ChangeNotifier {
     AmbulanceBookingStatus previous,
     AmbulanceBookingStatus incoming,
   ) {
-    if (incoming == AmbulanceBookingStatus.completed || previous == AmbulanceBookingStatus.completed) {
+    if (incoming == AmbulanceBookingStatus.completed ||
+        previous == AmbulanceBookingStatus.completed) {
       return AmbulanceBookingStatus.completed;
     }
-    if (incoming == AmbulanceBookingStatus.cancelled || previous == AmbulanceBookingStatus.cancelled) {
+    if (incoming == AmbulanceBookingStatus.cancelled ||
+        previous == AmbulanceBookingStatus.cancelled) {
       return AmbulanceBookingStatus.cancelled;
     }
-    if (incoming == AmbulanceBookingStatus.accepted || previous == AmbulanceBookingStatus.accepted) {
+    if (incoming == AmbulanceBookingStatus.accepted ||
+        previous == AmbulanceBookingStatus.accepted) {
       return AmbulanceBookingStatus.accepted;
     }
     return incoming;
@@ -170,7 +176,8 @@ class AmbulanceStore extends ChangeNotifier {
       final previous = _bookings[index];
       _bookings[index] = AmbulanceBooking(
         id: booking.id,
-        firestoreRequestId: booking.firestoreRequestId ?? previous.firestoreRequestId,
+        firestoreRequestId:
+            booking.firestoreRequestId ?? previous.firestoreRequestId,
         patientName: booking.patientName,
         pickupLocation: booking.pickupLocation,
         contactPhone: booking.contactPhone,
@@ -180,12 +187,18 @@ class AmbulanceStore extends ChangeNotifier {
         bookedById: booking.bookedById,
         createdAt: booking.createdAt,
         status: _mergeBookingStatus(previous.status, booking.status),
-        acceptedAmbulanceId: booking.acceptedAmbulanceId ?? previous.acceptedAmbulanceId,
-        acceptedAmbulanceName: booking.acceptedAmbulanceName ?? previous.acceptedAmbulanceName,
-        acceptedDriverName: booking.acceptedDriverName ?? previous.acceptedDriverName,
-        acceptedDriverPhone: booking.acceptedDriverPhone ?? previous.acceptedDriverPhone,
-        acceptedVehicleNumber: booking.acceptedVehicleNumber ?? previous.acceptedVehicleNumber,
-        acceptedAmbulanceType: booking.acceptedAmbulanceType ?? previous.acceptedAmbulanceType,
+        acceptedAmbulanceId:
+            booking.acceptedAmbulanceId ?? previous.acceptedAmbulanceId,
+        acceptedAmbulanceName:
+            booking.acceptedAmbulanceName ?? previous.acceptedAmbulanceName,
+        acceptedDriverName:
+            booking.acceptedDriverName ?? previous.acceptedDriverName,
+        acceptedDriverPhone:
+            booking.acceptedDriverPhone ?? previous.acceptedDriverPhone,
+        acceptedVehicleNumber:
+            booking.acceptedVehicleNumber ?? previous.acceptedVehicleNumber,
+        acceptedAmbulanceType:
+            booking.acceptedAmbulanceType ?? previous.acceptedAmbulanceType,
         acceptedAt: booking.acceptedAt ?? previous.acceptedAt,
         rating: booking.rating ?? previous.rating,
         review: booking.review ?? previous.review,
@@ -252,7 +265,9 @@ class AmbulanceStore extends ChangeNotifier {
     final id = 'amb-req-${DateTime.now().millisecondsSinceEpoch}';
     final booking = AmbulanceBooking(
       id: id,
-      patientName: patientName?.trim().isNotEmpty == true ? patientName!.trim() : 'Patient',
+      patientName: patientName?.trim().isNotEmpty == true
+          ? patientName!.trim()
+          : 'Patient',
       pickupLocation: pickupLocation,
       contactPhone: contactPhone?.trim() ?? '',
       notes: 'Destination: $dropLocation',
@@ -293,11 +308,16 @@ class AmbulanceStore extends ChangeNotifier {
     final id = 'amb-broadcast-${DateTime.now().millisecondsSinceEpoch}';
     final booking = AmbulanceBooking(
       id: id,
-      patientName: patientName?.trim().isNotEmpty == true ? patientName!.trim() : 'Patient',
+      patientName: patientName?.trim().isNotEmpty == true
+          ? patientName!.trim()
+          : 'Patient',
       pickupLocation: pickupLocation,
       contactPhone: contactPhone?.trim() ?? '',
-      notes: 'Destination: $dropLocation · Broadcast to ${driverIds.length} drivers',
-      bookedByRole: bookedByRole == AmbulanceBookedByRole.doctor.name // FIXED: was hardcoded to patient
+      notes:
+          'Destination: $dropLocation · Broadcast to ${driverIds.length} drivers',
+      bookedByRole: bookedByRole ==
+              AmbulanceBookedByRole
+                  .doctor.name // FIXED: was hardcoded to patient
           ? AmbulanceBookedByRole.doctor
           : AmbulanceBookedByRole.patient,
       bookedByName: patientName ?? 'Patient',
@@ -354,7 +374,8 @@ class AmbulanceStore extends ChangeNotifier {
         AmbulanceDriverAlert(
           id: 'accepted-$bookingId-${other.id}',
           title: 'Request already accepted',
-          body: '${ambulance.serviceName} accepted ${current.patientName}\'s request.',
+          body:
+              '${ambulance.serviceName} accepted ${current.patientName}\'s request.',
           createdAt: acceptedAt,
           bookingId: bookingId,
         ),
@@ -389,7 +410,8 @@ class AmbulanceStore extends ChangeNotifier {
     if (!booking.isPending || booking.acceptedAmbulanceId != null) return false;
 
     _driverRejectedBookings.putIfAbsent(ambulanceId, () => {}).add(bookingId);
-    _removeDriverAlertsForBooking(ambulanceId: ambulanceId, bookingId: bookingId);
+    _removeDriverAlertsForBooking(
+        ambulanceId: ambulanceId, bookingId: bookingId);
     notifyListeners();
     return true;
   }
@@ -496,4 +518,3 @@ class AmbulanceStore extends ChangeNotifier {
     notifyListeners();
   }
 }
-

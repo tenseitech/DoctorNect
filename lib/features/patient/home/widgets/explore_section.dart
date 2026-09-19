@@ -57,7 +57,9 @@ class ExploreSection extends StatelessWidget {
                     ),
                     child: Text(
                       'View all',
-                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodySmall,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
               ],
@@ -77,7 +79,8 @@ class ExploreSection extends StatelessWidget {
                     Expanded(
                       child: _ExploreCategoryTile(
                         label: previewCategories[i],
-                        onTap: () => _openDoctorSearchForCategory(context, previewCategories[i]),
+                        onTap: () => _openDoctorSearchForCategory(
+                            context, previewCategories[i]),
                       ),
                     ),
                   ],
@@ -89,7 +92,8 @@ class ExploreSection extends StatelessWidget {
     );
   }
 
-  static void _openDoctorSearchForCategory(BuildContext context, String category) {
+  static void _openDoctorSearchForCategory(
+      BuildContext context, String category) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -152,7 +156,8 @@ class _ExploreWideGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = _columnCount(constraints.maxWidth, categories.length);
-        final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
+        final textScale =
+            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
         final rowExtent = _rowHeight * textScale;
 
         return GridView.builder(
@@ -207,7 +212,9 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
   List<String> get _filtered {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return _categories;
-    return _categories.where((category) => category.toLowerCase().contains(query)).toList();
+    return _categories
+        .where((category) => category.toLowerCase().contains(query))
+        .toList();
   }
 
   @override
@@ -226,7 +233,8 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
           return Container(
             decoration: BoxDecoration(
               color: AppColors.surfaceOf(context),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -269,7 +277,8 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       hintText: 'Search speciality',
-                      prefixIcon: const Icon(Icons.search, color: AppColors.patientTeal),
+                      prefixIcon: const Icon(Icons.search,
+                          color: AppColors.patientTeal),
                       filled: true,
                       fillColor: AppColors.cardBgOf(context),
                       border: OutlineInputBorder(
@@ -284,13 +293,15 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                       ? Center(
                           child: Text(
                             'No specialities found',
-                            style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(
+                                color: AppColors.textSecondaryOf(context)),
                           ),
                         )
                       : GridView.builder(
                           controller: scrollController,
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 4,
                             mainAxisSpacing: 12,
                             crossAxisSpacing: 10,
@@ -332,9 +343,7 @@ class _ExploreCategoryTile extends StatelessWidget {
     final useWideTile = fixedWidth != null && fixedWidth! >= 84;
 
     Widget buildContent(double width) {
-      final iconBox = useWideTile
-          ? 54.0
-          : (width * 0.78).clamp(40.0, 58.0);
+      final iconBox = useWideTile ? 54.0 : (width * 0.78).clamp(40.0, 58.0);
       final iconSize = iconBox * 0.42;
       final fontSize = useWideTile ? 11.0 : (width * 0.132).clamp(9.0, 11.0);
 
@@ -393,9 +402,10 @@ class _ExploreCategoryTile extends StatelessWidget {
         ? buildContent(fixedWidth!)
         : LayoutBuilder(
             builder: (context, constraints) {
-              final width = constraints.maxWidth.isFinite && constraints.maxWidth > 0
-                  ? constraints.maxWidth
-                  : 92.0;
+              final width =
+                  constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                      ? constraints.maxWidth
+                      : 92.0;
               return buildContent(width);
             },
           );
@@ -418,29 +428,52 @@ class _ExplorePalette {
 
   static _ExplorePalette forCategory(String category) {
     return switch (category) {
-      'General Physician' => const _ExplorePalette([Color(0xFF0D9488), Color(0xFF0369A1)]),
-      "Women's Health" => const _ExplorePalette([Color(0xFFDB2777), Color(0xFFBE185D)]),
-      'Child Care' => const _ExplorePalette([Color(0xFF2563EB), Color(0xFF1D4ED8)]),
-      'Eye Specialist' => const _ExplorePalette([Color(0xFF7C3AED), Color(0xFF6D28D9)]),
-      'Ear, Nose & Throat' => const _ExplorePalette([Color(0xFF0891B2), Color(0xFF0E7490)]),
-      'Dentist' => const _ExplorePalette([Color(0xFF0284C7), Color(0xFF0369A1)]),
-      'Heart Specialist' => const _ExplorePalette([Color(0xFFDC2626), Color(0xFFB91C1C)]),
-      'Mental Wellness' => const _ExplorePalette([Color(0xFF6366F1), Color(0xFF4F46E5)]),
-      'Skin Specialist' => const _ExplorePalette([Color(0xFFEA580C), Color(0xFFC2410C)]),
-      'Bone & Joint' => const _ExplorePalette([Color(0xFF475569), Color(0xFF334155)]),
-      'Diabetes' => const _ExplorePalette([Color(0xFFCA8A04), Color(0xFFA16207)]),
-      'Stomach & Digestion' => const _ExplorePalette([Color(0xFF16A34A), Color(0xFF15803D)]),
-      'Urinary Problems' => const _ExplorePalette([Color(0xFF0EA5E9), Color(0xFF0284C7)]),
-      'Physiotherapist' => const _ExplorePalette([Color(0xFF059669), Color(0xFF047857)]),
-      'Lung & Respiratory' => const _ExplorePalette([Color(0xFF38BDF8), Color(0xFF0EA5E9)]),
-      'Dietitian' => const _ExplorePalette([Color(0xFF84CC16), Color(0xFF65A30D)]),
-      'Cancer Specialist' => const _ExplorePalette([Color(0xFF9333EA), Color(0xFF7E22CE)]),
-      'Neurologist' => const _ExplorePalette([Color(0xFF4F46E5), Color(0xFF4338CA)]),
-      'General Surgeon' => const _ExplorePalette([Color(0xFF64748B), Color(0xFF475569)]),
-      'Sexual Health' => const _ExplorePalette([Color(0xFFE11D48), Color(0xFFBE123C)]),
-      'Ayurveda' => const _ExplorePalette([Color(0xFF65A30D), Color(0xFF4D7C0F)]),
-      'Homeopathy' => const _ExplorePalette([Color(0xFF14B8A6), Color(0xFF0D9488)]),
-      'Veterinary' => const _ExplorePalette([Color(0xFF78716C), Color(0xFF57534E)]),
+      'General Physician' =>
+        const _ExplorePalette([Color(0xFF0D9488), Color(0xFF0369A1)]),
+      "Women's Health" =>
+        const _ExplorePalette([Color(0xFFDB2777), Color(0xFFBE185D)]),
+      'Child Care' =>
+        const _ExplorePalette([Color(0xFF2563EB), Color(0xFF1D4ED8)]),
+      'Eye Specialist' =>
+        const _ExplorePalette([Color(0xFF7C3AED), Color(0xFF6D28D9)]),
+      'Ear, Nose & Throat' =>
+        const _ExplorePalette([Color(0xFF0891B2), Color(0xFF0E7490)]),
+      'Dentist' =>
+        const _ExplorePalette([Color(0xFF0284C7), Color(0xFF0369A1)]),
+      'Heart Specialist' =>
+        const _ExplorePalette([Color(0xFFDC2626), Color(0xFFB91C1C)]),
+      'Mental Wellness' =>
+        const _ExplorePalette([Color(0xFF6366F1), Color(0xFF4F46E5)]),
+      'Skin Specialist' =>
+        const _ExplorePalette([Color(0xFFEA580C), Color(0xFFC2410C)]),
+      'Bone & Joint' =>
+        const _ExplorePalette([Color(0xFF475569), Color(0xFF334155)]),
+      'Diabetes' =>
+        const _ExplorePalette([Color(0xFFCA8A04), Color(0xFFA16207)]),
+      'Stomach & Digestion' =>
+        const _ExplorePalette([Color(0xFF16A34A), Color(0xFF15803D)]),
+      'Urinary Problems' =>
+        const _ExplorePalette([Color(0xFF0EA5E9), Color(0xFF0284C7)]),
+      'Physiotherapist' =>
+        const _ExplorePalette([Color(0xFF059669), Color(0xFF047857)]),
+      'Lung & Respiratory' =>
+        const _ExplorePalette([Color(0xFF38BDF8), Color(0xFF0EA5E9)]),
+      'Dietitian' =>
+        const _ExplorePalette([Color(0xFF84CC16), Color(0xFF65A30D)]),
+      'Cancer Specialist' =>
+        const _ExplorePalette([Color(0xFF9333EA), Color(0xFF7E22CE)]),
+      'Neurologist' =>
+        const _ExplorePalette([Color(0xFF4F46E5), Color(0xFF4338CA)]),
+      'General Surgeon' =>
+        const _ExplorePalette([Color(0xFF64748B), Color(0xFF475569)]),
+      'Sexual Health' =>
+        const _ExplorePalette([Color(0xFFE11D48), Color(0xFFBE123C)]),
+      'Ayurveda' =>
+        const _ExplorePalette([Color(0xFF65A30D), Color(0xFF4D7C0F)]),
+      'Homeopathy' =>
+        const _ExplorePalette([Color(0xFF14B8A6), Color(0xFF0D9488)]),
+      'Veterinary' =>
+        const _ExplorePalette([Color(0xFF78716C), Color(0xFF57534E)]),
       _ => const _ExplorePalette([Color(0xFF0D9488), Color(0xFF0369A1)]),
     };
   }
@@ -477,5 +510,3 @@ abstract final class _ExploreIcons {
     return _icons[category] ?? TablerIcons.stethoscope;
   }
 }
-
-

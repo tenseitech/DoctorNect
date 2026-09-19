@@ -25,7 +25,8 @@ class PatientTabItem {
 
   String get mobileLabel => shortLabel ?? label;
 
-  IconData icon({required bool selected}) => selected ? filledIcon : outlinedIcon;
+  IconData icon({required bool selected}) =>
+      selected ? filledIcon : outlinedIcon;
 }
 
 abstract final class _PatientNavActiveStyle {
@@ -86,8 +87,7 @@ class PatientAppShell extends StatelessWidget {
   /// Per-tab request indicator dots (true = show dot).
   final List<bool> requestDots;
 
-  bool _showDot(int index) =>
-      index < requestDots.length && requestDots[index];
+  bool _showDot(int index) => index < requestDots.length && requestDots[index];
 
   void _handleDestinationSelected(BuildContext context, int index) {
     final navigator = Navigator.of(context);
@@ -118,7 +118,8 @@ class PatientAppShell extends StatelessWidget {
     if (compact) {
       return PopScope(
         canPop: selectedIndex == 0 && !Navigator.of(context).canPop(),
-        onPopInvokedWithResult: (didPop, _) => _handleBackInvoked(context, didPop),
+        onPopInvokedWithResult: (didPop, _) =>
+            _handleBackInvoked(context, didPop),
         child: MobileScaffold(
           padding: EdgeInsets.zero,
           bottomNavigationBar: _PatientBottomTabBar(
@@ -136,7 +137,8 @@ class PatientAppShell extends StatelessWidget {
 
     return PopScope(
       canPop: selectedIndex == 0 && !Navigator.of(context).canPop(),
-      onPopInvokedWithResult: (didPop, _) => _handleBackInvoked(context, didPop),
+      onPopInvokedWithResult: (didPop, _) =>
+          _handleBackInvoked(context, didPop),
       child: Scaffold(
         backgroundColor: AppColors.cardBgOf(context),
         body: SafeArea(
@@ -164,7 +166,8 @@ class PatientAppShell extends StatelessWidget {
                               selected: index == selectedIndex,
                               extended: extended,
                               showDot: _showDot(index),
-                              onTap: () => _handleDestinationSelected(context, index),
+                              onTap: () =>
+                                  _handleDestinationSelected(context, index),
                             );
                           },
                         ),
@@ -175,7 +178,8 @@ class PatientAppShell extends StatelessWidget {
                   ),
                 ),
               ),
-              VerticalDivider(width: 1, thickness: 1, color: AppColors.borderOf(context)),
+              VerticalDivider(
+                  width: 1, thickness: 1, color: AppColors.borderOf(context)),
               Expanded(child: child),
             ],
           ),
@@ -239,8 +243,10 @@ class _PatientSideTabTile extends StatelessWidget {
                 curve: Curves.easeOutCubic,
                 height: 52,
                 alignment: Alignment.center,
-                decoration: _PatientNavActiveStyle.decoration(selected: selected),
-                child: _iconWithDot(item.icon(selected: selected), iconColor, 24),
+                decoration:
+                    _PatientNavActiveStyle.decoration(selected: selected),
+                child:
+                    _iconWithDot(item.icon(selected: selected), iconColor, 24),
               ),
             ),
           ),
@@ -332,107 +338,120 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
             ],
           ),
           child: Listener(
-          onPointerDown: (event) {
-            _startX = event.position.dx;
-            _startY = event.position.dy;
-          },
-          onPointerUp: (event) {
-            if (_startX == null || _startY == null) return;
-            final deltaX = event.position.dx - _startX!;
-            final deltaY = event.position.dy - _startY!;
-            _startX = null;
-            _startY = null;
+            onPointerDown: (event) {
+              _startX = event.position.dx;
+              _startY = event.position.dy;
+            },
+            onPointerUp: (event) {
+              if (_startX == null || _startY == null) return;
+              final deltaX = event.position.dx - _startX!;
+              final deltaY = event.position.dy - _startY!;
+              _startX = null;
+              _startY = null;
 
-            if (deltaX.abs() > 40 && deltaY.abs() < 50) {
-              if (deltaX < 0 && widget.selectedIndex < widget.tabs.length - 1) {
-                widget.onSelected(widget.selectedIndex + 1);
-              } else if (deltaX > 0 && widget.selectedIndex > 0) {
-                widget.onSelected(widget.selectedIndex - 1);
+              if (deltaX.abs() > 40 && deltaY.abs() < 50) {
+                if (deltaX < 0 &&
+                    widget.selectedIndex < widget.tabs.length - 1) {
+                  widget.onSelected(widget.selectedIndex + 1);
+                } else if (deltaX > 0 && widget.selectedIndex > 0) {
+                  widget.onSelected(widget.selectedIndex - 1);
+                }
               }
-            }
-          },
-          child: SizedBox(
-            height: widget.tabs.length >= 5 ? 64 : 58,
-            child: Row(
-              children: List.generate(widget.tabs.length, (index) {
-                final selected = index == widget.selectedIndex;
-                final tab = widget.tabs[index];
-                final iconColor = _PatientNavActiveStyle.iconColor(context, selected);
-                final label = tab.mobileLabel;
+            },
+            child: SizedBox(
+              height: widget.tabs.length >= 5 ? 64 : 58,
+              child: Row(
+                children: List.generate(widget.tabs.length, (index) {
+                  final selected = index == widget.selectedIndex;
+                  final tab = widget.tabs[index];
+                  final iconColor =
+                      _PatientNavActiveStyle.iconColor(context, selected);
+                  final label = tab.mobileLabel;
 
-                return Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => widget.onSelected(index),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                curve: Curves.easeOutCubic,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                                decoration: BoxDecoration(
-                                  gradient: selected
-                                      ? const LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [AppColors.patientTeal, Color(0xFF12836A)],
-                                        )
-                                      : null,
-                                  color: selected ? null : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: selected
-                                      ? [
-                                          BoxShadow(
-                                            color: AppColors.patientTeal.withValues(alpha: 0.22),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                                child: Icon(
-                                  tab.icon(selected: selected),
-                                  size: 24,
-                                  color: iconColor,
-                                ),
-                              ),
-                              if (widget.showDot(index))
-                                Positioned(
-                                  right: 6,
-                                  top: -2,
-                                  child: NavRequestDot(
-                                    color: AppColors.patientTeal,
-                                    borderColor: selected ? AppColors.patientTeal : Colors.white,
+                  return Expanded(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => widget.onSelected(index),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeOutCubic,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    gradient: selected
+                                        ? const LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              AppColors.patientTeal,
+                                              Color(0xFF12836A)
+                                            ],
+                                          )
+                                        : null,
+                                    color: selected ? null : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: selected
+                                        ? [
+                                            BoxShadow(
+                                              color: AppColors.patientTeal
+                                                  .withValues(alpha: 0.22),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Icon(
+                                    tab.icon(selected: selected),
+                                    size: 24,
+                                    color: iconColor,
                                   ),
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          SafeBottomNavLabel(
-                            label: compactBottomNavLabel(label),
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              height: 1.1,
-                              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                              color: selected ? AppColors.patientTeal : AppColors.textSecondaryOf(context),
+                                if (widget.showDot(index))
+                                  Positioned(
+                                    right: 6,
+                                    top: -2,
+                                    child: NavRequestDot(
+                                      color: AppColors.patientTeal,
+                                      borderColor: selected
+                                          ? AppColors.patientTeal
+                                          : Colors.white,
+                                    ),
+                                  ),
+                              ],
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 2),
+                            SafeBottomNavLabel(
+                              label: compactBottomNavLabel(label),
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                height: 1.1,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: selected
+                                    ? AppColors.patientTeal
+                                    : AppColors.textSecondaryOf(context),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 }

@@ -47,7 +47,8 @@ List<RegisteredDoctorSearchResult> sortDoctorsAlphabetically(
   List<RegisteredDoctorSearchResult> doctors,
 ) {
   final sorted = List<RegisteredDoctorSearchResult>.from(doctors);
-  sorted.sort((a, b) => partnerDoctorSortKey(a.name).compareTo(partnerDoctorSortKey(b.name)));
+  sorted.sort((a, b) =>
+      partnerDoctorSortKey(a.name).compareTo(partnerDoctorSortKey(b.name)));
   return sorted;
 }
 
@@ -108,7 +109,8 @@ class PartnerConnectDoctorsBaseView extends StatefulWidget {
   final List<PartnerConnectionItem> Function() fromDoctorRequests;
   final List<PartnerConnectionItem> Function() sentByPartnerInvites;
   final String? Function() cityFilter;
-  final List<RegisteredDoctorSearchResult> Function(String query) searchDoctorsFn;
+  final List<RegisteredDoctorSearchResult> Function(String query)
+      searchDoctorsFn;
   final String Function(String doctorId) activitySubtitleBuilder;
   final void Function(String id, String doctorName) onApproveConnection;
   final void Function(String id, String doctorName) onRejectConnection;
@@ -126,13 +128,16 @@ class PartnerConnectDoctorsBaseView extends StatefulWidget {
   final String? inviteDownloadSubtitle;
 
   @override
-  State<PartnerConnectDoctorsBaseView> createState() => _PartnerConnectDoctorsBaseViewState();
+  State<PartnerConnectDoctorsBaseView> createState() =>
+      _PartnerConnectDoctorsBaseViewState();
 }
 
-class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBaseView> {
+class _PartnerConnectDoctorsBaseViewState
+    extends State<PartnerConnectDoctorsBaseView> {
   final _searchController = TextEditingController();
   List<RegisteredDoctorSearchResult> _results = [];
-  bool get _isAddDoctorMode => widget.showAppBar && widget.appBarTitle == 'Add Doctor';
+  bool get _isAddDoctorMode =>
+      widget.showAppBar && widget.appBarTitle == 'Add Doctor';
 
   void _search() {
     if (!mounted) return;
@@ -177,7 +182,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
           padding: EdgeInsets.all(compact ? 14 : 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(compact ? 14 : 12),
-            border: Border.all(color: widget.accentColor.withValues(alpha: 0.25)),
+            border:
+                Border.all(color: widget.accentColor.withValues(alpha: 0.25)),
           ),
           child: Row(
             children: [
@@ -197,13 +203,18 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                   children: [
                     Text(
                       'Invite doctor to download app',
-                      style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodyMedium,
+                          fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       widget.inviteDownloadSubtitle ??
                           'Share a download link â€” they install DoctorNect, register as a doctor, and connect with your ${widget.partnerTypeLabel}',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context), height: 1.35),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                          height: 1.35),
                     ),
                   ],
                 ),
@@ -219,7 +230,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                       color: widget.accentColor,
                     ),
                   ),
-                  Icon(Icons.arrow_forward_rounded, size: 16, color: widget.accentColor),
+                  Icon(Icons.arrow_forward_rounded,
+                      size: 16, color: widget.accentColor),
                 ],
               ),
             ],
@@ -229,7 +241,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
     );
   }
 
-  Widget _buildConnectActionButtons({required int pendingCount, bool compact = false}) {
+  Widget _buildConnectActionButtons(
+      {required int pendingCount, bool compact = false}) {
     final addDoctorButton = FilledButton.icon(
       onPressed: _openAddDoctorScreen,
       icon: IconWithRequestDot(
@@ -239,7 +252,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
       ),
       label: Text(
         pendingCount > 0 ? 'Add Doctor ($pendingCount)' : 'Add Doctor',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall),
+        style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall),
       ),
       style: FilledButton.styleFrom(
         backgroundColor: widget.accentColor,
@@ -254,7 +268,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
       icon: const Icon(Icons.link, size: 18),
       label: Text(
         'Invite to download',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall),
+        style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall),
       ),
       style: OutlinedButton.styleFrom(
         foregroundColor: widget.accentColor,
@@ -349,9 +364,14 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: compact ? 'Search doctors...' : 'Search by name, clinic, or registration no...',
-          hintStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
-          prefixIcon: Icon(Icons.search, size: 22, color: AppColors.textSecondaryOf(context)),
+          hintText: compact
+              ? 'Search doctors...'
+              : 'Search by name, clinic, or registration no...',
+          hintStyle: GoogleFonts.inter(
+              fontSize: AppTypography.bodyMedium,
+              color: AppColors.textSecondaryOf(context)),
+          prefixIcon: Icon(Icons.search,
+              size: 22, color: AppColors.textSecondaryOf(context)),
           suffixIcon: _searchController.text.trim().isNotEmpty
               ? IconButton(
                   tooltip: 'Clear',
@@ -389,7 +409,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
         final sentByPartner = widget.sentByPartnerInvites();
 
         if (_isAddDoctorMode) {
-          return _buildAddDoctorContent(widget.partnerId, fromDoctor, sentByPartner);
+          return _buildAddDoctorContent(
+              widget.partnerId, fromDoctor, sentByPartner);
         }
 
         final pendingCount = fromDoctor.length + sentByPartner.length;
@@ -405,15 +426,20 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                   children: [
                     Text(
                       'Connect Dr.',
-                      style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.headlineLarge,
+                          fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Manage your doctor connections and pending requests.',
-                      style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodyMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                     const SizedBox(height: 14),
-                    _buildConnectActionButtons(pendingCount: pendingCount, compact: true),
+                    _buildConnectActionButtons(
+                        pendingCount: pendingCount, compact: true),
                     const SizedBox(height: 14),
                     _buildInviteDoctorCard(compact: true),
                   ],
@@ -428,12 +454,16 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                         children: [
                           Text(
                             'Connect Dr.',
-                            style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.headlineLarge,
+                                fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Manage your doctor connections and pending requests.',
-                            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodyMedium,
+                                color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ),
@@ -442,24 +472,32 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                   ],
                 ),
               const SizedBox(height: 24),
-              _PartnerSectionHeader(title: 'Active connections', count: active.length),
+              _PartnerSectionHeader(
+                  title: 'Active connections', count: active.length),
               if (active.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32),
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(Icons.people_outline, size: 48, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.4)),
+                        Icon(Icons.people_outline,
+                            size: 48,
+                            color: AppColors.textSecondaryOf(context)
+                                .withValues(alpha: 0.4)),
                         const SizedBox(height: 12),
                         Text(
                           'No active connections',
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodyLarge,
+                              fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 6),
                         Text(
                           'Tap Add Doctor to search and connect with a doctor.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
                       ],
                     ),
@@ -487,11 +525,14 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
     if (widget.showAppBar) {
       final compact = ResponsiveLayout.isCompact(context);
       return Scaffold(
-        backgroundColor: compact ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC),
+        backgroundColor:
+            compact ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC),
         appBar: AppBar(
           title: Text(
             widget.appBarTitle ?? 'Connect Dr.',
-            style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.headlineSmall,
+                fontWeight: FontWeight.w600),
           ),
           backgroundColor: AppColors.surfaceOf(context),
           elevation: 0,
@@ -518,7 +559,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
       return _buildAddDoctorMobileContent(partnerId, fromDoctor, sentByPartner);
     }
 
-    final connectedCount = _results.where((d) => widget.isConnected(d.id)).length;
+    final connectedCount =
+        _results.where((d) => widget.isConnected(d.id)).length;
     final cityLabel = widget.cityFilter();
 
     return SingleChildScrollView(
@@ -537,14 +579,18 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
             children: [
               Text(
                 'Find doctors on DoctorNect',
-                style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyLarge,
+                    fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Text(
                 cityLabel == null
                     ? '${_results.length} registered Â· $connectedCount connected Â· ${fromDoctor.length} requests Â· ${sentByPartner.length} pending'
                     : '${_results.length} in $cityLabel Â· $connectedCount connected Â· ${fromDoctor.length} requests Â· ${sentByPartner.length} pending',
-                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context)),
                 softWrap: true,
               ),
               const SizedBox(height: 16),
@@ -556,7 +602,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                 _PartnerAddDoctorSectionHeader(
                   title: 'Connection requests',
                   count: fromDoctor.length,
-                  subtitle: 'Doctors that want to connect with your ${widget.partnerTypeLabel}',
+                  subtitle:
+                      'Doctors that want to connect with your ${widget.partnerTypeLabel}',
                 ),
                 const SizedBox(height: 10),
                 _PartnerAddDoctorTable(
@@ -569,7 +616,9 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                         _PartnerDoctorNameCell(name: c.doctorName),
                         Text(
                           DateFormat('dd MMM yyyy').format(c.requestedAt),
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
                         Wrap(
                           spacing: 8,
@@ -580,7 +629,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                                 widget.onRejectConnection(c.id, c.doctorName);
                               },
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -592,7 +642,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                               },
                               style: FilledButton.styleFrom(
                                 backgroundColor: widget.accentColor,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
@@ -623,7 +674,9 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                         _PartnerDoctorNameCell(name: c.doctorName),
                         Text(
                           DateFormat('dd MMM yyyy').format(c.requestedAt),
-                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              color: AppColors.textSecondaryOf(context)),
                         ),
                         DoctorInviteActionButton(
                           isPending: true,
@@ -660,7 +713,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
     List<PartnerConnectionItem> fromDoctor,
     List<PartnerConnectionItem> sentByPartner,
   ) {
-    final connectedCount = _results.where((d) => widget.isConnected(d.id)).length;
+    final connectedCount =
+        _results.where((d) => widget.isConnected(d.id)).length;
     final cityLabel = widget.cityFilter();
 
     return ListView(
@@ -684,21 +738,24 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
         ),
         if (fromDoctor.isNotEmpty) ...[
           const SizedBox(height: 20),
-          _PartnerMobileSectionLabel(title: 'Connection requests', count: fromDoctor.length),
+          _PartnerMobileSectionLabel(
+              title: 'Connection requests', count: fromDoctor.length),
           const SizedBox(height: 8),
           ...fromDoctor.map((c) => Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                 child: _PartnerConnectionRequestMobileCard(
                   connection: c,
                   accentColor: widget.accentColor,
-                  onApprove: () => widget.onApproveConnection(c.id, c.doctorName),
+                  onApprove: () =>
+                      widget.onApproveConnection(c.id, c.doctorName),
                   onReject: () => widget.onRejectConnection(c.id, c.doctorName),
                 ),
               )),
         ],
         if (sentByPartner.isNotEmpty) ...[
           const SizedBox(height: 10),
-          _PartnerMobileSectionLabel(title: 'Pending invites', count: sentByPartner.length),
+          _PartnerMobileSectionLabel(
+              title: 'Pending invites', count: sentByPartner.length),
           const SizedBox(height: 8),
           ...sentByPartner.map((c) => Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -710,7 +767,8 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
               )),
         ],
         const SizedBox(height: 10),
-        _PartnerMobileSectionLabel(title: 'Registered doctors', count: _results.length),
+        _PartnerMobileSectionLabel(
+            title: 'Registered doctors', count: _results.length),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -734,11 +792,18 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
         ),
         child: Column(
           children: [
-            Icon(Icons.person_search_outlined, size: 40, color: AppColors.textSecondaryOf(context).withValues(alpha: 0.45)),
+            Icon(Icons.person_search_outlined,
+                size: 40,
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.45)),
             const SizedBox(height: 10),
             Text(
-              cityLabel == null ? 'No doctors found' : 'No doctors in $cityLabel',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+              cityLabel == null
+                  ? 'No doctors found'
+                  : 'No doctors in $cityLabel',
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodyLarge,
+                  fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
@@ -746,7 +811,9 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
                   ? 'Try a different name, clinic, or registration number.'
                   : 'Only doctors registered in your city are shown. Try a different search or check back later.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ],
         ),
@@ -765,13 +832,15 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
           child: Column(
             children: [
               for (var i = 0; i < _results.length; i++) ...[
-                if (i > 0) const Divider(height: 1, thickness: 1, color: _lineColor),
+                if (i > 0)
+                  const Divider(height: 1, thickness: 1, color: _lineColor),
                 _PartnerRegisteredDoctorMobileTile(
                   doctor: _results[i],
                   accentColor: widget.accentColor,
                   isConnected: widget.isConnected(_results[i].id),
                   isPendingSent: widget.isPendingSent(_results[i].id),
-                  isPendingFromDoctor: widget.isPendingFromDoctor(_results[i].id),
+                  isPendingFromDoctor:
+                      widget.isPendingFromDoctor(_results[i].id),
                   onSendRequest: () => _sendRequest(_results[i]),
                 ),
               ],
@@ -783,23 +852,39 @@ class _PartnerConnectDoctorsBaseViewState extends State<PartnerConnectDoctorsBas
 
     return _PartnerAddDoctorTable(
       columnWidths: const [180, 140, 110, 110, 100],
-      headers: const ['Doctor', 'Specialization', 'Clinic', 'Reg. No.', 'Status'],
+      headers: const [
+        'Doctor',
+        'Specialization',
+        'Clinic',
+        'Reg. No.',
+        'Status'
+      ],
       children: _results.map((d) {
         return _PartnerAddDoctorTableRow(
           columnWidths: const [180, 140, 110, 110, 100],
           cells: [
-            _PartnerDoctorNameCell(name: d.name, subtitle: d.clinicName.isNotEmpty ? d.clinicName : null),
+            _PartnerDoctorNameCell(
+                name: d.name,
+                subtitle: d.clinicName.isNotEmpty ? d.clinicName : null),
             Text(
               d.specialization.isNotEmpty ? d.specialization : '—',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
             Text(
               d.clinicName.isNotEmpty ? d.clinicName : '—',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
             Text(
-              (d.councilNumber != null && d.councilNumber!.isNotEmpty) ? d.councilNumber! : '—',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              (d.councilNumber != null && d.councilNumber!.isNotEmpty)
+                  ? d.councilNumber!
+                  : '—',
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
             _PartnerDoctorAction(
               doctor: d,
@@ -826,7 +911,10 @@ class _PartnerSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700)),
+        Text(title,
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyLarge,
+                fontWeight: FontWeight.w700)),
         const SizedBox(width: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -835,7 +923,10 @@ class _PartnerSectionHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: _lineColor),
           ),
-          child: Text('$count', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
+          child: Text('$count',
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  fontWeight: FontWeight.w600)),
         ),
       ],
     );
@@ -882,12 +973,16 @@ class _PartnerConnectionTile extends StatelessWidget {
               children: [
                 Text(
                   partnerDoctorLabel(connection.doctorName),
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -899,7 +994,8 @@ class _PartnerConnectionTile extends StatelessWidget {
               final confirmed = await showConfirmDeleteDialog(
                 context,
                 title: 'Disconnect Doctor',
-                message: 'Are you sure you want to disconnect from ${partnerDoctorLabel(connection.doctorName)}?',
+                message:
+                    'Are you sure you want to disconnect from ${partnerDoctorLabel(connection.doctorName)}?',
                 confirmLabel: 'Disconnect',
               );
               if (confirmed) onRemove();
@@ -929,7 +1025,10 @@ class _PartnerAddDoctorSectionHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700)),
+            Text(title,
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w700)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
@@ -938,7 +1037,10 @@ class _PartnerAddDoctorSectionHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: _lineColor),
               ),
-              child: Text('$count', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
+              child: Text('$count',
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -946,7 +1048,9 @@ class _PartnerAddDoctorSectionHeader extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             subtitle!,
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ],
       ],
@@ -987,7 +1091,10 @@ class _PartnerAddDoctorTable extends StatelessWidget {
                       flex: (columnWidths[i]).toInt(),
                       child: Text(
                         headers[i],
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w700, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                     ),
                 ],
@@ -997,7 +1104,10 @@ class _PartnerAddDoctorTable extends StatelessWidget {
             if (children.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(20),
-                child: Text('None', style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context))),
+                child: Text('None',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textSecondaryOf(context))),
               )
             else
               ...children,
@@ -1009,7 +1119,8 @@ class _PartnerAddDoctorTable extends StatelessWidget {
 }
 
 class _PartnerAddDoctorTableRow extends StatelessWidget {
-  const _PartnerAddDoctorTableRow({required this.columnWidths, required this.cells});
+  const _PartnerAddDoctorTableRow(
+      {required this.columnWidths, required this.cells});
 
   final List<double> columnWidths;
   final List<Widget> cells;
@@ -1050,7 +1161,9 @@ class _PartnerDoctorNameCell extends StatelessWidget {
           foregroundColor: AppColors.doctorBlue,
           child: Text(
             partnerDoctorInitial(name),
-            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelSmall,
+                fontWeight: FontWeight.w700),
           ),
         ),
         const SizedBox(width: 8),
@@ -1061,13 +1174,17 @@ class _PartnerDoctorNameCell extends StatelessWidget {
             children: [
               Text(
                 partnerDoctorLabel(name),
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600),
                 overflow: TextOverflow.ellipsis,
               ),
               if (subtitle != null)
                 Text(
                   subtitle!,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      color: AppColors.textSecondaryOf(context)),
                   overflow: TextOverflow.ellipsis,
                 ),
             ],
@@ -1106,29 +1223,42 @@ class _PartnerAddDoctorMobileHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Find doctors on DoctorNect', style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700)),
+          Text('Find doctors on DoctorNect',
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(
             cityLabel == null
                 ? 'Doctors registered on DoctorNect â€” connect or invite'
                 : 'Doctors registered in $cityLabel â€” connect or invite',
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _PartnerMobileStatChip(label: 'Registered', count: registered, color: AppColors.doctorBlue),
+                _PartnerMobileStatChip(
+                    label: 'Registered',
+                    count: registered,
+                    color: AppColors.doctorBlue),
                 const SizedBox(width: 8),
-                _PartnerMobileStatChip(label: 'Connected', count: connected, color: accentColor),
+                _PartnerMobileStatChip(
+                    label: 'Connected', count: connected, color: accentColor),
                 if (requests > 0) ...[
                   const SizedBox(width: 8),
-                  _PartnerMobileStatChip(label: 'Requests', count: requests, color: Colors.orange),
+                  _PartnerMobileStatChip(
+                      label: 'Requests', count: requests, color: Colors.orange),
                 ],
                 if (pending > 0) ...[
                   const SizedBox(width: 8),
-                  _PartnerMobileStatChip(label: 'Pending', count: pending, color: Colors.amber.shade700),
+                  _PartnerMobileStatChip(
+                      label: 'Pending',
+                      count: pending,
+                      color: Colors.amber.shade700),
                 ],
               ],
             ),
@@ -1140,7 +1270,8 @@ class _PartnerAddDoctorMobileHeader extends StatelessWidget {
 }
 
 class _PartnerMobileStatChip extends StatelessWidget {
-  const _PartnerMobileStatChip({required this.label, required this.count, required this.color});
+  const _PartnerMobileStatChip(
+      {required this.label, required this.count, required this.color});
 
   final String label;
   final int count;
@@ -1158,9 +1289,15 @@ class _PartnerMobileStatChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('$count', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700, color: color)),
+          Text('$count',
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  fontWeight: FontWeight.w700,
+                  color: color)),
           const SizedBox(width: 4),
-          Text(label, style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: color)),
+          Text(label,
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelSmall, color: color)),
         ],
       ),
     );
@@ -1179,7 +1316,10 @@ class _PartnerMobileSectionLabel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w700)),
+          Text(title,
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  fontWeight: FontWeight.w700)),
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -1188,7 +1328,9 @@ class _PartnerMobileSectionLabel extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               border: Border.all(color: _lineColor),
             ),
-            child: Text('$count', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700)),
+            child: Text('$count',
+                style: GoogleFonts.inter(
+                    fontSize: 10, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -1225,7 +1367,9 @@ class _PartnerConnectionRequestMobileCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Requested: ${DateFormat('dd MMM yyyy').format(connection.requestedAt)}',
-            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelSmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 12),
           Row(
@@ -1235,7 +1379,8 @@ class _PartnerConnectionRequestMobileCard extends StatelessWidget {
                   onPressed: onReject,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Text('Decline'),
                 ),
@@ -1247,7 +1392,8 @@ class _PartnerConnectionRequestMobileCard extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     backgroundColor: accentColor,
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Text('Accept'),
                 ),
@@ -1290,7 +1436,9 @@ class _PartnerPendingInviteMobileCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Sent: ${DateFormat('dd MMM yyyy').format(connection.requestedAt)}',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -1340,9 +1488,15 @@ class _PartnerRegisteredDoctorMobileTile extends StatelessWidget {
                   spacing: 6,
                   children: [
                     if (doctor.specialization.isNotEmpty)
-                      Text(doctor.specialization, style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context))),
+                      Text(doctor.specialization,
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelSmall,
+                              color: AppColors.textSecondaryOf(context))),
                     if (doctor.clinicName.isNotEmpty)
-                      Text('• ${doctor.clinicName}', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context))),
+                      Text('• ${doctor.clinicName}',
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelSmall,
+                              color: AppColors.textSecondaryOf(context))),
                   ],
                 ),
               ],
@@ -1401,7 +1555,10 @@ class _PartnerDoctorAction extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      child: const Text('Connect', style: TextStyle(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
+      child: const Text('Connect',
+          style: TextStyle(
+              fontSize: AppTypography.labelMedium,
+              fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -1423,7 +1580,10 @@ class _PartnerStatusPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: color),
+        style: GoogleFonts.inter(
+            fontSize: AppTypography.labelSmall,
+            fontWeight: FontWeight.w600,
+            color: color),
       ),
     );
   }

@@ -69,7 +69,8 @@ class SymptomsDatabase extends ChangeNotifier {
       }
 
       final merged = byCode.values.toList()
-        ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+        ..sort((a, b) =>
+            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
       _entries = merged;
       debugPrint(
         'SymptomsDatabase: loaded ${merged.length} symptoms '

@@ -9,7 +9,8 @@ import 'doctor_account_repository.dart';
 class DoctorVerificationRepository {
   DoctorVerificationRepository._();
 
-  static final DoctorVerificationRepository instance = DoctorVerificationRepository._();
+  static final DoctorVerificationRepository instance =
+      DoctorVerificationRepository._();
 
   @visibleForTesting
   static Stream<bool> Function(String doctorId)? debugWatchVerifiedOverride;
@@ -43,9 +44,9 @@ class DoctorVerificationRepository {
         .doc(doctorId)
         .snapshots()
         .map((snap) {
-          if (!snap.exists || snap.data() == null) return false;
-          return parseVerifiedFromDoctorData(snap.data());
-        });
+      if (!snap.exists || snap.data() == null) return false;
+      return parseVerifiedFromDoctorData(snap.data());
+    });
   }
 
   Future<bool> fetchVerified(String doctorId, {bool preferCache = false}) {

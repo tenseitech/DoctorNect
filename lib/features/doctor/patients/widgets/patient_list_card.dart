@@ -36,7 +36,8 @@ class PatientListCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             border: Border.all(color: AppColors.borderOf(context)),
           ),
-          child: wide ? _buildWideLayout(context) : _buildCompactLayout(context),
+          child:
+              wide ? _buildWideLayout(context) : _buildCompactLayout(context),
         ),
       ),
     );
@@ -71,7 +72,8 @@ class PatientListCard extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 160,
-            child: _ConditionChips(conditions: patient.conditions, maxVisible: 2),
+            child:
+                _ConditionChips(conditions: patient.conditions, maxVisible: 2),
           ),
         ],
         const SizedBox(width: 16),
@@ -150,7 +152,8 @@ class _PatientDetails extends StatelessWidget {
             else if (showTypeBadge && patient.isFollowUp)
               Padding(
                 padding: const EdgeInsets.only(left: 8),
-                child: StatusBadge(label: 'Follow-up', color: const Color(0xFF7C3AED)),
+                child: StatusBadge(
+                    label: 'Follow-up', color: const Color(0xFF7C3AED)),
               ),
           ],
         ),
@@ -159,12 +162,16 @@ class _PatientDetails extends StatelessWidget {
           '${patient.age} yrs · ${AppConstants.patientGenderLabel(patient.gender)} · ${patient.mobile}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 4),
         Text(
           'Last visit: ${DateFormat('dd MMM yyyy').format(patient.lastVisitDate)}',
-          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context)),
         ),
       ],
     );
@@ -207,7 +214,8 @@ class _ConditionChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = maxVisible == null ? conditions : conditions.take(maxVisible!).toList();
+    final visible =
+        maxVisible == null ? conditions : conditions.take(maxVisible!).toList();
     final hidden = maxVisible == null ? 0 : conditions.length - visible.length;
 
     return Wrap(
@@ -220,7 +228,9 @@ class _ConditionChips extends StatelessWidget {
         if (hidden > 0)
           Text(
             '+$hidden more',
-            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelSmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
       ],
     );
@@ -250,7 +260,8 @@ class _ViewProfileButton extends StatelessWidget {
         ),
         child: Text(
           'View Profile',
-          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
         ),
       ),
     );

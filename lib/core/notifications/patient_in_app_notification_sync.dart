@@ -1,11 +1,7 @@
-﻿import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/firestore_service.dart';
 import 'dart:async';
 
-
-
 import 'package:flutter/foundation.dart';
-
-
 
 import '../../features/patient/profile/data/patient_profile_mock.dart';
 
@@ -15,35 +11,23 @@ import 'app_notification.dart';
 
 import 'in_app_notification_service.dart';
 
-
-
 /// Real-time Firestore inbox sync for the signed-in patient.
 
 abstract final class PatientInAppNotificationSync {
-
   static StreamSubscription<List<AppNotification>>? _sub;
 
   static final Set<String> _knownNotificationIds = {};
 
   static var _seededInitialSnapshot = false;
 
-
-
   static Future<void> start(String recipientUid) async {
-
     if (recipientUid.isEmpty) return;
-
-
 
     final patientId = PatientSession.loggedInPatientId;
 
     if (patientId.isNotEmpty) {
-
       await PatientProfileMock.ensureNotificationPrefsLoaded(patientId);
-
     }
-
-
 
     _sub?.cancel();
 
@@ -51,64 +35,43 @@ abstract final class PatientInAppNotificationSync {
 
     _seededInitialSnapshot = false;
 
-
-
-    _sub = FirestoreService.instance.inAppNotification.watchForRecipient(recipientUid).listen(
-
+    _sub = FirestoreService.instance.inAppNotification
+        .watchForRecipient(recipientUid)
+        .listen(
       (notifications) {
-
-        InAppNotificationService.instance.mergePatientFirestoreNotifications(notifications);
-
-
+        InAppNotificationService.instance
+            .mergePatientFirestoreNotifications(notifications);
 
         if (!_seededInitialSnapshot) {
-
           _knownNotificationIds
-
             ..clear()
-
             ..addAll(notifications.map((n) => n.id));
 
           _seededInitialSnapshot = true;
 
           return;
-
         }
 
-
-
         for (final notification in notifications) {
-
           if (_knownNotificationIds.contains(notification.id)) continue;
 
           _knownNotificationIds.add(notification.id);
 
           if (notification.isRead) continue;
 
-          InAppNotificationService.instance.onPatientNotificationArrived?.call(notification);
-
+          InAppNotificationService.instance.onPatientNotificationArrived
+              ?.call(notification);
         }
-
       },
-
       onError: (Object e, StackTrace st) {
-
         if (kDebugMode) {
-
           debugPrint('Patient in-app notification sync error: $e\n$st');
-
         }
-
       },
-
     );
-
   }
 
-
-
   static void stop() {
-
     unawaited(_sub?.cancel());
 
     _sub = null;
@@ -116,8 +79,5 @@ abstract final class PatientInAppNotificationSync {
     _knownNotificationIds.clear();
 
     _seededInitialSnapshot = false;
-
   }
-
 }
-

@@ -44,6 +44,7 @@ class PatientProfileMock {
     if (total == 0) return 0;
     return ((completed / total) * 100).round();
   }
+
   static Listenable get listenable => _notifier;
 
   static void notifyProfileUpdated() => _notifier.notify();
@@ -65,12 +66,14 @@ class PatientProfileMock {
   static List<String> allergies = [];
   static final vaccinations = <({String name, DateTime date})>[];
   static List<FamilyProfileMember> familyMembers = [];
-  static final Map<String, List<PatientPrescription>> _prescriptionsByPatientKey = {};
+  static final Map<String, List<PatientPrescription>>
+      _prescriptionsByPatientKey = {};
 
   static String? _notificationPrefsLoadedForPatientId;
   static Future<void>? _notificationPrefsLoadFuture;
 
-  static StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _patientSub;
+  static StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      _patientSub;
 
   static void reset() {
     _patientSub?.cancel();
@@ -113,7 +116,8 @@ class PatientProfileMock {
 
   static Future<void> _loadNotificationPrefs(String patientId) async {
     try {
-      final data = await FirestoreService.instance.patientProfile.fetchPatientDocument(
+      final data =
+          await FirestoreService.instance.patientProfile.fetchPatientDocument(
         patientId,
         preferCache: false,
       );
@@ -143,7 +147,8 @@ class PatientProfileMock {
         .listen((snap) {
       if (!snap.exists || snap.data() == null) return;
       final data = snap.data()!;
-      final url = (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
+      final url =
+          (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
       if (url != profile.photoUrl) {
         profile.photoUrl = url;
         notifyProfileUpdated();
@@ -153,7 +158,8 @@ class PatientProfileMock {
 
   static Future<void> loadFromFirestore(String patientId) async {
     listenToPatientDocument(patientId);
-    final data = await FirestoreService.instance.patientProfile.fetchPatientDocument(patientId);
+    final data = await FirestoreService.instance.patientProfile
+        .fetchPatientDocument(patientId);
     if (data == null) return;
 
     profile.name = data['name'] as String? ?? profile.name;
@@ -164,8 +170,11 @@ class PatientProfileMock {
     profile.bloodGroup = data['bloodGroup'] as String? ?? profile.bloodGroup;
     profile.height = (data['height'] as num?)?.toDouble() ?? profile.height;
     profile.weight = (data['weight'] as num?)?.toDouble() ?? profile.weight;
-    profile.photoInitial = profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'P';
-    profile.photoUrl = (data['photoUrl'] as String?) ?? (data['photoURL'] as String?) ?? profile.photoUrl;
+    profile.photoInitial =
+        profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'P';
+    profile.photoUrl = (data['photoUrl'] as String?) ??
+        (data['photoURL'] as String?) ??
+        profile.photoUrl;
     profileAddress = PatientAddress.fromMap(data);
     if (!profileAddress.hasContent) {
       final city = data['city'] as String? ?? '';
@@ -178,18 +187,22 @@ class PatientProfileMock {
         ? profileAddress.city
         : data['city'] as String? ?? '';
 
-    conditions = (data['conditions'] as List<dynamic>? ?? const []).cast<String>();
-    allergies = (data['allergies'] as List<dynamic>? ?? const []).cast<String>();
+    conditions =
+        (data['conditions'] as List<dynamic>? ?? const []).cast<String>();
+    allergies =
+        (data['allergies'] as List<dynamic>? ?? const []).cast<String>();
 
     final prefs = data['notificationPrefs'] as Map<String, dynamic>?;
     if (prefs != null) _applyNotificationPrefs(prefs);
 
     privacyPrefs.shareRecordsWithDoctors =
         data['shareRecordsWithDoctors'] as bool? ?? true;
-    privacyPrefs.allowHealthInsights = data['allowHealthInsights'] as bool? ?? false;
+    privacyPrefs.allowHealthInsights =
+        data['allowHealthInsights'] as bool? ?? false;
     privacyPrefs.twoFactorEnabled = data['twoFactorEnabled'] as bool? ?? false;
 
-    familyMembers = await FirestoreService.instance.familyMember.fetchForPatient(patientId);
+    familyMembers =
+        await FirestoreService.instance.familyMember.fetchForPatient(patientId);
     PatientFavoritesStore.instance.applyFromPatientData(data);
     notifyProfileUpdated();
   }
@@ -210,11 +223,13 @@ class PatientProfileMock {
 
   static void _applyNotificationPrefs(Map<String, dynamic> prefs) {
     final p = notificationPrefs;
-    p.appointmentReminders = prefs['appointmentReminders'] as bool? ?? p.appointmentReminders;
+    p.appointmentReminders =
+        prefs['appointmentReminders'] as bool? ?? p.appointmentReminders;
     p.reminderTiming = ReminderTiming.values.byName(
       prefs['reminderTiming'] as String? ?? p.reminderTiming.name,
     );
-    p.medicationReminders = prefs['medicationReminders'] as bool? ?? p.medicationReminders;
+    p.medicationReminders =
+        prefs['medicationReminders'] as bool? ?? p.medicationReminders;
     p.labReportAlert = prefs['labReportAlert'] as bool? ?? p.labReportAlert;
     p.healthTips = prefs['healthTips'] as bool? ?? p.healthTips;
     p.offers = prefs['offers'] as bool? ?? p.offers;
@@ -293,7 +308,8 @@ class PatientProfileMock {
   }
 
   static Future<void> persistProfile(String patientId) async {
-    await FirestoreService.instance.patientProfile.savePatientDocument(patientId, {
+    await FirestoreService.instance.patientProfile
+        .savePatientDocument(patientId, {
       'name': profile.name,
       'age': profile.age,
       'gender': profile.gender,
@@ -303,7 +319,8 @@ class PatientProfileMock {
       'height': profile.height,
       'weight': profile.weight,
       'photoUrl': profile.photoUrl,
-      'city': profileAddress.city.isNotEmpty ? profileAddress.city : profileCity,
+      'city':
+          profileAddress.city.isNotEmpty ? profileAddress.city : profileCity,
       'country': profileAddress.country,
       'addressLine1': profileAddress.addressLine1,
       'addressLine2': profileAddress.addressLine2,
@@ -316,13 +333,18 @@ class PatientProfileMock {
       'shareRecordsWithDoctors': privacyPrefs.shareRecordsWithDoctors,
       'allowHealthInsights': privacyPrefs.allowHealthInsights,
       'twoFactorEnabled': privacyPrefs.twoFactorEnabled,
-      'hiddenDoctorIds': PatientFavoritesStore.instance.hiddenDoctorIds.toList(),
+      'hiddenDoctorIds':
+          PatientFavoritesStore.instance.hiddenDoctorIds.toList(),
       'hiddenLabKeys': PatientFavoritesStore.instance.hiddenLabKeys.toList(),
       'addedDoctorIds': PatientFavoritesStore.instance.addedDoctorIds,
       'addedDoctors': PatientFavoritesStore.instance.addedDoctorsForPersist,
-      'addedLabs': PatientFavoritesStore.instance.addedLabs.map((lab) => lab.toMap()).toList(),
-      if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty) 'invitedDoctorId': invitedDoctorId,
-      if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty) 'primaryDoctorId': invitedDoctorId,
+      'addedLabs': PatientFavoritesStore.instance.addedLabs
+          .map((lab) => lab.toMap())
+          .toList(),
+      if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
+        'invitedDoctorId': invitedDoctorId,
+      if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
+        'primaryDoctorId': invitedDoctorId,
     });
   }
 
@@ -404,7 +426,8 @@ class PatientProfileMock {
         ? 'Prescription — ${draft.patient.patientName}'
         : draft.primaryDiagnosis.trim();
 
-    final list = _prescriptionsByPatientKey.putIfAbsent(key, () => <PatientPrescription>[]);
+    final list = _prescriptionsByPatientKey.putIfAbsent(
+        key, () => <PatientPrescription>[]);
     list.removeWhere((p) => p.prescriptionId == draft.prescriptionId);
     list.insert(
       0,
@@ -425,7 +448,8 @@ class PatientProfileMock {
     required String doctorName,
   }) {
     final name = doctorName.startsWith('Dr.') ? doctorName : 'Dr. $doctorName';
-    final list = _prescriptionsByPatientKey.putIfAbsent(PatientSession.patientKey, () => <PatientPrescription>[]);
+    final list = _prescriptionsByPatientKey.putIfAbsent(
+        PatientSession.patientKey, () => <PatientPrescription>[]);
     list.insert(
       0,
       PatientPrescription(
@@ -445,15 +469,18 @@ class PatientProfileMock {
   static const faqs = [
     FaqItem(
       question: 'How do I reschedule an appointment?',
-      answer: 'Open Appointments → Upcoming → tap Reschedule on your booking, or contact the clinic directly.',
+      answer:
+          'Open Appointments → Upcoming → tap Reschedule on your booking, or contact the clinic directly.',
     ),
     FaqItem(
       question: 'When will I receive my lab report?',
-      answer: 'Most lab partners upload reports within 24–48 hours. You will get an app notification when ready.',
+      answer:
+          'Most lab partners upload reports within 24–48 hours. You will get an app notification when ready.',
     ),
     FaqItem(
       question: 'Can I share records with my doctor?',
-      answer: 'Yes. From Health Records, tap Share and select doctors you trust.',
+      answer:
+          'Yes. From Health Records, tap Share and select doctors you trust.',
     ),
   ];
 

@@ -17,10 +17,13 @@ abstract final class LabDoctorInviteService {
     if (role != null) {
       params['role'] = role;
     }
-    return Uri.parse(appDownloadUrl).replace(queryParameters: params).toString();
+    return Uri.parse(appDownloadUrl)
+        .replace(queryParameters: params)
+        .toString();
   }
 
-  static String inviteMessage({required String labName, required String link, String? role}) {
+  static String inviteMessage(
+      {required String labName, required String link, String? role}) {
     final name = labName.trim().isEmpty ? 'A diagnostic lab' : labName.trim();
     if (role == 'doctor') {
       return '$name invited you to download DoctorNect and register as a doctor to connect with their lab. '
@@ -66,7 +69,9 @@ class LabInviteDoctorSheet extends StatefulWidget {
 class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
   static const _labPurple = AppColors.labPurple;
 
-  String get _link => LabDoctorInviteService.buildInviteLink(LabSession.loggedInLabId, role: widget.role);
+  String get _link =>
+      LabDoctorInviteService.buildInviteLink(LabSession.loggedInLabId,
+          role: widget.role);
 
   Future<void> _copyLink() async {
     final message = LabDoctorInviteService.inviteMessage(
@@ -102,7 +107,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondaryOf(context).withValues(alpha: 0.3),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -110,7 +116,9 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
             const SizedBox(height: 16),
             Text(
               'Invite to download app',
-              style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.headlineMedium,
+                  fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
@@ -133,7 +141,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.link, size: 20, color: _labPurple.withValues(alpha: 0.9)),
+                  Icon(Icons.link,
+                      size: 20, color: _labPurple.withValues(alpha: 0.9)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: SelectableText(
@@ -156,7 +165,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               icon: const Icon(Icons.copy_outlined),
-              label: Text('Copy invite', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              label: Text('Copy invite',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
@@ -167,7 +177,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               icon: const Icon(Icons.share_outlined),
-              label: Text('Share invite', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              label: Text('Share invite',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
             ),
           ],
         ),

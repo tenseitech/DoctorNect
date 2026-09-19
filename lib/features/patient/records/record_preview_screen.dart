@@ -49,7 +49,8 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
       return;
     }
 
-    final patientId = widget.viewerPatientId ?? PatientSession.loggedInPatientId;
+    final patientId =
+        widget.viewerPatientId ?? PatientSession.loggedInPatientId;
     if (patientId.isEmpty) {
       setState(() {
         _loading = false;
@@ -69,7 +70,9 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
       setState(() {
         _bytes = bytes;
         _loading = false;
-        _error = bytes == null ? 'File not available on this device or in cloud storage.' : null;
+        _error = bytes == null
+            ? 'File not available on this device or in cloud storage.'
+            : null;
       });
     } catch (_) {
       if (!mounted) return;
@@ -88,15 +91,17 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        title: Text(record.title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.headlineSmall)),
+        title: Text(record.title,
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: AppTypography.headlineSmall)),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         actions: [
           if (_bytes != null)
             IconButton(
               icon: const Icon(Icons.download_outlined),
-              onPressed: () {
-              },
+              onPressed: () {},
             ),
         ],
       ),
@@ -109,7 +114,9 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
             color: AppColors.surfaceOf(context),
             child: Text(
               '${DateFormat('dd MMM yyyy').format(record.date)} · ${record.fileName}',
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ),
         ],
@@ -131,19 +138,23 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.insert_drive_file_outlined, size: 64, color: style.color),
+              Icon(Icons.insert_drive_file_outlined,
+                  size: 64, color: style.color),
               const SizedBox(height: 12),
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(
+                    color: AppColors.textSecondaryOf(context)),
               ),
               if (record.fileStorage == HealthRecordFileStorage.local) ...[
                 const SizedBox(height: 8),
                 Text(
                   'Files may be stored on the device where they were uploaded, or in cloud storage when sync is enabled.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ],

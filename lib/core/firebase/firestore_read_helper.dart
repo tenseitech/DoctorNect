@@ -7,6 +7,7 @@ abstract final class FirestoreReadHelper {
     required Query<T> query,
     bool preferCache = true,
     bool onlyCache = false,
+
     /// When true, skips the "return cache immediately if non-empty" shortcut so
     /// the server is always queried. Scoped to appointment reads — other callers
     /// keep the default cache-first behaviour.
@@ -40,7 +41,8 @@ abstract final class FirestoreReadHelper {
   }) async {
     if (preferCache && FirebaseBootstrap.isReady) {
       try {
-        final cached = await reference.get(const GetOptions(source: Source.cache));
+        final cached =
+            await reference.get(const GetOptions(source: Source.cache));
         if (cached.exists) {
           return cached;
         }

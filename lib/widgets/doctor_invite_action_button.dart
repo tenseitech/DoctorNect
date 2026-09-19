@@ -25,7 +25,8 @@ class DoctorInviteActionButton extends StatefulWidget {
   final bool fullWidth;
 
   @override
-  State<DoctorInviteActionButton> createState() => _DoctorInviteActionButtonState();
+  State<DoctorInviteActionButton> createState() =>
+      _DoctorInviteActionButtonState();
 }
 
 class _DoctorInviteActionButtonState extends State<DoctorInviteActionButton> {
@@ -73,8 +74,7 @@ class _DoctorInviteActionButtonState extends State<DoctorInviteActionButton> {
     setState(() {});
   }
 
-  bool get _pendingOrSending =>
-      widget.isPending || _inviteSentAt != null;
+  bool get _pendingOrSending => widget.isPending || _inviteSentAt != null;
 
   bool get _showInviteSentBrief =>
       _pendingOrSending &&
@@ -86,15 +86,19 @@ class _DoctorInviteActionButtonState extends State<DoctorInviteActionButton> {
     _startInviteSentPhase();
   }
 
-  ButtonStyle _buttonStyle({Color? foreground, Color? side, bool disabled = false}) {
+  ButtonStyle _buttonStyle(
+      {Color? foreground, Color? side, bool disabled = false}) {
     return OutlinedButton.styleFrom(
       foregroundColor: foreground,
-      disabledForegroundColor: disabled ? AppColors.textSecondaryOf(context) : null,
+      disabledForegroundColor:
+          disabled ? AppColors.textSecondaryOf(context) : null,
       side: side != null ? BorderSide(color: side) : null,
       padding: widget.fullWidth
           ? const EdgeInsets.symmetric(vertical: 12)
           : const EdgeInsets.symmetric(horizontal: 10),
-      minimumSize: widget.fullWidth ? const Size(double.infinity, 44) : const Size(0, 32),
+      minimumSize: widget.fullWidth
+          ? const Size(double.infinity, 44)
+          : const Size(0, 32),
     );
   }
 

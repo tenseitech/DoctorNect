@@ -31,7 +31,9 @@ class PrescriptionVitals {
 }
 
 class MedicineEntry {
-  MedicineEntry({String? id}) : id = id ?? '${DateTime.now().microsecondsSinceEpoch}_${_globalEntryIdCounter++}';
+  MedicineEntry({String? id})
+      : id = id ??
+            '${DateTime.now().microsecondsSinceEpoch}_${_globalEntryIdCounter++}';
 
   final String id;
   String name = '';
@@ -97,7 +99,8 @@ class InvestigationEntry {
     this.group = '',
     this.notes = '',
     this.catalogId,
-  }) : id = id ?? '${DateTime.now().microsecondsSinceEpoch}_${_globalEntryIdCounter++}';
+  }) : id = id ??
+            '${DateTime.now().microsecondsSinceEpoch}_${_globalEntryIdCounter++}';
 
   final String id;
   final String? catalogId;
@@ -192,10 +195,15 @@ class PrescriptionDraft {
     return 'RX-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.millisecondsSinceEpoch % 100000}';
   }
 
-  String get patientId => patient.patientId ?? ''; // FIXED: never fabricate a PAT-{hash} id; empty means unresolved so callers block the write
+  String get patientId =>
+      patient.patientId ??
+      ''; // FIXED: never fabricate a PAT-{hash} id; empty means unresolved so callers block the write
 
   bool get hasResolvedPatientId =>
-      patient.patientId != null && patient.patientId!.trim().isNotEmpty; // FIXED: callers must check before persisting/sending
+      patient.patientId != null &&
+      patient.patientId!
+          .trim()
+          .isNotEmpty; // FIXED: callers must check before persisting/sending
 
   List<MedicineEntry> get validMedicines =>
       medicines.where((m) => m.name.trim().isNotEmpty).toList();

@@ -5,7 +5,8 @@ import '../models/pharmacy_models.dart';
 class PharmacyNotificationStore extends ChangeNotifier {
   PharmacyNotificationStore._();
 
-  static final PharmacyNotificationStore instance = PharmacyNotificationStore._();
+  static final PharmacyNotificationStore instance =
+      PharmacyNotificationStore._();
 
   final List<PharmacyNotification> _storeNotifications = [];
 
@@ -55,7 +56,8 @@ class PharmacyNotificationStore extends ChangeNotifier {
   void markAllReadForStore(String storeId) {
     var changed = false;
     for (var i = 0; i < _storeNotifications.length; i++) {
-      if (_storeNotifications[i].userId == storeId && !_storeNotifications[i].isRead) {
+      if (_storeNotifications[i].userId == storeId &&
+          !_storeNotifications[i].isRead) {
         _storeNotifications[i].isRead = true;
         changed = true;
       }

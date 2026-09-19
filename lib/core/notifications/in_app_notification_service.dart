@@ -1,4 +1,4 @@
-﻿import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/firestore_service.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -13,23 +13,14 @@ import 'doctor_notification_trigger.dart';
 import 'notification_read_store.dart';
 import 'patient_notification_trigger.dart';
 
-
-
 typedef NotificationListener = void Function(AppNotification notification);
-
-
 
 /// In-app notification center â€” no FCM/SMS; alerts appear when events fire in DoctorNect.
 
 class InAppNotificationService extends ChangeNotifier {
-
   InAppNotificationService._();
 
-
-
   static final instance = InAppNotificationService._();
-
-
 
   final List<AppNotification> _doctor = [];
 
@@ -103,7 +94,8 @@ class InAppNotificationService extends ChangeNotifier {
   /// Re-evaluates patient inbox items when notification preferences change.
   void onPatientNotificationPrefsChanged() {
     if (_lastPatientFirestoreSnapshot != null) {
-      mergePatientFirestoreNotifications(List<AppNotification>.from(_lastPatientFirestoreSnapshot!));
+      mergePatientFirestoreNotifications(
+          List<AppNotification>.from(_lastPatientFirestoreSnapshot!));
     }
     refilterPatientLocalInbox();
   }
@@ -140,7 +132,8 @@ class InAppNotificationService extends ChangeNotifier {
       if (userId.isEmpty) return;
       _doctorReadKeys
         ..clear()
-        ..addAll(await NotificationReadStore.load(audience: audience, userId: userId));
+        ..addAll(await NotificationReadStore.load(
+            audience: audience, userId: userId));
       _applyPersistedReadToInbox(NotificationAudience.doctor);
       return;
     }
@@ -149,7 +142,8 @@ class InAppNotificationService extends ChangeNotifier {
     if (userId.isEmpty) return;
     _patientReadKeys
       ..clear()
-      ..addAll(await NotificationReadStore.load(audience: audience, userId: userId));
+      ..addAll(
+          await NotificationReadStore.load(audience: audience, userId: userId));
     _applyPersistedReadToInbox(NotificationAudience.patient);
   }
 
@@ -165,8 +159,11 @@ class InAppNotificationService extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  bool _isPersistedRead(NotificationAudience audience, AppNotification notification) {
-    final keys = audience == NotificationAudience.doctor ? _doctorReadKeys : _patientReadKeys;
+  bool _isPersistedRead(
+      NotificationAudience audience, AppNotification notification) {
+    final keys = audience == NotificationAudience.doctor
+        ? _doctorReadKeys
+        : _patientReadKeys;
     return keys.contains(_storageKey(notification));
   }
 
@@ -179,7 +176,9 @@ class InAppNotificationService extends ChangeNotifier {
         : PatientSession.loggedInPatientId;
     if (userId.isEmpty) return;
 
-    final keys = audience == NotificationAudience.doctor ? _doctorReadKeys : _patientReadKeys;
+    final keys = audience == NotificationAudience.doctor
+        ? _doctorReadKeys
+        : _patientReadKeys;
     final toPersist = <String>[];
     for (final notification in notifications) {
       final key = _storageKey(notification);
@@ -203,121 +202,75 @@ class InAppNotificationService extends ChangeNotifier {
     return notification.copyWith(isRead: true);
   }
 
-
-
   List<AppNotification> get doctorInbox => List.unmodifiable(_doctor);
 
-  List<AppNotification> get patientInbox =>
-      List.unmodifiable(_patient.where((n) => !_isPrescriptionExpiringAlert(n)));
-
-
+  List<AppNotification> get patientInbox => List.unmodifiable(
+      _patient.where((n) => !_isPrescriptionExpiringAlert(n)));
 
   int get unreadDoctorCount => _doctor.where((n) => !n.isRead).length;
 
-
-
-  int get unreadPatientCount =>
-      _patient.where((n) => !n.isRead && !_isPrescriptionExpiringAlert(n)).length;
-
-
+  int get unreadPatientCount => _patient
+      .where((n) => !n.isRead && !_isPrescriptionExpiringAlert(n))
+      .length;
 
   /// Retired alert type â€” hide legacy in-memory items (dedupe key / title).
 
   static bool _isPrescriptionExpiringAlert(AppNotification n) {
-
     if (n.dedupeKey != null && n.dedupeKey!.startsWith('rx_exp_')) return true;
 
     return n.title.toLowerCase().contains('prescription expiring');
-
   }
 
-
-
   bool _allowsDoctor(DoctorNotificationTrigger trigger) {
-
     final p = DoctorProfileStore.instance.profile;
 
     return switch (trigger) {
-
       DoctorNotificationTrigger.newAppointmentBooked => true,
-
       DoctorNotificationTrigger.appointmentCancelledByPatient => true,
-
       DoctorNotificationTrigger.appointmentReminderTomorrow ||
-
       DoctorNotificationTrigger.appointmentReminderToday ||
-
       DoctorNotificationTrigger.nextPatientReminder =>
-
         p.appointmentReminders,
-
       _ => true,
-
     };
-
   }
 
-
-
   bool _allowsPatient(PatientNotificationTrigger trigger) {
-
     final p = PatientProfileMock.notificationPrefs;
 
     return switch (trigger) {
-
       PatientNotificationTrigger.appointmentReminderTomorrow ||
-
       PatientNotificationTrigger.appointmentReminderTwoHours ||
-
       PatientNotificationTrigger.appointmentReminderThirtyMin =>
-
         p.appointmentReminders,
-
       PatientNotificationTrigger.labCollectionReminder ||
-
       PatientNotificationTrigger.phlebotomistOnTheWay ||
-
       PatientNotificationTrigger.labReportReady ||
-
       PatientNotificationTrigger.labBookingAccepted ||
-
       PatientNotificationTrigger.labBookingDeclined ||
-
       PatientNotificationTrigger.labOrderSent =>
-
         p.labReportAlert,
-
       PatientNotificationTrigger.labBookingUpdate ||
-
       PatientNotificationTrigger.pharmacyDeliveryUpdate =>
-
         true,
-
       PatientNotificationTrigger.medicineReminder => p.medicationReminders,
-
       PatientNotificationTrigger.healthTipOfDay => p.healthTips,
-
       _ => true,
-
     };
-
   }
 
-
-
   void addDoctor(AppNotification notification) {
-
-    if (notification.doctorTrigger != null && !_allowsDoctor(notification.doctorTrigger!)) {
-
+    if (notification.doctorTrigger != null &&
+        !_allowsDoctor(notification.doctorTrigger!)) {
       return;
-
     }
 
     final storageKey = _storageKey(notification);
     if (_doctorDedupeKeys.contains(storageKey)) return;
     _doctorDedupeKeys.add(storageKey);
 
-    final resolved = _withPersistedReadState(NotificationAudience.doctor, notification);
+    final resolved =
+        _withPersistedReadState(NotificationAudience.doctor, notification);
 
     _doctor.insert(0, resolved);
 
@@ -326,7 +279,6 @@ class InAppNotificationService extends ChangeNotifier {
     }
 
     notifyListeners();
-
   }
 
   /// Replaces Firestore-backed doctor inbox items with the latest remote snapshot.
@@ -383,20 +335,19 @@ class InAppNotificationService extends ChangeNotifier {
   }
 
   void addPatient(AppNotification notification) {
-
     if (_isPrescriptionExpiringAlert(notification)) return;
 
-    if (notification.patientTrigger != null && !_allowsPatient(notification.patientTrigger!)) {
-
+    if (notification.patientTrigger != null &&
+        !_allowsPatient(notification.patientTrigger!)) {
       return;
-
     }
 
     final storageKey = _storageKey(notification);
     if (_patientDedupeKeys.contains(storageKey)) return;
     _patientDedupeKeys.add(storageKey);
 
-    final resolved = _withPersistedReadState(NotificationAudience.patient, notification);
+    final resolved =
+        _withPersistedReadState(NotificationAudience.patient, notification);
 
     _patient.insert(0, resolved);
 
@@ -405,17 +356,15 @@ class InAppNotificationService extends ChangeNotifier {
     }
 
     notifyListeners();
-
   }
-
-
 
   Future<void> markDoctorRead(String id) async {
     final index = _doctor.indexWhere((n) => n.id == id);
     if (index < 0 || _doctor[index].isRead) return;
 
     final readKey = _storageKey(_doctor[index]);
-    final matching = _doctor.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
+    final matching =
+        _doctor.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
     if (matching.isEmpty) return;
 
     final firestoreUnreadIds = <String>[];
@@ -433,9 +382,11 @@ class InAppNotificationService extends ChangeNotifier {
     }
 
     if (firestoreUnreadIds.length == 1) {
-      await FirestoreService.instance.inAppNotification.markRead(firestoreUnreadIds.first);
+      await FirestoreService.instance.inAppNotification
+          .markRead(firestoreUnreadIds.first);
     } else if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification.markAllRead(firestoreUnreadIds);
+      await FirestoreService.instance.inAppNotification
+          .markAllRead(firestoreUnreadIds);
     }
     if (updatedMatching.isNotEmpty) {
       await _persistAllRead(NotificationAudience.doctor, updatedMatching);
@@ -463,7 +414,8 @@ class InAppNotificationService extends ChangeNotifier {
     if (!changed) return;
 
     if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification.markAllRead(firestoreUnreadIds);
+      await FirestoreService.instance.inAppNotification
+          .markAllRead(firestoreUnreadIds);
     }
     if (updatedUnread.isNotEmpty) {
       await _persistAllRead(NotificationAudience.doctor, updatedUnread);
@@ -476,7 +428,8 @@ class InAppNotificationService extends ChangeNotifier {
     if (index < 0 || _patient[index].isRead) return;
 
     final readKey = _storageKey(_patient[index]);
-    final matching = _patient.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
+    final matching =
+        _patient.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
     if (matching.isEmpty) return;
 
     final firestoreUnreadIds = <String>[];
@@ -494,9 +447,11 @@ class InAppNotificationService extends ChangeNotifier {
     }
 
     if (firestoreUnreadIds.length == 1) {
-      await FirestoreService.instance.inAppNotification.markRead(firestoreUnreadIds.first);
+      await FirestoreService.instance.inAppNotification
+          .markRead(firestoreUnreadIds.first);
     } else if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification.markAllRead(firestoreUnreadIds);
+      await FirestoreService.instance.inAppNotification
+          .markAllRead(firestoreUnreadIds);
     }
     if (updatedMatching.isNotEmpty) {
       await _persistAllRead(NotificationAudience.patient, updatedMatching);
@@ -524,7 +479,8 @@ class InAppNotificationService extends ChangeNotifier {
     if (!changed) return;
 
     if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification.markAllRead(firestoreUnreadIds);
+      await FirestoreService.instance.inAppNotification
+          .markAllRead(firestoreUnreadIds);
     }
     if (updatedUnread.isNotEmpty) {
       await _persistAllRead(NotificationAudience.patient, updatedUnread);
@@ -532,77 +488,44 @@ class InAppNotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
-
-
   void handleDoctorAction(String actionKey, {String? targetId}) {
-
     switch (actionKey) {
-
       case 'mark_no_show':
-
         if (targetId != null) {
-
           addDoctor(DoctorNotificationEmitter.patientMarkedNoShow(targetId));
-
         }
 
       default:
-
         break;
-
     }
 
     notifyListeners();
-
   }
 
-
-
   void handlePatientAction(String actionKey, {String? targetId}) {
-
     switch (actionKey) {
-
       case 'mark_no_show':
-
       case 'join_now':
-
       case 'join_soon':
-
       case 'view_report':
-
       case 'view_prescription':
-
       case 'book_another':
-
       case 'track_phlebotomist':
-
       case 'log_vitals':
-
       case 'view_appointment':
-
       case 'accept_reschedule':
-
         break;
 
       default:
-
         break;
-
     }
 
     notifyListeners();
-
   }
 
-
-
   void seedDoctorWelcomeIfEmpty() {
-
     if (_doctor.isNotEmpty) return;
 
     addDoctor(DoctorNotificationEmitter.kycApproved());
-
   }
-
 }
-

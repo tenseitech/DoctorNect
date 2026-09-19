@@ -34,7 +34,8 @@ class AppointmentChiefComplaintsSection extends StatefulWidget {
       _AppointmentChiefComplaintsSectionState();
 }
 
-class _AppointmentChiefComplaintsSectionState extends State<AppointmentChiefComplaintsSection> {
+class _AppointmentChiefComplaintsSectionState
+    extends State<AppointmentChiefComplaintsSection> {
   late List<String> _complaints;
   bool _saving = false;
 

@@ -88,10 +88,12 @@ class _QualificationSelectorBody extends StatefulWidget {
   final String? initialCustomValue;
 
   @override
-  State<_QualificationSelectorBody> createState() => _QualificationSelectorBodyState();
+  State<_QualificationSelectorBody> createState() =>
+      _QualificationSelectorBodyState();
 }
 
-class _QualificationSelectorBodyState extends State<_QualificationSelectorBody> {
+class _QualificationSelectorBodyState
+    extends State<_QualificationSelectorBody> {
   late String? _selected = widget.state.value;
   late final TextEditingController _otherController = TextEditingController(
     text: widget.initialCustomValue ?? '',
@@ -151,7 +153,8 @@ class _QualificationSelectorBodyState extends State<_QualificationSelectorBody> 
         ? widget.label
         : (widget.isRequired ? '${widget.label} *' : widget.label);
     final textStyle = widget.registrationStyle
-        ? GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)
+        ? GoogleFonts.inter(
+            fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)
         : null;
 
     return Column(

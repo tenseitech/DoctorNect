@@ -16,7 +16,8 @@ class LabWorklistStore extends ChangeNotifier {
   final List<LabBookingRecord> _bookings = [];
 
   List<DoctorLabOrder> get orders => List.unmodifiable(_orders);
-  List<LabBookingRecord> get bookings => LabBookingGrouper.group(List.unmodifiable(_bookings));
+  List<LabBookingRecord> get bookings =>
+      LabBookingGrouper.group(List.unmodifiable(_bookings));
 
   List<DoctorLabOrder> forLabAndDoctor(String labId, String doctorId) =>
       _orders.where((o) => o.labId == labId && o.doctorId == doctorId).toList();
@@ -38,7 +39,8 @@ class LabWorklistStore extends ChangeNotifier {
           LabNotificationStore.instance.addLab(
             labId: labId,
             title: 'New lab order',
-            message: 'Dr. ${item.doctorName} ordered tests for ${item.patientName}',
+            message:
+                'Dr. ${item.doctorName} ordered tests for ${item.patientName}',
             referenceId: item.orderId,
             createdAt: item.createdAt,
           );

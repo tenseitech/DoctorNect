@@ -22,7 +22,8 @@ class CommunityDiagnosis {
 class CommunityDiagnosisRepository {
   CommunityDiagnosisRepository._();
 
-  static final CommunityDiagnosisRepository instance = CommunityDiagnosisRepository._();
+  static final CommunityDiagnosisRepository instance =
+      CommunityDiagnosisRepository._();
 
   static const _fetchLimit = 1000;
 
@@ -37,7 +38,8 @@ class CommunityDiagnosisRepository {
           .collection(FirestorePaths.communityDiagnoses)
           .orderBy('text')
           .limit(_fetchLimit);
-      final snap = await FirestoreReadHelper.getQuery(query: query, preferCache: true);
+      final snap =
+          await FirestoreReadHelper.getQuery(query: query, preferCache: true);
 
       _cache
         ..clear()
@@ -91,7 +93,8 @@ class CommunityDiagnosisRepository {
       results.add(value.trim());
     }
 
-    for (final item in Icd10DiagnosesDatabase.instance.search(query, limit: limit)) {
+    for (final item
+        in Icd10DiagnosesDatabase.instance.search(query, limit: limit)) {
       add(item);
       if (results.length >= limit) return results;
     }
@@ -118,7 +121,9 @@ class CommunityDiagnosisRepository {
       throw StateError('Internet is required to save a custom diagnosis.');
     }
 
-    final doc = await FirebaseFirestore.instance.collection(FirestorePaths.communityDiagnoses).add({
+    final doc = await FirebaseFirestore.instance
+        .collection(FirestorePaths.communityDiagnoses)
+        .add({
       'text': trimmed,
       'textLower': trimmed.toLowerCase(),
       'addedByDoctorId': doctorId,
@@ -135,19 +140,22 @@ class CommunityDiagnosisRepository {
     return diagnosis;
   }
 
-  Future<void> persistCustomIfNeeded(String text, {required String doctorId}) async {
+  Future<void> persistCustomIfNeeded(String text,
+      {required String doctorId}) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || isKnownDisplay(trimmed) || doctorId.isEmpty) return;
     try {
       await addDiagnosis(text: trimmed, doctorId: doctorId);
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('CommunityDiagnosisRepository.persistCustomIfNeeded failed: $e\n$st');
+        debugPrint(
+            'CommunityDiagnosisRepository.persistCustomIfNeeded failed: $e\n$st');
       }
     }
   }
 
-  static CommunityDiagnosis _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+  static CommunityDiagnosis _fromDoc(
+      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data();
     return CommunityDiagnosis(
       id: doc.id,

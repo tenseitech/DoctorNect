@@ -14,20 +14,24 @@ class MedicalStoreRepository {
   Future<bool> isStoreVerified(String storeId) async {
     if (!FirebaseBootstrap.isReady) return false;
     final snap = await FirestoreReadHelper.getDocument(
-      reference: FirebaseFirestore.instance.collection(FirestorePaths.medicalStores).doc(storeId),
+      reference: FirebaseFirestore.instance
+          .collection(FirestorePaths.medicalStores)
+          .doc(storeId),
       preferCache: false,
     );
     if (!snap.exists || snap.data() == null) return false;
     return snap.data()!['verified'] as bool? ?? false;
   }
 
-  Future<List<MedicalStoreProfile>> fetchVerifiedStores({bool preferCache = true}) async {
+  Future<List<MedicalStoreProfile>> fetchVerifiedStores(
+      {bool preferCache = true}) async {
     if (!FirebaseBootstrap.isReady) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
       query: FirebaseFirestore.instance
           .collection(FirestorePaths.medicalStores)
-          .where('verified', isEqualTo: true) // FIXED: only surface admin-verified stores
+          .where('verified',
+              isEqualTo: true) // FIXED: only surface admin-verified stores
           .limit(FirestoreQueryLimits.verifiedDirectoryListingCap),
       preferCache: preferCache,
     );
@@ -56,8 +60,9 @@ class MedicalStoreRepository {
         aLine1 = addressData['addressLine1'] as String? ?? '';
         aLine2 = addressData['addressLine2'] as String? ?? '';
         aPinCode = addressData['pinCode'] as String? ?? '';
-        
-        final parts = [aLine1, aLine2, aCity, aState, aPinCode].where((e) => e.isNotEmpty);
+
+        final parts = [aLine1, aLine2, aCity, aState, aPinCode]
+            .where((e) => e.isNotEmpty);
         addressStr = parts.join(', ');
       } else if (addressData is String) {
         addressStr = addressData;
@@ -74,9 +79,9 @@ class MedicalStoreRepository {
         country: aCountry,
         state: aState,
         pincode: aPinCode,
-        drugLicenseNumber: (data['drugLicenseNumber'] as String?)
-            ?? (data['licenseNumber'] as String?)
-            ?? '',
+        drugLicenseNumber: (data['drugLicenseNumber'] as String?) ??
+            (data['licenseNumber'] as String?) ??
+            '',
         phone: data['phone'] as String? ?? '',
         email: data['email'] as String? ?? '',
         gstNumber: _optionalGst(data['gstNumber'] as String?),
@@ -95,7 +100,9 @@ class MedicalStoreRepository {
     if (!FirebaseBootstrap.isReady || storeId.isEmpty) return null;
 
     final snap = await FirestoreReadHelper.getDocument(
-      reference: FirebaseFirestore.instance.collection(FirestorePaths.medicalStores).doc(storeId),
+      reference: FirebaseFirestore.instance
+          .collection(FirestorePaths.medicalStores)
+          .doc(storeId),
       preferCache: false,
     );
     if (!snap.exists || snap.data() == null) return null;

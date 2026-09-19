@@ -67,7 +67,8 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
       return;
     }
 
-    final profile = await FirestoreService.instance.ambulance.fetchAmbulanceById(_ambulanceId);
+    final profile = await FirestoreService.instance.ambulance
+        .fetchAmbulanceById(_ambulanceId);
     if (!mounted) return;
 
     final username = profile?.username.trim().toLowerCase() ?? '';
@@ -254,11 +255,14 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: _accent, width: 1.5),
               ),
-              prefixIcon: Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.textSecondaryOf(context)),
+              prefixIcon: Icon(Icons.lock_outline_rounded,
+                  size: 20, color: AppColors.textSecondaryOf(context)),
               suffixIcon: IconButton(
                 tooltip: _obscurePin ? 'Show PIN' : 'Hide PIN',
                 icon: Icon(
-                  _obscurePin ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscurePin
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   size: 20,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -272,13 +276,15 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
             style: FilledButton.styleFrom(
               backgroundColor: _accent,
               minimumSize: const Size.fromHeight(48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: _submitting
                 ? const SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : Text(
                     'Continue',

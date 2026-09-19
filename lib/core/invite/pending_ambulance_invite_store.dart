@@ -1,4 +1,4 @@
-﻿import 'pending_invite_store.dart';
+import 'pending_invite_store.dart';
 
 /// Captures ambulance driver invite deep links before PIN setup.
 abstract final class PendingAmbulanceInviteStore {

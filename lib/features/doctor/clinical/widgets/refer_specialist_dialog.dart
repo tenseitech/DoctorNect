@@ -32,7 +32,8 @@ class ReferSpecialistDialog extends StatefulWidget {
     return showDialog<void>(
       context: context,
       builder: (_) => Dialog(
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16))),
         child: ReferSpecialistDialog(
           patient: patient,
           initialReferrals: initialReferrals,
@@ -102,7 +103,8 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
       );
       if (!mounted) return;
       setState(() {
-        final existing = _pendingReferrals.indexWhere((r) => r.doctorId == specialist.id);
+        final existing =
+            _pendingReferrals.indexWhere((r) => r.doctorId == specialist.id);
         if (existing >= 0) {
           _pendingReferrals[existing].sent = true;
           _pendingReferrals[existing].reason = _reason;
@@ -179,12 +181,15 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
           children: [
             Row(
               children: [
-                const Icon(Icons.person_add_alt_1_outlined, color: AppColors.doctorBlue, size: 22),
+                const Icon(Icons.person_add_alt_1_outlined,
+                    color: AppColors.doctorBlue, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Refer to Specialist',
-                    style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.headlineSmall,
+                        fontWeight: FontWeight.w700),
                   ),
                 ),
                 IconButton(
@@ -197,7 +202,9 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
             const SizedBox(height: 4),
             Text(
               'Refer ${widget.patient.patientName} to a verified DoctorNect doctor',
-              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context)),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -221,7 +228,9 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
               const SizedBox(height: 10),
               Text(
                 'Added referrals',
-                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelMedium,
+                    fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               Wrap(
@@ -232,12 +241,16 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                     InputChip(
                       label: Text(
                         _pendingReferrals[i].displayTitle,
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall),
                       ),
                       deleteIcon: _pendingReferrals[i].sent
-                          ? const Icon(Icons.check, size: 14, color: Color(0xFF16A34A))
+                          ? const Icon(Icons.check,
+                              size: 14, color: Color(0xFF16A34A))
                           : const Icon(Icons.close, size: 14),
-                      onDeleted: _pendingReferrals[i].sent ? null : () => _removePending(i),
+                      onDeleted: _pendingReferrals[i].sent
+                          ? null
+                          : () => _removePending(i),
                       backgroundColor: _pendingReferrals[i].sent
                           ? const Color(0xFF16A34A).withValues(alpha: 0.1)
                           : AppColors.doctorBlue.withValues(alpha: 0.08),
@@ -248,33 +261,34 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
             const Divider(height: 20),
             Flexible(
               child: ListenableBuilder(
-              listenable: RegisteredDoctorsStore.instance,
-              builder: (context, _) {
-                final list = RegisteredDoctorsStore.instance.verifiedDoctors
-                    .where((d) => d.id != selfId)
-                    .where((d) {
-                      if (query.isEmpty) return true;
-                      return d.name.toLowerCase().contains(query) ||
-                          d.specialization.toLowerCase().contains(query);
-                    })
-                    .toList();
+                listenable: RegisteredDoctorsStore.instance,
+                builder: (context, _) {
+                  final list = RegisteredDoctorsStore.instance.verifiedDoctors
+                      .where((d) => d.id != selfId)
+                      .where((d) {
+                    if (query.isEmpty) return true;
+                    return d.name.toLowerCase().contains(query) ||
+                        d.specialization.toLowerCase().contains(query);
+                  }).toList();
 
-                if (list.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(
-                        query.isEmpty
-                            ? 'No verified doctors available yet.'
-                            : 'No doctors match "$query".',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodySmall),
+                  if (list.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          query.isEmpty
+                              ? 'No verified doctors available yet.'
+                              : 'No doctors match "$query".',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                              color: AppColors.textSecondaryOf(context),
+                              fontSize: AppTypography.bodySmall),
+                        ),
                       ),
-                    ),
-                  );
-                }
+                    );
+                  }
 
-                return ListView.separated(
+                  return ListView.separated(
                     shrinkWrap: true,
                     itemCount: list.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
@@ -290,9 +304,12 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                           children: [
                             CircleAvatar(
                               radius: 18,
-                              backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.12),
+                              backgroundColor:
+                                  AppColors.doctorBlue.withValues(alpha: 0.12),
                               child: Text(
-                                doctor.name.isNotEmpty ? doctor.name[0].toUpperCase() : 'D',
+                                doctor.name.isNotEmpty
+                                    ? doctor.name[0].toUpperCase()
+                                    : 'D',
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.doctorBlue,
@@ -307,13 +324,18 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                                 children: [
                                   Text(
                                     'Dr. ${doctor.name}',
-                                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
+                                    style: GoogleFonts.inter(
+                                        fontSize: AppTypography.bodyMedium,
+                                        fontWeight: FontWeight.w500),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     doctor.specialization,
-                                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                                    style: GoogleFonts.inter(
+                                        fontSize: AppTypography.labelMedium,
+                                        color:
+                                            AppColors.textSecondaryOf(context)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -327,13 +349,16 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                                   : () => _sendReferral(doctor),
                               style: FilledButton.styleFrom(
                                 backgroundColor: sent
-                                    ? AppColors.textSecondaryOf(context).withValues(alpha: 0.35)
+                                    ? AppColors.textSecondaryOf(context)
+                                        .withValues(alpha: 0.35)
                                     : const Color(0xFF16A34A),
                                 foregroundColor: Colors.white,
                                 disabledBackgroundColor:
-                                    AppColors.textSecondaryOf(context).withValues(alpha: 0.35),
+                                    AppColors.textSecondaryOf(context)
+                                        .withValues(alpha: 0.35),
                                 disabledForegroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                                 minimumSize: const Size(0, 32),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 textStyle: GoogleFonts.inter(
@@ -348,8 +373,8 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                       );
                     },
                   );
-              },
-            ),
+                },
+              ),
             ),
             if (unsentCount > 0) ...[
               const SizedBox(height: 12),
@@ -361,10 +386,12 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.save_outlined, size: 18),
-                  label: Text(_saving ? 'Saving…' : 'Save $unsentCount referral(s)'),
+                  label: Text(
+                      _saving ? 'Saving…' : 'Save $unsentCount referral(s)'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.doctorBlue,
                     foregroundColor: Colors.white,

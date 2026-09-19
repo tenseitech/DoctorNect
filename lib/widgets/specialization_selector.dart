@@ -28,7 +28,9 @@ class SpecializationSelector extends FormField<String> {
     Color accentColor = AppColors.doctorBlue,
     FormFieldValidator<String>? validator,
   }) : super(
-          initialValue: initialValue?.trim().isEmpty == true ? null : initialValue?.trim(),
+          initialValue: initialValue?.trim().isEmpty == true
+              ? null
+              : initialValue?.trim(),
           autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: validator ??
               (isRequired
@@ -80,7 +82,9 @@ class _SelectorBodyState extends State<_SelectorBody> {
   void initState() {
     super.initState();
     final v = widget.state.value;
-    if (v != null && v.isNotEmpty && !AppConstants.allSpecializations.contains(v)) {
+    if (v != null &&
+        v.isNotEmpty &&
+        !AppConstants.allSpecializations.contains(v)) {
       _mode = _InputMode.manual;
       _manualCtrl.text = v;
     }
@@ -125,7 +129,8 @@ class _SelectorBodyState extends State<_SelectorBody> {
     final hasValue = value != null && value.isNotEmpty;
     final accent = widget.accentColor;
     final errorText = widget.state.errorText;
-    InputDecoration fieldDecoration(InputDecoration decoration) => RequiredFieldLabels.decorate(
+    InputDecoration fieldDecoration(InputDecoration decoration) =>
+        RequiredFieldLabels.decorate(
           decoration,
           widget.label,
           isRequired: widget.isRequired,
@@ -185,7 +190,8 @@ class _SelectorBodyState extends State<_SelectorBody> {
                           onPressed: _clear,
                         )
                       : const Icon(Icons.arrow_drop_down),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
@@ -202,7 +208,9 @@ class _SelectorBodyState extends State<_SelectorBody> {
               ),
               isEmpty: !hasValue,
               child: hasValue
-                  ? Text(value, style: const TextStyle(fontSize: AppTypography.headlineSmall))
+                  ? Text(value,
+                      style: const TextStyle(
+                          fontSize: AppTypography.headlineSmall))
                   : const SizedBox.shrink(),
             ),
           )
@@ -213,7 +221,8 @@ class _SelectorBodyState extends State<_SelectorBody> {
               InputDecoration(
                 hintText: 'e.g. Integrative Medicine',
                 errorText: errorText,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 suffixIcon: _manualCtrl.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close, size: 18),
@@ -290,7 +299,8 @@ class _ModeChip extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w500,
-            color: selected ? AppColors.surfaceOf(context) : Colors.grey.shade700,
+            color:
+                selected ? AppColors.surfaceOf(context) : Colors.grey.shade700,
           ),
         ),
       ),
@@ -335,7 +345,8 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
     final q = _query.toLowerCase();
     final result = <_ListEntry>[];
     for (final cat in cats.entries) {
-      final matches = cat.value.where((s) => s.toLowerCase().contains(q)).toList();
+      final matches =
+          cat.value.where((s) => s.toLowerCase().contains(q)).toList();
       if (matches.isNotEmpty) {
         result.add(_ListEntry.header(cat.key));
         result.addAll(matches.map(_ListEntry.item));
@@ -449,7 +460,9 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       '$itemCount result${itemCount == 1 ? '' : 's'}',
-                      style: TextStyle(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: TextStyle(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   ),
                 ),
@@ -461,16 +474,20 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.search_off, size: 40, color: Colors.grey.shade400),
+                            Icon(Icons.search_off,
+                                size: 40, color: Colors.grey.shade400),
                             const SizedBox(height: 8),
                             Text(
                               'No results for "$_query"',
-                              style: TextStyle(color: AppColors.textSecondaryOf(context)),
+                              style: TextStyle(
+                                  color: AppColors.textSecondaryOf(context)),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Use "Enter manually" for custom entries',
-                              style: TextStyle(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                              style: TextStyle(
+                                  fontSize: AppTypography.labelMedium,
+                                  color: AppColors.textSecondaryOf(context)),
                             ),
                           ],
                         ),
@@ -481,7 +498,8 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                         itemBuilder: (_, i) {
                           final e = entries[i];
                           if (e.isHeader) {
-                            return _CategoryHeader(label: e.text, accentColor: accent);
+                            return _CategoryHeader(
+                                label: e.text, accentColor: accent);
                           }
                           final isSelected = e.text == widget.currentValue;
                           return ListTile(
@@ -489,14 +507,19 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                               e.text,
                               style: GoogleFonts.inter(
                                 fontSize: AppTypography.bodyMedium,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                                 color: isSelected ? accent : null,
                               ),
                             ),
                             trailing: isSelected
-                                ? Icon(Icons.check_circle, color: accent, size: 20)
+                                ? Icon(Icons.check_circle,
+                                    color: accent, size: 20)
                                 : null,
-                            tileColor: isSelected ? accent.withValues(alpha: 0.06) : null,
+                            tileColor: isSelected
+                                ? accent.withValues(alpha: 0.06)
+                                : null,
                             onTap: () => Navigator.of(ctx).pop(e.text),
                             dense: true,
                             minVerticalPadding: 10,

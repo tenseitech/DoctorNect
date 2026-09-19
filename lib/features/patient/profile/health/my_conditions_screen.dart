@@ -94,12 +94,14 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
       decoration: BoxDecoration(
         color: AppColors.patientTeal.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.patientTeal.withValues(alpha: 0.25)),
+        border:
+            Border.all(color: AppColors.patientTeal.withValues(alpha: 0.25)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: AppColors.patientTeal, size: 20),
+          const Icon(Icons.info_outline,
+              color: AppColors.patientTeal, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -129,7 +131,8 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
               child: TextField(
                 controller: _controller,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: PatientProfileFormStyles.fieldDecoration(context, 
+                decoration: PatientProfileFormStyles.fieldDecoration(
+                  context,
                   labelText: 'Condition name',
                   hintText: 'e.g. Diabetes, Asthma',
                 ).copyWith(errorText: _errorText),
@@ -147,32 +150,39 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.patientTeal,
                 foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 minimumSize: const Size(0, 48),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
           ],
         ),
-        if (_suggestions.any((s) => !_items.any((i) => i.toLowerCase() == s.toLowerCase()))) ...[
+        if (_suggestions.any(
+            (s) => !_items.any((i) => i.toLowerCase() == s.toLowerCase()))) ...[
           const SizedBox(height: 12),
           Text(
             'Quick add',
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: _suggestions
-                .where((s) => !_items.any((i) => i.toLowerCase() == s.toLowerCase()))
+                .where((s) =>
+                    !_items.any((i) => i.toLowerCase() == s.toLowerCase()))
                 .map(
                   (s) => ActionChip(
                     label: Text(s),
                     onPressed: () => _add(s),
                     backgroundColor: AppColors.surfaceOf(context),
                     side: BorderSide(color: AppColors.borderOf(context)),
-                    labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context)),
+                    labelStyle: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textPrimaryOf(context)),
                   ),
                 )
                 .toList(),
@@ -205,7 +215,9 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
           Text(
             'Add any chronic health conditions above',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ],
       ),
@@ -257,12 +269,15 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('My Conditions', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('My Conditions',
+          context: context),
       body: PatientProfileFormStyles.constrainedScrollBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildInfoBanner(),
@@ -272,7 +287,9 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            PatientProfileFormStyles.contentSurface(context: context, child: Column(
+            PatientProfileFormStyles.contentSurface(
+              context: context,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   PatientProfileFormStyles.sectionHeader(

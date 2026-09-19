@@ -63,7 +63,8 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderOf(context).withValues(alpha: 0.65)),
+        border: Border.all(
+            color: AppColors.borderOf(context).withValues(alpha: 0.65)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -74,7 +75,8 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
             child: InkWell(
               onTap: widget.collapsible ? _toggle : null,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(padding, padding - 1, padding, _expanded ? padding - 2 : padding - 1),
+                padding: EdgeInsets.fromLTRB(padding, padding - 1, padding,
+                    _expanded ? padding - 2 : padding - 1),
                 child: Row(
                   children: [
                     Expanded(
@@ -90,13 +92,16 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
                               letterSpacing: -0.1,
                             ),
                           ),
-                          if (!_expanded && widget.collapsedSummary != null) ...[
+                          if (!_expanded &&
+                              widget.collapsedSummary != null) ...[
                             const SizedBox(height: 2),
                             Text(
                               widget.collapsedSummary!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelSmall,
+                                  color: AppColors.textSecondaryOf(context)),
                             ),
                           ],
                         ],
@@ -106,9 +111,12 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
                     if (widget.collapsible) ...[
                       if (widget.trailing != null) const SizedBox(width: 4),
                       Icon(
-                        _expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                        _expanded
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
                         size: 22,
-                        color: AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
+                        color: AppColors.textSecondaryOf(context)
+                            .withValues(alpha: 0.75),
                       ),
                     ],
                   ],
@@ -117,7 +125,10 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
             ),
           ),
           if (_expanded) ...[
-            Divider(height: 1, thickness: 1, color: AppColors.borderOf(context).withValues(alpha: 0.5)),
+            Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.borderOf(context).withValues(alpha: 0.5)),
             Padding(
               padding: EdgeInsets.fromLTRB(padding, 8, padding, padding),
               child: widget.child,
@@ -130,7 +141,8 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
 }
 
 typedef SuggestionFetcher = List<String> Function(String query);
-typedef ItemSuggestionFetcher = List<MedicineSearchSuggestion> Function(String query);
+typedef ItemSuggestionFetcher = List<MedicineSearchSuggestion> Function(
+    String query);
 
 class SearchSuggestionsField extends StatefulWidget {
   const SearchSuggestionsField({
@@ -146,7 +158,9 @@ class SearchSuggestionsField extends StatefulWidget {
     this.onItemSelected,
     this.maxSuggestionsHeight = 160,
   }) : assert(
-          suggestions != null || suggestionFetcher != null || itemSuggestionFetcher != null,
+          suggestions != null ||
+              suggestionFetcher != null ||
+              itemSuggestionFetcher != null,
           'Provide suggestions, suggestionFetcher, or itemSuggestionFetcher',
         );
 
@@ -198,7 +212,9 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
   List<MedicineSearchSuggestion> _runItemFilter(String query) {
     final fetcher = widget.itemSuggestionFetcher;
     if (fetcher != null) return fetcher(query);
-    return _runFilter(query).map((s) => MedicineSearchSuggestion(name: s)).toList();
+    return _runFilter(query)
+        .map((s) => MedicineSearchSuggestion(name: s))
+        .toList();
   }
 
   void _onTextChanged() {
@@ -241,7 +257,8 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
             focusNode: _focusNode,
             controller: widget.controller,
             decoration: InputDecoration(
-              labelText: widget.optional ? '${widget.label} (optional)' : widget.label,
+              labelText:
+                  widget.optional ? '${widget.label} (optional)' : widget.label,
               suffixIcon: const Icon(Icons.search, size: 20),
               isDense: true,
             ),
@@ -255,59 +272,66 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
               }
             }),
           ),
-        if (_showSuggestions && (_useItems ? _filteredItems.isNotEmpty : _filtered.isNotEmpty))
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            constraints: BoxConstraints(maxHeight: widget.maxSuggestionsHeight),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceOf(context),
-              borderRadius: BorderRadius.circular(AppConstants.inputRadius),
-              border: Border.all(color: AppColors.borderOf(context)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _useItems ? _filteredItems.length : _filtered.length,
-              itemBuilder: (context, index) {
-                if (_useItems) {
-                  final item = _filteredItems[index];
+          if (_showSuggestions &&
+              (_useItems ? _filteredItems.isNotEmpty : _filtered.isNotEmpty))
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              constraints:
+                  BoxConstraints(maxHeight: widget.maxSuggestionsHeight),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceOf(context),
+                borderRadius: BorderRadius.circular(AppConstants.inputRadius),
+                border: Border.all(color: AppColors.borderOf(context)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _useItems ? _filteredItems.length : _filtered.length,
+                itemBuilder: (context, index) {
+                  if (_useItems) {
+                    final item = _filteredItems[index];
+                    return Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        dense: true,
+                        title: Text(item.name,
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodySmall)),
+                        trailing: item.isCommunity
+                            ? Text(
+                                'Community',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondaryOf(context),
+                                ),
+                              )
+                            : null,
+                        onTap: () => _selectItem(item),
+                      ),
+                    );
+                  }
+                  final item = _filtered[index];
                   return Material(
                     color: Colors.transparent,
                     child: ListTile(
                       dense: true,
-                      title: Text(item.name, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
-                      trailing: item.isCommunity
-                          ? Text(
-                              'Community',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textSecondaryOf(context),
-                              ),
-                            )
-                          : null,
-                      onTap: () => _selectItem(item),
+                      title: Text(item,
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall)),
+                      onTap: () =>
+                          _selectItem(MedicineSearchSuggestion(name: item)),
                     ),
                   );
-                }
-                final item = _filtered[index];
-                return Material(
-                  color: Colors.transparent,
-                  child: ListTile(
-                    dense: true,
-                    title: Text(item, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
-                    onTap: () => _selectItem(MedicineSearchSuggestion(name: item)),
-                  ),
-                );
-              },
+                },
+              ),
             ),
-          ),
         ],
       ),
     );

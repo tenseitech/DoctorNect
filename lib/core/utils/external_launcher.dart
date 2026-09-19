@@ -21,13 +21,17 @@ class ExternalLauncher {
     try {
       return await launchUrl(
         uri,
-        mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
       );
     } catch (_) {
       if (!await canLaunchUrl(uri)) return false;
       return launchUrl(
         uri,
-        mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
       );
     }
   }
@@ -76,7 +80,9 @@ class ExternalLauncher {
     try {
       return await launchUrl(
         uri,
-        mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.externalApplication,
+        mode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
       );
     } catch (_) {
       try {
@@ -84,7 +90,8 @@ class ExternalLauncher {
       } catch (_) {
         await Clipboard.setData(ClipboardData(text: normalized));
         if (context != null && context.mounted) {
-          AppToast.info(context, 'Could not open dialer. Number copied: $normalized');
+          AppToast.info(
+              context, 'Could not open dialer. Number copied: $normalized');
         }
         return false;
       }
@@ -109,9 +116,11 @@ class ExternalLauncher {
     try {
       return await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
-      await Clipboard.setData(ClipboardData(text: '$body\n\nSend to: $normalized'));
+      await Clipboard.setData(
+          ClipboardData(text: '$body\n\nSend to: $normalized'));
       if (context != null && context.mounted) {
-        AppToast.info(context, 'SMS app not available. Message copied to clipboard.');
+        AppToast.info(
+            context, 'SMS app not available. Message copied to clipboard.');
       }
       return false;
     }
@@ -132,7 +141,8 @@ class ExternalLauncher {
     } catch (_) {
       await Clipboard.setData(ClipboardData(text: body));
       if (context != null && context.mounted) {
-        AppToast.info(context, 'SMS not available. Message copied to clipboard.');
+        AppToast.info(
+            context, 'SMS not available. Message copied to clipboard.');
       }
       return false;
     }
@@ -147,7 +157,8 @@ class ExternalLauncher {
     final waDigits = whatsAppPhoneDigits(phone);
     final uri = waDigits == null
         ? Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}')
-        : Uri.parse('https://wa.me/$waDigits?text=${Uri.encodeComponent(text)}');
+        : Uri.parse(
+            'https://wa.me/$waDigits?text=${Uri.encodeComponent(text)}');
 
     try {
       return await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -163,7 +174,8 @@ class ExternalLauncher {
     String? url,
     BuildContext? context,
   }) async {
-    final shareUrl = url?.trim().isNotEmpty == true ? url!.trim() : 'https://doctornect.com';
+    final shareUrl =
+        url?.trim().isNotEmpty == true ? url!.trim() : 'https://doctornect.com';
     final tgWeb = Uri.parse(
       'https://t.me/share/url?url=${Uri.encodeComponent(shareUrl)}&text=${Uri.encodeComponent(text)}',
     );

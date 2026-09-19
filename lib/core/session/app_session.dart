@@ -23,8 +23,9 @@ abstract final class AppSession {
   // Doctor session state
   static String doctorId = '';
   static String doctorName = '';
-  static String get activeDoctorId =>
-      doctorId.isNotEmpty ? doctorId : (FirebaseAuth.instance.currentUser?.uid ?? '');
+  static String get activeDoctorId => doctorId.isNotEmpty
+      ? doctorId
+      : (FirebaseAuth.instance.currentUser?.uid ?? '');
 
   // Patient session state
   static String patientId = '';
@@ -43,8 +44,9 @@ abstract final class AppSession {
   static String adminId = '';
   static String adminName = '';
   static String adminEmail = '';
-  static String get activeAdminId =>
-      adminId.isNotEmpty ? adminId : (FirebaseAuth.instance.currentUser?.uid ?? '');
+  static String get activeAdminId => adminId.isNotEmpty
+      ? adminId
+      : (FirebaseAuth.instance.currentUser?.uid ?? '');
 
   static void setDoctor({required String id, required String name}) {
     doctorId = id;
@@ -67,7 +69,8 @@ abstract final class AppSession {
     storeName = name;
   }
 
-  static void setSuperAdmin({required String id, required String name, String email = ''}) {
+  static void setSuperAdmin(
+      {required String id, required String name, String email = ''}) {
     adminId = id;
     adminName = name;
     adminEmail = email;

@@ -16,7 +16,8 @@ class LabRegistry extends ChangeNotifier {
 
   final List<RegisteredLabProfile> _labs = [];
 
-  static List<RegisteredLabProfile> get all => List.unmodifiable(instance._labs);
+  static List<RegisteredLabProfile> get all =>
+      List.unmodifiable(instance._labs);
 
   static RegisteredLabProfile? findById(String id) {
     for (final lab in instance._labs) {
@@ -67,7 +68,7 @@ class LabRegistry extends ChangeNotifier {
 
     final current = instance._labs[index];
     final normalizedEmail = email?.trim().toLowerCase();
-    
+
     Map<String, dynamic>? addressMap;
     String? addressStr;
     if (addressLine1 != null) {
@@ -79,7 +80,13 @@ class LabRegistry extends ChangeNotifier {
         'city': city ?? '',
         'pinCode': pincode ?? '',
       };
-      final parts = [addressLine1, addressLine2 ?? '', city ?? '', state ?? '', pincode ?? ''].where((e) => e.isNotEmpty);
+      final parts = [
+        addressLine1,
+        addressLine2 ?? '',
+        city ?? '',
+        state ?? '',
+        pincode ?? ''
+      ].where((e) => e.isNotEmpty);
       addressStr = parts.join(', ');
     }
 

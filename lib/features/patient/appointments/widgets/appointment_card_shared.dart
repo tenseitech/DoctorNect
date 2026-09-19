@@ -13,14 +13,17 @@ BoxDecoration appointmentTabCardDecoration([BuildContext? context]) {
   return BoxDecoration(
     color: context != null ? AppColors.surfaceOf(context) : Colors.white,
     borderRadius: BorderRadius.circular(12),
-    border: Border.all(color: context != null ? AppColors.borderOf(context) : _cardBorder),
+    border: Border.all(
+        color: context != null ? AppColors.borderOf(context) : _cardBorder),
   );
 }
 
-const EdgeInsets appointmentFlatPadding = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+const EdgeInsets appointmentFlatPadding =
+    EdgeInsets.symmetric(horizontal: 16, vertical: 14);
 
 Widget appointmentDoctorAvatar(String doctorName) {
-  final initial = doctorName.trim().isNotEmpty ? doctorName.trim()[0].toUpperCase() : 'D';
+  final initial =
+      doctorName.trim().isNotEmpty ? doctorName.trim()[0].toUpperCase() : 'D';
   return CircleAvatar(
     radius: 20,
     backgroundColor: AppColors.patientTeal.withValues(alpha: 0.12),
@@ -84,10 +87,12 @@ ButtonStyle compactTealOutlinedButtonStyle() {
     minimumSize: const Size(0, 32),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
+    textStyle: GoogleFonts.inter(
+        fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
   ).copyWith(
     overlayColor: WidgetStateProperty.resolveWith((states) {
-      if (states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed)) {
+      if (states.contains(WidgetState.hovered) ||
+          states.contains(WidgetState.pressed)) {
         return AppColors.patientTeal.withValues(alpha: 0.08);
       }
       return null;
@@ -102,7 +107,8 @@ ButtonStyle compactGhostButtonStyle() {
     minimumSize: const Size(0, 32),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
+    textStyle: GoogleFonts.inter(
+        fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
   );
 }
 
@@ -123,12 +129,15 @@ TextStyle appointmentCardDoctorNameStyle([BuildContext? context]) {
   return GoogleFonts.inter(
     fontSize: AppTypography.bodyMedium,
     fontWeight: FontWeight.w700,
-    color: context != null ? AppColors.textPrimaryOf(context) : AppColors.textPrimary,
+    color: context != null
+        ? AppColors.textPrimaryOf(context)
+        : AppColors.textPrimary,
   );
 }
 
 TextStyle appointmentCardDateStyle() {
-  return GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: _textGray400, height: 1.35);
+  return GoogleFonts.inter(
+      fontSize: AppTypography.labelMedium, color: _textGray400, height: 1.35);
 }
 
 class AppointmentCardWrapper extends StatelessWidget {
@@ -158,7 +167,9 @@ class AppointmentCardWrapper extends StatelessWidget {
               child: Padding(padding: appointmentFlatPadding, child: child),
             ),
           ),
-          if (showDivider) Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+          if (showDivider)
+            Divider(
+                height: 1, thickness: 1, color: AppColors.borderOf(context)),
         ],
       );
     }

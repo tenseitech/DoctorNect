@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -41,7 +41,9 @@ class BookingConfirmedView extends StatelessWidget {
         children: [
           Text(
             'Dr. ${booking.doctorName}',
-            style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.headlineSmall,
+                fontWeight: FontWeight.w600),
           ),
           Text(
             '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
@@ -57,9 +59,12 @@ class BookingConfirmedView extends StatelessWidget {
                 color: AppColors.patientTeal,
               ),
             ),
-            Text('Token Number', style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context))),
+            Text('Token Number',
+                style: GoogleFonts.inter(
+                    color: AppColors.textSecondaryOf(context))),
           ],
-          if (booking.clinicAddress != null && booking.clinicAddress!.isNotEmpty) ...[
+          if (booking.clinicAddress != null &&
+              booking.clinicAddress!.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text(
               booking.clinicAddress!,

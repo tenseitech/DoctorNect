@@ -111,7 +111,8 @@ Future<bool> showAmbulanceRatingDialog({
                     controller: reviewCtrl,
                     maxLines: 2,
                     maxLength: 200,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+                    style:
+                        GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
                     decoration: InputDecoration(
                       hintText: 'Write a short review (optional)',
                       hintStyle: GoogleFonts.inter(
@@ -123,11 +124,13 @@ Future<bool> showAmbulanceRatingDialog({
                       fillColor: AppColors.cardBgOf(context),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.borderOf(context)),
+                        borderSide:
+                            BorderSide(color: AppColors.borderOf(context)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.borderOf(context)),
+                        borderSide:
+                            BorderSide(color: AppColors.borderOf(context)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -165,7 +168,9 @@ Future<bool> showAmbulanceRatingDialog({
                     child: FilledButton(
                       onPressed: selectedStars > 0
                           ? () async {
-                              final ok = await FirestoreService.instance.ambulance.rateBroadcast(
+                              final ok = await FirestoreService
+                                  .instance.ambulance
+                                  .rateBroadcast(
                                 broadcastId: bookingId,
                                 stars: selectedStars,
                                 review: reviewCtrl.text.trim().isEmpty

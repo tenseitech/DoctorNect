@@ -106,7 +106,8 @@ class _SearchField extends StatelessWidget {
                     ]
                   : [
                       BoxShadow(
-                        color: AppColors.textPrimaryOf(context).withValues(alpha: 0.03),
+                        color: AppColors.textPrimaryOf(context)
+                            .withValues(alpha: 0.03),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -116,7 +117,9 @@ class _SearchField extends StatelessWidget {
               children: [
                 Icon(
                   Icons.search_rounded,
-                  color: active ? AppColors.patientTeal : AppColors.textSecondaryOf(context),
+                  color: active
+                      ? AppColors.patientTeal
+                      : AppColors.textSecondaryOf(context),
                   size: 22,
                 ),
                 SizedBox(width: compact ? 10 : 12),
@@ -173,7 +176,8 @@ class _MobileSearchAction extends StatelessWidget {
             child: Icon(
               Icons.arrow_forward_rounded,
               size: 20,
-              color: active ? AppColors.surfaceOf(context) : AppColors.patientTeal,
+              color:
+                  active ? AppColors.surfaceOf(context) : AppColors.patientTeal,
             ),
           ),
         ),

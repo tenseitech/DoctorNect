@@ -43,7 +43,8 @@ class DoctorShell extends StatefulWidget {
 class _DoctorShellState extends State<DoctorShell> {
   int _index = 0;
   int _appointmentsTab = 0;
-  late final PageController _pageController = PageController(initialPage: _index);
+  late final PageController _pageController =
+      PageController(initialPage: _index);
   bool _isAnimatingToPage = false;
   final Set<int> _visitedTabs = {0};
 
@@ -106,14 +107,18 @@ class _DoctorShellState extends State<DoctorShell> {
     if (widget.verificationPending) return;
     final doctorId = DoctorSession.loggedInDoctorId;
     if (doctorId.isEmpty) return;
-    FirestoreScreenSync.attachPendingConnections(role: UserType.doctor, profileId: doctorId);
-    FirestoreScreenSync.attachLabPendingConnections(role: UserType.doctor, profileId: doctorId);
+    FirestoreScreenSync.attachPendingConnections(
+        role: UserType.doctor, profileId: doctorId);
+    FirestoreScreenSync.attachLabPendingConnections(
+        role: UserType.doctor, profileId: doctorId);
     FirestoreScreenSync.attachDoctorAppointments(doctorId);
   }
 
   List<bool> _requestDots(String doctorId) {
-    final storePending = PharmacyConnectionStore.instance.pendingForDoctor(doctorId).isNotEmpty;
-    final labPending = LabConnectionStore.instance.pendingForDoctor(doctorId).isNotEmpty;
+    final storePending =
+        PharmacyConnectionStore.instance.pendingForDoctor(doctorId).isNotEmpty;
+    final labPending =
+        LabConnectionStore.instance.pendingForDoctor(doctorId).isNotEmpty;
     return [false, false, false, storePending, labPending];
   }
 
@@ -134,7 +139,8 @@ class _DoctorShellState extends State<DoctorShell> {
   }
 
   Future<void> _startDoctorNotifications() async {
-    if (!ProfileCompletionService.instance.isComplete || widget.verificationPending) {
+    if (!ProfileCompletionService.instance.isComplete ||
+        widget.verificationPending) {
       return;
     }
     // Defer all background work until after the first frame is drawn
@@ -209,11 +215,13 @@ class _DoctorShellState extends State<DoctorShell> {
     }
     if (_pageController.hasClients) {
       _isAnimatingToPage = true;
-      _pageController.animateToPage(
+      _pageController
+          .animateToPage(
         index,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
-      ).then((_) {
+      )
+          .then((_) {
         _isAnimatingToPage = false;
       });
     }
@@ -234,7 +242,8 @@ class _DoctorShellState extends State<DoctorShell> {
   }
 
   void _syncFirestoreForTab(int index) {
-    if (!ProfileCompletionService.instance.isComplete || widget.verificationPending) {
+    if (!ProfileCompletionService.instance.isComplete ||
+        widget.verificationPending) {
       return;
     }
     final doctorId = DoctorSession.loggedInDoctorId;
@@ -244,11 +253,15 @@ class _DoctorShellState extends State<DoctorShell> {
 
     if (index == 3) {
       unawaited(PharmacyConnectionStore.instance.refreshActiveConnections(
-        role: UserType.doctor, profileId: doctorId, preferCache: true,
+        role: UserType.doctor,
+        profileId: doctorId,
+        preferCache: true,
       ));
     } else if (index == 4) {
       unawaited(LabConnectionStore.instance.refreshActiveConnections(
-        role: UserType.doctor, profileId: doctorId, preferCache: true,
+        role: UserType.doctor,
+        profileId: doctorId,
+        preferCache: true,
       ));
       unawaited(LabRegistry.refreshFromFirestore());
     }
@@ -313,32 +326,32 @@ class _DoctorShellState extends State<DoctorShell> {
       child: Theme(
         data: doctorTheme,
         child: ListenableBuilder(
-        listenable: Listenable.merge([
-          PharmacyConnectionStore.instance,
-          LabConnectionStore.instance,
-        ]),
-        builder: (context, _) {
-          final doctorId = DoctorSession.loggedInDoctorId;
-          return AdaptiveAppShell(
-            selectedIndex: _index,
-            onDestinationSelected: _onTabSelected,
-            accentColor: AppColors.doctorBlue,
-            filledActiveTabs: true,
-            showMobileTopBar: false,
-            destinations: _destinations,
-            requestDots: _requestDots(doctorId),
-            glassmorphic: true,
-            child: PageView(
-              physics: const NeverScrollableScrollPhysics(),
-              controller: _pageController,
-              onPageChanged: _onPageChanged,
-              children: List.generate(_destinations.length, _lazyTab),
-            ),
-          );
-        },
+          listenable: Listenable.merge([
+            PharmacyConnectionStore.instance,
+            LabConnectionStore.instance,
+          ]),
+          builder: (context, _) {
+            final doctorId = DoctorSession.loggedInDoctorId;
+            return AdaptiveAppShell(
+              selectedIndex: _index,
+              onDestinationSelected: _onTabSelected,
+              accentColor: AppColors.doctorBlue,
+              filledActiveTabs: true,
+              showMobileTopBar: false,
+              destinations: _destinations,
+              requestDots: _requestDots(doctorId),
+              glassmorphic: true,
+              child: PageView(
+                physics: const NeverScrollableScrollPhysics(),
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                children: List.generate(_destinations.length, _lazyTab),
+              ),
+            );
+          },
+        ),
       ),
-    ),
-  );
+    );
   }
 }
 

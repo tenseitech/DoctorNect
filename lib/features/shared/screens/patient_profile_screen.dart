@@ -54,7 +54,6 @@ import 'package:medibond/widgets/image_viewer_dialog.dart';
 import 'package:medibond/widgets/logout_button.dart';
 import '../../../core/theme/app_typography.dart';
 
-
 class PatientProfileScreen extends StatelessWidget {
   const PatientProfileScreen({
     super.key,
@@ -66,7 +65,6 @@ class PatientProfileScreen extends StatelessWidget {
   final bool isDoctorView;
   final String? patientId;
   final VoidCallback? onOpenAppointments;
-
 
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
@@ -86,18 +84,18 @@ class PatientProfileScreen extends StatelessWidget {
 
 // --- DOCTOR VIEW IMPLEMENTATION ---
 
-
-
 class _DoctorPatientProfileScreen extends StatefulWidget {
   const _DoctorPatientProfileScreen({super.key, required this.patientId});
 
   final String patientId;
 
   @override
-  State<_DoctorPatientProfileScreen> createState() => _DoctorPatientProfileScreenState();
+  State<_DoctorPatientProfileScreen> createState() =>
+      _DoctorPatientProfileScreenState();
 }
 
-class _DoctorPatientProfileScreenState extends State<_DoctorPatientProfileScreen>
+class _DoctorPatientProfileScreenState
+    extends State<_DoctorPatientProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   PatientFileType? _fileFilter;
@@ -126,8 +124,8 @@ class _DoctorPatientProfileScreenState extends State<_DoctorPatientProfileScreen
     _reloading = true;
     try {
       final profile = await DoctorPatientsService.profileFor(widget.patientId);
-      final blocked =
-          !await DoctorPatientsService.canViewClinicalHistoryForKey(widget.patientId);
+      final blocked = !await DoctorPatientsService.canViewClinicalHistoryForKey(
+          widget.patientId);
       if (!mounted) return;
       setState(() {
         _profile = profile;
@@ -141,8 +139,8 @@ class _DoctorPatientProfileScreenState extends State<_DoctorPatientProfileScreen
 
   Future<void> _loadMedications() async {
     try {
-      final medications = await DoctorPatientsService
-          .loadMedicationsForProfile(widget.patientId)
+      final medications = await DoctorPatientsService.loadMedicationsForProfile(
+              widget.patientId)
           .timeout(const Duration(seconds: 10), onTimeout: () => []);
       if (!mounted) return;
       setState(() {
@@ -174,7 +172,8 @@ class _DoctorPatientProfileScreenState extends State<_DoctorPatientProfileScreen
     return visits.where((visit) {
       final day = DateTime(visit.date.year, visit.date.month, visit.date.day);
       if (_visitFrom != null) {
-        final from = DateTime(_visitFrom!.year, _visitFrom!.month, _visitFrom!.day);
+        final from =
+            DateTime(_visitFrom!.year, _visitFrom!.month, _visitFrom!.day);
         if (day.isBefore(from)) return false;
       }
       if (_visitTo != null) {
@@ -247,7 +246,6 @@ class _DoctorPatientProfileScreenState extends State<_DoctorPatientProfileScreen
     );
   }
 
-
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
       context,
@@ -288,7 +286,8 @@ class _DoctorPatientProfileScreenState extends State<_DoctorPatientProfileScreen
           labelColor: AppColors.doctorBlue,
           unselectedLabelColor: AppColors.textSecondaryOf(context),
           indicatorColor: AppColors.doctorBlue,
-          labelStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+          labelStyle: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(text: 'Personal Info'),
             Tab(text: 'Medical History'),
@@ -299,7 +298,8 @@ class _DoctorPatientProfileScreenState extends State<_DoctorPatientProfileScreen
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: ResponsiveLayout.contentMaxWidth(context)),
+          constraints: BoxConstraints(
+              maxWidth: ResponsiveLayout.contentMaxWidth(context)),
           child: TabBarView(
             controller: _tabController,
             children: [
@@ -344,7 +344,6 @@ class _PersonalInfoTab extends StatelessWidget {
 
   final DoctorPatientProfile profile;
 
-
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
       context,
@@ -363,7 +362,10 @@ class _PersonalInfoTab extends StatelessWidget {
             children: [
               PatientAvatar(name: s.name, gender: s.gender),
               const SizedBox(height: 8),
-              Text(s.name, style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700)),
+              Text(s.name,
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700)),
             ],
           ),
         ),
@@ -391,7 +393,8 @@ class _PersonalInfoTab extends StatelessWidget {
   }
 }
 
-DateTime? _latestPrescriptionDateForMedicine(String patientKey, String medicineName) {
+DateTime? _latestPrescriptionDateForMedicine(
+    String patientKey, String medicineName) {
   final key = medicineName.trim().toLowerCase();
   if (key.isEmpty) return null;
 
@@ -420,7 +423,6 @@ class _MedicalHistoryTab extends StatelessWidget {
   final bool loadingMedications;
   final bool clinicalDataBlocked;
 
-
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
       context,
@@ -443,8 +445,15 @@ class _MedicalHistoryTab extends StatelessWidget {
             spacing: 6,
             runSpacing: 6,
             children: profile.knownConditions.isEmpty
-                ? [Text('None recorded', style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)))]
-                : profile.knownConditions.map((c) => StatusBadge(label: c, color: AppColors.doctorBlue)).toList(),
+                ? [
+                    Text('None recorded',
+                        style: GoogleFonts.inter(
+                            color: AppColors.textSecondaryOf(context)))
+                  ]
+                : profile.knownConditions
+                    .map((c) =>
+                        StatusBadge(label: c, color: AppColors.doctorBlue))
+                    .toList(),
           ),
         ),
         _SectionCard(
@@ -470,8 +479,11 @@ class _MedicalHistoryTab extends StatelessWidget {
             children: profile.surgeries.map((s) {
               return ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.medical_services_outlined, color: AppColors.doctorBlue, size: 20),
-                title: Text(s.procedure, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+                leading: const Icon(Icons.medical_services_outlined,
+                    color: AppColors.doctorBlue, size: 20),
+                title: Text(s.procedure,
+                    style:
+                        GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
                 subtitle: Text(DateFormat('dd MMM yyyy').format(s.date)),
               );
             }).toList(),
@@ -479,7 +491,9 @@ class _MedicalHistoryTab extends StatelessWidget {
         ),
         _SectionCard(
           title: 'Family History',
-          child: Text(profile.familyHistory, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4)),
+          child: Text(profile.familyHistory,
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodyMedium, height: 1.4)),
         ),
         _SectionCard(
           title: 'Current Medications',
@@ -497,7 +511,8 @@ class _MedicalHistoryTab extends StatelessWidget {
                       clinicalDataBlocked
                           ? 'Medication history is hidden while sharing is off.'
                           : 'No medications prescribed yet',
-                      style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          color: AppColors.textSecondaryOf(context)),
                     )
                   : Column(
                       children: medications.map((m) {
@@ -514,12 +529,15 @@ class _MedicalHistoryTab extends StatelessWidget {
                           ),
                           title: Text(
                             m.name,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w600),
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(m.dosage, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
+                              Text(m.dosage,
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.bodySmall)),
                               if (prescribedOn != null)
                                 Text(
                                   'Prescribed ${DateFormat('dd MMM yyyy').format(prescribedOn)}',
@@ -540,7 +558,8 @@ class _MedicalHistoryTab extends StatelessWidget {
             children: profile.vaccinations.map((v) {
               return ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.vaccines_outlined, color: AppColors.doctorBlue, size: 20),
+                leading: const Icon(Icons.vaccines_outlined,
+                    color: AppColors.doctorBlue, size: 20),
                 title: Text(v.name),
                 subtitle: Text(DateFormat('dd MMM yyyy').format(v.date)),
               );
@@ -586,7 +605,6 @@ class _VisitHistoryTab extends StatelessWidget {
         null => 'Scheduled',
       };
 
-
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
       context,
@@ -613,14 +631,18 @@ class _VisitHistoryTab extends StatelessWidget {
               ActionChip(
                 avatar: const Icon(Icons.date_range, size: 16),
                 label: Text(
-                  visitFrom == null ? 'From date' : DateFormat('dd MMM yyyy').format(visitFrom!),
+                  visitFrom == null
+                      ? 'From date'
+                      : DateFormat('dd MMM yyyy').format(visitFrom!),
                 ),
                 onPressed: onPickFrom,
               ),
               ActionChip(
                 avatar: const Icon(Icons.event, size: 16),
                 label: Text(
-                  visitTo == null ? 'To date' : DateFormat('dd MMM yyyy').format(visitTo!),
+                  visitTo == null
+                      ? 'To date'
+                      : DateFormat('dd MMM yyyy').format(visitTo!),
                 ),
                 onPressed: onPickTo,
               ),
@@ -634,7 +656,8 @@ class _VisitHistoryTab extends StatelessWidget {
               ? Center(
                   child: Text(
                     'No visits in this date range',
-                    style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                 )
               : ListView.builder(
@@ -645,100 +668,112 @@ class _VisitHistoryTab extends StatelessWidget {
                     final isLast = index == visits.length - 1;
                     return IntrinsicHeight(
                       child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Column(
-                          children: [
-                            Container(
-                              width: 10,
-                              height: 10,
-                              margin: const EdgeInsets.only(top: 4),
-                              decoration: const BoxDecoration(
-                                color: AppColors.doctorBlue,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            if (!isLast)
-                              Expanded(
-                                child: Container(
-                                  width: 2,
-                                  margin: const EdgeInsets.symmetric(vertical: 4),
-                                  color: AppColors.borderOf(context),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Column(
+                            children: [
+                              Container(
+                                width: 10,
+                                height: 10,
+                                margin: const EdgeInsets.only(top: 4),
+                                decoration: const BoxDecoration(
+                                  color: AppColors.doctorBlue,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                          ],
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: AppColors.cardBgOf(context),
-                              borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-                              border: Border.all(color: AppColors.borderOf(context)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  DateFormat('dd MMM yyyy').format(v.date),
-                                  style: GoogleFonts.inter(
-                                    fontSize: AppTypography.labelMedium,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.doctorBlue,
+                              if (!isLast)
+                                Expanded(
+                                  child: Container(
+                                    width: 2,
+                                    margin:
+                                        const EdgeInsets.symmetric(vertical: 4),
+                                    color: AppColors.borderOf(context),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  v.diagnosis,
-                                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
-                                ),
-                                const SizedBox(height: 10),
-                                VisitHistoryClinicalEditor(
-                                  initialChiefComplaints: v.chiefComplaints,
-                                  initialObservations: v.observations,
-                                ),
-                                const SizedBox(height: 6),
-                                StatusBadge(
-                                  label: _statusLabel(v.status),
-                                  color: v.status == AppointmentStatus.completed
-                                      ? const Color(0xFF16A34A)
-                                      : AppColors.doctorBlue,
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  children: [
-                                    if (v.hasPrescription)
-                                      TextButton.icon(
-                                        onPressed: onViewPrescription,
-                                        icon: const Icon(AppIcons.prescription, size: 16),
-                                        label: const Text('Prescription'),
-                                      ),
-                                    if (v.hasLabReports)
-                                      TextButton.icon(
-                                        onPressed: () => onViewRecord(v),
-                                        icon: const Icon(Icons.biotech_outlined, size: 16),
-                                        label: const Text('Lab Reports'),
-                                      ),
-                                  ],
-                                ),
-                                OutlinedButton(
-                                  onPressed: () => onViewRecord(v),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.doctorBlue,
-                                    side: const BorderSide(color: AppColors.doctorBlue),
-                                    minimumSize: const Size(double.infinity, 34),
+                            ],
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardBgOf(context),
+                                borderRadius: BorderRadius.circular(
+                                    AppConstants.cardRadius),
+                                border: Border.all(
+                                    color: AppColors.borderOf(context)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    DateFormat('dd MMM yyyy').format(v.date),
+                                    style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelMedium,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.doctorBlue,
+                                    ),
                                   ),
-                                  child: const Text('View Full Record'),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    v.diagnosis,
+                                    style: GoogleFonts.inter(
+                                        fontSize: AppTypography.bodyMedium,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  VisitHistoryClinicalEditor(
+                                    initialChiefComplaints: v.chiefComplaints,
+                                    initialObservations: v.observations,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  StatusBadge(
+                                    label: _statusLabel(v.status),
+                                    color:
+                                        v.status == AppointmentStatus.completed
+                                            ? const Color(0xFF16A34A)
+                                            : AppColors.doctorBlue,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    children: [
+                                      if (v.hasPrescription)
+                                        TextButton.icon(
+                                          onPressed: onViewPrescription,
+                                          icon: const Icon(
+                                              AppIcons.prescription,
+                                              size: 16),
+                                          label: const Text('Prescription'),
+                                        ),
+                                      if (v.hasLabReports)
+                                        TextButton.icon(
+                                          onPressed: () => onViewRecord(v),
+                                          icon: const Icon(
+                                              Icons.biotech_outlined,
+                                              size: 16),
+                                          label: const Text('Lab Reports'),
+                                        ),
+                                    ],
+                                  ),
+                                  OutlinedButton(
+                                    onPressed: () => onViewRecord(v),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.doctorBlue,
+                                      side: const BorderSide(
+                                          color: AppColors.doctorBlue),
+                                      minimumSize:
+                                          const Size(double.infinity, 34),
+                                    ),
+                                    child: const Text('View Full Record'),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -769,7 +804,6 @@ class _ReportsTab extends StatelessWidget {
         PatientFileType.imaging => 'Imaging',
         PatientFileType.dischargeSummary => 'Discharge Summary',
       };
-
 
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
@@ -803,7 +837,9 @@ class _ReportsTab extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.only(left: 6),
                   child: FilterChip(
-                    label: Text(_typeLabel(t), style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
+                    label: Text(_typeLabel(t),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall)),
                     selected: fileFilter == t,
                     onSelected: (_) => onFilterChanged(t),
                     selectedColor: AppColors.doctorBlue.withValues(alpha: 0.15),
@@ -818,47 +854,58 @@ class _ReportsTab extends StatelessWidget {
           child: clinicalDataBlocked && files.isEmpty
               ? const PatientSharingBlockedEmptyState()
               : files.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('No documents yet', style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context))),
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: onOpenPrescriptions,
-                        child: const Text('View prescription history'),
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('No documents yet',
+                              style: GoogleFonts.inter(
+                                  color: AppColors.textSecondaryOf(context))),
+                          const SizedBox(height: 12),
+                          OutlinedButton(
+                            onPressed: onOpenPrescriptions,
+                            child: const Text('View prescription history'),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: files.length,
-                  itemBuilder: (context, index) {
-                    final f = files[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppConstants.inputRadius),
-                        side: BorderSide(color: AppColors.borderOf(context)),
-                      ),
-                      leading: Icon(
-                        f.type == PatientFileType.imaging ? Icons.image_outlined : Icons.insert_drive_file_outlined,
-                        color: AppColors.doctorBlue,
-                      ),
-                      title: Text(f.name, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
-                      subtitle: Text(
-                        '${_typeLabel(f.type)} · ${DateFormat('dd MMM yyyy').format(f.date)}',
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.visibility_outlined, size: 20),
-                        onPressed: onOpenPrescriptions,
-                      ),
-                      onTap: onOpenPrescriptions,
-                    );
-                  },
-                ),
+                    )
+                  : ListView.builder(
+                      padding: EdgeInsets.all(16),
+                      itemCount: files.length,
+                      itemBuilder: (context, index) {
+                        final f = files[index];
+                        return ListTile(
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppConstants.inputRadius),
+                            side:
+                                BorderSide(color: AppColors.borderOf(context)),
+                          ),
+                          leading: Icon(
+                            f.type == PatientFileType.imaging
+                                ? Icons.image_outlined
+                                : Icons.insert_drive_file_outlined,
+                            color: AppColors.doctorBlue,
+                          ),
+                          title: Text(f.name,
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodySmall)),
+                          subtitle: Text(
+                            '${_typeLabel(f.type)} · ${DateFormat('dd MMM yyyy').format(f.date)}',
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelSmall),
+                          ),
+                          trailing: IconButton(
+                            icon:
+                                const Icon(Icons.visibility_outlined, size: 20),
+                            onPressed: onOpenPrescriptions,
+                          ),
+                          onTap: onOpenPrescriptions,
+                        );
+                      },
+                    ),
         ),
       ],
     );
@@ -870,7 +917,6 @@ class _InfoCard extends StatelessWidget {
 
   final String title;
   final List<_Row> rows;
-
 
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
@@ -893,7 +939,10 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)),
+          Text(title,
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodyMedium,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 10),
           ...rows,
         ],
@@ -907,7 +956,6 @@ class _Row extends StatelessWidget {
 
   final String label;
   final String value;
-
 
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
@@ -923,8 +971,17 @@ class _Row extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 110, child: Text(label, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)))),
-          Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w500))),
+          SizedBox(
+              width: 110,
+              child: Text(label,
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      color: AppColors.textSecondaryOf(context)))),
+          Expanded(
+              child: Text(value,
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -936,7 +993,6 @@ class _SectionCard extends StatelessWidget {
 
   final String title;
   final Widget child;
-
 
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
@@ -959,7 +1015,10 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)),
+          Text(title,
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodyMedium,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 10),
           child,
         ],
@@ -969,8 +1028,6 @@ class _SectionCard extends StatelessWidget {
 }
 
 // --- PATIENT VIEW IMPLEMENTATION ---
-
-
 
 class _PatientPatientProfileScreen extends StatefulWidget {
   const _PatientPatientProfileScreen({super.key, this.onOpenAppointments});
@@ -985,10 +1042,12 @@ class _PatientPatientProfileScreen extends StatefulWidget {
   }
 
   @override
-  State<_PatientPatientProfileScreen> createState() => _PatientPatientProfileScreenState();
+  State<_PatientPatientProfileScreen> createState() =>
+      _PatientPatientProfileScreenState();
 }
 
-class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScreen> {
+class _PatientPatientProfileScreenState
+    extends State<_PatientPatientProfileScreen> {
   String? _photoUrl;
   Uint8List? _localPhotoBytes;
 
@@ -1034,8 +1093,10 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
     if (patientId.isEmpty || !FirebaseBootstrap.isReady) return;
 
     try {
-      final data = await FirestoreService.instance.patientProfile.fetchPatientDocument(patientId);
-      final url = (data?['photoUrl'] as String?) ?? (data?['photoURL'] as String?);
+      final data = await FirestoreService.instance.patientProfile
+          .fetchPatientDocument(patientId);
+      final url =
+          (data?['photoUrl'] as String?) ?? (data?['photoURL'] as String?);
       if (!mounted) return;
       final resolvedUrl = (url != null && url.isNotEmpty) ? url : null;
       setState(() {
@@ -1047,9 +1108,11 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
 
   Future<void> _pickPhoto() async {
     final photoUrl = _photoUrl ?? PatientProfileMock.profile.photoUrl;
-    final localBytes = _localPhotoBytes ?? PatientPhotoLocalStore.readCached(_effectivePatientId());
+    final localBytes = _localPhotoBytes ??
+        PatientPhotoLocalStore.readCached(_effectivePatientId());
     final hasLocalPhoto = localBytes != null && localBytes.isNotEmpty;
-    final hasNetworkPhoto = !hasLocalPhoto && photoUrl != null && photoUrl.isNotEmpty;
+    final hasNetworkPhoto =
+        !hasLocalPhoto && photoUrl != null && photoUrl.isNotEmpty;
 
     ImageProvider? currentImage;
     if (hasLocalPhoto) {
@@ -1082,8 +1145,11 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             ),
             if (currentImage != null)
               ListTile(
-                leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                title: const Text('Remove Photo', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+                leading:
+                    const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                title: const Text('Remove Photo',
+                    style: TextStyle(
+                        color: Colors.red, fontWeight: FontWeight.w500)),
                 onTap: () => Navigator.pop(ctx, 'remove'),
               ),
           ],
@@ -1091,7 +1157,7 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
       ),
     );
     if (source == null || !mounted) return;
-    
+
     if (source == 'view') {
       if (currentImage != null) {
         showImageViewerDialog(context, currentImage, title: 'Profile Photo');
@@ -1116,7 +1182,10 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             );
           } catch (_) {}
           try {
-            await FirebaseFirestore.instance.collection(FirestorePaths.users).doc(patientId).set({
+            await FirebaseFirestore.instance
+                .collection(FirestorePaths.users)
+                .doc(patientId)
+                .set({
               'photoUrl': FieldValue.delete(),
               'photoURL': FieldValue.delete(),
             }, SetOptions(merge: true));
@@ -1192,14 +1261,17 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
       String? remoteUrl;
       if (FirebaseBootstrap.isReady) {
         try {
-          remoteUrl = await PatientPhotoLocalStore.uploadToFirebaseStorage(patientId, bytes);
+          remoteUrl = await PatientPhotoLocalStore.uploadToFirebaseStorage(
+              patientId, bytes);
         } catch (e) {
-          if (kDebugMode) debugPrint('[PatientProfile] Storage upload warning: $e');
+          if (kDebugMode)
+            debugPrint('[PatientProfile] Storage upload warning: $e');
         }
       }
 
       // Fallback to Base64 data URL if storage upload failed
-      final finalUrl = remoteUrl ?? 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      final finalUrl =
+          remoteUrl ?? 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
       // 3. Save to Firestore in patients & users collections
       if (FirebaseBootstrap.isReady) {
@@ -1215,11 +1287,15 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             },
           );
         } catch (e) {
-          if (kDebugMode) debugPrint('[PatientProfile] Firestore patient doc save error: $e');
+          if (kDebugMode)
+            debugPrint('[PatientProfile] Firestore patient doc save error: $e');
         }
 
         try {
-          await FirebaseFirestore.instance.collection(FirestorePaths.users).doc(patientId).set({
+          await FirebaseFirestore.instance
+              .collection(FirestorePaths.users)
+              .doc(patientId)
+              .set({
             'photoUrl': remoteUrl ?? finalUrl,
             'photoURL': remoteUrl ?? finalUrl,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -1250,11 +1326,14 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
   }
 
   Widget _buildProfileAvatar(PatientProfile p, {double radius = 38}) {
-    final initial = (p.photoInitial ?? (p.name.isNotEmpty ? p.name[0] : 'P')).toUpperCase();
+    final initial =
+        (p.photoInitial ?? (p.name.isNotEmpty ? p.name[0] : 'P')).toUpperCase();
     final photoUrl = _photoUrl ?? PatientProfileMock.profile.photoUrl;
-    final localBytes = _localPhotoBytes ?? PatientPhotoLocalStore.readCached(_effectivePatientId());
+    final localBytes = _localPhotoBytes ??
+        PatientPhotoLocalStore.readCached(_effectivePatientId());
     final hasLocalPhoto = localBytes != null && localBytes.isNotEmpty;
-    final hasNetworkPhoto = !hasLocalPhoto && photoUrl != null && photoUrl.isNotEmpty;
+    final hasNetworkPhoto =
+        !hasLocalPhoto && photoUrl != null && photoUrl.isNotEmpty;
 
     ImageProvider? avatarImage;
     if (hasLocalPhoto) {
@@ -1308,7 +1387,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
               decoration: BoxDecoration(
                 color: AppColors.patientTeal,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.surfaceOf(context), width: 2),
+                border:
+                    Border.all(color: AppColors.surfaceOf(context), width: 2),
               ),
               child: Icon(
                 Icons.camera_alt_outlined,
@@ -1353,7 +1433,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
   void _openManageFamily() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => FamilyProfilesScreen(onChanged: _refresh)),
+      MaterialPageRoute(
+          builder: (_) => FamilyProfilesScreen(onChanged: _refresh)),
     );
   }
 
@@ -1365,7 +1446,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
           iconGradient: const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => MyConditionsScreen(onChanged: _refresh)),
+            MaterialPageRoute(
+                builder: (_) => MyConditionsScreen(onChanged: _refresh)),
           ),
         ),
         ProfileWebActionData(
@@ -1375,7 +1457,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
           iconGradient: const [Color(0xFFEA580C), Color(0xFFC2410C)],
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => MyAllergiesScreen(onChanged: _refresh)),
+            MaterialPageRoute(
+                builder: (_) => MyAllergiesScreen(onChanged: _refresh)),
           ),
         ),
         ProfileWebActionData(
@@ -1442,7 +1525,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
           iconGradient: const [Color(0xFF475569), Color(0xFF334155)],
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => AccountSecurityScreen(onChanged: _refresh)),
+            MaterialPageRoute(
+                builder: (_) => AccountSecurityScreen(onChanged: _refresh)),
           ),
         ),
         ProfileWebActionData(
@@ -1463,7 +1547,6 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
           onTap: () => _confirmDeleteAccount(context),
         ),
       ];
-
 
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
@@ -1500,7 +1583,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
     return _buildMobileScaffold(p, family);
   }
 
-  Widget _buildMobileScaffold(PatientProfile p, List<FamilyProfileMember> family) {
+  Widget _buildMobileScaffold(
+      PatientProfile p, List<FamilyProfileMember> family) {
     final maxWidth = ResponsiveLayout.contentMaxWidth(context);
 
     return Scaffold(
@@ -1512,7 +1596,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildMobileProfileHeader(context),
-              Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+              Divider(
+                  height: 1, thickness: 1, color: AppColors.borderOf(context)),
               Expanded(
                 child: ListView(
                   padding: EdgeInsets.zero,
@@ -1523,7 +1608,10 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
                       onPickPhoto: _pickPhoto,
                       onEdit: () => _openEditProfile(p),
                     ),
-                    Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.borderOf(context)),
                     ProfileFlatSection(
                       shaded: true,
                       title: 'Family Profiles',
@@ -1550,17 +1638,29 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
                           ProfileMenuTile(
                             icon: Icons.groups_outlined,
                             label: 'Manage family profiles',
-                            iconGradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+                            iconGradient: [
+                              Color(0xFF7C3AED),
+                              Color(0xFF6D28D9)
+                            ],
                             onTap: _openManageFamily,
                           ),
                         ],
                       ),
                     ),
-                    Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.borderOf(context)),
                     _buildHealthSection(),
-                    Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.borderOf(context)),
                     _buildCareSection(),
-                    Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.borderOf(context)),
                     _buildSettingsSection(shaded: false),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
@@ -1632,7 +1732,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             iconGradient: const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => MyConditionsScreen(onChanged: _refresh)),
+              MaterialPageRoute(
+                  builder: (_) => MyConditionsScreen(onChanged: _refresh)),
             ),
           ),
           ProfileMenuTile(
@@ -1641,7 +1742,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             iconGradient: const [Color(0xFFEA580C), Color(0xFFC2410C)],
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => MyAllergiesScreen(onChanged: _refresh)),
+              MaterialPageRoute(
+                  builder: (_) => MyAllergiesScreen(onChanged: _refresh)),
             ),
           ),
           ProfileMenuTile(
@@ -1650,7 +1752,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             iconGradient: const [Color(0xFF16A34A), Color(0xFF15803D)],
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const VaccinationRecordsScreen()),
+              MaterialPageRoute(
+                  builder: (_) => const VaccinationRecordsScreen()),
             ),
           ),
           ProfileMenuTile(
@@ -1698,7 +1801,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => NotificationsSettingsScreen(onChanged: _refresh),
+                builder: (_) =>
+                    NotificationsSettingsScreen(onChanged: _refresh),
               ),
             ),
           ),
@@ -1717,7 +1821,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
             iconGradient: const [Color(0xFF475569), Color(0xFF334155)],
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => AccountSecurityScreen(onChanged: _refresh)),
+              MaterialPageRoute(
+                  builder: (_) => AccountSecurityScreen(onChanged: _refresh)),
             ),
           ),
           ProfileMenuTile(
@@ -1745,7 +1850,8 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Account'),
-        content: const Text('Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -1780,7 +1886,6 @@ class _FamilyChip extends StatelessWidget {
   final FamilyProfileMember member;
   final VoidCallback onTap;
 
-
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
       context,
@@ -1791,7 +1896,8 @@ class _FamilyChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final m = member;
-    final initial = (m.photoInitial ?? (m.name.isNotEmpty ? m.name[0] : 'F')).toUpperCase();
+    final initial =
+        (m.photoInitial ?? (m.name.isNotEmpty ? m.name[0] : 'F')).toUpperCase();
 
     return GestureDetector(
       onTap: onTap,
@@ -1834,13 +1940,16 @@ class _FamilyChip extends StatelessWidget {
               m.name.split(' ').first,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelSmall,
+                  fontWeight: FontWeight.w700),
             ),
             Text(
               m.relationLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: 9.5, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: 9.5, color: AppColors.textSecondaryOf(context)),
             ),
           ],
         ),
@@ -1852,7 +1961,6 @@ class _FamilyChip extends StatelessWidget {
 class _AddFamilyCard extends StatelessWidget {
   const _AddFamilyCard({required this.onTap});
   final VoidCallback onTap;
-
 
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
@@ -1870,7 +1978,8 @@ class _AddFamilyCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.patientTeal.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.patientTeal.withValues(alpha: 0.35)),
+          border:
+              Border.all(color: AppColors.patientTeal.withValues(alpha: 0.35)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1882,7 +1991,8 @@ class _AddFamilyCard extends StatelessWidget {
                 color: AppColors.patientTeal.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add, color: AppColors.patientTeal, size: 22),
+              child:
+                  const Icon(Icons.add, color: AppColors.patientTeal, size: 22),
             ),
             const SizedBox(height: 6),
             Text(

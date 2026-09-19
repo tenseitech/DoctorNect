@@ -29,7 +29,8 @@ class _PrescriptionPreviewPage extends StatefulWidget {
   final PrescriptionDraft draft;
 
   @override
-  State<_PrescriptionPreviewPage> createState() => _PrescriptionPreviewPageState();
+  State<_PrescriptionPreviewPage> createState() =>
+      _PrescriptionPreviewPageState();
 }
 
 class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
@@ -51,7 +52,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
     if (mounted) setState(() => _timings = t);
   }
 
-  Future<void> _runAction(Future<void> Function() action, {String? errorLabel}) async {
+  Future<void> _runAction(Future<void> Function() action,
+      {String? errorLabel}) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
@@ -79,30 +81,45 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'Share prescription',
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyLarge,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
               ListTile(
-                leading: const FaIcon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366)),
-                title: Text('WhatsApp', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                leading: const FaIcon(FontAwesomeIcons.whatsapp,
+                    color: Color(0xFF25D366)),
+                title: Text('WhatsApp',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
-                  kIsWeb ? 'Share summary via WhatsApp' : 'Share PDF via WhatsApp',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  kIsWeb
+                      ? 'Share summary via WhatsApp'
+                      : 'Share PDF via WhatsApp',
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _runAction(
-                    () => PrescriptionPdfService.shareViaWhatsApp(_draft, context: context),
+                    () => PrescriptionPdfService.shareViaWhatsApp(_draft,
+                        context: context),
                     errorLabel: 'WhatsApp share',
                   );
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.email_outlined, color: AppColors.doctorBlue),
-                title: Text('Email', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                leading: const Icon(Icons.email_outlined,
+                    color: AppColors.doctorBlue),
+                title: Text('Email',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
-                  kIsWeb ? 'Open email with prescription summary' : 'Share PDF via email app',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  kIsWeb
+                      ? 'Open email with prescription summary'
+                      : 'Share PDF via email app',
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -133,24 +150,19 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
       draft,
       fallback: DoctorProfileStore.displayNameWithPrefix,
     );
-    final displaySpecialization = hasDoctorSnapshot
-        ? draft.doctorSpecialization
-        : profile.specialization;
+    final displaySpecialization =
+        hasDoctorSnapshot ? draft.doctorSpecialization : profile.specialization;
     final displayQualifications = hasDoctorSnapshot
         ? draft.doctorQualifications
         : PrescriptionHeaderHelper.qualificationsLine(profile);
-    final displayRegNumber = hasDoctorSnapshot
-        ? draft.doctorRegNumber
-        : profile.councilNumber;
-    final displayClinicName = hasDoctorSnapshot
-        ? draft.clinicName
-        : profile.clinicName;
+    final displayRegNumber =
+        hasDoctorSnapshot ? draft.doctorRegNumber : profile.councilNumber;
+    final displayClinicName =
+        hasDoctorSnapshot ? draft.clinicName : profile.clinicName;
     final displayAddress = hasDoctorSnapshot
         ? draft.clinicAddress
         : PrescriptionHeaderHelper.clinicAddressLine(profile);
-    final displayPhone = hasDoctorSnapshot
-        ? draft.doctorPhone
-        : profile.mobile;
+    final displayPhone = hasDoctorSnapshot ? draft.doctorPhone : profile.mobile;
 
     final date = DateFormat('dd MMM yyyy').format(draft.prescriptionDate);
 
@@ -204,227 +216,304 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
               minHeight: 842,
             ),
             child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceOf(context),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 12),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (displayClinicName.isNotEmpty)
-                  Text(displayClinicName,
-                      style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700)),
-                if (displayAddress.isNotEmpty)
-                  Text(displayAddress,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context))),
-                if (displayPhone.isNotEmpty)
-                  Text('Phone: $displayPhone',
-                      style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondaryOf(context))),
-                Text('Consultation: $_timings',
-                    style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondaryOf(context))),
-                const Divider(height: 24),
-                Text(
-                  displayQualifications.isNotEmpty
-                      ? '$displayDoctorName · $displayQualifications'
-                      : displayDoctorName,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
-                ),
-                if (displaySpecialization.isNotEmpty || displayRegNumber.isNotEmpty)
-                  Text(
-                    [
-                      if (displaySpecialization.isNotEmpty) displaySpecialization,
-                      if (displayRegNumber.isNotEmpty) 'Reg: $displayRegNumber',
-                    ].join(' · '),
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
-                  ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Patient: ${draft.patient.patientName}',
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            'Age: ${draft.patient.age} yrs · ${draft.patient.gender ?? '—'} · ID: ${draft.patientId}',
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (draft.vitals.weightKg.isNotEmpty)
-                            Text(
-                              'Weight: ${draft.vitals.weightKg} kg',
-                              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Date: $date',
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
-                            textAlign: TextAlign.end,
-                          ),
-                          Text(
-                            'Rx ID: ${draft.prescriptionId}',
-                            style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondaryOf(context)),
-                            textAlign: TextAlign.end,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                if (_hasVitals) ...[
-                  const SizedBox(height: 12),
-                  Text('Vitals', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
-                  Text(_vitalsLine, style: GoogleFonts.inter(fontSize: 10)),
+              width: double.infinity,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceOf(context),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 12),
                 ],
-                if (draft.chiefComplaint.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text('Chief Complaint', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
-                  Text(draft.chiefComplaint, style: GoogleFonts.inter(fontSize: 10)),
-                ],
-                if (draft.generalExamination.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text('General examination',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
-                  Text(draft.generalExamination, style: GoogleFonts.inter(fontSize: 10)),
-                ],
-                const SizedBox(height: 12),
-                Text('Diagnosis (${draft.diagnosisType})',
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700)),
-                _labeledPreviewLine('Primary', draft.primaryDiagnosis),
-                if (draft.secondaryDiagnosis.isNotEmpty)
-                  _labeledPreviewLine('Secondary', draft.secondaryDiagnosis),
-                if (draft.symptoms.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text('Symptoms', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
-                  Text(draft.symptoms, style: GoogleFonts.inter(fontSize: 10)),
-                ],
-                if (draft.symptomDuration.isNotEmpty)
-                  _labeledPreviewLine('Duration', draft.symptomDuration),
-                if (draft.pastHistory.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text('Past medical history',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
-                  Text(draft.pastHistory, style: GoogleFonts.inter(fontSize: 10)),
-                ],
-                if (draft.allergies.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text('Allergies: ${draft.allergies}',
-                      style: GoogleFonts.inter(fontSize: 10, color: AppColors.error)),
-                ],
-                const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text('℞', style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w800)),
-                    const SizedBox(width: 8),
-                    Text('Medicines',
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                if (draft.validMedicines.isNotEmpty) _buildMedicinesTable(draft),
-                if (draft.validInvestigations.isNotEmpty || draft.bodyParts.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Text('Investigations / Tests',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 6),
-                  ..._buildInvestigationTables(draft),
-                  if (draft.bodyParts.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text('Body Part / Region',
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (displayClinicName.isNotEmpty)
+                    Text(displayClinicName,
                         style: GoogleFonts.inter(
-                            fontSize: 10.5, fontWeight: FontWeight.w700, color: const Color(0xFF334155))),
-                    const SizedBox(height: 4),
-                    _buildBodyPartsTable(draft.bodyParts),
-                  ],
-                ],
-                if (_hasAdvice(draft)) ...[
-                  const SizedBox(height: 12),
-                  Text('Advice', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
-                  if (draft.dietAdvice.isNotEmpty)
-                    _labeledPreviewLine('Diet', draft.dietAdvice),
-                  if (draft.activityRestrictions.isNotEmpty)
-                    _labeledPreviewLine('Rest & activity', draft.activityRestrictions),
-                  if (draft.lifestyleAdvice.isNotEmpty)
-                    _labeledPreviewLine('Lifestyle', draft.lifestyleAdvice),
-                  if (draft.generalAdvice.isNotEmpty)
-                    _labeledPreviewLine('General', draft.generalAdvice),
-                ],
-                if (draft.nextVisit != null || draft.followUpNote.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text('Follow-up', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
-                  if (draft.nextVisit != null)
-                    _labeledPreviewLine(
-                      'Next visit',
-                      DateFormat('dd MMM yyyy').format(draft.nextVisit!),
-                    ),
-                  if (draft.followUpNote.isNotEmpty)
-                    _labeledPreviewLine('Condition note', draft.followUpNote),
-                ],
-                if (draft.referrals.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text('Referred to',
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 4),
-                  ...draft.referrals.map(
-                    (r) => Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        r.reason.isNotEmpty ? '${r.displayTitle} — ${r.reason}' : r.displayTitle,
-                        style: GoogleFonts.inter(fontSize: 10),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                            fontSize: AppTypography.headlineSmall,
+                            fontWeight: FontWeight.w700)),
+                  if (displayAddress.isNotEmpty)
+                    Text(displayAddress,
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            color: AppColors.textSecondaryOf(context))),
+                  if (displayPhone.isNotEmpty)
+                    Text('Phone: $displayPhone',
+                        style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: AppColors.textSecondaryOf(context))),
+                  Text('Consultation: $_timings',
+                      style: GoogleFonts.inter(
+                          fontSize: 10,
+                          color: AppColors.textSecondaryOf(context))),
+                  const Divider(height: 24),
+                  Text(
+                    displayQualifications.isNotEmpty
+                        ? '$displayDoctorName · $displayQualifications'
+                        : displayDoctorName,
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        fontWeight: FontWeight.w600),
                   ),
-                ],
-                if (draft.validityDate != null)
-                  _labeledPreviewLine(
-                    'Valid until',
-                    DateFormat('dd MMM yyyy').format(draft.validityDate!),
-                  ),
-                const SizedBox(height: 40),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  if (displaySpecialization.isNotEmpty ||
+                      displayRegNumber.isNotEmpty)
+                    Text(
+                      [
+                        if (displaySpecialization.isNotEmpty)
+                          displaySpecialization,
+                        if (displayRegNumber.isNotEmpty)
+                          'Reg: $displayRegNumber',
+                      ].join(' · '),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context)),
+                    ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(width: 140, height: 1, color: AppColors.textPrimaryOf(context)),
-                      const SizedBox(height: 4),
-                      Text(displayDoctorName,
-                          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontStyle: FontStyle.italic)),
-                      if (displayPhone.isNotEmpty)
-                        Text('Phone: $displayPhone',
-                            style: GoogleFonts.inter(fontSize: 9, color: AppColors.textSecondaryOf(context))),
-                      Text(DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now()),
-                          style: GoogleFonts.inter(fontSize: 9, color: AppColors.textSecondaryOf(context))),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Patient: ${draft.patient.patientName}',
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelMedium),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Age: ${draft.patient.age} yrs · ${draft.patient.gender ?? '—'} · ID: ${draft.patientId}',
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelSmall),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (draft.vitals.weightKg.isNotEmpty)
+                              Text(
+                                'Weight: ${draft.vitals.weightKg} kg',
+                                style: GoogleFonts.inter(
+                                    fontSize: AppTypography.labelSmall),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Date: $date',
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelSmall),
+                              textAlign: TextAlign.end,
+                            ),
+                            Text(
+                              'Rx ID: ${draft.prescriptionId}',
+                              style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondaryOf(context)),
+                              textAlign: TextAlign.end,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
+                  if (_hasVitals) ...[
+                    const SizedBox(height: 12),
+                    Text('Vitals',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            fontWeight: FontWeight.w600)),
+                    Text(_vitalsLine, style: GoogleFonts.inter(fontSize: 10)),
+                  ],
+                  if (draft.chiefComplaint.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text('Chief Complaint',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            fontWeight: FontWeight.w600)),
+                    Text(draft.chiefComplaint,
+                        style: GoogleFonts.inter(fontSize: 10)),
+                  ],
+                  if (draft.generalExamination.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text('General examination',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            fontWeight: FontWeight.w600)),
+                    Text(draft.generalExamination,
+                        style: GoogleFonts.inter(fontSize: 10)),
+                  ],
+                  const SizedBox(height: 12),
+                  Text('Diagnosis (${draft.diagnosisType})',
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          fontWeight: FontWeight.w700)),
+                  _labeledPreviewLine('Primary', draft.primaryDiagnosis),
+                  if (draft.secondaryDiagnosis.isNotEmpty)
+                    _labeledPreviewLine('Secondary', draft.secondaryDiagnosis),
+                  if (draft.symptoms.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text('Symptoms',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            fontWeight: FontWeight.w600)),
+                    Text(draft.symptoms,
+                        style: GoogleFonts.inter(fontSize: 10)),
+                  ],
+                  if (draft.symptomDuration.isNotEmpty)
+                    _labeledPreviewLine('Duration', draft.symptomDuration),
+                  if (draft.pastHistory.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text('Past medical history',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelSmall,
+                            fontWeight: FontWeight.w600)),
+                    Text(draft.pastHistory,
+                        style: GoogleFonts.inter(fontSize: 10)),
+                  ],
+                  if (draft.allergies.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text('Allergies: ${draft.allergies}',
+                        style: GoogleFonts.inter(
+                            fontSize: 10, color: AppColors.error)),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text('℞',
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineLarge,
+                              fontWeight: FontWeight.w800)),
+                      const SizedBox(width: 8),
+                      Text('Medicines',
+                          style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelMedium,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  if (draft.validMedicines.isNotEmpty)
+                    _buildMedicinesTable(draft),
+                  if (draft.validInvestigations.isNotEmpty ||
+                      draft.bodyParts.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text('Investigations / Tests',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 6),
+                    ..._buildInvestigationTables(draft),
+                    if (draft.bodyParts.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text('Body Part / Region',
+                          style: GoogleFonts.inter(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF334155))),
+                      const SizedBox(height: 4),
+                      _buildBodyPartsTable(draft.bodyParts),
+                    ],
+                  ],
+                  if (_hasAdvice(draft)) ...[
+                    const SizedBox(height: 12),
+                    Text('Advice',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w600)),
+                    if (draft.dietAdvice.isNotEmpty)
+                      _labeledPreviewLine('Diet', draft.dietAdvice),
+                    if (draft.activityRestrictions.isNotEmpty)
+                      _labeledPreviewLine(
+                          'Rest & activity', draft.activityRestrictions),
+                    if (draft.lifestyleAdvice.isNotEmpty)
+                      _labeledPreviewLine('Lifestyle', draft.lifestyleAdvice),
+                    if (draft.generalAdvice.isNotEmpty)
+                      _labeledPreviewLine('General', draft.generalAdvice),
+                  ],
+                  if (draft.nextVisit != null ||
+                      draft.followUpNote.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text('Follow-up',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w600)),
+                    if (draft.nextVisit != null)
+                      _labeledPreviewLine(
+                        'Next visit',
+                        DateFormat('dd MMM yyyy').format(draft.nextVisit!),
+                      ),
+                    if (draft.followUpNote.isNotEmpty)
+                      _labeledPreviewLine('Condition note', draft.followUpNote),
+                  ],
+                  if (draft.referrals.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text('Referred to',
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    ...draft.referrals.map(
+                      (r) => Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          r.reason.isNotEmpty
+                              ? '${r.displayTitle} — ${r.reason}'
+                              : r.displayTitle,
+                          style: GoogleFonts.inter(fontSize: 10),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (draft.validityDate != null)
+                    _labeledPreviewLine(
+                      'Valid until',
+                      DateFormat('dd MMM yyyy').format(draft.validityDate!),
+                    ),
+                  const SizedBox(height: 40),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Container(
+                            width: 140,
+                            height: 1,
+                            color: AppColors.textPrimaryOf(context)),
+                        const SizedBox(height: 4),
+                        Text(displayDoctorName,
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelSmall,
+                                fontStyle: FontStyle.italic)),
+                        if (displayPhone.isNotEmpty)
+                          Text('Phone: $displayPhone',
+                              style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  color: AppColors.textSecondaryOf(context))),
+                        Text(
+                            DateFormat('dd MMM yyyy, hh:mm a')
+                                .format(DateTime.now()),
+                            style: GoogleFonts.inter(
+                                fontSize: 9,
+                                color: AppColors.textSecondaryOf(context))),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -442,11 +531,13 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
       padding: const EdgeInsets.only(top: 2),
       child: RichText(
         text: TextSpan(
-          style: GoogleFonts.inter(fontSize: 10, color: AppColors.textPrimaryOf(context)),
+          style: GoogleFonts.inter(
+              fontSize: 10, color: AppColors.textPrimaryOf(context)),
           children: [
             TextSpan(
               text: '$label: ',
-              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600),
+              style:
+                  GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600),
             ),
             TextSpan(text: value),
           ],
@@ -510,7 +601,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
             style: GoogleFonts.inter(
               fontSize: 9.5,
               height: 1.35,
-              fontWeight: (boldFirst && i == 1) ? FontWeight.w600 : FontWeight.w400,
+              fontWeight:
+                  (boldFirst && i == 1) ? FontWeight.w600 : FontWeight.w400,
               color: AppColors.textPrimaryOf(context),
             ),
           ),
@@ -521,7 +613,16 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
 
   Widget _buildMedicinesTable(PrescriptionDraft d) {
     final rows = <TableRow>[
-      _headerRow(const ['#', 'Medicine', 'Dosage', 'Frequency', 'Timing', 'Duration', 'Qty', 'Notes']),
+      _headerRow(const [
+        '#',
+        'Medicine',
+        'Dosage',
+        'Frequency',
+        'Timing',
+        'Duration',
+        'Qty',
+        'Notes'
+      ]),
     ];
 
     for (var i = 0; i < d.validMedicines.length; i++) {
@@ -531,7 +632,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
       final notesParts = <String>[];
       if (m.isSos) notesParts.add('SOS');
       if (!m.substituteAllowed) notesParts.add('No substitute');
-      if (m.specialInstructions.isNotEmpty) notesParts.add(m.specialInstructions);
+      if (m.specialInstructions.isNotEmpty)
+        notesParts.add(m.specialInstructions);
       final notes = notesParts.join(' · ');
 
       rows.add(_bodyRow([

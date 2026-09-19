@@ -61,25 +61,36 @@ class FirestoreService {
   AmbulanceRepository get ambulance => AmbulanceRepository.instance;
   AppointmentRepository get appointment => AppointmentRepository.instance;
   DoctorAccountRepository get doctorAccount => DoctorAccountRepository.instance;
-  DoctorAvailabilityRepository get doctorAvailability => DoctorAvailabilityRepository.instance;
-  DoctorDirectoryRepository get doctorDirectory => DoctorDirectoryRepository.instance;
-  DoctorProfileDetailRepository get doctorProfileDetail => DoctorProfileDetailRepository.instance;
+  DoctorAvailabilityRepository get doctorAvailability =>
+      DoctorAvailabilityRepository.instance;
+  DoctorDirectoryRepository get doctorDirectory =>
+      DoctorDirectoryRepository.instance;
+  DoctorProfileDetailRepository get doctorProfileDetail =>
+      DoctorProfileDetailRepository.instance;
   DoctorProfileRepository get doctorProfile => DoctorProfileRepository.instance;
-  DoctorVerificationRepository get doctorVerification => DoctorVerificationRepository.instance;
+  DoctorVerificationRepository get doctorVerification =>
+      DoctorVerificationRepository.instance;
   FamilyMemberRepository get familyMember => FamilyMemberRepository.instance;
-  InAppNotificationRepository get notification => InAppNotificationRepository.instance;
-  InAppNotificationRepository get inAppNotification => InAppNotificationRepository.instance;
+  InAppNotificationRepository get notification =>
+      InAppNotificationRepository.instance;
+  InAppNotificationRepository get inAppNotification =>
+      InAppNotificationRepository.instance;
   LabBookingRepository get labBooking => LabBookingRepository.instance;
   LabCatalogRepository get labCatalog => LabCatalogRepository.instance;
   LabConnectionRepository get labConnection => LabConnectionRepository.instance;
   LabOrderRepository get labOrder => LabOrderRepository.instance;
   LabRepository get lab => LabRepository.instance;
-  MedicalDirectoryRepository get medicalDirectory => MedicalDirectoryRepository.instance;
+  MedicalDirectoryRepository get medicalDirectory =>
+      MedicalDirectoryRepository.instance;
   MedicalStoreRepository get medicalStore => MedicalStoreRepository.instance;
-  MedicineSuggestionRepository get medicineSuggestion => MedicineSuggestionRepository.instance;
-  PatientAccountRepository get patientAccount => PatientAccountRepository.instance;
-  PatientProfileRepository get patientProfile => PatientProfileRepository.instance;
-  PharmacyFirestoreRepository get pharmacyFirestore => PharmacyFirestoreRepository.instance;
+  MedicineSuggestionRepository get medicineSuggestion =>
+      MedicineSuggestionRepository.instance;
+  PatientAccountRepository get patientAccount =>
+      PatientAccountRepository.instance;
+  PatientProfileRepository get patientProfile =>
+      PatientProfileRepository.instance;
+  PharmacyFirestoreRepository get pharmacyFirestore =>
+      PharmacyFirestoreRepository.instance;
   PrescriptionRepository get prescription => PrescriptionRepository.instance;
   ReferralRepository get referral => ReferralRepository.instance;
   ReviewRepository get review => ReviewRepository.instance;

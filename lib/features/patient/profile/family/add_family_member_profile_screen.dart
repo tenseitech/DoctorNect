@@ -20,10 +20,12 @@ class AddFamilyMemberProfileScreen extends StatefulWidget {
   final FamilyProfileMember? existingMember;
 
   @override
-  State<AddFamilyMemberProfileScreen> createState() => _AddFamilyMemberProfileScreenState();
+  State<AddFamilyMemberProfileScreen> createState() =>
+      _AddFamilyMemberProfileScreenState();
 }
 
-class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScreen> {
+class _AddFamilyMemberProfileScreenState
+    extends State<AddFamilyMemberProfileScreen> {
   final _nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -42,7 +44,8 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
     if (_dob == null) return 0;
     final now = DateTime.now();
     var age = now.year - _dob!.year;
-    if (now.month < _dob!.month || (now.month == _dob!.month && now.day < _dob!.day)) age--;
+    if (now.month < _dob!.month ||
+        (now.month == _dob!.month && now.day < _dob!.day)) age--;
     return age;
   }
 
@@ -125,11 +128,15 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
     setState(() => _saving = true);
 
     final isEditing = widget.existingMember != null;
-    final memberId = isEditing ? widget.existingMember!.id : 'fm${DateTime.now().millisecondsSinceEpoch}';
+    final memberId = isEditing
+        ? widget.existingMember!.id
+        : 'fm${DateTime.now().millisecondsSinceEpoch}';
 
     final member = FamilyProfileMember(
       id: memberId,
-      name: _isEditing ? widget.existingMember!.name : _nameController.text.trim(),
+      name: _isEditing
+          ? widget.existingMember!.name
+          : _nameController.text.trim(),
       relation: _relation,
       age: _age,
       gender: _isEditing ? widget.existingMember!.gender : _gender,
@@ -138,7 +145,9 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
       conditions: List.from(_conditions),
       insuranceCovered: _insurance,
       dateOfBirth: _dob,
-      photoInitial: _nameController.text.trim().isNotEmpty ? _nameController.text.trim()[0] : 'F',
+      photoInitial: _nameController.text.trim().isNotEmpty
+          ? _nameController.text.trim()[0]
+          : 'F',
     );
 
     try {
@@ -213,7 +222,8 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
                         children: [
                           if (_isEditing) ...[
                             ProfileEditWidgets.lockedNote(
-                              message: 'Name, gender, and blood group are locked after adding a member.',
+                              message:
+                                  'Name, gender, and blood group are locked after adding a member.',
                             ),
                             const SizedBox(height: 14),
                             ProfileEditWidgets.lockedField(
@@ -224,7 +234,9 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
                             TextFormField(
                               controller: _nameController,
                               onChanged: (_) => setState(() {}),
-                              decoration: PatientProfileFormStyles.fieldDecoration(context, 
+                              decoration:
+                                  PatientProfileFormStyles.fieldDecoration(
+                                context,
                                 labelText: 'Full name',
                                 isRequired: true,
                               ),
@@ -234,7 +246,9 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
                           DropdownButtonFormField<FamilyRelation>(
                             initialValue: _relation,
                             isExpanded: true,
-                            decoration: PatientProfileFormStyles.fieldDecoration(context, 
+                            decoration:
+                                PatientProfileFormStyles.fieldDecoration(
+                              context,
                               labelText: 'Relation',
                               isRequired: true,
                             ),
@@ -250,7 +264,7 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
                           ),
                           const SizedBox(height: 12),
                           PatientProfileFormStyles.dobPickerRow(
-          context: context,
+                            context: context,
                             label: 'Date of birth',
                             valueText: _dob == null
                                 ? 'Select date'
@@ -286,7 +300,8 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
                           else
                             ProfileEditWidgets.bloodGroupChips(
                               selected: _bloodGroup,
-                              onSelected: (g) => setState(() => _bloodGroup = g),
+                              onSelected: (g) =>
+                                  setState(() => _bloodGroup = g),
                             ),
                         ],
                       ),
@@ -303,14 +318,16 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
                             label: 'allergy',
                             tags: _allergies,
                             onAdd: (t) => setState(() => _allergies.add(t)),
-                            onRemove: (t) => setState(() => _allergies.remove(t)),
+                            onRemove: (t) =>
+                                setState(() => _allergies.remove(t)),
                           ),
                           const SizedBox(height: 16),
                           TagInputField(
                             label: 'condition',
                             tags: _conditions,
                             onAdd: (t) => setState(() => _conditions.add(t)),
-                            onRemove: (t) => setState(() => _conditions.remove(t)),
+                            onRemove: (t) =>
+                                setState(() => _conditions.remove(t)),
                           ),
                         ],
                       ),

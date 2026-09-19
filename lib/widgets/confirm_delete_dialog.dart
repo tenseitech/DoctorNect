@@ -15,7 +15,9 @@ Future<bool> showConfirmDeleteDialog(
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
       content: Text(message, style: GoogleFonts.inter()),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel')),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
           style: FilledButton.styleFrom(

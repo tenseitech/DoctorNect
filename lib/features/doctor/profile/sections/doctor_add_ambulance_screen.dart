@@ -201,7 +201,8 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                     decoration: RequiredFieldLabels.decorate(
                       InputDecoration(
                         prefixIcon: Icon(Icons.phone_outlined,
-                            size: 20, color: AppColors.textSecondaryOf(context)),
+                            size: 20,
+                            color: AppColors.textSecondaryOf(context)),
                         filled: true,
                         fillColor: AppColors.surfaceOf(context),
                         border: OutlineInputBorder(
@@ -209,7 +210,8 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                                 BorderRadius.all(Radius.circular(12))),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
-                          borderSide: BorderSide(color: AppColors.borderOf(context)),
+                          borderSide:
+                              BorderSide(color: AppColors.borderOf(context)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -337,12 +339,14 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2.5, color: AppColors.surfaceOf(context)),
+                                strokeWidth: 2.5,
+                                color: AppColors.surfaceOf(context)),
                           )
                         : Text(
                             'Create Invite Link',
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+                                fontSize: AppTypography.headlineSmall,
+                                fontWeight: FontWeight.w700),
                           ),
                   ),
                 ],

@@ -1,4 +1,4 @@
-﻿import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/firestore_service.dart';
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -34,14 +34,16 @@ abstract final class AmbulancePushService {
     _initialized = true;
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      const androidInit = AndroidInitializationSettings('@drawable/ic_notification');
+      const androidInit =
+          AndroidInitializationSettings('@drawable/ic_notification');
       await _localNotifications.initialize(
         const InitializationSettings(android: androidInit),
         onDidReceiveNotificationResponse: _onLocalNotificationTap,
       );
 
       await _localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(
             const AndroidNotificationChannel(
               _channelId,
@@ -53,7 +55,8 @@ abstract final class AmbulancePushService {
     }
 
     _foregroundSub ??= FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-    _openedSub ??= FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
+    _openedSub ??=
+        FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
 
     final initial = await FirebaseMessaging.instance.getInitialMessage();
     if (initial != null) {
@@ -75,7 +78,8 @@ abstract final class AmbulancePushService {
       sound: true,
     );
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      if (kDebugMode) debugPrint('Ambulance push: notification permission denied');
+      if (kDebugMode)
+        debugPrint('Ambulance push: notification permission denied');
       return;
     }
 
@@ -84,7 +88,8 @@ abstract final class AmbulancePushService {
       if (kDebugMode) {
         debugPrint('Ambulance FCM token (copy for Firebase test): [REDACTED]');
       }
-      await FirestoreService.instance.ambulance.saveDriverFcmToken(driverId, token);
+      await FirestoreService.instance.ambulance
+          .saveDriverFcmToken(driverId, token);
     } else if (kDebugMode) {
       debugPrint('Ambulance push: FCM token is null or empty');
     }
@@ -95,7 +100,8 @@ abstract final class AmbulancePushService {
       if (kDebugMode) {
         debugPrint('Ambulance FCM token refreshed: [REDACTED]');
       }
-      await FirestoreService.instance.ambulance.saveDriverFcmToken(_activeDriverId!, newToken);
+      await FirestoreService.instance.ambulance
+          .saveDriverFcmToken(_activeDriverId!, newToken);
     });
   }
 
@@ -167,7 +173,8 @@ abstract final class AmbulancePushService {
     final body = message.notification?.body ?? 'Tap to view details';
 
     final alerts = AmbulanceStore.instance.alertsFor(driverId);
-    if (alerts.any((a) => a.bookingId == broadcastId && broadcastId.isNotEmpty)) return;
+    if (alerts.any((a) => a.bookingId == broadcastId && broadcastId.isNotEmpty))
+      return;
 
     AmbulanceStore.instance.registerDriverAlert(
       driverId,

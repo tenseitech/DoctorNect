@@ -135,7 +135,9 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
   bool _isImageFile(String name) {
     final lower = name.toLowerCase();
-    return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png');
+    return lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png');
   }
 
   Future<Uint8List?> _fileBytes(PlatformFile file) async {
@@ -160,7 +162,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
     final picked = _files.first;
     final bytes = await _fileBytes(picked);
-    if (!mounted) return; // FIXED: mounted check before using context after await
+    if (!mounted)
+      return; // FIXED: mounted check before using context after await
     if (bytes == null || bytes.isEmpty) {
       AppToast.info(context, 'Could not read file. Please pick again.');
       return;
@@ -202,10 +205,16 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           date: _date,
           source: RecordSource.selfUploaded,
           fileName: fileName,
-          doctorName: _doctorController.text.trim().isEmpty ? null : _doctorController.text.trim(),
-          labName: _facilityController.text.trim().isEmpty ? null : _facilityController.text.trim(),
+          doctorName: _doctorController.text.trim().isEmpty
+              ? null
+              : _doctorController.text.trim(),
+          labName: _facilityController.text.trim().isEmpty
+              ? null
+              : _facilityController.text.trim(),
           isImage: _isImageFile(fileName),
-          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
           sharedWithDoctors: _shareWithDoctors,
           fileStorage: storageUrl != null
               ? HealthRecordFileStorage.firebase
@@ -223,7 +232,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceOf(context),
       appBar: AppBar(
-        title: Text('Add Record', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text('Add Record',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
       ),
@@ -235,7 +245,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(labelText: 'Record title'),
-              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<HealthRecordType>(
@@ -250,12 +261,14 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _doctorController,
-              decoration: const InputDecoration(labelText: 'Doctor name (optional)'),
+              decoration:
+                  const InputDecoration(labelText: 'Doctor name (optional)'),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _facilityController,
-              decoration: const InputDecoration(labelText: 'Hospital / Lab name'),
+              decoration:
+                  const InputDecoration(labelText: 'Hospital / Lab name'),
             ),
             const SizedBox(height: 12),
             ListTile(
@@ -269,8 +282,10 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             OutlinedButton.icon(
               onPressed: _saving ? null : _pickFiles,
               icon: const Icon(Icons.upload_file),
-              label: Text('Upload file (PDF/image, max 10MB) — ${_files.length}'),
-              style: OutlinedButton.styleFrom(foregroundColor: AppColors.patientTeal),
+              label:
+                  Text('Upload file (PDF/image, max 10MB) — ${_files.length}'),
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.patientTeal),
             ),
             ..._files.map(
               (f) => ListTile(
@@ -283,7 +298,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             TextFormField(
               controller: _notesController,
               maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Notes', alignLabelWithHint: true),
+              decoration: const InputDecoration(
+                  labelText: 'Notes', alignLabelWithHint: true),
             ),
             const SizedBox(height: 12),
             SwitchListTile(
@@ -305,7 +321,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                   ? const SizedBox(
                       height: 22,
                       width: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.white),
                     )
                   : const Text('Save'),
             ),

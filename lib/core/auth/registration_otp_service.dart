@@ -62,7 +62,8 @@ class RegistrationOtpService {
     final appCheckBlock = await AppCheckService.ensureForCallable();
     if (appCheckBlock != null) {
       if (kDebugMode) {
-        debugPrint('[RegistrationOtpService] App Check blocked send: $appCheckBlock');
+        debugPrint(
+            '[RegistrationOtpService] App Check blocked send: $appCheckBlock');
       }
       return (error: appCheckBlock, debugOtp: null);
     }
@@ -165,8 +166,7 @@ class RegistrationOtpService {
         _verificationSessionId =
             sessionId != null && sessionId.isNotEmpty ? sessionId : null;
         final token = data['customToken'] as String?;
-        _loginCustomToken =
-            token != null && token.isNotEmpty ? token : null;
+        _loginCustomToken = token != null && token.isNotEmpty ? token : null;
         return null;
       }
       return 'Invalid or expired OTP. Please try again.';
@@ -196,7 +196,10 @@ class RegistrationOtpService {
     final digits = FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile);
     if (digits == null || digits.isEmpty) {
-      return (error: 'Enter a valid 10-digit mobile number.', customToken: null);
+      return (
+        error: 'Enter a valid 10-digit mobile number.',
+        customToken: null
+      );
     }
     if (sessionId.isEmpty) {
       return (error: 'OTP verification session is missing.', customToken: null);
@@ -227,7 +230,8 @@ class RegistrationOtpService {
       return (error: _mapFunctionsError(e), customToken: null);
     } catch (e) {
       return (
-        error: describeUserFacingError(e, fallback: 'Could not complete mobile login.'),
+        error: describeUserFacingError(e,
+            fallback: 'Could not complete mobile login.'),
         customToken: null,
       );
     }
@@ -265,7 +269,8 @@ class RegistrationOtpService {
         clearVerificationSession();
         return (
           success: true,
-          message: data['message'] as String? ?? 'Password updated successfully!',
+          message:
+              data['message'] as String? ?? 'Password updated successfully!',
         );
       }
       return (
@@ -277,7 +282,8 @@ class RegistrationOtpService {
     } catch (e) {
       return (
         success: false,
-        message: describeUserFacingError(e, fallback: 'Failed to update password.'),
+        message:
+            describeUserFacingError(e, fallback: 'Failed to update password.'),
       );
     }
   }
@@ -366,12 +372,10 @@ class RegistrationOtpService {
       }
     }
     return switch (e.code) {
-      'already-exists' =>
-        rawMessage ??
-            'This mobile number is already registered under another account.',
-      'not-found' =>
-        rawMessage ??
-            'No account found for this mobile number. Please register first.',
+      'already-exists' => rawMessage ??
+          'This mobile number is already registered under another account.',
+      'not-found' => rawMessage ??
+          'No account found for this mobile number. Please register first.',
       'failed-precondition' =>
         rawMessage ?? 'Mobile number is registered under a different account.',
       'deadline-exceeded' => 'OTP expired. Send a new one.',

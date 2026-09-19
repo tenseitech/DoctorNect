@@ -52,7 +52,13 @@ class DoctorLabPatientsScreen extends StatelessWidget {
       completedStatusLabel: 'completed',
       pendingStatusLabel: 'pending',
       emptyAllMessage: 'No test orders sent to this lab yet.',
-      tableHeaders: const ['Date', 'Patient', 'Tests ordered', 'Status', 'Indication / Note'],
+      tableHeaders: const [
+        'Date',
+        'Patient',
+        'Tests ordered',
+        'Status',
+        'Indication / Note'
+      ],
       columnWidths: const {
         0: FixedColumnWidth(108),
         1: FixedColumnWidth(130),
@@ -64,8 +70,10 @@ class DoctorLabPatientsScreen extends StatelessWidget {
         DocPartnerTableBodyCell(dateFormat.format(o.createdAt)),
         DocPartnerTableBodyCell(o.patientName, bold: true),
         DocPartnerTableBodyCell(o.testNames.join(', ')),
-        DocPartnerTableBodyCell(_statusLabel(o), color: _statusColor(o), bold: true),
-        DocPartnerTableBodyCell(o.indication?.trim().isNotEmpty == true ? o.indication! : '—'),
+        DocPartnerTableBodyCell(_statusLabel(o),
+            color: _statusColor(o), bold: true),
+        DocPartnerTableBodyCell(
+            o.indication?.trim().isNotEmpty == true ? o.indication! : '—'),
       ],
     );
   }

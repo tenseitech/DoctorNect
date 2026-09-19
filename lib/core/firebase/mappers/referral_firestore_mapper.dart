@@ -13,8 +13,10 @@ abstract final class ReferralFirestoreMapper {
         'patientId': referral.patientId,
         'patientName': referral.patientName,
         'patientAge': referral.patientAge,
-        if (referral.appointmentId != null) 'appointmentId': referral.appointmentId,
-        if (referral.reason != null && referral.reason!.isNotEmpty) 'reason': referral.reason,
+        if (referral.appointmentId != null)
+          'appointmentId': referral.appointmentId,
+        if (referral.reason != null && referral.reason!.isNotEmpty)
+          'reason': referral.reason,
         'status': referral.status,
         'createdAt': referral.createdAt,
       };

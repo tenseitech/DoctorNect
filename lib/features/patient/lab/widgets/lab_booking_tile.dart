@@ -25,7 +25,9 @@ class LabBookingTile extends StatelessWidget {
     final status = _statusStyle(booking);
     final day = DateFormat('dd').format(booking.dateTime);
     final month = DateFormat('MMM').format(booking.dateTime).toUpperCase();
-    final labName = booking.labName?.trim().isNotEmpty == true ? booking.labName!.trim() : 'Lab';
+    final labName = booking.labName?.trim().isNotEmpty == true
+        ? booking.labName!.trim()
+        : 'Lab';
     final patientName = booking.patientName.trim();
 
     return Column(
@@ -59,8 +61,14 @@ class LabBookingTile extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: upcoming
-                              ? [AppColors.labPurple, AppColors.labPurple.withValues(alpha: 0.78)]
-                              : [status.color.withValues(alpha: 0.85), status.color],
+                              ? [
+                                  AppColors.labPurple,
+                                  AppColors.labPurple.withValues(alpha: 0.78)
+                                ]
+                              : [
+                                  status.color.withValues(alpha: 0.85),
+                                  status.color
+                                ],
                         ),
                         borderRadius: BorderRadius.circular(13),
                       ),
@@ -82,7 +90,8 @@ class LabBookingTile extends StatelessWidget {
                             style: GoogleFonts.inter(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.surfaceOf(context).withValues(alpha: 0.92),
+                              color: AppColors.surfaceOf(context)
+                                  .withValues(alpha: 0.92),
                               letterSpacing: 0.4,
                             ),
                           ),
@@ -107,7 +116,8 @@ class LabBookingTile extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              _StatusChip(label: status.label, color: status.color),
+                              _StatusChip(
+                                  label: status.label, color: status.color),
                             ],
                           ),
                           const SizedBox(height: 3),
@@ -126,7 +136,9 @@ class LabBookingTile extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${booking.allTestNames.length} tests booked',
-                              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.labPurple),
+                              style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelSmall,
+                                  color: AppColors.labPurple),
                             ),
                           ],
                           const SizedBox(height: 2),
@@ -134,7 +146,9 @@ class LabBookingTile extends StatelessWidget {
                             labName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelMedium,
+                                color: AppColors.textSecondaryOf(context)),
                           ),
                           const SizedBox(height: 6),
                           Row(
@@ -142,7 +156,8 @@ class LabBookingTile extends StatelessWidget {
                               Icon(
                                 Icons.schedule,
                                 size: 14,
-                                color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9),
+                                color: AppColors.textSecondaryOf(context)
+                                    .withValues(alpha: 0.9),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -150,7 +165,10 @@ class LabBookingTile extends StatelessWidget {
                                   booking.slotLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelMedium,
+                                      color:
+                                          AppColors.textSecondaryOf(context)),
                                 ),
                               ),
                             ],
@@ -162,7 +180,8 @@ class LabBookingTile extends StatelessWidget {
                     Icon(
                       Icons.chevron_right,
                       size: 20,
-                      color: AppColors.textSecondaryOf(context).withValues(alpha: 0.85),
+                      color: AppColors.textSecondaryOf(context)
+                          .withValues(alpha: 0.85),
                     ),
                   ],
                 ),
@@ -192,7 +211,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: color),
+        style: GoogleFonts.inter(
+            fontSize: 10, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }
@@ -203,12 +223,12 @@ class _StatusChip extends StatelessWidget {
     return (label: 'Report ready', color: const Color(0xFF16A34A));
   }
   return switch (booking.status.toLowerCase()) {
-      'requested' => (label: 'Pending', color: const Color(0xFFEA580C)),
-      'confirmed' => (label: 'Confirmed', color: AppColors.labPurple),
-      'processing' => (label: 'Processing', color: const Color(0xFF2563EB)),
-      'completed' => (label: 'Completed', color: const Color(0xFF16A34A)),
-      'declined' => (label: 'Declined', color: const Color(0xFFDC2626)),
-      'cancelled' => (label: 'Cancelled', color: const Color(0xFFDC2626)),
-      _ => (label: 'Booked', color: AppColors.textSecondary),
-    };
+    'requested' => (label: 'Pending', color: const Color(0xFFEA580C)),
+    'confirmed' => (label: 'Confirmed', color: AppColors.labPurple),
+    'processing' => (label: 'Processing', color: const Color(0xFF2563EB)),
+    'completed' => (label: 'Completed', color: const Color(0xFF16A34A)),
+    'declined' => (label: 'Declined', color: const Color(0xFFDC2626)),
+    'cancelled' => (label: 'Cancelled', color: const Color(0xFFDC2626)),
+    _ => (label: 'Booked', color: AppColors.textSecondary),
+  };
 }

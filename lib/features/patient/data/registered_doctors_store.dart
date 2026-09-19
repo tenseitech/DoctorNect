@@ -21,7 +21,8 @@ class RegisteredDoctorsStore extends ChangeNotifier {
   List<DoctorListing> get verifiedDoctors =>
       _registered.where((d) => d.verified).toList(growable: false);
 
-  bool isRegistered(String doctorId) => _registered.any((d) => d.id == doctorId);
+  bool isRegistered(String doctorId) =>
+      _registered.any((d) => d.id == doctorId);
 
   DoctorListing? findById(String doctorId) {
     for (final d in _registered) {
@@ -51,29 +52,29 @@ class RegisteredDoctorsStore extends ChangeNotifier {
     _streamSub = FirestoreService.instance.doctorDirectory
         .streamAllDoctors(verifiedOnly: true)
         .listen(
-          (doctors) {
-            if (doctors.isNotEmpty) {
-              _registered
-                ..clear()
-                ..addAll(doctors);
-              notifyListeners();
-            } else if (_registered.isEmpty) {
-              notifyListeners();
-            }
-          },
-          onError: (e) {
-            if (kDebugMode) debugPrint('[RegisteredDoctorsStore] stream error: $e');
-            _streamActive = false;
-            Future.delayed(const Duration(seconds: 3), startListening);
-          },
-        );
+      (doctors) {
+        if (doctors.isNotEmpty) {
+          _registered
+            ..clear()
+            ..addAll(doctors);
+          notifyListeners();
+        } else if (_registered.isEmpty) {
+          notifyListeners();
+        }
+      },
+      onError: (e) {
+        if (kDebugMode) debugPrint('[RegisteredDoctorsStore] stream error: $e');
+        _streamActive = false;
+        Future.delayed(const Duration(seconds: 3), startListening);
+      },
+    );
   }
 
   /// One-time fetch fallback (also used as initial fast-path).
   Future<void> refreshFromFirestore({bool verifiedOnly = true}) async {
     try {
-      final doctors =
-          await FirestoreService.instance.doctorDirectory.fetchAllDoctors(verifiedOnly: verifiedOnly);
+      final doctors = await FirestoreService.instance.doctorDirectory
+          .fetchAllDoctors(verifiedOnly: verifiedOnly);
       if (doctors.isNotEmpty) {
         _registered
           ..clear()

@@ -55,7 +55,8 @@ class PhoneNumberField extends StatefulWidget {
 }
 
 class _PhoneNumberFieldState extends State<PhoneNumberField> {
-  late String _dialCode = widget.initialDialCode ?? CountryPhoneCodes.defaultDialCode;
+  late String _dialCode =
+      widget.initialDialCode ?? CountryPhoneCodes.defaultDialCode;
 
   String get dialCode => _dialCode;
 
@@ -132,7 +133,8 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
                   size: 20,
                   color: widget.enabled
                       ? AppColors.textSecondaryOf(context)
-                      : AppColors.textSecondaryOf(context).withValues(alpha: 0.5),
+                      : AppColors.textSecondaryOf(context)
+                          .withValues(alpha: 0.5),
                 ),
               ],
             ),
@@ -176,7 +178,8 @@ class _CountryCodePickerSheet extends StatefulWidget {
   final String selectedDialCode;
 
   @override
-  State<_CountryCodePickerSheet> createState() => _CountryCodePickerSheetState();
+  State<_CountryCodePickerSheet> createState() =>
+      _CountryCodePickerSheetState();
 }
 
 class _CountryCodePickerSheetState extends State<_CountryCodePickerSheet> {

@@ -125,7 +125,8 @@ class _ProfileSettingsRow extends StatelessWidget {
                         color: AppColors.textPrimaryOf(context),
                       ),
                     ),
-                    if (item.subtitle != null && item.subtitle!.trim().isNotEmpty) ...[
+                    if (item.subtitle != null &&
+                        item.subtitle!.trim().isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         item.subtitle!,
@@ -142,7 +143,8 @@ class _ProfileSettingsRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 22,
-                color: AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
               ),
             ],
           ),
@@ -331,11 +333,14 @@ class ProfileHeroHeader extends StatelessWidget {
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: Text(
                       'Edit Profile',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium),
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTypography.bodyMedium),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
-                      side: BorderSide(color: AppColors.doctorBlue.withValues(alpha: 0.45)),
+                      side: BorderSide(
+                          color: AppColors.doctorBlue.withValues(alpha: 0.45)),
                       minimumSize: const Size(double.infinity, 44),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -423,7 +428,8 @@ class EditableSectionScaffold extends StatefulWidget {
   final String Function() buildSnapshot;
 
   @override
-  State<EditableSectionScaffold> createState() => _EditableSectionScaffoldState();
+  State<EditableSectionScaffold> createState() =>
+      _EditableSectionScaffoldState();
 }
 
 class _EditableSectionScaffoldState extends State<EditableSectionScaffold> {
@@ -476,7 +482,8 @@ class _EditableSectionScaffoldState extends State<EditableSectionScaffold> {
                 children: [
                   Builder(
                     builder: (context) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) => markDirty());
+                      WidgetsBinding.instance
+                          .addPostFrameCallback((_) => markDirty());
                       return widget.child;
                     },
                   ),
@@ -495,7 +502,8 @@ class _EditableSectionScaffoldState extends State<EditableSectionScaffold> {
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceOf(context),
-                      border: Border(top: BorderSide(color: AppColors.borderOf(context))),
+                      border: Border(
+                          top: BorderSide(color: AppColors.borderOf(context))),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.06),

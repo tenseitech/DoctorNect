@@ -18,10 +18,10 @@ class AmbulanceDataSection extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Ambulance Data'),
           bottom: TabBar(
-            labelStyle:
-                GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
-            unselectedLabelStyle:
-                GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w400),
+            labelStyle: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w400),
             indicatorColor: Colors.red[600],
             labelColor: Colors.red[600],
             unselectedLabelColor: Colors.grey[600],
@@ -112,17 +112,20 @@ class _AmbulanceCard extends StatelessWidget {
                   children: [
                     Text(amb.serviceName,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)),
+                            fontSize: AppTypography.bodyMedium,
+                            fontWeight: FontWeight.w600)),
                     const SizedBox(height: 2),
                     Text(
                       '${amb.driverName}  •  ${amb.vehicleNumber}',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
+                          fontSize: AppTypography.labelSmall,
+                          color: Colors.grey[500]),
                     ),
                     Text(
                       amb.phone,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
+                          fontSize: AppTypography.labelSmall,
+                          color: Colors.grey[500]),
                     ),
                   ],
                 ),
@@ -153,7 +156,8 @@ class _AmbulanceCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(amb.city,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall, color: Colors.grey[400])),
+                          fontSize: AppTypography.labelSmall,
+                          color: Colors.grey[400])),
                 ],
               ),
             ],
@@ -165,10 +169,15 @@ class _AmbulanceCard extends StatelessWidget {
             children: [
               _Chip(label: amb.ambulanceTypeLabel, color: Colors.red[600]!),
               if (amb.hasOxygen) _Chip(label: 'O₂', color: Colors.blue[600]!),
-              if (amb.hasVentilator) _Chip(label: 'Ventilator', color: Colors.purple[600]!),
-              if (amb.hasStretcher) _Chip(label: 'Stretcher', color: Colors.teal[600]!),
+              if (amb.hasVentilator)
+                _Chip(label: 'Ventilator', color: Colors.purple[600]!),
+              if (amb.hasStretcher)
+                _Chip(label: 'Stretcher', color: Colors.teal[600]!),
               if (amb.is24x7) _Chip(label: '24×7', color: Colors.orange[700]!),
-              if (amb.ratePerKm != null) _Chip(label: '₹${amb.ratePerKm!.toStringAsFixed(0)}/km', color: Colors.green[700]!),
+              if (amb.ratePerKm != null)
+                _Chip(
+                    label: '₹${amb.ratePerKm!.toStringAsFixed(0)}/km',
+                    color: Colors.green[700]!),
             ],
           ),
         ],
@@ -274,11 +283,13 @@ class _BookingRow extends StatelessWidget {
               children: [
                 Text(booking.patientName,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600)),
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w600)),
                 Text(
                   booking.pickupLocation,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
+                      fontSize: AppTypography.labelSmall,
+                      color: Colors.grey[500]),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -290,7 +301,8 @@ class _BookingRow extends StatelessWidget {
                   Text(
                     '${df.format(booking.createdAt)}  ${tf.format(booking.createdAt)}',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
+                        fontSize: AppTypography.labelSmall,
+                        color: Colors.grey[500]),
                   ),
                 ]),
                 if (booking.acceptedAmbulanceName != null) ...[
@@ -308,8 +320,7 @@ class _BookingRow extends StatelessWidget {
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
               color: _statusColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
@@ -344,7 +355,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(message,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyMedium, color: Colors.grey[500])),
+                    fontSize: AppTypography.bodyMedium,
+                    color: Colors.grey[500])),
           ],
         ),
       );

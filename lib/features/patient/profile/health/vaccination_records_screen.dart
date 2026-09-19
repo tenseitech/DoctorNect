@@ -36,7 +36,8 @@ class VaccinationRecordsScreen extends StatefulWidget {
   const VaccinationRecordsScreen({super.key});
 
   @override
-  State<VaccinationRecordsScreen> createState() => _VaccinationRecordsScreenState();
+  State<VaccinationRecordsScreen> createState() =>
+      _VaccinationRecordsScreenState();
 }
 
 class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
@@ -152,7 +153,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
       'name': entry.name,
       'dateGiven': entry.date.toIso8601String(),
       if (entry.dose != null && entry.dose!.isNotEmpty) 'dose': entry.dose,
-      if (entry.notes != null && entry.notes!.isNotEmpty) 'userNotes': entry.notes,
+      if (entry.notes != null && entry.notes!.isNotEmpty)
+        'userNotes': entry.notes,
     };
 
     return HealthRecord(
@@ -180,7 +182,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
     }
 
     try {
-      final records = await FirestoreService.instance.patientProfile.fetchHealthRecords(patientId);
+      final records = await FirestoreService.instance.patientProfile
+          .fetchHealthRecords(patientId);
       final vaccinations = records
           .where((r) => r.type == HealthRecordType.vaccination)
           .map(_entryFromHealthRecord)
@@ -254,11 +257,12 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
         return;
       }
     }
-
   }
 
   Widget _buildAddForm() {
-    return PatientProfileFormStyles.contentSurface(context: context, child: Column(
+    return PatientProfileFormStyles.contentSurface(
+      context: context,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
@@ -266,19 +270,23 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
               Expanded(
                 child: Text(
                   'Add Vaccination',
-                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
                 onPressed: _closeAddForm,
-                icon: Icon(Icons.close, color: AppColors.textSecondaryOf(context)),
+                icon: Icon(Icons.close,
+                    color: AppColors.textSecondaryOf(context)),
               ),
             ],
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _nameController,
-            decoration: PatientProfileFormStyles.fieldDecoration(context, 
+            decoration: PatientProfileFormStyles.fieldDecoration(
+              context,
               labelText: 'Vaccine name',
               isRequired: true,
             ).copyWith(errorText: _nameError),
@@ -289,7 +297,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
           ),
           const SizedBox(height: 12),
           PatientProfileFormStyles.dobPickerRow(
-          context: context,
+            context: context,
             label: 'Date given',
             isRequired: true,
             valueText: DateFormat('dd MMM yyyy').format(_dateGiven),
@@ -298,7 +306,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _doseController,
-            decoration: PatientProfileFormStyles.fieldDecoration(context, 
+            decoration: PatientProfileFormStyles.fieldDecoration(
+              context,
               labelText: 'Dose (optional)',
               hintText: 'e.g. 1st, 2nd, Booster',
             ),
@@ -306,7 +315,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: _notesController,
-            decoration: PatientProfileFormStyles.fieldDecoration(context, 
+            decoration: PatientProfileFormStyles.fieldDecoration(
+              context,
               labelText: 'Notes (optional)',
               alignLabelWithHint: true,
             ),
@@ -334,14 +344,16 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isNotEmpty && !entry.id.startsWith('mock_')) {
       try {
-        await FirestoreService.instance.patientProfile.deleteHealthRecord(entry.id);
+        await FirestoreService.instance.patientProfile
+            .deleteHealthRecord(entry.id);
       } catch (_) {
         if (!mounted) return;
         setState(() {
           _entries.insert(index, entry);
           _syncMockFromEntries();
         });
-        AppToast.info(context, 'Failed to delete vaccination. Please try again.');
+        AppToast.info(
+            context, 'Failed to delete vaccination. Please try again.');
         return;
       }
     }
@@ -426,20 +438,27 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(entry.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  Text(entry.name,
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                   Text(
                     DateFormat('dd MMM yyyy').format(entry.date),
-                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
                   ),
                   if (entry.dose != null && entry.dose!.isNotEmpty)
                     Text(
                       entry.dose!,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                     ),
                   if (entry.notes != null && entry.notes!.isNotEmpty)
                     Text(
                       entry.notes!,
-                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -464,9 +483,11 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Vaccination Records', context: context),
+      appBar: PatientProfileFormStyles.profileAppBar('Vaccination Records',
+          context: context),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.patientTeal))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.patientTeal))
           : PatientProfileFormStyles.constrainedScrollBody(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -476,12 +497,16 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
                     const SizedBox(height: 16),
                   ],
                   if (_entries.isEmpty)
-                    PatientProfileFormStyles.contentSurface(context: context, child: _buildEmptyState())
+                    PatientProfileFormStyles.contentSurface(
+                        context: context, child: _buildEmptyState())
                   else ...[
-                    PatientProfileFormStyles.contentSurface(context: context, child: Column(
+                    PatientProfileFormStyles.contentSurface(
+                      context: context,
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          PatientProfileFormStyles.sectionHeader('Your vaccinations'),
+                          PatientProfileFormStyles.sectionHeader(
+                              'Your vaccinations'),
                           const SizedBox(height: 16),
                           ..._entries.map(_buildRecordTile),
                         ],

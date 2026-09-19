@@ -116,85 +116,91 @@ class _LabShellState extends State<LabShell> {
           final labName = lab?.labName ?? LabSession.loggedInLabName;
           final displayName = labName.isNotEmpty ? labName : 'Lab';
           final connectPending = labId.isNotEmpty &&
-              (LabConnectionStore.instance.pendingForLabFromDoctor(labId).isNotEmpty ||
-                  LabConnectionStore.instance.pendingSentByLab(labId).isNotEmpty);
+              (LabConnectionStore.instance
+                      .pendingForLabFromDoctor(labId)
+                      .isNotEmpty ||
+                  LabConnectionStore.instance
+                      .pendingSentByLab(labId)
+                      .isNotEmpty);
           final requestDots = [false, false, connectPending, false, false];
 
           return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Material(
-              color: Theme.of(context).colorScheme.surface,
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.biotech_outlined, color: AppColors.labPurple),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              displayName,
-                              style: GoogleFonts.inter(
-                                fontSize: AppTypography.headlineSmall,
-                                fontWeight: FontWeight.w700,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Material(
+                color: Theme.of(context).colorScheme.surface,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.biotech_outlined,
+                            color: AppColors.labPurple),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                style: GoogleFonts.inter(
+                                  fontSize: AppTypography.headlineSmall,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Diagnostic Lab',
-                              style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                color: AppColors.textSecondaryOf(context),
+                              Text(
+                                'Diagnostic Lab',
+                                style: GoogleFonts.inter(
+                                  fontSize: AppTypography.labelMedium,
+                                  color: AppColors.textSecondaryOf(context),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: AdaptiveAppShell(
+                  showMobileLogout: false,
+                  selectedIndex: _index,
+                  onDestinationSelected: _onTabSelected,
+                  accentColor: AppColors.labPurple,
+                  requestDots: requestDots,
+                  destinations: _tabs
+                      .map((t) => NavigationDestination(
+                          icon: Icon(t.icon), label: t.label))
+                      .toList(),
+                  child: IndexedStack(
+                    index: _index,
+                    children: [
+                      ProfileDataGate(
+                        role: UserType.lab,
+                        child: const LabOrdersTab(),
                       ),
+                      ProfileDataGate(
+                        role: UserType.lab,
+                        child: const LabWalkInScreen(),
+                      ),
+                      ProfileDataGate(
+                        role: UserType.lab,
+                        child: const LabConnectDoctorsScreen(),
+                      ),
+                      ProfileDataGate(
+                        role: UserType.lab,
+                        child: const LabNotificationsScreen(),
+                      ),
+                      const LabProfileScreen(),
                     ],
                   ),
                 ),
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: AdaptiveAppShell(
-                showMobileLogout: false,
-                selectedIndex: _index,
-                onDestinationSelected: _onTabSelected,
-                accentColor: AppColors.labPurple,
-                requestDots: requestDots,
-                destinations: _tabs
-                    .map((t) => NavigationDestination(icon: Icon(t.icon), label: t.label))
-                    .toList(),
-                child: IndexedStack(
-                  index: _index,
-                  children: [
-                    ProfileDataGate(
-                      role: UserType.lab,
-                      child: const LabOrdersTab(),
-                    ),
-                    ProfileDataGate(
-                      role: UserType.lab,
-                      child: const LabWalkInScreen(),
-                    ),
-                    ProfileDataGate(
-                      role: UserType.lab,
-                      child: const LabConnectDoctorsScreen(),
-                    ),
-                    ProfileDataGate(
-                      role: UserType.lab,
-                      child: const LabNotificationsScreen(),
-                    ),
-                    const LabProfileScreen(),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
           );
         },
       ),

@@ -28,10 +28,13 @@ class LabPageLayout extends StatelessWidget {
     );
   }
 
-  static PreferredSizeWidget appBar(BuildContext context, {required String title, VoidCallback? onBack, List<Widget>? actions}) {
+  static PreferredSizeWidget appBar(BuildContext context,
+      {required String title, VoidCallback? onBack, List<Widget>? actions}) {
     return AppBar(
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      leading: onBack != null ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack) : null,
+      leading: onBack != null
+          ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: onBack)
+          : null,
       actions: actions,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -39,21 +42,28 @@ class LabPageLayout extends StatelessWidget {
   }
 
   static double contentWidth(BuildContext context) => 720.0;
-  
+
   static BoxDecoration cardDecoration([BuildContext? context]) {
     return BoxDecoration(
       color: context != null ? AppColors.surfaceOf(context) : Colors.white,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: context != null ? AppColors.borderOf(context) : Colors.grey.shade200),
+      border: Border.all(
+          color: context != null
+              ? AppColors.borderOf(context)
+              : Colors.grey.shade200),
       boxShadow: context != null
           ? AppColors.cardShadowOf(context)
-          : const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+          : const [
+              BoxShadow(
+                  color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))
+            ],
     );
   }
 }
 
 class LabPageBody extends StatelessWidget {
-  const LabPageBody({super.key, required this.child, this.centerVertically = false});
+  const LabPageBody(
+      {super.key, required this.child, this.centerVertically = false});
   final Widget child;
   final bool centerVertically;
 
@@ -83,7 +93,12 @@ class LabContentCard extends StatelessWidget {
 }
 
 class LabPrimaryButton extends StatelessWidget {
-  const LabPrimaryButton({super.key, required this.label, required this.onPressed, this.loading = false, this.enabled = true});
+  const LabPrimaryButton(
+      {super.key,
+      required this.label,
+      required this.onPressed,
+      this.loading = false,
+      this.enabled = true});
   final String label;
   final VoidCallback? onPressed;
   final bool loading;
@@ -100,8 +115,14 @@ class LabPrimaryButton extends StatelessWidget {
         ),
         onPressed: (loading || !enabled) ? null : onPressed,
         child: loading
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-            : Text(label, style: const TextStyle(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.bold)),
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : Text(label,
+                style: const TextStyle(
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -119,7 +140,10 @@ class LabSectionHeader extends StatelessWidget {
       child: Row(
         children: [
           if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
-          Text(title, style: const TextStyle(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.bold)),
+          Text(title,
+              style: const TextStyle(
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );

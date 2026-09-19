@@ -54,7 +54,8 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
       if (_chiefComplaint.text.trim().isNotEmpty)
         'Chief complaint: ${_chiefComplaint.text.trim()}',
       if (_hpi.text.trim().isNotEmpty) 'HPI: ${_hpi.text.trim()}',
-      if (_pmh.text.trim().isNotEmpty) 'Past medical history: ${_pmh.text.trim()}',
+      if (_pmh.text.trim().isNotEmpty)
+        'Past medical history: ${_pmh.text.trim()}',
       if (_familyHistory.text.trim().isNotEmpty)
         'Family history: ${_familyHistory.text.trim()}',
       if (_allergies.isNotEmpty)
@@ -64,16 +65,18 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
     final summary = parts.join('\n');
     final appointmentId = widget.patient.appointmentId;
     if (appointmentId == null || appointmentId.isEmpty) {
-      AppToast.info(context, 'No appointment linked — clinical notes could not be saved.');
+      AppToast.info(context,
+          'No appointment linked — clinical notes could not be saved.');
       return;
     }
 
     SharedAppointmentsStore.instance.saveConsultationOutcome(
       recordId: appointmentId,
-      diagnosis: _chiefComplaint.text.trim().isNotEmpty ? _chiefComplaint.text.trim() : null,
+      diagnosis: _chiefComplaint.text.trim().isNotEmpty
+          ? _chiefComplaint.text.trim()
+          : null,
       clinicalNotes: summary.isNotEmpty ? summary : null,
     );
-
   }
 
   @override
@@ -152,7 +155,9 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
                       value: _allergySeverity,
                       isExpanded: true,
                       items: ClinicalMockData.allergySeverities
-                          .map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis)))
+                          .map((s) => DropdownMenuItem(
+                              value: s,
+                              child: Text(s, overflow: TextOverflow.ellipsis)))
                           .toList(),
                       onChanged: (v) => setState(() => _allergySeverity = v!),
                     ),
@@ -177,7 +182,8 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
                     return InputChip(
                       label: Text('${a.name} (${a.severity})'),
                       deleteIconColor: color,
-                      labelStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: color),
+                      labelStyle: GoogleFonts.inter(
+                          fontSize: AppTypography.labelMedium, color: color),
                       side: BorderSide(color: color.withValues(alpha: 0.4)),
                       onDeleted: () => setState(() => _allergies.remove(a)),
                     );
@@ -210,8 +216,14 @@ class _InfoLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text('$label: ', style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context))),
-        Text(value, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600)),
+        Text('$label: ',
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context))),
+        Text(value,
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w600)),
       ],
     );
   }

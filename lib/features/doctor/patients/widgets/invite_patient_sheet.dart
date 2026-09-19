@@ -79,7 +79,8 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondaryOf(context).withValues(alpha: 0.3),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -87,7 +88,9 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
             const SizedBox(height: 16),
             Text(
               'Invite Patient',
-              style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.headlineMedium,
+                  fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
@@ -104,11 +107,14 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
               decoration: BoxDecoration(
                 color: AppColors.doctorBlue.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.doctorBlue.withValues(alpha: 0.2)),
+                border: Border.all(
+                    color: AppColors.doctorBlue.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.link, size: 20, color: AppColors.doctorBlue.withValues(alpha: 0.9)),
+                  Icon(Icons.link,
+                      size: 20,
+                      color: AppColors.doctorBlue.withValues(alpha: 0.9)),
                   const SizedBox(width: 10),
                   Expanded(
                     child: _loading
@@ -118,7 +124,9 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Text(
-                            _link ?? DoctorInviteService.buildInviteLink(DoctorSession.loggedInDoctorId),
+                            _link ??
+                                DoctorInviteService.buildInviteLink(
+                                    DoctorSession.loggedInDoctorId),
                             style: GoogleFonts.inter(
                               fontSize: AppTypography.bodyMedium,
                               fontWeight: FontWeight.w600,
@@ -137,7 +145,8 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               icon: const Icon(Icons.copy_outlined),
-              label: Text('Copy Link', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              label: Text('Copy Link',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
@@ -148,7 +157,8 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               icon: const Icon(Icons.share_outlined),
-              label: Text('Share', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              label: Text('Share',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
             ),
           ],
         ),

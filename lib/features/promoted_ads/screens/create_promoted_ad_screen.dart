@@ -56,18 +56,23 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
 
   int get _combinedDailyRate {
     if (_selectedCities.isEmpty) return 100;
-    return _selectedCities.fold<int>(0, (sum, city) => sum + IndianCities.dailyRate(city));
+    return _selectedCities.fold<int>(
+        0, (sum, city) => sum + IndianCities.dailyRate(city));
   }
 
   String get _rateSumFormulaString {
     if (_selectedCities.isEmpty) return '';
-    final parts = _selectedCities.map((c) => '$c (₹${IndianCities.dailyRate(c)})').join(' + ');
+    final parts = _selectedCities
+        .map((c) => '$c (₹${IndianCities.dailyRate(c)})')
+        .join(' + ');
     return 'Rate Sum: $parts = ₹$_combinedDailyRate/day';
   }
 
   String get _rateSumPillFormulaString {
     if (_selectedCities.isEmpty) return '₹100';
-    return _selectedCities.map((c) => '₹${IndianCities.dailyRate(c)}').join(' + ');
+    return _selectedCities
+        .map((c) => '₹${IndianCities.dailyRate(c)}')
+        .join(' + ');
   }
 
   String get _citiesSnippet {
@@ -79,7 +84,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
 
   int _calculatePlanPrice(int days) {
     final hours = days * 24;
-    final basePrice = _bannerConfig?.pricingTiers[hours] ?? (_combinedDailyRate * days);
+    final basePrice =
+        _bannerConfig?.pricingTiers[hours] ?? (_combinedDailyRate * days);
     if (_selectedCities.length <= 1) {
       return basePrice;
     }
@@ -91,7 +97,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
   late String _selectedCtaLabel;
 
   // Step 3: Plan Selection Carousel
-  final PageController _planPageController = PageController(viewportFraction: 0.88);
+  final PageController _planPageController =
+      PageController(viewportFraction: 0.88);
   int _selectedPlanIndex = 1; // Default to "Most Popular" (3 Days / 72h)
 
   static const List<Map<String, dynamic>> _campaignPlans = [
@@ -171,7 +178,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
         setState(() => _selectedImageBytes = picked.bytes);
       }
     } catch (e) {
-      if (mounted) AppToast.error(context, 'Could not pick image. Please try again.');
+      if (mounted)
+        AppToast.error(context, 'Could not pick image. Please try again.');
     }
   }
 
@@ -265,7 +273,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
       if (verified) {
         Navigator.pop(context, true);
       } else {
-        AppToast.error(context, 'Payment verification failed. Please contact support.');
+        AppToast.error(
+            context, 'Payment verification failed. Please contact support.');
       }
     } catch (e) {
       if (mounted) {
@@ -301,7 +310,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               : _currentStep == 1
                   ? 'Banner Promotion'
                   : 'Banner Campaign Plan',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
+          style: GoogleFonts.inter(
+              fontWeight: FontWeight.w700,
+              fontSize: AppTypography.headlineSmall),
         ),
         centerTitle: true,
       ),
@@ -328,11 +339,13 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 if (_bannerConfig != null && !_bannerConfig!.enabled)
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     color: const Color(0xFFEF4444).withValues(alpha: 0.15),
                     child: Row(
                       children: [
-                        const Icon(Icons.pause_circle_outline, color: Color(0xFFEF4444), size: 20),
+                        const Icon(Icons.pause_circle_outline,
+                            color: Color(0xFFEF4444), size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -354,7 +367,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   color: AppColors.surfaceOf(context),
                   alignment: Alignment.center,
                   padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width > 900 ? 40 : 16,
+                    horizontal:
+                        MediaQuery.of(context).size.width > 900 ? 40 : 16,
                     vertical: 14,
                   ),
                   child: ConstrainedBox(
@@ -365,14 +379,18 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         Expanded(
                           child: Container(
                             height: 2,
-                            color: _currentStep >= 1 ? const Color(0xFF7C3AED) : AppColors.borderOf(context),
+                            color: _currentStep >= 1
+                                ? const Color(0xFF7C3AED)
+                                : AppColors.borderOf(context),
                           ),
                         ),
                         _buildStepBadge(1, 'Banner'),
                         Expanded(
                           child: Container(
                             height: 2,
-                            color: _currentStep >= 2 ? const Color(0xFF7C3AED) : AppColors.borderOf(context),
+                            color: _currentStep >= 2
+                                ? const Color(0xFF7C3AED)
+                                : AppColors.borderOf(context),
                           ),
                         ),
                         _buildStepBadge(2, 'Plan & Pay'),
@@ -416,7 +434,11 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w700,
-                    color: isActive ? Colors.white : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                    color: isActive
+                        ? Colors.white
+                        : (isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600),
                   ),
                 ),
         ),
@@ -465,7 +487,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   ),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF4C1D95) : const Color(0xFFDDD6FE),
+                    color: isDark
+                        ? const Color(0xFF4C1D95)
+                        : const Color(0xFFDDD6FE),
                   ),
                 ),
                 child: Row(
@@ -479,7 +503,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                             style: GoogleFonts.inter(
                               fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w800,
-                              color: isDark ? const Color(0xFFDDD6FE) : const Color(0xFF4C1D95),
+                              color: isDark
+                                  ? const Color(0xFFDDD6FE)
+                                  : const Color(0xFF4C1D95),
                               height: 1.25,
                             ),
                           ),
@@ -488,7 +514,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                             'Promote your $_providerLabel on patient portal and reach thousands of aspiring patients.',
                             style: GoogleFonts.inter(
                               fontSize: 12.5,
-                              color: isDark ? const Color(0xFFC4B5FD) : const Color(0xFF6B21A8),
+                              color: isDark
+                                  ? const Color(0xFFC4B5FD)
+                                  : const Color(0xFF6B21A8),
                               height: 1.35,
                             ),
                           ),
@@ -504,14 +532,16 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                            color:
+                                const Color(0xFF7C3AED).withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: const Center(
-                        child: Icon(TablerIcons.speakerphone, color: Colors.white, size: 28),
+                        child: Icon(TablerIcons.speakerphone,
+                            color: Colors.white, size: 28),
                       ),
                     ),
                   ],
@@ -535,26 +565,41 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   children: [
                     _buildWhyPromoteCard(
                       icon: TablerIcons.eye,
-                      iconBg: isDark ? const Color(0xFF3B0764) : const Color(0xFFF3E8FF),
-                      iconColor: isDark ? const Color(0xFFC4B5FD) : const Color(0xFF7C3AED),
+                      iconBg: isDark
+                          ? const Color(0xFF3B0764)
+                          : const Color(0xFFF3E8FF),
+                      iconColor: isDark
+                          ? const Color(0xFFC4B5FD)
+                          : const Color(0xFF7C3AED),
                       title: 'Increase Visibility',
-                      subtitle: 'Show your practice to thousands of active patients',
+                      subtitle:
+                          'Show your practice to thousands of active patients',
                     ),
                     const SizedBox(width: 12),
                     _buildWhyPromoteCard(
                       icon: TablerIcons.users,
-                      iconBg: isDark ? const Color(0xFF3B0764) : const Color(0xFFF3E8FF),
-                      iconColor: isDark ? const Color(0xFFC4B5FD) : const Color(0xFF7C3AED),
+                      iconBg: isDark
+                          ? const Color(0xFF3B0764)
+                          : const Color(0xFFF3E8FF),
+                      iconColor: isDark
+                          ? const Color(0xFFC4B5FD)
+                          : const Color(0xFF7C3AED),
                       title: 'Target Right Patients',
-                      subtitle: 'Reach patients searching in your city & specialty',
+                      subtitle:
+                          'Reach patients searching in your city & specialty',
                     ),
                     const SizedBox(width: 12),
                     _buildWhyPromoteCard(
                       icon: TablerIcons.bolt,
-                      iconBg: isDark ? const Color(0xFF451A03) : const Color(0xFFFEF3C7),
-                      iconColor: isDark ? const Color(0xFFFDE047) : const Color(0xFFD97706),
+                      iconBg: isDark
+                          ? const Color(0xFF451A03)
+                          : const Color(0xFFFEF3C7),
+                      iconColor: isDark
+                          ? const Color(0xFFFDE047)
+                          : const Color(0xFFD97706),
                       title: 'Instant Bookings',
-                      subtitle: 'Direct CTA button leads patients straight to booking',
+                      subtitle:
+                          'Direct CTA button leads patients straight to booking',
                     ),
                   ],
                 ),
@@ -575,7 +620,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 id: 'banner',
                 icon: TablerIcons.speakerphone,
                 iconColor: const Color(0xFF10B981),
-                iconBg: isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5),
+                iconBg:
+                    isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5),
                 title: 'Banner Promotion',
                 subtitle: 'Display banner on top of patient home app',
               ),
@@ -589,12 +635,15 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF97316),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     elevation: 2,
                   ),
                   child: Text(
                     'Continue to Banner Setup →',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyLarge,
+                        fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -625,7 +674,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+                color: iconBg, borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: iconColor, size: 20),
           ),
           const SizedBox(height: 10),
@@ -673,7 +723,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               : AppColors.surfaceOf(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? const Color(0xFF7C3AED) : AppColors.borderOf(context),
+            color: isSelected
+                ? const Color(0xFF7C3AED)
+                : AppColors.borderOf(context),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -685,12 +737,17 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(
+                      color: iconBg, borderRadius: BorderRadius.circular(10)),
                   child: Icon(icon, color: iconColor, size: 20),
                 ),
                 Icon(
-                  isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                  color: isSelected ? const Color(0xFF7C3AED) : AppColors.textSecondaryOf(context),
+                  isSelected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked,
+                  color: isSelected
+                      ? const Color(0xFF7C3AED)
+                      : AppColors.textSecondaryOf(context),
                   size: 20,
                 ),
               ],
@@ -752,27 +809,37 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 icon: Icon(
                   Icons.edit_location_alt_outlined,
                   size: 14,
-                  color: isDark ? const Color(0xFFC4B5FD) : const Color(0xFF6D28D9),
+                  color: isDark
+                      ? const Color(0xFFC4B5FD)
+                      : const Color(0xFF6D28D9),
                 ),
                 label: Text(
                   'Add / Modify',
                   style: GoogleFonts.inter(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? const Color(0xFFC4B5FD) : const Color(0xFF6D28D9),
+                    color: isDark
+                        ? const Color(0xFFC4B5FD)
+                        : const Color(0xFF6D28D9),
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? const Color(0xFFC4B5FD) : const Color(0xFF6D28D9),
+                  foregroundColor: isDark
+                      ? const Color(0xFFC4B5FD)
+                      : const Color(0xFF6D28D9),
                   side: BorderSide(
-                    color: isDark ? const Color(0xFF8B5CF6) : const Color(0xFFC4B5FD),
+                    color: isDark
+                        ? const Color(0xFF8B5CF6)
+                        : const Color(0xFFC4B5FD),
                     width: 1.3,
                   ),
                   backgroundColor: isDark
                       ? const Color(0xFF7C3AED).withValues(alpha: 0.25)
                       : const Color(0xFF7C3AED).withValues(alpha: 0.08),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -791,16 +858,21 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               return Container(
                 padding: const EdgeInsets.fromLTRB(12, 5, 7, 5),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1B4B) : const Color(0xFFF5F3FF),
+                  color: isDark
+                      ? const Color(0xFF1E1B4B)
+                      : const Color(0xFFF5F3FF),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF8B5CF6) : const Color(0xFFC4B5FD),
+                    color: isDark
+                        ? const Color(0xFF8B5CF6)
+                        : const Color(0xFFC4B5FD),
                     width: 1.3,
                   ),
                   boxShadow: isDark
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF7C3AED).withValues(alpha: 0.18),
+                            color:
+                                const Color(0xFF7C3AED).withValues(alpha: 0.18),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           )
@@ -820,9 +892,12 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     ),
                     const SizedBox(width: 7),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2.5),
                       decoration: BoxDecoration(
-                        color: isMetro ? const Color(0xFF7C3AED) : const Color(0xFF059669),
+                        color: isMetro
+                            ? const Color(0xFF7C3AED)
+                            : const Color(0xFF059669),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -840,7 +915,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         if (_selectedCities.length > 1) {
                           setState(() => _selectedCities.remove(city));
                         } else {
-                          AppToast.info(context, 'At least one target city must be selected.');
+                          AppToast.info(context,
+                              'At least one target city must be selected.');
                         }
                       },
                       borderRadius: BorderRadius.circular(12),
@@ -865,7 +941,11 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
             }).toList(),
           ),
           const SizedBox(height: 12),
-          Divider(height: 1, color: isDark ? const Color(0xFF374151) : AppColors.borderOf(context)),
+          Divider(
+              height: 1,
+              color: isDark
+                  ? const Color(0xFF374151)
+                  : AppColors.borderOf(context)),
           const SizedBox(height: 10),
 
           // Bottom Combined Rate Row
@@ -890,7 +970,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         _rateSumFormulaString,
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.labelSmall,
-                          color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                          color: isDark
+                              ? const Color(0xFFA78BFA)
+                              : const Color(0xFF7C3AED),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -904,7 +986,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w900,
-                  color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6B21A8),
+                  color: isDark
+                      ? const Color(0xFFA78BFA)
+                      : const Color(0xFF6B21A8),
                 ),
               ),
             ],
@@ -931,7 +1015,14 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final allStates = ['Maharashtra', 'All States (India)', ...IndianCities.byState.keys.where((s) => s != 'Maharashtra').toList()..sort()];
+            final allStates = [
+              'Maharashtra',
+              'All States (India)',
+              ...IndianCities.byState.keys
+                  .where((s) => s != 'Maharashtra')
+                  .toList()
+                ..sort()
+            ];
 
             List<String> availableCities = [];
             if (selectedState == 'All States (India)') {
@@ -942,13 +1033,16 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
 
             if (searchQuery.trim().isNotEmpty) {
               final q = searchQuery.trim().toLowerCase();
-              availableCities = availableCities.where((c) => c.toLowerCase().contains(q)).toList();
+              availableCities = availableCities
+                  .where((c) => c.toLowerCase().contains(q))
+                  .toList();
             }
 
             final isAllSelected = availableCities.isNotEmpty &&
                 availableCities.every((c) => tempSelected.contains(c));
 
-            final currentDailyRate = tempSelected.fold<int>(0, (sum, c) => sum + IndianCities.dailyRate(c));
+            final currentDailyRate = tempSelected.fold<int>(
+                0, (sum, c) => sum + IndianCities.dailyRate(c));
 
             return Container(
               height: MediaQuery.of(context).size.height * 0.85,
@@ -1008,11 +1102,14 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.4)),
+                          border: Border.all(
+                              color: const Color(0xFF7C3AED)
+                                  .withValues(alpha: 0.4)),
                         ),
                         child: Text(
                           'India',
@@ -1028,9 +1125,12 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E1B4B).withValues(alpha: 0.5) : const Color(0xFFF1F5F9),
+                            color: isDark
+                                ? const Color(0xFF1E1B4B).withValues(alpha: 0.5)
+                                : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.borderOf(context)),
+                            border:
+                                Border.all(color: AppColors.borderOf(context)),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
@@ -1064,21 +1164,32 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   // Search Bar
                   Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1B4B).withValues(alpha: 0.5) : const Color(0xFFF8FAFC),
+                      color: isDark
+                          ? const Color(0xFF1E1B4B).withValues(alpha: 0.5)
+                          : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.borderOf(context)),
                     ),
                     child: TextField(
                       controller: searchController,
-                      style: GoogleFonts.inter(color: AppColors.textPrimaryOf(context), fontSize: AppTypography.bodySmall),
+                      style: GoogleFonts.inter(
+                          color: AppColors.textPrimaryOf(context),
+                          fontSize: AppTypography.bodySmall),
                       decoration: InputDecoration(
-                        hintText: 'Search city (e.g. Nagpur, Amravati, Akola)...',
-                        hintStyle: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodySmall),
-                        prefixIcon: Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondaryOf(context)),
+                        hintText:
+                            'Search city (e.g. Nagpur, Amravati, Akola)...',
+                        hintStyle: GoogleFonts.inter(
+                            color: AppColors.textSecondaryOf(context),
+                            fontSize: AppTypography.bodySmall),
+                        prefixIcon: Icon(Icons.search_rounded,
+                            size: 20,
+                            color: AppColors.textSecondaryOf(context)),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
                       ),
-                      onChanged: (val) => setModalState(() => searchQuery = val),
+                      onChanged: (val) =>
+                          setModalState(() => searchQuery = val),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1089,12 +1200,14 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         ? Center(
                             child: Text(
                               'No cities found matching "$searchQuery"',
-                              style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+                              style: GoogleFonts.inter(
+                                  color: AppColors.textSecondaryOf(context)),
                             ),
                           )
                         : ListView.separated(
                             itemCount: availableCities.length,
-                            separatorBuilder: (_, __) => Divider(height: 1, color: AppColors.borderOf(context)),
+                            separatorBuilder: (_, __) => Divider(
+                                height: 1, color: AppColors.borderOf(context)),
                             itemBuilder: (context, idx) {
                               final city = availableCities[idx];
                               final stateName = IndianCities.stateForCity(city);
@@ -1113,7 +1226,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                   });
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 10, horizontal: 4),
                                   child: Row(
                                     children: [
                                       Expanded(
@@ -1122,27 +1236,40 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                           style: GoogleFonts.inter(
                                             fontSize: AppTypography.bodyMedium,
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.textPrimaryOf(context),
+                                            color: AppColors.textPrimaryOf(
+                                                context),
                                           ),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
                                           color: isMetro
-                                              ? (isDark ? const Color(0xFF3B0764) : const Color(0xFFF3E8FF))
-                                              : (isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5)),
-                                          borderRadius: BorderRadius.circular(8),
+                                              ? (isDark
+                                                  ? const Color(0xFF3B0764)
+                                                  : const Color(0xFFF3E8FF))
+                                              : (isDark
+                                                  ? const Color(0xFF064E3B)
+                                                  : const Color(0xFFD1FAE5)),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                         child: Text(
-                                          isMetro ? 'Metro ₹$rate/d' : 'Standard ₹$rate/d',
+                                          isMetro
+                                              ? 'Metro ₹$rate/d'
+                                              : 'Standard ₹$rate/d',
                                           style: GoogleFonts.inter(
                                             fontSize: AppTypography.labelSmall,
                                             fontWeight: FontWeight.w800,
                                             color: isMetro
-                                                ? (isDark ? const Color(0xFFA78BFA) : const Color(0xFF6B21A8))
-                                                : (isDark ? const Color(0xFF34D399) : const Color(0xFF065F46)),
+                                                ? (isDark
+                                                    ? const Color(0xFFA78BFA)
+                                                    : const Color(0xFF6B21A8))
+                                                : (isDark
+                                                    ? const Color(0xFF34D399)
+                                                    : const Color(0xFF065F46)),
                                           ),
                                         ),
                                       ),
@@ -1150,7 +1277,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                       Checkbox(
                                         value: isChecked,
                                         activeColor: const Color(0xFF7C3AED),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(4)),
                                         onChanged: (val) {
                                           setModalState(() {
                                             if (val == true) {
@@ -1176,7 +1305,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         if (tempSelected.isEmpty) {
-                          AppToast.info(context, 'Please select at least one target city.');
+                          AppToast.info(context,
+                              'Please select at least one target city.');
                           return;
                         }
                         setState(() {
@@ -1187,12 +1317,15 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF7C3AED),
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                         elevation: 2,
                       ),
                       child: Text(
                         'Apply Selection (${tempSelected.length} Cities • ₹$currentDailyRate/day)',
-                        style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodyLarge,
+                            fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -1251,7 +1384,11 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF0F9B7E), Color(0xFF0D9488), Color(0xFF14B8A6)],
+                      colors: [
+                        Color(0xFF0F9B7E),
+                        Color(0xFF0D9488),
+                        Color(0xFF14B8A6)
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1278,7 +1415,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFF59E0B),
                                       borderRadius: BorderRadius.circular(6),
@@ -1286,7 +1424,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.star, size: 11, color: Colors.white),
+                                        const Icon(Icons.star,
+                                            size: 11, color: Colors.white),
                                         const SizedBox(width: 4),
                                         Text(
                                           'FEATURED PROMOTION',
@@ -1312,7 +1451,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                   ),
                                   const SizedBox(height: 10),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(20),
@@ -1329,7 +1469,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                           ),
                                         ),
                                         const SizedBox(width: 4),
-                                        const Icon(Icons.chevron_right, size: 14, color: Color(0xFF0F766E)),
+                                        const Icon(Icons.chevron_right,
+                                            size: 14, color: Color(0xFF0F766E)),
                                       ],
                                     ),
                                   ),
@@ -1343,7 +1484,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                 color: Colors.white.withValues(alpha: 0.22),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.campaign_outlined, color: Colors.white, size: 28),
+                              child: const Icon(Icons.campaign_outlined,
+                                  color: Colors.white, size: 28),
                             ),
                           ],
                         ),
@@ -1419,7 +1561,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         children: [
                           // FEATURED PROMOTION gold pill badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF59E0B),
                               borderRadius: BorderRadius.circular(6),
@@ -1427,7 +1570,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.star, size: 11, color: Colors.white),
+                                const Icon(Icons.star,
+                                    size: 11, color: Colors.white),
                                 const SizedBox(width: 4),
                                 Text(
                                   'FEATURED PROMOTION',
@@ -1455,7 +1599,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                           ),
                           const SizedBox(height: 10),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
@@ -1472,7 +1617,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                const Icon(Icons.chevron_right, size: 14, color: Color(0xFF0F766E)),
+                                const Icon(Icons.chevron_right,
+                                    size: 14, color: Color(0xFF0F766E)),
                               ],
                             ),
                           ),
@@ -1486,7 +1632,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         color: Colors.white.withValues(alpha: 0.22),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.campaign_outlined, color: Colors.white, size: 26),
+                      child: const Icon(Icons.campaign_outlined,
+                          color: Colors.white, size: 26),
                     ),
                   ],
                 ),
@@ -1559,7 +1706,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFF0284C7),
             side: const BorderSide(color: Color(0xFF38BDF8), width: 1.2),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             padding: const EdgeInsets.symmetric(vertical: 10),
           ),
           child: Text(
@@ -1624,7 +1772,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 const SizedBox(height: 2),
                 Text(
                   'Upload attractive banner to promote your organization',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(height: 10),
                 InkWell(
@@ -1635,7 +1785,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.surfaceOf(context),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderOf(context), width: 1.5),
+                      border: Border.all(
+                          color: AppColors.borderOf(context), width: 1.5),
                     ),
                     child: _selectedImageBytes != null
                         ? Stack(
@@ -1643,18 +1794,23 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
-                                child: Image.memory(_selectedImageBytes!, fit: BoxFit.cover),
+                                child: Image.memory(_selectedImageBytes!,
+                                    fit: BoxFit.cover),
                               ),
                               Positioned(
                                 top: 8,
                                 right: 8,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withValues(alpha: 0.7),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Text('Change Image', style: GoogleFonts.inter(color: Colors.white, fontSize: AppTypography.labelSmall)),
+                                  child: Text('Change Image',
+                                      style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontSize: AppTypography.labelSmall)),
                                 ),
                               ),
                             ],
@@ -1662,7 +1818,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         : Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.cloud_upload_outlined, size: 36, color: AppColors.textSecondaryOf(context)),
+                              Icon(Icons.cloud_upload_outlined,
+                                  size: 36,
+                                  color: AppColors.textSecondaryOf(context)),
                               const SizedBox(height: 6),
                               Text(
                                 'Upload banner image',
@@ -1674,7 +1832,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                               ),
                               Text(
                                 'Select banner image from your device JPG, PNG up to 2 mb',
-                                style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
+                                style: GoogleFonts.inter(
+                                    fontSize: AppTypography.labelSmall,
+                                    color: AppColors.textSecondaryOf(context)),
                               ),
                             ],
                           ),
@@ -1685,48 +1845,65 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 // Headline Input
                 Text(
                   'Ad Headline (Title)',
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryOf(context)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _titleController,
                   maxLength: 50,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.inter(color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(
+                      color: AppColors.textPrimaryOf(context)),
                   decoration: inputDecoration.copyWith(
                     hintText: 'e.g., Special 20% Off Cardiology Screening',
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a headline' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Please enter a headline'
+                      : null,
                 ),
                 const SizedBox(height: 14),
 
                 // Subtitle Input
                 Text(
                   'Ad Description',
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryOf(context)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _descController,
                   maxLength: 100,
                   maxLines: 2,
-                  style: GoogleFonts.inter(color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(
+                      color: AppColors.textPrimaryOf(context)),
                   decoration: inputDecoration.copyWith(
-                    hintText: 'e.g., Book expert consultation with top specialists today.',
+                    hintText:
+                        'e.g., Book expert consultation with top specialists today.',
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a description' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Please enter a description'
+                      : null,
                 ),
                 const SizedBox(height: 14),
 
                 // Link Input (Optional)
                 Text(
                   'Link (Optional)',
-                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryOf(context)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
                   controller: _linkController,
-                  style: GoogleFonts.inter(color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(
+                      color: AppColors.textPrimaryOf(context)),
                   decoration: inputDecoration.copyWith(
                     hintText: 'Paste link (optional website or profile link)',
                   ),
@@ -1748,12 +1925,15 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFF97316),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                       elevation: 2,
                     ),
                     child: Text(
                       'Choose Campaign Plan →',
-                      style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodyLarge,
+                          fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -1768,7 +1948,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
   // ---------------------------------------------------------------------------
   // STEP 3: Banner Campaign Plan Carousel & Payment (Dynamic Dark / Light Mode)
   // ---------------------------------------------------------------------------
-  Widget _buildCampaignPlanCard(Map<String, dynamic> plan, int index, bool isDark) {
+  Widget _buildCampaignPlanCard(
+      Map<String, dynamic> plan, int index, bool isDark) {
     final isSelected = _selectedPlanIndex == index;
     final planDays = plan['days'] as int;
     final calculatedPrice = _calculatePlanPrice(planDays);
@@ -1782,7 +1963,10 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
           : 'Banner visible across ${_selectedCities.length} target cities ($_citiesSnippet) for $planDays days',
       'Top position in patient home carousel',
       'Direct CTA tap redirection',
-      if (planDays >= 30) 'Dedicated campaign manager' else 'Real-time campaign analytics',
+      if (planDays >= 30)
+        'Dedicated campaign manager'
+      else
+        'Real-time campaign analytics',
     ];
 
     return InkWell(
@@ -1801,7 +1985,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
         clipBehavior: Clip.none,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 14, right: 8, left: 8, bottom: 4),
+            margin:
+                const EdgeInsets.only(top: 14, right: 8, left: 8, bottom: 4),
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 18),
             decoration: BoxDecoration(
               color: isSelected
@@ -1809,7 +1994,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   : AppColors.surfaceOf(context),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? const Color(0xFF7C3AED) : AppColors.borderOf(context),
+                color: isSelected
+                    ? const Color(0xFF7C3AED)
+                    : AppColors.borderOf(context),
                 width: isSelected ? 2 : 1,
               ),
               boxShadow: isSelected
@@ -1848,7 +2035,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.headlineLarge,
                         fontWeight: FontWeight.w900,
-                        color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6B21A8),
+                        color: isDark
+                            ? const Color(0xFFA78BFA)
+                            : const Color(0xFF6B21A8),
                       ),
                     ),
                   ],
@@ -1875,7 +2064,11 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Divider(height: 1, color: isDark ? const Color(0xFF374151) : AppColors.borderOf(context)),
+                Divider(
+                    height: 1,
+                    color: isDark
+                        ? const Color(0xFF374151)
+                        : AppColors.borderOf(context)),
                 const SizedBox(height: 10),
 
                 // Features List with Purple Checks
@@ -1890,10 +2083,13 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                           Container(
                             padding: const EdgeInsets.all(2.5),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF3B0764) : const Color(0xFFF3E8FF),
+                              color: isDark
+                                  ? const Color(0xFF3B0764)
+                                  : const Color(0xFFF3E8FF),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.check, size: 13, color: Color(0xFF7C3AED)),
+                            child: const Icon(Icons.check,
+                                size: 13, color: Color(0xFF7C3AED)),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -1922,7 +2118,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFF7C3AED),
                   borderRadius: BorderRadius.circular(14),
@@ -1985,8 +2182,10 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 child: PageView.builder(
                   controller: _planPageController,
                   itemCount: _campaignPlans.length,
-                  onPageChanged: (idx) => setState(() => _selectedPlanIndex = idx),
-                  itemBuilder: (context, index) => _buildCampaignPlanCard(_campaignPlans[index], index, isDark),
+                  onPageChanged: (idx) =>
+                      setState(() => _selectedPlanIndex = idx),
+                  itemBuilder: (context, index) => _buildCampaignPlanCard(
+                      _campaignPlans[index], index, isDark),
                 ),
               ),
               const SizedBox(height: 14),
@@ -1997,7 +2196,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 children: [
                   TextButton.icon(
                     onPressed: _selectedPlanIndex > 0
-                        ? () => _planPageController.previousPage(duration: const Duration(milliseconds: 250), curve: Curves.easeInOut)
+                        ? () => _planPageController.previousPage(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut)
                         : null,
                     icon: const Icon(Icons.arrow_back_rounded, size: 16),
                     label: const Text('Previous'),
@@ -2018,7 +2219,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         decoration: BoxDecoration(
                           color: _selectedPlanIndex == dIdx
                               ? const Color(0xFF0D9488)
-                              : (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
+                              : (isDark
+                                  ? const Color(0xFF475569)
+                                  : const Color(0xFFCBD5E1)),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -2027,7 +2230,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
 
                   TextButton.icon(
                     onPressed: _selectedPlanIndex < _campaignPlans.length - 1
-                        ? () => _planPageController.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.easeInOut)
+                        ? () => _planPageController.nextPage(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut)
                         : null,
                     icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                     label: const Text('Next'),
@@ -2049,12 +2254,15 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF97316),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
                     elevation: 3,
                   ),
                   child: Text(
                     'Buy Subscription & Launch (₹$selectedPlanCalculatedPrice)',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w800),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyLarge,
+                        fontWeight: FontWeight.w800),
                   ),
                 ),
               ),

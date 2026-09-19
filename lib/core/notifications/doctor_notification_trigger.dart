@@ -76,5 +76,8 @@ abstract final class DoctorTriggerCatalog {
   };
 
   static TriggerSpec specFor(DoctorNotificationTrigger t) =>
-      specs[t] ?? const TriggerSpec(priority: NotificationPriority.medium, channels: [NotificationChannelTag.app]);
+      specs[t] ??
+      const TriggerSpec(
+          priority: NotificationPriority.medium,
+          channels: [NotificationChannelTag.app]);
 }

@@ -42,14 +42,16 @@ class DoctorNotificationScheduler {
       ...store.doctorAppointments(doctorId).where((a) {
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
-        final d = DateTime(a.appointmentDate.year, a.appointmentDate.month, a.appointmentDate.day);
+        final d = DateTime(a.appointmentDate.year, a.appointmentDate.month,
+            a.appointmentDate.day);
         return d == today && a.status == AppointmentStatus.confirmed;
       }),
     ];
   }
 
   List<Appointment> get _tomorrowAppointments =>
-      SharedAppointmentsStore.instance.tomorrowForDoctor(DoctorSession.loggedInDoctorId);
+      SharedAppointmentsStore.instance
+          .tomorrowForDoctor(DoctorSession.loggedInDoctorId);
 
   void _tick() {
     final now = DateTime.now();
@@ -74,9 +76,12 @@ class DoctorNotificationScheduler {
 
   void _checkTodayMorningReminder(DateTime now) {
     if (now.hour != 7 || now.minute > 5) return;
-    final today = _todayAppointments.where((a) => a.status != AppointmentStatus.cancelled).toList();
+    final today = _todayAppointments
+        .where((a) => a.status != AppointmentStatus.cancelled)
+        .toList();
     if (today.isEmpty) return;
-    final lines = today.map((a) => '${a.timeSlot} · ${a.patientName}').join('\n');
+    final lines =
+        today.map((a) => '${a.timeSlot} · ${a.patientName}').join('\n');
     DoctorNotificationEmitter.notifyTodaySchedule(
       summary: '${today.length} appointment(s) today:\n$lines',
     );
@@ -84,14 +89,16 @@ class DoctorNotificationScheduler {
 
   void _checkNextPatientReminders(DateTime now) {
     for (final a in _todayAppointments) {
-      if (a.status == AppointmentStatus.cancelled || a.status == AppointmentStatus.completed) {
+      if (a.status == AppointmentStatus.cancelled ||
+          a.status == AppointmentStatus.completed) {
         continue;
       }
       final diff = a.appointmentDate.difference(now);
       if (diff.inMinutes >= 14 && diff.inMinutes <= 16) {
         DoctorNotificationEmitter.notifyNextPatient(
           patientName: a.patientName,
-          reason: a.type == AppointmentType.newVisit ? 'New visit' : 'Follow-up',
+          reason:
+              a.type == AppointmentType.newVisit ? 'New visit' : 'Follow-up',
           appointmentId: a.id,
           appointmentTime: a.appointmentDate,
         );
@@ -101,7 +108,8 @@ class DoctorNotificationScheduler {
 
   void _checkNoShowAlerts(DateTime now) {
     for (final a in _todayAppointments) {
-      if (a.status != AppointmentStatus.waiting && a.status != AppointmentStatus.confirmed) {
+      if (a.status != AppointmentStatus.waiting &&
+          a.status != AppointmentStatus.confirmed) {
         continue;
       }
       final afterStart = now.difference(a.appointmentDate);
@@ -133,7 +141,10 @@ class DoctorNotificationScheduler {
   void runStartupChecks() {
     final today = _todayAppointments;
     if (today.isEmpty) return;
-    final lines = today.take(4).map((a) => '${a.timeSlot} · ${a.patientName}').join(' · ');
+    final lines = today
+        .take(4)
+        .map((a) => '${a.timeSlot} · ${a.patientName}')
+        .join(' · ');
     DoctorNotificationEmitter.notifyTodaySchedule(
       summary: 'You have ${today.length} appointment(s) today. Next: $lines',
     );

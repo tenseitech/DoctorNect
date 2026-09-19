@@ -55,7 +55,8 @@ class PatientMockData {
     if (l.contains('skin') || l.contains('hair') || l.contains('nail')) {
       return Icons.face_retouching_natural_outlined;
     }
-    if (l.contains('heart') || l.contains('blood vessel')) return Icons.favorite_outline;
+    if (l.contains('heart') || l.contains('blood vessel'))
+      return Icons.favorite_outline;
     if (l.contains('women')) return Icons.pregnant_woman_outlined;
     if (l.contains('child') || l.contains('pediatr')) {
       return AppIcons.childCare.data;
@@ -64,31 +65,46 @@ class PatientMockData {
       return AppIcons.boneAndJoint.data;
     }
     if (l.contains('mental')) return Icons.psychology_outlined;
-    if (l.contains('ent') || l.contains('ear') || l.contains('nose') || l.contains('throat')) {
+    if (l.contains('ent') ||
+        l.contains('ear') ||
+        l.contains('nose') ||
+        l.contains('throat')) {
       return Icons.hearing_outlined;
     }
     if (l.contains('dental')) return Icons.emoji_emotions_outlined;
     if (l.contains('eye')) return Icons.visibility_outlined;
-    if (l.contains('diagnostic') || l.contains('lab')) return Icons.biotech_outlined;
+    if (l.contains('diagnostic') || l.contains('lab'))
+      return Icons.biotech_outlined;
     if (l.contains('surgery')) return Icons.content_cut_outlined;
-    if (l.contains('brain') || l.contains('nervous')) return Icons.psychology_alt_outlined;
+    if (l.contains('brain') || l.contains('nervous'))
+      return Icons.psychology_alt_outlined;
     if (l.contains('stomach') || l.contains('digest')) {
       return Icons.medical_services_outlined;
     }
-    if (l.contains('kidney') || l.contains('urolog')) return Icons.water_drop_outlined;
+    if (l.contains('kidney') || l.contains('urolog'))
+      return Icons.water_drop_outlined;
     if (l.contains('lung') || l.contains('breath')) return Icons.air_outlined;
-    if (l.contains('diabetes') || l.contains('hormone')) return Icons.bloodtype_outlined;
+    if (l.contains('diabetes') || l.contains('hormone'))
+      return Icons.bloodtype_outlined;
     if (l.contains('cancer')) return Icons.health_and_safety_outlined;
-    if (l.contains('emergency') || l.contains('critical')) return Icons.local_hospital_outlined;
-    if (l.contains('ayush') || l.contains('alternative') || l.contains('traditional')) {
+    if (l.contains('emergency') || l.contains('critical'))
+      return Icons.local_hospital_outlined;
+    if (l.contains('ayush') ||
+        l.contains('alternative') ||
+        l.contains('traditional')) {
       return Icons.spa_outlined;
     }
-    if (l.contains('physio') || l.contains('rehab')) return Icons.self_improvement_outlined;
-    if (l.contains('nutrition') || l.contains('lifestyle')) return Icons.restaurant_menu_outlined;
-    if (l.contains('pain') || l.contains('palliative')) return Icons.healing_outlined;
+    if (l.contains('physio') || l.contains('rehab'))
+      return Icons.self_improvement_outlined;
+    if (l.contains('nutrition') || l.contains('lifestyle'))
+      return Icons.restaurant_menu_outlined;
+    if (l.contains('pain') || l.contains('palliative'))
+      return Icons.healing_outlined;
     if (l.contains('elderly')) return Icons.elderly_outlined;
-    if (l.contains('infection') || l.contains('immunity')) return Icons.coronavirus_outlined;
-    if (l.contains('general') || l.contains('preventive')) return Icons.medical_services_outlined;
+    if (l.contains('infection') || l.contains('immunity'))
+      return Icons.coronavirus_outlined;
+    if (l.contains('general') || l.contains('preventive'))
+      return Icons.medical_services_outlined;
     return Icons.medical_services_outlined;
   }
 
@@ -97,7 +113,8 @@ class PatientMockData {
       banner: PromoBanner(
         kind: HomeCarouselKind.healthTip,
         title: 'Stay Hydrated',
-        subtitle: 'Drink at least 8 glasses of water daily for glowing skin and better digestion.',
+        subtitle:
+            'Drink at least 8 glasses of water daily for glowing skin and better digestion.',
         gradientColors: [Color(0xFF0D9488), Color(0xFF0369A1)],
         icon: Icons.water_drop_outlined,
       ),
@@ -128,7 +145,8 @@ class PatientMockData {
       banner: PromoBanner(
         kind: HomeCarouselKind.productAd,
         title: 'Full Body Checkup',
-        subtitle: 'Book a comprehensive body checkup today from available labs.',
+        subtitle:
+            'Book a comprehensive body checkup today from available labs.',
         gradientColors: [Color(0xFF6D28D9), Color(0xFF4C1D95)],
         icon: Icons.biotech_outlined,
       ),
@@ -141,14 +159,25 @@ class PatientMockData {
       carouselItems.map((item) => item.banner).toList(growable: false);
 
   static const services = [
-    ServiceItem(label: 'Citywide', icon: TablerIcons.current_location, route: 'near-you'),
+    ServiceItem(
+        label: 'Citywide',
+        icon: TablerIcons.current_location,
+        route: 'near-you'),
     ServiceItem(label: 'My Lab', icon: TablerIcons.flask, route: 'my-lab'),
-    ServiceItem(label: 'Medical Record', icon: TablerIcons.file_description, route: 'records'),
-    ServiceItem(label: 'My Appointments', icon: TablerIcons.calendar_check, route: 'appointments'),
-    ServiceItem(label: 'Ambulance', icon: TablerIcons.ambulance, route: 'ambulance'),
+    ServiceItem(
+        label: 'Medical Record',
+        icon: TablerIcons.file_description,
+        route: 'records'),
+    ServiceItem(
+        label: 'My Appointments',
+        icon: TablerIcons.calendar_check,
+        route: 'appointments'),
+    ServiceItem(
+        label: 'Ambulance', icon: TablerIcons.ambulance, route: 'ambulance'),
   ];
 
-  static List<MyDoc> get myDocs => PatientFavoritesStore.instance.visibleDoctors();
+  static List<MyDoc> get myDocs =>
+      PatientFavoritesStore.instance.visibleDoctors();
 
   static List<MyDoc> doctorsInCity(String city) {
     final normalized = city.trim().toLowerCase();
@@ -177,7 +206,8 @@ class PatientMockData {
   static List<RecentAppointment> get recentAppointments {
     final completed = SharedAppointmentsStore.instance
         .patientAppointments()
-        .where((a) => a.cancellationReason == null && a.dateTime.isBefore(DateTime.now()))
+        .where((a) =>
+            a.cancellationReason == null && a.dateTime.isBefore(DateTime.now()))
         .toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return completed.take(3).map((a) {
@@ -196,5 +226,6 @@ class PatientMockData {
     HealthTip(title: 'When to see a dermatologist', category: 'Skin Care'),
   ];
 
-  static List<DoctorListing> get allDoctors => RegisteredDoctorsStore.instance.searchableDoctors;
+  static List<DoctorListing> get allDoctors =>
+      RegisteredDoctorsStore.instance.searchableDoctors;
 }

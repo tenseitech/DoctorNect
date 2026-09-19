@@ -41,7 +41,8 @@ class BookingStepHeader extends StatelessWidget {
                       color: active ? accentColor : AppColors.cardBgOf(context),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: active ? accentColor : AppColors.borderOf(context),
+                        color:
+                            active ? accentColor : AppColors.borderOf(context),
                       ),
                     ),
                     child: Text(
@@ -49,7 +50,9 @@ class BookingStepHeader extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
-                        color: active ? AppColors.surfaceOf(context) : AppColors.textSecondaryOf(context),
+                        color: active
+                            ? AppColors.surfaceOf(context)
+                            : AppColors.textSecondaryOf(context),
                       ),
                     ),
                   ),
@@ -58,7 +61,9 @@ class BookingStepHeader extends StatelessWidget {
                       child: Container(
                         height: 2,
                         margin: const EdgeInsets.symmetric(horizontal: 4),
-                        color: i < currentStep ? accentColor : AppColors.borderOf(context),
+                        color: i < currentStep
+                            ? accentColor
+                            : AppColors.borderOf(context),
                       ),
                     ),
                 ],
@@ -81,7 +86,9 @@ class BookingStepHeader extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           title,
-          style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
+          style: GoogleFonts.inter(
+              fontSize: AppTypography.headlineSmall,
+              fontWeight: FontWeight.w700),
         ),
       ],
     );

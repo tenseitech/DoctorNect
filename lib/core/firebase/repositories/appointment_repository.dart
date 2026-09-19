@@ -14,7 +14,8 @@ class AppointmentRepository {
 
   static final AppointmentRepository instance = AppointmentRepository._();
 
-  Future<void> save(DoctorNectAppointmentRecord record, {String? patientId}) async {
+  Future<void> save(DoctorNectAppointmentRecord record,
+      {String? patientId}) async {
     if (!FirebaseBootstrap.isReady) return;
 
     // H3 debug-only write failure simulation. kDebugMode is false in release/profile
@@ -54,7 +55,8 @@ class AppointmentRepository {
       }
     } on FirebaseException catch (e, st) {
       if (kDebugMode) {
-        debugPrint('Appointment save failed (${record.id}): ${e.code} ${e.message}\n$st');
+        debugPrint(
+            'Appointment save failed (${record.id}): ${e.code} ${e.message}\n$st');
       }
       rethrow;
     }
@@ -81,7 +83,9 @@ class AppointmentRepository {
       return const Stream.empty();
     }
 
-    return _doctorAppointmentsQuery(doctorId).snapshots().map(_recordsFromSnapshot);
+    return _doctorAppointmentsQuery(doctorId)
+        .snapshots()
+        .map(_recordsFromSnapshot);
   }
 
   /// Real-time appointment stream for the signed-in patient's bookings.

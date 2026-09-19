@@ -33,7 +33,9 @@ abstract final class DoctorAppointmentActions {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                describeUserFacingError(e, fallback: "Couldn't reschedule this appointment. Please check your connection and try again."),
+                describeUserFacingError(e,
+                    fallback:
+                        "Couldn't reschedule this appointment. Please check your connection and try again."),
               ),
             ),
           );
@@ -66,7 +68,8 @@ abstract final class DoctorAppointmentActions {
         title: const Text('Cancel appointment?'),
         content: Text('Cancel ${appointment.patientName}\'s appointment?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('No')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('No')),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -80,7 +83,9 @@ abstract final class DoctorAppointmentActions {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      describeUserFacingError(e, fallback: "Couldn't cancel this appointment. Please check your connection and try again."),
+                      describeUserFacingError(e,
+                          fallback:
+                              "Couldn't cancel this appointment. Please check your connection and try again."),
                     ),
                   ),
                 );
@@ -94,7 +99,8 @@ abstract final class DoctorAppointmentActions {
               if (!context.mounted) return;
               if (popAfter) Navigator.pop(context);
             },
-            child: const Text('Yes, Cancel', style: TextStyle(color: Color(0xFFDC2626))),
+            child: const Text('Yes, Cancel',
+                style: TextStyle(color: Color(0xFFDC2626))),
           ),
         ],
       ),

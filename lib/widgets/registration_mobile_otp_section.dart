@@ -43,7 +43,8 @@ class RegistrationMobileOtpSection extends StatefulWidget {
       _RegistrationMobileOtpSectionState();
 }
 
-class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSection> {
+class _RegistrationMobileOtpSectionState
+    extends State<RegistrationMobileOtpSection> {
   bool _otpSent = false;
   bool _verified = false;
   bool _sending = false;
@@ -137,12 +138,14 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
     );
     if (!mounted) return;
     if (conflict == true) {
-      AppToast.error(context, MobileRegistrationLookup.registrationConflictMessage);
+      AppToast.error(
+          context, MobileRegistrationLookup.registrationConflictMessage);
       return;
     }
 
     setState(() => _sending = true);
-    final result = await RegistrationOtpService.sendOtp(digits, role: widget.role);
+    final result =
+        await RegistrationOtpService.sendOtp(digits, role: widget.role);
     if (!mounted) return;
 
     if (result.error != null) {
@@ -168,7 +171,8 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
       return;
     }
     setState(() => _sending = true);
-    final error = await RegistrationOtpService.verify(digits, _otp, role: widget.role);
+    final error =
+        await RegistrationOtpService.verify(digits, _otp, role: widget.role);
     if (!mounted) return;
     setState(() => _sending = false);
     if (error != null) {
@@ -212,7 +216,8 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
   @override
   Widget build(BuildContext context) {
     if (_verified) {
-      final digits = _lastMobile ?? _mobileDigits ?? widget.mobileController.text.trim();
+      final digits =
+          _lastMobile ?? _mobileDigits ?? widget.mobileController.text.trim();
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -222,12 +227,14 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
             decoration: BoxDecoration(
               color: AppColors.pharmacyGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.pharmacyGreen.withValues(alpha: 0.4)),
+              border: Border.all(
+                  color: AppColors.pharmacyGreen.withValues(alpha: 0.4)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.verified_outlined, color: AppColors.pharmacyGreen, size: 22),
+                Icon(Icons.verified_outlined,
+                    color: AppColors.pharmacyGreen, size: 22),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -300,12 +307,16 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
           FilledButton(
             onPressed: _sending ? null : _sendOtp,
             style: _primaryButtonStyle,
-            child: _sending ? _loadingIndicator(color: Colors.white) : const Text('Send OTP'),
+            child: _sending
+                ? _loadingIndicator(color: Colors.white)
+                : const Text('Send OTP'),
           ),
         ] else ...[
           Text(
             'Enter the 6-digit code sent to $_dialCode ${_maskedDigits(sentDigits)}',
-            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 14),
           OtpInput(

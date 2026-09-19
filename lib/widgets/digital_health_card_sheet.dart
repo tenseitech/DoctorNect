@@ -56,7 +56,8 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
 
-      final renderObject = _passCardBoundaryKey.currentContext?.findRenderObject();
+      final renderObject =
+          _passCardBoundaryKey.currentContext?.findRenderObject();
       if (renderObject is! RenderRepaintBoundary || !renderObject.attached) {
         throw StateError('Pass card is not ready to share');
       }
@@ -96,19 +97,27 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
     final patientProfile = PatientProfileMock.profile;
 
     final name = isDoctor
-        ? (doctorProfile.fullName.isEmpty ? 'Dr. Doctor' : 'Dr. ${doctorProfile.fullName}')
+        ? (doctorProfile.fullName.isEmpty
+            ? 'Dr. Doctor'
+            : 'Dr. ${doctorProfile.fullName}')
         : (patientProfile.name.isEmpty ? 'Patient' : patientProfile.name);
 
     final subtitle = isDoctor
-        ? (doctorProfile.specialization.isEmpty ? 'Medical Practitioner' : doctorProfile.specialization)
+        ? (doctorProfile.specialization.isEmpty
+            ? 'Medical Practitioner'
+            : doctorProfile.specialization)
         : 'Patient ID: P-884210';
 
     final regNumber = isDoctor
-        ? (doctorProfile.councilNumber.isEmpty ? 'MCI-884210' : doctorProfile.councilNumber)
+        ? (doctorProfile.councilNumber.isEmpty
+            ? 'MCI-884210'
+            : doctorProfile.councilNumber)
         : 'Blood Group: ${patientProfile.bloodGroup}';
 
     final stateCouncil = isDoctor
-        ? (doctorProfile.stateCouncil.isEmpty ? 'State Medical Council' : doctorProfile.stateCouncil)
+        ? (doctorProfile.stateCouncil.isEmpty
+            ? 'State Medical Council'
+            : doctorProfile.stateCouncil)
         : 'Gender/Age: ${patientProfile.gender}, ${patientProfile.age} yrs';
 
     final accent = isDoctor ? AppColors.doctorBlue : AppColors.patientTeal;
@@ -138,7 +147,9 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isDoctor ? 'Digital Doctor Credentials Pass' : 'Digital Health Card ID',
+                isDoctor
+                    ? 'Digital Doctor Credentials Pass'
+                    : 'Digital Health Card ID',
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
@@ -176,7 +187,8 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
                 children: [
                   CustomPaint(
                     size: const Size(80, 80),
-                    painter: _QrCanvasPainter(color: AppColors.textPrimaryOf(context)),
+                    painter: _QrCanvasPainter(
+                        color: AppColors.textPrimaryOf(context)),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -359,7 +371,8 @@ class _DoctorNectPassCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFF16A34A),
                         borderRadius: BorderRadius.circular(12),
@@ -367,7 +380,8 @@ class _DoctorNectPassCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.verified_rounded, size: 12, color: Colors.white),
+                          const Icon(Icons.verified_rounded,
+                              size: 12, color: Colors.white),
                           const SizedBox(width: 4),
                           Text(
                             'VERIFIED',
@@ -475,7 +489,8 @@ class _QrCanvasPainter extends CustomPainter {
       canvas.drawRect(Rect.fromLTWH(x, y, tileSize * 2, tileSize * 2), paint);
       final whitePaint = Paint()..color = Colors.white;
       canvas.drawRect(
-        Rect.fromLTWH(x + tileSize * 0.5, y + tileSize * 0.5, tileSize, tileSize),
+        Rect.fromLTWH(
+            x + tileSize * 0.5, y + tileSize * 0.5, tileSize, tileSize),
         whitePaint,
       );
     }
@@ -497,7 +512,8 @@ class _QrCanvasPainter extends CustomPainter {
     ];
 
     for (final pos in positions) {
-      canvas.drawRect(Rect.fromLTWH(pos.dx, pos.dy, tileSize * 0.8, tileSize * 0.8), paint);
+      canvas.drawRect(
+          Rect.fromLTWH(pos.dx, pos.dy, tileSize * 0.8, tileSize * 0.8), paint);
     }
   }
 

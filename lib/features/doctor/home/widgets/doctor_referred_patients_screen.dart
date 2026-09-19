@@ -26,7 +26,8 @@ class DoctorReferredPatientsScreen extends StatefulWidget {
       _DoctorReferredPatientsScreenState();
 }
 
-class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScreen> {
+class _DoctorReferredPatientsScreenState
+    extends State<DoctorReferredPatientsScreen> {
   List<DoctorReferral> _sent = [];
   List<DoctorReferral> _received = [];
   bool _loading = true;
@@ -52,8 +53,10 @@ class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScr
     try {
       final doctorId = DoctorSession.loggedInDoctorId;
       final results = await Future.wait([
-        FirestoreService.instance.referral.fetchSentByDoctor(doctorId, preferCache: false),
-        FirestoreService.instance.referral.fetchReceivedByDoctor(doctorId, preferCache: false),
+        FirestoreService.instance.referral
+            .fetchSentByDoctor(doctorId, preferCache: false),
+        FirestoreService.instance.referral
+            .fetchReceivedByDoctor(doctorId, preferCache: false),
       ]);
       if (!mounted) return;
       setState(() {
@@ -95,7 +98,9 @@ class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScr
           child: Text(
             emptyMessage,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyLarge,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ),
       );
@@ -114,7 +119,8 @@ class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScr
               referral: referral,
               incoming: incoming,
               onOpenConsult: incoming
-                  ? () => ReferralConsultService.openIncomingConsult(context, referral)
+                  ? () => ReferralConsultService.openIncomingConsult(
+                      context, referral)
                   : null,
             );
           },
@@ -134,7 +140,8 @@ class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScr
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: wide ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
+        backgroundColor:
+            wide ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -151,8 +158,11 @@ class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScr
                 labelColor: AppColors.doctorBlue,
                 unselectedLabelColor: AppColors.textSecondaryOf(context),
                 indicatorColor: AppColors.doctorBlue,
-                labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
-                unselectedLabelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+                labelStyle: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600),
+                unselectedLabelStyle:
+                    GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                 tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
               ),
             ),
@@ -183,7 +193,8 @@ class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScr
                   _buildTabList(
                     items: received,
                     incoming: true,
-                    emptyMessage: 'No patients referred to you by other doctors yet.',
+                    emptyMessage:
+                        'No patients referred to you by other doctors yet.',
                     padding: padding,
                     maxWidth: maxWidth,
                   ),

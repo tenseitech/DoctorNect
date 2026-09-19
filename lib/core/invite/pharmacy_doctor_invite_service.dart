@@ -17,8 +17,10 @@ abstract final class PharmacyDoctorInviteService {
     }).toString();
   }
 
-  static String inviteMessage({required String storeName, required String link}) {
-    final name = storeName.trim().isEmpty ? 'A medical store' : storeName.trim();
+  static String inviteMessage(
+      {required String storeName, required String link}) {
+    final name =
+        storeName.trim().isEmpty ? 'A medical store' : storeName.trim();
     return '$name invited you to download DoctorNect and register as a doctor to connect with their pharmacy. '
         'Download the app and sign up using this link:\n$link';
   }
@@ -26,7 +28,10 @@ abstract final class PharmacyDoctorInviteService {
   static Future<void> ensureInviteMetadata(String storeId) async {
     if (!FirebaseBootstrap.isReady || storeId.isEmpty) return;
 
-    await FirebaseFirestore.instance.collection(FirestorePaths.medicalStores).doc(storeId).set({
+    await FirebaseFirestore.instance
+        .collection(FirestorePaths.medicalStores)
+        .doc(storeId)
+        .set({
       'doctorInviteLink': buildInviteLink(storeId),
       'doctorInviteUpdatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));

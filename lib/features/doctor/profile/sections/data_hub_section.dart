@@ -36,7 +36,8 @@ class DataHubSection extends StatelessWidget {
                 icon: Icons.people_alt_outlined,
                 color: AppColors.practoTeal,
                 title: 'Patient Data',
-                subtitle: 'Weekly · Monthly · Yearly · Custom reports, PDF export',
+                subtitle:
+                    'Weekly · Monthly · Yearly · Custom reports, PDF export',
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const PatientDataSection()),
@@ -50,7 +51,8 @@ class DataHubSection extends StatelessWidget {
                 subtitle: 'Connected stores, prescription deliveries & status',
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const PharmacyDataSection()),
+                  MaterialPageRoute(
+                      builder: (_) => const PharmacyDataSection()),
                 ),
               ),
               const SizedBox(height: 12),
@@ -72,7 +74,8 @@ class DataHubSection extends StatelessWidget {
                 subtitle: 'Registered providers & dispatch bookings',
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AmbulanceDataSection()),
+                  MaterialPageRoute(
+                      builder: (_) => const AmbulanceDataSection()),
                 ),
               ),
             ],

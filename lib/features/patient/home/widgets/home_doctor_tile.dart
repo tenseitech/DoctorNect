@@ -33,7 +33,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
   Widget build(BuildContext context) {
     final doctor = widget.doctor;
     final initial = doctor.name.isNotEmpty ? doctor.name[0].toUpperCase() : 'D';
-    final hasPhoto = doctor.photoUrl != null && doctor.photoUrl!.trim().isNotEmpty;
+    final hasPhoto =
+        doctor.photoUrl != null && doctor.photoUrl!.trim().isNotEmpty;
 
     return Material(
       color: Colors.transparent,
@@ -61,7 +62,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.textPrimaryOf(context).withValues(alpha: _pressed ? 0.02 : 0.04),
+                    color: AppColors.textPrimaryOf(context)
+                        .withValues(alpha: _pressed ? 0.02 : 0.04),
                     blurRadius: _pressed ? 8 : 12,
                     offset: Offset(0, _pressed ? 2 : 4),
                   ),
@@ -84,7 +86,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.patientTeal.withValues(alpha: 0.24),
+                            color:
+                                AppColors.patientTeal.withValues(alpha: 0.24),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -92,7 +95,9 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                       ),
                       child: CircleAvatar(
                         backgroundColor: AppColors.surfaceOf(context),
-                        backgroundImage: hasPhoto ? NetworkImage(doctor.photoUrl!.trim()) : null,
+                        backgroundImage: hasPhoto
+                            ? NetworkImage(doctor.photoUrl!.trim())
+                            : null,
                         child: hasPhoto
                             ? null
                             : Text(
@@ -138,7 +143,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star_rounded, size: 12, color: Color(0xFFF59E0B)),
+                        const Icon(Icons.star_rounded,
+                            size: 12, color: Color(0xFFF59E0B)),
                         const SizedBox(width: 2),
                         Text(
                           doctor.rating.toStringAsFixed(1),
@@ -180,7 +186,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         'Book',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 10.5, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.inter(
+                            fontSize: 10.5, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -196,7 +203,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                 color: AppColors.surfaceOf(context),
                 shape: const CircleBorder(),
                 elevation: 2,
-                shadowColor: AppColors.textPrimaryOf(context).withValues(alpha: 0.15),
+                shadowColor:
+                    AppColors.textPrimaryOf(context).withValues(alpha: 0.15),
                 child: InkWell(
                   onTap: widget.onRemove,
                   customBorder: const CircleBorder(),
@@ -224,7 +232,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
 }
 
 class HomeDoctorInlineMessage extends StatelessWidget {
-  const HomeDoctorInlineMessage({super.key, required this.icon, required this.text});
+  const HomeDoctorInlineMessage(
+      {super.key, required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -245,7 +254,9 @@ class HomeDoctorInlineMessage extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
           ),
         ],

@@ -22,7 +22,8 @@ abstract final class VitalAdvisoryEngine {
           unitLabel: 'bpm',
           criticalLowKey: 'criticalLow',
           criticalHighKey: 'criticalHigh',
-          criticalLowLabel: (t) => 'Pulse < ${t['criticalLow']} bpm — critically low',
+          criticalLowLabel: (t) =>
+              'Pulse < ${t['criticalLow']} bpm — critically low',
           criticalHighLabel: (t) =>
               'Pulse > ${t['criticalHigh']} bpm — critically high',
         );
@@ -117,13 +118,15 @@ abstract final class VitalAdvisoryEngine {
     if (parsed < belowNormal) {
       return VitalAdvisory(
         level: VitalAdvisoryLevel.caution,
-        message: 'Below normal (${belowNormal.toStringAsFixed(0)}–${normalMax.toStringAsFixed(0)}°F)',
+        message:
+            'Below normal (${belowNormal.toStringAsFixed(0)}–${normalMax.toStringAsFixed(0)}°F)',
       );
     }
     if (parsed <= normalMax) {
       return VitalAdvisory(
         level: VitalAdvisoryLevel.normal,
-        message: 'Normal (${belowNormal.toStringAsFixed(0)}–${normalMax.toStringAsFixed(0)}°F)',
+        message:
+            'Normal (${belowNormal.toStringAsFixed(0)}–${normalMax.toStringAsFixed(0)}°F)',
       );
     }
     if (parsed <= lowGradeFever) {
@@ -142,7 +145,8 @@ abstract final class VitalAdvisoryEngine {
     if (parsed <= highFever) {
       return VitalAdvisory(
         level: VitalAdvisoryLevel.critical,
-        message: 'High fever (${(fever + 0.1).toStringAsFixed(1)}–$highFever°F)',
+        message:
+            'High fever (${(fever + 0.1).toStringAsFixed(1)}–$highFever°F)',
       );
     }
     return VitalAdvisory(

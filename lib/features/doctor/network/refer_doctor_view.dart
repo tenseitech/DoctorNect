@@ -37,7 +37,7 @@ class ReferDoctorView extends StatefulWidget {
 class _ReferDoctorViewState extends State<ReferDoctorView> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  
+
   String? _link;
   bool _loading = true;
 
@@ -49,7 +49,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
 
   Future<void> _loadLink() async {
     setState(() => _loading = true);
-    final link = await DoctorInviteService.linkForCurrentDoctor(userType: InviteNetworkUserType.doctor);
+    final link = await DoctorInviteService.linkForCurrentDoctor(
+        userType: InviteNetworkUserType.doctor);
     if (!mounted) return;
     setState(() {
       _link = link;
@@ -72,12 +73,13 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
 
   Future<void> _copyLink() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    final link = _link ?? DoctorInviteService.buildNetworkInviteLink(
-      doctorId: DoctorSession.loggedInDoctorId,
-      userType: InviteNetworkUserType.doctor,
-    );
-    
+
+    final link = _link ??
+        DoctorInviteService.buildNetworkInviteLink(
+          doctorId: DoctorSession.loggedInDoctorId,
+          userType: InviteNetworkUserType.doctor,
+        );
+
     final name = _nameController.text.trim();
     final message = _referMessage(name, link);
 
@@ -86,15 +88,16 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
 
   Future<void> _shareLink() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    final link = _link ?? DoctorInviteService.buildNetworkInviteLink(
-      doctorId: DoctorSession.loggedInDoctorId,
-      userType: InviteNetworkUserType.doctor,
-    );
-    
+
+    final link = _link ??
+        DoctorInviteService.buildNetworkInviteLink(
+          doctorId: DoctorSession.loggedInDoctorId,
+          userType: InviteNetworkUserType.doctor,
+        );
+
     final name = _nameController.text.trim();
     final message = _referMessage(name, link);
-    
+
     await ExternalLauncher.shareText(message, context: context);
   }
 
@@ -138,7 +141,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                         color: AppColors.doctorBlue.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(TablerIcons.users_plus, color: AppColors.doctorBlue),
+                      child: const Icon(TablerIcons.users_plus,
+                          color: AppColors.doctorBlue),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -183,27 +187,33 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
                   decoration: _decoration('Doctor name', Icons.person_outline),
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Enter doctor name to generate message' : null,
+                  validator: (v) => v == null || v.trim().isEmpty
+                      ? 'Enter doctor name to generate message'
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.doctorBlue.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.doctorBlue.withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: AppColors.doctorBlue.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.link, size: 20, color: AppColors.doctorBlue.withValues(alpha: 0.9)),
+                      Icon(Icons.link,
+                          size: 20,
+                          color: AppColors.doctorBlue.withValues(alpha: 0.9)),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _loading
                             ? const SizedBox(
                                 height: 18,
                                 width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : SelectableText(
                                 _link ?? fallbackLink,
@@ -230,7 +240,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                     foregroundColor: AppColors.white,
                     minimumSize: const Size(double.infinity, 52),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+                      borderRadius:
+                          BorderRadius.circular(AppConstants.cardRadius),
                     ),
                   ),
                 ),
@@ -247,7 +258,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                     side: const BorderSide(color: AppColors.doctorBlue),
                     minimumSize: const Size(double.infinity, 52),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+                      borderRadius:
+                          BorderRadius.circular(AppConstants.cardRadius),
                     ),
                   ),
                 ),
@@ -262,7 +274,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
   InputDecoration _decoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
+      prefixIcon:
+          Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
       filled: true,
       fillColor: AppColors.cardBgOf(context),
       border: OutlineInputBorder(

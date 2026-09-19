@@ -45,7 +45,8 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
   @override
   void initState() {
     super.initState();
-    final initialPage = widget.items.isNotEmpty ? widget.items.length * 1000 : 0;
+    final initialPage =
+        widget.items.isNotEmpty ? widget.items.length * 1000 : 0;
     _controller = PageController(initialPage: initialPage);
     _startAutoScroll();
   }
@@ -78,7 +79,8 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
 
   void _step(int delta) {
     if (widget.items.isEmpty || !_controller.hasClients) return;
-    final currentPage = _controller.page?.round() ?? (widget.items.length * 1000);
+    final currentPage =
+        _controller.page?.round() ?? (widget.items.length * 1000);
     _controller.animateToPage(
       currentPage + delta,
       duration: const Duration(milliseconds: 400),
@@ -102,17 +104,18 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
     final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
     final height = (isWide ? 220.0 : 120.0) * textScale;
     final hasCardInset = widget.cardHorizontalInsetFraction > 0;
-    final borderRadius = hasCardInset || !isWide
-        ? AppConstants.cardRadius.toDouble()
-        : 0.0;
+    final borderRadius =
+        hasCardInset || !isWide ? AppConstants.cardRadius.toDouble() : 0.0;
     final sideGutter = hasCardInset
         ? screenWidth * widget.cardHorizontalInsetFraction
         : (isWide ? _legacyWideNavGutter : 0.0);
     final showNavButtons = hasCardInset || isWide;
-    final navButtonSize =
-        sideGutter >= _navButtonSize ? _navButtonSize : (sideGutter * 0.82).clamp(26.0, _navButtonSize);
+    final navButtonSize = sideGutter >= _navButtonSize
+        ? _navButtonSize
+        : (sideGutter * 0.82).clamp(26.0, _navButtonSize);
 
-    Widget buildNavButton({required IconData icon, required VoidCallback onTap}) {
+    Widget buildNavButton(
+        {required IconData icon, required VoidCallback onTap}) {
       return _CarouselNavButton(
         icon: icon,
         size: navButtonSize,
@@ -148,7 +151,8 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
                 Expanded(
                   child: PageView.builder(
                     controller: _controller,
-                    onPageChanged: (i) => setState(() => _index = i % widget.items.length),
+                    onPageChanged: (i) =>
+                        setState(() => _index = i % widget.items.length),
                     itemBuilder: (_, index) {
                       final actualIndex = index % widget.items.length;
                       return _HomeBannerCarouselSlide(
@@ -184,7 +188,9 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _index == i ? widget.dotActiveColor : AppColors.borderOf(context),
+                  color: _index == i
+                      ? widget.dotActiveColor
+                      : AppColors.borderOf(context),
                 ),
               );
             }),
@@ -219,7 +225,8 @@ class _CarouselNavButton extends StatelessWidget {
         child: SizedBox(
           width: size,
           height: size,
-          child: Icon(icon, size: size * 0.58, color: AppColors.textPrimaryOf(context)),
+          child: Icon(icon,
+              size: size * 0.58, color: AppColors.textPrimaryOf(context)),
         ),
       ),
     );
@@ -260,73 +267,75 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
             : const Color(0xFF2563EB));
 
     final bannerBody = Stack(
-            fit: StackFit.expand,
-            children: [
-          _gradientBackground(begin: Alignment.topLeft, end: Alignment.bottomRight),
-          if (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
-            LayoutBuilder(
-              builder: (context, constraints) => ResampledNetworkImageWidget(
-                url: banner.imageUrl!,
-                width: constraints.maxWidth,
-                height: constraints.maxHeight,
-                fit: BoxFit.cover,
-              ),
-            ),
-          if (banner.icon != null && (banner.imageUrl == null || banner.imageUrl!.isEmpty))
-            Positioned(
-              right: -8,
-              bottom: -12,
-              child: Icon(
-                banner.icon,
-                size: 72,
-                color: AppColors.surfaceOf(context).withValues(alpha: 0.18),
-              ),
-            ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.05),
-                  Colors.black.withValues(alpha: 0.55),
-                ],
-              ),
+      fit: StackFit.expand,
+      children: [
+        _gradientBackground(
+            begin: Alignment.topLeft, end: Alignment.bottomRight),
+        if (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
+          LayoutBuilder(
+            builder: (context, constraints) => ResampledNetworkImageWidget(
+              url: banner.imageUrl!,
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+              fit: BoxFit.cover,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _BadgeChip(label: banner.badgeLabel, color: badgeColor),
-                const Spacer(),
-                Text(
-                  banner.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyLarge,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  banner.subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelSmall,
-                    height: 1.3,
-                    color: Colors.white.withValues(alpha: 0.92),
-                  ),
-                ),
+        if (banner.icon != null &&
+            (banner.imageUrl == null || banner.imageUrl!.isEmpty))
+          Positioned(
+            right: -8,
+            bottom: -12,
+            child: Icon(
+              banner.icon,
+              size: 72,
+              color: AppColors.surfaceOf(context).withValues(alpha: 0.18),
+            ),
+          ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.05),
+                Colors.black.withValues(alpha: 0.55),
               ],
             ),
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _BadgeChip(label: banner.badgeLabel, color: badgeColor),
+              const Spacer(),
+              Text(
+                banner.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodyLarge,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                banner.subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelSmall,
+                  height: 1.3,
+                  color: Colors.white.withValues(alpha: 0.92),
+                ),
+              ),
             ],
-          );
+          ),
+        ),
+      ],
+    );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
@@ -357,7 +366,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _gradientBackground(begin: Alignment.centerLeft, end: Alignment.centerRight),
+          _gradientBackground(
+              begin: Alignment.centerLeft, end: Alignment.centerRight),
           if (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
             LayoutBuilder(
               builder: (context, constraints) => ResampledNetworkImageWidget(
@@ -378,82 +388,87 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                     child: SingleChildScrollView(
                       physics: const NeverScrollableScrollPhysics(),
                       child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                      _BadgeChip(label: banner.badgeLabel, color: badgeColor),
-                      const SizedBox(height: 14),
-                      Text(
-                        banner.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: AppTypography.headlineLarge,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        banner.subtitle,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodyMedium,
-                          height: 1.4,
-                          color: Colors.white.withValues(alpha: 0.92),
-                        ),
-                      ),
-                      if (interactive && item.ctaLabel != null) ...[
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: item.ctaRoute != null && onCtaTap != null
-                              ? () => onCtaTap!(item.ctaRoute)
-                              : null,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: banner.gradientColors.first,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _BadgeChip(
+                              label: banner.badgeLabel, color: badgeColor),
+                          const SizedBox(height: 14),
+                          Text(
+                            banner.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineLarge,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              height: 1.15,
                             ),
                           ),
-                          child: Text(
-                            item.ctaLabel!,
-                            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w700),
+                          const SizedBox(height: 8),
+                          Text(
+                            banner.subtitle,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodyMedium,
+                              height: 1.4,
+                              color: Colors.white.withValues(alpha: 0.92),
+                            ),
                           ),
-                        ),
-                      ],
-                      ],
+                          if (interactive && item.ctaLabel != null) ...[
+                            const SizedBox(height: 16),
+                            FilledButton(
+                              onPressed:
+                                  item.ctaRoute != null && onCtaTap != null
+                                      ? () => onCtaTap!(item.ctaRoute)
+                                      : null,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: banner.gradientColors.first,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                item.ctaLabel!,
+                                style: GoogleFonts.inter(
+                                    fontSize: AppTypography.bodySmall,
+                                    fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Expanded(
-                flex: 4,
-                child: Container(
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.05),
-                        Colors.white.withValues(alpha: 0.22),
-                      ],
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.05),
+                          Colors.white.withValues(alpha: 0.22),
+                        ],
+                      ),
                     ),
+                    child: banner.icon != null
+                        ? Icon(
+                            banner.icon,
+                            size: 120,
+                            color: Colors.white.withValues(alpha: 0.35),
+                          )
+                        : null,
                   ),
-                  child: banner.icon != null
-                      ? Icon(
-                          banner.icon,
-                          size: 120,
-                          color: Colors.white.withValues(alpha: 0.35),
-                        )
-                      : null,
                 ),
-              ),
-            ],
+              ],
             ),
           ),
         ],

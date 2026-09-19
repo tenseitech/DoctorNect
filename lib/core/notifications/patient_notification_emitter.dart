@@ -36,7 +36,8 @@ abstract final class PatientNotificationEmitter {
     );
   }
 
-  static void emit(AppNotification n) => InAppNotificationService.instance.addPatient(n);
+  static void emit(AppNotification n) =>
+      InAppNotificationService.instance.addPatient(n);
 
   static void notifyBookingConfirmed({
     required String doctorName,
@@ -53,7 +54,8 @@ abstract final class PatientNotificationEmitter {
         type: AppNotificationType.booking,
         target: AppNotificationTarget.appointments,
         targetId: appointmentId,
-        dedupeKey: appointmentId != null ? 'p_booking_confirmed_$appointmentId' : null,
+        dedupeKey:
+            appointmentId != null ? 'p_booking_confirmed_$appointmentId' : null,
       ));
 
   static void notifyBookingRequestSent({
@@ -69,7 +71,8 @@ abstract final class PatientNotificationEmitter {
         type: AppNotificationType.booking,
         target: AppNotificationTarget.appointments,
         targetId: appointmentId,
-        dedupeKey: appointmentId != null ? 'p_booking_request_$appointmentId' : null,
+        dedupeKey:
+            appointmentId != null ? 'p_booking_request_$appointmentId' : null,
       ));
 
   static void notifyReminderTomorrow({
@@ -83,7 +86,8 @@ abstract final class PatientNotificationEmitter {
         body: 'Dr. $doctorName',
         type: AppNotificationType.reminder,
         target: AppNotificationTarget.appointments,
-        dedupeKey: 'p_tomorrow_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        dedupeKey:
+            'p_tomorrow_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
       ));
 
   static void notifyReminderTwoHours({
@@ -97,16 +101,19 @@ abstract final class PatientNotificationEmitter {
         body: 'Dr. $doctorName',
         type: AppNotificationType.reminder,
         target: AppNotificationTarget.appointments,
-        dedupeKey: 'p_2h_${dateTimeLabel}_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        dedupeKey:
+            'p_2h_${dateTimeLabel}_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
       ));
 
-  static void notifyReminderThirtyMin({required String doctorName}) => emit(_build(
+  static void notifyReminderThirtyMin({required String doctorName}) =>
+      emit(_build(
         trigger: PatientNotificationTrigger.appointmentReminderThirtyMin,
         title: 'Appt in 30 mins',
         body: 'Dr. $doctorName',
         type: AppNotificationType.reminder,
         target: AppNotificationTarget.appointments,
-        dedupeKey: 'p_30m_${doctorName}_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        dedupeKey:
+            'p_30m_${doctorName}_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
       ));
 
   static void notifyDoctorRescheduled({
@@ -120,7 +127,8 @@ abstract final class PatientNotificationEmitter {
         body: 'Dr. $doctorName: $oldDateTime to $newDateTime.',
         type: AppNotificationType.appointment,
         target: AppNotificationTarget.appointments,
-        primaryAction: const AppNotificationAction(label: 'View details', actionKey: 'view_appointment'),
+        primaryAction: const AppNotificationAction(
+            label: 'View details', actionKey: 'view_appointment'),
         dedupeKey: 'p_reschedule_${doctorName}_$newDateTime',
       ));
 
@@ -134,7 +142,8 @@ abstract final class PatientNotificationEmitter {
         body: 'Dr. $doctorName: $reason.',
         type: AppNotificationType.cancellation,
         target: AppNotificationTarget.search,
-        primaryAction: const AppNotificationAction(label: 'Book another doctor', actionKey: 'book_another'),
+        primaryAction: const AppNotificationAction(
+            label: 'Book another doctor', actionKey: 'book_another'),
         dedupeKey: 'p_cancel_${doctorName}_$reason',
       ));
 
@@ -172,7 +181,8 @@ abstract final class PatientNotificationEmitter {
       emit(_build(
         trigger: PatientNotificationTrigger.bookingConfirmed,
         title: 'Doctor referral',
-        body: 'Dr. $fromDoctorName referred you to Dr. $toDoctorName ($specialization).',
+        body:
+            'Dr. $fromDoctorName referred you to Dr. $toDoctorName ($specialization).',
         type: AppNotificationType.appointment,
         target: AppNotificationTarget.search,
         dedupeKey: 'p_referral_${fromDoctorName}_$toDoctorName',
@@ -219,7 +229,8 @@ abstract final class PatientNotificationEmitter {
         body: 'ETA $eta',
         type: AppNotificationType.labReport,
         target: AppNotificationTarget.labBooking,
-        primaryAction: const AppNotificationAction(label: 'Track', actionKey: 'track_phlebotomist'),
+        primaryAction: const AppNotificationAction(
+            label: 'Track', actionKey: 'track_phlebotomist'),
         dedupeKey: 'lab_on_way_$eta',
       ));
 
@@ -233,7 +244,8 @@ abstract final class PatientNotificationEmitter {
         body: vaccineName,
         type: AppNotificationType.wellness,
         target: AppNotificationTarget.vaccination,
-        dedupeKey: 'vax_${vaccineName}_${DateFormat('yyyy-MM-dd').format(dueDate)}',
+        dedupeKey:
+            'vax_${vaccineName}_${DateFormat('yyyy-MM-dd').format(dueDate)}',
       ));
 
   static void notifyMedicineReminder({
@@ -255,8 +267,10 @@ abstract final class PatientNotificationEmitter {
         body: 'Log your vitals',
         type: AppNotificationType.wellness,
         target: AppNotificationTarget.vitals,
-        primaryAction: const AppNotificationAction(label: 'Log now', actionKey: 'log_vitals'),
-        dedupeKey: 'p_vitals_week_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        primaryAction: const AppNotificationAction(
+            label: 'Log now', actionKey: 'log_vitals'),
+        dedupeKey:
+            'p_vitals_week_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
       ));
 
   static void notifyHealthTip({required String tip}) => emit(_build(
@@ -266,5 +280,4 @@ abstract final class PatientNotificationEmitter {
         type: AppNotificationType.wellness,
         dedupeKey: 'p_tip_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
       ));
-
 }

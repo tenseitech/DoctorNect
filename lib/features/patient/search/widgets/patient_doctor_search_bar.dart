@@ -83,7 +83,9 @@ class _PatientDoctorSearchBarState extends State<PatientDoctorSearchBar> {
               children: [
                 Icon(
                   Icons.search_rounded,
-                  color: _focused ? AppColors.patientTeal : AppColors.textSecondaryOf(context),
+                  color: _focused
+                      ? AppColors.patientTeal
+                      : AppColors.textSecondaryOf(context),
                   size: 22,
                 ),
                 SizedBox(width: compact ? 10 : 12),
@@ -119,7 +121,8 @@ class _PatientDoctorSearchBarState extends State<PatientDoctorSearchBar> {
                 ListenableBuilder(
                   listenable: widget.controller,
                   builder: (context, _) {
-                    if (widget.controller.text.isEmpty) return const SizedBox.shrink();
+                    if (widget.controller.text.isEmpty)
+                      return const SizedBox.shrink();
                     return IconButton(
                       onPressed: () {
                         widget.controller.clear();
@@ -129,10 +132,12 @@ class _PatientDoctorSearchBarState extends State<PatientDoctorSearchBar> {
                       icon: Icon(
                         Icons.close_rounded,
                         size: 20,
-                        color: AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
+                        color: AppColors.textSecondaryOf(context)
+                            .withValues(alpha: 0.75),
                       ),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      constraints:
+                          const BoxConstraints(minWidth: 36, minHeight: 36),
                       tooltip: 'Clear',
                     );
                   },
@@ -201,7 +206,9 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                 Icon(
                   Icons.tune_rounded,
                   size: 20,
-                  color: hasActive ? AppColors.patientTeal : AppColors.textSecondaryOf(context),
+                  color: hasActive
+                      ? AppColors.patientTeal
+                      : AppColors.textSecondaryOf(context),
                 ),
                 if (!compact) ...[
                   const SizedBox(width: 8),
@@ -210,7 +217,9 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w600,
-                      color: hasActive ? AppColors.patientTeal : AppColors.textPrimaryOf(context),
+                      color: hasActive
+                          ? AppColors.patientTeal
+                          : AppColors.textPrimaryOf(context),
                     ),
                   ),
                 ] else ...[
@@ -220,14 +229,17 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
-                      color: hasActive ? AppColors.patientTeal : AppColors.textPrimaryOf(context),
+                      color: hasActive
+                          ? AppColors.patientTeal
+                          : AppColors.textPrimaryOf(context),
                     ),
                   ),
                 ],
                 if (hasActive) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppColors.patientTeal,
                       borderRadius: BorderRadius.circular(999),

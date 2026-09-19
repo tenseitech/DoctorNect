@@ -102,7 +102,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
 
     final animation = ModalRoute.of(context)?.animation;
     if (animation == null || animation.status == AnimationStatus.completed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _requestMobileFocusOnce());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _requestMobileFocusOnce());
       return;
     }
 
@@ -230,9 +231,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton(
-            onPressed: (_flow.busy || _flow.otpCountdown > 0)
-                ? null
-                : _resendOtp,
+            onPressed:
+                (_flow.busy || _flow.otpCountdown > 0) ? null : _resendOtp,
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
@@ -289,51 +289,55 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
                     child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _heading,
-                          style: GoogleFonts.inter(
-                            fontSize: AppTypography.headlineLarge,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimaryOf(context),
-                            letterSpacing: -0.4,
-                            height: 1.25,
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _heading,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineLarge,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimaryOf(context),
+                              letterSpacing: -0.4,
+                              height: 1.25,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 28),
-                        if (isMobileStep) _buildMobileStep() else _buildOtpStep(),
-                      ],
+                          const SizedBox(height: 28),
+                          if (isMobileStep)
+                            _buildMobileStep()
+                          else
+                            _buildOtpStep(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  20,
-                  8,
-                  20,
-                  16 + MediaQuery.paddingOf(context).bottom,
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    8,
+                    20,
+                    16 + MediaQuery.paddingOf(context).bottom,
+                  ),
+                  child: _PinnedPrimaryButton(
+                    label: isMobileStep ? 'Continue' : 'Verify & continue',
+                    accentColor: _accent,
+                    enabled: canContinue,
+                    loading: isLoading,
+                    loadingText:
+                        isMobileStep ? 'Sending OTP...' : 'Verifying...',
+                    onPressed: isMobileStep
+                        ? () {
+                            _dismissKeyboard();
+                            _continueWithMobile();
+                          }
+                        : () {
+                            _dismissKeyboard();
+                            _flow.verifyOtp(context);
+                          },
+                  ),
                 ),
-                child: _PinnedPrimaryButton(
-                  label: isMobileStep ? 'Continue' : 'Verify & continue',
-                  accentColor: _accent,
-                  enabled: canContinue,
-                  loading: isLoading,
-                  loadingText: isMobileStep ? 'Sending OTP...' : 'Verifying...',
-                  onPressed: isMobileStep
-                      ? () {
-                          _dismissKeyboard();
-                          _continueWithMobile();
-                        }
-                      : () {
-                          _dismissKeyboard();
-                          _flow.verifyOtp(context);
-                        },
-                ),
-              ),
               ],
             ),
           ),

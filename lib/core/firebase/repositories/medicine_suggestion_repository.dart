@@ -5,7 +5,8 @@ import '../firestore_paths.dart';
 class MedicineSuggestionRepository {
   MedicineSuggestionRepository._();
 
-  static final MedicineSuggestionRepository instance = MedicineSuggestionRepository._();
+  static final MedicineSuggestionRepository instance =
+      MedicineSuggestionRepository._();
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
 
@@ -26,4 +27,3 @@ class MedicineSuggestionRepository {
     });
   }
 }
-

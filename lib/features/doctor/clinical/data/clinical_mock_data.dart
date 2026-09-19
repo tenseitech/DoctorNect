@@ -121,12 +121,15 @@ abstract final class ClinicalMockData {
   static const allergySeverities = ['Mild', 'Moderate', 'Severe'];
 
   static const labTests = [
-    LabTestItem(id: '1', name: 'Complete Blood Count (CBC)', category: 'Blood Tests'),
+    LabTestItem(
+        id: '1', name: 'Complete Blood Count (CBC)', category: 'Blood Tests'),
     LabTestItem(id: '2', name: 'HbA1c', category: 'Blood Tests'),
     LabTestItem(id: '3', name: 'Lipid Profile', category: 'Blood Tests'),
     LabTestItem(id: '4', name: 'Liver Function Test', category: 'Blood Tests'),
-    LabTestItem(id: '5', name: 'Thyroid Profile (T3/T4/TSH)', category: 'Blood Tests'),
-    LabTestItem(id: '6', name: 'Urine Routine & Microscopy', category: 'Urine Tests'),
+    LabTestItem(
+        id: '5', name: 'Thyroid Profile (T3/T4/TSH)', category: 'Blood Tests'),
+    LabTestItem(
+        id: '6', name: 'Urine Routine & Microscopy', category: 'Urine Tests'),
     LabTestItem(id: '7', name: 'Chest X-Ray PA View', category: 'Imaging'),
     LabTestItem(id: '8', name: 'Ultrasound Abdomen', category: 'Imaging'),
     LabTestItem(id: '9', name: 'Blood Culture', category: 'Culture'),

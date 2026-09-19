@@ -31,10 +31,12 @@ class PrescriptionDesktopRxSection extends StatefulWidget {
   final void Function(MedicineSearchSuggestion item) onMedicineSelected;
 
   @override
-  State<PrescriptionDesktopRxSection> createState() => _PrescriptionDesktopRxSectionState();
+  State<PrescriptionDesktopRxSection> createState() =>
+      _PrescriptionDesktopRxSectionState();
 }
 
-class _PrescriptionDesktopRxSectionState extends State<PrescriptionDesktopRxSection> {
+class _PrescriptionDesktopRxSectionState
+    extends State<PrescriptionDesktopRxSection> {
   final _searchController = TextEditingController();
   String? _expandedMedicineId;
   final Set<String> _expandedInstructionIds = {};
@@ -73,8 +75,10 @@ class _PrescriptionDesktopRxSectionState extends State<PrescriptionDesktopRxSect
     });
   }
 
-  Future<void> _openAddCommunityDialog(BuildContext context, String initialName) async {
-    final medicine = await AddCommunityMedicineDialog.show(context, initialName);
+  Future<void> _openAddCommunityDialog(
+      BuildContext context, String initialName) async {
+    final medicine =
+        await AddCommunityMedicineDialog.show(context, initialName);
     if (!context.mounted || medicine == null) return;
     await CommunityMedicineRepository.instance.fetchAll();
     if (!context.mounted) return;
@@ -193,7 +197,9 @@ class _PrescriptionDesktopRxSectionState extends State<PrescriptionDesktopRxSect
             style: GoogleFonts.inter(
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
-              color: _namedCount > 0 ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
+              color: _namedCount > 0
+                  ? AppColors.doctorBlue
+                  : AppColors.textSecondaryOf(context),
             ),
           ),
         ),

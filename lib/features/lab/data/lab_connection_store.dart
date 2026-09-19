@@ -30,11 +30,14 @@ class LabConnectionStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<LabConnection> activeForDoctor(String doctorId) =>
-      _connections.where((c) => c.doctorId == doctorId && c.status == ConnectionStatus.active).toList();
+  List<LabConnection> activeForDoctor(String doctorId) => _connections
+      .where(
+          (c) => c.doctorId == doctorId && c.status == ConnectionStatus.active)
+      .toList();
 
-  List<LabConnection> activeForLab(String labId) =>
-      _connections.where((c) => c.labId == labId && c.status == ConnectionStatus.active).toList();
+  List<LabConnection> activeForLab(String labId) => _connections
+      .where((c) => c.labId == labId && c.status == ConnectionStatus.active)
+      .toList();
 
   List<LabConnection> pendingForDoctor(String doctorId) => _connections
       .where(
@@ -72,9 +75,10 @@ class LabConnectionStore extends ChangeNotifier {
       )
       .toList();
 
-  bool isConnected(String doctorId, String labId) =>
-      _connections.any((c) =>
-          c.doctorId == doctorId && c.labId == labId && c.status == ConnectionStatus.active);
+  bool isConnected(String doctorId, String labId) => _connections.any((c) =>
+      c.doctorId == doctorId &&
+      c.labId == labId &&
+      c.status == ConnectionStatus.active);
 
   bool hasPendingFromDoctor(String doctorId, String labId) => _connections.any(
         (c) =>
@@ -98,7 +102,8 @@ class LabConnectionStore extends ChangeNotifier {
   bool isPendingFromDoctor({required String labId, required String doctorId}) =>
       hasPendingFromDoctor(doctorId, labId);
 
-  bool isPendingSentByDoctor({required String doctorId, required String labId}) =>
+  bool isPendingSentByDoctor(
+          {required String doctorId, required String labId}) =>
       hasPendingFromDoctor(doctorId, labId);
 
   bool isPendingFromLab({required String doctorId, required String labId}) =>
@@ -127,7 +132,8 @@ class LabConnectionStore extends ChangeNotifier {
         .toList();
   }
 
-  List<RegisteredDoctorSearchResult> searchDoctors(String query, {String? labId, String? cityFilter}) {
+  List<RegisteredDoctorSearchResult> searchDoctors(String query,
+      {String? labId, String? cityFilter}) {
     final q = query.trim().toLowerCase();
     final city = cityFilter?.trim() ?? '';
 
@@ -153,7 +159,8 @@ class LabConnectionStore extends ChangeNotifier {
         .toList();
   }
 
-  String? sendRequestFromDoctor({required String doctorId, required String labId}) {
+  String? sendRequestFromDoctor(
+      {required String doctorId, required String labId}) {
     if (isConnected(doctorId, labId)) {
       return 'Already connected with this lab';
     }
@@ -201,7 +208,8 @@ class LabConnectionStore extends ChangeNotifier {
     return null;
   }
 
-  String? sendRequestFromLab({required String labId, required String doctorId}) {
+  String? sendRequestFromLab(
+      {required String labId, required String doctorId}) {
     if (!RegisteredDoctorsStore.instance.isRegistered(doctorId)) {
       return 'Doctor is not registered on DoctorNect';
     }
@@ -352,14 +360,16 @@ class LabConnectionStore extends ChangeNotifier {
   }) async {
     switch (role) {
       case UserType.doctor:
-        final doctorPage = await FirestoreService.instance.labConnection.fetchActiveConnectionsForDoctor(
+        final doctorPage = await FirestoreService.instance.labConnection
+            .fetchActiveConnectionsForDoctor(
           profileId,
           preferCache: preferCache,
         );
         mergeFirestoreConnections(doctorPage.items);
         break;
       case UserType.lab:
-        final labPage = await FirestoreService.instance.labConnection.fetchActiveConnectionsForLab(
+        final labPage = await FirestoreService.instance.labConnection
+            .fetchActiveConnectionsForLab(
           profileId,
           preferCache: preferCache,
         );

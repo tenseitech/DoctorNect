@@ -11,13 +11,15 @@ import '../../location/location_match.dart';
 class DoctorDirectoryRepository {
   DoctorDirectoryRepository._();
 
-  static final DoctorDirectoryRepository instance = DoctorDirectoryRepository._();
+  static final DoctorDirectoryRepository instance =
+      DoctorDirectoryRepository._();
 
   Future<List<DoctorListing>> fetchVerifiedDoctors() async {
     return fetchAllDoctors(verifiedOnly: true);
   }
 
-  Future<List<DoctorListing>> fetchAllDoctors({bool verifiedOnly = false}) async {
+  Future<List<DoctorListing>> fetchAllDoctors(
+      {bool verifiedOnly = false}) async {
     if (!FirebaseBootstrap.isReady) return const [];
 
     Query<Map<String, dynamic>> query =
@@ -68,7 +70,9 @@ class DoctorDirectoryRepository {
       // A collection LIST query is avoided because it requires a verified==true
       // filter to satisfy the list rule, which would defeat the purpose here.
       final snap = await FirestoreReadHelper.getDocument(
-        reference: FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(doctorId),
+        reference: FirebaseFirestore.instance
+            .collection(FirestorePaths.doctors)
+            .doc(doctorId),
         preferCache: preferCache,
       );
       if (!snap.exists || snap.data() == null) return false;
@@ -128,18 +132,29 @@ class DoctorDirectoryRepository {
       final listing = DoctorListing(
         id: docId,
         name: name,
-        specialization: readString(['specialization', 'spec', 'specialty']) ?? 'General Physician',
+        specialization: readString(['specialization', 'spec', 'specialty']) ??
+            'General Physician',
         qualification: readString(['qualification', 'degree']) ?? 'MBBS',
-        experienceYears: readNum(['experienceYears', 'experience', 'yearsExperience'])?.toInt() ?? 1,
+        experienceYears:
+            readNum(['experienceYears', 'experience', 'yearsExperience'])
+                    ?.toInt() ??
+                1,
         rating: readNum(['rating', 'avgRating'])?.toDouble() ?? 0.0,
-        reviewCount: readNum(['reviewCount', 'reviews', 'totalReviews'])?.toInt() ?? 0,
-        clinicName: readString(['clinicName', 'clinic', 'hospitalName']) ?? '$name Clinic',
+        reviewCount:
+            readNum(['reviewCount', 'reviews', 'totalReviews'])?.toInt() ?? 0,
+        clinicName: readString(['clinicName', 'clinic', 'hospitalName']) ??
+            '$name Clinic',
         area: nestedCity ?? readString(['area', 'locality', 'location']) ?? '',
         city: nestedCity ?? readString(['city']) ?? '',
-        addressLine1: nestedLine1 ?? readString(['addressLine1', 'address', 'addr', 'line1']) ?? '',
-        state: nestedState ?? readString(['state', 'stateCouncil', 'stateName']) ?? '',
+        addressLine1: nestedLine1 ??
+            readString(['addressLine1', 'address', 'addr', 'line1']) ??
+            '',
+        state: nestedState ??
+            readString(['state', 'stateCouncil', 'stateName']) ??
+            '',
         photoPath: readString(['photoPath']),
-        photoUrl: readString(['photoUrl', 'photoURL', 'profilePhoto', 'avatarUrl']),
+        photoUrl:
+            readString(['photoUrl', 'photoURL', 'profilePhoto', 'avatarUrl']),
         distanceKm: readNum(['distanceKm', 'distance'])?.toDouble() ?? 0,
         availability: DoctorAvailability.later,
         nextSlot: readString(['nextSlot', 'slot']) ?? 'Check availability',
@@ -148,7 +163,10 @@ class DoctorDirectoryRepository {
         languages: (() {
           final raw = data['languages'];
           if (raw is List) {
-            return raw.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+            return raw
+                .map((e) => e.toString())
+                .where((e) => e.isNotEmpty)
+                .toList();
           }
           return const <String>['English', 'Hindi'];
         })(),
@@ -157,7 +175,8 @@ class DoctorDirectoryRepository {
       return listing;
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('[DoctorDirectoryRepository] _fromMap error for doc $id: $e\n$st');
+        debugPrint(
+            '[DoctorDirectoryRepository] _fromMap error for doc $id: $e\n$st');
       }
       return null;
     }

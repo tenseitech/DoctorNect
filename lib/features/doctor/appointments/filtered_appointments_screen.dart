@@ -31,10 +31,12 @@ class FilteredAppointmentsScreen extends StatefulWidget {
   });
 
   @override
-  State<FilteredAppointmentsScreen> createState() => _FilteredAppointmentsScreenState();
+  State<FilteredAppointmentsScreen> createState() =>
+      _FilteredAppointmentsScreenState();
 }
 
-class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen> {
+class _FilteredAppointmentsScreenState
+    extends State<FilteredAppointmentsScreen> {
   static const _contentMaxWidth = 960.0;
 
   final _store = SharedAppointmentsStore.instance;
@@ -64,8 +66,7 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
       final list = _store.appointmentsForDoctorOnDate(
         DoctorSession.loggedInDoctorId,
         selected,
-      )
-        ..sort((a, b) => a.timeSlot.compareTo(b.timeSlot));
+      )..sort((a, b) => a.timeSlot.compareTo(b.timeSlot));
       return list;
     }
 
@@ -83,7 +84,8 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AppointmentDetailScreen(isDoctorView: true, 
+        builder: (_) => AppointmentDetailScreen(
+          isDoctorView: true,
           appointment: appointment,
           onStatusChanged: (s) => _updateStatus(appointment.id, s),
         ),
@@ -107,7 +109,9 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't accept this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't accept this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -125,7 +129,9 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e, fallback: "Couldn't decline this appointment. Please check your connection and try again."),
+            describeUserFacingError(e,
+                fallback:
+                    "Couldn't decline this appointment. Please check your connection and try again."),
           ),
         ),
       );
@@ -139,7 +145,8 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
     final record = _store.findRecordById(appointment.id);
     final resolvedPatientId = record?.patientId;
     if (resolvedPatientId == null || resolvedPatientId.isEmpty) {
-      AppToast.info(context, 'This patient is not registered yet — clinical tools cannot be linked to them.');
+      AppToast.info(context,
+          'This patient is not registered yet — clinical tools cannot be linked to them.');
       return;
     }
     _updateStatus(appointment.id, AppointmentStatus.inProgress);
@@ -167,10 +174,11 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
     final list = _filteredAppointments;
     final wide = !ResponsiveLayout.isCompact(context);
     final horizontalPadding = wide ? 24.0 : 16.0;
-    
+
     String emptyTabLabel = 'Today';
     if (widget.selectedDate != null) {
-      emptyTabLabel = DateFormat('EEE, d MMM yyyy').format(widget.selectedDate!);
+      emptyTabLabel =
+          DateFormat('EEE, d MMM yyyy').format(widget.selectedDate!);
     } else {
       switch (widget.tab) {
         case AppointmentListTab.today:
@@ -213,7 +221,8 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
           child: list.isEmpty
               ? AppointmentsEmptyState(tabLabel: emptyTabLabel)
               : ListView.builder(
-                  padding: EdgeInsets.fromLTRB(horizontalPadding, 12, horizontalPadding, 20),
+                  padding: EdgeInsets.fromLTRB(
+                      horizontalPadding, 12, horizontalPadding, 20),
                   itemCount: list.length,
                   itemBuilder: (context, index) {
                     final appt = list[index];

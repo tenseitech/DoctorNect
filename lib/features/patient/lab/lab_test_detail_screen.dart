@@ -112,16 +112,15 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
       ..._favoritesStore.hiddenLabKeys,
     };
 
-    return widget.partnerLabs
-        .where((lab) {
-          final key = LabCityFilter.partnerLabKey(lab);
-          if (excludedKeys.contains(key)) return false;
-          return LabCityFilter.partnerLabInCity(lab, city, _registryById);
-        })
-        .toList(growable: false);
+    return widget.partnerLabs.where((lab) {
+      final key = LabCityFilter.partnerLabKey(lab);
+      if (excludedKeys.contains(key)) return false;
+      return LabCityFilter.partnerLabInCity(lab, city, _registryById);
+    }).toList(growable: false);
   }
 
-  List<PartnerLab> _bookableLabs(List<PartnerLab> myLabs, List<PartnerLab> availableLabs) {
+  List<PartnerLab> _bookableLabs(
+      List<PartnerLab> myLabs, List<PartnerLab> availableLabs) {
     final seen = <String>{};
     final combined = <PartnerLab>[];
 
@@ -157,7 +156,8 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
 
     bool isSelected(PartnerLab lab) {
       if (selectedLab == null) return false;
-      return LabCityFilter.partnerLabKey(lab) == LabCityFilter.partnerLabKey(selectedLab);
+      return LabCityFilter.partnerLabKey(lab) ==
+          LabCityFilter.partnerLabKey(selectedLab);
     }
 
     return Scaffold(
@@ -177,10 +177,13 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                 children: [
                   Text(
                     widget.test.name,
-                    style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.headlineLarge,
+                        fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 20),
-                  const LabSectionHeader(icon: Icons.checklist_outlined, title: 'Includes'),
+                  const LabSectionHeader(
+                      icon: Icons.checklist_outlined, title: 'Includes'),
                   const SizedBox(height: 8),
                   ...widget.test.parameters.map(
                     (p) => Padding(
@@ -188,10 +191,13 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.check, size: 18, color: AppColors.labPurple),
+                          const Icon(Icons.check,
+                              size: 18, color: AppColors.labPurple),
                           SizedBox(width: 8),
                           Expanded(
-                            child: Text(p, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+                            child: Text(p,
+                                style: GoogleFonts.inter(
+                                    fontSize: AppTypography.bodyMedium)),
                           ),
                         ],
                       ),
@@ -205,10 +211,13 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                     runSpacing: 8,
                     children: [
                       _InfoChip(
-                        label: widget.test.fastingRequired ? 'Fasting required' : 'No fasting',
+                        label: widget.test.fastingRequired
+                            ? 'Fasting required'
+                            : 'No fasting',
                       ),
                       _InfoChip(label: sampleLabel),
-                      _InfoChip(label: 'Report in ${widget.test.reportHours} hrs'),
+                      _InfoChip(
+                          label: 'Report in ${widget.test.reportHours} hrs'),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -219,7 +228,8 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                   const SizedBox(height: 12),
                   if (myLabs.isEmpty)
                     _LabsEmptyNote(
-                      message: 'No labs added yet. Add labs from search or choose one below.',
+                      message:
+                          'No labs added yet. Add labs from search or choose one below.',
                     )
                   else
                     ...myLabs.map(
@@ -306,7 +316,10 @@ class _InfoChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600, color: AppColors.labPurple),
+        style: GoogleFonts.inter(
+            fontSize: AppTypography.labelMedium,
+            fontWeight: FontWeight.w600,
+            color: AppColors.labPurple),
       ),
     );
   }
@@ -323,7 +336,10 @@ class _LabsEmptyNote extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         message,
-        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.35),
+        style: GoogleFonts.inter(
+            fontSize: AppTypography.bodySmall,
+            color: AppColors.textSecondaryOf(context),
+            height: 1.35),
       ),
     );
   }
@@ -358,7 +374,9 @@ class _LabPartnerTile extends StatelessWidget {
                   : AppColors.cardBgOf(context),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected ? AppColors.labPurple : AppColors.borderOf(context),
+                color: selected
+                    ? AppColors.labPurple
+                    : AppColors.borderOf(context),
                 width: selected ? 1.5 : 1,
               ),
             ),
@@ -368,7 +386,8 @@ class _LabPartnerTile extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: AppColors.labPurple.withValues(alpha: selected ? 0.18 : 0.12),
+                    color: AppColors.labPurple
+                        .withValues(alpha: selected ? 0.18 : 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -382,17 +401,27 @@ class _LabPartnerTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(lab.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
+                      Text(lab.name,
+                          style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: AppTypography.bodyMedium)),
                       Text(
                         lab.area,
-                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context)),
                       ),
                     ],
                   ),
                 ),
                 Icon(
-                  selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                  color: selected ? AppColors.labPurple : AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
+                  selected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  color: selected
+                      ? AppColors.labPurple
+                      : AppColors.textSecondaryOf(context)
+                          .withValues(alpha: 0.7),
                   size: 22,
                 ),
               ],

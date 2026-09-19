@@ -37,12 +37,10 @@ class PrescriptionPdfService {
       fallback: DoctorProfileStore.displayNameWithPrefix,
     );
     final date = DateFormat('dd MMM yyyy').format(draft.prescriptionDate);
-    final meds = draft.validMedicines
-        .map((m) {
-          final dosage = m.dosageLabel.trim();
-          return dosage.isEmpty ? m.name.trim() : '${m.name.trim()} ($dosage)';
-        })
-        .join('\n• ');
+    final meds = draft.validMedicines.map((m) {
+      final dosage = m.dosageLabel.trim();
+      return dosage.isEmpty ? m.name.trim() : '${m.name.trim()} ($dosage)';
+    }).join('\n• ');
 
     final buffer = StringBuffer()
       ..writeln('Prescription — ${draft.patient.patientName}')
@@ -87,7 +85,8 @@ class PrescriptionPdfService {
     );
     final profile = DoctorProfileStore.instance.profile;
     final hasDoctorSnapshot = draft.doctorName.isNotEmpty;
-    final doctorId = hasDoctorSnapshot ? draft.doctorId : DoctorSession.loggedInDoctorId;
+    final doctorId =
+        hasDoctorSnapshot ? draft.doctorId : DoctorSession.loggedInDoctorId;
     await PrescriptionHeaderHelper.loadConsultationTimings(doctorId);
     final qualifications = hasDoctorSnapshot
         ? draft.doctorQualifications
@@ -98,13 +97,12 @@ class PrescriptionPdfService {
       draft,
       fallback: DoctorProfileStore.displayNameWithPrefix,
     );
-    final displaySpecialization = hasDoctorSnapshot
-        ? draft.doctorSpecialization
-        : profile.specialization;
-    final displayRegNumber = hasDoctorSnapshot
-        ? draft.doctorRegNumber
-        : profile.councilNumber;
-    final displayClinicName = hasDoctorSnapshot ? draft.clinicName : profile.clinicName;
+    final displaySpecialization =
+        hasDoctorSnapshot ? draft.doctorSpecialization : profile.specialization;
+    final displayRegNumber =
+        hasDoctorSnapshot ? draft.doctorRegNumber : profile.councilNumber;
+    final displayClinicName =
+        hasDoctorSnapshot ? draft.clinicName : profile.clinicName;
     final address = hasDoctorSnapshot
         ? draft.clinicAddress
         : PrescriptionHeaderHelper.clinicAddressLine(profile);
@@ -125,9 +123,13 @@ class PrescriptionPdfService {
             pw.SizedBox(height: 4),
           ],
           if (address.isNotEmpty)
-            pw.Text(address, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+            pw.Text(address,
+                style:
+                    const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
           if (contact.isNotEmpty)
-            pw.Text(contact, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+            pw.Text(contact,
+                style:
+                    const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
           pw.Text(
             'Consultation: $timings',
             style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
@@ -155,22 +157,26 @@ class PrescriptionPdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('Patient: ${draft.patient.patientName}', style: const pw.TextStyle(fontSize: 10)),
+                  pw.Text('Patient: ${draft.patient.patientName}',
+                      style: const pw.TextStyle(fontSize: 10)),
                   pw.Text(
                     'Age: ${draft.patient.age} yrs · ${draft.patient.gender ?? '-'} · ID: ${draft.patientId}',
                     style: const pw.TextStyle(fontSize: 9),
                   ),
                   if (draft.vitals.weightKg.isNotEmpty)
-                    pw.Text('Weight: ${draft.vitals.weightKg} kg', style: const pw.TextStyle(fontSize: 9)),
+                    pw.Text('Weight: ${draft.vitals.weightKg} kg',
+                        style: const pw.TextStyle(fontSize: 9)),
                 ],
               ),
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text('Date: $date', style: const pw.TextStyle(fontSize: 9)),
+                  pw.Text('Date: $date',
+                      style: const pw.TextStyle(fontSize: 9)),
                   pw.Text(
                     'Rx ID: ${draft.prescriptionId}',
-                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                    style: const pw.TextStyle(
+                        fontSize: 8, color: PdfColors.grey700),
                   ),
                 ],
               ),
@@ -178,13 +184,18 @@ class PrescriptionPdfService {
           ),
           if (_hasVitals(draft)) ...[
             pw.SizedBox(height: 8),
-            pw.Text('Vitals', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Vitals',
+                style:
+                    pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
             pw.Text(_vitalsLine(draft), style: const pw.TextStyle(fontSize: 9)),
           ],
           if (draft.chiefComplaint.isNotEmpty) ...[
             pw.SizedBox(height: 8),
-            pw.Text('Chief Complaint', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-            pw.Text(draft.chiefComplaint, style: const pw.TextStyle(fontSize: 9)),
+            pw.Text('Chief Complaint',
+                style:
+                    pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+            pw.Text(draft.chiefComplaint,
+                style: const pw.TextStyle(fontSize: 9)),
           ],
           if (draft.generalExamination.isNotEmpty) ...[
             pw.SizedBox(height: 8),
@@ -214,10 +225,13 @@ class PrescriptionPdfService {
               style: const pw.TextStyle(fontSize: 9, color: PdfColors.red800),
             ),
           pw.SizedBox(height: 12),
-          pw.Text('Rx Medicines', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+          pw.Text('Rx Medicines',
+              style:
+                  pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           if (draft.validMedicines.isNotEmpty) _medicinesTable(draft),
-          if (draft.validInvestigations.isNotEmpty || draft.bodyParts.isNotEmpty) ...[
+          if (draft.validInvestigations.isNotEmpty ||
+              draft.bodyParts.isNotEmpty) ...[
             pw.SizedBox(height: 12),
             pw.Text(
               'Investigations / Tests',
@@ -229,7 +243,8 @@ class PrescriptionPdfService {
               pw.SizedBox(height: 8),
               pw.Text(
                 'Body Part / Region',
-                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                style:
+                    pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
               pw.SizedBox(height: 4),
               _bodyPartsTable(draft.bodyParts),
@@ -237,16 +252,23 @@ class PrescriptionPdfService {
           ],
           if (_hasAdvice(draft)) ...[
             pw.SizedBox(height: 12),
-            pw.Text('Advice', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-            if (draft.dietAdvice.isNotEmpty) _labeledLine('Diet', draft.dietAdvice),
+            pw.Text('Advice',
+                style:
+                    pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            if (draft.dietAdvice.isNotEmpty)
+              _labeledLine('Diet', draft.dietAdvice),
             if (draft.activityRestrictions.isNotEmpty)
               _labeledLine('Rest & activity', draft.activityRestrictions),
-            if (draft.lifestyleAdvice.isNotEmpty) _labeledLine('Lifestyle', draft.lifestyleAdvice),
-            if (draft.generalAdvice.isNotEmpty) _labeledLine('General', draft.generalAdvice),
+            if (draft.lifestyleAdvice.isNotEmpty)
+              _labeledLine('Lifestyle', draft.lifestyleAdvice),
+            if (draft.generalAdvice.isNotEmpty)
+              _labeledLine('General', draft.generalAdvice),
           ],
           if (draft.nextVisit != null || draft.followUpNote.isNotEmpty) ...[
             pw.SizedBox(height: 12),
-            pw.Text('Follow-up', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            pw.Text('Follow-up',
+                style:
+                    pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
             if (draft.nextVisit != null)
               _labeledLine(
                 'Next visit',
@@ -270,16 +292,19 @@ class PrescriptionPdfService {
                 pw.SizedBox(height: 4),
                 pw.Text(
                   displayDoctorName,
-                  style: pw.TextStyle(fontSize: 10, fontStyle: pw.FontStyle.italic),
+                  style: pw.TextStyle(
+                      fontSize: 10, fontStyle: pw.FontStyle.italic),
                 ),
                 if (contact.isNotEmpty)
                   pw.Text(
                     contact,
-                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                    style: const pw.TextStyle(
+                        fontSize: 8, color: PdfColors.grey700),
                   ),
                 pw.Text(
                   DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now()),
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                  style:
+                      const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
                 ),
               ],
             ),
@@ -341,7 +366,8 @@ class PrescriptionPdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(heading, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+        pw.Text(heading,
+            style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
         pw.Text(body, style: const pw.TextStyle(fontSize: 9)),
       ],
     );
@@ -349,7 +375,16 @@ class PrescriptionPdfService {
 
   static pw.Widget _medicinesTable(PrescriptionDraft draft) {
     final rows = <List<String>>[
-      const ['#', 'Medicine', 'Dosage', 'Frequency', 'Timing', 'Duration', 'Qty', 'Notes'],
+      const [
+        '#',
+        'Medicine',
+        'Dosage',
+        'Frequency',
+        'Timing',
+        'Duration',
+        'Qty',
+        'Notes'
+      ],
     ];
 
     for (var i = 0; i < draft.validMedicines.length; i++) {
@@ -359,7 +394,8 @@ class PrescriptionPdfService {
       final notesParts = <String>[];
       if (m.isSos) notesParts.add('SOS');
       if (!m.substituteAllowed) notesParts.add('No substitute');
-      if (m.specialInstructions.isNotEmpty) notesParts.add(m.specialInstructions);
+      if (m.specialInstructions.isNotEmpty)
+        notesParts.add(m.specialInstructions);
 
       rows.add([
         '${i + 1}',
@@ -411,7 +447,9 @@ class PrescriptionPdfService {
       return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(title, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          pw.Text(title,
+              style:
+                  pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 4),
           _table(rows, flex: const [0.4, 1.4, 2.6, 2.0]),
         ],
@@ -435,12 +473,15 @@ class PrescriptionPdfService {
     return _table(rows, flex: const [0.4, 1]);
   }
 
-  static pw.Widget _table(List<List<String>> rows, {required List<double> flex}) {
+  static pw.Widget _table(List<List<String>> rows,
+      {required List<double> flex}) {
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
       columnWidths: {
         for (var i = 0; i < flex.length; i++)
-          i: flex[i] <= 0.5 ? const pw.FixedColumnWidth(22) : pw.FlexColumnWidth(flex[i]),
+          i: flex[i] <= 0.5
+              ? const pw.FixedColumnWidth(22)
+              : pw.FlexColumnWidth(flex[i]),
       },
       defaultVerticalAlignment: pw.TableCellVerticalAlignment.middle,
       children: rows.asMap().entries.map((entry) {
@@ -451,12 +492,14 @@ class PrescriptionPdfService {
               : null,
           children: entry.value.map((cell) {
             return pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
               child: pw.Text(
                 cell,
                 style: pw.TextStyle(
                   fontSize: 8,
-                  fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+                  fontWeight:
+                      isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
                 ),
               ),
             );

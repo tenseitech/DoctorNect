@@ -40,7 +40,8 @@ class ProfileWebLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxWidth = ResponsiveLayout.contentMaxWidth(context);
     final canPop = Navigator.canPop(context);
-    final stacked = ResponsiveLayout.screenWidth(context) < ResponsiveLayout.mediumMaxWidth;
+    final stacked =
+        ResponsiveLayout.screenWidth(context) < ResponsiveLayout.mediumMaxWidth;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(28, 24, 28, 32),
@@ -102,7 +103,8 @@ class ProfileWebLayout extends StatelessWidget {
         _WebSectionPanel(
           title: 'My Health',
           subtitle: 'Conditions, allergies & vaccines',
-          child: _ActionGrid(actions: healthActions, minTileHeight: 118, columns: columns),
+          child: _ActionGrid(
+              actions: healthActions, minTileHeight: 118, columns: columns),
         ),
         const SizedBox(height: 20),
         _WebSectionPanel(
@@ -160,7 +162,8 @@ class _WebPageHeader extends StatelessWidget {
               foregroundColor: AppColors.textPrimaryOf(context),
               backgroundColor: AppColors.surfaceOf(context),
               side: BorderSide(color: AppColors.borderOf(context)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
           const SizedBox(width: 14),
@@ -219,7 +222,8 @@ class _ProfileIdentityPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasStats = profile.height > 0 && profile.weight > 0;
     final bmi = hasStats
-        ? PatientBmiUtils.calculate(heightCm: profile.height, weightKg: profile.weight)
+        ? PatientBmiUtils.calculate(
+            heightCm: profile.height, weightKg: profile.weight)
         : null;
 
     return DecoratedBox(
@@ -257,11 +261,13 @@ class _ProfileIdentityPanel extends StatelessWidget {
                 runSpacing: 6,
                 children: [
                   if (profile.age > 0) _MetaChip('${profile.age} yrs'),
-                  if (profile.gender.trim().isNotEmpty) _MetaChip(profile.gender),
+                  if (profile.gender.trim().isNotEmpty)
+                    _MetaChip(profile.gender),
                 ],
               ),
             ],
-            if (profile.mobile.trim().isNotEmpty || profile.email.trim().isNotEmpty) ...[
+            if (profile.mobile.trim().isNotEmpty ||
+                profile.email.trim().isNotEmpty) ...[
               const SizedBox(height: 14),
               if (profile.mobile.trim().isNotEmpty)
                 _ContactRow(icon: Icons.phone_outlined, text: profile.mobile),
@@ -310,7 +316,8 @@ class _ProfileIdentityPanel extends StatelessWidget {
                 backgroundColor: AppColors.patientTeal,
                 foregroundColor: AppColors.white,
                 minimumSize: Size(double.infinity, 46),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
             SizedBox(height: 22),
@@ -351,7 +358,9 @@ class _ProfileIdentityPanel extends StatelessWidget {
                   ),
                   child: Text(
                     'Manage',
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -404,7 +413,9 @@ class _WebSectionPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context)),
             ),
             const SizedBox(height: 16),
             child,
@@ -500,7 +511,9 @@ class _ContactRow extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],
@@ -550,7 +563,9 @@ class _StatTile extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w800,
-              color: highlight ? AppColors.patientTeal : AppColors.textPrimaryOf(context),
+              color: highlight
+                  ? AppColors.patientTeal
+                  : AppColors.textPrimaryOf(context),
             ),
           ),
         ],
@@ -599,7 +614,11 @@ class _WebFamilyList extends StatelessWidget {
                 onTap: () => onFamilyMemberTap(family[i]),
               ),
               if (i < family.length - 1)
-                Divider(height: 1, thickness: 1, indent: 58, color: AppColors.borderOf(context)),
+                Divider(
+                    height: 1,
+                    thickness: 1,
+                    indent: 58,
+                    color: AppColors.borderOf(context)),
             ],
           Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)),
           _WebAddFamilyRow(onTap: onAddFamily),
@@ -618,7 +637,8 @@ class _WebFamilyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initial =
-        (member.photoInitial ?? (member.name.isNotEmpty ? member.name[0] : 'F')).toUpperCase();
+        (member.photoInitial ?? (member.name.isNotEmpty ? member.name[0] : 'F'))
+            .toUpperCase();
 
     return Material(
       color: Colors.transparent,
@@ -631,7 +651,8 @@ class _WebFamilyRow extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+                backgroundColor:
+                    const Color(0xFF7C3AED).withValues(alpha: 0.12),
                 child: Text(
                   initial,
                   style: GoogleFonts.inter(
@@ -672,7 +693,8 @@ class _WebFamilyRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
               ),
             ],
           ),
@@ -705,7 +727,8 @@ class _WebAddFamilyRow extends StatelessWidget {
                   color: AppColors.patientTeal.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.add_rounded, color: AppColors.patientTeal, size: 20),
+                child: const Icon(Icons.add_rounded,
+                    color: AppColors.patientTeal, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(

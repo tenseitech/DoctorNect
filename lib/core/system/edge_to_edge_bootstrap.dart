@@ -19,7 +19,8 @@ abstract final class EdgeToEdgeBootstrap {
     final isDark = brightness == Brightness.dark;
     return SystemUiOverlayStyle(
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-      systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      systemNavigationBarIconBrightness:
+          isDark ? Brightness.light : Brightness.dark,
       systemStatusBarContrastEnforced: false,
       systemNavigationBarContrastEnforced: false,
     );

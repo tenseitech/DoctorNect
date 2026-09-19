@@ -16,10 +16,11 @@ abstract final class DoctorProfileShareSheet {
 
   static String shareMessage(DoctorProfileDetail doctor) {
     final lines = <String>[];
-    
+
     lines.add('Doctor: Dr. ${doctor.name}');
     lines.add('Specialization: ${doctor.specialization}');
-    lines.add('Rating: ${doctor.rating.toStringAsFixed(1)}/5.0 (${doctor.reviewCount} reviews)');
+    lines.add(
+        'Rating: ${doctor.rating.toStringAsFixed(1)}/5.0 (${doctor.reviewCount} reviews)');
     lines.add('');
 
     if (doctor.clinicName.trim().isNotEmpty) {
@@ -44,7 +45,8 @@ abstract final class DoctorProfileShareSheet {
       lines.add('');
     }
 
-    if (doctor.phone.trim().isNotEmpty && !doctor.phone.toLowerCase().contains('contact via')) {
+    if (doctor.phone.trim().isNotEmpty &&
+        !doctor.phone.toLowerCase().contains('contact via')) {
       lines.add('Contact: ${doctor.phone}');
     }
     if (doctor.mapsUrl.trim().isNotEmpty) {
@@ -76,105 +78,129 @@ abstract final class DoctorProfileShareSheet {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Share doctor profile',
-                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'Share doctor profile',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.headlineSmall,
+                        fontWeight: FontWeight.w600),
+                  ),
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.image, color: AppColors.doctorBlue),
-                title: Text('Share as Image Poster', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                subtitle: Text(
-                  'Generate a beautiful image card',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
-                ),
-                onTap: () async {
-                  Navigator.pop(ctx);
+                ListTile(
+                  leading: const Icon(Icons.image, color: AppColors.doctorBlue),
+                  title: Text('Share as Image Poster',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  subtitle: Text(
+                    'Generate a beautiful image card',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
 
-                  try {
-                    final screenshotController = ScreenshotController();
-                    final bytes = await screenshotController.captureFromWidget(
-                      DoctorPosterWidget(doctor: doctor),
-                      delay: const Duration(milliseconds: 100),
+                    try {
+                      final screenshotController = ScreenshotController();
+                      final bytes =
+                          await screenshotController.captureFromWidget(
+                        DoctorPosterWidget(doctor: doctor),
+                        delay: const Duration(milliseconds: 100),
+                        context: context,
+                      );
+
+                      final xFile = XFile.fromData(bytes,
+                          mimeType: 'image/png', name: 'doctor_poster.png');
+                      await Share.shareXFiles([xFile],
+                          text: 'Check out Dr. ${doctor.name} on DoctorNect!');
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      AppToast.info(context, 'Failed to generate poster');
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const FaIcon(FontAwesomeIcons.whatsapp,
+                      color: Color(0xFF25D366)),
+                  title: Text('WhatsApp',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  subtitle: Text(
+                    'Share via WhatsApp',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final ok = await ExternalLauncher.shareViaWhatsApp(
+                      text: message,
                       context: context,
                     );
-                    
-                    final xFile = XFile.fromData(bytes, mimeType: 'image/png', name: 'doctor_poster.png');
-                    await Share.shareXFiles([xFile], text: 'Check out Dr. ${doctor.name} on DoctorNect!');
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    AppToast.info(context, 'Failed to generate poster');
-                  }
-                },
-              ),
-              ListTile(
-                leading: const FaIcon(FontAwesomeIcons.whatsapp, color: Color(0xFF25D366)),
-                title: Text('WhatsApp', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                subtitle: Text(
-                  'Share via WhatsApp',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                    if (!context.mounted || ok) return;
+                    AppToast.info(context, 'Could not open WhatsApp');
+                  },
                 ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final ok = await ExternalLauncher.shareViaWhatsApp(
-                    text: message,
-                    context: context,
-                  );
-                  if (!context.mounted || ok) return;
-                  AppToast.info(context, 'Could not open WhatsApp');
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.sms_outlined, color: AppColors.patientTeal),
-                title: Text('SMS', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                subtitle: Text(
-                  'Share via text message',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                ListTile(
+                  leading:
+                      Icon(Icons.sms_outlined, color: AppColors.patientTeal),
+                  title: Text('SMS',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  subtitle: Text(
+                    'Share via text message',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final ok = await ExternalLauncher.shareSmsBody(
+                      body: message,
+                      context: context,
+                    );
+                    if (!context.mounted || ok) return;
+                    AppToast.info(context, 'Could not open SMS app');
+                  },
                 ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final ok = await ExternalLauncher.shareSmsBody(
-                    body: message,
-                    context: context,
-                  );
-                  if (!context.mounted || ok) return;
-                  AppToast.info(context, 'Could not open SMS app');
-                },
-              ),
-              ListTile(
-                leading: const FaIcon(FontAwesomeIcons.telegram, color: Color(0xFF0088CC)),
-                title: Text('Telegram', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                subtitle: Text(
-                  'Share via Telegram',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                ListTile(
+                  leading: const FaIcon(FontAwesomeIcons.telegram,
+                      color: Color(0xFF0088CC)),
+                  title: Text('Telegram',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  subtitle: Text(
+                    'Share via Telegram',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final ok = await ExternalLauncher.shareViaTelegram(
+                      text: message,
+                      url: doctor.mapsUrl,
+                      context: context,
+                    );
+                    if (!context.mounted || ok) return;
+                    AppToast.info(context, 'Could not open Telegram');
+                  },
                 ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final ok = await ExternalLauncher.shareViaTelegram(
-                    text: message,
-                    url: doctor.mapsUrl,
-                    context: context,
-                  );
-                  if (!context.mounted || ok) return;
-                  AppToast.info(context, 'Could not open Telegram');
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.more_horiz, color: AppColors.textPrimaryOf(context)),
-                title: Text('More options...', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
-                subtitle: Text(
-                  'Share using other apps',
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
+                ListTile(
+                  leading: Icon(Icons.more_horiz,
+                      color: AppColors.textPrimaryOf(context)),
+                  title: Text('More options...',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  subtitle: Text(
+                    'Share using other apps',
+                    style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context)),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await ExternalLauncher.shareText(message, context: context);
+                  },
                 ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  await ExternalLauncher.shareText(message, context: context);
-                },
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
         ),
       ),

@@ -22,7 +22,8 @@ abstract final class MedicalDirectoryFirestoreMapper {
         type: data['type'] as String? ?? '',
         phone: data['phone'] as String? ?? '',
         createdAt: _parseDate(data['createdAt']),
-        updatedAt: data['updatedAt'] == null ? null : _parseDate(data['updatedAt']),
+        updatedAt:
+            data['updatedAt'] == null ? null : _parseDate(data['updatedAt']),
       );
     } catch (_) {
       return null;

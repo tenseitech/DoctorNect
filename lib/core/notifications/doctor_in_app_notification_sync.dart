@@ -1,4 +1,4 @@
-﻿import 'package:medibond/core/firebase/firestore_service.dart';
+import 'package:medibond/core/firebase/firestore_service.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -18,9 +18,12 @@ abstract final class DoctorInAppNotificationSync {
     _knownNotificationIds.clear();
     _seededInitialSnapshot = false;
 
-    _sub = FirestoreService.instance.inAppNotification.watchForRecipient(recipientUid).listen(
+    _sub = FirestoreService.instance.inAppNotification
+        .watchForRecipient(recipientUid)
+        .listen(
       (notifications) {
-        InAppNotificationService.instance.mergeDoctorFirestoreNotifications(notifications);
+        InAppNotificationService.instance
+            .mergeDoctorFirestoreNotifications(notifications);
 
         if (!_seededInitialSnapshot) {
           _knownNotificationIds
@@ -34,7 +37,8 @@ abstract final class DoctorInAppNotificationSync {
           if (_knownNotificationIds.contains(notification.id)) continue;
           _knownNotificationIds.add(notification.id);
           if (notification.isRead) continue;
-          InAppNotificationService.instance.onDoctorNotificationArrived?.call(notification);
+          InAppNotificationService.instance.onDoctorNotificationArrived
+              ?.call(notification);
         }
       },
       onError: (Object e, StackTrace st) {

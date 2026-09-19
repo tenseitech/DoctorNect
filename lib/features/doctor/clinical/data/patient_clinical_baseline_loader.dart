@@ -23,25 +23,29 @@ abstract final class PatientClinicalBaselineLoader {
 
   /// Returns the most recent saved prescription that contains baseline data.
   static PrescriptionDraft? latestBaselineDraft(String patientId) {
-    for (final draft in ClinicalPrescriptionStore.instance.forPatient(patientId)) {
+    for (final draft
+        in ClinicalPrescriptionStore.instance.forPatient(patientId)) {
       if (hasBaselineData(draft)) return draft;
     }
     return null;
   }
 
-  static Future<PrescriptionDraft?> fetchLatestBaselineDraft(String patientId) async {
+  static Future<PrescriptionDraft?> fetchLatestBaselineDraft(
+      String patientId) async {
     if (patientId.isEmpty) return null;
     try {
       final doctorId = DoctorSession.loggedInDoctorId;
       if (doctorId.isNotEmpty) {
-        if (!await FirestoreService.instance.patientProfile.isPatientSharingClinicalDataWithDoctors(
+        if (!await FirestoreService.instance.patientProfile
+            .isPatientSharingClinicalDataWithDoctors(
           patientId,
           preferCache: false,
         )) {
           return null;
         }
 
-        final page = await FirestoreService.instance.prescription.fetchForDoctorAndPatientForDoctor(
+        final page = await FirestoreService.instance.prescription
+            .fetchForDoctorAndPatientForDoctor(
           doctorId,
           patientId,
           preferCache: false,
@@ -59,7 +63,8 @@ abstract final class PatientClinicalBaselineLoader {
       return latestBaselineDraft(patientId);
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('PatientClinicalBaselineLoader.fetchLatestBaselineDraft failed: $e\n$st');
+        debugPrint(
+            'PatientClinicalBaselineLoader.fetchLatestBaselineDraft failed: $e\n$st');
       }
       return null;
     }
@@ -67,12 +72,14 @@ abstract final class PatientClinicalBaselineLoader {
 
   static Future<String?> fetchProfileAllergiesText(String patientId) async {
     if (patientId.isEmpty) return null;
-    if (!await FirestoreService.instance.patientProfile.isPatientSharingClinicalDataWithDoctors(
+    if (!await FirestoreService.instance.patientProfile
+        .isPatientSharingClinicalDataWithDoctors(
       patientId,
     )) {
       return null;
     }
-    final data = await FirestoreService.instance.patientProfile.fetchPatientDocumentForDoctor(patientId);
+    final data = await FirestoreService.instance.patientProfile
+        .fetchPatientDocumentForDoctor(patientId);
     if (data == null) return null;
     final list = (data['allergies'] as List<dynamic>? ?? const [])
         .map((e) => e.toString().trim())

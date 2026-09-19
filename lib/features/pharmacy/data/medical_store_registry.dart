@@ -17,7 +17,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
 
   final List<MedicalStoreProfile> _stores = [];
 
-  static List<MedicalStoreProfile> get all => List.unmodifiable(instance._stores);
+  static List<MedicalStoreProfile> get all =>
+      List.unmodifiable(instance._stores);
 
   static MedicalStoreProfile? findById(String id) {
     for (final s in instance._stores) {
@@ -27,7 +28,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
   }
 
   static Future<void> refreshFromFirestore({bool preferCache = true}) async {
-    final stores = await FirestoreService.instance.medicalStore.fetchVerifiedStores(
+    final stores =
+        await FirestoreService.instance.medicalStore.fetchVerifiedStores(
       preferCache: preferCache,
     );
     instance._stores
@@ -38,7 +40,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
 
   static Future<void> ensureStoreLoaded(String storeId) async {
     if (storeId.isEmpty || findById(storeId) != null) return;
-    final remote = await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
+    final remote =
+        await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
     if (remote == null) return;
     instance._stores.add(remote);
     instance.notifyListeners();
@@ -86,7 +89,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
   }) async {
     var index = instance._stores.indexWhere((s) => s.id == storeId);
     if (index < 0) {
-      final remote = await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
+      final remote =
+          await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
       if (remote == null) return 'Store not found';
       instance._stores.add(remote);
       index = instance._stores.length - 1;
@@ -105,7 +109,13 @@ class MedicalStoreRegistry extends ChangeNotifier {
         'city': city ?? '',
         'pinCode': pincode ?? '',
       };
-      final parts = [addressLine1, addressLine2 ?? '', city ?? '', state ?? '', pincode ?? ''].where((e) => e.isNotEmpty);
+      final parts = [
+        addressLine1,
+        addressLine2 ?? '',
+        city ?? '',
+        state ?? '',
+        pincode ?? ''
+      ].where((e) => e.isNotEmpty);
       addressStr = parts.join(', ');
     }
 
