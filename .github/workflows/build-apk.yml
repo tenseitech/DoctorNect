@@ -4,23 +4,24 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'frontend/**'
+      - 'lib/**'
+      - 'android/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
   workflow_dispatch: {}
 
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.9'
+          flutter-version: '3.47.5'
           channel: 'stable'
+          cache: true
 
       - run: flutter pub get
       - run: flutter build apk --release
@@ -28,4 +29,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: app-release-apk
-          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
