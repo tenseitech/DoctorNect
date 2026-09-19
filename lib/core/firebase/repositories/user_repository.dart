@@ -227,7 +227,7 @@ class UserRepository {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        return fetchProfile(user.uid, preferCache: false);
+        return await fetchProfile(user.uid, preferCache: false);
       }
     } on FirebaseException {
       return null;
@@ -282,7 +282,7 @@ class UserRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      return fetchProfile(user.uid, preferCache: false);
+      return await fetchProfile(user.uid, preferCache: false);
     } catch (_) {
       return null;
     }
@@ -300,7 +300,7 @@ class UserRepository {
             .limit(1)
             .get(const GetOptions(source: Source.server));
         if (snap.docs.isNotEmpty) {
-          return fetchProfile(snap.docs.first.id, preferCache: false);
+          return await fetchProfile(snap.docs.first.id, preferCache: false);
         }
       } catch (_) {}
     }

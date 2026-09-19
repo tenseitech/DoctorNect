@@ -169,7 +169,7 @@ abstract final class LabReportFileStore {
 
     try {
       final dir = await _localDirPath(patientId, bookingId);
-      return FileEncryptionService.readDiskFileWithLegacyMigration(
+      return await FileEncryptionService.readDiskFileWithLegacyMigration(
         directoryPath: dir,
         sanitizedFileName: _sanitizeFileName(fileName),
       );
