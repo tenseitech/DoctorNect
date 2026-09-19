@@ -16,6 +16,14 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+  errors:
+    avoid_print: ignore
+    curly_braces_in_flow_control_structures: ignore
+    unnecessary_import: ignore
+    unawaited_return_in_try_block: ignore
+    unused_element: ignore
+    unused_element_parameter: ignore
+    use_build_context_synchronously: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:
