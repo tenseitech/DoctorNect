@@ -19,13 +19,12 @@ import '../../core/notifications/patient_notification_scheduler.dart';
 import '../../core/notifications/patient_push_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/digital_health_card_sheet.dart';
+import '../../widgets/emergency_sos_sheet.dart';
+import '../shared/screens/patient_profile_screen.dart';
 import 'widgets/patient_app_shell.dart';
 import 'home/patient_home_screen.dart';
-import '../../features/ambulance/ambulance_booking_screen.dart';
-import '../../features/ambulance/models/ambulance_models.dart';
 import 'appointments/patient_appointments_screen.dart';
-import 'lab/lab_home_screen.dart';
-import 'records/patient_records_screen.dart';
 import 'profile/widgets/profile_completion_dialog.dart';
 
 class PatientShell extends StatefulWidget {
@@ -51,27 +50,40 @@ class _PatientShellState extends State<PatientShell> {
       shortLabel: 'Visits',
     ),
     PatientTabItem(
-      outlinedIcon: Icons.biotech_outlined,
-      filledIcon: Icons.biotech_rounded,
-      label: 'Lab',
+      outlinedIcon: Icons.badge_outlined,
+      filledIcon: Icons.badge_rounded,
+      label: 'Digital Pass',
+      shortLabel: 'Pass',
     ),
     PatientTabItem(
-      outlinedIcon: Icons.folder_open_outlined,
-      filledIcon: Icons.folder_open_rounded,
-      label: 'Medical Record',
-      shortLabel: 'Records',
+      outlinedIcon: Icons.emergency_outlined,
+      filledIcon: Icons.emergency_rounded,
+      label: 'SOS',
     ),
     PatientTabItem(
-      outlinedIcon: Icons.local_hospital_outlined,
-      filledIcon: Icons.local_hospital_rounded,
-      label: 'Ambulance',
+      outlinedIcon: Icons.person_outline_rounded,
+      filledIcon: Icons.person_rounded,
+      label: 'Account',
     ),
   ];
 
   void _selectTab(int index) {
     Navigator.of(context).popUntil((route) => route.isFirst);
     if (!mounted) return;
-    setState(() => _index = index);
+
+    switch (index) {
+      case 2:
+        DigitalHealthCardSheet.show(context, userType: UserType.patient);
+        return;
+      case 3:
+        EmergencySosSheet.show(context);
+        return;
+      case 4:
+        unawaited(PatientProfileScreen.open(context));
+        return;
+      default:
+        setState(() => _index = index);
+    }
   }
 
   @override
@@ -187,9 +199,9 @@ class _PatientShellState extends State<PatientShell> {
   List<Widget> _buildPages() => [
         PatientHomeScreen(onSelectTab: _selectTab),
         const PatientAppointmentsScreen(),
-        const LabHomeScreen(embeddedInShell: true),
-        const PatientRecordsScreen(),
-        const AmbulanceBookingScreen(bookedByRole: AmbulanceBookedByRole.patient),
+        const SizedBox.shrink(),
+        const SizedBox.shrink(),
+        const SizedBox.shrink(),
       ];
 
   @override

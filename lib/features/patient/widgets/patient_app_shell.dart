@@ -309,21 +309,29 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context),
-        border: Border(top: BorderSide(color: AppColors.borderOf(context).withValues(alpha: 0.9))),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimaryOf(context).withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppColors.surfaceOf(context),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: AppColors.borderOf(context)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textPrimaryOf(context).withValues(alpha: 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: AppColors.textPrimaryOf(context).withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Listener(
+          child: Listener(
           onPointerDown: (event) {
             _startX = event.position.dx;
             _startY = event.position.dy;
@@ -344,7 +352,7 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
             }
           },
           child: SizedBox(
-            height: widget.tabs.length >= 5 ? 66 : 60,
+            height: widget.tabs.length >= 5 ? 64 : 58,
             child: Row(
               children: List.generate(widget.tabs.length, (index) {
                 final selected = index == widget.selectedIndex;
@@ -424,6 +432,7 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
           ),
         ),
       ),
+    ),
     );
   }
 }

@@ -4,14 +4,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/enums/user_type.dart';
 import '../../../core/notifications/app_notification.dart';
 import '../../../core/notifications/widgets/notification_bell_button.dart';
 import '../../../core/session/patient_session.dart';
 import '../../../features/ambulance/ambulance_booking_screen.dart';
 import '../../../features/ambulance/models/ambulance_models.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../widgets/header_overflow_menu.dart';
 import '../../../widgets/theme_toggle_button.dart';
 import '../data/patient_mock_data.dart';
 import '../data/registered_doctors_store.dart';
@@ -22,15 +20,12 @@ import '../booking/booking_flow_screen.dart';
 import '../doctor_profile/patient_doctor_profile_screen.dart';
 import '../lab/my_labs_screen.dart';
 import '../lab/lab_home_screen.dart';
-import '../profile/about/about_screen.dart';
-import '../profile/support/help_support_screen.dart';
 import '../records/patient_records_screen.dart';
 import '../search/doctor_search_screen.dart';
 import '../../../widgets/home_banner_carousel.dart';
 import '../widgets/patient_favorites_sheets.dart';
 import '../../../core/models/promoted_ad_model.dart';
 import '../../../core/services/promoted_ads_service.dart';
-import '../widgets/patient_profile_avatar_button.dart';
 import 'widgets/health_tips_section.dart';
 import 'widgets/my_doctor_section.dart';
 import 'widgets/appointments_section.dart';
@@ -47,7 +42,7 @@ class PatientHomeScreen extends StatefulWidget {
     this.onOpenAppointments,
   });
 
-  /// Switches the patient shell tab (0=Home, 1=Appointments, 2=Lab, 3=Medical Record, 4=Ambulance).
+  /// Switches the patient shell tab (0=Home, 1=Appointments).
   final ValueChanged<int>? onSelectTab;
 
   @Deprecated('Use onSelectTab')
@@ -161,37 +156,25 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       return;
     }
     if (route == 'lab') {
-      if (widget.onSelectTab != null) {
-        widget.onSelectTab!(2);
-      } else {
-        _openLab();
-      }
+      _openLab();
       return;
     }
     if (route == 'records') {
-      if (widget.onSelectTab != null) {
-        widget.onSelectTab!(3);
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PatientRecordsScreen()),
-        );
-      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PatientRecordsScreen()),
+      );
       return;
     }
     if (route == 'ambulance') {
-      if (widget.onSelectTab != null) {
-        widget.onSelectTab!(4);
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const AmbulanceBookingScreen(
-              bookedByRole: AmbulanceBookedByRole.patient,
-            ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const AmbulanceBookingScreen(
+            bookedByRole: AmbulanceBookedByRole.patient,
           ),
-        );
-      }
+        ),
+      );
       return;
     }
     AppToast.info(context, '${service.label} — coming soon');
@@ -216,15 +199,13 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, compact ? 12 : 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const PatientProfileAvatarButton(),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,13 +234,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       const ThemeToggleButton(),
                       const SizedBox(width: 4),
                       const NotificationBellButton(audience: NotificationAudience.patient),
-                      const HeaderOverflowMenu(userType: UserType.patient),
                     ],
                   ),
                 SizedBox(height: compact ? 12 : 16),
                 HomeSearchBar(
                   onTap: () => _openSearch(),
-                  onCategoryTap: (category) => _openSearch(category: category),
                 ),
               ],
             ),
@@ -268,10 +247,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         SliverToBoxAdapter(
           child: LayoutBuilder(
             builder: (context, _) {
-              final isWide = MediaQuery.sizeOf(context).width >= 600;
-              return Padding(
-                padding: EdgeInsets.fromLTRB(isWide ? 0 : 16, isWide ? 16 : 12, isWide ? 0 : 16, 0),
-                child: StreamBuilder<List<PromotedAdModel>>(
+              return StreamBuilder<List<PromotedAdModel>>(
                   stream: PromotedAdsService.streamActiveAds(),
                   builder: (context, snapshot) {
                     final activeAds = snapshot.data ?? [];
@@ -279,11 +255,11 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     return HomeBannerCarousel(
                       items: carouselItems,
                       dotActiveColor: AppColors.patientTeal,
-                      onCtaTap: (route) => _navigateCarouselCta(context, route),
+                      interactive: false,
+                      cardHorizontalInsetFraction: 0.09,
                     );
                   },
-                ),
-              );
+                );
             },
           ),
         ),
@@ -439,86 +415,4 @@ List<HomeCarouselItem> _buildCarouselItems(List<PromotedAdModel> activeAds, {Str
   }
 
   return combined;
-}
-
-void _navigateCarouselCta(BuildContext context, String? route) {
-  if (route == null) return;
-
-  if (route.startsWith('promotedAd:')) {
-    final parts = route.split(':');
-    if (parts.length >= 4) {
-      final providerType = parts[2].toLowerCase();
-      final providerId = parts[3];
-
-      switch (providerType) {
-        case 'doctor':
-          if (providerId.isNotEmpty) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => PatientDoctorProfileScreen(doctorId: providerId)),
-            );
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const DoctorSearchScreen()),
-            );
-          }
-          break;
-        case 'lab':
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const LabHomeScreen()),
-          );
-          break;
-        case 'pharmacy':
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DoctorSearchScreen()),
-          );
-          break;
-        case 'ambulance':
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const AmbulanceBookingScreen(
-                bookedByRole: AmbulanceBookedByRole.patient,
-              ),
-            ),
-          );
-          break;
-        default:
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DoctorSearchScreen()),
-          );
-          break;
-      }
-    }
-    return;
-  }
-
-  switch (route) {
-    case 'search':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const DoctorSearchScreen()),
-      );
-    case 'lab':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const LabHomeScreen()),
-      );
-    case 'help':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
-      );
-    case 'about':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AboutScreen()),
-      );
-    default:
-      break;
-  }
 }

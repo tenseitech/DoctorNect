@@ -17,11 +17,15 @@ class HomeBannerCarousel extends StatefulWidget {
     required this.items,
     required this.dotActiveColor,
     this.onCtaTap,
+    this.interactive = true,
+    this.cardHorizontalInsetFraction = 0,
   });
 
   final List<HomeCarouselItem> items;
   final Color dotActiveColor;
   final HomeCarouselCtaHandler? onCtaTap;
+  final bool interactive;
+  final double cardHorizontalInsetFraction;
 
   @override
   State<HomeBannerCarousel> createState() => _HomeBannerCarouselState();
@@ -30,7 +34,8 @@ class HomeBannerCarousel extends StatefulWidget {
 class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
   static const _autoScrollInterval = Duration(seconds: 5);
   static const _wideBreakpoint = 600.0;
-  static const _wideNavGutter = 52.0;
+  static const _legacyWideNavGutter = 52.0;
+  static const _navButtonSize = 36.0;
 
   int _index = 0;
   late final PageController _controller;
@@ -92,10 +97,33 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
   Widget build(BuildContext context) {
     if (widget.items.isEmpty) return const SizedBox.shrink();
 
-    final isWide = MediaQuery.sizeOf(context).width >= _wideBreakpoint;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWide = screenWidth >= _wideBreakpoint;
     final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
     final height = (isWide ? 220.0 : 120.0) * textScale;
-    final borderRadius = isWide ? 0.0 : AppConstants.cardRadius.toDouble();
+    final hasCardInset = widget.cardHorizontalInsetFraction > 0;
+    final borderRadius = hasCardInset || !isWide
+        ? AppConstants.cardRadius.toDouble()
+        : 0.0;
+    final sideGutter = hasCardInset
+        ? screenWidth * widget.cardHorizontalInsetFraction
+        : (isWide ? _legacyWideNavGutter : 0.0);
+    final showNavButtons = hasCardInset || isWide;
+    final navButtonSize =
+        sideGutter >= _navButtonSize ? _navButtonSize : (sideGutter * 0.82).clamp(26.0, _navButtonSize);
+
+    Widget buildNavButton({required IconData icon, required VoidCallback onTap}) {
+      return _CarouselNavButton(
+        icon: icon,
+        size: navButtonSize,
+        onTap: onTap,
+      );
+    }
+
+    void handleNavStep(int delta) {
+      _step(delta);
+      if (!_isHovered) _startAutoScroll();
+    }
 
     return MouseRegion(
       onEnter: (_) => _onHoverEnter(),
@@ -105,45 +133,44 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
           SizedBox(
             height: height,
             width: double.infinity,
-            child: Stack(
-              alignment: Alignment.center,
+            child: Row(
               children: [
-                PageView.builder(
-                  controller: _controller,
-                  onPageChanged: (i) => setState(() => _index = i % widget.items.length),
-                  itemBuilder: (_, index) {
-                    final actualIndex = index % widget.items.length;
-                    return _HomeBannerCarouselSlide(
-                      item: widget.items[actualIndex],
-                      isWide: isWide,
-                      borderRadius: borderRadius,
-                      contentHorizontalInset: isWide ? _wideNavGutter : 0,
-                      onCtaTap: widget.onCtaTap,
-                    );
-                  },
+                if (showNavButtons)
+                  SizedBox(
+                    width: sideGutter,
+                    child: Center(
+                      child: buildNavButton(
+                        icon: Icons.chevron_left,
+                        onTap: () => handleNavStep(-1),
+                      ),
+                    ),
+                  ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _controller,
+                    onPageChanged: (i) => setState(() => _index = i % widget.items.length),
+                    itemBuilder: (_, index) {
+                      final actualIndex = index % widget.items.length;
+                      return _HomeBannerCarouselSlide(
+                        item: widget.items[actualIndex],
+                        isWide: isWide,
+                        borderRadius: borderRadius,
+                        interactive: widget.interactive,
+                        onCtaTap: widget.interactive ? widget.onCtaTap : null,
+                      );
+                    },
+                  ),
                 ),
-                if (isWide) ...[
-                  Positioned(
-                    left: 12,
-                    child: _CarouselNavButton(
-                      icon: Icons.chevron_left,
-                      onTap: () {
-                        _step(-1);
-                        if (!_isHovered) _startAutoScroll();
-                      },
+                if (showNavButtons)
+                  SizedBox(
+                    width: sideGutter,
+                    child: Center(
+                      child: buildNavButton(
+                        icon: Icons.chevron_right,
+                        onTap: () => handleNavStep(1),
+                      ),
                     ),
                   ),
-                  Positioned(
-                    right: 12,
-                    child: _CarouselNavButton(
-                      icon: Icons.chevron_right,
-                      onTap: () {
-                        _step(1);
-                        if (!_isHovered) _startAutoScroll();
-                      },
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -169,10 +196,15 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
 }
 
 class _CarouselNavButton extends StatelessWidget {
-  const _CarouselNavButton({required this.icon, required this.onTap});
+  const _CarouselNavButton({
+    required this.icon,
+    required this.onTap,
+    this.size = 36,
+  });
 
   final IconData icon;
   final VoidCallback onTap;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -185,9 +217,9 @@ class _CarouselNavButton extends StatelessWidget {
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(icon, size: 22, color: AppColors.textPrimaryOf(context)),
+          width: size,
+          height: size,
+          child: Icon(icon, size: size * 0.58, color: AppColors.textPrimaryOf(context)),
         ),
       ),
     );
@@ -199,14 +231,14 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
     required this.item,
     required this.isWide,
     required this.borderRadius,
-    this.contentHorizontalInset = 0,
+    this.interactive = true,
     this.onCtaTap,
   });
 
   final HomeCarouselItem item;
   final bool isWide;
   final double borderRadius;
-  final double contentHorizontalInset;
+  final bool interactive;
   final HomeCarouselCtaHandler? onCtaTap;
 
   PromoBanner get banner => item.banner;
@@ -227,15 +259,7 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
             ? banner.gradientColors.first
             : const Color(0xFF2563EB));
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: item.ctaRoute != null && onCtaTap != null
-              ? () => onCtaTap!(item.ctaRoute)
-              : null,
-          child: Stack(
+    final bannerBody = Stack(
             fit: StackFit.expand,
             children: [
           _gradientBackground(begin: Alignment.topLeft, end: Alignment.bottomRight),
@@ -302,9 +326,21 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
             ),
           ),
             ],
-          ),
-        ),
-      ),
+          );
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: interactive
+          ? Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: item.ctaRoute != null && onCtaTap != null
+                    ? () => onCtaTap!(item.ctaRoute)
+                    : null,
+                child: bannerBody,
+              ),
+            )
+          : bannerBody,
     );
   }
 
@@ -332,7 +368,7 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
               ),
             ),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: contentHorizontalInset),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Row(
               children: [
                 Expanded(
@@ -369,7 +405,7 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.92),
                         ),
                       ),
-                      if (item.ctaLabel != null) ...[
+                      if (interactive && item.ctaLabel != null) ...[
                         const SizedBox(height: 16),
                         FilledButton(
                           onPressed: item.ctaRoute != null && onCtaTap != null

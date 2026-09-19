@@ -86,6 +86,7 @@ String compactBottomNavLabel(String label) {
     'Notifications' => 'Alerts',
     'Appointments' => 'Appointments',
     'Diagnostic Lab Login' => 'Lab',
+    'Digital Pass' => 'Pass',
     _ => label,
   };
 }

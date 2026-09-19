@@ -21,7 +21,9 @@ class ThemeToggleButton extends StatelessWidget {
       builder: (context, _) {
         final isDark = AppThemeController.instance.isDarkMode;
         final iconColor = color ??
-            (isDark ? const Color(0xFFFDE047) : const Color(0xFF0F172A));
+            (highlighted
+                ? AppColors.textPrimaryOf(context)
+                : (isDark ? const Color(0xFFFDE047) : const Color(0xFF0F172A)));
         final tooltip = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
 
         final iconWidget = AnimatedSwitcher(
@@ -44,47 +46,16 @@ class ThemeToggleButton extends StatelessWidget {
         if (highlighted) {
           return Tooltip(
             message: tooltip,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => AppThemeController.instance.toggleTheme(),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFFFDE047).withValues(alpha: 0.18)
-                        : AppColors.patientTeal.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isDark ? const Color(0xFFFDE047) : AppColors.patientTeal,
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isDark ? const Color(0xFFFDE047) : AppColors.patientTeal)
-                            .withValues(alpha: 0.25),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      iconWidget,
-                      const SizedBox(width: 6),
-                      Text(
-                        isDark ? 'Dark' : 'Light',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? const Color(0xFFFDE047) : AppColors.textPrimaryOf(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+            child: IconButton(
+              onPressed: () => AppThemeController.instance.toggleTheme(),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              icon: iconWidget,
+              color: iconColor,
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.cardBgOf(context),
+                side: BorderSide(color: AppColors.borderOf(context)),
               ),
             ),
           );
