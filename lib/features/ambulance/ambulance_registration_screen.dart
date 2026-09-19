@@ -17,9 +17,12 @@ import '../auth/widgets/simple_role_registration_form.dart';
 import 'ambulance_shell.dart';
 import 'data/ambulance_pin.dart';
 import 'models/ambulance_models.dart';
+import '../../core/theme/app_typography.dart';
 
 class AmbulanceRegistrationScreen extends StatelessWidget {
-  const AmbulanceRegistrationScreen({super.key});
+  const AmbulanceRegistrationScreen({super.key, this.preVerifiedMobile});
+
+  final String? preVerifiedMobile;
 
   static const _accent = Color(0xFFDC2626);
 
@@ -39,14 +42,14 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
           children: [
             Text(
               'Use these to sign in to your ambulance dashboard:',
-              style: GoogleFonts.inter(fontSize: 14),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
             ),
             const SizedBox(height: 16),
             Text('Username', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            SelectableText(username, style: GoogleFonts.inter(fontSize: 16)),
+            SelectableText(username, style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall)),
             const SizedBox(height: 12),
             Text('PIN', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            SelectableText(pin, style: GoogleFonts.inter(fontSize: 16)),
+            SelectableText(pin, style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall)),
           ],
         ),
         actions: [
@@ -132,7 +135,6 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
       await _showCredentialsDialog(context, username: username, pin: pin);
       if (!context.mounted) return;
 
-      AppToast.success(context, 'Account created! Complete your profile to receive requests.');
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
@@ -164,6 +166,7 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
       subtitle: 'Quick signup — add vehicle and service details in your profile next',
       icon: Icons.local_hospital_outlined,
       nameLabel: 'Owner / manager name *',
+      preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
         context,

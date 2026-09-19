@@ -5,6 +5,7 @@ import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 import '../utils/doctor_display_name.dart';
+import '../../../core/theme/app_typography.dart';
 
 const _textGrey = Color(0xFF9CA3AF);
 const _starColor = Color(0xFFF59E0B);
@@ -178,7 +179,7 @@ class _DoctorMeta extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
-            fontSize: 13,
+            fontSize: AppTypography.bodySmall,
             color: AppColors.textSecondaryOf(context),
             height: 1.3,
           ),
@@ -189,7 +190,7 @@ class _DoctorMeta extends StatelessWidget {
             Text(
               formatExperienceYears(doctor.experienceYears),
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -199,7 +200,7 @@ class _DoctorMeta extends StatelessWidget {
             Text(
               doctor.rating.toStringAsFixed(1),
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -208,7 +209,7 @@ class _DoctorMeta extends StatelessWidget {
               Text(
                 ' (${doctor.reviewCount})',
                 style: GoogleFonts.inter(
-                  fontSize: 11,
+                  fontSize: AppTypography.labelSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
@@ -251,7 +252,7 @@ class _LocationRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
           ),
@@ -289,7 +290,7 @@ class _AvailabilityRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
           ),
@@ -342,7 +343,7 @@ class _ActionRow extends StatelessWidget {
             minimumSize: const Size(0, 40),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+            textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
           ),
           child: const Text('Book Appointment'),
         ),
@@ -355,7 +356,7 @@ class _ActionRow extends StatelessWidget {
             minimumSize: const Size(0, 40),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+            textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
           ),
           child: const Text('View Profile'),
         ),
@@ -372,7 +373,7 @@ class _ActionRow extends StatelessWidget {
               minimumSize: const Size(0, 40),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+              textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
             ),
             child: Text(isInMyDoctors ? 'Added' : 'Add to My Doctors'),
           ),
@@ -408,7 +409,7 @@ class _ActionColumn extends StatelessWidget {
               foregroundColor: AppColors.white,
               minimumSize: const Size(double.infinity, 42),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+              textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
             ),
             child: const Text('Book'),
           ),
@@ -420,7 +421,7 @@ class _ActionColumn extends StatelessWidget {
               side: const BorderSide(color: AppColors.patientTeal),
               minimumSize: const Size(double.infinity, 42),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+              textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
             ),
             child: const Text('View Profile'),
           ),
@@ -436,7 +437,7 @@ class _ActionColumn extends StatelessWidget {
                 ),
                 minimumSize: const Size(double.infinity, 42),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
               ),
               child: Text(isInMyDoctors ? 'Added' : 'Add to My Doctors'),
             ),
@@ -464,7 +465,7 @@ class _LanguagePill extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w500,
           color: AppColors.textSecondaryOf(context),
         ),

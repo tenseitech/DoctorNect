@@ -13,6 +13,7 @@ import '../../../../widgets/phone_number_field.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../../../../widgets/multi_tag_input_field.dart';
 import '../../profile/data/doctor_profile_store.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class WalkInPatientSheet extends StatefulWidget {
   const WalkInPatientSheet({super.key});
@@ -145,7 +146,7 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
 
   void _snack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -175,12 +176,12 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
               const SizedBox(height: 16),
               Text(
                 'Add Walk-in Patient',
-                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
                 'Register a patient who is at the clinic without an app booking.',
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 20),
               TextFormField(

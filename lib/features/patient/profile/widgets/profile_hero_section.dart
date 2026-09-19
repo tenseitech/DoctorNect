@@ -5,6 +5,7 @@ import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/patient_profile_models.dart';
 import '../utils/patient_bmi_utils.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ProfileHeroSection extends StatelessWidget {
   const ProfileHeroSection({
@@ -131,7 +132,7 @@ class _MetaChip extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(
-          fontSize: 12,
+          fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
         ),
@@ -157,7 +158,7 @@ class _MetaLine extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],
@@ -228,7 +229,7 @@ class _PatientBmiCard extends StatelessWidget {
           Text(
             'BMI',
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.patientTeal,
             ),
@@ -259,7 +260,7 @@ class _PatientBmiCard extends StatelessWidget {
           child: Text(
             PatientBmiUtils.labelFor(category),
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: AppColors.patientTeal,
             ),
@@ -325,7 +326,7 @@ class _StatPill extends StatelessWidget {
       child: Text(
         '$label · $value',
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.textSecondaryOf(context),
         ),

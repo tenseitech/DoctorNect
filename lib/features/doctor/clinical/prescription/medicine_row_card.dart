@@ -12,6 +12,7 @@ import '../models/clinical_models.dart';
 import '../widgets/clinical_input_formatters.dart';
 import '../widgets/clinical_widgets.dart';
 import 'add_community_medicine_dialog.dart';
+import '../../../../core/theme/app_typography.dart';
 
 List<String> _mergedDosageUnits(String current) => dosageUnitsIncluding(current);
 
@@ -87,7 +88,7 @@ class MedicineRowCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.doctorBlue,
                   ),
@@ -173,7 +174,7 @@ class MedicineRowCard extends StatelessWidget {
                       child: Text(
                         'Medicine not found in database',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                           fontWeight: FontWeight.w600,
                         ),
@@ -189,12 +190,6 @@ class MedicineRowCard extends StatelessWidget {
                         nameController.text = medicine.name;
                         _applyCommunityMedicine(entry, medicine);
                         onChanged();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Medicine added — available to all doctors'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
                       },
                     ),
                   ],
@@ -257,7 +252,7 @@ class MedicineRowCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text('Frequency (M · A · N)', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+          Text('Frequency (M · A · N)', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -423,7 +418,7 @@ class MedicineRowCard extends StatelessWidget {
                   maxLines: 1,
                   textAlign: TextAlign.end,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.doctorBlue,
                   ),
@@ -469,7 +464,7 @@ class _MealToggle extends StatelessWidget {
               label[0],
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
                 color: selected ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
               ),

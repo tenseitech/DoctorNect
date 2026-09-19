@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../appointments/appointment_utils.dart';
 import '../../models/doctor_models.dart';
 import '../../widgets/doctor_ui_widgets.dart';
+import '../../../../core/theme/app_typography.dart';
 
 String _familyRelationLabel(Appointment appointment) {
   final relation = appointment.patientRelation?.trim();
@@ -582,7 +583,7 @@ class _UpcomingTypePill extends StatelessWidget {
       child: Text(
         AppointmentStatusStyle.typeLabel(type),
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.textSecondaryOf(context),
         ),
@@ -627,7 +628,7 @@ class _UpcomingTileTopBar extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.doctorBlue,
                   ),
@@ -642,7 +643,7 @@ class _UpcomingTileTopBar extends StatelessWidget {
               Text(
                 primary.timeSlot,
                 style: GoogleFonts.inter(
-                  fontSize: 18,
+                  fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                   letterSpacing: -0.3,
@@ -665,7 +666,7 @@ class _UpcomingTileTopBar extends StatelessWidget {
                     Text(
                       'Family · ${entry.members!.length}',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.doctorBlue,
                       ),
@@ -711,7 +712,7 @@ class _UpcomingSingleBody extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 15,
+                            fontSize: AppTypography.bodyLarge,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -727,7 +728,7 @@ class _UpcomingSingleBody extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)}',
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
               ),
@@ -741,7 +742,7 @@ class _UpcomingSingleBody extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
               height: 1.35,
             ),
@@ -774,7 +775,7 @@ class _UpcomingFamilyBody extends StatelessWidget {
             child: Text(
               'Booked by $booker',
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -843,7 +844,7 @@ class _UpcomingFamilyMemberCardState extends State<_UpcomingFamilyMemberCard> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                fontSize: 14,
+                                fontSize: AppTypography.bodyMedium,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
                               ),
@@ -861,7 +862,7 @@ class _UpcomingFamilyMemberCardState extends State<_UpcomingFamilyMemberCard> {
                         _familyRelationLabel(widget.member),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                       ),
                       if (reason != null && reason.isNotEmpty) ...[
                         const SizedBox(height: 6),
@@ -870,7 +871,7 @@ class _UpcomingFamilyMemberCardState extends State<_UpcomingFamilyMemberCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 11,
+                            fontSize: AppTypography.labelSmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),
@@ -953,7 +954,7 @@ class _UpcomingTileFooter extends StatelessWidget {
               Text(
                 'View details',
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: hovered ? const Color(0xFF1D4ED8) : AppColors.doctorBlue,
                 ),
@@ -999,7 +1000,7 @@ class _EmptyQueueCard extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w500,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -1035,7 +1036,7 @@ class _DateGroupHeader extends StatelessWidget {
           child: Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
               color: emphasizeToday || isToday ? AppColors.doctorBlue : AppColors.textPrimaryOf(context),
             ),
@@ -1050,7 +1051,7 @@ class _DateGroupHeader extends StatelessWidget {
           child: Text(
             '$count',
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w700,
               color: AppColors.doctorBlue,
             ),
@@ -1075,7 +1076,7 @@ class _AgeGenderLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final genderLabel = AppConstants.patientGenderLabel(gender);
     final metaStyle = GoogleFonts.inter(
-      fontSize: 12,
+      fontSize: AppTypography.labelMedium,
       color: AppColors.textSecondaryOf(context),
       height: 1.3,
     );
@@ -1151,7 +1152,7 @@ class _PatientAppointmentCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                         height: 1.25,
@@ -1176,7 +1177,7 @@ class _PatientAppointmentCard extends StatelessWidget {
                         Text(
                           appointment.timeSlot,
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -1188,7 +1189,7 @@ class _PatientAppointmentCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 11,
+                              fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -1222,7 +1223,7 @@ class _PatientAppointmentCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                     height: 1.35,
                   ),
@@ -1269,7 +1270,7 @@ class _PatientAppointmentCard extends StatelessWidget {
                   child: Text(
                     'View details',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                       color: AppColors.doctorBlue,
                     ),
@@ -1369,7 +1370,7 @@ class _FamilyAppointmentCard extends StatelessWidget {
                     Text(
                       'Family booking · ${members.length}',
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -1379,7 +1380,7 @@ class _FamilyAppointmentCard extends StatelessWidget {
                       'Booked by $booker · ${_primary.timeSlot}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),
@@ -1406,7 +1407,7 @@ class _FamilyAppointmentCard extends StatelessWidget {
                     backgroundColor: AppColors.doctorBlue,
                     minimumSize: Size(compact ? double.infinity : 140, 36),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    textStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                    textStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                   ),
                   child: Text('Accept all ($_pendingCount)'),
                 ),
@@ -1454,7 +1455,7 @@ class _FamilyMemberRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -1464,7 +1465,7 @@ class _FamilyMemberRow extends StatelessWidget {
                       _familyRelationLabel(member),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -1480,7 +1481,7 @@ class _FamilyMemberRow extends StatelessWidget {
                             reason,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                           ),
                       ],
                     ),

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../utils/doctor_display_name.dart';
 import '../models/patient_appointment_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class VisitAppointmentTile extends StatefulWidget {
   const VisitAppointmentTile({
@@ -87,7 +88,7 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  fontSize: 15,
+                                  fontSize: AppTypography.bodyLarge,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -100,7 +101,7 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                           a.specialization,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -116,7 +117,7 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                                 time,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                               ),
                             ),
                           ],
@@ -126,7 +127,7 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                           Text(
                             _countdown,
                             style: GoogleFonts.inter(
-                              fontSize: 11,
+                              fontSize: AppTypography.labelSmall,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF117554),
                             ),
@@ -140,7 +141,7 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 11,
+                              fontSize: AppTypography.labelSmall,
                               fontStyle: FontStyle.italic,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -207,7 +208,7 @@ class _DateBadge extends StatelessWidget {
           Text(
             day,
             style: GoogleFonts.inter(
-              fontSize: 16,
+              fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w800,
               color: AppColors.surfaceOf(context),
               height: 1,

@@ -6,6 +6,7 @@ import '../../../../core/constants/specialty_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/stomach_icon.dart';
 import '../../search/doctor_search_screen.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ExploreSection extends StatelessWidget {
   const ExploreSection({super.key});
@@ -56,7 +57,7 @@ class ExploreSection extends StatelessWidget {
                     ),
                     child: Text(
                       'View all',
-                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                     ),
                   ),
               ],
@@ -249,7 +250,7 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                         child: Text(
                           'All specialities',
                           style: GoogleFonts.inter(
-                            fontSize: 18,
+                            fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

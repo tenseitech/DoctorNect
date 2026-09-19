@@ -16,6 +16,7 @@ import '../../models/doctor_models.dart';
 import '../../patients/data/doctor_patients_service.dart';
 import '../../profile/data/doctor_profile_store.dart';
 import '../../widgets/doctor_ui_widgets.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class DoctorGlobalSearchScreen extends StatefulWidget {
   const DoctorGlobalSearchScreen({
@@ -132,11 +133,11 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
           controller: _searchController,
           autofocus: true,
           onChanged: (v) => setState(() => _query = v),
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textPrimaryOf(context)),
           decoration: InputDecoration(
             hintText: 'Search for patient, medical, lab...',
             hintStyle: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
             border: InputBorder.none,
@@ -173,7 +174,7 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                   Text(
                     'Type to start searching',
                     style: GoogleFonts.inter(
-                      fontSize: 16,
+                      fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -195,7 +196,7 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                       Text(
                         'No results found for "$_query"',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: AppTypography.bodyMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
                       ),
@@ -276,9 +277,9 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Container(width: 3, height: 14, color: color),
           const SizedBox(width: 8),
-          Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700)),
+          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700)),
           const SizedBox(width: 8),
-          Text('($count)', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+          Text('($count)', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
         ],
       ),
     );
@@ -321,7 +322,7 @@ class _PatientRow extends StatelessWidget {
                     Text(
                       appointment.patientName,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -332,7 +333,7 @@ class _PatientRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -379,11 +380,11 @@ class _MedicalStoreRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(store.storeName, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(store.storeName, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
                 const SizedBox(height: 2),
                 Text(
                   store.address,
-                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -427,11 +428,11 @@ class _LabRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(lab.labName, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(lab.labName, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
                 const SizedBox(height: 2),
                 Text(
                   lab.address,
-                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -478,11 +479,11 @@ class _AmbulanceRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Ambulance Service', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                    Text('Ambulance Service', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
                     const SizedBox(height: 2),
                     Text(
                       'Book an emergency ambulance',
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),

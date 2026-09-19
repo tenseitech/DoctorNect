@@ -8,6 +8,7 @@ import '../../../patient/profile/widgets/profile_web_layout.dart';
 import '../../models/doctor_models.dart';
 import '../../widgets/doctor_ui_widgets.dart';
 import '../models/doctor_profile_data.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class DoctorProfileWebLayout extends StatelessWidget {
   const DoctorProfileWebLayout({
@@ -162,7 +163,7 @@ class _WebPageHeader extends StatelessWidget {
               Text(
                 'Profile',
                 style: GoogleFonts.inter(
-                  fontSize: 26,
+                  fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimaryOf(context),
                   height: 1.1,
@@ -172,7 +173,7 @@ class _WebPageHeader extends StatelessWidget {
               Text(
                 'Manage your practice, network & account',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
@@ -228,7 +229,7 @@ class _DoctorIdentityPanel extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                      fontSize: 22,
+                      fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimaryOf(context),
                       height: 1.15,
@@ -293,7 +294,7 @@ class _DoctorIdentityPanel extends StatelessWidget {
               Text(
                 'Quick access',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -302,7 +303,7 @@ class _DoctorIdentityPanel extends StatelessWidget {
               Text(
                 'Account, reviews & reports',
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
@@ -381,7 +382,7 @@ class _SidebarQuickLinkState extends State<_SidebarQuickLink> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 13,
+                          fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimaryOf(context),
                         ),
@@ -393,7 +394,7 @@ class _SidebarQuickLinkState extends State<_SidebarQuickLink> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 11,
+                            fontSize: AppTypography.labelSmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),
@@ -442,7 +443,7 @@ class _WebSectionPanel extends StatelessWidget {
             Text(
               title,
               style: GoogleFonts.inter(
-                fontSize: 18,
+                fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -450,7 +451,7 @@ class _WebSectionPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
             const SizedBox(height: 16),
             child,
@@ -592,7 +593,7 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
                         ),
@@ -604,7 +605,7 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),
@@ -645,7 +646,7 @@ class _MetaChip extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: GoogleFonts.inter(
-          fontSize: 12,
+          fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
         ),
@@ -671,7 +672,7 @@ class _ContactRow extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],
@@ -710,7 +711,7 @@ class _StatTile extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -719,7 +720,7 @@ class _StatTile extends StatelessWidget {
           Text(
             value,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w800,
               color: highlight ? AppColors.doctorBlue : AppColors.textPrimaryOf(context),
             ),

@@ -9,6 +9,7 @@ import '../../data/registered_doctors_store.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 import '../../widgets/patient_favorites_sheets.dart';
 import 'home_doctor_tile.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class MyDoctorSection extends StatelessWidget {
   const MyDoctorSection({
@@ -70,7 +71,7 @@ class MyDoctorSection extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -88,7 +89,7 @@ class MyDoctorSection extends StatelessWidget {
                       ),
                       child: Text(
                         'Add',
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],

@@ -9,6 +9,7 @@ import '../features/ambulance/ambulance_profile_screen.dart';
 import '../features/doctor/profile/doctor_profile_screen.dart';
 import '../features/lab/screens/lab_profile_screen.dart';
 import '../features/pharmacy/screens/store_profile_screen.dart';
+import '../core/theme/app_typography.dart';
 
 /// Shown when a non-patient user tries to access role data before completing profile.
 class CompleteProfilePrompt extends StatelessWidget {
@@ -92,7 +93,7 @@ class CompleteProfilePrompt extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  fontSize: 20,
+                  fontSize: AppTypography.headlineMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -102,7 +103,7 @@ class CompleteProfilePrompt extends StatelessWidget {
                 message,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   height: 1.5,
                   color: AppColors.textSecondaryOf(context),
                 ),

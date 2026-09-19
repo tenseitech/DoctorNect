@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Bottom sheet for submitting or editing a doctor review (editable for 48 hours).
 abstract final class SubmitDoctorReviewSheet {
@@ -98,14 +99,14 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
         children: [
           Text(
             widget.isEdit ? 'Edit your review' : 'Rate Dr. ${widget.doctorName}',
-            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
             widget.isEdit
                 ? 'You can edit this review within 48 hours of posting.'
                 : 'How was your visit?',
-            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 16),
           Row(

@@ -104,7 +104,6 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
       await PatientProfileMock.removeFamilyMember(member.id);
       if (!mounted) return;
       Navigator.pop(context, true);
-      AppToast.info(context, '${member.name} removed');
     } catch (_) {
       if (!mounted) return;
       AppToast.info(context, 'Could not remove family member. Try again.');
@@ -150,7 +149,6 @@ class _AddFamilyMemberProfileScreenState extends State<AddFamilyMemberProfileScr
       }
       if (!mounted) return;
       Navigator.pop(context, member);
-      AppToast.info(context, isEditing ? 'Family member updated' : 'Family member added');
     } catch (_) {
       if (!mounted) return;
       AppToast.info(context, 'Could not save family member. Try again.');

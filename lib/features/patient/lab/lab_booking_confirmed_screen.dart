@@ -8,6 +8,7 @@ import '../widgets/patient_app_shell.dart';
 import 'models/lab_models.dart';
 import 'patient_lab_bookings_screen.dart';
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 class LabBookingConfirmedScreen extends StatelessWidget {
   const LabBookingConfirmedScreen({super.key, required this.booking});
@@ -56,7 +57,7 @@ class LabBookingConfirmedScreen extends StatelessWidget {
             children: [
               Text(
                 booking.testName,
-                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -75,7 +76,7 @@ class LabBookingConfirmedScreen extends StatelessWidget {
                 Text(
                   booking.address,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 13),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                 ),
               ] else ...[
                 Text(
@@ -92,7 +93,7 @@ class LabBookingConfirmedScreen extends StatelessWidget {
                 Text(
                   booking.address,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 13),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                 ),
               ],
             ],

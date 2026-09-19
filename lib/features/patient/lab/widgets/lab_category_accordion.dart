@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/lab_models.dart';
 import 'lab_test_row.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class LabCategoryAccordionSection extends StatelessWidget {
   const LabCategoryAccordionSection({
@@ -91,7 +92,7 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
                     child: Text(
                       title,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -106,7 +107,7 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
                     child: Text(
                       '${tests.length}',
                       style: GoogleFonts.inter(
-                        fontSize: 11,
+                        fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.labPurple,
                       ),

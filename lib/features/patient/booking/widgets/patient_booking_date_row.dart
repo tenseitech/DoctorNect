@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Compact one-row date picker: month/year control + horizontal day chips.
 class PatientBookingDateRow extends StatefulWidget {
@@ -97,10 +98,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
     final message = widget.holidayMessage?.call(date);
     if (message != null && message.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message)),
       );
       return;
     }
@@ -126,7 +124,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: Text(
                 'Select month & year',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
               ),
               content: SizedBox(
                 width: 300,
@@ -137,7 +135,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                     Text(
                       'Year',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -161,7 +159,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                           .map(
                             (y) => DropdownMenuItem(
                               value: y,
-                              child: Text('$y', style: GoogleFonts.inter(fontSize: 14)),
+                              child: Text('$y', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
                             ),
                           )
                           .toList(),
@@ -173,7 +171,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                     Text(
                       'Month',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -208,7 +206,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                               child: Text(
                                 label,
                                 style: GoogleFonts.inter(
-                                  fontSize: 13,
+                                  fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
                                 ),
@@ -301,7 +299,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                                 monthName,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.inter(
-                                  fontSize: 13,
+                                  fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimaryOf(context),
                                   height: 1.1,
@@ -311,7 +309,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                                 yearName,
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.inter(
-                                  fontSize: 12,
+                                  fontSize: AppTypography.labelMedium,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textSecondaryOf(context),
                                   height: 1.1,
@@ -338,7 +336,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                 ? Center(
                     child: Text(
                       'No dates this month',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                   )
                 : SizedBox(
@@ -401,7 +399,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                                 Text(
                                   DateFormat('d').format(d),
                                   style: GoogleFonts.inter(
-                                    fontSize: 16,
+                                    fontSize: AppTypography.headlineSmall,
                                     height: 1,
                                     fontWeight: FontWeight.w700,
                                     color: dayColor,

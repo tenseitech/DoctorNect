@@ -6,6 +6,7 @@ import '../core/constants/country_phone_codes.dart';
 import '../core/theme/app_colors.dart';
 import '../core/validators/form_validators.dart';
 import 'required_field_label.dart';
+import '../core/theme/app_typography.dart';
 
 class PhoneNumberField extends StatefulWidget {
   const PhoneNumberField({
@@ -119,7 +120,7 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
                 Text(
                   _dialCode,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: widget.enabled
                         ? AppColors.textPrimaryOf(context)
@@ -219,7 +220,7 @@ class _CountryCodePickerSheetState extends State<_CountryCodePickerSheet> {
               child: Text(
                 'Select country code',
                 style: GoogleFonts.inter(
-                  fontSize: 18,
+                  fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                 ),
               ),

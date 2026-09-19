@@ -26,6 +26,7 @@ import 'utils/patient_lab_age_guard.dart';
 import 'utils/patient_selected_investigations_mapper.dart';
 import 'widgets/lab_category_accordion.dart';
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 class LabHomeScreen extends StatefulWidget {
   const LabHomeScreen({super.key, this.embeddedInShell = false});
@@ -93,14 +94,14 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
             Expanded(
               child: Text(
                 'Packages',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 18),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
               ),
             ),
           ],
         ),
         content: Text(
           'Health packages are coming soon. You will be able to book bundled checkups at better value.',
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context), height: 1.45),
+          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context), height: 1.45),
         ),
         actions: [
           FilledButton(
@@ -189,7 +190,7 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
                   Text(
                     'Bookings',
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.surfaceOf(context),
                       letterSpacing: 0.1,
@@ -209,7 +210,7 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
                       child: Text(
                         '$upcomingCount',
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w800,
                           color: AppColors.surfaceOf(context),
                           height: 1,
@@ -387,12 +388,12 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
             if (!profileAgeValid) ...[
               Text(
                 'Booking for ${PatientLabAgeGuard.selfAgeLabel()}',
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 8),
               Text(
                 PatientLabAgeGuard.missingAgeHint,
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.error, height: 1.4),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.error, height: 1.4),
               ),
               const SizedBox(height: 12),
             ],
@@ -623,7 +624,7 @@ class _LabQuickAction extends StatelessWidget {
                 child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
                   ),

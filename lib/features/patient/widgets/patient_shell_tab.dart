@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import 'patient_screen_title_bar.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Shell tab page: title, pill tabs, constrained body.
 class PatientShellTabPage extends StatelessWidget {
@@ -161,7 +162,7 @@ class _SegmentTabState extends State<_SegmentTab> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: selected ? AppColors.white : AppColors.textPrimaryOf(context),
               ),
@@ -252,14 +253,14 @@ class PatientTabEmptyState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.45,
               ),

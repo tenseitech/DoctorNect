@@ -6,6 +6,7 @@ import '../../../core/session/medical_store_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/pharmacy_notification_store.dart';
 import 'store_prescription_detail_screen.dart';
+import '../../../core/theme/app_typography.dart';
 
 class StoreNotificationsScreen extends StatelessWidget {
   const StoreNotificationsScreen({super.key});
@@ -48,7 +49,7 @@ class StoreNotificationsScreen extends StatelessWidget {
                     Text(n.message),
                     Text(
                       DateFormat('dd MMM yyyy, hh:mm a').format(n.createdAt),
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),

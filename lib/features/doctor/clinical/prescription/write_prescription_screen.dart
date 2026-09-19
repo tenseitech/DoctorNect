@@ -35,6 +35,7 @@ import 'prescription_mobile_rx_section.dart';
 import 'prescription_preview_modal.dart';
 import 'prescription_rx_shared.dart';
 import 'widgets/prescription_form_sections.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class WritePrescriptionScreen extends StatefulWidget {
   const WritePrescriptionScreen({
@@ -348,7 +349,6 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${item.name.trim()} is already in this Rx'),
-          behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -480,36 +480,19 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
     if (!mounted) return;
     if (storeIds != null && storeIds.isNotEmpty) {
       try {
-        final sent = await PharmacyPrescriptionStore.instance.sendToStores( // FIXED: await so send failures surface
+        await PharmacyPrescriptionStore.instance.sendToStores( // FIXED: await so send failures surface
           draft: _draft,
           storeIds: storeIds,
           doctorId: doctorId,
           doctorName: doctorName,
         );
         if (!mounted) return; // FIXED: mounted check after await
-        if (sent.isNotEmpty) {
-          showClinicalToast(
-            context,
-            _isLoadedFromSavedRecord
-                ? 'Prescription updated and sent to ${sent.length} medical store(s)'
-                : 'Prescription saved and sent to ${sent.length} medical store(s)',
-          );
-        }
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Prescription saved, but sending to the pharmacy failed. Please retry from Send.')), // FIXED
         );
       }
-    } else {
-      final message = _isLoadedFromSavedRecord
-          ? (connections.isEmpty
-              ? 'Prescription updated in EMR'
-              : 'Prescription updated in EMR — use Send to notify recipients')
-          : (connections.isEmpty
-              ? 'Prescription saved to EMR (no connected stores)'
-              : 'Prescription saved to EMR');
-      showClinicalToast(context, message);
     }
   }
 
@@ -603,7 +586,7 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
                           child: Text(
                             'Editing · ${DateFormat('dd MMM yyyy, hh:mm a').format(_draft.prescriptionDate)} · ${_draft.prescriptionId}',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
                               color: AppColors.doctorBlue,
                             ),
@@ -862,7 +845,7 @@ class _PrevRxCard extends StatelessWidget {
                   DateFormat('dd MMM yyyy').format(draft.prescriptionDate),
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     color: AppColors.textPrimaryOf(context),
                   ),
                 ),
@@ -872,7 +855,7 @@ class _PrevRxCard extends StatelessWidget {
                     dx,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
                 if (meds.isNotEmpty) ...[
@@ -885,7 +868,7 @@ class _PrevRxCard extends StatelessWidget {
                     }).join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
                 if (tests.isNotEmpty) ...[
@@ -897,7 +880,7 @@ class _PrevRxCard extends StatelessWidget {
                         .join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
               ],
@@ -932,7 +915,7 @@ class _PrevRxCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Edit',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                     ),
                   ),
                   TextButton(
@@ -945,7 +928,7 @@ class _PrevRxCard extends StatelessWidget {
                     ),
                     child: Text(
                       'View',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -1104,16 +1087,6 @@ class _SendToSheetState extends State<_SendToSheet> {
     }
 
     Navigator.pop(context);
-
-    final label = sentTo.join(', ');
-    final warningSuffix = warnings.isEmpty ? '' : ' (${warnings.join('; ')})';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Prescription sent to: $label$warningSuffix'),
-        backgroundColor: const Color(0xFF16A34A),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override
@@ -1141,14 +1114,14 @@ class _SendToSheetState extends State<_SendToSheet> {
               const SizedBox(width: 10),
               Text(
                 'Send Prescription to',
-                style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             'Select all recipients for ${widget.patient.patientName}\'s prescription',
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 16),
           const Divider(),
@@ -1190,7 +1163,7 @@ class _SendToSheetState extends State<_SendToSheet> {
                 backgroundColor: AppColors.doctorBlue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -1227,12 +1200,12 @@ class _RecipientTile extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: AppColors.doctorBlue),
           const SizedBox(width: 10),
-          Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
         ],
       ),
       subtitle: Padding(
         padding: const EdgeInsets.only(left: 28),
-        child: Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+        child: Text(subtitle, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
       ),
     );
   }

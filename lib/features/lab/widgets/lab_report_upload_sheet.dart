@@ -16,6 +16,7 @@ import '../../../core/firebase/models/doctor_lab_order.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/overflow_safe_layout.dart';
 import '../data/lab_worklist_store.dart';
+import '../../../core/theme/app_typography.dart';
 
 abstract final class LabReportUploadSheet {
   static Future<bool?> show(
@@ -100,7 +101,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                       Expanded(
                         child: Text(
                           'This file is larger than typical lab reports — please confirm this is the correct report.',
-                          style: GoogleFonts.inter(fontSize: 13, color: Color(0xFF9A3412), height: 1.4),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: Color(0xFF9A3412), height: 1.4),
                         ),
                       ),
                     ],
@@ -332,12 +333,12 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             const SizedBox(height: 16),
             Text(
               'Upload lab report',
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             Text(
               '$_patientName · $_testNames',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
@@ -369,12 +370,12 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                         children: [
                           Text(
                             _file!.name,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall),
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             _formatFileSize(_file!.size),
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ),

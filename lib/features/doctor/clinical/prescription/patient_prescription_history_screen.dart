@@ -12,6 +12,7 @@ import '../models/clinical_models.dart';
 import '../../widgets/patient_sharing_blocked_notice.dart';
 import 'edit_prescription_screen.dart';
 import 'prescription_preview_modal.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class PatientPrescriptionHistoryScreen extends StatefulWidget {
   const PatientPrescriptionHistoryScreen({
@@ -59,7 +60,7 @@ class _PatientPrescriptionHistoryScreenState extends State<PatientPrescriptionHi
         appBar: AppBar(
           title: Text(
             'Prescription History',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.headlineSmall),
           ),
           backgroundColor: AppColors.surfaceOf(context),
           foregroundColor: AppColors.textPrimaryOf(context),
@@ -76,7 +77,7 @@ class _PatientPrescriptionHistoryScreenState extends State<PatientPrescriptionHi
         appBar: AppBar(
           title: Text(
             'Prescription History',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.headlineSmall),
           ),
           backgroundColor: AppColors.surfaceOf(context),
           foregroundColor: AppColors.textPrimaryOf(context),
@@ -103,7 +104,7 @@ class _PatientPrescriptionHistoryScreenState extends State<PatientPrescriptionHi
           appBar: AppBar(
             title: Text(
               'Prescription History',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.headlineSmall),
             ),
             backgroundColor: AppColors.surfaceOf(context),
             foregroundColor: AppColors.textPrimaryOf(context),
@@ -125,7 +126,7 @@ class _PatientPrescriptionHistoryScreenState extends State<PatientPrescriptionHi
                             Text(
                               '${records.length} visit${records.length == 1 ? '' : 's'}',
                               style: GoogleFonts.inter(
-                                fontSize: 13,
+                                fontSize: AppTypography.bodySmall,
                                 fontWeight: FontWeight.w500,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -148,7 +149,7 @@ class _PatientPrescriptionHistoryScreenState extends State<PatientPrescriptionHi
                                   ),
                                   child: Text(
                                     'Load older prescriptions',
-                                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall),
                                   ),
                                 ),
                               ),
@@ -181,7 +182,7 @@ class _EmptyHistoryState extends StatelessWidget {
             Text(
               'No saved prescriptions yet',
               style: GoogleFonts.inter(
-                fontSize: 15,
+                fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -190,7 +191,7 @@ class _EmptyHistoryState extends StatelessWidget {
             Text(
               'Prescriptions saved to EMR for this patient will appear here.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
           ],
         ),

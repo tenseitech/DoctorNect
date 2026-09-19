@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 const _observationGreen = Color(0xFF16A34A);
 
@@ -58,7 +59,7 @@ class _ReadOnlyTagList extends StatelessWidget {
       return Text(
         emptyLabel,
         style: GoogleFonts.inter(
-          fontSize: 13,
+          fontSize: AppTypography.bodySmall,
           color: AppColors.textSecondaryOf(context),
           fontStyle: FontStyle.italic,
         ),
@@ -79,7 +80,7 @@ class _ReadOnlyTagList extends StatelessWidget {
           child: Text(
             item,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -109,7 +110,7 @@ class _SectionHeader extends StatelessWidget {
         Text(
           title,
           style: GoogleFonts.inter(
-            fontSize: 12,
+            fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w600,
             color: color,
           ),

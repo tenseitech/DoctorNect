@@ -9,6 +9,7 @@ import '../../../widgets/required_field_label.dart';
 import '../../../widgets/theme_toggle_button.dart';
 import 'auth_login_branding.dart';
 import 'auth_login_form_field.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Legacy floating-label decoration (forgot-password flows, etc.).
 InputDecoration authLoginInputDecoration({
@@ -334,7 +335,7 @@ class _LoginBrandingPanel extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  fontSize: 20,
+                                  fontSize: AppTypography.headlineMedium,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                   letterSpacing: -0.3,
@@ -347,7 +348,7 @@ class _LoginBrandingPanel extends StatelessWidget {
                         Text(
                           welcomeTitle,
                           style: GoogleFonts.inter(
-                            fontSize: 36,
+                            fontSize: AppTypography.displayLarge,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             height: 1.15,
@@ -360,7 +361,7 @@ class _LoginBrandingPanel extends StatelessWidget {
                           maxLines: 4,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 16,
+                            fontSize: AppTypography.headlineSmall,
                             color: Colors.white.withValues(alpha: 0.92),
                             height: 1.55,
                           ),
@@ -390,7 +391,7 @@ class _LoginBrandingPanel extends StatelessWidget {
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                           style: GoogleFonts.inter(
-                                            fontSize: 15,
+                                            fontSize: AppTypography.bodyLarge,
                                             fontWeight: FontWeight.w600,
                                             color: Colors.white,
                                           ),
@@ -400,7 +401,7 @@ class _LoginBrandingPanel extends StatelessWidget {
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                           style: GoogleFonts.inter(
-                                            fontSize: 13,
+                                            fontSize: AppTypography.bodySmall,
                                             color: Colors.white.withValues(alpha: 0.85),
                                           ),
                                         ),
@@ -421,7 +422,7 @@ class _LoginBrandingPanel extends StatelessWidget {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  fontSize: 12,
+                                  fontSize: AppTypography.labelMedium,
                                   color: Colors.white.withValues(alpha: 0.8),
                                 ),
                               ),
@@ -606,7 +607,7 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 20,
+                              fontSize: AppTypography.headlineMedium,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                               letterSpacing: -0.3,
@@ -618,7 +619,7 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 13,
+                              fontSize: AppTypography.bodySmall,
                               color: Colors.white.withValues(alpha: 0.92),
                               height: 1.4,
                             ),
@@ -754,7 +755,7 @@ class _StackedLoginScaffold extends StatelessWidget {
                             subtitle,
                             textAlign: compact ? TextAlign.center : TextAlign.left,
                             style: GoogleFonts.inter(
-                              fontSize: 14,
+                              fontSize: AppTypography.bodyMedium,
                               color: AppColors.textSecondaryOf(context),
                               height: 1.45,
                             ),
@@ -857,7 +858,7 @@ class AuthLoginDividerLabel extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -928,7 +929,7 @@ class AuthLoginPrimaryButton extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
@@ -948,7 +949,7 @@ class AuthLoginPrimaryButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        fontSize: 15,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                         letterSpacing: 0.2,
@@ -1006,7 +1007,7 @@ class AuthLoginRegisterButton extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   color: accentColor,
                 ),
               ),

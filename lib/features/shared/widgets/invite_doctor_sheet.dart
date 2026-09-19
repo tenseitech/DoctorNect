@@ -6,6 +6,7 @@ import '../../../core/session/lab_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/external_launcher.dart';
 import '../../lab/data/lab_registry.dart';
+import '../../../core/theme/app_typography.dart';
 
 abstract final class LabDoctorInviteService {
   static const appDownloadUrl = 'https://doctornect.com/download';
@@ -74,13 +75,6 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
       role: widget.role,
     );
     await Clipboard.setData(ClipboardData(text: message));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Invite message copied'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _shareLink() async {
@@ -116,7 +110,7 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
             const SizedBox(height: 16),
             Text(
               'Invite to download app',
-              style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
@@ -124,7 +118,7 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
                   ? 'Share this link with a doctor who is not on DoctorNect yet. They can download the app, register as a doctor, and connect with $labName.'
                   : 'Share this link with anyone who is not on DoctorNect yet. They can download the app and connect with $labName.',
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
               ),
@@ -145,7 +139,7 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
                     child: SelectableText(
                       _link,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),

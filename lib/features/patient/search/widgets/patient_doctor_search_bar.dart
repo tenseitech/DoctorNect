@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class PatientDoctorSearchBar extends StatefulWidget {
   const PatientDoctorSearchBar({
@@ -207,7 +208,7 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                   Text(
                     'Filters',
                     style: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w600,
                       color: hasActive ? AppColors.patientTeal : AppColors.textPrimaryOf(context),
                     ),
@@ -217,7 +218,7 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                   Text(
                     'Filter',
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                       color: hasActive ? AppColors.patientTeal : AppColors.textPrimaryOf(context),
                     ),
@@ -234,7 +235,7 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                     child: Text(
                       '${widget.activeCount}',
                       style: GoogleFonts.inter(
-                        fontSize: 11,
+                        fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.surfaceOf(context),
                       ),

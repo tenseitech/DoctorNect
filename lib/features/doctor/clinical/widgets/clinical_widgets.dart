@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../data/community_medicine_repository.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ClinicalSectionCard extends StatefulWidget {
   const ClinicalSectionCard({
@@ -95,7 +96,7 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
                               widget.collapsedSummary!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                             ),
                           ],
                         ],
@@ -280,7 +281,7 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
                     color: Colors.transparent,
                     child: ListTile(
                       dense: true,
-                      title: Text(item.name, style: GoogleFonts.inter(fontSize: 13)),
+                      title: Text(item.name, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
                       trailing: item.isCommunity
                           ? Text(
                               'Community',
@@ -300,7 +301,7 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
                   color: Colors.transparent,
                   child: ListTile(
                     dense: true,
-                    title: Text(item, style: GoogleFonts.inter(fontSize: 13)),
+                    title: Text(item, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
                     onTap: () => _selectItem(MedicineSearchSuggestion(name: item)),
                   ),
                 );
@@ -311,14 +312,4 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
       ),
     );
   }
-}
-
-void showClinicalToast(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: const Color(0xFF16A34A),
-    ),
-  );
 }

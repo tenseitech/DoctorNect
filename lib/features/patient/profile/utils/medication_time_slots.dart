@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 enum MedicationTimeSlot { morning, afternoon, evening, night }
 
@@ -122,12 +123,12 @@ abstract final class MedicationTimeSlots {
                     const SizedBox(height: 14),
                     Text(
                       '${label(slot)} time',
-                      style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Select between ${rangeLabel(slot)}',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                     const SizedBox(height: 16),
                     Row(

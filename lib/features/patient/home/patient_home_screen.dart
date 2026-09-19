@@ -38,6 +38,7 @@ import 'widgets/explore_section.dart';
 import 'widgets/home_search_bar.dart';
 import 'widgets/services_section.dart';
 import 'widgets/patient_address_sheet.dart';
+import '../../../core/theme/app_typography.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({
@@ -73,14 +74,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   Future<void> _openAddressForm() async {
-    final saved = await PatientAddressSheet.show(context);
-    if (!mounted || !saved) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Location saved'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    await PatientAddressSheet.show(context);
   }
 
   void _openSearch({
@@ -119,7 +113,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Add your city to see citywide doctors'),
-            behavior: SnackBarBehavior.floating,
           ),
         );
         return;
@@ -375,7 +368,7 @@ class _PatientLocationRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     fontWeight: hasAddress ? FontWeight.w500 : FontWeight.w600,
                     height: 1.2,
                     color: hasAddress ? AppColors.textSecondaryOf(context) : AppColors.patientTeal,

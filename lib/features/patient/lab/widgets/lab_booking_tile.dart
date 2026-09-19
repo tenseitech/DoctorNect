@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../data/patient_lab_booking_filters.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class LabBookingTile extends StatelessWidget {
   const LabBookingTile({
@@ -69,7 +70,7 @@ class LabBookingTile extends StatelessWidget {
                           Text(
                             day,
                             style: GoogleFonts.inter(
-                              fontSize: 18,
+                              fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w800,
                               color: AppColors.surfaceOf(context),
                               height: 1,
@@ -101,7 +102,7 @@ class LabBookingTile extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                    fontSize: 14,
+                                    fontSize: AppTypography.bodyMedium,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -116,7 +117,7 @@ class LabBookingTile extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                fontSize: 12,
+                                fontSize: AppTypography.labelMedium,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
                               ),
@@ -125,7 +126,7 @@ class LabBookingTile extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${booking.allTestNames.length} tests booked',
-                              style: GoogleFonts.inter(fontSize: 11, color: AppColors.labPurple),
+                              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.labPurple),
                             ),
                           ],
                           const SizedBox(height: 2),
@@ -133,7 +134,7 @@ class LabBookingTile extends StatelessWidget {
                             labName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                           ),
                           const SizedBox(height: 6),
                           Row(
@@ -149,7 +150,7 @@ class LabBookingTile extends StatelessWidget {
                                   booking.slotLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                                 ),
                               ),
                             ],

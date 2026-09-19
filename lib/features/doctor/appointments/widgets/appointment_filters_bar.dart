@@ -6,6 +6,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../models/doctor_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class AppointmentFiltersBar extends StatelessWidget {
   const AppointmentFiltersBar({
@@ -220,7 +221,7 @@ class _FilterChip extends StatelessWidget {
               Text(
                 label,
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w500,
                   color: selected ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
                 ),

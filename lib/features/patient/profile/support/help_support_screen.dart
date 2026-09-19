@@ -11,6 +11,7 @@ import '../../../../core/validators/form_validators.dart';
 import '../data/patient_profile_mock.dart';
 import '../widgets/patient_profile_form_styles.dart';
 import 'support_tickets_history_screen.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
@@ -57,7 +58,6 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
       _submitting = false;
       _issueController.clear();
     });
-    AppToast.info(context, 'Issue submitted. We will respond within 24 hours.');
   }
 
   @override
@@ -89,7 +89,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                           tilePadding: const EdgeInsets.symmetric(horizontal: 12),
                           title: Text(
                             e.value.question,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 14),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: AppTypography.bodyMedium),
                           ),
                           children: [
                             Padding(
@@ -98,7 +98,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   e.value.answer,
-                                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                                 ),
                               ),
                             ),

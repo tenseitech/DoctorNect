@@ -10,6 +10,7 @@ import '../theme/app_colors.dart';
 import 'app_notification.dart';
 import 'app_notification_navigator.dart';
 import 'in_app_notification_service.dart';
+import '../../core/theme/app_typography.dart';
 
 enum _InboxFilter { newAlerts, unread }
 
@@ -94,7 +95,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
               children: [
                 Text(
                   'Notifications',
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
                 ),
                 if (unreadCount > 0) ...[
                   const SizedBox(width: 10),
@@ -108,7 +109,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                     child: Text(
                       '$unreadCount unread',
                       style: GoogleFonts.inter(
-                        fontSize: 11.5,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w700,
                         color: _accent,
                       ),
@@ -128,7 +129,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                   ),
                   child: Text(
                     'Mark all read',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -232,7 +233,7 @@ class _FilterPill extends StatelessWidget {
           child: Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 13.5,
+              fontSize: AppTypography.bodySmall,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               color: selected ? AppColors.white : unselectedTextColor,
             ),
@@ -336,7 +337,7 @@ class _NotificationTile extends StatelessWidget {
                                   n.title,
                                   style: GoogleFonts.inter(
                                     fontWeight: n.isRead ? FontWeight.w600 : FontWeight.w700,
-                                    fontSize: 14,
+                                    fontSize: AppTypography.bodyMedium,
                                     height: 1.25,
                                     color: AppColors.textPrimaryOf(context),
                                   ),
@@ -379,7 +380,7 @@ class _NotificationTile extends StatelessWidget {
                           Text(
                             n.body,
                             style: GoogleFonts.inter(
-                              fontSize: 13,
+                              fontSize: AppTypography.bodySmall,
                               color: AppColors.textSecondaryOf(context),
                               height: 1.4,
                             ),
@@ -387,7 +388,7 @@ class _NotificationTile extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             time,
-                            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ),
@@ -508,13 +509,13 @@ class _EmptyInbox extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   title,
-                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.45),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.45),
                 ),
               ],
             ),

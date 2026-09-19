@@ -7,6 +7,7 @@ import '../../../../core/validators/form_validators.dart';
 import '../../../../widgets/overflow_safe_layout.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../models/booking_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class AddFamilyMemberSheet extends StatefulWidget {
   const AddFamilyMemberSheet({super.key});
@@ -115,7 +116,7 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
               children: [
                 Text(
                   'Add family member',
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -164,7 +165,7 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                               final option = options.elementAt(index);
                               return ListTile(
                                 dense: true,
-                                title: Text(option, style: GoogleFonts.inter(fontSize: 14)),
+                                title: Text(option, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
                                 onTap: () => onSelected(option),
                               );
                             },

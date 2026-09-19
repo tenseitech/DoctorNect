@@ -29,6 +29,7 @@ import 'data/ambulance_store.dart';
 import 'models/ambulance_models.dart';
 import '../doctor/profile/sections/doctor_add_ambulance_screen.dart';
 import 'widgets/ambulance_rating_dialog.dart';
+import '../../core/theme/app_typography.dart';
 
 class AmbulanceBookingScreen extends StatefulWidget {
   const AmbulanceBookingScreen({
@@ -47,8 +48,6 @@ class AmbulanceBookingScreen extends StatefulWidget {
 }
 
 class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
-  static const _accentColor = Color(0xFFDC2626);
-
   final _formKey = GlobalKey<FormState>();
   final _patientNameController = TextEditingController();
   final _pickupController = TextEditingController();
@@ -260,11 +259,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
   void _showBookingError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: _accentColor,
-      ),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -345,13 +340,6 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
       return;
     }
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ambulance request sent. Waiting for a driver to accept…'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   AmbulanceBooking? get _activeBooking {
@@ -411,13 +399,13 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                         'Emergency Ambulance',
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w700,
-                          fontSize: 17,
+                          fontSize: AppTypography.headlineSmall,
                         ),
                       ),
                       Text(
                         'Fast help when you need it',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
                       ),
@@ -507,22 +495,12 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               if (ok) {
                                                 _sync.stopPatientWatch();
                                                 setState(() => _activeBookingId = null);
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text('Request cancelled'),
-                                                    behavior: SnackBarBehavior.floating,
-                                                  ),
-                                                );
                                               } else {
                                                 final message =
                                                     _repository.lastCancelFailureUserMessage ??
                                                     'Could not cancel this request. Please try again.';
                                                 ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(message),
-                                                    backgroundColor: const Color(0xFFDC2626),
-                                                    behavior: SnackBarBehavior.floating,
-                                                  ),
+                                                  SnackBar(content: Text(message)),
                                                 );
                                               }
                                             }
@@ -590,7 +568,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                                 Text(
                                                   'Book Ambulance',
                                                   style: GoogleFonts.inter(
-                                                    fontSize: 16,
+                                                    fontSize: AppTypography.headlineSmall,
                                                     fontWeight: FontWeight.w700,
                                                   ),
                                                 ),
@@ -603,7 +581,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       'You will wait up to 5 minutes for acceptance.',
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.inter(
-                                        fontSize: 12,
+                                        fontSize: AppTypography.labelMedium,
                                         color: AppColors.textSecondaryOf(context),
                                         height: 1.4,
                                       ),
@@ -652,7 +630,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                         'Register a new ambulance service and send the driver an invite link.',
                                         textAlign: TextAlign.center,
                                         style: GoogleFonts.inter(
-                                          fontSize: 11,
+                                          fontSize: AppTypography.labelSmall,
                                           color: AppColors.textSecondaryOf(context),
                                           height: 1.35,
                                         ),
@@ -708,7 +686,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.inter(
-        fontSize: 13,
+        fontSize: AppTypography.bodySmall,
         color: AppColors.textSecondaryOf(context),
         fontWeight: FontWeight.w500,
       ),
@@ -773,7 +751,7 @@ class _EmergencyInfoStrip extends StatelessWidget {
                     ? 'Share pickup and destination. Nearby online drivers get notified instantly.'
                     : 'Book for your patient. All online ambulance drivers receive the request.',
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   color: AppColors.textPrimaryOf(context),
                   height: 1.4,
                   fontWeight: FontWeight.w500,
@@ -926,7 +904,7 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
                             Text(
                               'Ambulance History',
                               style: GoogleFonts.inter(
-                                fontSize: 17,
+                                fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -935,7 +913,7 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
                                   ? 'No past trips yet'
                                   : '${trips.length} past trip${trips.length == 1 ? '' : 's'}',
                               style: GoogleFonts.inter(
-                                fontSize: 12,
+                                fontSize: AppTypography.labelMedium,
                                 color: AppColors.textSecondaryOf(context),
                               ),
                             ),
@@ -978,7 +956,7 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
                                   'Your completed trips will show here.',
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.inter(
-                                    fontSize: 14,
+                                    fontSize: AppTypography.bodyMedium,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
                                 ),
@@ -1045,7 +1023,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 15,
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1073,7 +1051,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
               trip.notes!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
             ),
           ],
           const SizedBox(height: 6),
@@ -1086,7 +1064,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   DateFormat('dd MMM yyyy · hh:mm a').format(trip.createdAt),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                 ),
               ),
             ],
@@ -1109,7 +1087,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           trip.acceptedAmbulanceName!,
-                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -1120,7 +1098,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
                       'Driver: ${trip.acceptedDriverName!} • ${trip.acceptedVehicleNumber ?? ""}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                   if (trip.acceptedDriverPhone != null) ...[
@@ -1131,7 +1109,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           trip.acceptedDriverPhone!,
-                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                         ),
                       ],
                     ),
@@ -1159,7 +1137,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   Text(
                     '${trip.rating}/5',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFF59E0B),
                     ),
@@ -1172,7 +1150,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: AppTypography.labelSmall,
                           fontStyle: FontStyle.italic,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -1189,7 +1167,7 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   icon: const Icon(Icons.star_rounded, size: 16),
                   label: Text(
                     'Rate & Review',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFF59E0B),
@@ -1233,7 +1211,7 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
         Text(
           'Ambulance type',
           style: GoogleFonts.inter(
-            fontSize: 13,
+            fontSize: AppTypography.bodySmall,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimaryOf(context),
           ),
@@ -1241,7 +1219,7 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Optional — leave on All Types for fastest match',
-          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 10),
         SingleChildScrollView(
@@ -1286,7 +1264,7 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                         Text(
                           label,
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w700,
                             color: selected ? AppColors.surfaceOf(context) : const Color(0xFF374151),
                           ),
@@ -1422,20 +1400,8 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
       if (mounted) {
         if (resolvedAddress != null && resolvedAddress.trim().isNotEmpty) {
           controller.text = resolvedAddress.trim();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${isPickup ? "Pickup" : "Drop"} location auto-filled from current GPS.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
         } else {
           controller.text = '${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}';
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Coordinates auto-filled from GPS.'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
         }
       }
     } catch (e) {
@@ -1443,7 +1409,6 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Could not fetch location. Enter address manually.'),
-            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -1513,14 +1478,14 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                   enabled: widget.enabled,
                   textCapitalization: TextCapitalization.words,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimaryOf(context),
                   ),
                   decoration: InputDecoration(
                     hintText: 'Pickup location',
                     hintStyle: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                       fontWeight: FontWeight.w400,
                     ),
@@ -1562,14 +1527,14 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                   enabled: widget.enabled,
                   textCapitalization: TextCapitalization.words,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimaryOf(context),
                   ),
                   decoration: InputDecoration(
                     hintText: 'Destination hospital or address',
                     hintStyle: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                       fontWeight: FontWeight.w400,
                     ),
@@ -1792,7 +1757,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                       title,
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         color: color,
                       ),
                     ),
@@ -1800,7 +1765,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     Text(
                       subtitle,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -1864,7 +1829,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                       child: Text(
                         'Time remaining: ${widget.remainingTimeLabel}',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w700,
                           color: color,
                         ),
@@ -1915,7 +1880,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     icon: const Icon(Icons.star_rounded, size: 18),
                     label: Text(
                       'Rate Driver',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                     ),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFF59E0B),
@@ -1937,7 +1902,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                       Text(
                         'Rated ${booking.rating}★',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFFF59E0B),
                         ),
@@ -1956,7 +1921,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     ),
                     child: Text(
                       'Done',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -2012,7 +1977,7 @@ class _AcceptedDriverDetails extends StatelessWidget {
                 Text(
                   'Assigned driver',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF16A34A),
                   ),
@@ -2096,7 +2061,7 @@ class _DetailRow extends StatelessWidget {
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
               children: [
                 TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w600)),
                 TextSpan(
@@ -2180,7 +2145,7 @@ class _SkippedDriversRow extends StatelessWidget {
                 child: Text(
                   message,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: barColor,
                   ),

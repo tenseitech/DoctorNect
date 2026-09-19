@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class AppointmentsEmptyState extends StatelessWidget {
   const AppointmentsEmptyState({super.key, required this.tabLabel});
@@ -33,7 +34,7 @@ class AppointmentsEmptyState extends StatelessWidget {
               'No $tabLabel appointments',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 18,
+                fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -43,7 +44,7 @@ class AppointmentsEmptyState extends StatelessWidget {
               'Appointments matching your filters will appear here.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
               ),

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/media/gallery_image_picker.dart';
 import '../core/theme/app_colors.dart';
 import 'profile_photo_image_io.dart' if (dart.library.html) 'profile_photo_image_stub.dart';
+import '../core/theme/app_typography.dart';
 
 class PickedProfilePhoto {
   const PickedProfilePhoto({this.path, this.bytes});
@@ -37,7 +38,7 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
             child: Text(
               'Upload Profile Photo',
               style: GoogleFonts.inter(
-                fontSize: 16,
+                fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
               ),

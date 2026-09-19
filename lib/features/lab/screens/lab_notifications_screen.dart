@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/lab_notification_store.dart';
 import '../models/lab_notification.dart';
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 enum _LabNotifFilter { all, unread, read }
 
@@ -75,14 +76,14 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                       children: [
                         Text(
                           'Notifications',
-                          style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w700),
+                          style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           unreadCount > 0
                               ? '$unreadCount unread · connection, orders & bookings'
                               : 'Connection updates, new orders, and booking alerts',
-                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                         ),
                       ],
                     ),
@@ -100,7 +101,7 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                       ),
                       child: Text(
                         'Mark all read',
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                       ),
                     ),
                 ],
@@ -158,7 +159,7 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                               child: Text(
                                 entry.key,
                                 style: GoogleFonts.inter(
-                                  fontSize: 12,
+                                  fontSize: AppTypography.labelMedium,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textSecondaryOf(context),
                                   letterSpacing: 0.4,
@@ -224,7 +225,7 @@ class _FilterPill extends StatelessWidget {
               Text(
                 label,
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: selected ? AppColors.surfaceOf(context) : AppColors.textSecondaryOf(context),
                 ),
@@ -242,7 +243,7 @@ class _FilterPill extends StatelessWidget {
                   child: Text(
                     '$count',
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w700,
                       color: selected ? AppColors.surfaceOf(context) : _labPurple,
                     ),
@@ -325,7 +326,7 @@ class _LabNotificationCard extends StatelessWidget {
                             child: Text(
                               notification.title,
                               style: GoogleFonts.inter(
-                                fontSize: 14,
+                                fontSize: AppTypography.bodyMedium,
                                 fontWeight:
                                     notification.isRead ? FontWeight.w600 : FontWeight.w700,
                                 height: 1.25,
@@ -348,7 +349,7 @@ class _LabNotificationCard extends StatelessWidget {
                       Text(
                         notification.message,
                         style: GoogleFonts.inter(
-                          fontSize: 13,
+                          fontSize: AppTypography.bodySmall,
                           color: AppColors.textSecondaryOf(context),
                           height: 1.4,
                         ),
@@ -375,7 +376,7 @@ class _LabNotificationCard extends StatelessWidget {
                           Text(
                             timeLabel,
                             style: GoogleFonts.inter(
-                              fontSize: 11,
+                              fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -520,14 +521,14 @@ class _EmptyNotifications extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
               subtitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.45,
               ),

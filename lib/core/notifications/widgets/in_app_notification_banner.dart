@@ -7,6 +7,7 @@ import '../../theme/app_colors.dart';
 import '../app_notification.dart';
 import '../app_notification_navigator.dart';
 import '../in_app_notification_service.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Top banner when a new in-app alert arrives (replaces push notification tray).
 class InAppNotificationBanner {
@@ -103,14 +104,14 @@ class _Banner extends StatelessWidget {
                     children: [
                       Text(
                         notification.title,
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.bodyMedium),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         notification.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                       ),
                       const SizedBox(height: 4),
                       Text(

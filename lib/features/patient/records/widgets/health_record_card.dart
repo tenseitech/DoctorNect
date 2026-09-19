@@ -7,6 +7,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/health_record_models.dart';
 import '../utils/record_type_style.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class HealthRecordCard extends StatelessWidget {
   const HealthRecordCard({
@@ -127,14 +128,14 @@ class HealthRecordCard extends StatelessWidget {
                 record.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 2),
               Text(
                 _provider,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 6),
               Container(
@@ -187,20 +188,20 @@ class HealthRecordCard extends StatelessWidget {
                 children: [
                   Text(
                     record.title,
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
                   ),
                   Text(
                     _provider,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                   Text(
                     DateFormat('dd MMM yyyy').format(record.date),
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                   if (record.notes != null && record.notes!.trim().isNotEmpty)
                     Text(
                       record.notes!,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                     ),
                 ],
               ),
@@ -266,7 +267,7 @@ class _RecordDateBadge extends StatelessWidget {
           Text(
             day,
             style: GoogleFonts.inter(
-              fontSize: 16,
+              fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w800,
               color: color,
               height: 1,

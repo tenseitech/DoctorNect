@@ -6,6 +6,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme_controller.dart';
 import 'digital_health_card_sheet.dart';
 import 'emergency_sos_sheet.dart';
+import '../core/theme/app_typography.dart';
 
 /// Consolidated three-dot (⋮) overflow menu for top header bars.
 /// Contains QR Credentials Pass, Emergency SOS Hotline, and Theme Toggle.
@@ -60,7 +61,7 @@ class HeaderOverflowMenu extends StatelessWidget {
                   Text(
                     userType == UserType.doctor ? 'Doctor Pass (QR)' : 'Health Pass ID',
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -85,7 +86,7 @@ class HeaderOverflowMenu extends StatelessWidget {
                   Text(
                     'Emergency SOS',
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFFDC2626),
                     ),

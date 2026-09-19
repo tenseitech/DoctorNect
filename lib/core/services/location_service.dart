@@ -202,10 +202,6 @@ abstract final class LocationService {
         mapsUrl: mapsUrl,
       );
 
-      if (context != null && context.mounted && showToast) {
-        AppToast.success(context, 'Current location detected successfully.');
-      }
-
       return result;
     } catch (e) {
       if (context != null && context.mounted && showToast) {

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class HomeDoctorTile extends StatefulWidget {
   const HomeDoctorTile({
@@ -97,7 +98,7 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                             : Text(
                                 initial,
                                 style: GoogleFonts.inter(
-                                  fontSize: 16,
+                                  fontSize: AppTypography.headlineSmall,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.patientTeal,
                                 ),
@@ -112,7 +113,7 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                      fontSize: 11.5,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
                       height: 1.15,
@@ -244,7 +245,7 @@ class HomeDoctorInlineMessage extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
           ),
         ],

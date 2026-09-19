@@ -7,16 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/profile_photo_avatar.dart';
 import '../../widgets/doctor_ui_widgets.dart';
 import '../../models/doctor_models.dart';
-
-void showProfileSavedToast(BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('Profile saved successfully', style: GoogleFonts.inter()),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: const Color(0xFF16A34A),
-    ),
-  );
-}
+import '../../../../core/theme/app_typography.dart';
 
 class ProfileSectionHeader extends StatelessWidget {
   const ProfileSectionHeader(this.title, {super.key});
@@ -30,7 +21,7 @@ class ProfileSectionHeader extends StatelessWidget {
       child: Text(
         title.toUpperCase(),
         style: GoogleFonts.inter(
-          fontSize: 12,
+          fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondaryOf(context),
           letterSpacing: 0.6,
@@ -129,7 +120,7 @@ class _ProfileSettingsRow extends StatelessWidget {
                     Text(
                       item.title,
                       style: GoogleFonts.inter(
-                        fontSize: 15,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -139,7 +130,7 @@ class _ProfileSettingsRow extends StatelessWidget {
                       Text(
                         item.subtitle!,
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                           height: 1.35,
                         ),
@@ -293,7 +284,7 @@ class ProfileHeroHeader extends StatelessWidget {
                   displayName,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                    fontSize: 20,
+                    fontSize: AppTypography.headlineMedium,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
                     height: 1.2,
@@ -305,7 +296,7 @@ class ProfileHeroHeader extends StatelessWidget {
                     specialization.trim(),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
@@ -340,7 +331,7 @@ class ProfileHeroHeader extends StatelessWidget {
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: Text(
                       'Edit Profile',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
@@ -392,7 +383,7 @@ class _HeroStatChip extends StatelessWidget {
                 Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 16,
+                    fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
                     height: 1.1,
@@ -401,7 +392,7 @@ class _HeroStatChip extends StatelessWidget {
                 Text(
                   caption,
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
                 ),
@@ -455,7 +446,6 @@ class _EditableSectionScaffoldState extends State<EditableSectionScaffold> {
     widget.onSave();
     _initialSnapshot = widget.buildSnapshot();
     setState(() => _dirty = false);
-    showProfileSavedToast(context);
     Navigator.pop(context);
   }
 

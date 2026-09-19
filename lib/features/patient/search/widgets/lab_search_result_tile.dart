@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 enum LabSearchResultKind { test, package, lab }
 
@@ -65,7 +66,7 @@ class LabSearchResultTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 14,
+                            fontSize: AppTypography.bodyMedium,
                             fontWeight: FontWeight.w600,
                             height: 1.25,
                           ),
@@ -76,7 +77,7 @@ class LabSearchResultTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),
@@ -132,7 +133,7 @@ class LabSearchSectionHeader extends StatelessWidget {
               child: Text(
                 title,
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -141,7 +142,7 @@ class LabSearchSectionHeader extends StatelessWidget {
             Text(
               '$count',
               style: GoogleFonts.inter(
-                fontSize: 11,
+                fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: accentColor,
               ),

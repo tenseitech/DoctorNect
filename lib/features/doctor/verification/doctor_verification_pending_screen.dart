@@ -1,4 +1,3 @@
-import '../../../core/notifications/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +7,7 @@ import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/external_launcher.dart';
 import '../../../widgets/mobile_scaffold.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Hold screen for logged-in doctors awaiting admin verification.
 class DoctorVerificationPendingScreen extends StatelessWidget {
@@ -40,7 +40,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
           Text(
             'Verification pending',
             style: GoogleFonts.inter(
-              fontSize: 22,
+              fontSize: AppTypography.headlineLarge,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -50,7 +50,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
           Text(
             'Hello, $greeting',
             style: GoogleFonts.inter(
-              fontSize: 16,
+              fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -62,7 +62,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
             'credentials — full dashboard access unlocks after approval, '
             'usually within 24–48 hours.',
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               height: 1.5,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -72,7 +72,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
           Text(
             'Aapko approve hote hi app automatically update ho jayegi.',
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: AppTypography.bodyMedium,
               height: 1.5,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -124,6 +124,5 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
   Future<void> _copySupportEmail(BuildContext context) async {
     await Clipboard.setData(const ClipboardData(text: supportEmail));
     if (!context.mounted) return;
-    AppToast.info(context, 'Support email copied');
   }
 }

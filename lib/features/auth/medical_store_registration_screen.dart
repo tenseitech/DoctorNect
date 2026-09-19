@@ -14,7 +14,9 @@ import '../pharmacy/data/medical_store_registry.dart';
 import 'widgets/simple_role_registration_form.dart';
 
 class MedicalStoreRegistrationScreen extends StatelessWidget {
-  const MedicalStoreRegistrationScreen({super.key});
+  const MedicalStoreRegistrationScreen({super.key, this.preVerifiedMobile});
+
+  final String? preVerifiedMobile;
 
   Future<void> _register(
     BuildContext context, {
@@ -68,7 +70,6 @@ class MedicalStoreRegistrationScreen extends StatelessWidget {
     }
 
     MedicalStoreSession.setStore(id: storeId, name: name);
-    AppToast.success(context, 'Account created! Complete your profile to access orders.');
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => const DashboardShell(userType: UserType.medicalStore),
@@ -87,6 +88,7 @@ class MedicalStoreRegistrationScreen extends StatelessWidget {
       subtitle: 'Quick signup — add store details in your profile next',
       icon: Icons.local_pharmacy_outlined,
       nameLabel: 'Owner name *',
+      preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
         context,

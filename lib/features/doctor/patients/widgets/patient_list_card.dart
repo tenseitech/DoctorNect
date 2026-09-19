@@ -7,6 +7,7 @@ import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../widgets/doctor_ui_widgets.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class PatientListCard extends StatelessWidget {
   const PatientListCard({
@@ -135,7 +136,7 @@ class _PatientDetails extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -158,12 +159,12 @@ class _PatientDetails extends StatelessWidget {
           '${patient.age} yrs · ${AppConstants.patientGenderLabel(patient.gender)} · ${patient.mobile}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 4),
         Text(
           'Last visit: ${DateFormat('dd MMM yyyy').format(patient.lastVisitDate)}',
-          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
         ),
       ],
     );
@@ -186,7 +187,7 @@ class _VisitsBadge extends StatelessWidget {
       child: Text(
         '$count visits',
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.doctorBlue,
         ),
@@ -219,7 +220,7 @@ class _ConditionChips extends StatelessWidget {
         if (hidden > 0)
           Text(
             '+$hidden more',
-            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
           ),
       ],
     );
@@ -249,7 +250,7 @@ class _ViewProfileButton extends StatelessWidget {
         ),
         child: Text(
           'View Profile',
-          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
         ),
       ),
     );

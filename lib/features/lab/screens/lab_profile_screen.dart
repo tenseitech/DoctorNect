@@ -22,6 +22,7 @@ import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
+import '../../../core/theme/app_typography.dart';
 
 const _lineColor = Color(0xFFE2E8F0);
 const _labPurple = AppColors.labPurple;
@@ -71,12 +72,12 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
             children: [
               Text(
                 'Profile',
-                style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
                 'Lab details, contact info & account settings',
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 20),
               _LabHeroCard(lab: lab, connectedDoctors: connectedDoctors),
@@ -338,7 +339,6 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
               }
 
               Navigator.pop(context);
-              AppToast.info(dialogContext, '$field updated successfully');
             }
 
             return AlertDialog(
@@ -352,7 +352,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                     if (errorText != null) ...[
                       Text(
                         errorText!,
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.error),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.error),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -462,7 +462,7 @@ class _LabHeroCard extends StatelessWidget {
                 child: Text(
                   _labInitial(lab.labName),
                   style: GoogleFonts.inter(
-                    fontSize: 24,
+                    fontSize: AppTypography.headlineLarge,
                     fontWeight: FontWeight.w800,
                     color: AppColors.surfaceOf(context),
                   ),
@@ -476,7 +476,7 @@ class _LabHeroCard extends StatelessWidget {
                     Text(
                       lab.labName,
                       style: GoogleFonts.inter(
-                        fontSize: 20,
+                        fontSize: AppTypography.headlineMedium,
                         fontWeight: FontWeight.w800,
                         color: AppColors.surfaceOf(context),
                         height: 1.2,
@@ -487,7 +487,7 @@ class _LabHeroCard extends StatelessWidget {
                       Text(
                         lab.area,
                         style: GoogleFonts.inter(
-                          fontSize: 13,
+                          fontSize: AppTypography.bodySmall,
                           color: AppColors.surfaceOf(context).withValues(alpha: 0.88),
                         ),
                       ),
@@ -530,7 +530,7 @@ class _LabHeroCard extends StatelessWidget {
                     child: Text(
                       'License · ${lab.licenseNumber}',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.surfaceOf(context).withValues(alpha: 0.95),
                       ),
@@ -568,7 +568,7 @@ class _HeroChip extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: AppColors.surfaceOf(context),
             ),
@@ -595,11 +595,11 @@ class _LabProfileSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700)),
+        Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700)),
         const SizedBox(height: 3),
         Text(
           subtitle,
-          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 10),
         Container(
@@ -667,13 +667,13 @@ class _LabInfoTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   display,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: isPlaceholder ? AppColors.textSecondaryOf(context) : AppColors.textPrimaryOf(context),
                     height: 1.35,
@@ -752,14 +752,14 @@ class _LabActionTile extends StatelessWidget {
                     Text(
                       label,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: destructive ? AppColors.error : AppColors.textPrimaryOf(context),
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),
@@ -802,7 +802,6 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       await FirebaseAuthService.instance.updatePassword(current, newPass);
       if (!mounted) return;
       Navigator.pop(context);
-      AppToast.info(context, 'Password updated successfully!');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -831,7 +830,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (_error != null) ...[
-              Text(_error!, style: GoogleFonts.inter(color: AppColors.error, fontSize: 13)),
+              Text(_error!, style: GoogleFonts.inter(color: AppColors.error, fontSize: AppTypography.bodySmall)),
               const SizedBox(height: 12),
             ],
             TextField(
@@ -938,7 +937,6 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
     }
 
     Navigator.pop(context);
-    AppToast.info(context, 'Address updated successfully');
   }
 
   @override
@@ -953,7 +951,7 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
             if (_errorText != null) ...[
               Text(
                 _errorText!,
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.error),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.error),
               ),
               const SizedBox(height: 12),
             ],

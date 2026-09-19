@@ -48,6 +48,7 @@ dependencies:
 
   timezone: any
   flutter_native_splash: ^2.4.0
+  sms_autofill: ^2.5.0
 
 dev_dependencies:
   flutter_test:

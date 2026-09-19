@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/auth/app_logout.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
 
 class LogoutIconButton extends StatelessWidget {
   const LogoutIconButton({super.key, this.tooltip = 'Log out', this.color});
@@ -30,7 +31,7 @@ class LogoutIconButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
                 color: c,
               ),
@@ -51,7 +52,7 @@ class LogoutTextButton extends StatelessWidget {
       onPressed: () => AppLogout.confirmAndSignOut(context),
       child: Text(
         'Log out',
-        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.error),
+        style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600, color: AppColors.error),
       ),
     );
   }
@@ -77,7 +78,7 @@ class LogoutRailTile extends StatelessWidget {
               Text(
                 'Log out',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.error,
                 ),

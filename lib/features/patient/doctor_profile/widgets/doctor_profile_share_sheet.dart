@@ -9,6 +9,7 @@ import '../models/doctor_profile_detail.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'doctor_poster_widget.dart';
+import '../../../../core/theme/app_typography.dart';
 
 abstract final class DoctorProfileShareSheet {
   DoctorProfileShareSheet._();
@@ -79,7 +80,7 @@ abstract final class DoctorProfileShareSheet {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'Share doctor profile',
-                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
                 ),
               ),
               ListTile(
@@ -87,15 +88,10 @@ abstract final class DoctorProfileShareSheet {
                 title: Text('Share as Image Poster', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
                   'Generate a beautiful image card',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  
-                  // Show a quick loading toast since generating might take a second
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Generating poster...'), duration: Duration(seconds: 1)),
-                  );
 
                   try {
                     final screenshotController = ScreenshotController();
@@ -118,7 +114,7 @@ abstract final class DoctorProfileShareSheet {
                 title: Text('WhatsApp', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
                   'Share via WhatsApp',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -135,7 +131,7 @@ abstract final class DoctorProfileShareSheet {
                 title: Text('SMS', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
                   'Share via text message',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -152,7 +148,7 @@ abstract final class DoctorProfileShareSheet {
                 title: Text('Telegram', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
                   'Share via Telegram',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -170,7 +166,7 @@ abstract final class DoctorProfileShareSheet {
                 title: Text('More options...', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
                   'Share using other apps',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () async {
                   Navigator.pop(ctx);

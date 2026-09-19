@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Compact action tile for the web profile dashboard grid.
 class ProfileWebActionCard extends StatefulWidget {
@@ -73,7 +74,7 @@ class _ProfileWebActionCardState extends State<ProfileWebActionCard> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
                     height: 1.2,
@@ -86,7 +87,7 @@ class _ProfileWebActionCardState extends State<ProfileWebActionCard> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.25,
                     ),

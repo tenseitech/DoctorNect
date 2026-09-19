@@ -27,6 +27,7 @@ import 'widgets/patient_doctor_profile_hero.dart';
 import 'widgets/patient_doctor_profile_shared.dart';
 import 'models/doctor_profile_detail.dart';
 import 'data/review_vote_store.dart';
+import '../../../core/theme/app_typography.dart';
 
 class PatientDoctorProfileScreen extends StatefulWidget {
   const PatientDoctorProfileScreen({super.key, required this.doctorId});
@@ -115,10 +116,6 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
     setState(() {
       _doctorFuture = FirestoreService.instance.doctorProfileDetail.fetch(widget.doctorId);
     });
-    AppToast.info(
-      context,
-      isEdit ? 'Review updated' : 'Thank you for your review! It is now visible to everyone.',
-    );
   }
 
   Future<void> _editReview(PatientDoctorReview review, String doctorName) async {
@@ -138,7 +135,6 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
     setState(() {
       _doctorFuture = FirestoreService.instance.doctorProfileDetail.fetch(widget.doctorId);
     });
-    AppToast.info(context, 'Review updated');
   }
 
   @override
@@ -215,7 +211,7 @@ class _DoctorProfileBody extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         title: Text(
           'Doctor Profile',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.headlineSmall),
         ),
         centerTitle: true,
       ),
@@ -475,7 +471,7 @@ class _HeroAvatarState extends State<_HeroAvatar> {
           ? Text(
               initial,
               style: GoogleFonts.inter(
-                fontSize: 30,
+                fontSize: AppTypography.headlineLarge,
                 fontWeight: FontWeight.w700,
                 color: AppColors.patientTeal,
               ),
@@ -510,7 +506,7 @@ class _OverviewTab extends StatelessWidget {
               const PatientDoctorSectionTitle('About'),
               Text(
                 doctor.about.trim().isEmpty ? 'Bio not added yet.' : doctor.about,
-                style: GoogleFonts.inter(fontSize: 14, height: 1.6, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.6, color: AppColors.textSecondaryOf(context)),
               ),
             ],
           ),
@@ -596,7 +592,7 @@ class _DoctorPerformanceStatsState extends State<_DoctorPerformanceStats> {
                       AppColors.patientTeal.withValues(alpha: 0.15),
                   checkmarkColor: AppColors.patientTeal,
                   labelStyle: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                     color: selected
                         ? AppColors.patientTeal
@@ -636,7 +632,7 @@ class _DoctorPerformanceStatsState extends State<_DoctorPerformanceStats> {
           Text(
             'Services used in this period',
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -668,7 +664,7 @@ class _DoctorPerformanceStatsState extends State<_DoctorPerformanceStats> {
                     Text(
                       service,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.patientTeal,
                       ),
@@ -685,7 +681,7 @@ class _DoctorPerformanceStatsState extends State<_DoctorPerformanceStats> {
             child: Text(
               'No activity recorded for this period yet.',
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -743,7 +739,7 @@ class _StatCard extends StatelessWidget {
               Text(
                 value,
                 style: GoogleFonts.inter(
-                  fontSize: 24,
+                  fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w800,
                   color: color,
                 ),
@@ -754,7 +750,7 @@ class _StatCard extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w500,
               color: AppColors.textSecondaryOf(context),
               height: 1.3,
@@ -780,7 +776,7 @@ class _ExperienceTab extends StatelessWidget {
       children: [
         Text(
           '${doctor.experienceYears} years of experience in ${doctor.specialization}',
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context), height: 1.5),
+          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context), height: 1.5),
         ),
         const SizedBox(height: 24),
         _ExperienceSection(
@@ -852,7 +848,7 @@ class _ExperienceSection extends StatelessWidget {
         if (children.isEmpty)
           Text(
             emptyMessage,
-            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
           )
         else
           ...children,
@@ -1045,13 +1041,13 @@ class _ReviewsTabState extends State<_ReviewsTab> {
               const SizedBox(height: 16),
               Text(
                 'No reviews yet',
-                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Text(
                 'Be the first to share your experience after a visit.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context), height: 1.4),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context), height: 1.4),
               ),
               const SizedBox(height: 20),
               if (widget.onRateDoctor != null)
@@ -1110,7 +1106,7 @@ class _ReviewsTabState extends State<_ReviewsTab> {
                   const SizedBox(height: 4),
                   Text(
                     '$total reviews',
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
               ),
@@ -1124,7 +1120,7 @@ class _ReviewsTabState extends State<_ReviewsTab> {
                       padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Row(
                         children: [
-                          Text('$star', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600)),
+                          Text('$star', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
                           const SizedBox(width: 4),
                           const Icon(Icons.star_rounded, size: 12, color: Color(0xFFF59E0B)),
                           const SizedBox(width: 6),
@@ -1142,7 +1138,7 @@ class _ReviewsTabState extends State<_ReviewsTab> {
                           const SizedBox(width: 6),
                           Text(
                             '$count',
-                            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ),
@@ -1243,7 +1239,7 @@ class _ReviewCard extends StatelessWidget {
               const Spacer(),
               Text(
                 DateFormat('dd MMM yyyy').format(review.date),
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
               ),
             ],
           ),
@@ -1258,7 +1254,7 @@ class _ReviewCard extends StatelessWidget {
             }),
           ),
           const SizedBox(height: 8),
-          Text(review.text, style: GoogleFonts.inter(fontSize: 14, height: 1.4)),
+          Text(review.text, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4)),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -1279,7 +1275,7 @@ class _ReviewCard extends StatelessWidget {
                       Text(
                         helpfulCount > 0 ? '$helpfulCount' : 'Like',
                         style: GoogleFonts.inter(
-                          fontSize: 13,
+                          fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                           color: liked ? AppColors.patientTeal : AppColors.textSecondaryOf(context),
                         ),
@@ -1315,9 +1311,9 @@ class _ReviewCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Doctor reply', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.patientTeal)),
+                  Text('Doctor reply', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600, color: AppColors.patientTeal)),
                   const SizedBox(height: 4),
-                  Text(review.doctorReply!, style: GoogleFonts.inter(fontSize: 13)),
+                  Text(review.doctorReply!, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
                 ],
               ),
             ),
@@ -1353,7 +1349,7 @@ class _LocationTab extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   doctor.area.trim().isEmpty ? 'Location' : doctor.area,
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -1380,7 +1376,7 @@ class _LocationTab extends StatelessWidget {
         PatientDoctorSectionTitle(doctor.clinicName.isNotEmpty ? doctor.clinicName : 'Clinic'),
         Text(
           doctor.address.trim().isEmpty ? 'Address not added yet.' : doctor.address,
-          style: GoogleFonts.inter(fontSize: 14, height: 1.45),
+          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.45),
         ),
         if (doctor.landmark.trim().isNotEmpty) ...[
           const SizedBox(height: 10),
@@ -1411,7 +1407,7 @@ class _ClinicTimingsTable extends StatelessWidget {
     if (timings.isEmpty) {
       return Text(
         'Timings not added yet.',
-        style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context)),
+        style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
       );
     }
 
@@ -1443,7 +1439,7 @@ class _ClinicTimingsTable extends StatelessWidget {
                         t.day,
                         style: GoogleFonts.inter(
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          fontSize: AppTypography.bodySmall,
                           color: today ? AppColors.patientTeal : AppColors.textPrimaryOf(context),
                         ),
                       ),
@@ -1471,7 +1467,7 @@ class _ClinicTimingsTable extends StatelessWidget {
                   child: Text(
                     t.hours,
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                       fontWeight: today ? FontWeight.w600 : FontWeight.w400,
                     ),

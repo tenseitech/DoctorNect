@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../models/patient_profile_models.dart';
 import '../utils/patient_bmi_utils.dart';
 import 'profile_web_action_card.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ProfileWebLayout extends StatelessWidget {
   const ProfileWebLayout({
@@ -171,7 +172,7 @@ class _WebPageHeader extends StatelessWidget {
               Text(
                 'Profile',
                 style: GoogleFonts.inter(
-                  fontSize: 26,
+                  fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimaryOf(context),
                   height: 1.1,
@@ -181,7 +182,7 @@ class _WebPageHeader extends StatelessWidget {
               Text(
                 'Manage your account, family & health records',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
@@ -242,7 +243,7 @@ class _ProfileIdentityPanel extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                fontSize: 22,
+                fontSize: AppTypography.headlineLarge,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
                 height: 1.15,
@@ -324,7 +325,7 @@ class _ProfileIdentityPanel extends StatelessWidget {
                       Text(
                         'Family',
                         style: GoogleFonts.inter(
-                          fontSize: 15,
+                          fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
                         ),
@@ -333,7 +334,7 @@ class _ProfileIdentityPanel extends StatelessWidget {
                         Text(
                           '${family.length} member${family.length == 1 ? '' : 's'}',
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),
@@ -350,7 +351,7 @@ class _ProfileIdentityPanel extends StatelessWidget {
                   ),
                   child: Text(
                     'Manage',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -395,7 +396,7 @@ class _WebSectionPanel extends StatelessWidget {
             Text(
               title,
               style: GoogleFonts.inter(
-                fontSize: 18,
+                fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -403,7 +404,7 @@ class _WebSectionPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
             const SizedBox(height: 16),
             child,
@@ -473,7 +474,7 @@ class _MetaChip extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(
-          fontSize: 12,
+          fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
         ),
@@ -499,7 +500,7 @@ class _ContactRow extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],
@@ -538,7 +539,7 @@ class _StatTile extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -547,7 +548,7 @@ class _StatTile extends StatelessWidget {
           Text(
             value,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w800,
               color: highlight ? AppColors.patientTeal : AppColors.textPrimaryOf(context),
             ),
@@ -586,7 +587,7 @@ class _WebFamilyList extends StatelessWidget {
               child: Text(
                 'No family profiles yet',
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
@@ -634,7 +635,7 @@ class _WebFamilyRow extends StatelessWidget {
                 child: Text(
                   initial,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF7C3AED),
                   ),
@@ -650,7 +651,7 @@ class _WebFamilyRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -661,7 +662,7 @@ class _WebFamilyRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -711,7 +712,7 @@ class _WebAddFamilyRow extends StatelessWidget {
                 child: Text(
                   'Add family member',
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.patientTeal,
                   ),

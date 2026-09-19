@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../models/patient_appointment_models.dart';
 import '../../utils/doctor_display_name.dart';
 import 'appointment_card_shared.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class UpcomingAppointmentCard extends StatefulWidget {
   const UpcomingAppointmentCard({
@@ -83,7 +84,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
                     a.specialization,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -92,7 +93,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
                         : DateFormat('EEE, dd MMM yyyy · hh:mm a').format(a.dateTime),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -106,7 +107,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               child: Text(
                 '#${a.tokenNumber}',
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.patientTeal,
                 ),
@@ -122,7 +123,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
             Text(
               'In-Clinic',
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: AppColors.patientTeal,
               ),
@@ -136,7 +137,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               ),
               child: Text(
                 statusLabel,
-                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: statusColor),
               ),
             ),
           ],
@@ -147,20 +148,20 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
             a.clinicName!,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w500),
           ),
           if (a.clinicAddress != null)
             Text(
               a.clinicAddress!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
             ),
         ],
         const SizedBox(height: 8),
         Text(
           _countdown,
-          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.patientTeal),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600, color: AppColors.patientTeal),
         ),
         const SizedBox(height: 12),
         Row(

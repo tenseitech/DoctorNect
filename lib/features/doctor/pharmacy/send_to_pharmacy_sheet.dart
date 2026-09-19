@@ -8,6 +8,7 @@ import '../../pharmacy/data/pharmacy_connection_store.dart';
 import '../../pharmacy/data/pharmacy_prescription_store.dart';
 import '../../pharmacy/models/pharmacy_models.dart';
 import '../clinical/models/clinical_models.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Bottom sheet to choose which connected stores receive a prescription.
 class SendToPharmacySheet {
@@ -56,7 +57,7 @@ class _SendSheetState extends State<_SendSheet> {
         children: [
           Text(
             'Send to Medical Stores',
-            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
@@ -139,7 +140,7 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pharmacy delivery', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+        Text('Pharmacy delivery', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall)),
         const SizedBox(height: 6),
         ...deliveries.map((d) {
           final color = switch (d.status) {
@@ -154,10 +155,10 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
               children: [
                 Icon(Icons.local_pharmacy, size: 16, color: color),
                 const SizedBox(width: 6),
-                Expanded(child: Text(d.storeName, style: GoogleFonts.inter(fontSize: 12))),
+                Expanded(child: Text(d.storeName, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium))),
                 Text(
                   _statusLabel(d.status),
-                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: color),
                 ),
               ],
             ),

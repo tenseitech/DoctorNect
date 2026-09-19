@@ -15,6 +15,7 @@ import 'data/ambulance_booking_sync.dart';
 import 'data/ambulance_store.dart';
 import 'models/ambulance_models.dart';
 import '../promoted_ads/screens/promoted_ads_management_screen.dart';
+import '../../core/theme/app_typography.dart';
 // FIXED: online/offline toggle on the post-login dashboard
 
 class AmbulanceDriverHomeScreen extends StatefulWidget {
@@ -317,21 +318,11 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     if (!context.mounted) return;
     if (ok) {
       setState(() => _selectedTab = AmbulanceDriverTab.cancelled);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Trip cancelled'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } else {
       final message = FirestoreService.instance.ambulance.lastCancelFailureUserMessage ??
           'Could not cancel this trip. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message)),
       );
     }
   }
@@ -361,12 +352,6 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     if (!context.mounted) return;
     if (ok) {
       setState(() => _selectedTab = AmbulanceDriverTab.accepted);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Trip accepted'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } else {
       final message =
           FirestoreService.instance.ambulance.lastAcceptFailureUserMessage ??
@@ -374,8 +359,6 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: const Color(0xFFDC2626),
-          behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 5),
         ),
       );
@@ -415,13 +398,13 @@ class _RequestsHeader extends StatelessWidget {
               children: [
                 Text(
                   'Trip Requests',
-                  style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.surfaceOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700, color: AppColors.surfaceOf(context)),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$pendingCount new · $acceptedCount active · $completedCount completed',
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.surfaceOf(context).withValues(alpha: 0.9),
                   ),
@@ -443,7 +426,7 @@ class _RequestsHeader extends StatelessWidget {
               );
             },
             icon: const Icon(Icons.campaign_rounded, size: 16, color: Colors.white),
-            label: const Text('Promote Ad', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            label: const Text('Promote Ad', style: TextStyle(color: Colors.white, fontSize: AppTypography.labelMedium, fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.white),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -557,7 +540,7 @@ class _TripTabPill extends StatelessWidget {
                 Text(
                   '$count',
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w800,
                     color: selected ? color : AppColors.textSecondaryOf(context),
                   ),
@@ -604,7 +587,7 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             title,
-            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
           ),
           const SizedBox(width: 8),
           Container(
@@ -616,7 +599,7 @@ class _SectionHeader extends StatelessWidget {
             child: Text(
               '$count',
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w700,
                 color: color,
               ),
@@ -647,7 +630,7 @@ class _EmptyHint extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
           ),
         ],
@@ -761,14 +744,14 @@ class _RequestCard extends StatelessWidget {
                       Text(
                         booking.patientName,
                         style: GoogleFonts.inter(
-                          fontSize: 15,
+                          fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         booking.pickupLocation,
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
                       ),
@@ -800,7 +783,7 @@ class _RequestCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   booking.contactPhone,
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(width: 12),
                 Icon(Icons.person_outline, size: 14, color: AppColors.textSecondaryOf(context)),
@@ -808,7 +791,7 @@ class _RequestCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'by ${booking.bookedByName}',
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -824,7 +807,7 @@ class _RequestCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       booking.notes!,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                   ),
                 ],
@@ -839,7 +822,7 @@ class _RequestCard extends StatelessWidget {
                   Text(
                     'Assigned: ${booking.acceptedAmbulanceName}',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF2563EB),
                     ),
@@ -854,7 +837,7 @@ class _RequestCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   DateFormat('dd MMM · hh:mm a').format(booking.createdAt),
-                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -874,7 +857,7 @@ class _RequestCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       _getCancelledByText(),
-                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFFDC2626)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: const Color(0xFFDC2626)),
                     ),
                   ],
                 ),
@@ -968,7 +951,7 @@ class _RequestCard extends StatelessWidget {
                   Text(
                     '${booking.rating}/5',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFFF59E0B),
                     ),
@@ -979,7 +962,7 @@ class _RequestCard extends StatelessWidget {
                       child: Text(
                         '"${booking.review}"',
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: AppTypography.labelSmall,
                           fontStyle: FontStyle.italic,
                           color: AppColors.textSecondaryOf(context),
                         ),

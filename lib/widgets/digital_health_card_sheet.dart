@@ -6,6 +6,7 @@ import '../core/enums/user_type.dart';
 import '../core/theme/app_colors.dart';
 import '../features/doctor/profile/data/doctor_profile_store.dart';
 import '../features/patient/profile/data/patient_profile_mock.dart';
+import '../core/theme/app_typography.dart';
 
 /// Modal sheet displaying a digital health ID card with scannable QR pass.
 class DigitalHealthCardSheet extends StatelessWidget {
@@ -73,7 +74,7 @@ class DigitalHealthCardSheet extends StatelessWidget {
               Text(
                 isDoctor ? 'Digital Doctor Credentials Pass' : 'Digital Health Card ID',
                 style: GoogleFonts.inter(
-                  fontSize: 18,
+                  fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -147,7 +148,7 @@ class DigitalHealthCardSheet extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.inter(
-                                      fontSize: 13,
+                                      fontSize: AppTypography.bodySmall,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.white,
                                       letterSpacing: 1.2,
@@ -186,7 +187,7 @@ class DigitalHealthCardSheet extends StatelessWidget {
                       Text(
                         name,
                         style: GoogleFonts.inter(
-                          fontSize: 20,
+                          fontSize: AppTypography.headlineMedium,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
@@ -195,7 +196,7 @@ class DigitalHealthCardSheet extends StatelessWidget {
                       Text(
                         subtitle,
                         style: GoogleFonts.inter(
-                          fontSize: 13,
+                          fontSize: AppTypography.bodySmall,
                           color: Colors.white.withValues(alpha: 0.85),
                         ),
                       ),
@@ -280,7 +281,7 @@ class DigitalHealthCardSheet extends StatelessWidget {
                       Text(
                         'Scan to Verify Pass',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
                         ),
@@ -291,7 +292,7 @@ class DigitalHealthCardSheet extends StatelessWidget {
                             ? 'Allows patients and pharmacies to quickly verify doctor registration & credentials.'
                             : 'Presents health ID & blood group details during clinic or hospital check-in.',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                           height: 1.35,
                         ),

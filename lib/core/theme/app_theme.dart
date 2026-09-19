@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
+import 'app_typography.dart';
 import '../constants/app_constants.dart';
 
 abstract final class AppTheme {
@@ -19,7 +20,7 @@ abstract final class AppTheme {
       ),
     );
 
-    final inter = GoogleFonts.interTextTheme(base.textTheme);
+    final inter = AppTypography.buildTextTheme(base.textTheme);
 
     return base.copyWith(
       textTheme: inter.apply(
@@ -32,7 +33,7 @@ abstract final class AppTheme {
         elevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.inter(
-          fontSize: 18,
+          fontSize: AppTypography.titleMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
@@ -57,9 +58,18 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        labelStyle: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14),
-        hintStyle: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14),
-        errorStyle: GoogleFonts.inter(color: AppColors.error, fontSize: 12),
+        labelStyle: GoogleFonts.inter(
+          color: AppColors.textSecondary,
+          fontSize: AppTypography.bodyMedium,
+        ),
+        hintStyle: GoogleFonts.inter(
+          color: AppColors.textSecondary,
+          fontSize: AppTypography.bodyMedium,
+        ),
+        errorStyle: GoogleFonts.inter(
+          color: AppColors.error,
+          fontSize: AppTypography.labelMedium,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -70,7 +80,7 @@ abstract final class AppTheme {
             borderRadius: BorderRadius.circular(AppConstants.inputRadius),
           ),
           textStyle: GoogleFonts.inter(
-            fontSize: 16,
+            fontSize: AppTypography.labelLarge,
             fontWeight: FontWeight.w600,
           ),
           elevation: 0,
@@ -85,7 +95,10 @@ abstract final class AppTheme {
         ),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
-        textStyle: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+        textStyle: GoogleFonts.inter(
+          fontSize: AppTypography.bodyMedium,
+          color: AppColors.textPrimary,
+        ),
       ),
     );
   }
@@ -104,7 +117,7 @@ abstract final class AppTheme {
       ),
     );
 
-    final inter = GoogleFonts.interTextTheme(base.textTheme);
+    final inter = AppTypography.buildTextTheme(base.textTheme);
 
     return base.copyWith(
       textTheme: inter.apply(
@@ -117,7 +130,7 @@ abstract final class AppTheme {
         elevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.inter(
-          fontSize: 18,
+          fontSize: AppTypography.titleMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.darkTextPrimary,
         ),
@@ -142,9 +155,18 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        labelStyle: GoogleFonts.inter(color: AppColors.darkTextSecondary, fontSize: 14),
-        hintStyle: GoogleFonts.inter(color: AppColors.darkTextSecondary, fontSize: 14),
-        errorStyle: GoogleFonts.inter(color: AppColors.error, fontSize: 12),
+        labelStyle: GoogleFonts.inter(
+          color: AppColors.darkTextSecondary,
+          fontSize: AppTypography.bodyMedium,
+        ),
+        hintStyle: GoogleFonts.inter(
+          color: AppColors.darkTextSecondary,
+          fontSize: AppTypography.bodyMedium,
+        ),
+        errorStyle: GoogleFonts.inter(
+          color: AppColors.error,
+          fontSize: AppTypography.labelMedium,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -155,7 +177,7 @@ abstract final class AppTheme {
             borderRadius: BorderRadius.circular(AppConstants.inputRadius),
           ),
           textStyle: GoogleFonts.inter(
-            fontSize: 16,
+            fontSize: AppTypography.labelLarge,
             fontWeight: FontWeight.w600,
           ),
           elevation: 0,
@@ -180,7 +202,10 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
-        textStyle: GoogleFonts.inter(fontSize: 14, color: AppColors.darkTextPrimary),
+        textStyle: GoogleFonts.inter(
+          fontSize: AppTypography.bodyMedium,
+          color: AppColors.darkTextPrimary,
+        ),
       ),
     );
   }

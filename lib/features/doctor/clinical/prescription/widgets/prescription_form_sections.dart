@@ -18,6 +18,7 @@ import '../../widgets/clinical_widgets.dart';
 import '../../widgets/clinical_input_formatters.dart';
 import '../prescription_vital_validators.dart';
 import 'multi_select_test_picker.dart';
+import '../../../../../core/theme/app_typography.dart';
 
 class PrescriptionHeaderSection extends StatefulWidget {
   const PrescriptionHeaderSection({
@@ -76,7 +77,7 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
           Text(
             doctorName,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -85,7 +86,7 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
             const SizedBox(height: 2),
             Text(
               qualifications,
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
             ),
           ],
           const SizedBox(height: 10),
@@ -140,7 +141,7 @@ class _DetailRow extends StatelessWidget {
             width: 104,
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
             ),
           ),
           Expanded(
@@ -149,7 +150,7 @@ class _DetailRow extends StatelessWidget {
               maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w500,
                 color: muted ? AppColors.textSecondaryOf(context) : AppColors.textPrimaryOf(context),
                 fontStyle: muted ? FontStyle.italic : FontStyle.normal,
@@ -201,7 +202,7 @@ class PrescriptionPatientSection extends StatelessWidget {
           Text(
             patient.patientName,
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -209,7 +210,7 @@ class PrescriptionPatientSection extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             '$gender · ${patient.age} yrs · $date',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 10),
           _DetailRow(
@@ -222,7 +223,7 @@ class PrescriptionPatientSection extends StatelessWidget {
             controller: weightController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: const [DecimalInputFormatter(maxIntegerDigits: 3, maxDecimalDigits: 1)],
-            style: GoogleFonts.inter(fontSize: 13),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
             decoration: InputDecoration(
               labelText: 'Weight (kg)',
               isDense: true,
@@ -241,7 +242,7 @@ class PrescriptionPatientSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: AppColors.doctorBlue, width: 1.2),
               ),
-              labelStyle: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+              labelStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
             ),
             onChanged: (_) => onChanged(),
           ),
@@ -319,7 +320,7 @@ class PrescriptionClinicalSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Vitals (optional)', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+          Text('Vitals (optional)', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -640,13 +641,6 @@ class _DiagnosisSearchField extends StatelessWidget {
         text: text,
         doctorId: doctorId,
       );
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Diagnosis saved — available to all doctors'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } catch (e) {
       if (!context.mounted) return;
       AppToast.info(context, 'Could not save diagnosis: $e');
@@ -690,7 +684,7 @@ class _DiagnosisSearchField extends StatelessWidget {
                           ? 'Custom diagnosis — save to shared database (optional)'
                           : 'Not in ICD-10 list — save to shared database',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                         fontWeight: FontWeight.w600,
                       ),
@@ -706,7 +700,7 @@ class _DiagnosisSearchField extends StatelessWidget {
                     ),
                     child: Text(
                       '+ Save diagnosis',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],
@@ -997,7 +991,7 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
               child: Text(
                 '$_totalCount',
                 style: GoogleFonts.inter(
-                  fontSize: 11,
+                  fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.surfaceOf(context),
                 ),
@@ -1011,7 +1005,7 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
           Text(
             'Quick Templates',
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
               fontWeight: FontWeight.w600,
             ),
@@ -1031,7 +1025,7 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
                 label: Text(
                   t,
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     color: active ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
                   ),
@@ -1104,7 +1098,7 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
               runSpacing: 6,
               children: draft.bodyParts.map((bp) {
                 return InputChip(
-                  label: Text(bp, style: GoogleFonts.inter(fontSize: 12)),
+                  label: Text(bp, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
                   backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.08),
                   onDeleted: () {
                     draft.bodyParts.remove(bp);
@@ -1169,7 +1163,7 @@ class _PickerField extends StatelessWidget {
                       Text(
                         '$count selected',
                         style: GoogleFonts.inter(
-                          fontSize: 13,
+                          fontSize: AppTypography.bodySmall,
                           color: AppColors.textPrimaryOf(context),
                           fontWeight: FontWeight.w600,
                         ),
@@ -1189,7 +1183,7 @@ class _PickerField extends StatelessWidget {
                   child: Text(
                     '$count',
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.surfaceOf(context),
                     ),
@@ -1315,7 +1309,7 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                   child: Text(
                     widget.entry.name,
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -1350,7 +1344,7 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                     label: Text(
                       'Remove',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.surfaceOf(context),
                       ),
@@ -1377,7 +1371,7 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
-                style: GoogleFonts.inter(fontSize: 12),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
                 onChanged: widget.onNotesChanged,
               ),
             ),
@@ -1619,7 +1613,7 @@ class PrescriptionReferralsSection extends StatelessWidget {
                           Text(
                             draft.referrals[i].displayTitle,
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1627,7 +1621,7 @@ class PrescriptionReferralsSection extends StatelessWidget {
                             Text(
                               draft.referrals[i].reason,
                               style: GoogleFonts.inter(
-                                fontSize: 11,
+                                fontSize: AppTypography.labelSmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
                             ),
@@ -1680,7 +1674,7 @@ class PrescriptionPractoActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compactText = GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600);
+    final compactText = GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600);
     final filledStyle = ElevatedButton.styleFrom(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       minimumSize: const Size(0, 40),

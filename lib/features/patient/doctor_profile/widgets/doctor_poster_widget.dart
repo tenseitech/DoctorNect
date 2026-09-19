@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/widgets/resampled_network_image.dart';
 import '../models/doctor_profile_detail.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class DoctorPosterWidget extends StatelessWidget {
   const DoctorPosterWidget({super.key, required this.doctor});
@@ -71,7 +72,7 @@ class DoctorPosterWidget extends StatelessWidget {
             Text(
               'Dr. ${doctor.name}',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A)),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A)),
             ),
             const SizedBox(height: 8),
             // Specialization & Rating
@@ -86,7 +87,7 @@ class DoctorPosterWidget extends StatelessWidget {
                 children: [
                   Text(
                     doctor.specialization,
-                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF0F766E)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600, color: const Color(0xFF0F766E)),
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
@@ -96,7 +97,7 @@ class DoctorPosterWidget extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     doctor.rating.toStringAsFixed(1),
-                    style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
                   ),
                 ],
               ),
@@ -105,7 +106,7 @@ class DoctorPosterWidget extends StatelessWidget {
             // About
             Text(
               'About',
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
             ),
             const SizedBox(height: 8),
             Text(
@@ -113,13 +114,13 @@ class DoctorPosterWidget extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: 15, height: 1.5, color: const Color(0xFF475569)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, height: 1.5, color: const Color(0xFF475569)),
             ),
             const SizedBox(height: 32),
             // Achievements
             Text(
               'Achievements',
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700, color: const Color(0xFF0F172A)),
             ),
             const SizedBox(height: 12),
             ...awards.take(3).map((a) => Padding(
@@ -132,7 +133,7 @@ class DoctorPosterWidget extends StatelessWidget {
                   Expanded(
                     child: Text(
                       a,
-                      style: GoogleFonts.inter(fontSize: 15, color: const Color(0xFF334155), fontWeight: FontWeight.w500),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, color: const Color(0xFF334155), fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -152,7 +153,7 @@ class DoctorPosterWidget extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     'DoctorNect',
-                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: const Color(0xFF0F766E)),
+                    style: GoogleFonts.outfit(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w800, color: const Color(0xFF0F766E)),
                   ),
                 ],
               ),

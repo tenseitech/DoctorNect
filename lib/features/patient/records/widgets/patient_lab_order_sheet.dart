@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/firebase/models/doctor_lab_order.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../lab/lab_report_screen.dart';
+import '../../../../core/theme/app_typography.dart';
 
 abstract final class PatientLabOrderSheet {
   static Future<void> show(BuildContext context, DoctorLabOrder order) {
@@ -72,11 +73,11 @@ class _PatientLabOrderSheet extends StatelessWidget {
                     children: [
                       Text(
                         'Lab test order',
-                        style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
                       ),
                       Text(
                         DateFormat('dd MMM yyyy · hh:mm a').format(order.createdAt),
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                       ),
                     ],
                   ),
@@ -110,7 +111,7 @@ class _PatientLabOrderSheet extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Tests (${order.testNames.length})',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             ...order.testNames.map(
@@ -121,7 +122,7 @@ class _PatientLabOrderSheet extends StatelessWidget {
                   children: [
                     const Icon(Icons.circle, size: 6, color: AppColors.patientTeal),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(test, style: GoogleFonts.inter(fontSize: 14))),
+                    Expanded(child: Text(test, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium))),
                   ],
                 ),
               ),
@@ -182,13 +183,13 @@ class _InfoRow extends StatelessWidget {
             width: 96,
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
             ),
           ),
         ],

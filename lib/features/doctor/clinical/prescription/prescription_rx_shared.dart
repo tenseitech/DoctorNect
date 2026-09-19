@@ -8,6 +8,7 @@ import '../data/dosage_units.dart';
 import '../data/community_medicine_repository.dart';
 import '../models/clinical_models.dart';
 import '../widgets/clinical_input_formatters.dart';
+import '../../../../core/theme/app_typography.dart';
 
 List<MedicineEntry> namedMedicineEntries(List<MedicineEntry> medicines) =>
     medicines.where((m) => m.name.trim().isNotEmpty).toList();
@@ -46,7 +47,7 @@ class RxEmptyState extends StatelessWidget {
             'Search above to add medicines',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w500,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -96,7 +97,7 @@ class RxMedicineSearchBar extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
-                style: GoogleFonts.inter(fontSize: 14),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
                 decoration: InputDecoration(
                   labelText: 'Search & add medicine',
                   isDense: true,
@@ -159,7 +160,7 @@ class RxMedicineSearchBar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
                       child: Text(
                         'No medicines found',
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                       ),
                     )
                   : ListView.separated(
@@ -178,11 +179,11 @@ class RxMedicineSearchBar extends StatelessWidget {
                         ),
                         title: Text(
                           item.name,
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                         ),
                         subtitle: Text(
                           _formatSuggestion(item),
-                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                         ),
                         trailing: Icon(Icons.add_circle_outline, size: 20, color: AppColors.doctorBlue),
                         onTap: () => onSelect(item),
@@ -287,7 +288,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
         isDense: true,
         filled: true,
         fillColor: AppColors.surfaceOf(context),
-        labelStyle: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+        labelStyle: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
@@ -332,7 +333,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                 Text(
                   short,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w700,
                     color: selected ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
                   ),
@@ -401,7 +402,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                 child: Text(
                   '${widget.index + 1}',
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: widget.isExpanded ? AppColors.surfaceOf(context) : AppColors.doctorBlue,
                   ),
@@ -423,7 +424,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -435,17 +436,17 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               if (dosage.isNotEmpty)
                                 Text(
                                   dosage,
-                                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                                 ),
                               if (dosage.isNotEmpty && duration.isNotEmpty)
                                 Text(
                                   ' · ',
-                                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                                 ),
                               if (duration.isNotEmpty)
                                 Text(
                                   duration,
-                                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                                 ),
                               if (entry.isSos) ...[
                                 const SizedBox(width: 6),
@@ -463,7 +464,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                         ] else if (entry.form.isNotEmpty)
                           Text(
                             entry.form,
-                            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                           ),
                       ],
                     );
@@ -539,7 +540,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                         inputFormatters: const [
                           DecimalInputFormatter(maxIntegerDigits: 4, maxDecimalDigits: 2),
                         ],
-                        style: GoogleFonts.inter(fontSize: 13),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                         decoration: _fieldDecoration(label: 'Strength'),
                         onChanged: (v) => entry.dosageAmount = v,
                       ),
@@ -552,7 +553,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                             ? entry.dosageUnit
                             : _dosageUnits.first,
                         isExpanded: true,
-                        style: GoogleFonts.inter(fontSize: 13),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                         decoration: _fieldDecoration(label: 'Unit'),
                         items: _dosageUnits
                             .map((u) => DropdownMenuItem(value: u, child: Text(u)))
@@ -574,7 +575,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                         controller: _durationController,
                         keyboardType: TextInputType.number,
                         inputFormatters: const [DigitsMaxInputFormatter(3)],
-                        style: GoogleFonts.inter(fontSize: 13),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                         decoration: _fieldDecoration(label: 'Duration'),
                         onChanged: (v) {
                           entry.durationAmount = v;
@@ -590,7 +591,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                             ? entry.durationUnit
                             : ClinicalMockData.durationUnits.first,
                         isExpanded: true,
-                        style: GoogleFonts.inter(fontSize: 13),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                         decoration: _fieldDecoration(label: 'Period'),
                         items: ClinicalMockData.durationUnits
                             .map((d) => DropdownMenuItem(value: d, child: Text(d)))
@@ -611,7 +612,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                         controller: _qtyController,
                         keyboardType: TextInputType.number,
                         inputFormatters: const [DigitsMaxInputFormatter(4)],
-                        style: GoogleFonts.inter(fontSize: 13),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                         decoration: _fieldDecoration(label: 'Qty'),
                         onChanged: (v) => entry.quantity = v,
                       ),
@@ -622,7 +623,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                 Text(
                   'Frequency',
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -658,7 +659,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                   runSpacing: 4,
                   children: [
                     FilterChip(
-                      label: Text('SOS', style: GoogleFonts.inter(fontSize: 12)),
+                      label: Text('SOS', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
                       selected: entry.isSos,
                       selectedColor: AppColors.error.withValues(alpha: 0.12),
                       checkmarkColor: AppColors.error,
@@ -666,7 +667,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                       onSelected: (v) => setState(() => entry.isSos = v),
                     ),
                     FilterChip(
-                      label: Text('Substitute OK', style: GoogleFonts.inter(fontSize: 12)),
+                      label: Text('Substitute OK', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
                       selected: entry.substituteAllowed,
                       selectedColor: AppColors.doctorBlue.withValues(alpha: 0.12),
                       checkmarkColor: AppColors.doctorBlue,
@@ -685,7 +686,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                     ),
                     label: Text(
                       widget.showInstruction ? 'Hide instructions' : 'Add instructions',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                     ),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
@@ -703,7 +704,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               ? ''
                               : entry.instructions,
                           isExpanded: true,
-                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context)),
                           decoration: _fieldDecoration(label: 'Timing'),
                           items: [
                             DropdownMenuItem<String>(
@@ -723,7 +724,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                         flex: 2,
                         child: TextField(
                           controller: _specialInstructionsController,
-                          style: GoogleFonts.inter(fontSize: 13),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                           decoration: _fieldDecoration(label: 'Special instructions'),
                           onChanged: (v) => entry.specialInstructions = v,
                         ),
@@ -739,7 +740,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                     icon: const Icon(Icons.check_rounded, size: 18),
                     label: Text(
                       'Add to Rx',
-                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.doctorBlue,

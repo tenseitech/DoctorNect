@@ -21,6 +21,7 @@ import 'screens/lab_dashboard_tabs.dart';
 import 'screens/lab_notifications_screen.dart';
 import 'screens/lab_profile_screen.dart';
 import 'screens/lab_walkin_screen.dart';
+import '../../core/theme/app_typography.dart';
 
 class LabShell extends StatefulWidget {
   const LabShell({super.key});
@@ -139,14 +140,14 @@ class _LabShellState extends State<LabShell> {
                             Text(
                               displayName,
                               style: GoogleFonts.inter(
-                                fontSize: 18,
+                                fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                             Text(
                               'Diagnostic Lab',
                               style: GoogleFonts.inter(
-                                fontSize: 12,
+                                fontSize: AppTypography.labelMedium,
                                 color: AppColors.textSecondaryOf(context),
                               ),
                             ),

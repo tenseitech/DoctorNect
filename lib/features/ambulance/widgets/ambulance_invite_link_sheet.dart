@@ -6,6 +6,7 @@ import '../../../core/invite/ambulance_invite_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/external_launcher.dart';
 import '../../doctor/profile/data/doctor_profile_store.dart';
+import '../../../core/theme/app_typography.dart';
 
 class AmbulanceInviteLinkSheet extends StatelessWidget {
   const AmbulanceInviteLinkSheet({
@@ -42,13 +43,6 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
 
   Future<void> _copyLink(BuildContext context) async {
     await Clipboard.setData(ClipboardData(text: link));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Invite link copied'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _shareLink(BuildContext context) async {
@@ -82,12 +76,12 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Invite link created',
-              style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
               'Share this link with $driverName. They can download DoctorNect, open the link, set a username & PIN, and login to the ambulance dashboard.',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.4),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
             ),
             const SizedBox(height: 16),
             Container(
@@ -99,7 +93,7 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
               ),
               child: SelectableText(
                 link,
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textPrimaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textPrimaryOf(context)),
               ),
             ),
             const SizedBox(height: 16),

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import 'required_field_label.dart';
+import '../core/theme/app_typography.dart';
 
 typedef QualificationDecorationBuilder = InputDecoration Function({
   required String label,
@@ -150,7 +151,7 @@ class _QualificationSelectorBodyState extends State<_QualificationSelectorBody> 
         ? widget.label
         : (widget.isRequired ? '${widget.label} *' : widget.label);
     final textStyle = widget.registrationStyle
-        ? GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)
+        ? GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)
         : null;
 
     return Column(
@@ -170,7 +171,7 @@ class _QualificationSelectorBodyState extends State<_QualificationSelectorBody> 
                     child: Text(
                       q,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w500,
                         color: isDark ? Colors.white : Colors.black87,
                       ),

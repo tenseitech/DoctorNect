@@ -11,6 +11,7 @@ import '../doctor_profile/patient_doctor_profile_screen.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 import '../../../widgets/labeled_remove_button.dart';
 import '../widgets/patient_favorites_sheets.dart';
+import '../../../core/theme/app_typography.dart';
 
 class MyDoctorsScreen extends StatefulWidget {
   const MyDoctorsScreen({super.key});
@@ -81,7 +82,7 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                   child: Text(
                     'No doctors in your list yet. Tap Add to search registered doctors or book a visit.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: 14),
+                    style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodyMedium),
                   ),
                 )
               : ListView.separated(
@@ -158,18 +159,18 @@ class _MyDoctorManageTile extends StatelessWidget {
                   children: [
                     Text(
                       'Dr. ${doctor.name}',
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       doctor.specialization,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                     if (doctor.city.trim().isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         doctor.city,
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                       ),
                     ],
                   ],

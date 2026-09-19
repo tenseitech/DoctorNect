@@ -9,8 +9,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validators/form_validators.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../data/doctor_profile_store.dart';
-import '../widgets/profile_widgets.dart';
 import '../widgets/section_save_bar.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ConsultationSettingsSection extends StatefulWidget {
   const ConsultationSettingsSection({super.key});
@@ -58,7 +58,6 @@ class _ConsultationSettingsSectionState extends State<ConsultationSettingsSectio
     }
     if (!mounted) return; // FIXED: mounted check after await
     setState(() => _dirty = false);
-    showProfileSavedToast(context);
     Navigator.pop(context, true);
   }
 
@@ -100,7 +99,7 @@ class _ConsultationSettingsSectionState extends State<ConsultationSettingsSectio
                     _autoAccept
                         ? 'New patient requests are confirmed instantly.'
                         : 'You review each request and tap Accept or Decline.',
-                    style: GoogleFonts.inter(fontSize: 13),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                   ),
                   value: _autoAccept,
                   onChanged: (v) {
@@ -169,7 +168,7 @@ class _ConsultationSettingsSectionState extends State<ConsultationSettingsSectio
                     _apptReminders
                         ? 'Patients receive automated reminder alerts before their appointment.'
                         : 'No reminders will be sent.',
-                    style: GoogleFonts.inter(fontSize: 13),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                   ),
                   value: _apptReminders,
                   activeTrackColor: AppColors.doctorBlue.withValues(alpha: 0.5),

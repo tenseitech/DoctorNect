@@ -6,6 +6,7 @@ import '../../../../core/notifications/app_toast.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/booking_models.dart';
 import 'patient_booking_confirmed_base.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class BookingConfirmedView extends StatelessWidget {
   const BookingConfirmedView({
@@ -40,7 +41,7 @@ class BookingConfirmedView extends StatelessWidget {
         children: [
           Text(
             'Dr. ${booking.doctorName}',
-            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
           ),
           Text(
             '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
@@ -63,7 +64,7 @@ class BookingConfirmedView extends StatelessWidget {
             Text(
               booking.clinicAddress!,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 14),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
             ),
           ],
         ],

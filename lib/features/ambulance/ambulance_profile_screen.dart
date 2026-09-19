@@ -26,6 +26,7 @@ import 'widgets/ambulance_service_form_fields.dart';
 import '../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
+import '../../core/theme/app_typography.dart';
 
 class AmbulanceProfileScreen extends StatefulWidget {
   const AmbulanceProfileScreen({
@@ -241,13 +242,11 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       );
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'Profile updated' : 'Could not save profile'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: ok ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-      ),
-    );
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save profile')),
+      );
+    }
   }
 
   @override
@@ -283,14 +282,14 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                     Text(
                                       'Profile',
                                       style: GoogleFonts.inter(
-                                          fontSize: 24,
+                                          fontSize: AppTypography.headlineLarge,
                                           fontWeight: FontWeight.w700),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'Service details, availability & account',
                                       style: GoogleFonts.inter(
-                                          fontSize: 13,
+                                          fontSize: AppTypography.bodySmall,
                                           color: AppColors.textSecondaryOf(context)),
                                     ),
                                   ],
@@ -439,11 +438,11 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                     leading: const Icon(Icons.campaign_rounded, color: Color(0xFFDC2626)),
                                     title: Text(
                                       'Promote Banner Ad',
-                                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.bodyMedium),
                                     ),
                                     subtitle: Text(
                                       'Advertise ambulance service on Patient Home',
-                                      style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+                                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: Colors.grey),
                                     ),
                                     trailing: const Icon(Icons.chevron_right),
                                     onTap: () {
@@ -661,7 +660,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
             Text(
               'Username: ${amb.username}',
               style: GoogleFonts.inter(
-                  fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
             ),
           ],
         ),
@@ -762,7 +761,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                   Text(
                     ambulance.serviceName,
                     style: GoogleFonts.inter(
-                      fontSize: 18,
+                      fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -770,14 +769,14 @@ class _ProfileHeaderCard extends StatelessWidget {
                   Text(
                     ambulance.driverName,
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
                   Text(
                     ambulance.vehicleNumber,
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
@@ -823,14 +822,14 @@ class _AboutSection extends StatelessWidget {
                     Text(
                       'About',
                       style: GoogleFonts.inter(
-                        fontSize: 15,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       'Rate the app, share link & legal',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -870,7 +869,7 @@ class _ProfileSection extends StatelessWidget {
             Text(
               title,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFFDC2626),
               ),
@@ -902,7 +901,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -911,7 +910,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               value.isEmpty ? '—' : value,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -949,28 +948,28 @@ class _EquipmentToggles extends StatelessWidget {
       children: [
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Oxygen', style: GoogleFonts.inter(fontSize: 14)),
+          title: Text('Oxygen', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
           value: hasOxygen,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onOxygen,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Ventilator', style: GoogleFonts.inter(fontSize: 14)),
+          title: Text('Ventilator', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
           value: hasVentilator,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onVentilator,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Stretcher', style: GoogleFonts.inter(fontSize: 14)),
+          title: Text('Stretcher', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
           value: hasStretcher,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onStretcher,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('24×7 service', style: GoogleFonts.inter(fontSize: 14)),
+          title: Text('24×7 service', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
           value: is24x7,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: on24x7,

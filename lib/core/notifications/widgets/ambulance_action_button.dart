@@ -5,6 +5,7 @@ import '../../constants/ambulance_icons.dart';
 import '../../../features/ambulance/ambulance_booking_screen.dart';
 import '../../../features/ambulance/models/ambulance_models.dart';
 import '../app_notification.dart';
+import '../../../core/theme/app_typography.dart';
 
 class AmbulanceActionButton extends StatefulWidget {
   const AmbulanceActionButton({
@@ -82,7 +83,7 @@ class _AmbulanceActionButtonState extends State<AmbulanceActionButton> {
                     Text(
                       'Ambulance',
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),

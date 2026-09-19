@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../core/theme/app_colors.dart';
 import '../../data/medical_tests_catalog.dart';
+import '../../../../../core/theme/app_typography.dart';
 
 class TestPickerResult {
   TestPickerResult({required this.selectedIds, required this.customNames});
@@ -125,7 +126,6 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
             _selectedIds.add(id);
             _extraItems.add(TestCatalogItem(id: id, name: name, group: 'Custom'));
           });
-          AppToast.info(context, 'Added successfully');
           return;
         }
       } catch (e) {
@@ -140,7 +140,6 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
       if (!_customNames.contains(name)) _customNames.add(name);
     });
     if (mounted) {
-      AppToast.info(context, 'Added successfully');
     }
   }
 
@@ -181,7 +180,7 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                         Text(
                           widget.title,
                           style: GoogleFonts.inter(
-                            fontSize: 17,
+                            fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -190,7 +189,7 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                           Text(
                             '$totalSelected selected',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               color: AppColors.doctorBlue,
                               fontWeight: FontWeight.w600,
                             ),
@@ -213,7 +212,7 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       textStyle: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -276,7 +275,7 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
           child: Text(
             group.toUpperCase(),
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: AppColors.doctorBlue,
               letterSpacing: 0.5,
@@ -320,7 +319,7 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                     child: Text(
                       t.name,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         color: AppColors.textPrimaryOf(context),
                         fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                       ),
@@ -435,7 +434,6 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
             }
             if (!_selected.contains(savedName)) _selected.add(savedName);
           });
-          AppToast.info(context, 'Added successfully');
           return;
         }
       } catch (e) {
@@ -450,7 +448,6 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
       if (!_selected.contains(name)) _selected.add(name);
     });
     if (mounted) {
-      AppToast.info(context, 'Added successfully');
     }
   }
 
@@ -488,7 +485,7 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                         Text(
                           widget.title,
                           style: GoogleFonts.inter(
-                            fontSize: 17,
+                            fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -497,7 +494,7 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                           Text(
                             '${_selected.length} selected',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               color: AppColors.doctorBlue,
                               fontWeight: FontWeight.w600,
                             ),
@@ -514,7 +511,7 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       textStyle: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -589,7 +586,7 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                               child: Text(
                                 item,
                                 style: GoogleFonts.inter(
-                                  fontSize: 13,
+                                  fontSize: AppTypography.bodySmall,
                                   color: AppColors.textPrimaryOf(context),
                                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                                 ),
@@ -634,7 +631,7 @@ class _AddCustomSearchTile extends StatelessWidget {
       title: RichText(
         text: TextSpan(
           style: GoogleFonts.inter(
-            fontSize: 13,
+            fontSize: AppTypography.bodySmall,
             color: AppColors.doctorBlue,
             fontWeight: FontWeight.w600,
           ),
@@ -643,7 +640,7 @@ class _AddCustomSearchTile extends StatelessWidget {
             TextSpan(
               text: "'$query'",
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 color: AppColors.doctorBlue,
                 fontWeight: FontWeight.w600,
                 fontStyle: FontStyle.italic,

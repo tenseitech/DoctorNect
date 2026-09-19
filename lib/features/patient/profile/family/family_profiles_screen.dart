@@ -10,6 +10,7 @@ import '../models/patient_profile_models.dart';
 import '../widgets/patient_profile_form_styles.dart';
 import '../widgets/profile_edit_widgets.dart';
 import 'add_family_member_profile_screen.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class FamilyProfilesScreen extends StatefulWidget {
   const FamilyProfilesScreen({super.key, required this.onChanged});
@@ -55,7 +56,6 @@ class _FamilyProfilesScreenState extends State<FamilyProfilesScreen> {
       if (!mounted) return;
       setState(() {});
       widget.onChanged();
-      AppToast.info(context, '${member.name} removed');
     } catch (_) {
       if (!mounted) return;
       AppToast.info(context, 'Could not remove family member. Try again.');
@@ -124,13 +124,13 @@ class _EmptyFamilyState extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'No family members yet',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 15),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyLarge),
           ),
           const SizedBox(height: 6),
           Text(
             'Add spouse, children, or parents to book on their behalf.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.4),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
           ),
           const SizedBox(height: 16),
           TextButton.icon(
@@ -215,12 +215,12 @@ class _MemberCard extends StatelessWidget {
                         children: [
                           Text(
                             member.name,
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${member.relationLabel} · ${member.age} yrs · ${member.bloodGroup}',
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                           ),
                           if (member.allergies.isNotEmpty || member.conditions.isNotEmpty) ...[
                             const SizedBox(height: 6),
@@ -285,7 +285,7 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.patientTeal),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: AppColors.patientTeal),
           ),
         ],
       ),

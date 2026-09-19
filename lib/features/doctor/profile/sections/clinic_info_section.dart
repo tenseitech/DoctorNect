@@ -16,8 +16,8 @@ import '../../../../widgets/confirm_delete_dialog.dart';
 import '../../../../widgets/labeled_remove_button.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../data/doctor_profile_store.dart';
-import '../widgets/profile_widgets.dart';
 import '../widgets/section_save_bar.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ClinicInfoSection extends StatefulWidget {
   const ClinicInfoSection({super.key});
@@ -95,7 +95,6 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
           _dirty = true;
         });
 
-        AppToast.success(context, 'Clinic address updated from current location.');
       }
     } finally {
       if (mounted) setState(() => _fetchingLocation = false);
@@ -220,7 +219,6 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
     }
     if (!mounted) return; // FIXED: mounted check after await
     setState(() => _dirty = false);
-    showProfileSavedToast(context);
     Navigator.pop(context, true);
   }
 
@@ -492,7 +490,7 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                             ),
                             ..._photos.map((p) => ListTile(
                                   leading: const Icon(Icons.image_outlined, color: AppColors.doctorBlue),
-                                  title: Text(p, style: const TextStyle(fontSize: 13)),
+                                  title: Text(p, style: const TextStyle(fontSize: AppTypography.bodySmall)),
                                   trailing: LabeledRemoveButton(
                                     label: 'Delete',
                                     onPressed: () => _deletePhoto(p),
@@ -541,7 +539,7 @@ class _ClinicTypeModeChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w500,
             color: selected ? AppColors.surfaceOf(context) : Colors.grey.shade700,
           ),

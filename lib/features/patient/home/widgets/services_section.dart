@@ -6,6 +6,7 @@ import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/patient_mock_data.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ServicesSection extends StatelessWidget {
   const ServicesSection({
@@ -226,7 +227,7 @@ class _ServiceTileState extends State<_ServiceTile> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -237,7 +238,7 @@ class _ServiceTileState extends State<_ServiceTile> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 11,
+                        fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),

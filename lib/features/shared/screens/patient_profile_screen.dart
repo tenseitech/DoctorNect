@@ -52,6 +52,7 @@ import 'package:medibond/features/patient/profile/widgets/profile_web_layout.dar
 import 'package:medibond/features/patient/records/vitals_tracker_screen.dart';
 import 'package:medibond/widgets/image_viewer_dialog.dart';
 import 'package:medibond/widgets/logout_button.dart';
+import '../../../core/theme/app_typography.dart';
 
 
 class PatientProfileScreen extends StatelessWidget {
@@ -287,7 +288,7 @@ class _DoctorPatientProfileScreenState extends State<_DoctorPatientProfileScreen
           labelColor: AppColors.doctorBlue,
           unselectedLabelColor: AppColors.textSecondaryOf(context),
           indicatorColor: AppColors.doctorBlue,
-          labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+          labelStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(text: 'Personal Info'),
             Tab(text: 'Medical History'),
@@ -362,7 +363,7 @@ class _PersonalInfoTab extends StatelessWidget {
             children: [
               PatientAvatar(name: s.name, gender: s.gender),
               const SizedBox(height: 8),
-              Text(s.name, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700)),
+              Text(s.name, style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700)),
             ],
           ),
         ),
@@ -470,7 +471,7 @@ class _MedicalHistoryTab extends StatelessWidget {
               return ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.medical_services_outlined, color: AppColors.doctorBlue, size: 20),
-                title: Text(s.procedure, style: GoogleFonts.inter(fontSize: 14)),
+                title: Text(s.procedure, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
                 subtitle: Text(DateFormat('dd MMM yyyy').format(s.date)),
               );
             }).toList(),
@@ -478,7 +479,7 @@ class _MedicalHistoryTab extends StatelessWidget {
         ),
         _SectionCard(
           title: 'Family History',
-          child: Text(profile.familyHistory, style: GoogleFonts.inter(fontSize: 14, height: 1.4)),
+          child: Text(profile.familyHistory, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4)),
         ),
         _SectionCard(
           title: 'Current Medications',
@@ -518,12 +519,12 @@ class _MedicalHistoryTab extends StatelessWidget {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(m.dosage, style: GoogleFonts.inter(fontSize: 13)),
+                              Text(m.dosage, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
                               if (prescribedOn != null)
                                 Text(
                                   'Prescribed ${DateFormat('dd MMM yyyy').format(prescribedOn)}',
                                   style: GoogleFonts.inter(
-                                    fontSize: 11,
+                                    fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
                                 ),
@@ -683,7 +684,7 @@ class _VisitHistoryTab extends StatelessWidget {
                                 Text(
                                   DateFormat('dd MMM yyyy').format(v.date),
                                   style: GoogleFonts.inter(
-                                    fontSize: 12,
+                                    fontSize: AppTypography.labelMedium,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.doctorBlue,
                                   ),
@@ -691,7 +692,7 @@ class _VisitHistoryTab extends StatelessWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   v.diagnosis,
-                                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+                                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
                                 ),
                                 const SizedBox(height: 10),
                                 VisitHistoryClinicalEditor(
@@ -802,7 +803,7 @@ class _ReportsTab extends StatelessWidget {
                 return Padding(
                   padding: const EdgeInsets.only(left: 6),
                   child: FilterChip(
-                    label: Text(_typeLabel(t), style: GoogleFonts.inter(fontSize: 11)),
+                    label: Text(_typeLabel(t), style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
                     selected: fileFilter == t,
                     onSelected: (_) => onFilterChanged(t),
                     selectedColor: AppColors.doctorBlue.withValues(alpha: 0.15),
@@ -845,10 +846,10 @@ class _ReportsTab extends StatelessWidget {
                         f.type == PatientFileType.imaging ? Icons.image_outlined : Icons.insert_drive_file_outlined,
                         color: AppColors.doctorBlue,
                       ),
-                      title: Text(f.name, style: GoogleFonts.inter(fontSize: 13)),
+                      title: Text(f.name, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
                       subtitle: Text(
                         '${_typeLabel(f.type)} · ${DateFormat('dd MMM yyyy').format(f.date)}',
-                        style: GoogleFonts.inter(fontSize: 11),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.visibility_outlined, size: 20),
@@ -892,7 +893,7 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)),
           const SizedBox(height: 10),
           ...rows,
         ],
@@ -922,8 +923,8 @@ class _Row extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 110, child: Text(label, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)))),
-          Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500))),
+          SizedBox(width: 110, child: Text(label, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)))),
+          Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -958,7 +959,7 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)),
           const SizedBox(height: 10),
           child,
         ],
@@ -1136,7 +1137,6 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
         PatientProfileMock.profile.photoUrl = null;
       });
       PatientProfileMock.notifyProfileUpdated();
-      AppToast.info(context, 'Profile photo removed');
       return;
     }
 
@@ -1243,7 +1243,6 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
       });
       PatientProfileMock.notifyProfileUpdated();
       if (!mounted) return;
-      AppToast.info(context, 'Profile photo updated successfully!');
     } catch (e) {
       if (!mounted) return;
       AppToast.info(context, 'Failed to save photo: $e');
@@ -1597,7 +1596,7 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
                   Text(
                     'Profile',
                     style: GoogleFonts.inter(
-                      fontSize: 22,
+                      fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -1606,7 +1605,7 @@ class _PatientPatientProfileScreenState extends State<_PatientPatientProfileScre
                   Text(
                     'Your account & health',
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.3,
                     ),
@@ -1823,7 +1822,7 @@ class _FamilyChip extends StatelessWidget {
                 child: Text(
                   initial,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF7C3AED),
                   ),
@@ -1835,7 +1834,7 @@ class _FamilyChip extends StatelessWidget {
               m.name.split(' ').first,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w700),
             ),
             Text(
               m.relationLabel,
@@ -1889,7 +1888,7 @@ class _AddFamilyCard extends StatelessWidget {
             Text(
               'Add',
               style: GoogleFonts.inter(
-                fontSize: 11,
+                fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w700,
                 color: AppColors.patientTeal,
               ),

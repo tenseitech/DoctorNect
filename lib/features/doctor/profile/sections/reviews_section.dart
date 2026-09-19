@@ -9,6 +9,7 @@ import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../data/doctor_profile_store.dart';
 import '../models/doctor_profile_data.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ReviewsSection extends StatefulWidget {
   const ReviewsSection({super.key});
@@ -92,13 +93,6 @@ class _ReviewsSectionState extends State<ReviewsSection> {
               }
               if (!ctx.mounted) return; // FIXED: dialog context guard after await
               Navigator.pop(ctx);
-              if (!mounted) return; // FIXED: state context guard after await
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Reply posted'),
-                  backgroundColor: Color(0xFF16A34A),
-                ),
-              );
             },
             child: const Text('Post Reply'),
           ),
@@ -136,7 +130,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
               children: [
                 Text(
                   '${p.rating}',
-                  style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.w800, color: AppColors.doctorBlue),
+                  style: GoogleFonts.inter(fontSize: AppTypography.displayLarge, fontWeight: FontWeight.w800, color: AppColors.doctorBlue),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -146,7 +140,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                         size: 18,
                       )),
                 ),
-                Text('${p.reviewCount} total reviews', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+                Text('${p.reviewCount} total reviews', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
                 const SizedBox(height: 16),
                 ...List.generate(5, (i) {
                   final stars = 5 - i;
@@ -158,7 +152,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                       children: [
                         SizedBox(
                           width: 28,
-                          child: Text('$stars★', style: GoogleFonts.inter(fontSize: 11)),
+                          child: Text('$stars★', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
                         ),
                         Expanded(
                           child: ClipRRect(
@@ -172,7 +166,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text('$count', style: GoogleFonts.inter(fontSize: 11)),
+                        Text('$count', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
                       ],
                     ),
                   );
@@ -232,10 +226,10 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                   ),
                   Text(
                     DateFormat('dd MMM yyyy').format(r.date),
-                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 8),
-                  Text(r.text, style: GoogleFonts.inter(fontSize: 13, height: 1.4)),
+                  Text(r.text, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, height: 1.4)),
                   if (r.doctorReply != null) ...[
                     const SizedBox(height: 10),
                     Container(
@@ -248,8 +242,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Your reply', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.doctorBlue)),
-                          Text(r.doctorReply!, style: GoogleFonts.inter(fontSize: 12)),
+                          Text('Your reply', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: AppColors.doctorBlue)),
+                          Text(r.doctorReply!, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
                         ],
                       ),
                     ),

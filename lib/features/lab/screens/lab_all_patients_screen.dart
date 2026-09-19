@@ -10,6 +10,7 @@ import '../data/lab_worklist_store.dart';
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
 import '../widgets/lab_report_upload_sheet.dart';
 import 'lab_dashboard_tabs.dart';
+import '../../../core/theme/app_typography.dart';
 
 enum _PatientTypeFilter { all, walkIn, home, reportPending }
 
@@ -112,15 +113,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
   }
 
   Future<void> _uploadReport(LabBookingRecord booking) async {
-    final sent = await LabReportUploadSheet.show(context, booking: booking);
-    if (sent == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Report shared with ${booking.patientName}'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    await LabReportUploadSheet.show(context, booking: booking);
   }
 
   @override
@@ -128,7 +121,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        title: Text('All Patients', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text('All Patients', style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600)),
         backgroundColor: AppColors.surfaceOf(context),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -155,12 +148,12 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                 children: [
                   Text(
                     'Patient bookings',
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${all.length} total · ${patients.length} shown${pendingReports > 0 ? ' · $pendingReports need report' : ''}',
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 14),
                   TextField(
@@ -168,7 +161,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       hintText: 'Search patient or test...',
-                      hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                      hintStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                       prefixIcon: const Icon(Icons.search, size: 20),
                       filled: true,
                       fillColor: AppColors.surfaceOf(context),
@@ -212,7 +205,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                           selectedColor: _labPurple.withValues(alpha: 0.14),
                           checkmarkColor: _labPurple,
                           labelStyle: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: _typeFilter == entry.$1 ? _labPurple : AppColors.textSecondaryOf(context),
                           ),
@@ -237,7 +230,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                               ? 'No patient bookings yet. Walk-ins and app bookings will appear here.'
                               : 'No patients match your filters.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.4),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
                         ),
                       ),
                     )
@@ -297,7 +290,7 @@ class _DateFilterRow extends StatelessWidget {
                   Expanded(
                     child: Text(
                       label,
-                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                     ),
                   ),
                   Icon(Icons.arrow_drop_down, color: AppColors.textSecondaryOf(context)),
@@ -311,7 +304,7 @@ class _DateFilterRow extends StatelessWidget {
           TextButton(
             onPressed: onClearDate,
             style: TextButton.styleFrom(foregroundColor: AppColors.labPurple),
-            child: Text('Clear', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+            child: Text('Clear', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall)),
           ),
         ],
       ],
@@ -363,12 +356,12 @@ class _PatientBookingCard extends StatelessWidget {
                   children: [
                     Text(
                       booking.patientName,
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       isWalkIn ? 'Walk-in' : 'Home collection',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),
@@ -396,7 +389,7 @@ class _PatientBookingCard extends StatelessWidget {
                     children: [
                       Text(
                         labOrderStatusLabel(booking.status),
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w700, color: statusColor),
                       ),
                       const SizedBox(width: 4),
                       Icon(Icons.arrow_drop_down, size: 14, color: statusColor),
@@ -431,7 +424,7 @@ class _PatientBookingCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       testName,
-                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, height: 1.35),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600, height: 1.35),
                     ),
                   ),
                 ],
@@ -441,13 +434,13 @@ class _PatientBookingCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '${DateFormat('dd MMM yyyy').format(booking.dateTime)} · ${booking.slotLabel}',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
           if (!isWalkIn && booking.address.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               booking.address,
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
             ),
           ],
           if (booking.hasReport) ...[
@@ -458,7 +451,7 @@ class _PatientBookingCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   'Report sent',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.pharmacyGreen, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.pharmacyGreen, fontWeight: FontWeight.w600),
                 ),
               ],
             ),

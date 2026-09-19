@@ -9,6 +9,7 @@ import '../../../../widgets/labeled_add_button.dart';
 import '../data/clinical_mock_data.dart';
 import '../models/clinical_models.dart';
 import '../widgets/clinical_widgets.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ClinicalNotesScreen extends StatefulWidget {
   const ClinicalNotesScreen({super.key, required this.patient});
@@ -73,7 +74,6 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
       clinicalNotes: summary.isNotEmpty ? summary : null,
     );
 
-    showClinicalToast(context, 'Clinical notes saved to EMR');
   }
 
   @override
@@ -177,7 +177,7 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
                     return InputChip(
                       label: Text('${a.name} (${a.severity})'),
                       deleteIconColor: color,
-                      labelStyle: GoogleFonts.inter(fontSize: 12, color: color),
+                      labelStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: color),
                       side: BorderSide(color: color.withValues(alpha: 0.4)),
                       onDeleted: () => setState(() => _allergies.remove(a)),
                     );
@@ -210,8 +210,8 @@ class _InfoLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text('$label: ', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context))),
-        Text(value, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+        Text('$label: ', style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context))),
+        Text(value, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600)),
       ],
     );
   }

@@ -13,6 +13,7 @@ import '../../../../core/constants/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../patient/booking/models/booking_models.dart';
 import '../../models/doctor_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class RescheduleModal extends StatefulWidget {
   const RescheduleModal({
@@ -182,7 +183,7 @@ class _RescheduleModalState extends State<RescheduleModal> {
                 child: Text(
                   'Reschedule Appointment',
                   style: GoogleFonts.inter(
-                    fontSize: 18,
+                    fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
                   ),
@@ -237,7 +238,7 @@ class _RescheduleModalState extends State<RescheduleModal> {
               ),
               child: Text(
                 'No slots available on this date. Update your availability schedule first.',
-                style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: 13),
+                style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodySmall),
               ),
             )
           else
@@ -281,10 +282,10 @@ class _RescheduleModalState extends State<RescheduleModal> {
           const SizedBox(height: 8),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text('Notify patient', style: GoogleFonts.inter(fontSize: 14)),
+            title: Text('Notify patient', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
             subtitle: Text(
               'Send SMS & app notification',
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
             ),
             value: _notifyPatient,
             activeTrackColor: AppColors.doctorBlue.withValues(alpha: 0.5),
@@ -323,7 +324,7 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: GoogleFonts.inter(
-        fontSize: 13,
+        fontSize: AppTypography.bodySmall,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimaryOf(context),
       ),
@@ -372,7 +373,7 @@ class _PatientSummaryCard extends StatelessWidget {
                 Text(
                   patientName,
                   style: GoogleFonts.inter(
-                    fontSize: 15,
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
                   ),
@@ -381,7 +382,7 @@ class _PatientSummaryCard extends StatelessWidget {
                 Text(
                   'Current: $currentLabel',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
                 ),
@@ -422,7 +423,7 @@ class _DatePickerTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimaryOf(context),
                   ),
@@ -469,7 +470,7 @@ class _SlotChip extends StatelessWidget {
           child: Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               color: selected ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
             ),

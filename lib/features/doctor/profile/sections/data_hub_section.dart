@@ -6,6 +6,7 @@ import 'ambulance_data_section.dart';
 import 'lab_data_section.dart';
 import 'patient_data_section.dart';
 import 'pharmacy_data_section.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class DataHubSection extends StatelessWidget {
   const DataHubSection({super.key});
@@ -24,7 +25,7 @@ class DataHubSection extends StatelessWidget {
               Text(
                 'Reports & Analytics',
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[500],
                   letterSpacing: 0.4,
@@ -131,7 +132,7 @@ class _HubCard extends StatelessWidget {
                     Text(
                       title,
                       style: GoogleFonts.inter(
-                        fontSize: 15,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -139,7 +140,7 @@ class _HubCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: Colors.grey[500],
                       ),
                     ),

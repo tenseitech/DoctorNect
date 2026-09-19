@@ -7,6 +7,7 @@ import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/external_launcher.dart';
 import '../../profile/data/doctor_profile_store.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class InvitePatientSheet extends StatefulWidget {
   const InvitePatientSheet({super.key});
@@ -50,13 +51,6 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
     final link = _link;
     if (link == null) return;
     await Clipboard.setData(ClipboardData(text: link));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Invite link copied'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _shareLink() async {
@@ -93,13 +87,13 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
             const SizedBox(height: 16),
             Text(
               'Invite Patient',
-              style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineMedium, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
               'Share your personal DoctorNect link. When patients register with it, they are linked to $doctorName.',
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
               ),
@@ -126,7 +120,7 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
                         : Text(
                             _link ?? DoctorInviteService.buildInviteLink(DoctorSession.loggedInDoctorId),
                             style: GoogleFonts.inter(
-                              fontSize: 14,
+                              fontSize: AppTypography.bodyMedium,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimaryOf(context),
                             ),

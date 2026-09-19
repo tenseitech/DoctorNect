@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_colors.dart';
 import 'legal_document_modal.dart';
 import 'medibond_legal_content.dart';
+import '../../core/theme/app_typography.dart';
 
 class RegistrationLegalConsentCheckbox extends StatelessWidget {
   const RegistrationLegalConsentCheckbox({
@@ -32,7 +33,7 @@ class RegistrationLegalConsentCheckbox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final linkStyle = GoogleFonts.inter(
-      fontSize: 13,
+      fontSize: AppTypography.bodySmall,
       height: 1.45,
       color: accentColor,
       fontWeight: FontWeight.w600,
@@ -40,7 +41,7 @@ class RegistrationLegalConsentCheckbox extends StatelessWidget {
       decorationColor: accentColor,
     );
     final bodyStyle = GoogleFonts.inter(
-      fontSize: 13,
+      fontSize: AppTypography.bodySmall,
       height: 1.45,
       color: AppColors.textSecondaryOf(context),
     );

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../specialty_search_suggestions.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class SearchSpecialtySuggestionsPanel extends StatelessWidget {
   const SearchSpecialtySuggestionsPanel({
@@ -47,7 +48,7 @@ class SearchSpecialtySuggestionsPanel extends StatelessWidget {
                 child: Text(
                   title,
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textSecondaryOf(context),
                     letterSpacing: 0.2,
@@ -123,7 +124,7 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimaryOf(context),
                         ),
@@ -135,7 +136,7 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 11,
+                            fontSize: AppTypography.labelSmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),

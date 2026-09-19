@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Grouped section for long registration forms.
 class AuthRegistrationSection extends StatelessWidget {
@@ -118,7 +119,7 @@ class _SectionHeader extends StatelessWidget {
               Text(
                 title,
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -128,7 +129,7 @@ class _SectionHeader extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                     height: 1.35,
                   ),
@@ -191,7 +192,7 @@ class AuthRegistrationStepIndicator extends StatelessWidget {
                     child: Text(
                       '${i + 1}',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w700,
                         color: i <= activeIndex
                             ? Colors.white

@@ -24,6 +24,7 @@ import '../models/pharmacy_models.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
+import '../../../core/theme/app_typography.dart';
 
 const _lineColor = Color(0xFFE2E8F0);
 const _headerBg = Color(0xFFF1F5F9);
@@ -421,7 +422,6 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
               }
 
               Navigator.pop(context);
-              AppToast.info(dialogContext, '$field updated successfully');
             }
 
             return AlertDialog(
@@ -434,7 +434,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                     if (errorText != null) ...[
                       Text(
                         errorText!,
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.error),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.error),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -556,7 +556,7 @@ class _ProfileHeaderBand extends StatelessWidget {
                 child: Text(
                   _storeInitial(store.storeName),
                   style: GoogleFonts.inter(
-                    fontSize: 22,
+                    fontSize: AppTypography.headlineLarge,
                     fontWeight: FontWeight.w800,
                     color: AppColors.surfaceOf(context),
                   ),
@@ -570,7 +570,7 @@ class _ProfileHeaderBand extends StatelessWidget {
                     Text(
                       store.storeName,
                       style: GoogleFonts.inter(
-                        fontSize: 20,
+                        fontSize: AppTypography.headlineMedium,
                         fontWeight: FontWeight.w800,
                         color: AppColors.surfaceOf(context),
                         height: 1.2,
@@ -580,7 +580,7 @@ class _ProfileHeaderBand extends StatelessWidget {
                     Text(
                       store.ownerName,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         color: AppColors.surfaceOf(context).withValues(alpha: 0.88),
                       ),
                     ),
@@ -594,7 +594,7 @@ class _ProfileHeaderBand extends StatelessWidget {
                       child: Text(
                         'Medical Store',
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.surfaceOf(context),
                         ),
@@ -644,7 +644,7 @@ class _HeaderStatPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w700,
               color: AppColors.surfaceOf(context),
             ),
@@ -679,14 +679,14 @@ class _ProfileSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               title,
-              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 10),
         if (rows.isNotEmpty)
@@ -711,7 +711,7 @@ class _ProfileSection extends StatelessWidget {
                             child: Text(
                               'Field',
                               style: GoogleFonts.inter(
-                                fontSize: 12,
+                                fontSize: AppTypography.labelMedium,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -722,7 +722,7 @@ class _ProfileSection extends StatelessWidget {
                             child: Text(
                               'Details',
                               style: GoogleFonts.inter(
-                                fontSize: 12,
+                                fontSize: AppTypography.labelMedium,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -775,7 +775,7 @@ class _ProfileTableRow extends StatelessWidget {
               child: Text(
                 field.label,
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -792,7 +792,7 @@ class _ProfileTableRow extends StatelessWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -874,7 +874,6 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       await FirebaseAuthService.instance.updatePassword(current, newPass);
       if (!mounted) return;
       Navigator.pop(context);
-      AppToast.info(context, 'Password updated successfully!');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -902,7 +901,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (_error != null) ...[
-              Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+              Text(_error!, style: const TextStyle(color: Colors.red, fontSize: AppTypography.bodySmall)),
               const SizedBox(height: 12),
             ],
             TextField(
@@ -1012,7 +1011,6 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
     }
 
     Navigator.pop(context);
-    AppToast.info(context, 'Address updated successfully');
   }
 
   @override
@@ -1027,7 +1025,7 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
             if (_errorText != null) ...[
               Text(
                 _errorText!,
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.error),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.error),
               ),
               const SizedBox(height: 12),
             ],

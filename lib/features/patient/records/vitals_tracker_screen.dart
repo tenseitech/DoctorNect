@@ -13,6 +13,7 @@ import '../../../core/theme/app_colors.dart';
 import '../profile/widgets/patient_profile_form_styles.dart';
 import 'data/health_records_mock.dart';
 import 'models/health_record_models.dart';
+import '../../../core/theme/app_typography.dart';
 
 class VitalsTrackerScreen extends StatefulWidget {
   const VitalsTrackerScreen({super.key});
@@ -169,10 +170,6 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
       _showForm = false;
     });
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Vitals log saved'), backgroundColor: Color(0xFF16A34A)),
-    );
   }
 
   List<FlSpot> _spotsForTrend() {
@@ -216,7 +213,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                 children: [
                   Text(
                     'Track your health metrics',
-                    style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 16),
                   Align(
@@ -269,7 +266,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                         selectedColor: AppColors.patientTeal.withValues(alpha: 0.15),
                         checkmarkColor: AppColors.patientTeal,
                         labelStyle: GoogleFonts.inter(
-                          fontSize: 13,
+                          fontSize: AppTypography.bodySmall,
                           color: selected ? AppColors.patientTeal : AppColors.textSecondaryOf(context),
                           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                         ),
@@ -504,7 +501,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
               children: [
                 Text(
                   DateFormat('dd MMM yyyy, hh:mm a').format(log.dateTime),
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -514,7 +511,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                     if (log.weightKg != null) 'Weight ${log.weightKg} kg',
                     if (log.pulse != null) 'Pulse ${log.pulse}',
                   ].join(' · '),
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),

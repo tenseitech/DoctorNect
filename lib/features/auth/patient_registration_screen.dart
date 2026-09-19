@@ -20,15 +20,20 @@ import '../../widgets/form_scroll_helper.dart';
 import '../../widgets/google_sign_in_button.dart';
 import '../../widgets/password_field.dart';
 import '../../widgets/registration_mobile_otp_section.dart';
+import '../../widgets/text_field_focus_helper.dart';
 import '../dashboard/dashboard_shell.dart';
 import '../patient/profile/data/patient_profile_mock.dart';
 import '../patient/sharing/patient_sharing_utils.dart';
 import 'widgets/auth_login_page_shell.dart';
 import 'widgets/auth_registration_page_shell.dart';
 import 'widgets/registration_address_section.dart';
+import '../../core/theme/app_typography.dart';
 
 class PatientRegistrationScreen extends StatefulWidget {
-  const PatientRegistrationScreen({super.key});
+  const PatientRegistrationScreen({super.key, this.preVerifiedMobile});
+
+  /// 10-digit mobile already verified via [UnifiedMobileAuthScreen].
+  final String? preVerifiedMobile;
 
   @override
   State<PatientRegistrationScreen> createState() =>
@@ -48,6 +53,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
   final _heightFtController = TextEditingController();
   final _heightInController = TextEditingController();
   final _weightController = TextEditingController();
+  final _heightFtFocusNode = FocusNode();
+  final _heightInFocusNode = FocusNode();
+  final _weightFocusNode = FocusNode();
 
   double cmFromFtIn(int ft, int inch) => (ft * 30.48) + (inch * 2.54);
 
@@ -73,6 +81,34 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
   String? _locationError;
   String _mobileDialCode = CountryPhoneCodes.defaultDialCode;
 
+  bool get _otpAlreadyVerified => widget.preVerifiedMobile != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final preMobile = widget.preVerifiedMobile;
+    final digits = preMobile == null
+        ? null
+        : (FormValidators.registrationMobileDigits(preMobile) ??
+            FormValidators.mobileDigits(preMobile));
+    if (digits != null) {
+      _mobileController.text = digits;
+      _mobileVerified = true;
+    }
+    TextFieldFocusHelper.bindSelectAllOnFocus(
+      focusNode: _heightFtFocusNode,
+      controller: _heightFtController,
+    );
+    TextFieldFocusHelper.bindSelectAllOnFocus(
+      focusNode: _heightInFocusNode,
+      controller: _heightInController,
+    );
+    TextFieldFocusHelper.bindSelectAllOnFocus(
+      focusNode: _weightFocusNode,
+      controller: _weightController,
+    );
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -86,6 +122,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     _heightFtController.dispose();
     _heightInController.dispose();
     _weightController.dispose();
+    _heightFtFocusNode.dispose();
+    _heightInFocusNode.dispose();
+    _weightFocusNode.dispose();
     super.dispose();
   }
 
@@ -239,7 +278,6 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
       TextInput.finishAutofillContext(shouldSave: true);
 
       if (!mounted) return;
-      AppToast.success(context, 'Account created successfully!');
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (_) => const DashboardShell(userType: UserType.patient),
@@ -264,7 +302,6 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
           _nameController.text = googleProfile.displayName;
           _emailController.text = googleProfile.email;
         });
-        AppToast.info(context, 'Profile pre-filled from Google');
       }
     } catch (e) {
       if (!mounted) return;
@@ -315,7 +352,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       validator: FormValidators.fullName,
                       textInputAction: TextInputAction.next,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                       ),
                       decoration: _fieldDecoration(
@@ -339,7 +376,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                               ? 'Select date of birth'
                               : DateFormat('dd MMM yyyy').format(_dob!),
                           style: GoogleFonts.inter(
-                            fontSize: 14,
+                            fontSize: AppTypography.bodyMedium,
                             fontWeight: FontWeight.w600,
                             color: _dob == null
                                 ? AppColors.textSecondaryOf(context)
@@ -388,14 +425,18 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _heightFtController,
+                            focusNode: _heightFtFocusNode,
                             keyboardType: TextInputType.number,
+                            autofillHints: const <String>[],
+                            autocorrect: false,
+                            enableSuggestions: false,
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(1),
                             ],
-                            validator: (v) =>
-                                FormValidators.required(v, field: 'Feet'),
+                            validator: FormValidators.heightFeet,
                             style: GoogleFonts.inter(
-                              fontSize: 14,
+                              fontSize: AppTypography.bodyMedium,
                               fontWeight: FontWeight.w600,
                             ),
                             decoration: _fieldDecoration(
@@ -410,20 +451,18 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _heightInController,
+                            focusNode: _heightInFocusNode,
                             keyboardType: TextInputType.number,
+                            autofillHints: const <String>[],
+                            autocorrect: false,
+                            enableSuggestions: false,
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(2),
                             ],
-                            validator: (v) {
-                              final err =
-                                  FormValidators.required(v, field: 'Inches');
-                              if (err != null) return err;
-                              final val = int.tryParse(v!.trim()) ?? -1;
-                              if (val < 0 || val > 11) return '0-11 in';
-                              return null;
-                            },
+                            validator: FormValidators.heightInches,
                             style: GoogleFonts.inter(
-                              fontSize: 14,
+                              fontSize: AppTypography.bodyMedium,
                               fontWeight: FontWeight.w600,
                             ),
                             decoration: _fieldDecoration(
@@ -439,14 +478,19 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _weightController,
+                      focusNode: _weightFocusNode,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      autofillHints: const <String>[],
+                      autocorrect: false,
+                      enableSuggestions: false,
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                        LengthLimitingTextInputFormatter(6),
                       ],
                       validator: (v) =>
                           FormValidators.required(v, field: 'Weight'),
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                       ),
                       decoration: _fieldDecoration(
@@ -463,35 +507,62 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
               AuthRegistrationSection(
                 key: _mobileFieldKey,
                 icon: Icons.sms_outlined,
-                title: 'Mobile verification',
-                subtitle: 'One-time SMS code',
+                title: _otpAlreadyVerified ? 'Mobile number' : 'Mobile verification',
+                subtitle: _otpAlreadyVerified
+                    ? 'Verified during sign-in'
+                    : 'One-time SMS code',
                 accentColor: accent,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    RegistrationMobileOtpSection(
-                      mobileController: _mobileController,
-                      role: UserType.patient,
-                      initialDialCode: _mobileDialCode,
-                      onDialCodeChanged: (code) =>
-                          setState(() => _mobileDialCode = code),
-                      accentColor: accent,
-                      phoneDecoration: _fieldDecoration(
-                        label: 'Mobile number *',
-                        prefixIcon: const Icon(Icons.phone_outlined, size: 20),
-                      ).copyWith(errorText: _mobileError),
-                      onVerifiedChanged: (v) => setState(() {
-                        _mobileVerified = v;
-                        if (v) _mobileError = null;
-                      }),
-                    ),
+                    if (_otpAlreadyVerified)
+                      InputDecorator(
+                        decoration: _fieldDecoration(
+                          label: 'Mobile number *',
+                          prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                FormValidators.formatFullPhone(
+                                  _mobileDialCode,
+                                  _mobileController.text.trim(),
+                                ),
+                                style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodyMedium,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Icon(Icons.verified_rounded, size: 18, color: accent),
+                          ],
+                        ),
+                      )
+                    else
+                      RegistrationMobileOtpSection(
+                        mobileController: _mobileController,
+                        role: UserType.patient,
+                        initialDialCode: _mobileDialCode,
+                        onDialCodeChanged: (code) =>
+                            setState(() => _mobileDialCode = code),
+                        accentColor: accent,
+                        phoneDecoration: _fieldDecoration(
+                          label: 'Mobile number *',
+                          prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                        ).copyWith(errorText: _mobileError),
+                        onVerifiedChanged: (v) => setState(() {
+                          _mobileVerified = v;
+                          if (v) _mobileError = null;
+                        }),
+                      ),
                     if (_mobileError != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 6, left: 4),
                         child: Text(
                           _mobileError!,
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: Colors.red.shade700,
                             fontWeight: FontWeight.w500,
                           ),
@@ -520,7 +591,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       validator: FormValidators.optionalEmail,
                       textInputAction: TextInputAction.next,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                       ),
                       decoration: _fieldDecoration(
@@ -593,7 +664,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                         child: Text(
                           _locationError!,
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: Colors.red.shade700,
                             fontWeight: FontWeight.w500,
                           ),

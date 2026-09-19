@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
 
 class SearchableDropdownFormField extends FormField<String> {
   SearchableDropdownFormField({
@@ -60,7 +61,7 @@ class SearchableDropdownFormField extends FormField<String> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     color: displayValue != null
                         ? AppColors.textPrimaryOf(context)
                         : AppColors.textSecondaryOf(context).withValues(alpha: enabled ? 0.75 : 0.4),
@@ -186,7 +187,7 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
                       child: Text(
                         'Select ${widget.title}',
                         style: GoogleFonts.inter(
-                          fontSize: 18,
+                          fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                           color: textPrimary,
                         ),
@@ -207,11 +208,11 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
                   controller: _searchController,
                   autofocus: true,
                   onChanged: _onSearchChanged,
-                  style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: textPrimary),
                   decoration: InputDecoration(
                     hintText: 'Type to search ${widget.title.toLowerCase()}... (e.g. maha)',
                     hintStyle: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
                     prefixIcon: const Icon(Icons.search_rounded, size: 20),
@@ -268,7 +269,7 @@ class _SearchModalSheetState extends State<_SearchModalSheet> {
                         subtitle: Text(
                           'Select custom ${widget.title.toLowerCase()} entry',
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),

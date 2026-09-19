@@ -12,6 +12,7 @@ import 'my_lab_booking_launcher.dart';
 import '../records/data/patient_lab_booking_store.dart';
 import '../../../widgets/labeled_remove_button.dart';
 import '../widgets/patient_favorites_sheets.dart';
+import '../../../core/theme/app_typography.dart';
 
 class MyLabsScreen extends StatefulWidget {
   const MyLabsScreen({super.key});
@@ -90,7 +91,7 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
                   child: Text(
                     'No labs in your list yet. Tap Add to search registered labs or book a lab test.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: 14),
+                    style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodyMedium),
                   ),
                 )
               : ListView.separated(
@@ -152,13 +153,13 @@ class _MyLabManageTile extends StatelessWidget {
                 children: [
                   Text(
                     lab.name,
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
                   ),
                   if (lab.area.trim().isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       lab.area,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ],

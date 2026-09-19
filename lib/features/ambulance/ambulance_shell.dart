@@ -25,6 +25,7 @@ import 'ambulance_profile_screen.dart';
 import 'data/ambulance_store.dart';
 import 'models/ambulance_models.dart';
 import 'screens/ambulance_notifications_screen.dart';
+import '../../core/theme/app_typography.dart';
 
 class AmbulanceShell extends StatefulWidget {
   const AmbulanceShell({super.key, required this.ambulance});
@@ -111,7 +112,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
         title: Text('Logout', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
         content: Text(
           'Are you sure you want to logout from ${widget.ambulance.serviceName}?',
-          style: GoogleFonts.inter(fontSize: 14),
+          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
@@ -134,10 +135,8 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                     content: Text(
                       'Signed out, but session data may not have cleared fully. '
                       'If you still auto-login after refresh, clear site data for this browser.',
-                      style: GoogleFonts.inter(fontSize: 13),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                     ),
-                    behavior: SnackBarBehavior.floating,
-                    backgroundColor: _accent,
                     duration: const Duration(seconds: 6),
                   ),
                 );
@@ -205,7 +204,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                             children: [
                               Text(
                                 ambulance.serviceName,
-                                style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700),
+                                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -221,7 +220,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                                     child: Text(
                                       '${ambulance.driverName} · ${isOnline ? 'Online' : 'Offline'}',
                                       style: GoogleFonts.inter(
-                                        fontSize: 12,
+                                        fontSize: AppTypography.labelMedium,
                                         color: AppColors.textSecondaryOf(context),
                                       ),
                                       maxLines: 1,

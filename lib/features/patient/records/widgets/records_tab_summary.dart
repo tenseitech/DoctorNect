@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class RecordsTabSummary extends StatelessWidget {
   const RecordsTabSummary({
@@ -47,7 +48,7 @@ class RecordsTabSummary extends StatelessWidget {
                   Text(
                     countLabel,
                     style: GoogleFonts.inter(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -56,7 +57,7 @@ class RecordsTabSummary extends StatelessWidget {
                   Text(
                     hint,
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.3,
                     ),

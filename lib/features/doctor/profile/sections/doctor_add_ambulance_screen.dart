@@ -12,6 +12,7 @@ import '../../../../widgets/required_field_label.dart';
 import '../../../ambulance/models/ambulance_models.dart';
 import '../../../ambulance/widgets/ambulance_invite_link_sheet.dart';
 import '../../../ambulance/widgets/ambulance_service_form_fields.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Doctor fills ambulance service details and generates a driver invite link.
 class DoctorAddAmbulanceScreen extends StatefulWidget {
@@ -68,7 +69,6 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
         const SnackBar(
           content:
               Text('Firebase is not connected. Check internet and try again.'),
-          backgroundColor: Color(0xFFDC2626),
         ),
       );
       return;
@@ -108,7 +108,6 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not create invite. Please try again.'),
-          backgroundColor: Color(0xFFDC2626),
         ),
       );
       return;
@@ -159,7 +158,7 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                     child: Text(
                       'Fill the ambulance service details. An invite link will be created for the driver to download the app, set a PIN, and login.',
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                         height: 1.4,
                       ),
@@ -343,7 +342,7 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                         : Text(
                             'Create Invite Link',
                             style: GoogleFonts.inter(
-                                fontSize: 16, fontWeight: FontWeight.w700),
+                                fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
                           ),
                   ),
                 ],

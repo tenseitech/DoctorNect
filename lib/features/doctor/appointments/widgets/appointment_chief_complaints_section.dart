@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/multi_tag_input_field.dart';
+import '../../../../core/theme/app_typography.dart';
 
 const kCommonChiefComplaints = [
   'Chest Pain',
@@ -71,12 +72,6 @@ class _AppointmentChiefComplaintsSectionState extends State<AppointmentChiefComp
     );
     if (!mounted) return;
     setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chief complaints saved'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override
@@ -95,7 +90,7 @@ class _AppointmentChiefComplaintsSectionState extends State<AppointmentChiefComp
           Text(
             'Chief Complaints',
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
             ),

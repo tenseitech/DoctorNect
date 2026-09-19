@@ -1,4 +1,3 @@
-import '../../../../core/notifications/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/external_launcher.dart';
 import '../data/patient_profile_mock.dart';
 import '../widgets/patient_profile_form_styles.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({
@@ -52,7 +52,7 @@ class AboutScreen extends StatelessWidget {
                     child: Icon(Icons.local_hospital, size: 40, color: accentColor),
                   ),
                   const SizedBox(height: 12),
-                  Text('DoctorNect', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700)),
+                  Text('DoctorNect', style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700)),
                   Text(
                     'Version ${PatientProfileMock.appVersion}',
                     style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
@@ -91,11 +91,8 @@ class AboutScreen extends StatelessWidget {
                       title: Text('Rate the app'),
                       trailing: Icon(Icons.chevron_right, color: AppColors.textSecondaryOf(context)),
                       onTap: () async {
-                        final opened = await ExternalLauncher.openUrl(PatientProfileMock.appDownloadUrl);
+                        await ExternalLauncher.openUrl(PatientProfileMock.appDownloadUrl);
                         if (!context.mounted) return;
-                        if (!opened) {
-                          AppToast.info(context, 'Thank you for your feedback!');
-                        }
                       },
                     ),
                   ),

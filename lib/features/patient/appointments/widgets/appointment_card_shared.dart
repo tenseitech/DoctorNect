@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/registered_doctors_store.dart';
+import '../../../../core/theme/app_typography.dart';
 
 const _cardBorder = Color(0xFFE5E7EB);
 const _textGray400 = Color(0xFF9CA3AF);
@@ -26,7 +27,7 @@ Widget appointmentDoctorAvatar(String doctorName) {
     child: Text(
       initial,
       style: GoogleFonts.inter(
-        fontSize: 15,
+        fontSize: AppTypography.bodyLarge,
         fontWeight: FontWeight.w700,
         color: AppColors.patientTeal,
       ),
@@ -45,7 +46,7 @@ Widget? appointmentDoctorRatingBadge(String doctorId) {
       Text(
         rating.toStringAsFixed(1),
         style: GoogleFonts.inter(
-          fontSize: 12,
+          fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: _starColor,
         ),
@@ -64,7 +65,7 @@ Widget appointmentCardRating(double rating) {
         Text(
           rating.toStringAsFixed(1),
           style: GoogleFonts.inter(
-            fontSize: 14,
+            fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimaryOf(context),
             height: 1.2,
@@ -83,7 +84,7 @@ ButtonStyle compactTealOutlinedButtonStyle() {
     minimumSize: const Size(0, 32),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+    textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
   ).copyWith(
     overlayColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed)) {
@@ -101,7 +102,7 @@ ButtonStyle compactGhostButtonStyle() {
     minimumSize: const Size(0, 32),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+    textStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
   );
 }
 
@@ -120,14 +121,14 @@ Widget appointmentReviewStars(int rating, {double iconSize = 16}) {
 
 TextStyle appointmentCardDoctorNameStyle([BuildContext? context]) {
   return GoogleFonts.inter(
-    fontSize: 14,
+    fontSize: AppTypography.bodyMedium,
     fontWeight: FontWeight.w700,
     color: context != null ? AppColors.textPrimaryOf(context) : AppColors.textPrimary,
   );
 }
 
 TextStyle appointmentCardDateStyle() {
-  return GoogleFonts.inter(fontSize: 12, color: _textGray400, height: 1.35);
+  return GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: _textGray400, height: 1.35);
 }
 
 class AppointmentCardWrapper extends StatelessWidget {

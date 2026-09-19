@@ -5,6 +5,7 @@ import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/clinical_models.dart';
 import 'write_prescription_screen.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class EditPrescriptionScreen extends StatelessWidget {
   const EditPrescriptionScreen({
@@ -42,7 +43,7 @@ class EditPrescriptionScreen extends StatelessWidget {
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
         titleTextStyle: GoogleFonts.inter(
-          fontSize: 16,
+          fontSize: AppTypography.headlineSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
 
 class QuickRxTemplate {
   const QuickRxTemplate({
@@ -125,7 +126,7 @@ class QuickRxTemplateSheet extends StatelessWidget {
                   Text(
                     '1-Click Clinical Rx Templates',
                     style: GoogleFonts.inter(
-                      fontSize: 17,
+                      fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -141,7 +142,7 @@ class QuickRxTemplateSheet extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             'Select a standard template to instantly pre-fill diagnosis, medicines, dosage, and dietary advice:',
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 16),
           Flexible(
@@ -187,7 +188,7 @@ class QuickRxTemplateSheet extends StatelessWidget {
                                     child: Text(
                                       t.category,
                                       style: GoogleFonts.inter(
-                                        fontSize: 11,
+                                        fontSize: AppTypography.labelSmall,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.doctorBlue,
                                       ),
@@ -199,7 +200,7 @@ class QuickRxTemplateSheet extends StatelessWidget {
                               Text(
                                 t.diagnosis,
                                 style: GoogleFonts.inter(
-                                  fontSize: 12,
+                                  fontSize: AppTypography.labelMedium,
                                   color: AppColors.textSecondaryOf(context),
                                 ),
                               ),
@@ -219,7 +220,7 @@ class QuickRxTemplateSheet extends StatelessWidget {
                                         child: Text(
                                           m,
                                           style: GoogleFonts.inter(
-                                            fontSize: 11,
+                                            fontSize: AppTypography.labelSmall,
                                             fontWeight: FontWeight.w500,
                                             color: AppColors.textPrimaryOf(context),
                                           ),

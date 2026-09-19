@@ -10,6 +10,7 @@ import '../../../widgets/overflow_safe_layout.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
 import 'create_promoted_ad_screen.dart';
+import '../../../core/theme/app_typography.dart';
 
 class PromotedAdsManagementScreen extends StatelessWidget {
   const PromotedAdsManagementScreen({
@@ -47,7 +48,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
         ),
         title: Text(
           'Promotional Ads Paused',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 18),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
           textAlign: TextAlign.center,
         ),
         content: scrollableDialogContent(
@@ -60,7 +61,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                     ? notice.trim()
                     : 'Promotional ads and banner placements are currently paused by the Super Administrator. Please check back later or contact admin support.',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(ctx),
                   height: 1.4,
                 ),
@@ -81,7 +82,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                       child: Text(
                         'Status: Paused by Super Admin',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFFD97706),
                         ),
@@ -218,7 +219,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                               ? config.bannerNotice
                               : 'Banner promotion system is currently paused by administrator.',
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFFEF4444),
                           ),
@@ -270,7 +271,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                     Text(
                       'No Promotional Ads Yet',
                       style: GoogleFonts.inter(
-                        fontSize: 18,
+                        fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -280,7 +281,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                       'Promote your medical practice on the Patient Home screen banner carousel to gain maximum visibility.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -389,7 +390,7 @@ class _PromotedAdCard extends StatelessWidget {
                   child: Text(
                     statusLabel,
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                     ),
@@ -413,7 +414,7 @@ class _PromotedAdCard extends StatelessWidget {
                         Text(
                           ad.remainingTimeString,
                           style: GoogleFonts.inter(
-                            fontSize: 11,
+                            fontSize: AppTypography.labelSmall,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -437,7 +438,7 @@ class _PromotedAdCard extends StatelessWidget {
                       child: Text(
                         ad.title,
                         style: GoogleFonts.inter(
-                          fontSize: 16,
+                          fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
                         ),
@@ -446,7 +447,7 @@ class _PromotedAdCard extends StatelessWidget {
                     Text(
                       '₹${ad.amountPaid}',
                       style: GoogleFonts.inter(
-                        fontSize: 16,
+                        fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w800,
                         color: AppColors.doctorBlue,
                       ),
@@ -457,7 +458,7 @@ class _PromotedAdCard extends StatelessWidget {
                 Text(
                   ad.description,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
                 ),
@@ -469,12 +470,12 @@ class _PromotedAdCard extends StatelessWidget {
                   children: [
                     Text(
                       'Duration: ${_formatDuration(ad.durationHours)}',
-                      style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: Colors.grey),
                     ),
                     Text(
                       ad.paymentStatus == 'verified' ? 'Payment Verified' : 'Payment Pending',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: ad.paymentStatus == 'verified' ? const Color(0xFF16A34A) : Colors.orange,
                       ),
@@ -490,7 +491,7 @@ class _PromotedAdCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Active paid ads are read-only to ensure ad integrity.',
-                          style: GoogleFonts.inter(fontSize: 11, color: Colors.grey),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: Colors.grey),
                         ),
                       ),
                     ],

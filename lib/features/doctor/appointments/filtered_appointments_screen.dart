@@ -109,19 +109,12 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
           content: Text(
             describeUserFacingError(e, fallback: "Couldn't accept this appointment. Please check your connection and try again."),
           ),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
     if (!mounted) return;
     setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Accepted — ${appointment.patientName}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _declineAppointment(Appointment appointment) async {
@@ -134,19 +127,12 @@ class _FilteredAppointmentsScreenState extends State<FilteredAppointmentsScreen>
           content: Text(
             describeUserFacingError(e, fallback: "Couldn't decline this appointment. Please check your connection and try again."),
           ),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
     if (!mounted) return;
     setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Declined — ${appointment.patientName}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   void _startConsultation(Appointment appointment) {

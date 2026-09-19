@@ -3,6 +3,7 @@ import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../features/promoted_ads/screens/promoted_ads_management_screen.dart';
+import '../core/theme/app_typography.dart';
 
 /// Prominent front-page promotional ad banner widget for Doctors, Labs, Pharmacies, and Ambulances.
 class PromotedAdBannerCard extends StatelessWidget {
@@ -130,7 +131,7 @@ class PromotedAdBannerCard extends StatelessWidget {
                 final subText = Text(
                   'Showcase your service on the Patient Home screen banner carousel to reach thousands of patients.',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     color: Colors.white.withValues(alpha: 0.92),
                     height: 1.3,
                   ),
@@ -147,7 +148,7 @@ class PromotedAdBannerCard extends StatelessWidget {
                   ),
                   child: Text(
                     'Book Ad',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w800),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w800),
                   ),
                 );
 

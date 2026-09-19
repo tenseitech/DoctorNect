@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Unified base screen for Doctor viewing patient prescriptions (Pharmacy) or lab test orders (Diagnostic Lab).
 class DoctorPartnerPatientsBaseView<T> extends StatefulWidget {
@@ -128,7 +129,7 @@ class _DoctorPartnerPatientsBaseViewState<T> extends State<DoctorPartnerPatients
     return Scaffold(
       backgroundColor: AppColors.surfaceOf(context),
       appBar: AppBar(
-        title: Text(widget.partnerTitle, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600)),
+        title: Text(widget.partnerTitle, style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600)),
         backgroundColor: AppColors.surfaceOf(context),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -164,7 +165,7 @@ class _DoctorPartnerPatientsBaseViewState<T> extends State<DoctorPartnerPatients
                           children: [
                             Text(
                               widget.sectionTitle,
-                              style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+                              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -200,7 +201,7 @@ class _DoctorPartnerPatientsBaseViewState<T> extends State<DoctorPartnerPatients
                                 child: Text(
                                   'All (${all.length})',
                                   style: GoogleFonts.inter(
-                                    fontSize: 12,
+                                    fontSize: AppTypography.labelMedium,
                                     fontWeight: _showAllDates ? FontWeight.w700 : FontWeight.w500,
                                     color: _showAllDates ? widget.accentColor : AppColors.textSecondaryOf(context),
                                   ),
@@ -220,7 +221,7 @@ class _DoctorPartnerPatientsBaseViewState<T> extends State<DoctorPartnerPatients
                                 child: Text(
                                   'By Date',
                                   style: GoogleFonts.inter(
-                                    fontSize: 12,
+                                    fontSize: AppTypography.labelMedium,
                                     fontWeight: !_showAllDates ? FontWeight.w700 : FontWeight.w500,
                                     color: !_showAllDates ? widget.accentColor : AppColors.textSecondaryOf(context),
                                   ),
@@ -266,7 +267,7 @@ class _DoctorPartnerPatientsBaseViewState<T> extends State<DoctorPartnerPatients
                                     child: Text(
                                       _isToday ? 'Today • ${_dateFormat.format(_selectedDate)}' : _dateFormat.format(_selectedDate),
                                       style: GoogleFonts.inter(
-                                        fontSize: 13,
+                                        fontSize: AppTypography.bodySmall,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.textPrimaryOf(context),
                                       ),
@@ -297,7 +298,7 @@ class _DoctorPartnerPatientsBaseViewState<T> extends State<DoctorPartnerPatients
                               foregroundColor: AppColors.doctorBlue,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             ),
-                            child: Text('Today', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                            child: Text('Today', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodySmall)),
                           ),
                         ],
                       ],
@@ -307,10 +308,10 @@ class _DoctorPartnerPatientsBaseViewState<T> extends State<DoctorPartnerPatients
                   TextField(
                     controller: _searchController,
                     onChanged: (_) => setState(() {}),
-                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context)),
                     decoration: InputDecoration(
                       hintText: 'Search patient name...',
-                      hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                      hintStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                       prefixIcon: const Icon(Icons.search, size: 20),
                       filled: true,
                       fillColor: cardColor,
@@ -341,7 +342,7 @@ class _DoctorPartnerPatientsBaseViewState<T> extends State<DoctorPartnerPatients
                                   ? 'No records on ${_dateFormat.format(_selectedDate)}. Switch to "All" or pick another date.'
                                   : 'No records match your search.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                         ),
                       ),
                     )
@@ -398,7 +399,7 @@ class DocPartnerTableHeaderCell extends StatelessWidget {
       child: Text(
         text,
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondaryOf(context),
         ),
@@ -421,7 +422,7 @@ class DocPartnerTableBodyCell extends StatelessWidget {
       child: Text(
         text,
         style: GoogleFonts.inter(
-          fontSize: 12,
+          fontSize: AppTypography.labelMedium,
           height: 1.35,
           fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
           color: color ?? AppColors.textPrimaryOf(context),

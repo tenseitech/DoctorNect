@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/patient_mock_data.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class HealthTipsSection extends StatelessWidget {
   const HealthTipsSection({super.key});
@@ -35,7 +36,7 @@ class HealthTipsSection extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   'Quick reads for daily wellness',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),

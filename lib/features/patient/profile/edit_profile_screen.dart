@@ -30,6 +30,7 @@ import 'models/patient_profile_models.dart';
 import 'utils/patient_bmi_utils.dart';
 import 'widgets/patient_profile_form_styles.dart';
 import 'widgets/profile_edit_widgets.dart';
+import '../../../core/theme/app_typography.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key, required this.profile, required this.onSaved});
@@ -228,7 +229,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         PatientProfileMock.profile.photoUrl = null;
       });
       PatientProfileMock.notifyProfileUpdated();
-      AppToast.info(context, 'Profile photo removed');
       return;
     }
 
@@ -332,7 +332,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       });
       PatientProfileMock.notifyProfileUpdated();
       if (!mounted) return;
-      AppToast.info(context, 'Profile photo updated successfully!');
     } catch (e) {
       if (!mounted) return;
       AppToast.info(context, 'Failed to save photo: $e');
@@ -549,7 +548,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     widget.onSaved();
     if (!mounted) return;
     Navigator.pop(context);
-    AppToast.info(context, 'Profile saved successfully');
   }
 
   String get _displayName {
@@ -733,7 +731,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               child: Text(
                                 'Tap Change to update your registered mobile number via SMS OTP.',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: AppTypography.labelMedium,
                                   color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9),
                                   height: 1.35,
                                 ),

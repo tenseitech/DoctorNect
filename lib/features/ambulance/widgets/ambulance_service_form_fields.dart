@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/validators/form_validators.dart';
 import '../../../widgets/required_field_label.dart';
 import '../models/ambulance_models.dart';
+import '../../../core/theme/app_typography.dart';
 
 class AmbulanceFormSectionTitle extends StatelessWidget {
   const AmbulanceFormSectionTitle({super.key, required this.title, required this.icon});
@@ -22,7 +23,7 @@ class AmbulanceFormSectionTitle extends StatelessWidget {
         Text(
           title,
           style: GoogleFonts.inter(
-            fontSize: 15,
+            fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimaryOf(context),
           ),
@@ -65,7 +66,7 @@ class AmbulanceFormField extends StatelessWidget {
       inputFormatters: formatters,
       maxLines: maxLines,
       textCapitalization: capitalization,
-      style: GoogleFonts.inter(fontSize: 14),
+      style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
       decoration: RequiredFieldLabels.decorate(
         InputDecoration(
           hintText: hint,
@@ -164,7 +165,7 @@ class AmbulanceFormToggleRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
             ),
           ),
           Switch(

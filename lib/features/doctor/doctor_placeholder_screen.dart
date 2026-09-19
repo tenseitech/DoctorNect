@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 
 class DoctorPlaceholderScreen extends StatelessWidget {
   const DoctorPlaceholderScreen({
@@ -25,7 +26,7 @@ class DoctorPlaceholderScreen extends StatelessWidget {
           Text(
             title,
             style: GoogleFonts.inter(
-              fontSize: 24,
+              fontSize: AppTypography.headlineLarge,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -33,7 +34,7 @@ class DoctorPlaceholderScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 32),
           Expanded(
@@ -53,7 +54,7 @@ class DoctorPlaceholderScreen extends StatelessWidget {
                   Text(
                     'Coming soon',
                     style: GoogleFonts.inter(
-                      fontSize: 16,
+                      fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

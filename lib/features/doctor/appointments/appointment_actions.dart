@@ -35,7 +35,6 @@ abstract final class DoctorAppointmentActions {
               content: Text(
                 describeUserFacingError(e, fallback: "Couldn't reschedule this appointment. Please check your connection and try again."),
               ),
-              behavior: SnackBarBehavior.floating,
             ),
           );
           return;
@@ -50,17 +49,6 @@ abstract final class DoctorAppointmentActions {
         }
 
         onComplete?.call();
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              notifyPatient
-                  ? 'Appointment rescheduled & patient notified'
-                  : 'Appointment rescheduled',
-            ),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
       },
     );
   }
@@ -94,7 +82,6 @@ abstract final class DoctorAppointmentActions {
                     content: Text(
                       describeUserFacingError(e, fallback: "Couldn't cancel this appointment. Please check your connection and try again."),
                     ),
-                    behavior: SnackBarBehavior.floating,
                   ),
                 );
                 return;
@@ -105,12 +92,6 @@ abstract final class DoctorAppointmentActions {
               );
               onComplete?.call();
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Appointment cancelled & patient notified'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
               if (popAfter) Navigator.pop(context);
             },
             child: const Text('Yes, Cancel', style: TextStyle(color: Color(0xFFDC2626))),

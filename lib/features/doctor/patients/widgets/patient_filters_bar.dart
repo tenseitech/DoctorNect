@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class PatientFiltersBar extends StatelessWidget {
   const PatientFiltersBar({
@@ -174,7 +175,7 @@ class PatientFiltersBar extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(label, style: GoogleFonts.inter(fontSize: 12)),
+              label: Text(label, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
               selected: selected,
               onSelected: (_) => onFilterChanged(f),
               selectedColor: AppColors.doctorBlue.withValues(alpha: 0.15),
@@ -196,7 +197,7 @@ class PatientFiltersBar extends StatelessWidget {
     return Row(
       children: [
         if (!compact)
-          Text('Sort:', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+          Text('Sort:', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
         if (!compact) const SizedBox(width: 8),
         Expanded(
           child: DropdownButtonFormField<PatientSort>(

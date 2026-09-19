@@ -12,6 +12,7 @@ import '../../data/registered_doctors_store.dart';
 import '../../doctor_profile/patient_doctor_profile_screen.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 import '../../profile/data/patient_profile_mock.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Promotional banner section on the Patient Home Screen showcasing
 /// top-rated verified doctors near the patient's location.
@@ -185,7 +186,7 @@ class _TopRatedDoctorsNearYouSectionState
                 Text(
                   'Top Rated Doctors Near You',
                   style: GoogleFonts.inter(
-                    fontSize: 16,
+                    fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -194,7 +195,7 @@ class _TopRatedDoctorsNearYouSectionState
                 Text(
                   '${doctors.length} Verified',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
@@ -408,7 +409,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 16,
+                          fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.surfaceOf(context),
                         ),
@@ -418,7 +419,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           color: AppColors.surfaceOf(context).withValues(alpha: 0.92),
                         ),
                       ),
@@ -438,7 +439,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  fontSize: 11,
+                                  fontSize: AppTypography.labelSmall,
                                   color: AppColors.surfaceOf(context).withValues(alpha: 0.88),
                                 ),
                               ),
@@ -459,7 +460,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                             Text(
                               '${doctor.rating.toStringAsFixed(1)} · ${doctor.reviewCount} ${doctor.reviewCount == 1 ? "review" : "reviews"}',
                               style: GoogleFonts.inter(
-                                fontSize: 11,
+                                fontSize: AppTypography.labelSmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.surfaceOf(context).withValues(alpha: 0.95),
                               ),
@@ -491,7 +492,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                       child: Text(
                         'Book',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -511,7 +512,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                             Text(
                               'Profile',
                               style: GoogleFonts.inter(
-                                fontSize: 11,
+                                fontSize: AppTypography.labelSmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.surfaceOf(context).withValues(alpha: 0.95),
                               ),
@@ -603,7 +604,7 @@ class _DoctorPhotoAvatar extends StatelessWidget {
                 Text(
                   initial,
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.surfaceOf(context),
                   ),

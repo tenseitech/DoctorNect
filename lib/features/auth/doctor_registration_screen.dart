@@ -14,7 +14,9 @@ import '../dashboard/dashboard_shell.dart';
 import 'widgets/simple_role_registration_form.dart';
 
 class DoctorRegistrationScreen extends StatelessWidget {
-  const DoctorRegistrationScreen({super.key});
+  const DoctorRegistrationScreen({super.key, this.preVerifiedMobile});
+
+  final String? preVerifiedMobile;
 
   Future<void> _register(
     BuildContext context, {
@@ -68,7 +70,6 @@ class DoctorRegistrationScreen extends StatelessWidget {
     }
 
     DoctorSession.setDoctor(id: doctorId, name: name);
-    AppToast.success(context, 'Account created! Complete your profile to access patient data.');
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => const DashboardShell(userType: UserType.doctor),
@@ -86,6 +87,7 @@ class DoctorRegistrationScreen extends StatelessWidget {
       welcomeTitle: 'Join as Doctor',
       subtitle: 'Quick signup — complete your full profile after verification',
       icon: Icons.medical_services_outlined,
+      preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
         context,

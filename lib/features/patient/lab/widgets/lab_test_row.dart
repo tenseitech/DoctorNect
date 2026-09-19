@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../models/lab_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class LabTestRow extends StatelessWidget {
   const LabTestRow({
@@ -83,7 +84,7 @@ class LabTestRow extends StatelessWidget {
                           test.name,
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                            fontSize: AppTypography.bodyMedium,
                             height: 1.25,
                           ),
                         ),
@@ -91,7 +92,7 @@ class LabTestRow extends StatelessWidget {
                         Text(
                           _metaLine(test),
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),

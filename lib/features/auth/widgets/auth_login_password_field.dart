@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/validators/form_validators.dart';
 import 'auth_login_form_field.dart';
+import '../../../core/theme/app_typography.dart';
 
 class AuthLoginPasswordField extends StatefulWidget {
   const AuthLoginPasswordField({
@@ -93,7 +94,7 @@ class _AuthLoginPasswordFieldState extends State<AuthLoginPasswordField> {
           enableSuggestions: false,
           enableInteractiveSelection: true,
           style: GoogleFonts.inter(
-            fontSize: 15,
+            fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimaryOf(context),
           ),

@@ -11,6 +11,7 @@ import '../auth/widgets/auth_login_page_shell.dart';
 import '../welcome/welcome_screen.dart';
 import 'ambulance_shell.dart';
 import 'data/ambulance_store.dart';
+import '../../core/theme/app_typography.dart';
 
 /// Resumes a persisted ambulance session only after PIN re-verification.
 class AmbulanceShellAuto extends StatefulWidget {
@@ -152,11 +153,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: _accent,
-      ),
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -199,7 +196,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
             Text(
               _serviceName,
               style: GoogleFonts.inter(
-                fontSize: 16,
+                fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -209,7 +206,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
           Text(
             'Username: ${_username ?? ''}',
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
           ),
@@ -217,7 +214,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
           Text(
             'Security PIN',
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -236,7 +233,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
               LengthLimitingTextInputFormatter(6),
             ],
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w500,
               letterSpacing: _obscurePin ? 6 : 1.5,
             ),
@@ -294,7 +291,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
             child: Text(
               'Use a different account',
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
                 color: _accent,
               ),

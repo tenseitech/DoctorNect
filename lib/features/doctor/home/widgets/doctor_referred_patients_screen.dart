@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../appointments/widgets/referred_patient_card.dart';
 import '../../clinical/referral_consult_service.dart';
 import '../../widgets/doctor_screen_title_bar.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class DoctorReferredPatientsScreen extends StatefulWidget {
   const DoctorReferredPatientsScreen({super.key});
@@ -94,7 +95,7 @@ class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScr
           child: Text(
             emptyMessage,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 15, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, color: AppColors.textSecondaryOf(context)),
           ),
         ),
       );
@@ -150,8 +151,8 @@ class _DoctorReferredPatientsScreenState extends State<DoctorReferredPatientsScr
                 labelColor: AppColors.doctorBlue,
                 unselectedLabelColor: AppColors.textSecondaryOf(context),
                 indicatorColor: AppColors.doctorBlue,
-                labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-                unselectedLabelStyle: GoogleFonts.inter(fontSize: 13),
+                labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+                unselectedLabelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                 tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
               ),
             ),

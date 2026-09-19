@@ -9,6 +9,7 @@ import '../appointments/widgets/appointment_action_buttons.dart';
 import '../appointments/widgets/appointment_symptoms_section.dart';
 import '../models/doctor_models.dart';
 import 'doctor_ui_widgets.dart';
+import '../../../core/theme/app_typography.dart';
 
 class AppointmentCard extends StatelessWidget {
   const AppointmentCard({
@@ -60,7 +61,7 @@ class AppointmentCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 15,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -69,7 +70,7 @@ class AppointmentCard extends StatelessWidget {
                     Text(
                       '${appointment.age} yrs Â· ${AppConstants.patientGenderLabel(appointment.gender)}',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -84,7 +85,7 @@ class AppointmentCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -157,7 +158,7 @@ class AppointmentCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),

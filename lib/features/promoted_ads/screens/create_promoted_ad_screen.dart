@@ -14,6 +14,7 @@ import '../../../core/services/razorpay_payment_helper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Multi-step Promotional Ad Creation and Payment Gateway Flow (Light & Dark Mode Enabled)
 class CreatePromotedAdScreen extends StatefulWidget {
@@ -262,7 +263,6 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
       setState(() => _submitting = false);
 
       if (verified) {
-        AppToast.success(context, 'Payment successful! Your ad is now pending review.');
         Navigator.pop(context, true);
       } else {
         AppToast.error(context, 'Payment verification failed. Please contact support.');
@@ -301,7 +301,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               : _currentStep == 1
                   ? 'Banner Promotion'
                   : 'Banner Campaign Plan',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
         ),
         centerTitle: true,
       ),
@@ -315,7 +315,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   Text(
                     _loadingMessage,
                     style: GoogleFonts.inter(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -340,7 +340,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                 ? _bannerConfig!.bannerNotice
                                 : 'Banner promotion system is currently paused by administrator.',
                             style: GoogleFonts.inter(
-                              fontSize: 13,
+                              fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFFEF4444),
                             ),
@@ -414,7 +414,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               : Text(
                   '${stepIndex + 1}',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w700,
                     color: isActive ? Colors.white : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
                   ),
@@ -427,7 +427,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: AppTypography.labelMedium,
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               color: isActive
                   ? const Color(0xFF7C3AED)
@@ -477,7 +477,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                           Text(
                             'Get more visibility\nAttract more patients.',
                             style: GoogleFonts.inter(
-                              fontSize: 18,
+                              fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w800,
                               color: isDark ? const Color(0xFFDDD6FE) : const Color(0xFF4C1D95),
                               height: 1.25,
@@ -523,7 +523,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               Text(
                 'Why Promote',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -565,7 +565,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               Text(
                 'Promotion Options',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -594,7 +594,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   ),
                   child: Text(
                     'Continue to Banner Setup →',
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -632,7 +632,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
           Text(
             title,
             style: GoogleFonts.inter(
-              fontSize: 13.5,
+              fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -641,7 +641,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
           Text(
             subtitle,
             style: GoogleFonts.inter(
-              fontSize: 11.5,
+              fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
               height: 1.3,
             ),
@@ -699,7 +699,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
             Text(
               title,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -708,7 +708,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
             Text(
               subtitle,
               style: GoogleFonts.inter(
-                fontSize: 11.5,
+                fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.3,
               ),
@@ -813,7 +813,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     Text(
                       city,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: isDark ? Colors.white : const Color(0xFF1F2937),
                       ),
@@ -889,7 +889,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                       Text(
                         _rateSumFormulaString,
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: AppTypography.labelSmall,
                           color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
                           fontWeight: FontWeight.w600,
                         ),
@@ -902,7 +902,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               Text(
                 '₹$_combinedDailyRate / day',
                 style: GoogleFonts.inter(
-                  fontSize: 16,
+                  fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w900,
                   color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6B21A8),
                 ),
@@ -976,7 +976,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                       Text(
                         'Select Target Cities',
                         style: GoogleFonts.inter(
-                          fontSize: 18,
+                          fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimaryOf(context),
                         ),
@@ -994,7 +994,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         child: Text(
                           isAllSelected ? 'Deselect All' : 'Select All',
                           style: GoogleFonts.inter(
-                            fontSize: 14,
+                            fontSize: AppTypography.bodyMedium,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF7C3AED),
                           ),
@@ -1017,7 +1017,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         child: Text(
                           'India',
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF7C3AED),
                           ),
@@ -1039,7 +1039,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                               dropdownColor: AppColors.surfaceOf(context),
                               style: GoogleFonts.inter(
                                 color: AppColors.textPrimaryOf(context),
-                                fontSize: 13.5,
+                                fontSize: AppTypography.bodySmall,
                                 fontWeight: FontWeight.w600,
                               ),
                               items: allStates.map((st) {
@@ -1070,10 +1070,10 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     ),
                     child: TextField(
                       controller: searchController,
-                      style: GoogleFonts.inter(color: AppColors.textPrimaryOf(context), fontSize: 13.5),
+                      style: GoogleFonts.inter(color: AppColors.textPrimaryOf(context), fontSize: AppTypography.bodySmall),
                       decoration: InputDecoration(
                         hintText: 'Search city (e.g. Nagpur, Amravati, Akola)...',
-                        hintStyle: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: 13),
+                        hintStyle: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodySmall),
                         prefixIcon: Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondaryOf(context)),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1120,7 +1120,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                         child: Text(
                                           '$city ($stateName)',
                                           style: GoogleFonts.inter(
-                                            fontSize: 14,
+                                            fontSize: AppTypography.bodyMedium,
                                             fontWeight: FontWeight.w600,
                                             color: AppColors.textPrimaryOf(context),
                                           ),
@@ -1138,7 +1138,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                         child: Text(
                                           isMetro ? 'Metro ₹$rate/d' : 'Standard ₹$rate/d',
                                           style: GoogleFonts.inter(
-                                            fontSize: 11,
+                                            fontSize: AppTypography.labelSmall,
                                             fontWeight: FontWeight.w800,
                                             color: isMetro
                                                 ? (isDark ? const Color(0xFFA78BFA) : const Color(0xFF6B21A8))
@@ -1192,7 +1192,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                       ),
                       child: Text(
                         'Apply Selection (${tempSelected.length} Cities • ₹$currentDailyRate/day)',
-                        style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -1234,7 +1234,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     Text(
                       'Live Patient Carousel Preview',
                       style: GoogleFonts.inter(
-                        fontSize: 16,
+                        fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(ctx),
                       ),
@@ -1305,7 +1305,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.inter(
-                                      fontSize: 18,
+                                      fontSize: AppTypography.headlineSmall,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.white,
                                     ),
@@ -1323,7 +1323,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                         Text(
                                           previewCta,
                                           style: GoogleFonts.inter(
-                                            fontSize: 12,
+                                            fontSize: AppTypography.labelMedium,
                                             fontWeight: FontWeight.w700,
                                             color: const Color(0xFF0F766E),
                                           ),
@@ -1371,7 +1371,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
         Text(
           'Preview of Banner Promotion',
           style: GoogleFonts.inter(
-            fontSize: 15,
+            fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w800,
             color: AppColors.textPrimaryOf(context),
           ),
@@ -1447,7 +1447,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              fontSize: 16,
+                              fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                               letterSpacing: -0.2,
@@ -1466,7 +1466,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                 Text(
                                   previewCta,
                                   style: GoogleFonts.inter(
-                                    fontSize: 11,
+                                    fontSize: AppTypography.labelSmall,
                                     fontWeight: FontWeight.w700,
                                     color: const Color(0xFF0F766E),
                                   ),
@@ -1507,7 +1507,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   Text(
                     'Top Banner Position',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFEF4444),
                     ),
@@ -1516,7 +1516,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   Text(
                     'Your banner will be displayed prominently at the top of the patient portal home screen carousel.',
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: AppTypography.labelSmall,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.35,
                     ),
@@ -1532,7 +1532,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   Text(
                     'Banner Specifications',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFEF4444),
                     ),
@@ -1541,7 +1541,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   Text(
                     '• Recommended Size: 1200 × 400 px\n• Formats: JPG, PNG\n• Max Size: Up to 2MB',
                     style: GoogleFonts.inter(
-                      fontSize: 11,
+                      fontSize: AppTypography.labelSmall,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.35,
                     ),
@@ -1565,7 +1565,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
           child: Text(
             'See Full Screen Live Preview',
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF0284C7),
             ),
@@ -1616,7 +1616,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 Text(
                   'Banner image',
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
                   ),
@@ -1624,7 +1624,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 const SizedBox(height: 2),
                 Text(
                   'Upload attractive banner to promote your organization',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(height: 10),
                 InkWell(
@@ -1654,7 +1654,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                     color: Colors.black.withValues(alpha: 0.7),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Text('Change Image', style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
+                                  child: Text('Change Image', style: GoogleFonts.inter(color: Colors.white, fontSize: AppTypography.labelSmall)),
                                 ),
                               ),
                             ],
@@ -1667,14 +1667,14 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                               Text(
                                 'Upload banner image',
                                 style: GoogleFonts.inter(
-                                  fontSize: 13.5,
+                                  fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimaryOf(context),
                                 ),
                               ),
                               Text(
                                 'Select banner image from your device JPG, PNG up to 2 mb',
-                                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                                style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                               ),
                             ],
                           ),
@@ -1685,7 +1685,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 // Headline Input
                 Text(
                   'Ad Headline (Title)',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -1703,7 +1703,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 // Subtitle Input
                 Text(
                   'Ad Description',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -1721,7 +1721,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 // Link Input (Optional)
                 Text(
                   'Link (Optional)',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
                 ),
                 const SizedBox(height: 6),
                 TextFormField(
@@ -1753,7 +1753,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     ),
                     child: Text(
                       'Choose Campaign Plan →',
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -1838,7 +1838,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     Text(
                       plan['title'],
                       style: GoogleFonts.inter(
-                        fontSize: 18,
+                        fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -1846,7 +1846,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     Text(
                       '₹$calculatedPrice',
                       style: GoogleFonts.inter(
-                        fontSize: 22,
+                        fontSize: AppTypography.headlineLarge,
                         fontWeight: FontWeight.w900,
                         color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF6B21A8),
                       ),
@@ -1859,7 +1859,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 11.5,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF7C3AED),
                   ),
@@ -1870,7 +1870,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
                 ),
@@ -1937,7 +1937,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 child: Text(
                   plan['badge'],
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
@@ -1968,7 +1968,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 'Banner Campaign Plan',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                  fontSize: 20,
+                  fontSize: AppTypography.headlineMedium,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -2054,7 +2054,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   ),
                   child: Text(
                     'Buy Subscription & Launch (₹$selectedPlanCalculatedPrice)',
-                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w800),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),

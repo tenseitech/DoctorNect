@@ -73,8 +73,6 @@ abstract final class RoleSessionGuard {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Session mismatch detected, please log in again.'),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
       ),
     );
     await FirebaseAuthService.instance.signOut();

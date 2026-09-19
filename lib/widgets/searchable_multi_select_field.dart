@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme/app_colors.dart';
 import 'required_field_label.dart';
+import '../core/theme/app_typography.dart';
 
 /// Dropdown-style field that opens a searchable multi-select sheet with checkboxes.
 class SearchableMultiSelectField extends StatelessWidget {
@@ -75,7 +76,7 @@ class SearchableMultiSelectField extends StatelessWidget {
                 border: const OutlineInputBorder(),
                 hintText: placeholder,
                 hintStyle: GoogleFonts.inter(
-                  fontSize: 16,
+                  fontSize: AppTypography.headlineSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
                 floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -88,7 +89,7 @@ class SearchableMultiSelectField extends StatelessWidget {
                 ? Text(
                     _summary,
                     style: GoogleFonts.inter(
-                      fontSize: 16,
+                      fontSize: AppTypography.headlineSmall,
                       color: AppColors.textPrimaryOf(context),
                     ),
                     maxLines: 2,
@@ -106,7 +107,7 @@ class SearchableMultiSelectField extends StatelessWidget {
               return Chip(
                 label: Text(
                   item,
-                  style: GoogleFonts.inter(fontSize: 12, color: accentColor),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: accentColor),
                 ),
                 deleteIcon: Icon(Icons.close, size: 14, color: accentColor),
                 onDeleted: () {
@@ -212,7 +213,7 @@ class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet
                         Text(
                           widget.title,
                           style: GoogleFonts.inter(
-                            fontSize: 17,
+                            fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -221,7 +222,7 @@ class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet
                           Text(
                             '${_selected.length} selected',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               color: widget.accentColor,
                               fontWeight: FontWeight.w600,
                             ),
@@ -288,7 +289,7 @@ class _SearchableMultiSelectSheetState extends State<_SearchableMultiSelectSheet
                                   child: Text(
                                     item,
                                     style: GoogleFonts.inter(
-                                      fontSize: 14,
+                                      fontSize: AppTypography.bodyMedium,
                                       color: AppColors.textPrimaryOf(context),
                                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                                     ),

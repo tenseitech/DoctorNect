@@ -14,6 +14,7 @@ import '../../../doctor/clinical/prescription/prescription_preview_modal.dart';
 import '../../../pharmacy/data/pharmacy_prescription_store.dart';
 import '../widgets/patient_profile_form_styles.dart';
 import 'patient_pharmacy_status.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class MyPrescriptionsScreen extends StatefulWidget {
   const MyPrescriptionsScreen({super.key});
@@ -163,7 +164,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                             Text(
                               draft.doctorName,
                               style: GoogleFonts.inter(
-                                fontSize: 12,
+                                fontSize: AppTypography.labelMedium,
                                 color: AppColors.patientTeal,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -172,11 +173,11 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                             Text(
                               draft.clinicName,
                               style: GoogleFonts.inter(
-                                  fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                                  fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                             ),
                           Text(
                             DateFormat('dd MMM yyyy').format(draft.prescriptionDate),
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ),
@@ -239,7 +240,7 @@ class _PrescriptionsMessageState extends StatelessWidget {
                     title,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                      fontSize: 16,
+                      fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -249,7 +250,7 @@ class _PrescriptionsMessageState extends StatelessWidget {
                     Text(
                       subtitle!,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                   if (actionLabel != null && onAction != null) ...[

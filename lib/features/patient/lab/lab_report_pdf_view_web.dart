@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Web PDF preview — desktop uses a blob iframe; mobile browsers skip iframe
 /// (iOS Safari renders blob PDFs blank inside iframes).
@@ -106,13 +107,13 @@ class _LabReportPdfViewState extends State<LabReportPdfView> {
               Text(
                 widget.fileName,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Text(
                 'Your browser works best when this report opens in a full-screen viewer.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.45),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.45),
               ),
               const SizedBox(height: 28),
               SizedBox(

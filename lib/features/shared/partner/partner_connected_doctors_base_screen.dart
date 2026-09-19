@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/doctor_invite_action_button.dart';
 import 'partner_connect_doctors_base_screen.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Shared simple Connected Doctors list view for Pharmacy and Lab.
 class PartnerConnectedDoctorsBaseView extends StatelessWidget {
@@ -52,12 +53,12 @@ class PartnerConnectedDoctorsBaseView extends StatelessWidget {
             children: [
               Text(
                 'Connected Doctors',
-                style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
                 'Manage your doctor connections and pending requests.',
-                style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 20),
               if (fromDoctor.isNotEmpty) ...[
@@ -68,7 +69,7 @@ class PartnerConnectedDoctorsBaseView extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Doctors who sent you an invite',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 const SizedBox(height: 8),
                 ...fromDoctor.map(
@@ -143,12 +144,12 @@ class _BaseDoctorRequestCard extends StatelessWidget {
         children: [
           Text(
             '${partnerDoctorLabel(connection.doctorName)} sent you an invite',
-            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
             'Requested ${DateFormat('dd MMM yyyy, hh:mm a').format(connection.requestedAt)}',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 14),
           Row(
@@ -201,11 +202,11 @@ class _BasePendingInviteTile extends StatelessWidget {
               children: [
                 Text(
                   partnerDoctorLabel(connection.doctorName),
-                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
                 ),
                 Text(
                   'Invite Sent Â· ${DateFormat('dd MMM yyyy').format(connection.requestedAt)}',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -262,14 +263,14 @@ class _BaseSimpleConnectionTile extends StatelessWidget {
               children: [
                 Text(
                   partnerDoctorLabel(connection.doctorName),
-                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
                 ),
                 Text(
                   'Connected',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 if (subtitle != null)
-                  Text(subtitle!, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context))),
+                  Text(subtitle!, style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context))),
               ],
             ),
           ),
@@ -278,7 +279,7 @@ class _BaseSimpleConnectionTile extends StatelessWidget {
               icon: const Icon(Icons.link_off, size: 16),
               label: Text(
                 'Disconnect',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.error,

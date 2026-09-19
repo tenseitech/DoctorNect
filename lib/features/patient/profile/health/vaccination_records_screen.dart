@@ -14,6 +14,7 @@ import '../../../../widgets/labeled_remove_button.dart';
 import '../../records/models/health_record_models.dart';
 import '../data/patient_profile_mock.dart';
 import '../widgets/patient_profile_form_styles.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class _VaccinationEntry {
   const _VaccinationEntry({
@@ -254,13 +255,6 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
       }
     }
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Vaccination saved'),
-        backgroundColor: Color(0xFF16A34A),
-      ),
-    );
   }
 
   Widget _buildAddForm() {
@@ -272,7 +266,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
               Expanded(
                 child: Text(
                   'Add Vaccination',
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
@@ -353,7 +347,6 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
     }
 
     if (!mounted) return;
-    AppToast.info(context, 'Vaccination removed');
   }
 
   Future<bool> _confirmDelete(_VaccinationEntry entry) {
@@ -377,7 +370,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
           'No vaccination records yet',
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
-            fontSize: 16,
+            fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimaryOf(context),
           ),
@@ -387,7 +380,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
           'Add your vaccination history to keep track',
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
-            fontSize: 13,
+            fontSize: AppTypography.bodySmall,
             color: AppColors.textSecondaryOf(context),
           ),
         ),
@@ -417,7 +410,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
           style: GoogleFonts.inter(
             color: AppColors.surfaceOf(context),
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: AppTypography.labelMedium,
           ),
         ),
       ),
@@ -436,17 +429,17 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
                   Text(entry.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                   Text(
                     DateFormat('dd MMM yyyy').format(entry.date),
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                   if (entry.dose != null && entry.dose!.isNotEmpty)
                     Text(
                       entry.dose!,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                   if (entry.notes != null && entry.notes!.isNotEmpty)
                     Text(
                       entry.notes!,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

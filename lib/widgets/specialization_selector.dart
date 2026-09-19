@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import 'required_field_label.dart';
+import '../core/theme/app_typography.dart';
 
 enum _InputMode { list, manual }
 
@@ -201,7 +202,7 @@ class _SelectorBodyState extends State<_SelectorBody> {
               ),
               isEmpty: !hasValue,
               child: hasValue
-                  ? Text(value, style: const TextStyle(fontSize: 16))
+                  ? Text(value, style: const TextStyle(fontSize: AppTypography.headlineSmall))
                   : const SizedBox.shrink(),
             ),
           )
@@ -235,7 +236,7 @@ class _SelectorBodyState extends State<_SelectorBody> {
             label: Text(
               value,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w500,
                 color: accent,
               ),
@@ -287,7 +288,7 @@ class _ModeChip extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: 12,
+            fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w500,
             color: selected ? AppColors.surfaceOf(context) : Colors.grey.shade700,
           ),
@@ -390,7 +391,7 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                       child: Text(
                         'Select Specialization',
                         style: GoogleFonts.inter(
-                          fontSize: 17,
+                          fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -448,7 +449,7 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       '$itemCount result${itemCount == 1 ? '' : 's'}',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: TextStyle(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                   ),
                 ),
@@ -469,7 +470,7 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                             const SizedBox(height: 4),
                             Text(
                               'Use "Enter manually" for custom entries',
-                              style: TextStyle(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                              style: TextStyle(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                             ),
                           ],
                         ),
@@ -487,7 +488,7 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                             title: Text(
                               e.text,
                               style: GoogleFonts.inter(
-                                fontSize: 14,
+                                fontSize: AppTypography.bodyMedium,
                                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                                 color: isSelected ? accent : null,
                               ),
@@ -529,7 +530,7 @@ class _CategoryHeader extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.6,
           color: accentColor,

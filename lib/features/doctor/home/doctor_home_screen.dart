@@ -679,14 +679,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
   }
 
   Future<void> _openAddNewPatient() async {
-    final added = await WalkInPatientSheet.show(context);
-    if (!mounted || !added) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('New patient added'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    await WalkInPatientSheet.show(context);
   }
 
   Future<void> _acceptAppointment(Appointment appointment) async {
@@ -699,18 +692,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
           content: Text(
             describeUserFacingError(e, fallback: "Couldn't accept this appointment. Please check your connection and try again."),
           ),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Accepted â€” ${appointment.patientName}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _acceptFamilyAppointments(List<Appointment> members) async {
@@ -729,24 +714,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
           content: Text(
             describeUserFacingError(e, fallback: "Couldn't accept these appointments. Please check your connection and try again."),
           ),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
-    if (!mounted) return;
-
-    final booker = members.first.bookedByName?.trim();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          booker == null || booker.isEmpty
-              ? 'Accepted ${pending.length} family appointments'
-              : 'Accepted family booking for $booker (${pending.length})',
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _declineAppointment(Appointment appointment) async {
@@ -759,18 +730,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
           content: Text(
             describeUserFacingError(e, fallback: "Couldn't decline this appointment. Please check your connection and try again."),
           ),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Declined â€” ${appointment.patientName}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _startConsultation(Appointment appointment) async {
@@ -786,7 +749,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with WidgetsBinding
               fallback: "Couldn't start consultation. Please check your connection and try again.",
             ),
           ),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../data/patient_profile_mock.dart';
 import '../edit_profile_screen.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ProfileCompletionDialog extends StatelessWidget {
   const ProfileCompletionDialog({super.key});
@@ -42,7 +43,7 @@ class ProfileCompletionDialog extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 18,
+                        fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -75,7 +76,7 @@ class ProfileCompletionDialog extends StatelessWidget {
                   Text(
                     '$percentage%',
                     style: GoogleFonts.inter(
-                      fontSize: 18,
+                      fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.patientTeal,
                     ),
@@ -88,7 +89,7 @@ class ProfileCompletionDialog extends StatelessWidget {
               'Your profile is $percentage% complete. Please complete your profile to book appointments and receive accurate medical care.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
               ),
@@ -112,7 +113,7 @@ class ProfileCompletionDialog extends StatelessWidget {
               ),
               child: Text(
                 'Complete Profile',
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(height: 12),
@@ -126,7 +127,7 @@ class ProfileCompletionDialog extends StatelessWidget {
               ),
               child: Text(
                 'Later',
-                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
               ),
             ),
           ],

@@ -41,6 +41,7 @@ import 'package:medibond/features/patient/profile/widgets/patient_profile_form_s
 import 'package:medibond/features/patient/utils/doctor_display_name.dart';
 import 'package:medibond/features/patient/widgets/submit_doctor_review_sheet.dart';
 import 'package:medibond/widgets/labeled_remove_button.dart';
+import '../../../core/theme/app_typography.dart';
 
 
 class AppointmentDetailScreen extends StatelessWidget {
@@ -142,7 +143,6 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
     if (!mounted) return;
     widget.onStatusChanged?.call(AppointmentStatus.confirmed);
     setState(() {});
-    AppToast.info(context, 'Accepted — ${appointment.patientName}');
   }
 
   Future<void> _decline() async {
@@ -162,7 +162,6 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
     if (!mounted) return;
     widget.onStatusChanged?.call(AppointmentStatus.cancelled);
     Navigator.pop(context);
-    AppToast.info(context, 'Declined — ${appointment.patientName}');
   }
 
   static bool _canBookAmbulance(AppointmentStatus status) {
@@ -268,7 +267,7 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                         title: 'Reason for Visit',
                         child: Text(
                           appt.reasonForVisit!,
-                          style: GoogleFonts.inter(fontSize: 14, height: 1.4),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -288,7 +287,7 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                               Expanded(
                                 child: Text(
                                   appt.slotShareReason!.trim(),
-                                  style: GoogleFonts.inter(fontSize: 14, height: 1.4),
+                                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4),
                                 ),
                               ),
                             ],
@@ -318,7 +317,7 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                         title: 'Diagnosis',
                         child: Text(
                           record.diagnosis!,
-                          style: GoogleFonts.inter(fontSize: 14, height: 1.4),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4),
                         ),
                       ),
                     ],
@@ -330,7 +329,7 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                         title: 'Clinical Notes',
                         child: Text(
                           record.clinicalNotes!,
-                          style: GoogleFonts.inter(fontSize: 14, height: 1.4),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.4),
                         ),
                       ),
                     ],
@@ -348,7 +347,7 @@ class _DoctorAppointmentDetailScreenState extends State<_DoctorAppointmentDetail
                                     : Icons.image_outlined,
                                 color: AppColors.doctorBlue,
                               ),
-                              title: Text(r.name, style: GoogleFonts.inter(fontSize: 14)),
+                              title: Text(r.name, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
                               trailing: TextButton(
                                 onPressed: () => DoctorReportOpener.open(
                                   context,
@@ -409,7 +408,7 @@ class _BookAmbulanceAppBarAction extends StatelessWidget {
       label: Text(
         'Book Ambulance',
         style: GoogleFonts.inter(
-          fontSize: 13,
+          fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w600,
           color: _ambulanceRed,
         ),
@@ -446,19 +445,19 @@ class _PatientHeader extends StatelessWidget {
                 Text(
                   appointment.patientName,
                   style: GoogleFonts.inter(
-                    fontSize: 18,
+                    fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
                   Text(
                     '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)}',
-                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${DateFormat('dd MMM yyyy').format(appointment.appointmentDate)} · ${appointment.timeSlot}',
-                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimaryOf(context), fontWeight: FontWeight.w500),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context), fontWeight: FontWeight.w500),
                   ),
                   if (appointment.slotShareReason != null &&
                       appointment.slotShareReason!.trim().isNotEmpty) ...[
@@ -476,7 +475,7 @@ class _PatientHeader extends StatelessWidget {
                           appointment.contactNumber!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.doctorBlue),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.doctorBlue),
                         ),
                       ),
                     ],
@@ -490,7 +489,7 @@ class _PatientHeader extends StatelessWidget {
               Text(
                 '#${appointment.tokenNumber}',
                 style: GoogleFonts.inter(
-                  fontSize: 22,
+                  fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w800,
                   color: AppColors.doctorBlue,
                 ),
@@ -529,7 +528,7 @@ class _InfoCard extends StatelessWidget {
           Text(
             title,
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -581,7 +580,7 @@ class _VisitTimeline extends StatelessWidget {
                     Text(
                       DateFormat('dd MMM yyyy').format(visit.date),
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.doctorBlue,
                       ),
@@ -589,14 +588,14 @@ class _VisitTimeline extends StatelessWidget {
                     Text(
                       visit.diagnosis,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
                       visit.notes,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -653,13 +652,13 @@ class _VitalsGrid extends StatelessWidget {
                       item.$1,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                     ),
                     Text(
                       item.$2,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -680,12 +679,6 @@ class _ActionGrid extends StatelessWidget {
 
   final Appointment appointment;
   final ValueChanged<AppointmentStatus>? onStatusChanged;
-
-  void _snack(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
-    );
-  }
 
   PatientClinicalContext _patientContext() {
     final record = SharedAppointmentsStore.instance.findRecordById(appointment.id);
@@ -745,7 +738,6 @@ class _ActionGrid extends StatelessWidget {
       markCompleted: true,
     );
     onStatusChanged?.call(AppointmentStatus.completed);
-    _snack(context, 'Consultation completed');
     if (context.mounted) Navigator.pop(context);
   }
 
@@ -831,7 +823,7 @@ class _ActionTile extends StatelessWidget {
         icon: Icon(icon, size: 18, color: c),
         label: Text(
           label,
-          style: GoogleFonts.inter(fontSize: 12, color: c),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: c),
         ),
         style: OutlinedButton.styleFrom(
           foregroundColor: c,
@@ -926,9 +918,6 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
       );
       if (!context.mounted) return;
       Navigator.pop(context);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Appointment cancelled')),
-      );
     } catch (e) {
       if (!context.mounted) return;
       messenger.showSnackBar(
@@ -966,12 +955,6 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
       ),
     );
     if (!context.mounted || submitted != true) return;
-    AppToast.info(
-      context,
-      isEdit
-          ? 'Review updated'
-          : 'Thank you for your review! It is now visible to the doctor and other patients.',
-    );
   }
 
   Future<void> _editReview(BuildContext context, PatientAppointment a) async {
@@ -995,7 +978,6 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
       ),
     );
     if (!context.mounted || updated != true) return;
-    AppToast.info(context, 'Review updated');
   }
 
   @override
@@ -1032,7 +1014,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                   Text(
                     DateFormat('EEEE, dd MMMM yyyy').format(a.dateTime),
                     style: GoogleFonts.inter(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -1041,7 +1023,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                   Text(
                     DateFormat('hh:mm a').format(a.dateTime),
                     style: GoogleFonts.inter(
-                      fontSize: 28,
+                      fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w800,
                       color: AppColors.patientTeal,
                       height: 1.1,
@@ -1052,7 +1034,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                     Text(
                       a.countdownLabel,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.patientTeal,
                       ),
@@ -1103,7 +1085,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                         Text(
                           formatDoctorDisplayName(a.doctorName),
                           style: GoogleFonts.inter(
-                            fontSize: 16,
+                            fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -1111,7 +1093,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           a.specialization,
-                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                         ),
                         if (appointmentDoctorRatingBadge(a.doctorId) != null) ...[
                           const SizedBox(height: 6),
@@ -1177,7 +1159,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Lab reports',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium),
                     ),
                     const SizedBox(height: 8),
                     ...a.labReports.map(
@@ -1187,9 +1169,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                           children: [
                             const Icon(Icons.biotech_outlined, size: 18, color: AppColors.patientTeal),
                             const SizedBox(width: 8),
-                            Expanded(child: Text(r, style: GoogleFonts.inter(fontSize: 13))),
+                            Expanded(child: Text(r, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall))),
                             TextButton(
-                              onPressed: () => _snack(context, 'Viewing $r'),
+                              onPressed: () {},
                               child: const Text('View'),
                             ),
                           ],
@@ -1392,7 +1374,7 @@ class _StatusHeader extends StatelessWidget {
                   child: Text(
                     label,
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: color,
                     ),
@@ -1402,14 +1384,14 @@ class _StatusHeader extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     'ID: ${appointment.appointmentId}',
-                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
                 if (cancelled && appointment.cancellationReason != null) ...[
                   const SizedBox(height: 8),
                   Text(
                     appointment.cancellationReason!,
-                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                   ),
                 ],
               ],
@@ -1461,13 +1443,13 @@ class _DetailRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -1496,9 +1478,9 @@ class _SectionCard extends StatelessWidget {
     return PatientProfileFormStyles.contentSurface(context: context, child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
           const SizedBox(height: 8),
-          Text(body, style: GoogleFonts.inter(fontSize: 13, height: 1.4)),
+          Text(body, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, height: 1.4)),
           if (actions.isNotEmpty) ...[
             const SizedBox(height: 4),
             Row(children: actions),

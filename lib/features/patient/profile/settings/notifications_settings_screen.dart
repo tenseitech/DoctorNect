@@ -13,6 +13,7 @@ import '../models/patient_profile_models.dart';
 import '../../../../widgets/labeled_remove_button.dart';
 import '../utils/medication_time_slots.dart';
 import '../widgets/patient_profile_form_styles.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class NotificationsSettingsScreen extends StatefulWidget {
   const NotificationsSettingsScreen({super.key, required this.onChanged});
@@ -72,10 +73,10 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+                          Text(title, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)),
                           Text(
                             MedicationTimeSlots.rangeLabel(slot),
-                            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ),
@@ -192,7 +193,7 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                 children: [
                   Text(
                     'All alerts are delivered inside DoctorNect. Push/SMS/WhatsApp tags show alert type only — nothing is sent outside the app.',
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 16),
                   SwitchListTile(
@@ -278,7 +279,7 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                                     if (m.afternoonTime != null) 'Afternoon (${m.afternoonTime})',
                                     if (m.eveningTime != null) 'Evening (${m.eveningTime})',
                                     if (m.nightTime != null) 'Night (${m.nightTime})',
-                                  ].join(' • '), style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+                                  ].join(' • '), style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
                                 ],
                               ),
                             ),

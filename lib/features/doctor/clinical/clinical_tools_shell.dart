@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import 'models/clinical_models.dart';
 import 'notes/clinical_notes_screen.dart';
 import 'prescription/write_prescription_screen.dart';
+import '../../../core/theme/app_typography.dart';
 
 class ClinicalToolsShell extends StatefulWidget {
   const ClinicalToolsShell({
@@ -83,7 +84,7 @@ class _ClinicalToolsShellState extends State<ClinicalToolsShell>
           labelColor: AppColors.doctorBlue,
           unselectedLabelColor: AppColors.textSecondaryOf(context),
           indicatorColor: AppColors.doctorBlue,
-          labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+          labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(text: 'Prescription'),
             Tab(text: 'Notes'),

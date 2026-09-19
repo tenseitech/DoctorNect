@@ -9,6 +9,7 @@ import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/external_launcher.dart';
 import '../profile/data/doctor_profile_store.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Doctor-to-doctor referral — generate and share an invite link.
 class ReferDoctorView extends StatefulWidget {
@@ -81,14 +82,6 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
     final message = _referMessage(name, link);
 
     await Clipboard.setData(ClipboardData(text: message));
-    
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Referral invite copied to clipboard'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _shareLink() async {
@@ -155,7 +148,7 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                           Text(
                             'Refer another Doctor',
                             style: GoogleFonts.inter(
-                              fontSize: 18,
+                              fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimaryOf(context),
                             ),
@@ -163,7 +156,7 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                           Text(
                             'Generate and share a referral link',
                             style: GoogleFonts.inter(
-                              fontSize: 13,
+                              fontSize: AppTypography.bodySmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -180,7 +173,7 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                 Text(
                   'Enter the doctor\'s name to generate a personalized referral message with your link from $doctorName.',
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     color: AppColors.textSecondaryOf(context),
                     height: 1.4,
                   ),
@@ -215,7 +208,7 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                             : SelectableText(
                                 _link ?? fallbackLink,
                                 style: GoogleFonts.inter(
-                                  fontSize: 14,
+                                  fontSize: AppTypography.bodyMedium,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimaryOf(context),
                                 ),

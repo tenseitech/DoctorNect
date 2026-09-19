@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class HomeSearchBar extends StatefulWidget {
   const HomeSearchBar({
@@ -235,7 +236,7 @@ class _DesktopSearchActionState extends State<_DesktopSearchAction> {
           child: Text(
             'Search',
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.surfaceOf(context),
             ),

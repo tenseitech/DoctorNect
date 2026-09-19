@@ -11,6 +11,7 @@ import '../../profile/data/doctor_profile_store.dart';
 import '../models/clinical_models.dart';
 import 'prescription_header_helper.dart';
 import 'prescription_pdf_service.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class PrescriptionPreviewModal {
   static void show(BuildContext context, {required PrescriptionDraft draft}) {
@@ -78,7 +79,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'Share prescription',
-                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
                 ),
               ),
               ListTile(
@@ -86,7 +87,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 title: Text('WhatsApp', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
                   kIsWeb ? 'Share summary via WhatsApp' : 'Share PDF via WhatsApp',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -101,7 +102,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 title: Text('Email', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                 subtitle: Text(
                   kIsWeb ? 'Open email with prescription summary' : 'Share PDF via email app',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -216,10 +217,10 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
               children: [
                 if (displayClinicName.isNotEmpty)
                   Text(displayClinicName,
-                      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700)),
                 if (displayAddress.isNotEmpty)
                   Text(displayAddress,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context))),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context))),
                 if (displayPhone.isNotEmpty)
                   Text('Phone: $displayPhone',
                       style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondaryOf(context))),
@@ -230,7 +231,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                   displayQualifications.isNotEmpty
                       ? '$displayDoctorName · $displayQualifications'
                       : displayDoctorName,
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                 ),
                 if (displaySpecialization.isNotEmpty || displayRegNumber.isNotEmpty)
                   Text(
@@ -238,7 +239,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                       if (displaySpecialization.isNotEmpty) displaySpecialization,
                       if (displayRegNumber.isNotEmpty) 'Reg: $displayRegNumber',
                     ].join(' · '),
-                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                   ),
                 const SizedBox(height: 12),
                 Row(
@@ -250,20 +251,20 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                         children: [
                           Text(
                             'Patient: ${draft.patient.patientName}',
-                            style: GoogleFonts.inter(fontSize: 12),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             'Age: ${draft.patient.age} yrs · ${draft.patient.gender ?? '—'} · ID: ${draft.patientId}',
-                            style: GoogleFonts.inter(fontSize: 11),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (draft.vitals.weightKg.isNotEmpty)
                             Text(
                               'Weight: ${draft.vitals.weightKg} kg',
-                              style: GoogleFonts.inter(fontSize: 11),
+                              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
                             ),
                         ],
                       ),
@@ -275,7 +276,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                         children: [
                           Text(
                             'Date: $date',
-                            style: GoogleFonts.inter(fontSize: 11),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
                             textAlign: TextAlign.end,
                           ),
                           Text(
@@ -292,29 +293,29 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 ),
                 if (_hasVitals) ...[
                   const SizedBox(height: 12),
-                  Text('Vitals', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600)),
+                  Text('Vitals', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
                   Text(_vitalsLine, style: GoogleFonts.inter(fontSize: 10)),
                 ],
                 if (draft.chiefComplaint.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Text('Chief Complaint', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600)),
+                  Text('Chief Complaint', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
                   Text(draft.chiefComplaint, style: GoogleFonts.inter(fontSize: 10)),
                 ],
                 if (draft.generalExamination.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text('General examination',
-                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
                   Text(draft.generalExamination, style: GoogleFonts.inter(fontSize: 10)),
                 ],
                 const SizedBox(height: 12),
                 Text('Diagnosis (${draft.diagnosisType})',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700)),
                 _labeledPreviewLine('Primary', draft.primaryDiagnosis),
                 if (draft.secondaryDiagnosis.isNotEmpty)
                   _labeledPreviewLine('Secondary', draft.secondaryDiagnosis),
                 if (draft.symptoms.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text('Symptoms', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600)),
+                  Text('Symptoms', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
                   Text(draft.symptoms, style: GoogleFonts.inter(fontSize: 10)),
                 ],
                 if (draft.symptomDuration.isNotEmpty)
@@ -322,7 +323,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 if (draft.pastHistory.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text('Past medical history',
-                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600)),
                   Text(draft.pastHistory, style: GoogleFonts.inter(fontSize: 10)),
                 ],
                 if (draft.allergies.isNotEmpty) ...[
@@ -334,10 +335,10 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text('℞', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800)),
+                    Text('℞', style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w800)),
                     const SizedBox(width: 8),
                     Text('Medicines',
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700)),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -345,7 +346,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 if (draft.validInvestigations.isNotEmpty || draft.bodyParts.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text('Investigations / Tests',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 6),
                   ..._buildInvestigationTables(draft),
                   if (draft.bodyParts.isNotEmpty) ...[
@@ -359,7 +360,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 ],
                 if (_hasAdvice(draft)) ...[
                   const SizedBox(height: 12),
-                  Text('Advice', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text('Advice', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
                   if (draft.dietAdvice.isNotEmpty)
                     _labeledPreviewLine('Diet', draft.dietAdvice),
                   if (draft.activityRestrictions.isNotEmpty)
@@ -371,7 +372,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 ],
                 if (draft.nextVisit != null || draft.followUpNote.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  Text('Follow-up', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text('Follow-up', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
                   if (draft.nextVisit != null)
                     _labeledPreviewLine(
                       'Next visit',
@@ -383,7 +384,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 if (draft.referrals.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text('Referred to',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   ...draft.referrals.map(
                     (r) => Padding(
@@ -411,7 +412,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                       Container(width: 140, height: 1, color: AppColors.textPrimaryOf(context)),
                       const SizedBox(height: 4),
                       Text(displayDoctorName,
-                          style: GoogleFonts.inter(fontSize: 11, fontStyle: FontStyle.italic)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontStyle: FontStyle.italic)),
                       if (displayPhone.isNotEmpty)
                         Text('Phone: $displayPhone',
                             style: GoogleFonts.inter(fontSize: 9, color: AppColors.textSecondaryOf(context))),

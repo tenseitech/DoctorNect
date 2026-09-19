@@ -11,6 +11,7 @@ import 'package:medibond/features/patient/booking/booking_flow_screen.dart';
 import 'package:medibond/features/patient/data/featured_doctors_service.dart';
 import 'package:medibond/features/patient/doctor_profile/patient_doctor_profile_screen.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+import 'package:medibond/core/theme/app_typography.dart';
 import 'package:medibond/widgets/profile_photo_image_io.dart'
     if (dart.library.html) 'package:medibond/widgets/profile_photo_image_stub.dart';
 
@@ -137,7 +138,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
       children: [
         Text(
           'Featured Doctors',
-          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+          style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -214,7 +215,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                    fontSize: 12,
+                                    fontSize: AppTypography.labelMedium,
                                     color: Colors.white.withValues(alpha: 0.92),
                                   ),
                                 ),
@@ -242,7 +243,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
-                                        fontSize: 11,
+                                        fontSize: AppTypography.labelSmall,
                                         color: Colors.white.withValues(alpha: 0.9),
                                       ),
                                     ),
@@ -446,7 +447,7 @@ class _FeaturedDoctorPhoto extends StatelessWidget {
                 Text(
                   initial,
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: Colors.white.withValues(alpha: 0.9),
                   ),
@@ -475,7 +476,7 @@ class _InfoRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               color: Colors.white.withValues(alpha: 0.88),
             ),
           ),

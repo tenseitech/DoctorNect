@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_colors.dart';
 import 'medibond_legal_content.dart';
+import '../../core/theme/app_typography.dart';
 
 class LegalDocumentScreen extends StatelessWidget {
   const LegalDocumentScreen({
@@ -47,7 +48,7 @@ class LegalDocumentScreen extends StatelessWidget {
                 Text(
                   'DoctorNect',
                   style: GoogleFonts.inter(
-                    fontSize: 16,
+                    fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: accentColor,
                   ),
@@ -55,7 +56,7 @@ class LegalDocumentScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   DoctorNectLegalContent.lastUpdated,
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -65,7 +66,7 @@ class LegalDocumentScreen extends StatelessWidget {
             Text(
               section.title,
               style: GoogleFonts.inter(
-                fontSize: 15,
+                fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
                 height: 1.3,
@@ -76,7 +77,7 @@ class LegalDocumentScreen extends StatelessWidget {
               Text(
                 paragraph,
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   height: 1.55,
                   color: AppColors.textSecondaryOf(context),
                 ),

@@ -1,4 +1,3 @@
-import '../../../core/notifications/app_toast.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -11,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import 'data/health_record_file_store.dart';
 import 'models/health_record_models.dart';
 import 'utils/record_type_style.dart';
+import '../../../core/theme/app_typography.dart';
 
 class RecordPreviewScreen extends StatefulWidget {
   const RecordPreviewScreen({
@@ -88,7 +88,7 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        title: Text(record.title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16)),
+        title: Text(record.title, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.headlineSmall)),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         actions: [
@@ -96,7 +96,6 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
             IconButton(
               icon: const Icon(Icons.download_outlined),
               onPressed: () {
-                AppToast.info(context, 'File is saved on this device');
               },
             ),
         ],
@@ -110,7 +109,7 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
             color: AppColors.surfaceOf(context),
             child: Text(
               '${DateFormat('dd MMM yyyy').format(record.date)} · ${record.fileName}',
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
             ),
           ),
         ],
@@ -144,7 +143,7 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
                 Text(
                   'Files may be stored on the device where they were uploaded, or in cloud storage when sync is enabled.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ],

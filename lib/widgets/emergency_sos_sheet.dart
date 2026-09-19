@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_colors.dart';
 import '../features/ambulance/ambulance_booking_screen.dart';
 import '../features/ambulance/models/ambulance_models.dart';
+import '../core/theme/app_typography.dart';
 
 /// SOS Emergency Sheet for instant 108 Ambulance Hotline and Emergency Trauma Dispatch.
 class EmergencySosSheet extends StatelessWidget {
@@ -72,7 +73,7 @@ class EmergencySosSheet extends StatelessWidget {
                     Text(
                       'Emergency SOS Assistance',
                       style: GoogleFonts.inter(
-                        fontSize: 18,
+                        fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w800,
                         color: const Color(0xFF991B1B),
                       ),
@@ -80,7 +81,7 @@ class EmergencySosSheet extends StatelessWidget {
                     Text(
                       '24/7 Rapid Emergency Response',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -133,7 +134,7 @@ class EmergencySosSheet extends StatelessWidget {
                           Text(
                             'Call 108 Emergency Hotline',
                             style: GoogleFonts.inter(
-                              fontSize: 16,
+                              fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),
@@ -142,7 +143,7 @@ class EmergencySosSheet extends StatelessWidget {
                           Text(
                             'Toll-free immediate trauma & cardiac response',
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               color: Colors.white.withValues(alpha: 0.9),
                             ),
                           ),
@@ -180,14 +181,14 @@ class EmergencySosSheet extends StatelessWidget {
             icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
             label: Text(
               'Book Nearby ICU Ambulance Dispatcher',
-              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(height: 20),
           Text(
             'Emergency Trauma Services',
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -251,7 +252,7 @@ class _SosOptionTile extends StatelessWidget {
                     Text(
                       title,
                       style: GoogleFonts.inter(
-                        fontSize: 13.5,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -259,7 +260,7 @@ class _SosOptionTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: GoogleFonts.inter(
-                        fontSize: 11.5,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),

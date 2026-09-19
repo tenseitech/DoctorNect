@@ -13,6 +13,7 @@ import '../appointment_utils.dart';
 import '../../widgets/doctor_ui_widgets.dart';
 import 'appointment_action_buttons.dart';
 import 'appointment_symptoms_section.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class AppointmentTabCard extends StatelessWidget {
   const AppointmentTabCard({
@@ -202,7 +203,7 @@ class _WideLayout extends StatelessWidget {
                       foregroundColor: AppColors.doctorBlue,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       textStyle: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -303,7 +304,7 @@ class _AppointmentDetails extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -321,12 +322,12 @@ class _AppointmentDetails extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)} · $typeLabel',
-          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 4),
         Text(
           '${DateFormat('dd MMM yyyy').format(appointment.appointmentDate)} · ${appointment.timeSlot}',
-          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
         ),
         if (appointment.bookedByName != null &&
             appointment.bookedByName!.trim().isNotEmpty &&
@@ -336,7 +337,7 @@ class _AppointmentDetails extends StatelessWidget {
           Text(
             'Booked by ${appointment.bookedByName}${appointment.patientRelation != null && appointment.patientRelation!.trim().isNotEmpty && appointment.patientRelation!.trim().toLowerCase() != 'self' ? ' (${appointment.patientRelation})' : ''}',
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w500,
               color: typeColor,
             ),
@@ -353,7 +354,7 @@ class _AppointmentDetails extends StatelessWidget {
             'Reason: ${appointment.reasonForVisit}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
         ],
         if (symptoms.isNotEmpty) ...[

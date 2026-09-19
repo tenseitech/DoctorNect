@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../features/auth/widgets/auth_login_page_shell.dart';
 import 'required_field_label.dart';
+import '../core/theme/app_typography.dart';
 
 class PasswordField extends StatefulWidget {
   const PasswordField({
@@ -86,7 +87,7 @@ class _PasswordFieldState extends State<PasswordField> {
           textInputAction: widget.textInputAction,
           onFieldSubmitted: widget.onFieldSubmitted,
           style: widget.accentColor != null
-              ? GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)
+              ? GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)
               : null,
           decoration: widget.accentColor != null
               ? authLoginInputDecoration(
@@ -172,7 +173,7 @@ class _RequirementPill extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: met ? FontWeight.w600 : FontWeight.w400,
               color: met ? activeColor : inactiveColor,
             ),

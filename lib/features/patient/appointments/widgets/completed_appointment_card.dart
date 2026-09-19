@@ -8,6 +8,7 @@ import '../models/patient_appointment_models.dart';
 import '../patient_prescription_opener.dart';
 import '../../utils/doctor_display_name.dart';
 import 'appointment_card_shared.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class CompletedAppointmentCard extends StatelessWidget {
   const CompletedAppointmentCard({
@@ -72,7 +73,7 @@ class CompletedAppointmentCard extends StatelessWidget {
             a.diagnosis!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
         ],
         if (a.hasPrescription || a.hasReport) ...[

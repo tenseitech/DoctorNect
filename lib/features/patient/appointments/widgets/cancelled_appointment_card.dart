@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../models/patient_appointment_models.dart';
 import '../../utils/doctor_display_name.dart';
 import 'appointment_card_shared.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class CancelledAppointmentCard extends StatelessWidget {
   const CancelledAppointmentCard({
@@ -60,7 +61,7 @@ class CancelledAppointmentCard extends StatelessWidget {
                     Text(
                       reason,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontStyle: FontStyle.italic,
                         color: AppColors.textSecondaryOf(context),
                         height: 1.35,
@@ -81,7 +82,7 @@ class CancelledAppointmentCard extends StatelessWidget {
               child: Text(
                 'Cancelled',
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                   color: _cancelledBadgeText,
                 ),

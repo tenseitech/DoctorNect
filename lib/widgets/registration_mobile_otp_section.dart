@@ -13,6 +13,7 @@ import '../core/theme/app_colors.dart';
 import '../core/validators/form_validators.dart';
 import 'otp_input.dart';
 import 'phone_number_field.dart';
+import '../core/theme/app_typography.dart';
 
 /// Unified mobile number + OTP verification block for registration flows.
 class RegistrationMobileOtpSection extends StatefulWidget {
@@ -158,13 +159,6 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
       _otpKeyCounter++;
     });
     _startResendCooldown();
-    final sentMessage = 'OTP sent to $_dialCode ${_maskedDigits(digits)}';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(sentMessage),
-        duration: const Duration(seconds: 6),
-      ),
-    );
   }
 
   Future<void> _verifyOtp() async {
@@ -178,12 +172,11 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
     if (!mounted) return;
     setState(() => _sending = false);
     if (error != null) {
-      AppToast.info(context, error);
+      AppToast.error(context, error);
       return;
     }
     setState(() => _verified = true);
     widget.onVerifiedChanged(true);
-    AppToast.info(context, 'Mobile number verified');
   }
 
   Widget _loadingIndicator({Color? color}) {
@@ -243,7 +236,7 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
                       Text(
                         'Mobile verified ($_dialCode ${_maskedDigits(digits)})',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                           color: AppColors.pharmacyGreen,
                         ),
@@ -312,7 +305,7 @@ class _RegistrationMobileOtpSectionState extends State<RegistrationMobileOtpSect
         ] else ...[
           Text(
             'Enter the 6-digit code sent to $_dialCode ${_maskedDigits(sentDigits)}',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 14),
           OtpInput(

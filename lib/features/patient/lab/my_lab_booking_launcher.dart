@@ -16,6 +16,7 @@ import 'lab_booking_flow_screen.dart';
 import 'utils/patient_lab_age_guard.dart';
 import 'utils/patient_selected_investigations_mapper.dart';
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 Future<void> showMyLabTestPickerAndBook(BuildContext context, SavedLabEntry lab) async {
   final patientId = PatientSession.loggedInPatientId;
@@ -116,12 +117,12 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
             children: [
               Text(
                 labName.isEmpty ? 'Book lab tests' : 'Book at $labName',
-                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+                style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
                 'Choose tests below, then continue to complete your booking request.',
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.4),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
               ),
               const SizedBox(height: 16),
               Container(
@@ -138,12 +139,12 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
                     if (!profileAgeValid) ...[
                       Text(
                         'Booking for ${PatientLabAgeGuard.selfAgeLabel()}',
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         PatientLabAgeGuard.missingAgeHint,
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.error, height: 1.4),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.error, height: 1.4),
                       ),
                       const SizedBox(height: 12),
                     ],

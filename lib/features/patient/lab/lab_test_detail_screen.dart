@@ -11,6 +11,7 @@ import 'lab_booking_flow_screen.dart';
 import 'lab_city_filter.dart';
 import 'models/lab_models.dart';
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 class LabTestDetailScreen extends StatefulWidget {
   const LabTestDetailScreen({
@@ -176,7 +177,7 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                 children: [
                   Text(
                     widget.test.name,
-                    style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 20),
                   const LabSectionHeader(icon: Icons.checklist_outlined, title: 'Includes'),
@@ -190,7 +191,7 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                           const Icon(Icons.check, size: 18, color: AppColors.labPurple),
                           SizedBox(width: 8),
                           Expanded(
-                            child: Text(p, style: GoogleFonts.inter(fontSize: 14)),
+                            child: Text(p, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
                           ),
                         ],
                       ),
@@ -305,7 +306,7 @@ class _InfoChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.labPurple),
+        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600, color: AppColors.labPurple),
       ),
     );
   }
@@ -322,7 +323,7 @@ class _LabsEmptyNote extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         message,
-        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.35),
+        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.35),
       ),
     );
   }
@@ -381,10 +382,10 @@ class _LabPartnerTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(lab.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                      Text(lab.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium)),
                       Text(
                         lab.area,
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                       ),
                     ],
                   ),

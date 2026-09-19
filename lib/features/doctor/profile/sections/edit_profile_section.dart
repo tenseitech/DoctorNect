@@ -11,8 +11,8 @@ import '../../../../widgets/qualification_selector.dart';
 import '../../../../widgets/specialization_selector.dart';
 import '../data/doctor_photo_local_store.dart';
 import '../data/doctor_profile_store.dart';
-import '../widgets/profile_widgets.dart';
 import '../widgets/section_save_bar.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Quick edit for top-card fields: name, specialization, languages.
 class EditProfileSection extends StatefulWidget {
@@ -78,7 +78,6 @@ class _EditProfileSectionState extends State<EditProfileSection> {
         final doctorId = DoctorSession.activeDoctorId;
         await DoctorProfileStore.instance.removePhoto(doctorId);
         _markDirty();
-        if (mounted) AppToast.info(context, 'Profile photo removed');
       },
     );
     if (picked == null || !picked.hasImage) {
@@ -115,7 +114,6 @@ class _EditProfileSectionState extends State<EditProfileSection> {
     }
     if (!mounted) return;
     setState(() => _dirty = false);
-    showProfileSavedToast(context);
     Navigator.pop(context, true);
   }
 
@@ -152,7 +150,7 @@ class _EditProfileSectionState extends State<EditProfileSection> {
                                   child: avatarImage == null
                                       ? Text(
                                           _name.text.isNotEmpty ? _name.text[0].toUpperCase() : 'D',
-                                          style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                                          style: const TextStyle(fontSize: AppTypography.displayLarge, fontWeight: FontWeight.bold),
                                         )
                                       : null,
                                 ),

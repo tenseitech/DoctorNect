@@ -15,6 +15,7 @@ import '../../../widgets/mobile_scaffold.dart';
 import '../../../widgets/nav_request_dot.dart';
 import '../../../widgets/overflow_safe_layout.dart';
 import '../../../widgets/theme_toggle_button.dart';
+import '../../../core/theme/app_typography.dart';
 
 class PharmacyNavTab {
   const PharmacyNavTab({
@@ -451,7 +452,7 @@ class _PharmacyNavTileState extends State<_PharmacyNavTile> {
                   child: Text(
                     widget.label,
                     style: GoogleFonts.inter(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: widget.selected ? FontWeight.w700 : FontWeight.w500,
                       color: labelColor,
                     ),
@@ -490,7 +491,7 @@ class _NavBadge extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
           color: inverted ? AppColors.pharmacyGreen : AppColors.surfaceOf(context),
         ),

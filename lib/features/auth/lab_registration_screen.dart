@@ -12,7 +12,9 @@ import '../dashboard/dashboard_shell.dart';
 import 'widgets/simple_role_registration_form.dart';
 
 class LabRegistrationScreen extends StatelessWidget {
-  const LabRegistrationScreen({super.key});
+  const LabRegistrationScreen({super.key, this.preVerifiedMobile});
+
+  final String? preVerifiedMobile;
 
   static const _accent = Color(0xFF8B5CF6);
 
@@ -61,7 +63,6 @@ class LabRegistrationScreen extends StatelessWidget {
     }
 
     LabSession.setLab(id: labId, name: name);
-    AppToast.success(context, 'Account created! Complete your profile to access lab orders.');
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => const DashboardShell(userType: UserType.lab),
@@ -80,6 +81,7 @@ class LabRegistrationScreen extends StatelessWidget {
       subtitle: 'Quick signup — add lab details in your profile next',
       icon: Icons.biotech_outlined,
       nameLabel: 'Contact person name *',
+      preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
         context,

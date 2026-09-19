@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/ambulance_store.dart';
 import '../models/ambulance_models.dart';
 import '../widgets/ambulance_page_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 enum _AlertFilter { all, unread, read }
 
@@ -78,14 +79,14 @@ class _AmbulanceNotificationsScreenState extends State<AmbulanceNotificationsScr
                   children: [
                     Text(
                       'Notifications',
-                      style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       unreadCount > 0
                           ? '$unreadCount unread · new requests & trip updates'
                           : 'New requests, acceptances, and trip alerts',
-                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),
@@ -103,7 +104,7 @@ class _AmbulanceNotificationsScreenState extends State<AmbulanceNotificationsScr
                   ),
                   child: Text(
                     'Mark all read',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                   ),
                 ),
             ],
@@ -159,7 +160,7 @@ class _AmbulanceNotificationsScreenState extends State<AmbulanceNotificationsScr
                           : 'No ${_filter.name} notifications.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                         height: 1.4,
                       ),
@@ -173,7 +174,7 @@ class _AmbulanceNotificationsScreenState extends State<AmbulanceNotificationsScr
                           child: Text(
                             entry.key,
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -236,7 +237,7 @@ class _FilterPill extends StatelessWidget {
               Text(
                 '$count',
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w800,
                   color: selected ? const Color(0xFFDC2626) : AppColors.textPrimaryOf(context),
                 ),
@@ -244,7 +245,7 @@ class _FilterPill extends StatelessWidget {
               Text(
                 label,
                 style: GoogleFonts.inter(
-                  fontSize: 11,
+                  fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w600,
                   color: selected ? const Color(0xFFDC2626) : AppColors.textSecondaryOf(context),
                 ),
@@ -300,17 +301,17 @@ class _AlertCard extends StatelessWidget {
                     children: [
                       Text(
                         alert.title,
-                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         alert.body,
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.35),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.35),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         DateFormat('hh:mm a').format(alert.createdAt),
-                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                       ),
                     ],
                   ),

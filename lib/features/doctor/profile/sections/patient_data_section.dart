@@ -14,6 +14,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../doctor/models/doctor_models.dart';
 import '../data/doctor_profile_store.dart';
 import '../../patients/data/doctor_patients_service.dart';
+import '../../../../core/theme/app_typography.dart';
 
 enum _Period { weekly, monthly, yearly, custom }
 
@@ -172,7 +173,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                     pw.Text(
                       'Patient Data Report',
                       style: pw.TextStyle(
-                        fontSize: 20,
+                        fontSize: AppTypography.headlineMedium,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.teal800,
                       ),
@@ -180,7 +181,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                     pw.SizedBox(height: 4),
                     pw.Text(
                       'Dr. $doctorName',
-                      style: pw.TextStyle(fontSize: 13, color: PdfColors.grey700),
+                      style: pw.TextStyle(fontSize: AppTypography.bodySmall, color: PdfColors.grey700),
                     ),
                   ],
                 ),
@@ -190,7 +191,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                     pw.Text(
                       '$periodLabel Report',
                       style: pw.TextStyle(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: pw.FontWeight.bold,
                         color: PdfColors.teal700,
                       ),
@@ -325,7 +326,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
           pw.Text(
             value,
             style: pw.TextStyle(
-              fontSize: 18,
+              fontSize: AppTypography.headlineSmall,
               fontWeight: pw.FontWeight.bold,
               color: PdfColors.teal800,
             ),
@@ -464,7 +465,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                     Text(
                       _dateRangeLabel(),
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -475,7 +476,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                         child: Text(
                           'Change',
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: AppColors.practoTeal,
                             fontWeight: FontWeight.w600,
                           ),
@@ -543,12 +544,12 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                       const SizedBox(width: 10),
                       Text(
                         'All-time total visits: ',
-                        style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[700]),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: Colors.grey[700]),
                       ),
                       Text(
                         '$total',
                         style: GoogleFonts.inter(
-                          fontSize: 15,
+                          fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                           color: AppColors.practoTeal,
                         ),
@@ -576,7 +577,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                           _CardFilter.all => '',
                         }} (${displayRecords.length})',
                         style: GoogleFonts.inter(
-                            fontSize: 12, color: Colors.grey[600]),
+                            fontSize: AppTypography.labelMedium, color: Colors.grey[600]),
                       ),
                       const Spacer(),
                       GestureDetector(
@@ -585,7 +586,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                         child: Text(
                           'Clear',
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: AppColors.practoTeal,
                             fontWeight: FontWeight.w600,
                           ),
@@ -608,7 +609,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                             Text(
                               'No patient records for this filter',
                               style: GoogleFonts.inter(
-                                  fontSize: 14, color: Colors.grey[500]),
+                                  fontSize: AppTypography.bodyMedium, color: Colors.grey[500]),
                             ),
                           ],
                         ),
@@ -691,7 +692,7 @@ class _PeriodSelector extends StatelessWidget {
                       Text(
                         label,
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: AppTypography.labelMedium,
                           fontWeight:
                               isActive ? FontWeight.w600 : FontWeight.w500,
                           color: isActive ? AppColors.surfaceOf(context) : Colors.grey[600],
@@ -754,7 +755,7 @@ class _StatCard extends StatelessWidget {
               Text(
                 value,
                 style: GoogleFonts.inter(
-                  fontSize: 18,
+                  fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                   color: color,
                 ),
@@ -802,7 +803,7 @@ class _PatientRow extends StatelessWidget {
             width: 28,
             child: Text(
               '${index + 1}.',
-              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[500]),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: Colors.grey[500]),
             ),
           ),
           // Avatar
@@ -814,7 +815,7 @@ class _PatientRow extends StatelessWidget {
                   ? record.patientName[0].toUpperCase()
                   : '?',
               style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.practoTeal),
             ),
@@ -831,7 +832,7 @@ class _PatientRow extends StatelessWidget {
                       child: Text(
                         record.patientName,
                         style: GoogleFonts.inter(
-                            fontSize: 13.5, fontWeight: FontWeight.w600),
+                            fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                       ),
                     ),
                     Container(
@@ -860,7 +861,7 @@ class _PatientRow extends StatelessWidget {
                 Text(
                   '${record.patientAge} yrs · ${AppConstants.patientGenderLabel(record.patientGender)}',
                   style: GoogleFonts.inter(
-                      fontSize: 11.5, color: Colors.grey[600]),
+                      fontSize: AppTypography.labelMedium, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 2),
                 Row(
@@ -871,7 +872,7 @@ class _PatientRow extends StatelessWidget {
                     Text(
                       '${df.format(record.dateTime)}  ${tf.format(record.dateTime)}',
                       style: GoogleFonts.inter(
-                          fontSize: 11, color: Colors.grey[500]),
+                          fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
                     ),
                   ],
                 ),
@@ -888,7 +889,7 @@ class _PatientRow extends StatelessWidget {
                         child: Text(
                           record.diagnosis!,
                           style: GoogleFonts.inter(
-                              fontSize: 11, color: Colors.grey[500]),
+                              fontSize: AppTypography.labelSmall, color: Colors.grey[500]),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -962,7 +963,7 @@ class _CustomRangeDialogState extends State<_CustomRangeDialog> {
                   Text(
                     'Select Date Range',
                     style: GoogleFonts.inter(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.surfaceOf(context),
                     ),
@@ -1052,7 +1053,7 @@ class _CustomRangeDialogState extends State<_CustomRangeDialog> {
                       DateTimeRange(start: _start, end: _end),
                     ),
                     child:
-                        Text('Apply', style: GoogleFonts.inter(fontSize: 13)),
+                        Text('Apply', style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
                   ),
                 ],
               ),
@@ -1151,7 +1152,7 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                   monthLabel,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600),
+                      fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
@@ -1171,7 +1172,7 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                         child: Text(
                           d,
                           style: GoogleFonts.inter(
-                            fontSize: 11,
+                            fontSize: AppTypography.labelSmall,
                             fontWeight: FontWeight.w600,
                             color: Colors.grey[500],
                           ),
@@ -1253,7 +1254,7 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                     Text(
                       '$day',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: isEndpoint
                             ? FontWeight.w700
                             : FontWeight.w400,
@@ -1323,7 +1324,7 @@ class _DateChip extends StatelessWidget {
             Text(
               date,
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: isActive ? AppColors.practoTeal : Colors.grey[800],
               ),

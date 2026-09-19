@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../widgets/mobile_scaffold.dart';
 
 import '../splash/splash_screen.dart';
+import '../../core/theme/app_typography.dart';
 
 class AccountUnderReviewScreen extends StatelessWidget {
   const AccountUnderReviewScreen({
@@ -40,7 +41,7 @@ class AccountUnderReviewScreen extends StatelessWidget {
               Text(
                 'Account under review',
                 style: GoogleFonts.inter(
-                  fontSize: 22,
+                  fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -50,7 +51,7 @@ class AccountUnderReviewScreen extends StatelessWidget {
               Text(
                 reviewMessage,
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: AppTypography.bodyLarge,
                   height: 1.5,
                   color: AppColors.textSecondaryOf(context),
                 ),

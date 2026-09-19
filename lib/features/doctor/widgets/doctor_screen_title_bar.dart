@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 class DoctorScreenTitleBar extends StatelessWidget {
   const DoctorScreenTitleBar({
@@ -40,7 +41,7 @@ class DoctorScreenTitleBar extends StatelessWidget {
                 child: Text(
                   title,
                   style: GoogleFonts.inter(
-                    fontSize: 24,
+                    fontSize: AppTypography.headlineLarge,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
                   ),
@@ -57,7 +58,7 @@ class DoctorScreenTitleBar extends StatelessWidget {
             Text(
               subtitle!,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
             ),

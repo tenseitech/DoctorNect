@@ -7,6 +7,7 @@ import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import '../core/widgets/resampled_network_image.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+import '../core/theme/app_typography.dart';
 
 typedef HomeCarouselCtaHandler = void Function(String? route);
 
@@ -281,7 +282,7 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 15,
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
@@ -292,7 +293,7 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    fontSize: 11,
+                    fontSize: AppTypography.labelSmall,
                     height: 1.3,
                     color: Colors.white.withValues(alpha: 0.92),
                   ),
@@ -351,7 +352,7 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 24,
+                          fontSize: AppTypography.headlineLarge,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                           height: 1.15,
@@ -363,7 +364,7 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: AppTypography.bodyMedium,
                           height: 1.4,
                           color: Colors.white.withValues(alpha: 0.92),
                         ),
@@ -384,7 +385,7 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                           ),
                           child: Text(
                             item.ctaLabel!,
-                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
+                            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ],

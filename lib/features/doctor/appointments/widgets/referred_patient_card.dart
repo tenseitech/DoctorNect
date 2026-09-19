@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/firebase/models/doctor_referral.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ReferredPatientCard extends StatelessWidget {
   const ReferredPatientCard({
@@ -59,7 +60,7 @@ class ReferredPatientCard extends StatelessWidget {
                     child: Text(
                       'Referred',
                       style: GoogleFonts.inter(
-                        fontSize: 11,
+                        fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.isDark(context)
                             ? const Color(0xFF4ADE80)
@@ -74,7 +75,7 @@ class ReferredPatientCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.end,
-                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
                     ),
                   ),
                 ],
@@ -83,7 +84,7 @@ class ReferredPatientCard extends StatelessWidget {
               Text(
                 referral.patientName,
                 style: GoogleFonts.inter(
-                  fontSize: 16,
+                  fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -129,7 +130,7 @@ class ReferredPatientCard extends StatelessWidget {
       child: RichText(
         text: TextSpan(
           style: GoogleFonts.inter(
-            fontSize: 13,
+            fontSize: AppTypography.bodySmall,
             color: AppColors.textPrimaryOf(context),
             height: 1.35,
           ),

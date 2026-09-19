@@ -20,6 +20,7 @@ import 'widgets/appointment_filters_bar.dart';
 import 'widgets/appointment_tab_card.dart';
 import 'widgets/appointments_empty_state.dart';
 import 'appointment_actions.dart';
+import '../../../core/theme/app_typography.dart';
 
 class DoctorAppointmentsScreen extends StatefulWidget {
   const DoctorAppointmentsScreen({super.key, this.initialTabIndex = 0});
@@ -140,19 +141,12 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
           content: Text(
             describeUserFacingError(e, fallback: "Couldn't accept this appointment. Please check your connection and try again."),
           ),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
     if (!mounted) return;
     setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Accepted — ${appointment.patientName}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _declineAppointment(Appointment appointment) async {
@@ -165,19 +159,12 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
           content: Text(
             describeUserFacingError(e, fallback: "Couldn't decline this appointment. Please check your connection and try again."),
           ),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
     if (!mounted) return;
     setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Declined — ${appointment.patientName}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   void _startConsultation(Appointment appointment) {
@@ -239,8 +226,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                         labelColor: AppColors.doctorBlue,
                         unselectedLabelColor: AppColors.textSecondaryOf(context),
                         indicatorColor: AppColors.doctorBlue,
-                        labelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
-                        unselectedLabelStyle: GoogleFonts.inter(fontSize: 14),
+                        labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
+                        unselectedLabelStyle: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
                         tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
                         onTap: (_) => setState(() {}),
                       ),

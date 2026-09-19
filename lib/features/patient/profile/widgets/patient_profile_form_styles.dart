@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/labeled_remove_button.dart';
 import '../../../../widgets/required_field_label.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Shared visual tokens for patient profile form screens (matches doctor profile sections).
 abstract final class PatientProfileFormStyles {
@@ -46,7 +47,7 @@ abstract final class PatientProfileFormStyles {
     final label = Text(
       'Change',
       style: GoogleFonts.inter(
-        fontSize: 14,
+        fontSize: AppTypography.bodyMedium,
         fontWeight: FontWeight.w600,
         color: AppColors.patientTeal,
       ),
@@ -76,7 +77,7 @@ abstract final class PatientProfileFormStyles {
         child: Text(
           text,
           style: GoogleFonts.inter(
-            fontSize: 14,
+            fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w500,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -252,12 +253,12 @@ abstract final class PatientProfileFormStyles {
                     RequiredFieldLabels.text(
                       label,
                       isRequired: isRequired,
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                     ),
                     SizedBox(height: 2),
                     Text(
                       valueText,
-                      style: GoogleFonts.inter(fontSize: 15, color: AppColors.textPrimaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, color: AppColors.textPrimaryOf(context)),
                     ),
                   ],
                 ),
@@ -290,7 +291,7 @@ abstract final class PatientProfileFormStyles {
             disabledColor: AppColors.cardBgOf(context),
             checkmarkColor: AppColors.patientTeal,
             labelStyle: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               color: isSelected ? AppColors.patientTeal : AppColors.textSecondaryOf(context),
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),

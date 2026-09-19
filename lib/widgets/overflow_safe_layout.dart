@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
 
 /// Icon + text row that avoids horizontal overflow on narrow screens.
 class SafeIconTextRow extends StatelessWidget {
@@ -38,7 +39,7 @@ class SafeIconTextRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: style ??
-                GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],

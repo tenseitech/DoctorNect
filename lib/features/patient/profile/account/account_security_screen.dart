@@ -22,7 +22,6 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
       builder: (ctx) => _ChangePasswordDialog(
         onSaved: () {
           Navigator.pop(ctx);
-          AppToast.info(context, 'Password updated successfully');
         },
       ),
     );

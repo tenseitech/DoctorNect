@@ -13,8 +13,8 @@ import '../../../../core/session/doctor_session.dart'; // FIXED: doctor id for F
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validators/form_validators.dart';
 import '../data/doctor_profile_store.dart';
-import '../widgets/profile_widgets.dart';
 import '../widgets/section_save_bar.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ProfessionalDetailsSection extends StatefulWidget {
   const ProfessionalDetailsSection({super.key});
@@ -104,7 +104,6 @@ class _ProfessionalDetailsSectionState extends State<ProfessionalDetailsSection>
     }
     if (!mounted) return; // FIXED: mounted check after await
     setState(() => _dirty = false);
-    showProfileSavedToast(context);
     Navigator.pop(context, true);
   }
 
@@ -371,7 +370,7 @@ class _ProfessionalDetailsSectionState extends State<ProfessionalDetailsSection>
                   ],
                 ),
                 ..._pubs.map((p) => ListTile(
-                      title: Text(p, style: const TextStyle(fontSize: 13)),
+                      title: Text(p, style: const TextStyle(fontSize: AppTypography.bodySmall)),
                       trailing: IconButton(
                         icon: const Icon(Icons.remove_circle_outline, color: Color(0xFFDC2626)),
                         onPressed: () {

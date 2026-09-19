@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Configuration for customizing the calendar appearance.
 ///
@@ -185,7 +186,7 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: Text(
                 'Select month & year',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
               ),
               content: SizedBox(
                 width: 300,
@@ -196,7 +197,7 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                     Text(
                       'Year',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -220,7 +221,7 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                           .map(
                             (y) => DropdownMenuItem(
                               value: y,
-                              child: Text('$y', style: GoogleFonts.inter(fontSize: 14)),
+                              child: Text('$y', style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
                             ),
                           )
                           .toList(),
@@ -232,7 +233,7 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                     Text(
                       'Month',
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -267,7 +268,7 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                               child: Text(
                                 label,
                                 style: GoogleFonts.inter(
-                                  fontSize: 13,
+                                  fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected ? AppColors.surfaceOf(context) : AppColors.textPrimaryOf(context),
                                 ),
@@ -412,7 +413,7 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                     label,
                     style: config?.dayLabelStyle ??
                         GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondaryOf(context),
                         ),

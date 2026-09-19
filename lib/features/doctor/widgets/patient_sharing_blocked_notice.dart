@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/patient_sharing_messages.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Info banner when a registered patient has disabled sharing with doctors.
 class PatientSharingBlockedNotice extends StatelessWidget {
@@ -89,7 +90,7 @@ class PatientSharingBlockedEmptyState extends StatelessWidget {
               PatientSharingMessages.dataNotSharedWithDoctors,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 15,
+                fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -98,7 +99,7 @@ class PatientSharingBlockedEmptyState extends StatelessWidget {
             Text(
               PatientSharingMessages.dataNotSharedSubtitle,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
           ],
         ),

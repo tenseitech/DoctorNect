@@ -2,6 +2,7 @@
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Unified animation and card layout for Doctor appointment and Lab test booking confirmation.
 class PatientBookingConfirmedBase extends StatefulWidget {
@@ -93,7 +94,7 @@ class _PatientBookingConfirmedBaseState extends State<PatientBookingConfirmedBas
         const SizedBox(height: 20),
         Text(
           widget.title,
-          style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w700),
+          style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w700),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
@@ -107,7 +108,7 @@ class _PatientBookingConfirmedBaseState extends State<PatientBookingConfirmedBas
           Text(
             widget.subMessage!,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.45),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.45),
           ),
         ],
         const SizedBox(height: 20),

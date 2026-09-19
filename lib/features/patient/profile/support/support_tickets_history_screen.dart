@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/session/patient_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/patient_profile_form_styles.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class SupportTicketsHistoryScreen extends StatelessWidget {
   const SupportTicketsHistoryScreen({super.key});
@@ -59,7 +60,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                     Text(
                       'No tickets raised yet',
                       style: GoogleFonts.inter(
-                        fontSize: 18,
+                        fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -69,7 +70,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                       'If you face any issues, submit a ticket in the support section.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -99,7 +100,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                 Text(
                   'Raised Tickets (${sortedDocs.length})',
                   style: GoogleFonts.inter(
-                    fontSize: 16,
+                    fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
                   ),
@@ -164,7 +165,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                     child: Text(
                                       issueType,
                                       style: GoogleFonts.inter(
-                                        fontSize: 12,
+                                        fontSize: AppTypography.labelMedium,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.patientTeal,
                                       ),
@@ -191,7 +192,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                               Text(
                                 message,
                                 style: GoogleFonts.inter(
-                                  fontSize: 14,
+                                  fontSize: AppTypography.bodyMedium,
                                   color: AppColors.textPrimaryOf(context),
                                   height: 1.4,
                                 ),
@@ -208,7 +209,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.inter(
-                                          fontSize: 12,
+                                          fontSize: AppTypography.labelMedium,
                                           color: AppColors.textSecondaryOf(context),
                                           fontStyle: FontStyle.italic,
                                         ),
@@ -226,7 +227,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                   Text(
                                     'Ticket ID: ${doc.id.substring(0, doc.id.length > 8 ? 8 : doc.id.length).toUpperCase()}',
                                     style: GoogleFonts.inter(
-                                      fontSize: 11,
+                                      fontSize: AppTypography.labelSmall,
                                       color: AppColors.textSecondaryOf(context),
                                       letterSpacing: 0.5,
                                     ),
@@ -234,7 +235,7 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                   Text(
                                     formattedDate,
                                     style: GoogleFonts.inter(
-                                      fontSize: 11,
+                                      fontSize: AppTypography.labelSmall,
                                       color: AppColors.textSecondaryOf(context),
                                     ),
                                   ),

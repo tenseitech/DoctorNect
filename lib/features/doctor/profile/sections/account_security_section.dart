@@ -9,8 +9,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validators/form_validators.dart';
 import '../../../../widgets/overflow_safe_layout.dart';
 import '../data/doctor_profile_store.dart';
-import '../widgets/profile_widgets.dart';
 import '../widgets/section_save_bar.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class AccountSecuritySection extends StatefulWidget {
   const AccountSecuritySection({super.key});
@@ -45,7 +45,6 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
     }
     if (!mounted) return;
     setState(() => _dirty = false);
-    showProfileSavedToast(context);
     Navigator.pop(context, true);
   }
 
@@ -177,17 +176,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       await user.updatePassword(_newCtrl.text);
 
       if (!mounted) return;
-      final parent = widget.parentContext;
       Navigator.of(context).pop();
-      if (parent.mounted) {
-        ScaffoldMessenger.of(parent).showSnackBar(
-          const SnackBar(
-            content: Text('Password changed successfully!'),
-            backgroundColor: Color(0xFF16A34A),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
     } on FirebaseAuthException catch (e) {
       final msg = switch (e.code) {
         'wrong-password' || 'invalid-credential' => 'Current password is incorrect.',
@@ -218,7 +207,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             child: Text(
               'Change Password',
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 17),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
             ),
           ),
         ],
@@ -241,7 +230,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   ),
                   child: Text(
                     _errorMsg!,
-                    style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFFDC2626)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: const Color(0xFFDC2626)),
                   ),
                 ),
                 const SizedBox(height: 12),

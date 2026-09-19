@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/multi_tag_input_field.dart';
+import '../../../../core/theme/app_typography.dart';
 
 const kCommonSymptoms = [
   'Fever',
@@ -43,20 +44,20 @@ class SymptomChipsPreview extends StatelessWidget {
       children: [
         for (final s in visible)
           Chip(
-            label: Text(s, style: GoogleFonts.inter(fontSize: 11)),
+            label: Text(s, style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.1),
             side: BorderSide(color: AppColors.doctorBlue.withValues(alpha: 0.25)),
             labelStyle: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w500,
               color: AppColors.doctorBlue,
             ),
           ),
         if (extra > 0)
           Chip(
-            label: Text('+$extra', style: GoogleFonts.inter(fontSize: 11)),
+            label: Text('+$extra', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: AppColors.textSecondaryOf(context).withValues(alpha: 0.1),
@@ -119,12 +120,6 @@ class _AppointmentSymptomsSectionState extends State<AppointmentSymptomsSection>
     );
     if (!mounted) return;
     setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Symptoms saved'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override
@@ -143,7 +138,7 @@ class _AppointmentSymptomsSectionState extends State<AppointmentSymptomsSection>
           Text(
             'Symptoms',
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
             ),

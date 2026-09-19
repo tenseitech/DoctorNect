@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
 
 enum RoleCardVariant { mobile, web }
 
@@ -67,17 +68,22 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
     final color = widget.color;
     final radius = isMobile ? 16.0 : 12.0;
 
-    final scale = _pressed ? 0.97 : (_hovered && !isMobile ? 1.01 : 1.0);
+    final isWeb = !isMobile;
+    final scale = _pressed ? 0.985 : (isWeb && _hovered ? 1.008 : 1.0);
+    final lift = isWeb && _hovered && !_pressed ? -3.0 : 0.0;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        transform: Matrix4.diagonal3Values(scale, scale, 1.0),
-        transformAlignment: Alignment.center,
-        child: Material(
+        scale: scale,
+        child: AnimatedSlide(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          offset: Offset(0, lift / 120),
+          child: Material(
           color: AppColors.surfaceOf(context),
           elevation: 0,
           borderRadius: BorderRadius.circular(radius),
@@ -88,13 +94,14 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
             onTapCancel: () => setState(() => _pressed = false),
             borderRadius: BorderRadius.circular(radius),
             child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
               border: Border.all(
-                color: _hovered && !isMobile
-                    ? color.withValues(alpha: 0.4)
+                color: _hovered && isWeb
+                    ? color.withValues(alpha: 0.45)
                     : AppColors.borderOf(context),
+                width: _hovered && isWeb ? 1.5 : 1,
               ),
               boxShadow: isMobile
                   ? [
@@ -107,13 +114,31 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                   : _hovered
                       ? [
                           BoxShadow(
-                            color: color.withValues(alpha: 0.1),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
+                            color: color.withValues(alpha: 0.16),
+                            blurRadius: 22,
+                            offset: const Offset(0, 8),
+                          ),
+                          BoxShadow(
+                            color: AppColors.textPrimary.withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ]
-                      : null,
-              color: _hovered && !isMobile ? color.withValues(alpha: 0.03) : AppColors.surfaceOf(context),
+                      : [
+                          BoxShadow(
+                            color: AppColors.textPrimary.withValues(alpha: 0.05),
+                            blurRadius: 14,
+                            offset: const Offset(0, 3),
+                          ),
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+              color: _hovered && isWeb
+                  ? color.withValues(alpha: 0.035)
+                  : AppColors.surfaceOf(context),
             ),
             child: Row(
               children: [
@@ -171,7 +196,9 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  fontSize: isMobile ? 16 : 15,
+                                  fontSize: isMobile
+                                      ? AppTypography.headlineSmall
+                                      : AppTypography.bodyLarge,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimaryOf(context),
                                   letterSpacing: -0.2,
@@ -183,7 +210,7 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                                 maxLines: isMobile ? 2 : 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  fontSize: isMobile ? 12 : 12.5,
+                                  fontSize: AppTypography.labelMedium,
                                   height: 1.35,
                                   color: AppColors.textSecondaryOf(context),
                                 ),
@@ -208,7 +235,8 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
           ),
         ),
       ),
-    ),
-  );
-}
+        ),
+      ),
+    );
+  }
 }

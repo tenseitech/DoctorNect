@@ -14,6 +14,7 @@ import 'ambulance_shell.dart';
 import 'data/ambulance_login_cache.dart';
 import 'data/ambulance_store.dart';
 import 'models/ambulance_invite.dart';
+import '../../core/theme/app_typography.dart';
 
 class AmbulanceInviteSetupScreen extends StatefulWidget {
   const AmbulanceInviteSetupScreen({
@@ -146,7 +147,7 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
     if (error != null) {
       setState(() => _submitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: _accentColor),
+        SnackBar(content: Text(error)),
       );
       return;
     }
@@ -232,18 +233,18 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
                       children: [
                         Text(
                           invite.serviceName,
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.bodyLarge),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Driver: ${invite.driverName} · ${invite.city}',
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                         ),
                         if (invite.doctorName.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             'Invited by Dr. ${invite.doctorName}',
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                           ),
                         ],
                       ],
@@ -252,7 +253,7 @@ class _AmbulanceInviteSetupScreenState extends State<AmbulanceInviteSetupScreen>
                   const SizedBox(height: 20),
                   TextFormField(
                     controller: _usernameCtrl,
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
                     decoration: authLoginInputDecoration(
                       context: context,
                       accentColor: _accentColor,

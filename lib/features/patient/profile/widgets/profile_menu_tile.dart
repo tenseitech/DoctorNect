@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class ProfileMenuTile extends StatelessWidget {
   const ProfileMenuTile({
@@ -57,7 +58,7 @@ class ProfileMenuTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
                   ),
@@ -90,7 +91,7 @@ class ProfileSectionHeader extends StatelessWidget {
       child: Text(
         title,
         style: GoogleFonts.inter(
-          fontSize: 13,
+          fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondaryOf(context),
           letterSpacing: 0.5,

@@ -9,6 +9,7 @@ import '../data/prescription_clinical_assets.dart';
 import '../models/clinical_models.dart';
 import 'add_community_medicine_dialog.dart';
 import 'prescription_rx_shared.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Card-based Rx layout for desktop (used when !ResponsiveLayout.isCompact).
 class PrescriptionDesktopRxSection extends StatefulWidget {
@@ -83,12 +84,6 @@ class _PrescriptionDesktopRxSectionState extends State<PrescriptionDesktopRxSect
         isCommunity: true,
         dosageUnit: medicine.dosageUnit,
         form: medicine.form,
-      ),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Medicine added — available to all doctors'),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -196,7 +191,7 @@ class _PrescriptionDesktopRxSectionState extends State<PrescriptionDesktopRxSect
           child: Text(
             _namedCount == 0 ? '0 medicines' : '$_namedCount in Rx',
             style: GoogleFonts.inter(
-              fontSize: 11,
+              fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: _namedCount > 0 ? AppColors.doctorBlue : AppColors.textSecondaryOf(context),
             ),

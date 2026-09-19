@@ -9,6 +9,7 @@ import '../../../../widgets/confirm_delete_dialog.dart';
 import '../../../../widgets/labeled_remove_button.dart';
 import '../data/patient_profile_mock.dart';
 import '../widgets/patient_profile_form_styles.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class MyAllergiesScreen extends StatefulWidget {
   const MyAllergiesScreen({super.key, required this.onChanged});
@@ -104,7 +105,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
             child: Text(
               'List all known allergies including medicines and food. Doctors use this for safer prescriptions.',
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: AppTypography.bodySmall,
                 height: 1.4,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -157,7 +158,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           const SizedBox(height: 12),
           Text(
             'Quick add',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -171,7 +172,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
                     onPressed: () => _add(s),
                     backgroundColor: AppColors.surfaceOf(context),
                     side: BorderSide(color: AppColors.borderOf(context)),
-                    labelStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimaryOf(context)),
+                    labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textPrimaryOf(context)),
                   ),
                 )
                 .toList(),
@@ -195,7 +196,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           Text(
             'No allergies added yet',
             style: GoogleFonts.inter(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -204,7 +205,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           Text(
             'Add any medicine or food allergies above',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
           ),
         ],
       ),
@@ -236,7 +237,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
               child: Text(
                 allergy,
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),
                 ),

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/overflow_safe_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Shows a star-rating dialog and saves the rating to Firestore + local store.
 Future<bool> showAmbulanceRatingDialog({
@@ -49,7 +50,7 @@ Future<bool> showAmbulanceRatingDialog({
                   Text(
                     'Rate your experience',
                     style: GoogleFonts.inter(
-                      fontSize: 18,
+                      fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -58,7 +59,7 @@ Future<bool> showAmbulanceRatingDialog({
                   Text(
                     ambulanceName,
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
@@ -97,7 +98,7 @@ Future<bool> showAmbulanceRatingDialog({
                     Text(
                       _ratingLabel(selectedStars),
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFFF59E0B),
                       ),
@@ -110,11 +111,11 @@ Future<bool> showAmbulanceRatingDialog({
                     controller: reviewCtrl,
                     maxLines: 2,
                     maxLength: 200,
-                    style: GoogleFonts.inter(fontSize: 14),
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
                     decoration: InputDecoration(
                       hintText: 'Write a short review (optional)',
                       hintStyle: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
                       counterText: '',

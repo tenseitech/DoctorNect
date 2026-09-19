@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/doctor_models.dart';
+import '../../../core/theme/app_typography.dart';
 
 class VerificationBadge extends StatelessWidget {
   const VerificationBadge({super.key, required this.status});
@@ -37,7 +38,7 @@ class VerificationBadge extends StatelessWidget {
             Text(
               verified ? 'Verified' : 'Pending',
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),
@@ -132,7 +133,7 @@ class _StatMetricCardState extends State<StatMetricCard> {
                       maxLines: 1,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        fontSize: 12.0,
+                        fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w500,
                         color: _hovered ? AppColors.textPrimaryOf(context) : AppColors.textSecondaryOf(context),
                         height: 1.15,
@@ -182,7 +183,7 @@ class StatusBadge extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 11,
+                fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: color,
               ),

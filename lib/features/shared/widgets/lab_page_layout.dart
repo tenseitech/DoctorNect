@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 class LabPageLayout extends StatelessWidget {
   const LabPageLayout({
@@ -100,7 +101,7 @@ class LabPrimaryButton extends StatelessWidget {
         onPressed: (loading || !enabled) ? null : onPressed,
         child: loading
             ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-            : Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            : Text(label, style: const TextStyle(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -118,7 +119,7 @@ class LabSectionHeader extends StatelessWidget {
       child: Row(
         children: [
           if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(title, style: const TextStyle(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.bold)),
         ],
       ),
     );

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validators/form_validators.dart';
 import 'patient_profile_form_styles.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class TagInputField extends StatefulWidget {
   const TagInputField({
@@ -92,7 +93,7 @@ class _TagInputFieldState extends State<TagInputField> {
                     Text(
                       t,
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.patientTeal,
                       ),

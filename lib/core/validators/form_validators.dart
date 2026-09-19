@@ -17,6 +17,24 @@ class FormValidators {
   static String? required(String? value, {String field = 'This field'}) =>
       ValidationEngine.validate('required', value, params: {'field': field});
 
+  /// Patient height in feet (1–8). Rejects cm-style values such as 180.
+  static String? heightFeet(String? value) {
+    final err = required(value, field: 'Feet');
+    if (err != null) return err;
+    final feet = int.tryParse(value!.trim()) ?? -1;
+    if (feet < 1 || feet > 8) return 'Enter 1–8 ft';
+    return null;
+  }
+
+  /// Patient height remainder in inches (0–11).
+  static String? heightInches(String? value) {
+    final err = required(value, field: 'Inches');
+    if (err != null) return err;
+    final inches = int.tryParse(value!.trim()) ?? -1;
+    if (inches < 0 || inches > 11) return 'Enter 0–11 in';
+    return null;
+  }
+
   static String? fullName(String? value) =>
       ValidationEngine.validate('fullName', value);
 

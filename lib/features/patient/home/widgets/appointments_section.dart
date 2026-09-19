@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import 'package:medibond/features/shared/screens/appointment_detail_screen.dart';
 import '../../appointments/models/patient_appointment_models.dart';
 import '../../booking/booking_flow_screen.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class AppointmentsSection extends StatelessWidget {
   const AppointmentsSection({
@@ -65,7 +66,7 @@ class AppointmentsSection extends StatelessWidget {
                           Text(
                             'Your upcoming & recent visits',
                             style: GoogleFonts.inter(
-                              fontSize: 13,
+                              fontSize: AppTypography.bodySmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -82,7 +83,7 @@ class AppointmentsSection extends StatelessWidget {
                       ),
                       child: Text(
                         'View all',
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -136,13 +137,13 @@ class _EmptyAppointments extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'No appointments yet',
-            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
             'Book your first consultation to see upcoming visits here.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.4),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
           ),
           const SizedBox(height: 14),
           FilledButton(
@@ -242,7 +243,7 @@ class _AppointmentCard extends StatelessWidget {
                       Text(
                         day,
                         style: GoogleFonts.inter(
-                          fontSize: 18,
+                          fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w800,
                           color: AppColors.surfaceOf(context),
                           height: 1,
@@ -274,7 +275,7 @@ class _AppointmentCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                fontSize: 14,
+                                fontSize: AppTypography.bodyMedium,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -287,7 +288,7 @@ class _AppointmentCard extends StatelessWidget {
                         appointment.specialization,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                       ),
                       const SizedBox(height: 6),
                       Row(
@@ -296,7 +297,7 @@ class _AppointmentCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             time,
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                           ),
                           if (isUpcoming) ...[
                             const SizedBox(width: 8),
@@ -306,7 +307,7 @@ class _AppointmentCard extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  fontSize: 11,
+                                  fontSize: AppTypography.labelSmall,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.patientTeal,
                                 ),
@@ -336,7 +337,7 @@ class _AppointmentCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Book again',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                     ),
                   ),
               ],

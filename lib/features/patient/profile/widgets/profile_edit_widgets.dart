@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../utils/patient_bmi_utils.dart';
 import 'patient_profile_form_styles.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Shared building blocks for patient & family profile edit screens.
 abstract final class ProfileEditWidgets {
@@ -50,7 +51,7 @@ abstract final class ProfileEditWidgets {
                           ? Text(
                               initial,
                               style: GoogleFonts.inter(
-                                fontSize: 30,
+                                fontSize: AppTypography.headlineLarge,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.patientTeal,
                               ),
@@ -76,7 +77,7 @@ abstract final class ProfileEditWidgets {
           Text(
             name,
             style: GoogleFonts.inter(
-              fontSize: 20,
+              fontSize: AppTypography.headlineMedium,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -85,7 +86,7 @@ abstract final class ProfileEditWidgets {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
             ),
           ],
           if (trailingBadge != null) ...[
@@ -133,7 +134,7 @@ abstract final class ProfileEditWidgets {
                       Text(
                         title,
                         style: GoogleFonts.inter(
-                          fontSize: 15,
+                          fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
                         ),
@@ -141,7 +142,7 @@ abstract final class ProfileEditWidgets {
                       if (subtitle != null)
                         Text(
                           subtitle,
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                         ),
                     ],
                   ),
@@ -174,7 +175,7 @@ abstract final class ProfileEditWidgets {
               child: Text(
                 message,
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: AppTypography.labelMedium,
                   height: 1.4,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -206,13 +207,13 @@ abstract final class ProfileEditWidgets {
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     value,
                     style: GoogleFonts.inter(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -232,7 +233,7 @@ abstract final class ProfileEditWidgets {
       builder: (context) => Text(
         text,
         style: GoogleFonts.inter(
-          fontSize: 13,
+          fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w600,
           color: AppColors.textSecondaryOf(context),
         ),
@@ -267,7 +268,7 @@ abstract final class ProfileEditWidgets {
                 backgroundColor: AppColors.cardBgOf(context),
                 disabledColor: AppColors.cardBgOf(context),
                 labelStyle: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
                       ? (locked ? AppColors.textPrimaryOf(context) : AppColors.patientTeal)
@@ -282,7 +283,7 @@ abstract final class ProfileEditWidgets {
           ),
           if (errorText != null) ...[
             const SizedBox(height: 4),
-            Text(errorText, style: const TextStyle(color: Colors.red, fontSize: 12)),
+            Text(errorText, style: const TextStyle(color: Colors.red, fontSize: AppTypography.labelMedium)),
           ],
         ],
       ),
@@ -317,7 +318,7 @@ abstract final class ProfileEditWidgets {
                 disabledColor: AppColors.cardBgOf(context),
                 checkmarkColor: AppColors.patientTeal,
                 labelStyle: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   color: isSelected
                       ? (locked ? AppColors.textPrimaryOf(context) : AppColors.patientTeal)
                       : AppColors.textSecondaryOf(context),
@@ -332,7 +333,7 @@ abstract final class ProfileEditWidgets {
           ),
           if (errorText != null) ...[
             const SizedBox(height: 4),
-            Text(errorText, style: const TextStyle(color: Colors.red, fontSize: 12)),
+            Text(errorText, style: const TextStyle(color: Colors.red, fontSize: AppTypography.labelMedium)),
           ],
         ],
       ),
@@ -382,7 +383,7 @@ abstract final class ProfileEditWidgets {
                   bmiResult,
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.w800,
-                    fontSize: 20,
+                    fontSize: AppTypography.headlineMedium,
                     color: accent,
                   ),
                 ),
@@ -399,7 +400,7 @@ abstract final class ProfileEditWidgets {
                 child: Text(
                   PatientBmiUtils.labelFor(category),
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w700,
                     color: accent,
                   ),
@@ -409,7 +410,7 @@ abstract final class ProfileEditWidgets {
               Text(
                 PatientBmiUtils.messageFor(category),
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   height: 1.4,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -419,7 +420,7 @@ abstract final class ProfileEditWidgets {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'Enter height and weight to calculate your BMI.',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
               ),
           ],
@@ -466,13 +467,13 @@ abstract final class ProfileEditWidgets {
             'Insurance covered',
             style: GoogleFonts.inter(
               fontWeight: FontWeight.w600,
-              fontSize: 14,
+              fontSize: AppTypography.bodyMedium,
               color: AppColors.textPrimaryOf(context),
             ),
           ),
           subtitle: Text(
             'Include this member under your health insurance',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
           value: value,
           onChanged: onChanged,

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 double patientDoctorProfileMaxWidth(BuildContext context) =>
     ResponsiveLayout.contentMaxWidth(context).clamp(0.0, 640.0);
@@ -44,7 +45,7 @@ class PatientDoctorSectionTitle extends StatelessWidget {
       child: Text(
         text,
         style: GoogleFonts.inter(
-          fontSize: 15,
+          fontSize: AppTypography.bodyLarge,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
           letterSpacing: -0.1,
@@ -65,7 +66,7 @@ class PatientDoctorTagWrap extends StatelessWidget {
     if (labels.isEmpty) {
       return Text(
         'Not added yet',
-        style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context)),
+        style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context)),
       );
     }
 
@@ -83,7 +84,7 @@ class PatientDoctorTagWrap extends StatelessWidget {
           child: Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 13,
+              fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimaryOf(context),
             ),
@@ -114,7 +115,7 @@ class PatientDoctorMetaRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context), height: 1.4),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textSecondaryOf(context), height: 1.4),
           ),
         ),
       ],
@@ -140,7 +141,7 @@ class PatientDoctorBulletItem extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(text, style: GoogleFonts.inter(fontSize: 14, height: 1.45)),
+            child: Text(text, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, height: 1.45)),
           ),
         ],
       ),
@@ -181,12 +182,12 @@ class PatientDoctorTimelineTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),

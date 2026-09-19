@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/firebase/ambulance_auth_helper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/ambulance_store.dart';
+import '../../../core/theme/app_typography.dart';
 
 class AmbulanceAvailabilityToggle extends StatefulWidget {
   const AmbulanceAvailabilityToggle({
@@ -39,7 +40,6 @@ class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggl
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Could not connect. Please try again.'),
-          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
@@ -94,7 +94,7 @@ class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggl
                       Text(
                         isOnline ? 'Online for patient requests' : 'Offline',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                           color: isOnline ? const Color(0xFF16A34A) : AppColors.textSecondaryOf(context),
                         ),
@@ -103,7 +103,7 @@ class _AmbulanceAvailabilityToggleState extends State<AmbulanceAvailabilityToggl
                       Text(
                         'Stays on even after logout or closing the app',
                         style: GoogleFonts.inter(
-                          fontSize: 11,
+                          fontSize: AppTypography.labelSmall,
                           color: AppColors.textSecondaryOf(context),
                         ),
                       ),

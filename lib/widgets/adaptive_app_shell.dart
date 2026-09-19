@@ -9,6 +9,7 @@ import 'medibond_logo.dart';
 import 'mobile_scaffold.dart';
 import 'nav_request_dot.dart';
 import 'overflow_safe_layout.dart';
+import '../core/theme/app_typography.dart';
 
 /// Bottom nav on phone; side rail on tablet/desktop web — same tabs, no missing features.
 class AdaptiveAppShell extends StatelessWidget {
@@ -326,7 +327,7 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                             child: Text(
                               d.label,
                               style: GoogleFonts.inter(
-                                fontSize: 15,
+                                fontSize: AppTypography.bodyLarge,
                                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                                 color: labelColor,
                               ),

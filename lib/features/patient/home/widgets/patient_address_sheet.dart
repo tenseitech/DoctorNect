@@ -13,6 +13,7 @@ import '../../../../widgets/location_dropdown_fields.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../../profile/data/patient_profile_mock.dart';
 import '../../profile/models/patient_profile_models.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class PatientAddressSheet extends StatefulWidget {
   const PatientAddressSheet({super.key});
@@ -140,7 +141,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                     child: Text(
                       'Change location',
                       style: GoogleFonts.inter(
-                        fontSize: 18,
+                        fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -154,7 +155,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
               ),
               Text(
                 'Enter your full address for home visits, lab collection, and nearby doctor search.',
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.4),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
               ),
               const SizedBox(height: 20),
               _field(
@@ -241,7 +242,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                         )
                       : Text(
                           'Save location',
-                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600),
                         ),
                 ),
               ),

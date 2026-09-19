@@ -13,6 +13,7 @@ import '../../../core/layout/responsive_layout.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/validators/form_validators.dart';
+import '../../../core/theme/app_typography.dart';
 
 class AvailabilityScreen extends StatefulWidget {
   const AvailabilityScreen({super.key});
@@ -286,12 +287,6 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         _buildSchedule(),
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Schedule saved successfully'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
       Navigator.pop(context);
     } catch (_) {
       if (!mounted) return;
@@ -433,7 +428,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               )
                             : Text(
                                 'No break scheduled',
-                                style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: 14),
+                                style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context), fontSize: AppTypography.bodyMedium),
                               ),
                       ),
                       const SizedBox(height: 16),
@@ -499,7 +494,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 children: _blockedDates.map((d) {
                                   final label = DateFormat('dd MMM yyyy').format(d);
                                   return InputChip(
-                                    label: Text(label, style: GoogleFonts.inter(fontSize: 12)),
+                                    label: Text(label, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
                                     onDeleted: () => setState(() => _blockedDates.remove(d)),
                                     deleteIconColor: AppColors.textSecondaryOf(context),
                                   );
@@ -580,7 +575,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                 child: Text(
                   title,
                   style: GoogleFonts.inter(
-                    fontSize: 15,
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
                   ),
@@ -621,7 +616,7 @@ class _TimeDropdown extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
@@ -634,7 +629,7 @@ class _TimeDropdown extends StatelessWidget {
             errorText: errorText,
           ),
           items: items
-              .map((t) => DropdownMenuItem(value: t, child: Text(t, style: GoogleFonts.inter(fontSize: 13))))
+              .map((t) => DropdownMenuItem(value: t, child: Text(t, style: GoogleFonts.inter(fontSize: AppTypography.bodySmall))))
               .toList(),
           onChanged: onChanged,
           validator: errorText != null ? (_) => errorText : null,

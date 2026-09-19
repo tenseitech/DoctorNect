@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/notifications/app_toast.dart';
 import '../../../core/session/medical_store_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../shared/partner/partner_connect_doctors_base_screen.dart';
@@ -59,24 +58,15 @@ class ConnectedDoctorsScreen extends StatelessWidget {
       },
       onApprove: (id, doctorName) {
         connStore.approveByStore(id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Connected with ${partnerDoctorLabel(doctorName)}'),
-            backgroundColor: AppColors.pharmacyGreen,
-          ),
-        );
       },
       onReject: (id, doctorName) {
         connStore.rejectByStore(id);
-        AppToast.info(context, 'Rejected ${partnerDoctorLabel(doctorName)}');
       },
       onRevoke: (id, doctorName) {
         connStore.removeConnection(id);
-        AppToast.info(context, 'Invite revoked for ${partnerDoctorLabel(doctorName)}');
       },
       onRemove: (id, doctorName) {
         connStore.removeConnection(id);
-        AppToast.info(context, 'Disconnected from ${partnerDoctorLabel(doctorName)}');
       },
       pageLayoutBuilder: (context, child) => PharmacyPageLayout(child: child),
     );

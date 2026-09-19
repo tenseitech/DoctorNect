@@ -8,6 +8,7 @@ import '../../../widgets/medibond_logo.dart';
 import '../../../widgets/mobile_scaffold.dart';
 import '../../../widgets/nav_request_dot.dart';
 import '../../../widgets/overflow_safe_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 class PatientTabItem {
   const PatientTabItem({
@@ -269,7 +270,7 @@ class _PatientSideTabTile extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyMedium,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                       color: labelColor,
                       height: 1.2,

@@ -6,6 +6,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../models/doctor_models.dart';
 import '../../widgets/doctor_ui_widgets.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class PatientPickerSheet extends StatefulWidget {
   const PatientPickerSheet({
@@ -95,7 +96,7 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
               Text(
                 widget.title,
                 style: GoogleFonts.inter(
-                  fontSize: 17,
+                  fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -104,7 +105,7 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
               Text(
                 widget.subtitle,
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
@@ -113,11 +114,11 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                 controller: _searchController,
                 autofocus: false,
                 onChanged: (v) => setState(() => _query = v),
-                style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, color: AppColors.textPrimaryOf(context)),
                 decoration: InputDecoration(
                   hintText: 'Search patient by name…',
                   hintStyle: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
                   prefixIcon: const Icon(Icons.search, size: 20),
@@ -167,7 +168,7 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                               ? 'No patients to choose from'
                               : 'No patients found for "$_query"',
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),
@@ -240,7 +241,7 @@ class _PatientRow extends StatelessWidget {
                     Text(
                       appointment.patientName,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -251,7 +252,7 @@ class _PatientRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),

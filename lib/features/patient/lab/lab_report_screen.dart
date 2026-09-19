@@ -12,6 +12,7 @@ import 'lab_report_download_stub.dart'
 import 'lab_report_pdf_view_stub.dart'
     if (dart.library.html) 'lab_report_pdf_view_web.dart' as lab_report_pdf_view;
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+import '../../../core/theme/app_typography.dart';
 
 class LabReportScreen extends StatefulWidget {
   const LabReportScreen({
@@ -186,7 +187,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
               ),
               child: Text(
                 fileName,
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
               ),
             ),
         ],

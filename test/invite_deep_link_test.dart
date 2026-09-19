@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/invite/doctor_invite_service.dart';
 import 'package:medibond/core/invite/ambulance_invite_service.dart';
 import 'package:medibond/core/invite/invite_deep_link_resolver.dart';
@@ -7,11 +8,7 @@ import 'package:medibond/core/invite/pending_doctor_invite_store.dart';
 import 'package:medibond/core/invite/pending_lab_invite_store.dart';
 import 'package:medibond/core/invite/pending_pharmacy_invite_store.dart';
 import 'package:medibond/core/invite/pharmacy_doctor_invite_service.dart';
-import 'package:medibond/features/auth/doctor_login_screen.dart';
-import 'package:medibond/features/auth/lab_login_screen.dart';
-import 'package:medibond/features/auth/medical_store_login_screen.dart';
-import 'package:medibond/features/auth/patient_login_screen.dart';
-import 'package:medibond/features/ambulance/ambulance_login_screen.dart';
+import 'package:medibond/features/auth/unified_mobile_auth_screen.dart';
 
 void main() {
   tearDown(() {
@@ -71,70 +68,78 @@ void main() {
     });
   });
 
-  group('invite deep link login routing', () {
-    void expectLoginScreen<T extends Widget>(Widget? screen) {
-      expect(screen, isA<T>());
+  group('invite deep link unified auth routing', () {
+    void expectUnifiedAuth(UserType role, Widget? screen) {
+      expect(screen, isA<UnifiedMobileAuthScreen>());
+      expect((screen! as UnifiedMobileAuthScreen).role, role);
     }
 
-    test('patient join link opens patient login', () {
+    test('patient join link opens patient unified auth', () {
       PendingDoctorInviteStore.captureFromUri(
         Uri.parse('https://doctornect.com/join?doctor=d1784185736978'),
       );
-      expectLoginScreen<PatientLoginScreen>(
+      expectUnifiedAuth(
+        UserType.patient,
         InviteDeepLinkResolver.loginScreenFromPendingInvite(),
       );
     });
 
-    test('pharmacy join link opens medical store login', () {
+    test('pharmacy join link opens pharmacy unified auth', () {
       PendingDoctorInviteStore.captureFromUri(
         Uri.parse('https://doctornect.com/join?doctor=d1784185736978&role=pharmacy'),
       );
-      expectLoginScreen<MedicalStoreLoginScreen>(
+      expectUnifiedAuth(
+        UserType.medicalStore,
         InviteDeepLinkResolver.loginScreenFromPendingInvite(),
       );
     });
 
-    test('lab join link opens lab login', () {
+    test('lab join link opens lab unified auth', () {
       PendingDoctorInviteStore.captureFromUri(
         Uri.parse('https://doctornect.com/join?doctor=d1784185736978&role=lab'),
       );
-      expectLoginScreen<LabLoginScreen>(
+      expectUnifiedAuth(
+        UserType.lab,
         InviteDeepLinkResolver.loginScreenFromPendingInvite(),
       );
     });
 
-    test('doctor join link opens doctor login', () {
+    test('doctor join link opens doctor unified auth', () {
       PendingDoctorInviteStore.captureFromUri(
         Uri.parse('https://doctornect.com/join?doctor=d1784185736978&role=doctor'),
       );
-      expectLoginScreen<DoctorLoginScreen>(
+      expectUnifiedAuth(
+        UserType.doctor,
         InviteDeepLinkResolver.loginScreenFromPendingInvite(),
       );
     });
 
-    test('ambulance join link opens ambulance login', () {
+    test('ambulance join link opens ambulance unified auth', () {
       PendingDoctorInviteStore.captureFromUri(
         Uri.parse('https://doctornect.com/join?doctor=d1784185736978&role=ambulance'),
       );
-      expectLoginScreen<AmbulanceLoginScreen>(
+      expectUnifiedAuth(
+        UserType.ambulance,
         InviteDeepLinkResolver.loginScreenFromPendingInvite(),
       );
     });
 
-    test('pharmacy doctor download link opens doctor login', () {
+    test('pharmacy doctor download link opens doctor unified auth', () {
       PendingPharmacyInviteStore.captureFromUri(
         Uri.parse('https://doctornect.com/download?store=store-1&role=doctor'),
       );
-      expectLoginScreen<DoctorLoginScreen>(
+      expectUnifiedAuth(
+        UserType.doctor,
         InviteDeepLinkResolver.loginScreenFromPendingInvite(),
       );
     });
 
-    test('lab doctor download link opens doctor login', () {
+    test('lab doctor download link opens doctor unified auth', () {
       PendingLabInviteStore.captureFromUri(
         Uri.parse('https://doctornect.com/download?lab=lab-1&role=doctor'),
       );
-      expectLoginScreen<DoctorLoginScreen>(
+      expectUnifiedAuth(
+        UserType.doctor,
         InviteDeepLinkResolver.loginScreenFromPendingInvite(),
       );
     });

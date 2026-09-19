@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/patient_favorites_store.dart';
 import '../data/registered_doctors_store.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+import '../../../core/theme/app_typography.dart';
 
 abstract final class PatientFavoritesSheets {
   static Future<void> showAddDoctorSheet(BuildContext context) {
@@ -121,12 +122,12 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
           const SizedBox(height: 12),
           Text(
             'Add to My Doctor',
-            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
             'Search registered doctors to add to your list.',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -166,11 +167,11 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
                         contentPadding: EdgeInsets.zero,
                         title: Text(
                           'Dr. ${doctor.name}',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium),
                         ),
                         subtitle: Text(
                           '${doctor.specialization}${doctor.area.trim().isNotEmpty ? ' · ${doctor.area}' : ''}',
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                          style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                         ),
                         trailing: FilledButton(
                           onPressed: added ? null : () => _favorites.addDoctor(doctor.id),
@@ -179,7 +180,7 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
                             disabledBackgroundColor: AppColors.borderOf(context),
                             minimumSize: const Size(64, 32),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                            textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                            textStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                           ),
                           child: Text(added ? 'Added' : 'Add'),
                         ),
@@ -255,12 +256,12 @@ class _AddLabSheetState extends State<_AddLabSheet> {
           const SizedBox(height: 12),
           Text(
             'Add to My Lab',
-            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
+            style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
             'Search registered labs to add to your list.',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -315,11 +316,11 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         lab.name,
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: AppTypography.bodyMedium),
                       ),
                       subtitle: Text(
                         lab.area.trim().isNotEmpty ? lab.area : 'Registered lab',
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                        style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                       ),
                       trailing: FilledButton(
                         onPressed: added ? null : () => _favorites.addLab(lab),
@@ -328,7 +329,7 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                           disabledBackgroundColor: AppColors.borderOf(context),
                           minimumSize: const Size(64, 32),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          textStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                          textStyle: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
                         ),
                         child: Text(added ? 'Added' : 'Add'),
                       ),

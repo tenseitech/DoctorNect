@@ -8,6 +8,7 @@ import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/external_launcher.dart';
 import '../profile/data/doctor_profile_store.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Doctor growth sheet — share a personal DoctorNect invite link.
 class InviteNetworkView extends StatefulWidget {
@@ -63,13 +64,6 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
     final link = _link;
     if (link == null) return;
     await Clipboard.setData(ClipboardData(text: link));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Invite link copied'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _shareLink() async {
@@ -131,7 +125,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                         Text(
                           'Invite and Connect',
                           style: GoogleFonts.inter(
-                            fontSize: 18,
+                            fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -139,7 +133,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                         Text(
                           'Share your DoctorNect invite link',
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),
@@ -156,7 +150,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
               Text(
                 'Choose who you are inviting, then copy or share your personal link from $doctorName.',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
                 ),
@@ -199,7 +193,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                           : SelectableText(
                               _link ?? fallbackLink,
                               style: GoogleFonts.inter(
-                                fontSize: 14,
+                                fontSize: AppTypography.bodyMedium,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
                               ),

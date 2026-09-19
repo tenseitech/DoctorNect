@@ -15,8 +15,8 @@ import '../../../../widgets/phone_number_field.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../../../../widgets/searchable_multi_select_field.dart';
 import '../data/doctor_profile_store.dart';
-import '../widgets/profile_widgets.dart';
 import '../widgets/section_save_bar.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class PersonalInfoSection extends StatefulWidget {
   const PersonalInfoSection({super.key});
@@ -59,7 +59,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
             Expanded(
               child: Text(
                 'Admin Verification Required',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 18),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: AppTypography.headlineSmall),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -74,7 +74,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
               Text(
                 'Doctor mobile numbers are verified for medical licensing and regulatory compliance. To update your registered phone number, please contact administration with your medical registration details.',
                 style: GoogleFonts.inter(
-                  fontSize: 14,
+                  fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.45,
                 ),
@@ -97,7 +97,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                         Flexible(
                           child: Text(
                             'support@doctornect.com',
-                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.doctorBlue),
+                            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600, color: AppColors.doctorBlue),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -111,7 +111,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                         Flexible(
                           child: Text(
                             '+91 80000 00000 (Admin Desk)',
-                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context)),
+                            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context)),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -155,7 +155,6 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
       _dirty = false;
     });
 
-    showProfileSavedToast(context);
     Navigator.pop(context, true);
   }
 
@@ -209,7 +208,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                                             ? DoctorProfileStore.displayName[0].toUpperCase()
                                             : 'D',
                                     style: GoogleFonts.inter(
-                                      fontSize: 32,
+                                      fontSize: AppTypography.headlineLarge,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.doctorBlue,
                                     ),
@@ -235,7 +234,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                             Text(
                               DoctorProfileStore.displayNameWithPrefix,
                               style: GoogleFonts.inter(
-                                fontSize: 16,
+                                fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
                               ),
@@ -284,7 +283,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                               suffixIcon: TextButton.icon(
                                 onPressed: _showContactAdminDialog,
                                 icon: const Icon(Icons.lock_outline, size: 14),
-                                label: const Text('Contact Admin', style: TextStyle(fontSize: 12)),
+                                label: const Text('Contact Admin', style: TextStyle(fontSize: AppTypography.labelMedium)),
                                 style: TextButton.styleFrom(
                                   foregroundColor: AppColors.doctorBlue,
                                   visualDensity: VisualDensity.compact,

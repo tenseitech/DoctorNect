@@ -6,6 +6,7 @@ import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/health_record_models.dart';
 import '../utils/record_type_style.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class HealthRecordRow extends StatelessWidget {
   const HealthRecordRow({
@@ -86,7 +87,7 @@ class HealthRecordRow extends StatelessWidget {
               _SourceChip(label: _chipLabel, color: accent),
               Text(
                 year,
-                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
               ),
             ],
           ),
@@ -108,7 +109,7 @@ class HealthRecordRow extends StatelessWidget {
           _SourceChip(label: statusLabel, color: statusColor),
         Text(
           year,
-          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context)),
+          style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context)),
         ),
       ],
     );
@@ -144,7 +145,7 @@ class HealthRecordRow extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 15,
+                            fontSize: AppTypography.bodyLarge,
                             fontWeight: FontWeight.w700,
                             height: 1.25,
                           ),
@@ -155,7 +156,7 @@ class HealthRecordRow extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
                         ),
@@ -218,7 +219,7 @@ class _RecordDateBadge extends StatelessWidget {
           Text(
             day,
             style: GoogleFonts.inter(
-              fontSize: 18,
+              fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w800,
               color: AppColors.surfaceOf(context),
               height: 1,
@@ -296,7 +297,7 @@ class HealthRecordMonthHeader extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: 12,
+            fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w700,
             color: AppColors.textSecondaryOf(context),
             letterSpacing: 0.2,

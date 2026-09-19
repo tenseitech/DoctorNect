@@ -28,6 +28,7 @@ import 'widgets/lab_search_result_tile.dart';
 import 'widgets/patient_doctor_search_bar.dart';
 import 'widgets/search_filters_sheet.dart';
 import 'widgets/search_specialty_suggestions_panel.dart';
+import '../../../core/theme/app_typography.dart';
 
 class DoctorSearchScreen extends StatefulWidget {
   const DoctorSearchScreen({
@@ -369,7 +370,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                     Text(
                       'Filter',
                       style: GoogleFonts.inter(
-                        fontSize: 13,
+                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: hasActiveFilters
                             ? Colors.white
@@ -410,7 +411,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           onDeleted: () => setState(() => _locationFilter = null),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
                           ),
@@ -427,7 +428,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           onDeleted: () => setState(() => _specialityCategory = null),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
                           ),
@@ -443,7 +444,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           onDeleted: () => setState(() => _availableToday = false),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
                           ),
@@ -460,7 +461,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           onDeleted: () => setState(() => _minRating = null),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
                           ),
@@ -477,7 +478,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           onDeleted: () => setState(() => _language = null),
                           deleteIconColor: AppColors.patientTeal,
                           labelStyle: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
                           ),
@@ -615,13 +616,6 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
   Future<void> _addDoctorToMyList(BuildContext context, DoctorListing doctor) async {
     await PatientFavoritesStore.instance.addDoctor(doctor.id);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${doctor.name} added to My Doctors'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Widget _buildCitywideList(List<DoctorListing> doctors) {
@@ -811,7 +805,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                 Text(appBarTitle, style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
                 Text(
                   appBarSubtitle,
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
                 ),
               ],
             ),
@@ -956,14 +950,14 @@ class _NoResultsState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No results found',
-              style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700),
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
               'Try a different keyword for doctors or lab tests.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
               ),

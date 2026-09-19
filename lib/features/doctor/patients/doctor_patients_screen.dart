@@ -15,6 +15,7 @@ import 'widgets/invite_patient_sheet.dart';
 import 'widgets/patient_filters_bar.dart';
 import 'widgets/patient_list_card.dart';
 import 'widgets/walkin_patient_sheet.dart';
+import '../../../core/theme/app_typography.dart';
 
 class DoctorPatientsScreen extends StatefulWidget {
   const DoctorPatientsScreen({super.key});
@@ -84,14 +85,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
   }
 
   Future<void> _openWalkInSheet() async {
-    final added = await WalkInPatientSheet.show(context);
-    if (!mounted || !added) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Walk-in patient added'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    await WalkInPatientSheet.show(context);
   }
 
   void _closeFabMenu() {
@@ -246,7 +240,7 @@ class _EmptyPatientsState extends StatelessWidget {
             Text(
               'No patients found',
               style: GoogleFonts.inter(
-                fontSize: 18,
+                fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
               ),
@@ -256,7 +250,7 @@ class _EmptyPatientsState extends StatelessWidget {
               'Patients with appointments will appear here.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -358,7 +352,7 @@ class _SpeedDialOption extends StatelessWidget {
               child: Text(
                 label,
                 style: GoogleFonts.inter(
-                  fontSize: 13,
+                  fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: enabled ? AppColors.textPrimaryOf(context) : AppColors.textSecondaryOf(context),
                 ),

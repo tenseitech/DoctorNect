@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../doctor/clinical/prescription/prescription_preview_modal.dart';
 import '../data/pharmacy_prescription_store.dart';
 import '../models/pharmacy_models.dart';
+import '../../../core/theme/app_typography.dart';
 
 const _detailContentMaxWidth = 960.0;
 const _lineColor = Color(0xFFE2E8F0);
@@ -86,7 +87,6 @@ class _StorePrescriptionDetailScreenState extends State<StorePrescriptionDetailS
       return;
     }
     if (!mounted) return;
-    AppToast.info(context, 'Prescription marked as dispensed');
     Navigator.pop(context);
   }
 
@@ -113,7 +113,7 @@ class _StorePrescriptionDetailScreenState extends State<StorePrescriptionDetailS
         return Scaffold(
           backgroundColor: AppColors.surfaceOf(context),
           appBar: AppBar(
-            title: Text(draft.prescriptionId, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+            title: Text(draft.prescriptionId, style: GoogleFonts.inter(fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w600)),
             backgroundColor: AppColors.surfaceOf(context),
             elevation: 0,
             scrolledUnderElevation: 0,
@@ -217,12 +217,12 @@ class _PrescriptionHeader extends StatelessWidget {
               children: [
                 Text(
                   draft.patient.patientName,
-                  style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimaryOf(context), letterSpacing: -0.5),
+                  style: GoogleFonts.inter(fontSize: AppTypography.headlineLarge, fontWeight: FontWeight.w800, color: AppColors.textPrimaryOf(context), letterSpacing: -0.5),
                 ),
                 SizedBox(height: 6),
                 Text(
                   '${draft.patient.age} yrs · ${draft.patient.gender ?? '—'} · ${_pharmacyDoctorLabel(delivery.doctorName)}',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500, color: AppColors.textSecondaryOf(context)),
                 ),
                 SizedBox(height: 6),
                 Row(
@@ -231,7 +231,7 @@ class _PrescriptionHeader extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       'Received ${DateFormat('dd MMM yyyy, hh:mm a').format(delivery.sentAt)}',
-                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondaryOf(context)),
+                      style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w500, color: AppColors.textSecondaryOf(context)),
                     ),
                   ],
                 ),
@@ -247,7 +247,7 @@ class _PrescriptionHeader extends StatelessWidget {
                         Text(
                           'Preview',
                           style: GoogleFonts.inter(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
                             color: AppColors.pharmacyGreen,
                           ),
@@ -276,7 +276,7 @@ class _PrescriptionHeader extends StatelessWidget {
                 ),
                 child: Text(
                   status.label,
-                  style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: status.color),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w700, color: status.color),
                 ),
               ),
               const SizedBox(height: 8),
@@ -288,7 +288,7 @@ class _PrescriptionHeader extends StatelessWidget {
                 ),
                 child: Text(
                   '$reviewedCount / $totalCount reviewed',
-                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context)),
+                  style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context)),
                 ),
               ),
             ],
@@ -345,14 +345,14 @@ class _DetailSection extends StatelessWidget {
                 children: [
                   Container(width: 4, height: 16, decoration: BoxDecoration(color: AppColors.pharmacyGreen, borderRadius: BorderRadius.circular(2))),
                   const SizedBox(width: 10),
-                  Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
+                  Text(title, style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
                 ],
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.only(left: 13),
-                  child: Text(subtitle!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+                  child: Text(subtitle!, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
                 ),
               ],
             ],
@@ -404,9 +404,9 @@ class _PatientDetailsGrid extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(d.$1, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context), fontWeight: FontWeight.w500)),
+                    Text(d.$1, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context), fontWeight: FontWeight.w500)),
                     const SizedBox(height: 6),
-                    Text(d.$2, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
+                    Text(d.$2, style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
                   ],
                 ),
               );
@@ -488,7 +488,7 @@ class _MedicinesListSection extends StatelessWidget {
               children: [
                 Text(
                   line.medicineName,
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -506,7 +506,7 @@ class _MedicinesListSection extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Note: ${line.specialInstructions}',
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context), fontStyle: FontStyle.italic),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context), fontStyle: FontStyle.italic),
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -536,8 +536,8 @@ class _InfoChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('$label: ', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondaryOf(context))),
-        Text(value, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context))),
+        Text('$label: ', style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, color: AppColors.textSecondaryOf(context))),
+        Text(value, style: GoogleFonts.inter(fontSize: AppTypography.labelSmall, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context))),
       ],
     );
   }
@@ -648,31 +648,31 @@ class _DispensingPanel extends StatelessWidget {
             children: [
               Container(width: 4, height: 16, decoration: BoxDecoration(color: AppColors.pharmacyGreen, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 10),
-              Text('Dispensing', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
+              Text('Dispensing', style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall, fontWeight: FontWeight.w700)),
             ],
           ),
           const SizedBox(height: 12),
           if (isDispensed) ...[
             Text(
               'Dispensed ${delivery.dispensedAt != null ? DateFormat('dd MMM yyyy, hh:mm a').format(delivery.dispensedAt!) : ''}',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.pharmacyGreen),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600, color: AppColors.pharmacyGreen),
             ),
             if (delivery.dispensingNotes.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   delivery.dispensingNotes,
-                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.4),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.4),
                 ),
               ),
           ] else ...[
             TextFormField(
               controller: notesController,
               maxLines: 2,
-              style: GoogleFonts.inter(fontSize: 13),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
               decoration: InputDecoration(
                 labelText: 'Dispensing notes (optional)',
-                labelStyle: GoogleFonts.inter(fontSize: 13),
+                labelStyle: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
                 filled: true,
                 fillColor: AppColors.cardBgOf(context),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -700,7 +700,7 @@ class _DispensingPanel extends StatelessWidget {
                 ),
                 child: Text(
                   'Mark as Dispensed',
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -723,7 +723,7 @@ class _HeaderCell extends StatelessWidget {
       child: Text(
         text,
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
           color: const Color(0xFF475569),
         ),
@@ -752,7 +752,7 @@ class _BodyCell extends StatelessWidget {
         text.isEmpty ? '—' : text,
         textAlign: align,
         style: GoogleFonts.inter(
-          fontSize: 12,
+          fontSize: AppTypography.labelMedium,
           height: 1.35,
           fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
           color: muted ? AppColors.textSecondaryOf(context) : AppColors.textPrimaryOf(context),
@@ -882,7 +882,7 @@ class _StatusSegment extends StatelessWidget {
               label,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                fontSize: 11,
+                fontSize: AppTypography.labelSmall,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                 color: selected ? AppColors.surfaceOf(context) : (disabled ? AppColors.textPrimaryOf(context) : AppColors.textSecondaryOf(context)),
               ),

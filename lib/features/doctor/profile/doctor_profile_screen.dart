@@ -37,6 +37,7 @@ import 'widgets/doctor_profile_hero_section.dart';
 import 'widgets/doctor_profile_menu_tile.dart';
 import 'widgets/doctor_profile_web_layout.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
+import '../../../core/theme/app_typography.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});
@@ -108,7 +109,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           setState(() {
             _localPhotoBytes = null;
           });
-          AppToast.info(context, 'Profile photo removed');
         }
       },
     );
@@ -126,7 +126,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       await DoctorPhotoLocalStore.save(doctorId, bytes);
       await DoctorProfileStore.instance.uploadPhotoToServer(doctorId, bytes);
       if (mounted) {
-        AppToast.info(context, 'Profile photo updated successfully!');
       }
     }
   }
@@ -424,7 +423,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   Text(
                     'Profile',
                     style: GoogleFonts.inter(
-                      fontSize: 22,
+                      fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -433,7 +432,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   Text(
                     'Your practice & account',
                     style: GoogleFonts.inter(
-                      fontSize: 13,
+                      fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.3,
                     ),

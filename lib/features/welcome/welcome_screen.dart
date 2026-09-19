@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/auth/unified_auth_coordinator.dart';
+import '../../core/enums/user_type.dart';
+import '../../core/invite/pending_ambulance_invite_store.dart';
 import '../../core/layout/responsive_layout.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme_controller.dart';
+import '../../core/theme/app_typography.dart';
 import '../../widgets/role_card.dart';
 import '../../widgets/theme_toggle_button.dart';
-import '../auth/doctor_login_screen.dart';
-import '../auth/medical_store_login_screen.dart';
-import '../auth/patient_login_screen.dart';
-import '../auth/lab_login_screen.dart';
 import '../ambulance/ambulance_invite_setup_screen.dart';
-import '../ambulance/ambulance_login_screen.dart';
-import '../../core/invite/pending_ambulance_invite_store.dart';
+import '../auth/unified_auth_intro_screen.dart';
 
 class _WelcomeRoleOption {
   const _WelcomeRoleOption({
@@ -32,50 +32,42 @@ class _WelcomeRoleOption {
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
+  void _openUnifiedAuth(BuildContext context, UserType role, Color accent) {
+    openUnifiedAuthIntro(context, role: role, accentColor: accent);
+  }
+
   List<_WelcomeRoleOption> _roleOptions(BuildContext context) => [
         _WelcomeRoleOption(
-          title: 'Doctor',
-          subtitle: 'Manage appointments, patients & prescriptions',
+          title: UnifiedAuthCoordinator.roleLabel(UserType.doctor),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.doctor),
           color: AppColors.doctorBlue,
           icon: Icons.medical_services_rounded,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DoctorLoginScreen()),
-          ),
+          onTap: () => _openUnifiedAuth(context, UserType.doctor, AppColors.doctorBlue),
         ),
         _WelcomeRoleOption(
-          title: 'Patient',
-          subtitle: 'Book doctors, labs & track your health',
+          title: UnifiedAuthCoordinator.roleLabel(UserType.patient),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.patient),
           color: AppColors.patientTeal,
           icon: Icons.person_rounded,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PatientLoginScreen()),
-          ),
+          onTap: () => _openUnifiedAuth(context, UserType.patient, AppColors.patientTeal),
         ),
         _WelcomeRoleOption(
-          title: 'Pharmacy',
-          subtitle: 'Receive and dispense prescriptions',
+          title: UnifiedAuthCoordinator.roleLabel(UserType.medicalStore),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.medicalStore),
           color: AppColors.pharmacyGreen,
           icon: Icons.local_pharmacy_rounded,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MedicalStoreLoginScreen()),
-          ),
+          onTap: () => _openUnifiedAuth(context, UserType.medicalStore, AppColors.pharmacyGreen),
         ),
         _WelcomeRoleOption(
-          title: 'Lab',
-          subtitle: 'Manage diagnostic test orders',
+          title: UnifiedAuthCoordinator.roleLabel(UserType.lab),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.lab),
           color: AppColors.labPurple,
           icon: Icons.biotech_rounded,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const LabLoginScreen()),
-          ),
+          onTap: () => _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
         ),
         _WelcomeRoleOption(
-          title: 'Ambulance',
-          subtitle: 'Handle emergency pickup requests',
+          title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
           color: const Color(0xFFDC2626),
           icon: Icons.emergency_rounded,
           onTap: () {
@@ -91,10 +83,7 @@ class WelcomeScreen extends StatelessWidget {
               );
               return;
             }
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AmbulanceLoginScreen()),
-            );
+            _openUnifiedAuth(context, UserType.ambulance, const Color(0xFFDC2626));
           },
         ),
       ];
@@ -112,6 +101,19 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
+/// Platform-level teal branding for the desktop welcome left panel.
+abstract final class _WebWelcomeBrandTheme {
+  static const gradient = [
+    Color(0xFF032A22),
+    Color(0xFF064E3B),
+    Color(0xFF0F766E),
+    Color(0xFF14B8A6),
+  ];
+
+  static const meshMint = Color(0xFF5EEAD4);
+  static const meshEmerald = Color(0xFF10B981);
+}
+
 /// Split-panel welcome — web / desktop browser only.
 class _WebWelcomeScaffold extends StatelessWidget {
   const _WebWelcomeScaffold({required this.roles});
@@ -120,6 +122,8 @@ class _WebWelcomeScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
     return Scaffold(
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -127,8 +131,22 @@ class _WebWelcomeScaffold extends StatelessWidget {
           const Expanded(flex: 40, child: _WebBrandPanel()),
           Expanded(
             flex: 60,
-            child: ColoredBox(
-              color: AppColors.surfaceOf(context),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? const [
+                          AppColors.darkBackground,
+                          AppColors.darkSurface,
+                        ]
+                      : const [
+                          Color(0xFFF7F9FC),
+                          Color(0xFFEEF3FB),
+                        ],
+                ),
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(48, 48, 48, 28),
                 child: Column(
@@ -138,67 +156,82 @@ class _WebWelcomeScaffold extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Select your role',
-                              style: GoogleFonts.inter(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimaryOf(context),
-                                letterSpacing: -0.4,
-                              ),
+                        Expanded(
+                          child: _WebWelcomeFadeSlideIn(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Select your role',
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.headlineLarge,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimaryOf(context),
+                                    letterSpacing: -0.5,
+                                    height: 1.15,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Sign in to the experience built for you',
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.bodyMedium,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColors.textSecondaryOf(context),
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Sign in to the experience built for you',
-                              style: GoogleFonts.inter(
-                                fontSize: 13.5,
-                                color: AppColors.textSecondaryOf(context),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                        const ThemeToggleButton(),
+                        const _WebWelcomeThemeToggle(),
                       ],
                     ),
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 26),
                     Expanded(
                       child: ListView.separated(
                         itemCount: roles.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final role = roles[index];
-                          return RoleCard(
-                            title: role.title,
-                            subtitle: role.subtitle,
-                            color: role.color,
-                            icon: role.icon,
-                            onTap: role.onTap,
-                            variant: RoleCardVariant.web,
+                          return _WebWelcomeFadeSlideIn(
+                            delay: Duration(milliseconds: 90 + index * 70),
+                            child: RoleCard(
+                              title: role.title,
+                              subtitle: role.subtitle,
+                              color: role.color,
+                              icon: role.icon,
+                              onTap: role.onTap,
+                              variant: RoleCardVariant.web,
+                            ),
                           );
                         },
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.lock_outline,
-                          size: 13,
-                          color: AppColors.textSecondaryOf(context),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Secure & encrypted sign-in',
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
+                    const SizedBox(height: 16),
+                    _WebWelcomeFadeSlideIn(
+                      delay: const Duration(milliseconds: 480),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.lock_outline_rounded,
+                            size: 14,
                             color: AppColors.textSecondaryOf(context),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 7),
+                          Text(
+                            'Secure & encrypted sign-in',
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelMedium,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textSecondaryOf(context),
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -221,37 +254,19 @@ class _WebBrandPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF064E3B),
-            Color(0xFF0F766E),
-            Color(0xFF0D9488),
-          ],
+          colors: _WebWelcomeBrandTheme.gradient,
         ),
       ),
       child: Stack(
+        fit: StackFit.expand,
         children: [
+          const _WebWelcomeBrandBackdrop(),
           Positioned(
-            top: -60,
-            right: -40,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.06),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -70,
-            left: -30,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
+            right: -80,
+            bottom: -60,
+            child: Opacity(
+              opacity: 0.16,
+              child: _WebWelcomeNetworkGraphic(size: 320),
             ),
           ),
           Padding(
@@ -260,50 +275,88 @@ class _WebBrandPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                _WebWelcomeFadeSlideIn(
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.22),
+                          Colors.white.withValues(alpha: 0.10),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.32),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _WebWelcomeBrandTheme.meshMint
+                              .withValues(alpha: 0.25),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.local_hospital_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
-                  child: const Icon(Icons.local_hospital_rounded, color: Colors.white, size: 30),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  'DoctorNect',
-                  style: GoogleFonts.inter(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.6,
+                _WebWelcomeFadeSlideIn(
+                  delay: const Duration(milliseconds: 80),
+                  child: Text(
+                    'DoctorNect',
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.displayLarge,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.6,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  'One platform for every\nhealthcare role',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFFCCFBF1),
-                    height: 1.45,
+                _WebWelcomeFadeSlideIn(
+                  delay: const Duration(milliseconds: 140),
+                  child: Text(
+                    'One platform for every\nhealthcare role',
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFFCCFBF1),
+                      height: 1.45,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
-                const _BrandBullet(
-                  icon: Icons.people_alt_outlined,
-                  text: 'Doctors, patients & care partners',
+                _WebWelcomeFadeSlideIn(
+                  delay: const Duration(milliseconds: 210),
+                  child: const _WebBrandBullet(
+                    icon: Icons.people_alt_outlined,
+                    text: 'Doctors, patients & care partners',
+                  ),
                 ),
                 const SizedBox(height: 14),
-                const _BrandBullet(
-                  icon: Icons.medication_outlined,
-                  text: 'Prescriptions, labs & ambulance',
+                _WebWelcomeFadeSlideIn(
+                  delay: const Duration(milliseconds: 270),
+                  child: const _WebBrandBullet(
+                    icon: Icons.medication_outlined,
+                    text: 'Prescriptions, labs & ambulance',
+                  ),
                 ),
                 const SizedBox(height: 14),
-                const _BrandBullet(
-                  icon: Icons.hub_outlined,
-                  text: 'Connected end-to-end',
+                _WebWelcomeFadeSlideIn(
+                  delay: const Duration(milliseconds: 330),
+                  child: const _WebBrandBullet(
+                    icon: Icons.hub_outlined,
+                    text: 'Connected end-to-end',
+                  ),
                 ),
               ],
             ),
@@ -314,51 +367,373 @@ class _WebBrandPanel extends StatelessWidget {
   }
 }
 
-class _BrandBullet extends StatelessWidget {
-  const _BrandBullet({required this.text, this.icon});
-
-  final String text;
-  final IconData? icon;
+class _WebWelcomeBrandBackdrop extends StatelessWidget {
+  const _WebWelcomeBrandBackdrop();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 20, color: const Color(0xFF5EEAD4)),
-            const SizedBox(width: 12),
-          ] else ...[
-            Container(
-              width: 7,
-              height: 7,
-              decoration: const BoxDecoration(
-                color: Color(0xFF5EEAD4),
-                shape: BoxShape.circle,
-              ),
+          Positioned(
+            top: -180,
+            left: -140,
+            child: _WebWelcomeSoftGlow(
+              diameter: 560,
+              color: _WebWelcomeBrandTheme.meshEmerald.withValues(alpha: 0.50),
             ),
-            const SizedBox(width: 12),
-          ],
-          Flexible(
-            child: Text(
-              text,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                height: 1.3,
+          ),
+          Positioned(
+            top: -120,
+            right: -160,
+            child: _WebWelcomeSoftGlow(
+              diameter: 480,
+              color: _WebWelcomeBrandTheme.meshMint.withValues(alpha: 0.28),
+            ),
+          ),
+          Positioned(
+            bottom: -220,
+            left: -100,
+            child: _WebWelcomeSoftGlow(
+              diameter: 520,
+              color: _WebWelcomeBrandTheme.meshEmerald.withValues(alpha: 0.32),
+            ),
+          ),
+          Positioned(
+            bottom: -160,
+            right: -80,
+            child: _WebWelcomeSoftGlow(
+              diameter: 400,
+              color: Colors.white.withValues(alpha: 0.10),
+            ),
+          ),
+          Opacity(
+            opacity: 0.50,
+            child: CustomPaint(painter: _WebWelcomeDotLatticePainter()),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  const Color(0xFF021A15).withValues(alpha: 0.30),
+                ],
+                stops: const [0.55, 1.0],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WebWelcomeSoftGlow extends StatelessWidget {
+  const _WebWelcomeSoftGlow({required this.diameter, required this.color});
+
+  final double diameter;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: diameter,
+        height: diameter,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [color, color.withValues(alpha: 0)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WebWelcomeDotLatticePainter extends CustomPainter {
+  static const _spacing = 26.0;
+  static const _radius = 1.1;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.07);
+
+    for (var y = _spacing; y < size.height; y += _spacing) {
+      for (var x = _spacing; x < size.width; x += _spacing) {
+        canvas.drawCircle(Offset(x, y), _radius, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_WebWelcomeDotLatticePainter oldDelegate) => false;
+}
+
+class _WebWelcomeNetworkGraphic extends StatelessWidget {
+  const _WebWelcomeNetworkGraphic({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(
+          painter: const _WebWelcomeNetworkGraphicPainter(),
+        ),
+      ),
+    );
+  }
+}
+
+class _WebWelcomeNetworkGraphicPainter extends CustomPainter {
+  const _WebWelcomeNetworkGraphicPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width * 0.52, size.height * 0.48);
+    final nodePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = Colors.white.withValues(alpha: 0.14)
+      ..strokeWidth = 1.4;
+
+    final nodes = [
+      Offset(size.width * 0.18, size.height * 0.22),
+      Offset(size.width * 0.78, size.height * 0.18),
+      Offset(size.width * 0.86, size.height * 0.62),
+      Offset(size.width * 0.42, size.height * 0.82),
+      Offset(size.width * 0.12, size.height * 0.58),
+      center,
+    ];
+
+    for (var i = 0; i < nodes.length; i++) {
+      for (var j = i + 1; j < nodes.length; j++) {
+        canvas.drawLine(nodes[i], nodes[j], nodePaint);
+      }
+    }
+
+    final hubPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.white.withValues(alpha: 0.10);
+    final hubRing = Paint()
+      ..style = PaintingStyle.stroke
+      ..color = Colors.white.withValues(alpha: 0.22)
+      ..strokeWidth = 1.5;
+
+    for (final node in nodes) {
+      canvas.drawCircle(node, 7, hubPaint);
+      canvas.drawCircle(node, 7, hubRing);
+    }
+
+    canvas.drawCircle(center, 16, hubRing);
+    canvas.drawCircle(center, 10, hubPaint);
+  }
+
+  @override
+  bool shouldRepaint(_WebWelcomeNetworkGraphicPainter oldDelegate) => false;
+}
+
+class _WebBrandBullet extends StatefulWidget {
+  const _WebBrandBullet({required this.text, required this.icon});
+
+  final String text;
+  final IconData icon;
+
+  @override
+  State<_WebBrandBullet> createState() => _WebBrandBulletState();
+}
+
+class _WebBrandBulletState extends State<_WebBrandBullet> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedSlide(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        offset: Offset(_hovered ? 0.015 : 0, 0),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: _hovered ? 0.16 : 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: _hovered ? 0.32 : 0.22),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _WebWelcomeBrandTheme.meshMint
+                    .withValues(alpha: _hovered ? 0.22 : 0.10),
+                blurRadius: _hovered ? 20 : 12,
+                offset: Offset(0, _hovered ? 6 : 3),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                widget.icon,
+                size: 20,
+                color: _WebWelcomeBrandTheme.meshMint,
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  widget.text,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: _hovered ? 1 : 0.94),
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Icon-only theme toggle — matches the desktop auth intro screen.
+class _WebWelcomeThemeToggle extends StatelessWidget {
+  const _WebWelcomeThemeToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppThemeController.instance,
+      builder: (context, _) {
+        final isDark = AppThemeController.instance.isDarkMode;
+        final tooltip =
+            isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        final iconColor = isDark
+            ? const Color(0xFFFDE047)
+            : AppColors.textSecondaryOf(context);
+
+        return Tooltip(
+          message: tooltip,
+          child: Material(
+            color: AppColors.surfaceOf(context),
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: AppThemeController.instance.toggleTheme,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.borderOf(context)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  transitionBuilder: (child, anim) => ScaleTransition(
+                    scale: anim,
+                    child: child,
+                  ),
+                  child: Icon(
+                    isDark
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    key: ValueKey(isDark),
+                    color: iconColor,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WebWelcomeFadeSlideIn extends StatefulWidget {
+  const _WebWelcomeFadeSlideIn({
+    required this.child,
+    this.delay = Duration.zero,
+  });
+
+  final Widget child;
+  final Duration delay;
+
+  static const _slideDistance = 18.0;
+
+  @override
+  State<_WebWelcomeFadeSlideIn> createState() => _WebWelcomeFadeSlideInState();
+}
+
+class _WebWelcomeFadeSlideInState extends State<_WebWelcomeFadeSlideIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+  );
+
+  late final Animation<double> _curve = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      Future<void>.delayed(widget.delay, () {
+        if (mounted) _controller.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _curve,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _curve.value,
+          child: Transform.translate(
+            offset: Offset(
+              0,
+              (1 - _curve.value) * _WebWelcomeFadeSlideIn._slideDistance,
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: widget.child,
     );
   }
 }
@@ -453,7 +828,9 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                             Text(
                               'DoctorNect',
                               style: GoogleFonts.inter(
-                                fontSize: compactHeight ? 18 : 20,
+                                fontSize: compactHeight
+                                    ? AppTypography.titleMedium
+                                    : AppTypography.headlineMedium,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white.withValues(alpha: 0.92),
                                 letterSpacing: -0.2,
@@ -463,7 +840,7 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                             Text(
                               'Welcome',
                               style: GoogleFonts.inter(
-                                fontSize: compactHeight ? 26 : 30,
+                                fontSize: AppTypography.headlineLarge,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                                 letterSpacing: -0.5,
@@ -474,7 +851,9 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                             Text(
                               'Choose your role to continue',
                               style: GoogleFonts.inter(
-                                fontSize: compactHeight ? 13 : 14,
+                                fontSize: compactHeight
+                                    ? AppTypography.bodySmall
+                                    : AppTypography.bodyMedium,
                                 color: Colors.white.withValues(alpha: 0.85),
                                 height: 1.35,
                               ),
@@ -517,7 +896,7 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                     Text(
                                       'Select your role',
                                       style: GoogleFonts.inter(
-                                        fontSize: 17,
+                                        fontSize: AppTypography.headlineMedium,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.textPrimaryOf(context),
                                         letterSpacing: -0.2,
@@ -527,7 +906,7 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                     Text(
                                       'Tap a card to sign in',
                                       style: GoogleFonts.inter(
-                                        fontSize: 13,
+                                        fontSize: AppTypography.bodySmall,
                                         color: AppColors.textSecondaryOf(context),
                                       ),
                                     ),
@@ -562,7 +941,7 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                         Text(
                                           'Secure & encrypted sign-in',
                                           style: GoogleFonts.inter(
-                                            fontSize: 11,
+                                            fontSize: AppTypography.labelSmall,
                                             color: AppColors.textSecondaryOf(context),
                                           ),
                                         ),

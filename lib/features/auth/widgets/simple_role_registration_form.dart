@@ -12,6 +12,7 @@ import '../../../widgets/qualification_selector.dart';
 import '../../../widgets/registration_mobile_otp_section.dart';
 import 'auth_login_page_shell.dart';
 import 'auth_registration_page_shell.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Minimal registration form: Name, Degree, Mobile + OTP, legal consent.
 class SimpleRoleRegistrationForm extends StatefulWidget {
@@ -26,6 +27,7 @@ class SimpleRoleRegistrationForm extends StatefulWidget {
     required this.onSubmit,
     this.nameLabel = 'Full name *',
     this.degreeLabel = 'Degree / qualification *',
+    this.preVerifiedMobile,
   });
 
   final UserType role;
@@ -42,6 +44,9 @@ class SimpleRoleRegistrationForm extends StatefulWidget {
     required String mobile,
   }) onSubmit;
 
+  /// When set, mobile OTP was already verified in [UnifiedMobileAuthScreen].
+  final String? preVerifiedMobile;
+
   @override
   State<SimpleRoleRegistrationForm> createState() =>
       _SimpleRoleRegistrationFormState();
@@ -53,10 +58,28 @@ class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm>
   final _mobileController = TextEditingController();
 
   String? _qualification;
-  bool _mobileVerified = false;
+  late bool _mobileVerified;
   bool _legalAccepted = false;
   bool _submitting = false;
   String _mobileDialCode = CountryPhoneCodes.defaultDialCode;
+
+  bool get _otpAlreadyVerified => widget.preVerifiedMobile != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final preMobile = widget.preVerifiedMobile;
+    final digits = preMobile == null
+        ? null
+        : (FormValidators.registrationMobileDigits(preMobile) ??
+            FormValidators.mobileDigits(preMobile));
+    if (digits != null) {
+      _mobileController.text = digits;
+      _mobileVerified = true;
+    } else {
+      _mobileVerified = false;
+    }
+  }
 
   @override
   void dispose() {
@@ -148,7 +171,7 @@ class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm>
                       textInputAction: TextInputAction.next,
                       textCapitalization: TextCapitalization.words,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                       ),
                       decoration: _fieldDecoration(
@@ -164,18 +187,27 @@ class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm>
                       registrationStyle: true,
                     ),
                     const SizedBox(height: 14),
-                    RegistrationMobileOtpSection(
-                      role: widget.role,
-                      accentColor: widget.accentColor,
-                      mobileController: _mobileController,
-                      initialDialCode: _mobileDialCode,
-                      onDialCodeChanged: (v) => setState(() => _mobileDialCode = v),
-                      phoneDecoration: _fieldDecoration(
-                        'Mobile number *',
-                        prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                    if (_otpAlreadyVerified)
+                      _VerifiedMobileField(
+                        mobile: FormValidators.formatFullPhone(
+                          _mobileDialCode,
+                          _mobileController.text.trim(),
+                        ),
+                        accentColor: widget.accentColor,
+                      )
+                    else
+                      RegistrationMobileOtpSection(
+                        role: widget.role,
+                        accentColor: widget.accentColor,
+                        mobileController: _mobileController,
+                        initialDialCode: _mobileDialCode,
+                        onDialCodeChanged: (v) => setState(() => _mobileDialCode = v),
+                        phoneDecoration: _fieldDecoration(
+                          'Mobile number *',
+                          prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+                        ),
+                        onVerifiedChanged: (v) => setState(() => _mobileVerified = v),
                       ),
-                      onVerifiedChanged: (v) => setState(() => _mobileVerified = v),
-                    ),
                   ],
                 ),
               ),
@@ -197,6 +229,43 @@ class _SimpleRoleRegistrationFormState extends State<SimpleRoleRegistrationForm>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _VerifiedMobileField extends StatelessWidget {
+  const _VerifiedMobileField({
+    required this.mobile,
+    required this.accentColor,
+  });
+
+  final String mobile;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: authLoginInputDecoration(
+        context: context,
+        accentColor: accentColor,
+        labelText: 'Mobile number',
+        prefixIcon: const Icon(Icons.phone_outlined, size: 20),
+        isRequired: true,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              mobile,
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyMedium,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Icon(Icons.verified_rounded, size: 18, color: accentColor),
+        ],
       ),
     );
   }

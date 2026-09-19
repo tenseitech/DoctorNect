@@ -21,6 +21,7 @@ import 'models/lab_models.dart';
 import 'utils/patient_selected_investigations_mapper.dart';
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
 import 'widgets/lab_step_header.dart';
+import '../../../core/theme/app_typography.dart';
 
 class LabBookingFlowScreen extends StatefulWidget {
   const LabBookingFlowScreen({
@@ -524,7 +525,7 @@ class _PatientStep extends StatelessWidget {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               'Age is required for lab bookings. Update your Profile or family member details before continuing.',
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.error, height: 1.4),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.error, height: 1.4),
             ),
           ),
       ],
@@ -576,7 +577,7 @@ class _CollectionStep extends StatelessWidget {
                 if (lab.area.trim().isNotEmpty)
                   Text(
                     lab.area,
-                    style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+                    style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondary),
                   ),
               ],
             ),
@@ -638,7 +639,7 @@ class _CollectionStep extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Select lab',
-              style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             _labPicker(context),
@@ -650,7 +651,7 @@ class _CollectionStep extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Select lab',
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           _labPicker(context),
@@ -671,7 +672,7 @@ class _CollectionStep extends StatelessWidget {
         ),
         child: Text(
           'No labs in My labs yet. Add a lab from the Lab tab to continue.',
-          style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.45),
+          style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context), height: 1.45),
         ),
       );
     }
@@ -711,7 +712,7 @@ class _CollectionStep extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               'Choose a lab to continue.',
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondary),
             ),
           ),
       ],
@@ -757,7 +758,7 @@ class _TypeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                    Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+                    Text(subtitle, style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context))),
                   ],
                 ),
               ),
@@ -880,7 +881,7 @@ class _ScheduleStep extends StatelessWidget {
                     child: Text(
                       DateFormat('EEE, dd MMM yyyy').format(selectedDate),
                       style: GoogleFonts.inter(
-                        fontSize: 15,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -911,7 +912,7 @@ class _ScheduleStep extends StatelessWidget {
                     child: Text(
                       timeLabel ?? 'Tap to choose a time',
                       style: GoogleFonts.inter(
-                        fontSize: 15,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: timeLabel == null ? AppColors.textSecondaryOf(context) : AppColors.textPrimaryOf(context),
                       ),
@@ -928,7 +929,7 @@ class _ScheduleStep extends StatelessWidget {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               'This time has already passed. Please pick another time.',
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.error),
+              style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.error),
             ),
           ),
       ],
@@ -963,7 +964,7 @@ class _ReviewStep extends StatelessWidget {
             children: [
               Text(
                 tests.length == 1 ? 'Test' : '${tests.length} tests',
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context)),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.textSecondaryOf(context)),
               ),
               const SizedBox(height: 6),
               ...tests.map(
@@ -973,16 +974,16 @@ class _ReviewStep extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Text('Patient: $patientLabel', style: GoogleFonts.inter(fontSize: 12)),
+              Text('Patient: $patientLabel', style: GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
               Text(
                 '${DateFormat('dd MMM yyyy').format(draft.selectedDate!)} · ${draft.selectedSlotLabel}',
-                style: GoogleFonts.inter(fontSize: 12),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
               ),
               Text(
                 draft.collectionType == LabCollectionType.home
                     ? 'Home collection'
                     : 'Walk-in · ${draft.selectedLab?.name}',
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.labPurple),
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium, color: AppColors.labPurple),
               ),
             ],
           ),

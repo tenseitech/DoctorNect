@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../models/doctor_models.dart';
 import '../../widgets/doctor_ui_widgets.dart';
 import '../models/doctor_profile_data.dart';
+import '../../../../core/theme/app_typography.dart';
 
 class DoctorProfileHeroSection extends StatelessWidget {
   const DoctorProfileHeroSection({
@@ -154,7 +155,7 @@ class _MetaChip extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: GoogleFonts.inter(
-          fontSize: 12,
+          fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
         ),
@@ -180,7 +181,7 @@ class _MetaLine extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context)),
+            style: GoogleFonts.inter(fontSize: AppTypography.bodySmall, color: AppColors.textSecondaryOf(context)),
           ),
         ),
       ],
@@ -263,7 +264,7 @@ class _StatTile extends StatelessWidget {
             Text(
               value,
               style: GoogleFonts.inter(
-                fontSize: 18,
+                fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
                 height: 1,
@@ -273,7 +274,7 @@ class _StatTile extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 11,
+                fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondaryOf(context),
               ),
