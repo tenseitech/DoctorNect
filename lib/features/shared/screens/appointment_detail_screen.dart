@@ -71,7 +71,6 @@ class AppointmentDetailScreen extends StatelessWidget {
 
 class _DoctorAppointmentDetailScreen extends StatefulWidget {
   const _DoctorAppointmentDetailScreen({
-    super.key,
     required this.appointment,
     this.onStatusChanged,
   });
@@ -878,7 +877,7 @@ class _ActionTile extends StatelessWidget {
 // --- PATIENT VIEW IMPLEMENTATION ---
 
 class _PatientAppointmentDetailScreen extends StatelessWidget {
-  const _PatientAppointmentDetailScreen({super.key, required this.appointment});
+  const _PatientAppointmentDetailScreen({required this.appointment});
 
   final PatientAppointment appointment;
 

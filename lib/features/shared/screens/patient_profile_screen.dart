@@ -85,7 +85,7 @@ class PatientProfileScreen extends StatelessWidget {
 // --- DOCTOR VIEW IMPLEMENTATION ---
 
 class _DoctorPatientProfileScreen extends StatefulWidget {
-  const _DoctorPatientProfileScreen({super.key, required this.patientId});
+  const _DoctorPatientProfileScreen({required this.patientId});
 
   final String patientId;
 
@@ -246,13 +246,6 @@ class _DoctorPatientProfileScreenState
     );
   }
 
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_loadingProfile) {
@@ -344,13 +337,6 @@ class _PersonalInfoTab extends StatelessWidget {
 
   final DoctorPatientProfile profile;
 
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = profile.summary;
@@ -422,13 +408,6 @@ class _MedicalHistoryTab extends StatelessWidget {
   final List<MedicationRecord> medications;
   final bool loadingMedications;
   final bool clinicalDataBlocked;
-
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -604,13 +583,6 @@ class _VisitHistoryTab extends StatelessWidget {
         AppointmentStatus.waiting => 'Waiting',
         null => 'Scheduled',
       };
-
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -805,13 +777,6 @@ class _ReportsTab extends StatelessWidget {
         PatientFileType.dischargeSummary => 'Discharge Summary',
       };
 
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final files = fileFilter == null
@@ -918,13 +883,6 @@ class _InfoCard extends StatelessWidget {
   final String title;
   final List<_Row> rows;
 
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -957,13 +915,6 @@ class _Row extends StatelessWidget {
   final String label;
   final String value;
 
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -994,13 +945,6 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final Widget child;
 
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1030,16 +974,9 @@ class _SectionCard extends StatelessWidget {
 // --- PATIENT VIEW IMPLEMENTATION ---
 
 class _PatientPatientProfileScreen extends StatefulWidget {
-  const _PatientPatientProfileScreen({super.key, this.onOpenAppointments});
+  const _PatientPatientProfileScreen({this.onOpenAppointments});
 
   final VoidCallback? onOpenAppointments;
-
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const _PatientPatientProfileScreen()),
-    );
-  }
 
   @override
   State<_PatientPatientProfileScreen> createState() =>
@@ -1548,13 +1485,6 @@ class _PatientPatientProfileScreenState
         ),
       ];
 
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = PatientProfileMock.profile;
@@ -1886,13 +1816,6 @@ class _FamilyChip extends StatelessWidget {
   final FamilyProfileMember member;
   final VoidCallback onTap;
 
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final m = member;
@@ -1961,13 +1884,6 @@ class _FamilyChip extends StatelessWidget {
 class _AddFamilyCard extends StatelessWidget {
   const _AddFamilyCard({required this.onTap});
   final VoidCallback onTap;
-
-  static Future<void> open(BuildContext context) {
-    return Navigator.push<void>(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientProfileScreen()),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {

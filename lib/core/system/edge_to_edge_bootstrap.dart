@@ -1,7 +1,6 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Enables Android 15+ edge-to-edge and transparent system bar styling.

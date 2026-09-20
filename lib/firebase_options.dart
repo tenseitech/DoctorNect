@@ -2,7 +2,9 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, kDebugMode, kIsWeb, TargetPlatform;
+
+import 'firebase_options.secrets.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 class DefaultFirebaseOptions {
@@ -54,62 +56,115 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static String _resolveApiKey({
+    required String defineName,
+    required String envKey,
+    required String secretKey,
+  }) {
+    if (envKey.isNotEmpty) {
+      return envKey;
+    }
+    if (kDebugMode && secretKey.isNotEmpty) {
+      return secretKey;
+    }
+    return '';
+  }
+
   static void _requireConfiguredApiKey(String defineName, String apiKey) {
     if (apiKey.isNotEmpty) {
       return;
     }
+    final platformHint = defineName == 'FIREBASE_API_KEY_ANDROID'
+        ? ' On Android, pass FIREBASE_API_KEY_ANDROID (from google-services.json), '
+            'run .\\scripts\\run_local.ps1, or add keys to lib/firebase_options.secrets.dart.'
+        : '';
     throw StateError(
-      'Missing $defineName. Pass --dart-define=$defineName=<your Firebase API key> at build/run time.',
+      'Missing $defineName. Pass --dart-define=$defineName=<your Firebase API key> at build/run time.$platformHint',
     );
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_WEB'),
-    appId: '1:658118593597:web:fc49d67175f2f39b44ae54',
-    messagingSenderId: '658118593597',
-    projectId: 'medibond-45fad',
-    authDomain: 'medibond-45fad.firebaseapp.com',
-    storageBucket: 'medibond-45fad.firebasestorage.app',
-    measurementId: 'G-QMYJXZVJ5Z',
-  );
+  static FirebaseOptions get web {
+    const envKey = String.fromEnvironment('FIREBASE_API_KEY_WEB');
+    return FirebaseOptions(
+      apiKey: _resolveApiKey(
+        defineName: 'FIREBASE_API_KEY_WEB',
+        envKey: envKey,
+        secretKey: FirebaseOptionsSecrets.webApiKey,
+      ),
+      appId: '1:658118593597:web:fc49d67175f2f39b44ae54',
+      messagingSenderId: '658118593597',
+      projectId: 'medibond-45fad',
+      authDomain: 'medibond-45fad.firebaseapp.com',
+      storageBucket: 'medibond-45fad.firebasestorage.app',
+      measurementId: 'G-QMYJXZVJ5Z',
+    );
+  }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_ANDROID'),
-    appId: '1:658118593597:android:0f1ef9a897bdc52844ae54',
-    messagingSenderId: '658118593597',
-    projectId: 'medibond-45fad',
-    storageBucket: 'medibond-45fad.firebasestorage.app',
-  );
+  static FirebaseOptions get android {
+    const envKey = String.fromEnvironment('FIREBASE_API_KEY_ANDROID');
+    return FirebaseOptions(
+      apiKey: _resolveApiKey(
+        defineName: 'FIREBASE_API_KEY_ANDROID',
+        envKey: envKey,
+        secretKey: FirebaseOptionsSecrets.androidApiKey,
+      ),
+      appId: '1:658118593597:android:0f1ef9a897bdc52844ae54',
+      messagingSenderId: '658118593597',
+      projectId: 'medibond-45fad',
+      storageBucket: 'medibond-45fad.firebasestorage.app',
+    );
+  }
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_IOS'),
-    appId: '1:658118593597:ios:0fa63da574d241f044ae54',
-    messagingSenderId: '658118593597',
-    projectId: 'medibond-45fad',
-    storageBucket: 'medibond-45fad.firebasestorage.app',
-    iosClientId:
-        '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
-    iosBundleId: 'com.tenseitech.doctornect',
-  );
+  static FirebaseOptions get ios {
+    const envKey = String.fromEnvironment('FIREBASE_API_KEY_IOS');
+    return FirebaseOptions(
+      apiKey: _resolveApiKey(
+        defineName: 'FIREBASE_API_KEY_IOS',
+        envKey: envKey,
+        secretKey: FirebaseOptionsSecrets.iosApiKey,
+      ),
+      appId: '1:658118593597:ios:0fa63da574d241f044ae54',
+      messagingSenderId: '658118593597',
+      projectId: 'medibond-45fad',
+      storageBucket: 'medibond-45fad.firebasestorage.app',
+      iosClientId:
+          '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
+      iosBundleId: 'com.tenseitech.doctornect',
+    );
+  }
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_IOS'),
-    appId: '1:658118593597:ios:0fa63da574d241f044ae54',
-    messagingSenderId: '658118593597',
-    projectId: 'medibond-45fad',
-    storageBucket: 'medibond-45fad.firebasestorage.app',
-    iosClientId:
-        '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
-    iosBundleId: 'com.tenseitech.doctornect',
-  );
+  static FirebaseOptions get macos {
+    const envKey = String.fromEnvironment('FIREBASE_API_KEY_IOS');
+    return FirebaseOptions(
+      apiKey: _resolveApiKey(
+        defineName: 'FIREBASE_API_KEY_IOS',
+        envKey: envKey,
+        secretKey: FirebaseOptionsSecrets.iosApiKey,
+      ),
+      appId: '1:658118593597:ios:0fa63da574d241f044ae54',
+      messagingSenderId: '658118593597',
+      projectId: 'medibond-45fad',
+      storageBucket: 'medibond-45fad.firebasestorage.app',
+      iosClientId:
+          '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
+      iosBundleId: 'com.tenseitech.doctornect',
+    );
+  }
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: String.fromEnvironment('FIREBASE_API_KEY_WEB'),
-    appId: '1:658118593597:web:fc49d67175f2f39b44ae54',
-    messagingSenderId: '658118593597',
-    projectId: 'medibond-45fad',
-    authDomain: 'medibond-45fad.firebaseapp.com',
-    storageBucket: 'medibond-45fad.firebasestorage.app',
-    measurementId: 'G-QMYJXZVJ5Z',
-  );
+  static FirebaseOptions get windows {
+    const envKey = String.fromEnvironment('FIREBASE_API_KEY_WEB');
+    return FirebaseOptions(
+      apiKey: _resolveApiKey(
+        defineName: 'FIREBASE_API_KEY_WEB',
+        envKey: envKey,
+        secretKey: FirebaseOptionsSecrets.webApiKey,
+      ),
+      appId: '1:658118593597:web:fc49d67175f2f39b44ae54',
+      messagingSenderId: '658118593597',
+      projectId: 'medibond-45fad',
+      authDomain: 'medibond-45fad.firebaseapp.com',
+      storageBucket: 'medibond-45fad.firebasestorage.app',
+      measurementId: 'G-QMYJXZVJ5Z',
+    );
+  }
 }

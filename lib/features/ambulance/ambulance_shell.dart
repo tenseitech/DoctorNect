@@ -125,6 +125,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
             onPressed: () async {
               Navigator.pop(ctx);
               final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
               await AmbulancePushService.unregisterDriver();
               await AmbulanceLoginCache.clear();
               final prefs = await SharedPreferences.getInstance();
@@ -135,7 +136,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
               }
               if (!context.mounted) return;
               if (!sessionCleared) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(
                     content: Text(
                       'Signed out, but session data may not have cleared fully. '

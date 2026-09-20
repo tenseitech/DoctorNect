@@ -221,6 +221,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
     final ok = await FirestoreService.instance.ambulance
         .updateAmbulanceProfile(updated);
     if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
 
     setState(() {
       _saving = false;
@@ -245,11 +246,13 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       );
     }
 
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save profile')),
-      );
-    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Profile updated' : 'Could not save profile'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: ok ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+      ),
+    );
   }
 
   @override

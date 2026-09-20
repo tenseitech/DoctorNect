@@ -503,6 +503,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       onCancel: active.isPending ||
                                               active.isAccepted
                                           ? () async {
+                                              final messenger =
+                                                  ScaffoldMessenger.of(context);
                                               final ok = await _repository
                                                   .cancelBroadcast(
                                                 active.id,
@@ -510,16 +512,28 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               if (!mounted) return;
                                               if (ok) {
                                                 _sync.stopPatientWatch();
-                                                setState(() =>
-                                                    _activeBookingId = null);
+                                                setState(
+                                                    () => _activeBookingId = null);
+                                                messenger.showSnackBar(
+                                                  const SnackBar(
+                                                    content:
+                                                        Text('Request cancelled'),
+                                                    behavior:
+                                                        SnackBarBehavior.floating,
+                                                  ),
+                                                );
                                               } else {
                                                 final message = _repository
                                                         .lastCancelFailureUserMessage ??
                                                     'Could not cancel this request. Please try again.';
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
+                                                messenger.showSnackBar(
                                                   SnackBar(
-                                                      content: Text(message)),
+                                                    content: Text(message),
+                                                    backgroundColor:
+                                                        const Color(0xFFDC2626),
+                                                    behavior:
+                                                        SnackBarBehavior.floating,
+                                                  ),
                                                 );
                                               }
                                             }

@@ -3,7 +3,7 @@ import 'dart:io';
 void main() async {
   final dir = Directory('lib');
   if (!dir.existsSync()) {
-    print('lib directory not found.');
+    stdout.writeln('lib directory not found.');
     return;
   }
 
@@ -84,10 +84,10 @@ void main() async {
         }
         await entity.writeAsString(modified);
         modifiedFiles++;
-        print('Modified: ${entity.path}');
+        stdout.writeln('Modified: ${entity.path}');
       }
     }
   }
 
-  print('Modified $modifiedFiles files.');
+  stdout.writeln('Modified $modifiedFiles files.');
 }

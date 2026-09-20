@@ -7,7 +7,6 @@ import 'package:medibond/features/patient/models/patient_models.dart';
 import '../utils/doctor_display_name.dart';
 import '../../../core/theme/app_typography.dart';
 
-const _textGrey = Color(0xFF9CA3AF);
 const _starColor = Color(0xFFF59E0B);
 
 class DoctorListingCard extends StatelessWidget {
