@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../enums/user_type.dart';
@@ -323,35 +324,24 @@ class UserRepository {
         return doc;
       }
     } on FirebaseException {
-      // Fall through to email lookup for OAuth users.
-    }
-
-    final email = user.email?.trim();
-    if (email == null || email.isEmpty) return null;
-
-    try {
-      for (final candidate in _emailCandidates(email)) {
-        final byEmail = await _db
-            .collection(collection)
-            .where('email', isEqualTo: candidate)
-            .limit(1)
-            .get(const GetOptions(source: Source.server));
-        if (byEmail.docs.isEmpty) continue;
-
-        final roleDoc = byEmail.docs.first;
-        final data = roleDoc.data();
-        if (!_emailsMatch(data['email'] as String?, email)) continue;
-
-        final ownerUid = data['ownerUid'] as String?;
-        if (ownerUid != user.uid) {
-          await roleDoc.reference.update({'ownerUid': user.uid});
-        }
-        await _ensureRoleDocEmail(roleDoc, user.email);
-        return roleDoc;
-      }
-    } on FirebaseException {
       return null;
     }
+
+    if (collection == FirestorePaths.ambulances) {
+      try {
+        final byAuth = await _db
+            .collection(collection)
+            .where('authUid', isEqualTo: user.uid)
+            .limit(1)
+            .get(const GetOptions(source: Source.server));
+        if (byAuth.docs.isNotEmpty) {
+          return byAuth.docs.first;
+        }
+      } on FirebaseException {
+        return null;
+      }
+    }
+
     return null;
   }
 
@@ -372,6 +362,27 @@ class UserRepository {
     if (trimmed.isEmpty || trimmed.endsWith('@patient.doctornect.com'))
       return null;
     return trimmed;
+  }
+
+  Future<bool> _activeUsersDocExists(String uid) async {
+    final normalized = uid.trim();
+    if (normalized.isEmpty) return false;
+    try {
+      final snap = await _db.collection(FirestorePaths.users).doc(normalized).get(
+            const GetOptions(source: Source.server),
+          );
+      return snap.exists;
+    } on FirebaseException {
+      return false;
+    }
+  }
+
+  String _accountUidFromRoleDoc(UserType role, Map<String, dynamic> data) {
+    if (role == UserType.ambulance) {
+      final authUid = data['authUid'] as String? ?? '';
+      if (authUid.trim().isNotEmpty) return authUid.trim();
+    }
+    return (data['ownerUid'] as String? ?? '').trim();
   }
 
   Future<void> _ensureRoleDocEmail(
@@ -457,25 +468,16 @@ class UserRepository {
   }
 
   Future<void> deleteAccount({required User user}) async {
-    final uid = user.uid;
-    final profile = await fetchProfile(uid, preferCache: false);
-
-    if (profile != null) {
-      final collection = switch (profile.role) {
-        UserType.superAdmin => FirestorePaths.users,
-        UserType.doctor => FirestorePaths.doctors,
-        UserType.medicalStore => FirestorePaths.medicalStores,
-        UserType.patient => FirestorePaths.patients,
-        UserType.lab => FirestorePaths.labs,
-        UserType.ambulance => FirestorePaths.ambulances,
-      };
-      if (profile.profileId.isNotEmpty) {
-        await _db.collection(collection).doc(profile.profileId).delete();
-      }
+    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1')
+        .httpsCallable('deleteMyAccount');
+    final result = await callable.call<Map<String, dynamic>>({});
+    final ok = result.data['ok'] == true;
+    if (!ok) {
+      throw FirebaseFunctionsException(
+        code: 'internal',
+        message: 'Could not delete account. Please try again.',
+      );
     }
-
-    await _db.collection(FirestorePaths.users).doc(uid).delete();
-    await user.delete();
   }
 
   Future<String?> checkDuplicateAccountExists({
@@ -707,14 +709,28 @@ class UserRepository {
     for (final snap in roleSnaps) {
       if (snap != null && snap.docs.isNotEmpty) {
         final doc = snap.docs.first;
-        final uid = doc.data()['ownerUid'] as String? ?? doc.id;
-        await _db.collection(FirestorePaths.users).doc(uid).set({
-          'role': roleStr,
-          'profileId': doc.id,
-          'mobile': digits,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-        return fetchProfile(uid, preferCache: true);
+        var accountUid = _accountUidFromRoleDoc(role, doc.data());
+        if (accountUid.isEmpty || !await _activeUsersDocExists(accountUid)) {
+          final profileId = doc.id.trim();
+          if (profileId.isNotEmpty) {
+            try {
+              final userSnap = await _db
+                  .collection(FirestorePaths.users)
+                  .where('profileId', isEqualTo: profileId)
+                  .limit(1)
+                  .get(const GetOptions(source: Source.server));
+              if (userSnap.docs.isNotEmpty) {
+                accountUid = userSnap.docs.first.id;
+              }
+            } on FirebaseException {
+              continue;
+            }
+          }
+        }
+        if (accountUid.isEmpty || !await _activeUsersDocExists(accountUid)) {
+          continue;
+        }
+        return fetchProfile(accountUid, preferCache: true);
       }
     }
 
@@ -796,20 +812,10 @@ class UserRepository {
     for (final match in roleResults) {
       if (match != null && match.snap.docs.isNotEmpty) {
         final doc = match.snap.docs.first;
-        final uid = doc.data()['ownerUid'] as String? ?? doc.id;
-        _db.collection(FirestorePaths.users).doc(uid).set({
-          'role': switch (match.role) {
-            UserType.superAdmin => 'super_admin',
-            UserType.doctor => 'doctor',
-            UserType.medicalStore => 'medicalStore',
-            UserType.patient => 'patient',
-            UserType.lab => 'lab',
-            UserType.ambulance => 'ambulance',
-          },
-          'profileId': doc.id,
-          'mobile': digits,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        final accountUid = _accountUidFromRoleDoc(match.role, doc.data());
+        if (accountUid.isEmpty || !await _activeUsersDocExists(accountUid)) {
+          continue;
+        }
         return match.role;
       }
     }

@@ -150,6 +150,8 @@ class RegistrationOtpService {
       return 'Firebase is not available.';
     }
 
+    await AppCheckService.ensureForCallable();
+
     try {
       final payload = <String, dynamic>{
         'role': _roleValue(role),
@@ -204,6 +206,8 @@ class RegistrationOtpService {
     if (sessionId.isEmpty) {
       return (error: 'OTP verification session is missing.', customToken: null);
     }
+
+    await AppCheckService.ensureForCallable();
 
     // Prefer token already returned by verify when otpType=login.
     if (_loginCustomToken != null && _loginCustomToken!.isNotEmpty) {
@@ -345,6 +349,9 @@ class RegistrationOtpService {
         UserType.lab => 'lab',
         UserType.ambulance => 'ambulance',
       };
+
+  static String mapCallableError(FirebaseFunctionsException e) =>
+      _mapFunctionsError(e);
 
   static String _mapFunctionsError(FirebaseFunctionsException e) {
     if (_isAppCheckRejection(e)) {

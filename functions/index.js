@@ -96,6 +96,7 @@ const {
   GENERIC_AMBULANCE_LOGIN_FAILED,
   clientFacingHttpsMessage,
 } = require('./public_error_messages');
+const { deleteMyAccountHandler } = require('./delete_my_account');
 
 assertProductionSecrets();
 assertProductionOtpSafety();
@@ -1804,6 +1805,15 @@ exports.processMailQueueMsg91 = onDocumentCreated(
       { merge: true }
     );
   }
+);
+
+/** Permanently deletes the caller's Firestore, Storage, and Auth data. */
+exports.deleteMyAccount = onCall(
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  protectCallable('deleteMyAccount', { category: 'api' }, async (request) => {
+    requireAuth(request);
+    return deleteMyAccountHandler(request.auth.uid);
+  }),
 );
 
 exports.sendMsg91EmailCallable = onCall(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -17,7 +18,9 @@ import 'package:medibond/core/firebase/firestore_service.dart';
 import 'package:medibond/core/layout/responsive_layout.dart';
 import 'package:medibond/core/media/gallery_image_picker.dart';
 import 'package:medibond/core/notifications/app_toast.dart';
+import 'package:medibond/core/session/ambulance_session.dart';
 import 'package:medibond/core/session/app_session.dart';
+import 'package:medibond/features/welcome/welcome_screen.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/session/patient_session.dart';
 import 'package:medibond/core/theme/app_colors.dart';
@@ -1796,17 +1799,36 @@ class _PatientPatientProfileScreenState
       ),
     );
 
-    if (confirmed == true && context.mounted) {
-      try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          await FirestoreService.instance.user.deleteAccount(user: user);
-        }
-      } catch (e) {
-        if (context.mounted) {
-          AppToast.info(context, 'Failed to delete account: $e');
-        }
+    if (confirmed != true || !context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirestoreService.instance.user.deleteAccount(user: user);
       }
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      await AmbulanceSession.clear();
+      AppSession.clear();
+      await FirebaseAuth.instance.signOut();
+      if (!context.mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        (_) => false,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      final message = e is FirebaseFunctionsException
+          ? (e.message ?? 'Could not delete account. Please try again.')
+          : 'Failed to delete account. Please try again.';
+      AppToast.info(context, message);
     }
   }
 }

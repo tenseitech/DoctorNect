@@ -13,6 +13,7 @@ import '../auth/auth_rate_limiter.dart';
 import '../auth/last_login_store.dart';
 import '../auth/registration_otp_service.dart';
 import '../auth/session_expiry.dart';
+import '../security/app_check_service.dart';
 import '../security/abuse_protection_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
@@ -250,6 +251,8 @@ class FirebaseAuthService {
       return AuthSignInResult.fail(rateLimitMsg);
     }
 
+    await AppCheckService.ensureForCallable();
+
     final error = await RegistrationOtpService.verify(
       digits,
       otpCode,
@@ -261,27 +264,29 @@ class FirebaseAuthService {
       return AuthSignInResult.fail(error);
     }
 
-    final sessionId = RegistrationOtpService.verificationSessionId;
-    if (sessionId == null ||
-        sessionId.isEmpty ||
-        RegistrationOtpService.isLocalVerificationSession(sessionId)) {
-      AuthRateLimiter.recordFailure('otp_login', digits);
-      return AuthSignInResult.fail(
-        'OTP verification session expired. Please request a new OTP.',
-      );
-    }
-
     try {
-      final functions = FirebaseFunctions.instanceFor(region: 'asia-south1');
-      final result = await functions
-          .httpsCallable('completeMobileOtpLogin')
-          .call<Map<String, dynamic>>({
-        'mobile': digits,
-        'sessionId': sessionId,
-        'role': _roleValue(expectedRole),
-      });
-      final data = Map<String, dynamic>.from(result.data);
-      final customToken = data['customToken'] as String?;
+      var customToken = RegistrationOtpService.loginCustomToken;
+      if (customToken == null || customToken.isEmpty) {
+        final sessionId = RegistrationOtpService.verificationSessionId;
+        if (sessionId == null ||
+            sessionId.isEmpty ||
+            RegistrationOtpService.isLocalVerificationSession(sessionId)) {
+          AuthRateLimiter.recordFailure('otp_login', digits);
+          return AuthSignInResult.fail(
+            'OTP verification session expired. Please request a new OTP.',
+          );
+        }
+        final loginResult = await RegistrationOtpService.completeMobileLogin(
+          mobile: digits,
+          sessionId: sessionId,
+          role: expectedRole,
+        );
+        if (loginResult.error != null) {
+          AuthRateLimiter.recordFailure('otp_login', digits);
+          return AuthSignInResult.fail(loginResult.error!);
+        }
+        customToken = loginResult.customToken;
+      }
       if (customToken == null || customToken.isEmpty) {
         return AuthSignInResult.fail(
             'Could not establish a secure session. Please try again.');
@@ -331,9 +336,7 @@ class FirebaseAuthService {
     } on FirebaseFunctionsException catch (e) {
       AuthRateLimiter.recordFailure('otp_login', digits);
       return AuthSignInResult.fail(
-        e.message?.trim().isNotEmpty == true
-            ? e.message!
-            : 'OTP login failed. Please try again.',
+        RegistrationOtpService.mapCallableError(e),
       );
     } on FirebaseAuthException catch (e) {
       AuthRateLimiter.recordFailure('otp_login', digits);

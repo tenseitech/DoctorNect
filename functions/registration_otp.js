@@ -734,6 +734,36 @@ function resolveMobileLookupConflict({ found, registeredRole, requestedRole, int
   return String(registeredRole || '').trim() !== String(requestedRole || '').trim();
 }
 
+async function usersDocExists(db, uid) {
+  const normalized = String(uid || '').trim();
+  if (!normalized) return false;
+  const snap = await db.collection('users').doc(normalized).get();
+  return snap.exists;
+}
+
+function accountUidFromRoleDoc(role, data) {
+  const row = data || {};
+  if (role === 'ambulance') {
+    const authUid = String(row.authUid || '').trim();
+    if (authUid) return authUid;
+  }
+  return String(row.ownerUid || '').trim();
+}
+
+async function resolveActiveAccountUid(db, role, doc) {
+  const directUid = accountUidFromRoleDoc(role, doc.data());
+  if (directUid && (await usersDocExists(db, directUid))) {
+    return directUid;
+  }
+  const profileId = String(doc.id || '').trim();
+  if (!profileId) return null;
+  const userSnap = await db.collection('users').where('profileId', '==', profileId).limit(1).get();
+  if (userSnap.empty) return null;
+  const uid = userSnap.docs[0].id;
+  if (uid && (await usersDocExists(db, uid))) return uid;
+  return null;
+}
+
 async function findUserByMobileDigits(db, digits) {
   const candidates = [digits, `+91${digits}`, `+91 ${digits}`, `+91-${digits}`, `91${digits}`, `0${digits}`];
   const fields = ['mobile', 'phone', 'phoneNumber', 'mobileNumber'];
@@ -782,8 +812,10 @@ async function findUserByMobileDigits(db, digits) {
   const roleMatch = roleSnapshots.find(Boolean);
   if (roleMatch) {
     const doc = roleMatch.doc;
-    const uid = doc.data()?.ownerUid || doc.id;
-    return { found: true, role: roleMatch.role, uid, data: doc.data() };
+    const uid = await resolveActiveAccountUid(db, roleMatch.role, doc);
+    if (uid) {
+      return { found: true, role: roleMatch.role, uid, data: doc.data() };
+    }
   }
 
   return { found: false, role: null, uid: null, data: null };
@@ -819,8 +851,10 @@ async function findUserByEmail(db, email) {
   const roleMatch = roleSnapshots.find(Boolean);
   if (roleMatch) {
     const doc = roleMatch.doc;
-    const uid = doc.data()?.ownerUid || doc.id;
-    return { found: true, role: roleMatch.role, uid, data: doc.data() };
+    const uid = await resolveActiveAccountUid(db, roleMatch.role, doc);
+    if (uid) {
+      return { found: true, role: roleMatch.role, uid, data: doc.data() };
+    }
   }
 
   return { found: false, role: null, uid: null, data: null };
