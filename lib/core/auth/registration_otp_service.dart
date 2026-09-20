@@ -353,6 +353,11 @@ class RegistrationOtpService {
   static String mapCallableError(FirebaseFunctionsException e) =>
       _mapFunctionsError(e);
 
+  static String _cleanFunctionsMessage(String? raw) {
+    if (raw == null) return '';
+    return raw.replaceAll(RegExp(r'\s*\[\d+\]\s*$'), '').trim();
+  }
+
   static String _mapFunctionsError(FirebaseFunctionsException e) {
     if (_isAppCheckRejection(e)) {
       if (kIsWeb) {
@@ -368,32 +373,49 @@ class RegistrationOtpService {
           : 'Security verification failed. Update the app and try again.';
     }
 
-    final rawMessage = e.message?.trim();
-    if (rawMessage != null && rawMessage.isNotEmpty) {
-      final lower = rawMessage.toLowerCase();
-      if (lower != 'error' &&
-          lower != 'internal' &&
-          lower != 'unknown' &&
-          lower != 'unauthenticated') {
-        return rawMessage;
-      }
-    }
+    final rawMessage = _cleanFunctionsMessage(e.message);
     return switch (e.code) {
-      'already-exists' => rawMessage ??
-          'This mobile number is already registered under another account.',
-      'not-found' => rawMessage ??
-          'No account found for this mobile number. Please register first.',
-      'failed-precondition' =>
-        rawMessage ?? 'Mobile number is registered under a different account.',
+      'already-exists' => rawMessage.isNotEmpty
+          ? rawMessage
+          : 'This mobile number is already registered under another account.',
+      'not-found' => rawMessage.isNotEmpty
+          ? rawMessage
+          : 'No account found for this mobile number. Please register first.',
+      'failed-precondition' => _failedPreconditionMessage(rawMessage),
       'deadline-exceeded' => 'OTP expired. Send a new one.',
-      'permission-denied' => 'Invalid OTP.',
-      'resource-exhausted' => 'Too many attempts. Wait and try again.',
-      'invalid-argument' => rawMessage ?? 'Invalid OTP request.',
-      'unavailable' => rawMessage ??
-          'SMS service is temporarily unavailable. Please try again shortly.',
+      'permission-denied' => 'Incorrect OTP. Check the code and try again.',
+      'resource-exhausted' => _resourceExhaustedMessage(rawMessage),
+      'invalid-argument' =>
+        rawMessage.isNotEmpty ? rawMessage : 'Invalid OTP request.',
+      'unavailable' => rawMessage.isNotEmpty
+          ? rawMessage
+          : 'SMS service is temporarily unavailable. Please try again shortly.',
       'internal' || 'unknown' => _serviceUnavailable,
-      _ => rawMessage ?? _serviceUnavailable,
+      _ => rawMessage.isNotEmpty ? rawMessage : _serviceUnavailable,
     };
+  }
+
+  static String _failedPreconditionMessage(String rawMessage) {
+    final lower = rawMessage.toLowerCase();
+    if (lower.contains('send otp first') || lower.contains('otp session expired')) {
+      return 'OTP expired. Send a new one.';
+    }
+    if (rawMessage.isNotEmpty) return rawMessage;
+    return 'Mobile number is registered under a different account.';
+  }
+
+  static String _resourceExhaustedMessage(String rawMessage) {
+    final lower = rawMessage.toLowerCase();
+    if (lower.contains('invalid attempt') || lower.contains('too many invalid')) {
+      return 'Too many wrong attempts. Send a new OTP.';
+    }
+    if (lower.contains('wait a minute') || lower.contains('wait and try')) {
+      return rawMessage.isNotEmpty
+          ? rawMessage
+          : 'Too many OTP requests. Please wait and try again.';
+    }
+    if (rawMessage.isNotEmpty) return rawMessage;
+    return 'Too many attempts. Wait and try again.';
   }
 
   static bool _isAppCheckRejection(FirebaseFunctionsException e) {

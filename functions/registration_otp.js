@@ -550,6 +550,143 @@ function buildMsg91OtpRequest({ mobileDigits, code, templateId, senderId }) {
   };
 }
 
+function requestMsg91Api({ authKey, path, method = 'GET' }) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'control.msg91.com',
+      path,
+      method,
+      headers: {
+        authkey: authKey,
+        accept: 'application/json',
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let responseData = '';
+      res.on('data', (chunk) => { responseData += chunk; });
+      res.on('end', () => {
+        resolve({
+          statusCode: res.statusCode || 0,
+          body: responseData,
+        });
+      });
+    });
+
+    req.on('error', (err) => reject(err));
+    req.end();
+  });
+}
+
+function parseMsg91OtpVerifyResponse(statusCode, rawBody) {
+  const body = String(rawBody || '');
+  let parsed = null;
+  if (body.trim()) {
+    try {
+      parsed = JSON.parse(body);
+    } catch (_) {
+      parsed = null;
+    }
+  }
+  const type = String(parsed?.type || '').trim().toLowerCase();
+  if (statusCode >= 200 && statusCode < 300 && type === 'success') {
+    return { ok: true, parsed };
+  }
+  return {
+    ok: false,
+    httpStatus: statusCode,
+    parsed,
+    rawBody: body,
+  };
+}
+
+/**
+ * Confirms OTP against MSG91's active OTP session (source of truth for SMS content).
+ * Returns false when auth key is missing or MSG91 rejects the code.
+ */
+async function verifyMsg91Otp(mobileDigits, otp) {
+  const authKey = readMsg91AuthKey({ required: false });
+  const normalizedMobile = normalizeMobileDigits(mobileDigits);
+  const normalizedOtp = String(otp || '').trim();
+  if (!authKey || !normalizedMobile || !/^\d{6}$/.test(normalizedOtp)) {
+    return false;
+  }
+
+  const query = new URLSearchParams({
+    mobile: `91${normalizedMobile}`,
+    otp: normalizedOtp,
+  });
+
+  try {
+    const { statusCode, body } = await requestMsg91Api({
+      authKey,
+      path: `/api/v5/otp/verify?${query.toString()}`,
+    });
+    const parsed = parseMsg91OtpVerifyResponse(statusCode, body);
+    if (!parsed.ok) {
+      logMsg91Otp('verify_rejected', {
+        severity: 'INFO',
+        mobile: maskMsg91Mobile(normalizedMobile),
+        httpStatus: statusCode,
+        responseBody: body,
+      });
+    }
+    return parsed.ok;
+  } catch (err) {
+    logMsg91Otp('verify_network_error', {
+      severity: 'ERROR',
+      mobile: maskMsg91Mobile(normalizedMobile),
+      error: err?.message || String(err),
+    });
+    return false;
+  }
+}
+
+/** Resends the same MSG91 OTP (do not rotate local hash on resend). */
+async function retryMsg91SmsOtp(mobileDigits) {
+  const authKey = readMsg91AuthKey({ required: false });
+  const normalizedMobile = normalizeMobileDigits(mobileDigits);
+  if (!authKey) {
+    throw new HttpsError(
+      'unavailable',
+      'SMS service is temporarily unavailable. Please try again later.',
+    );
+  }
+  if (!normalizedMobile) {
+    throw new HttpsError('invalid-argument', 'Enter a valid 10-digit mobile number.');
+  }
+
+  const query = new URLSearchParams({
+    mobile: `91${normalizedMobile}`,
+    retrytype: 'text',
+  });
+
+  const { statusCode, body } = await requestMsg91Api({
+    authKey,
+    path: `/api/v5/otp/retry?${query.toString()}`,
+  });
+
+  const parsed = parseMsg91OtpSendResponse(statusCode, body);
+  if (!parsed.ok) {
+    logMsg91Otp('retry_rejected', {
+      severity: 'ERROR',
+      mobile: maskMsg91Mobile(normalizedMobile),
+      httpStatus: parsed.httpStatus,
+      responseBody: body,
+    });
+    throw new HttpsError(
+      'failed-precondition',
+      'OTP session expired. Send a new one.',
+    );
+  }
+
+  logMsg91Otp('retry_confirmed', {
+    mobile: maskMsg91Mobile(normalizedMobile),
+    httpStatus: statusCode,
+    requestId: parsed.requestId,
+  });
+}
+
 function postMsg91OtpRequest({ authKey, mobileDigits, code, templateId, senderId }) {
   const built = buildMsg91OtpRequest({ mobileDigits, code, templateId, senderId });
 
@@ -915,12 +1052,37 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   const existing = await challengeRef.get();
   const isDemoAccount = isDemoPhone(digits, role);
   if (existing.exists && !isDemoAccount) {
-    const lastSentAt = existing.data()?.sentAt?.toDate?.();
+    const existingData = existing.data() || {};
+    const lastSentAt = existingData.sentAt?.toDate?.();
     if (lastSentAt && Date.now() - lastSentAt.getTime() < RESEND_COOLDOWN_MS) {
       throw new HttpsError(
         'resource-exhausted',
         'Please wait a minute before requesting another OTP.',
       );
+    }
+    // MSG91 retry resends the same OTP session; rotating our hash breaks verify.
+    if (!isTestMode() && existingData.otpHash) {
+      const expiryMs = OTP_EXPIRY_MS;
+      const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
+      try {
+        await retryMsg91SmsOtp(digits);
+        await challengeRef.set({
+          sentAt: FieldValue.serverTimestamp(),
+          expiresAt,
+          attempts: 0,
+        }, { merge: true });
+        return {
+          ok: true,
+          expiresInSeconds: Math.floor(expiryMs / 1000),
+        };
+      } catch (err) {
+        if (err instanceof HttpsError) throw err;
+        logMsg91Otp('retry_network_error', {
+          severity: 'ERROR',
+          mobile: maskMsg91Mobile(digits),
+          error: err?.message || String(err),
+        });
+      }
     }
   }
 
@@ -959,12 +1121,69 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   };
 }
 
+async function isChallengeOtpValid({ otp, challenge, isDemoAccount }) {
+  if (isDemoAccount) {
+    return String(otp || '').trim() === DEMO_OTP;
+  }
+  if (!isDemoAccount && isTestMode() && String(otp || '').trim() === DEV_TEST_OTP) {
+    return true;
+  }
+  if (otpHashesEqual(hashOtp(otp), challenge.otpHash)) {
+    return true;
+  }
+  if (isTestMode()) {
+    return false;
+  }
+  return verifyMsg91Otp(challenge.mobileDigits, otp);
+}
+
 /**
  * Atomically validates an OTP challenge, increments failed attempts, or consumes it.
  * Prevents concurrent verify calls from bypassing lockout or reusing a challenge.
  */
 async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAccount }) {
   const challengeRef = db.collection('otp_challenges').doc(challengeKey);
+
+  const precheck = await db.runTransaction(async (tx) => {
+    const challengeSnap = await tx.get(challengeRef);
+    if (!challengeSnap.exists) {
+      return { status: 'missing' };
+    }
+
+    const challenge = challengeSnap.data() || {};
+    const expiresAt = challenge.expiresAt?.toDate?.();
+    if (!expiresAt || Date.now() > expiresAt.getTime()) {
+      tx.delete(challengeRef);
+      return { status: 'expired' };
+    }
+
+    const attempts = Number(challenge.attempts) || 0;
+    if (attempts >= 5) {
+      tx.delete(challengeRef);
+      return { status: 'locked' };
+    }
+
+    return { status: 'pending', challenge, attempts };
+  });
+
+  if (precheck.status !== 'pending') {
+    switch (precheck.status) {
+      case 'missing':
+        throw new HttpsError('failed-precondition', 'Send OTP first.');
+      case 'expired':
+        throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
+      case 'locked':
+        throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
+      default:
+        throw new HttpsError('internal', 'OTP verification failed.');
+    }
+  }
+
+  const otpValid = await isChallengeOtpValid({
+    otp,
+    challenge: precheck.challenge,
+    isDemoAccount,
+  });
 
   const outcome = await db.runTransaction(async (tx) => {
     const challengeSnap = await tx.get(challengeRef);
@@ -985,8 +1204,6 @@ async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAcco
       return { status: 'locked' };
     }
 
-    const otpValid = otpHashesEqual(hashOtp(otp), challenge.otpHash)
-      || (!isDemoAccount && isTestMode() && otp === DEV_TEST_OTP);
     if (!otpValid) {
       tx.set(challengeRef, { attempts: attempts + 1 }, { merge: true });
       return { status: 'invalid', attempts: attempts + 1 };
