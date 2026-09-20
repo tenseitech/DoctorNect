@@ -19,6 +19,9 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Prepare secrets file
+        run: cp lib/firebase_options.secrets.example.dart lib/firebase_options.secrets.dart
+
       - name: Install dependencies
         run: flutter pub get
 
