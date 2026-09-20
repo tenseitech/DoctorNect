@@ -4,7 +4,7 @@ const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestor
 const crypto = require('crypto');
 const https = require('https');
 const { enforceAbuseLimit } = require('./abuse_rate_limit');
-const { PAYMENT_SECRETS } = require('./secure_config');
+const { readSecret } = require('./secure_config');
 const {
   requireDocId,
   requireIntInSet,
@@ -75,7 +75,7 @@ function makeRazorpayRequest(path, method, payload, keyId, keySecret) {
  * 1. Callable Cloud Function: createRazorpayOrder
  * Input: { adId: string, durationHours: number }
  */
-const createRazorpayOrder = onCall({ region: 'asia-south1', secrets: PAYMENT_SECRETS }, async (request) => {
+const createRazorpayOrder = onCall({ region: 'asia-south1' }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to create payment order.');
   }
@@ -152,7 +152,7 @@ const createRazorpayOrder = onCall({ region: 'asia-south1', secrets: PAYMENT_SEC
  * 2. Callable Cloud Function: verifyRazorpayPayment
  * Input: { adId: string, orderId: string, paymentId: string, signature: string }
  */
-const verifyRazorpayPayment = onCall({ region: 'asia-south1', secrets: PAYMENT_SECRETS }, async (request) => {
+const verifyRazorpayPayment = onCall({ region: 'asia-south1' }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required to verify payment.');
   }

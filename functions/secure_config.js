@@ -3,27 +3,11 @@
 /**
  * Centralized secret / config access for Cloud Functions.
  *
- * Production: bind secrets with Google Secret Manager, e.g.
- *   firebase functions:secrets:set MSG91_AUTHKEY
- *   firebase functions:secrets:set RAZORPAY_KEY_SECRET
- *
- * Then declare them on each function via `secrets: [...]` (see MSG91_SECRETS /
- * PAYMENT_SECRETS below). Bound secrets appear in process.env at runtime.
- *
- * Local emulator: put values in functions/.secret.local (gitignored), not in
- * the Flutter app or dart-define. Never log raw secret values.
+ * All secrets are now strictly loaded via `functions/.env` files.
+ * Firebase Secret Manager bindings have been removed to resolve overlap crashes.
  */
 
-const { defineSecret } = require('firebase-functions/params');
-
-/** MSG91 SMS auth key (server-only). */
-const MSG91_AUTHKEY = defineSecret('MSG91_AUTHKEY');
-
-/** Bind to OTP / MSG91 callables. */
-const MSG91_SECRETS = [MSG91_AUTHKEY];
-
-/** Payment secrets (see promoted_ads.js). */
-const PAYMENT_SECRETS = [];
+// No more defineSecret
 
 function readSecret(name, { required = false } = {}) {
   const value = String(process.env[name] || '').trim();
@@ -78,9 +62,6 @@ function assertProductionSecrets() {
 }
 
 module.exports = {
-  MSG91_AUTHKEY,
-  MSG91_SECRETS,
-  PAYMENT_SECRETS,
   readSecret,
   readMsg91AuthKey,
   isProduction,

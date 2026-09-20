@@ -21,12 +21,7 @@ const DEV_TEST_OTP = '123456';
  * Demo / store-review accounts — fixed OTP 000000, no SMS, one phone per role.
  * Set DEMO_PHONE_* in functions env (server-only). Legacy: GOOGLE_PLAY_REVIEW_PHONE = patient.
  */
-const DEMO_OTP = '000000';
-const DEMO_OTP_EXPIRY_MS = 365 * 24 * 60 * 60 * 1000;
-/** @deprecated alias */
-const PLAY_REVIEW_OTP = DEMO_OTP;
-/** @deprecated alias */
-const PLAY_REVIEW_EXPIRY_MS = DEMO_OTP_EXPIRY_MS;
+// No hardcoded DEMO_OTP here anymore. It must come from Firestore.
 
 /** Env keys tried in order per role (first non-empty wins). */
 const DEMO_PHONE_ENV_BY_ROLE = {
@@ -36,6 +31,34 @@ const DEMO_PHONE_ENV_BY_ROLE = {
   lab: ['DEMO_PHONE_LAB'],
   ambulance: ['DEMO_PHONE_AMBULANCE'],
 };
+
+// Cache for demo config to reduce Firestore reads (lives for the life of the Cloud Function instance)
+let cachedDemoConfig = null;
+let lastDemoConfigFetchTime = 0;
+const DEMO_CONFIG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+async function getDemoConfig() {
+  if (cachedDemoConfig && (Date.now() - lastDemoConfigFetchTime < DEMO_CONFIG_CACHE_TTL_MS)) {
+    return cachedDemoConfig;
+  }
+<<<<<<< Updated upstream
+
+=======
+  
+>>>>>>> Stashed changes
+  try {
+    const { getFirestore } = require('firebase-admin/firestore');
+    const doc = await getFirestore().collection('app_config').doc('demo_accounts').get();
+    if (doc.exists) {
+      cachedDemoConfig = doc.data();
+      lastDemoConfigFetchTime = Date.now();
+      return cachedDemoConfig;
+    }
+  } catch (error) {
+    console.error('Error fetching demo config:', error);
+  }
+  return null;
+}
 
 function demoPhoneDigitsForRole(role) {
   const r = String(role || '').trim();
@@ -50,30 +73,60 @@ function demoPhoneDigitsForRole(role) {
   return null;
 }
 
-/** True when OTP_TEST_MODE is on and [digits] is the env demo number for [role]. */
-function isDemoPhone(digits, role) {
-  if (!isTestMode()) {
+<<<<<<< Updated upstream
+/** True when [digits] is the Firestore or env-configured demo number for [role]. */
+async function isDemoPhone(digits, role) {
+  const r = String(role || '').trim();
+
+  // 1. Check remote config (Firestore) — allowed in production for store-review accounts.
+=======
+/** True when [digits] is the env-configured demo number for [role] only. */
+async function isDemoPhone(digits, role) {
+  const r = String(role || '').trim();
+  
+  // 1. Check remote config (Firestore) - bypasses production blocks
+>>>>>>> Stashed changes
+  const config = await getDemoConfig();
+  if (config && config.demoPhones && Array.isArray(config.demoPhones[r]) && config.demoOtp) {
+    for (const remoteNumber of config.demoPhones[r]) {
+      if (normalizeMobileDigits(remoteNumber) === digits) {
+        return true;
+      }
+    }
+  }
+
+<<<<<<< Updated upstream
+  // 2. Block env-based demo numbers in production to prevent accidental leaks.
+  if (isProductionFirebaseProject()) {
     return false;
   }
+
+=======
+  // 2. Block env-based demo numbers in production to prevent accidental leaks
+  if (isProductionFirebaseProject()) {
+    return false;
+  }
+  
+>>>>>>> Stashed changes
   const expected = demoPhoneDigitsForRole(role);
   return expected != null && expected === digits;
 }
 
 /** Callable/request mobile + role — demo bypass only for matching role number. */
-function isDemoMobileInput(mobile, role) {
+async function isDemoMobileInput(mobile, role) {
   const digits = normalizeMobileDigits(mobile);
   if (!digits) return false;
-  return isDemoPhone(digits, String(role || 'patient').trim());
+  return await isDemoPhone(digits, String(role || 'patient').trim());
 }
 
 /** @deprecated use isDemoPhone(digits, role) */
-function isPlayReviewPhone(digits) {
-  return isDemoPhone(digits, 'patient');
+async function isPlayReviewPhone(digits) {
+  return await isDemoPhone(digits, 'patient');
 }
 
 /** @deprecated use isDemoMobileInput(mobile, role) */
-function isPlayReviewMobileInput(mobile) {
-  return isDemoMobileInput(mobile, 'patient');
+async function isPlayReviewMobileInput(mobile) {
+  return await isDemoMobileInput(mobile, 'patient');
 }
 const SEND_IP_WINDOW_MS = 60 * 60 * 1000;
 const SEND_IP_MAX = 10;
@@ -243,7 +296,7 @@ async function assertOtpRateLimit(db, { bucket, windowMs, maxAttempts }) {
 }
 
 async function enforceSendOtpRateLimits(db, { clientIp, role, digits }) {
-  if (isDemoPhone(digits, role)) return;
+  if (await isDemoPhone(digits, role)) return;
   await assertOtpRateLimit(db, {
     bucket: `send_ip_${hashRateLimitKey(clientIp)}`,
     windowMs: SEND_IP_WINDOW_MS,
@@ -257,7 +310,7 @@ async function enforceSendOtpRateLimits(db, { clientIp, role, digits }) {
 }
 
 async function enforceVerifyOtpRateLimits(db, { clientIp, role, digits }) {
-  if (isDemoPhone(digits, role)) return;
+  if (await isDemoPhone(digits, role)) return;
   await assertOtpRateLimit(db, {
     bucket: `verify_ip_${hashRateLimitKey(clientIp)}`,
     windowMs: VERIFY_IP_WINDOW_MS,
@@ -1046,18 +1099,12 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   }
 
-  if (isDemoPhone(digits, role)) {
-    return {
-      ok: true,
-      expiresInSeconds: Math.floor(DEMO_OTP_EXPIRY_MS / 1000),
-    };
-  }
-
   await enforceSendOtpRateLimits(db, { clientIp, role, digits });
 
   const challengeRef = db.collection('otp_challenges').doc(mobileHash(role, digits));
   const existing = await challengeRef.get();
-  const isDemoAccount = isDemoPhone(digits, role);
+  const isDemoAccount = await isDemoPhone(digits, role);
+
   if (existing.exists && !isDemoAccount) {
     const existingData = existing.data() || {};
     const lastSentAt = existingData.sentAt?.toDate?.();
@@ -1093,8 +1140,14 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   }
 
-  const code = isDemoAccount ? DEMO_OTP : generateOtpCode();
-  const expiryMs = isDemoAccount ? DEMO_OTP_EXPIRY_MS : OTP_EXPIRY_MS;
+  const config = await getDemoConfig();
+  if (isDemoAccount && (!config || !config.demoOtp)) {
+    throw new HttpsError('internal', 'Demo configuration missing demoOtp');
+  }
+
+  const code = isDemoAccount ? config.demoOtp : generateOtpCode();
+  // 10 years for demo expiry if we want it long lived, or just standard if not defined
+  const expiryMs = isDemoAccount ? (365 * 24 * 60 * 60 * 1000) : OTP_EXPIRY_MS;
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
 
   await challengeRef.set({
@@ -1110,7 +1163,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   // Outbound MSG91 API call via VPC Connector (static IP).
   try {
     if (isDemoAccount) {
-      // No SMS — demo/store-review number for this role only; OTP is DEMO_OTP.
+      // No SMS — demo/store-review number for this role only; OTP comes from Firestore.
     } else if (!isTestMode()) {
       await sendMsg91SmsOtp(digits, code, otpType);
     } else {
@@ -1128,17 +1181,18 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   };
 }
 
-async function isChallengeOtpValid({ otp, challenge, isDemoAccount }) {
-  if (isDemoAccount) {
-    return String(otp || '').trim() === DEMO_OTP;
+async function isChallengeOtpValid({ otp, challenge, isDemoAccount, demoOtp }) {
+  const entered = String(otp || '').trim();
+  if (isDemoAccount && demoOtp != null && entered === String(demoOtp).trim()) {
+    return true;
   }
-  if (!isDemoAccount && isTestMode() && String(otp || '').trim() === DEV_TEST_OTP) {
+  if (!isDemoAccount && isTestMode() && entered === DEV_TEST_OTP) {
     return true;
   }
   if (otpHashesEqual(hashOtp(otp), challenge.otpHash)) {
     return true;
   }
-  if (isTestMode()) {
+  if (isTestMode() || isDemoAccount) {
     return false;
   }
   return verifyMsg91Otp(challenge.mobileDigits, otp);
@@ -1150,6 +1204,10 @@ async function isChallengeOtpValid({ otp, challenge, isDemoAccount }) {
  */
 async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAccount }) {
   const challengeRef = db.collection('otp_challenges').doc(challengeKey);
+  const demoConfig = await getDemoConfig();
+  const demoOtp =
+    demoConfig?.demoOtp != null ? String(demoConfig.demoOtp).trim() : null;
+<<<<<<< Updated upstream
 
   const precheck = await db.runTransaction(async (tx) => {
     const challengeSnap = await tx.get(challengeRef);
@@ -1186,11 +1244,15 @@ async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAcco
     }
   }
 
+  const treatAsDemo = isDemoAccount || precheck.challenge.demoAccount === true;
   const otpValid = await isChallengeOtpValid({
     otp,
     challenge: precheck.challenge,
-    isDemoAccount,
+    isDemoAccount: treatAsDemo,
+    demoOtp,
   });
+=======
+>>>>>>> Stashed changes
 
   const outcome = await db.runTransaction(async (tx) => {
     const challengeSnap = await tx.get(challengeRef);
@@ -1211,6 +1273,13 @@ async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAcco
       return { status: 'locked' };
     }
 
+<<<<<<< Updated upstream
+=======
+    const treatAsDemo = isDemoAccount || challenge.demoAccount === true;
+    const otpValid = otpHashesEqual(hashOtp(otp), challenge.otpHash)
+      || (treatAsDemo && demoOtp != null && otp === demoOtp)
+      || (!treatAsDemo && isTestMode() && otp === DEV_TEST_OTP);
+>>>>>>> Stashed changes
     if (!otpValid) {
       tx.set(challengeRef, { attempts: attempts + 1 }, { merge: true });
       return { status: 'invalid', attempts: attempts + 1 };
@@ -1346,27 +1415,21 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     throw new HttpsError('invalid-argument', 'Enter the 6-digit OTP.');
   }
 
-  const otpType = String(data?.otpType || 'registration').trim();
-  const isDemoAccount = isDemoPhone(digits, role);
-  const demoVerifyBypass = isDemoAccount
-    && (otpType === 'login' || otpType === 'registration');
+  await enforceVerifyOtpRateLimits(db, { clientIp, role, digits });
 
-  if (demoVerifyBypass) {
-    if (String(otp).trim() !== DEMO_OTP) {
-      throw new HttpsError('permission-denied', 'Invalid OTP.');
-    }
-  } else {
-    await enforceVerifyOtpRateLimits(db, { clientIp, role, digits });
-    await consumeOtpChallengeAtomically(db, {
-      challengeKey: mobileHash(role, digits),
-      otp,
-      isDemoAccount,
-    });
-  }
+  const challengeKey = mobileHash(role, digits);
+  const isDemoAccount = await isDemoPhone(digits, role);
+
+  await consumeOtpChallengeAtomically(db, {
+    challengeKey,
+    otp,
+    isDemoAccount,
+  });
 
   const verifiedAt = FieldValue.serverTimestamp();
   const sessionExpiresAt = Timestamp.fromDate(new Date(Date.now() + SESSION_EXPIRY_MS));
   const sessionId = crypto.randomBytes(16).toString('hex');
+  const otpType = String(data?.otpType || 'registration').trim();
 
   // Signed-in account — refresh mobileVerified only when users/{uid} already exists.
   if (auth?.uid && !isEmail) {

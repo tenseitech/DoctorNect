@@ -1,3 +1,4 @@
+// Deploy: disable OTP App Check until reCAPTCHA is configured.
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { initializeApp } = require('firebase-admin/app');
@@ -56,7 +57,7 @@ const {
   verifyRazorpayPayment,
   expirePromotedAds,
 } = require('./promoted_ads');
-const { MSG91_SECRETS } = require('./secure_config');
+
 const {
   sanitizeRuleParams,
   requireKnownRule,
@@ -108,7 +109,6 @@ const CALLABLE_REGION = 'asia-south1';
 /** MSG91 callable options (asia-south1) — region + Secret Manager secrets. */
 const MSG91_VPC_OPTIONS = {
   region: 'asia-south1',
-  secrets: MSG91_SECRETS,
 };
 
 /** Set ENFORCE_OTP_APP_CHECK=false in functions/.env only while App Check is being configured. */
@@ -944,7 +944,7 @@ exports.sendUserRegistrationOtp = onCall(
     if (otpType === 'registration') {
       const mobile = request.data?.mobile || request.data?.email || request.data?.identifier;
       const role = String(request.data?.role || 'patient').trim();
-      if (!isDemoMobileInput(mobile, role)) {
+      if (!(await isDemoMobileInput(mobile, role))) {
         await enforceAbuseLimit(firestore, request, 'signup', {
           identifier: mobile,
           message: 'Too many account creation attempts. Please try again later.',

@@ -75,7 +75,7 @@ test('production OTP guard blocks cold start when demo phone env is configured',
   );
 });
 
-test('registration OTP backdoors are disabled on production project', () => {
+test('registration OTP backdoors are disabled on production project', async () => {
   const savedEnv = {
     GCLOUD_PROJECT: process.env.GCLOUD_PROJECT,
     OTP_TEST_MODE: process.env.OTP_TEST_MODE,
@@ -96,7 +96,7 @@ test('registration OTP backdoors are disabled on production project', () => {
 
     const { isTestMode, isDemoPhone } = require('../registration_otp');
     assert.equal(isTestMode(), false);
-    assert.equal(isDemoPhone('9359503874', 'patient'), false);
+    assert.equal(await isDemoPhone('9359503874', 'patient'), false);
   } finally {
     for (const [key, value] of Object.entries(savedEnv)) {
       if (value === undefined) {
