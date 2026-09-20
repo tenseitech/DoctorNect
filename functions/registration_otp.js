@@ -41,11 +41,7 @@ async function getDemoConfig() {
   if (cachedDemoConfig && (Date.now() - lastDemoConfigFetchTime < DEMO_CONFIG_CACHE_TTL_MS)) {
     return cachedDemoConfig;
   }
-<<<<<<< Updated upstream
-
-=======
   
->>>>>>> Stashed changes
   try {
     const { getFirestore } = require('firebase-admin/firestore');
     const doc = await getFirestore().collection('app_config').doc('demo_accounts').get();
@@ -73,19 +69,11 @@ function demoPhoneDigitsForRole(role) {
   return null;
 }
 
-<<<<<<< Updated upstream
-/** True when [digits] is the Firestore or env-configured demo number for [role]. */
-async function isDemoPhone(digits, role) {
-  const r = String(role || '').trim();
-
-  // 1. Check remote config (Firestore) — allowed in production for store-review accounts.
-=======
 /** True when [digits] is the env-configured demo number for [role] only. */
 async function isDemoPhone(digits, role) {
   const r = String(role || '').trim();
   
   // 1. Check remote config (Firestore) - bypasses production blocks
->>>>>>> Stashed changes
   const config = await getDemoConfig();
   if (config && config.demoPhones && Array.isArray(config.demoPhones[r]) && config.demoOtp) {
     for (const remoteNumber of config.demoPhones[r]) {
@@ -95,19 +83,11 @@ async function isDemoPhone(digits, role) {
     }
   }
 
-<<<<<<< Updated upstream
-  // 2. Block env-based demo numbers in production to prevent accidental leaks.
-  if (isProductionFirebaseProject()) {
-    return false;
-  }
-
-=======
   // 2. Block env-based demo numbers in production to prevent accidental leaks
   if (isProductionFirebaseProject()) {
     return false;
   }
   
->>>>>>> Stashed changes
   const expected = demoPhoneDigitsForRole(role);
   return expected != null && expected === digits;
 }
@@ -1148,6 +1128,16 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   const code = isDemoAccount ? config.demoOtp : generateOtpCode();
   // 10 years for demo expiry if we want it long lived, or just standard if not defined
   const expiryMs = isDemoAccount ? (365 * 24 * 60 * 60 * 1000) : OTP_EXPIRY_MS;
+  }
+
+  const config = await getDemoConfig();
+  if (isDemoAccount && (!config || !config.demoOtp)) {
+    throw new HttpsError('internal', 'Demo configuration missing demoOtp');
+  }
+
+  const code = isDemoAccount ? config.demoOtp : generateOtpCode();
+  // 10 years for demo expiry if we want it long lived, or just standard if not defined
+  const expiryMs = isDemoAccount ? (365 * 24 * 60 * 60 * 1000) : OTP_EXPIRY_MS;
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
 
   await challengeRef.set({
@@ -1179,7 +1169,6 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     expiresInSeconds: Math.floor(expiryMs / 1000),
     ...(isTestMode() && !isDemoAccount ? { debugOtp: DEV_TEST_OTP } : {}),
   };
-}
 
 async function isChallengeOtpValid({ otp, challenge, isDemoAccount, demoOtp }) {
   const entered = String(otp || '').trim();
@@ -1207,52 +1196,6 @@ async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAcco
   const demoConfig = await getDemoConfig();
   const demoOtp =
     demoConfig?.demoOtp != null ? String(demoConfig.demoOtp).trim() : null;
-<<<<<<< Updated upstream
-
-  const precheck = await db.runTransaction(async (tx) => {
-    const challengeSnap = await tx.get(challengeRef);
-    if (!challengeSnap.exists) {
-      return { status: 'missing' };
-    }
-
-    const challenge = challengeSnap.data() || {};
-    const expiresAt = challenge.expiresAt?.toDate?.();
-    if (!expiresAt || Date.now() > expiresAt.getTime()) {
-      tx.delete(challengeRef);
-      return { status: 'expired' };
-    }
-
-    const attempts = Number(challenge.attempts) || 0;
-    if (attempts >= 5) {
-      tx.delete(challengeRef);
-      return { status: 'locked' };
-    }
-
-    return { status: 'pending', challenge, attempts };
-  });
-
-  if (precheck.status !== 'pending') {
-    switch (precheck.status) {
-      case 'missing':
-        throw new HttpsError('failed-precondition', 'Send OTP first.');
-      case 'expired':
-        throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
-      case 'locked':
-        throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
-      default:
-        throw new HttpsError('internal', 'OTP verification failed.');
-    }
-  }
-
-  const treatAsDemo = isDemoAccount || precheck.challenge.demoAccount === true;
-  const otpValid = await isChallengeOtpValid({
-    otp,
-    challenge: precheck.challenge,
-    isDemoAccount: treatAsDemo,
-    demoOtp,
-  });
-=======
->>>>>>> Stashed changes
 
   const outcome = await db.runTransaction(async (tx) => {
     const challengeSnap = await tx.get(challengeRef);
@@ -1273,13 +1216,10 @@ async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAcco
       return { status: 'locked' };
     }
 
-<<<<<<< Updated upstream
-=======
     const treatAsDemo = isDemoAccount || challenge.demoAccount === true;
     const otpValid = otpHashesEqual(hashOtp(otp), challenge.otpHash)
       || (treatAsDemo && demoOtp != null && otp === demoOtp)
       || (!treatAsDemo && isTestMode() && otp === DEV_TEST_OTP);
->>>>>>> Stashed changes
     if (!otpValid) {
       tx.set(challengeRef, { attempts: attempts + 1 }, { merge: true });
       return { status: 'invalid', attempts: attempts + 1 };
