@@ -397,7 +397,8 @@ class RegistrationOtpService {
 
   static String _failedPreconditionMessage(String rawMessage) {
     final lower = rawMessage.toLowerCase();
-    if (lower.contains('send otp first') || lower.contains('otp session expired')) {
+    if (lower.contains('send otp first') ||
+        lower.contains('otp session expired')) {
       return 'OTP expired. Send a new one.';
     }
     if (rawMessage.isNotEmpty) return rawMessage;
@@ -406,7 +407,8 @@ class RegistrationOtpService {
 
   static String _resourceExhaustedMessage(String rawMessage) {
     final lower = rawMessage.toLowerCase();
-    if (lower.contains('invalid attempt') || lower.contains('too many invalid')) {
+    if (lower.contains('invalid attempt') ||
+        lower.contains('too many invalid')) {
       return 'Too many wrong attempts. Send a new OTP.';
     }
     if (lower.contains('wait a minute') || lower.contains('wait and try')) {
