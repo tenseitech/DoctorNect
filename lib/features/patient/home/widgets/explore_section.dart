@@ -337,15 +337,31 @@ class _ExploreCategoryTile extends StatelessWidget {
   final VoidCallback onTap;
   final double? fixedWidth;
 
+  Widget _buildFallback(BuildContext context, double iconSize) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Center(
+      child: label == 'Stomach & Digestion'
+          ? StomachIcon(
+              size: iconSize * 1.15,
+              color: isDark ? Colors.white : AppColors.patientTeal,
+            )
+          : Icon(
+              _ExploreIcons.forCategory(label),
+              size: iconSize,
+              color: isDark ? Colors.white : AppColors.patientTeal,
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final palette = _ExplorePalette.forCategory(label);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final useWideTile = fixedWidth != null && fixedWidth! >= 84;
 
     Widget buildContent(double width) {
-      final iconBox = useWideTile ? 54.0 : (width * 0.78).clamp(40.0, 58.0);
-      final iconSize = iconBox * 0.42;
+      final iconBox = useWideTile ? 56.0 : (width * 0.78).clamp(42.0, 60.0);
       final fontSize = useWideTile ? 11.0 : (width * 0.132).clamp(9.0, 11.0);
+      final assetPath = _ExploreSpecialtyAssets.forCategory(label);
 
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -354,31 +370,36 @@ class _ExploreCategoryTile extends StatelessWidget {
             width: iconBox,
             height: iconBox,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: palette.gradient,
-              ),
+              color: isDark ? Colors.black : Colors.white,
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF27272A) : const Color(0xFFE2E8F0),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: palette.gradient.last.withValues(alpha: 0.28),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.6)
+                      : Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
-            child: Center(
-              child: label == 'Stomach & Digestion'
-                  ? StomachIcon(
-                      size: iconSize * 1.15,
-                      color: AppColors.surfaceOf(context),
-                    )
-                  : Icon(
-                      _ExploreIcons.forCategory(label),
-                      size: iconSize,
-                      color: AppColors.surfaceOf(context),
-                    ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Padding(
+                padding: const EdgeInsets.all(7.0),
+                child: assetPath != null
+                    ? Image.asset(
+                        assetPath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                            _buildFallback(context, iconBox * 0.45),
+                      )
+                    : _buildFallback(context, iconBox * 0.45),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -421,62 +442,34 @@ class _ExploreCategoryTile extends StatelessWidget {
   }
 }
 
-class _ExplorePalette {
-  const _ExplorePalette(this.gradient);
+abstract final class _ExploreSpecialtyAssets {
+  static const Map<String, String> _assetPaths = {
+    'General Physician': 'assets/images/specialties/general_physician.png',
+    "Women's Health": 'assets/images/specialties/womens_health.png',
+    'Child Care': 'assets/images/specialties/child_care.png',
+    'Eye Specialist': 'assets/images/specialties/eye_specialist.png',
+    'Ear, Nose & Throat': 'assets/images/specialties/ear_nose_throat.png',
+    // 'Dentist' will be used once dentist.png is provided
+    'Heart Specialist': 'assets/images/specialties/heart_specialist.png',
+    'Mental Wellness': 'assets/images/specialties/mental_wellness.png',
+    'Skin Specialist': 'assets/images/specialties/skin_specialist.png',
+    'Bone & Joint': 'assets/images/specialties/bone_joint.png',
+    'Diabetes': 'assets/images/specialties/diabetes.png',
+    'Stomach & Digestion': 'assets/images/specialties/stomach_digestion.png',
+    'Urinary Problems': 'assets/images/specialties/urinary_problems.png',
+    'Physiotherapist': 'assets/images/specialties/physiotherapist.png',
+    'Lung & Respiratory': 'assets/images/specialties/lung_respiratory.png',
+    'Dietitian': 'assets/images/specialties/dietitian.png',
+    'Cancer Specialist': 'assets/images/specialties/cancer_specialist.png',
+    'Neurologist': 'assets/images/specialties/neurologist.png',
+    'General Surgeon': 'assets/images/specialties/general_surgeon.png',
+    'Sexual Health': 'assets/images/specialties/sexual_health.png',
+    'Ayurveda': 'assets/images/specialties/ayurveda.png',
+    'Homeopathy': 'assets/images/specialties/homeopathy.png',
+    'Veterinary': 'assets/images/specialties/veterinary.png',
+  };
 
-  final List<Color> gradient;
-
-  static _ExplorePalette forCategory(String category) {
-    return switch (category) {
-      'General Physician' =>
-        const _ExplorePalette([Color(0xFF0D9488), Color(0xFF0369A1)]),
-      "Women's Health" =>
-        const _ExplorePalette([Color(0xFFDB2777), Color(0xFFBE185D)]),
-      'Child Care' =>
-        const _ExplorePalette([Color(0xFF2563EB), Color(0xFF1D4ED8)]),
-      'Eye Specialist' =>
-        const _ExplorePalette([Color(0xFF7C3AED), Color(0xFF6D28D9)]),
-      'Ear, Nose & Throat' =>
-        const _ExplorePalette([Color(0xFF0891B2), Color(0xFF0E7490)]),
-      'Dentist' =>
-        const _ExplorePalette([Color(0xFF0284C7), Color(0xFF0369A1)]),
-      'Heart Specialist' =>
-        const _ExplorePalette([Color(0xFFDC2626), Color(0xFFB91C1C)]),
-      'Mental Wellness' =>
-        const _ExplorePalette([Color(0xFF6366F1), Color(0xFF4F46E5)]),
-      'Skin Specialist' =>
-        const _ExplorePalette([Color(0xFFEA580C), Color(0xFFC2410C)]),
-      'Bone & Joint' =>
-        const _ExplorePalette([Color(0xFF475569), Color(0xFF334155)]),
-      'Diabetes' =>
-        const _ExplorePalette([Color(0xFFCA8A04), Color(0xFFA16207)]),
-      'Stomach & Digestion' =>
-        const _ExplorePalette([Color(0xFF16A34A), Color(0xFF15803D)]),
-      'Urinary Problems' =>
-        const _ExplorePalette([Color(0xFF0EA5E9), Color(0xFF0284C7)]),
-      'Physiotherapist' =>
-        const _ExplorePalette([Color(0xFF059669), Color(0xFF047857)]),
-      'Lung & Respiratory' =>
-        const _ExplorePalette([Color(0xFF38BDF8), Color(0xFF0EA5E9)]),
-      'Dietitian' =>
-        const _ExplorePalette([Color(0xFF84CC16), Color(0xFF65A30D)]),
-      'Cancer Specialist' =>
-        const _ExplorePalette([Color(0xFF9333EA), Color(0xFF7E22CE)]),
-      'Neurologist' =>
-        const _ExplorePalette([Color(0xFF4F46E5), Color(0xFF4338CA)]),
-      'General Surgeon' =>
-        const _ExplorePalette([Color(0xFF64748B), Color(0xFF475569)]),
-      'Sexual Health' =>
-        const _ExplorePalette([Color(0xFFE11D48), Color(0xFFBE123C)]),
-      'Ayurveda' =>
-        const _ExplorePalette([Color(0xFF65A30D), Color(0xFF4D7C0F)]),
-      'Homeopathy' =>
-        const _ExplorePalette([Color(0xFF14B8A6), Color(0xFF0D9488)]),
-      'Veterinary' =>
-        const _ExplorePalette([Color(0xFF78716C), Color(0xFF57534E)]),
-      _ => const _ExplorePalette([Color(0xFF0D9488), Color(0xFF0369A1)]),
-    };
-  }
+  static String? forCategory(String category) => _assetPaths[category];
 }
 
 abstract final class _ExploreIcons {

@@ -50,9 +50,9 @@ function demoPhoneDigitsForRole(role) {
   return null;
 }
 
-/** True when [digits] is the env-configured demo number for [role] only. */
+/** True when OTP_TEST_MODE is on and [digits] is the env demo number for [role]. */
 function isDemoPhone(digits, role) {
-  if (isProductionFirebaseProject()) {
+  if (!isTestMode()) {
     return false;
   }
   const expected = demoPhoneDigitsForRole(role);
@@ -1046,6 +1046,13 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   }
 
+  if (isDemoPhone(digits, role)) {
+    return {
+      ok: true,
+      expiresInSeconds: Math.floor(DEMO_OTP_EXPIRY_MS / 1000),
+    };
+  }
+
   await enforceSendOtpRateLimits(db, { clientIp, role, digits });
 
   const challengeRef = db.collection('otp_challenges').doc(mobileHash(role, digits));
@@ -1339,21 +1346,27 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     throw new HttpsError('invalid-argument', 'Enter the 6-digit OTP.');
   }
 
-  await enforceVerifyOtpRateLimits(db, { clientIp, role, digits });
-
-  const challengeKey = mobileHash(role, digits);
+  const otpType = String(data?.otpType || 'registration').trim();
   const isDemoAccount = isDemoPhone(digits, role);
+  const demoVerifyBypass = isDemoAccount
+    && (otpType === 'login' || otpType === 'registration');
 
-  await consumeOtpChallengeAtomically(db, {
-    challengeKey,
-    otp,
-    isDemoAccount,
-  });
+  if (demoVerifyBypass) {
+    if (String(otp).trim() !== DEMO_OTP) {
+      throw new HttpsError('permission-denied', 'Invalid OTP.');
+    }
+  } else {
+    await enforceVerifyOtpRateLimits(db, { clientIp, role, digits });
+    await consumeOtpChallengeAtomically(db, {
+      challengeKey: mobileHash(role, digits),
+      otp,
+      isDemoAccount,
+    });
+  }
 
   const verifiedAt = FieldValue.serverTimestamp();
   const sessionExpiresAt = Timestamp.fromDate(new Date(Date.now() + SESSION_EXPIRY_MS));
   const sessionId = crypto.randomBytes(16).toString('hex');
-  const otpType = String(data?.otpType || 'registration').trim();
 
   // Signed-in account — refresh mobileVerified only when users/{uid} already exists.
   if (auth?.uid && !isEmail) {

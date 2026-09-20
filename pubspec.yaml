@@ -91,6 +91,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/specialties/
     - assets/data/indian_medicines.txt.gz
     - assets/data/icd10_diagnoses.txt
     - assets/data/symptoms.json
