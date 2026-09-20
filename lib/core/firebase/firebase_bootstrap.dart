@@ -61,7 +61,7 @@ Future<void> _activateAppCheck() async {
   FirebaseBootstrap.appCheckReady = false;
   try {
     if (kIsWeb) {
-      final siteKey = AppConstants.firebaseAppCheckRecaptchaSiteKey.trim();
+      final siteKey = AppConstants.resolvedAppCheckRecaptchaSiteKey;
       if (siteKey.isEmpty) {
         if (kDebugMode) {
           debugPrint(
@@ -92,7 +92,7 @@ Future<void> _activateAppCheck() async {
 
     // Release builds use Play Integrity when installed from Play Store.
     // Pass --dart-define=APP_CHECK_DEBUG_TOKEN=uuid for sideloaded release testing.
-    final debugToken = AppConstants.appCheckDebugToken.trim();
+    final debugToken = AppConstants.resolvedAppCheckDebugToken;
     final useDebugProvider = kDebugMode || debugToken.isNotEmpty;
     await FirebaseAppCheck.instance.activate(
       providerAndroid: useDebugProvider

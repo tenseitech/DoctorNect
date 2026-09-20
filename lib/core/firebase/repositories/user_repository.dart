@@ -368,9 +368,10 @@ class UserRepository {
     final normalized = uid.trim();
     if (normalized.isEmpty) return false;
     try {
-      final snap = await _db.collection(FirestorePaths.users).doc(normalized).get(
-            const GetOptions(source: Source.server),
-          );
+      final snap =
+          await _db.collection(FirestorePaths.users).doc(normalized).get(
+                const GetOptions(source: Source.server),
+              );
       return snap.exists;
     } on FirebaseException {
       return false;

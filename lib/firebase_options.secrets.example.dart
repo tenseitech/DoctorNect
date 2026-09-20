@@ -3,4 +3,6 @@ abstract final class FirebaseOptionsSecrets {
   static const String webApiKey = '';
   static const String androidApiKey = '';
   static const String iosApiKey = '';
+  static const String recaptchaSiteKey = '';
+  static const String appCheckDebugToken = '';
 }

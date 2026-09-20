@@ -37,13 +37,23 @@ $webKey = if ($env:FIREBASE_API_KEY_WEB) { $env:FIREBASE_API_KEY_WEB } else { ''
 $androidKey = if ($env:FIREBASE_API_KEY_ANDROID) { $env:FIREBASE_API_KEY_ANDROID } else { Read-AndroidApiKey }
 $iosKey = if ($env:FIREBASE_API_KEY_IOS) { $env:FIREBASE_API_KEY_IOS } else { '' }
 
+function Escape-DartString {
+    param([string]$Value)
+    return ($Value -replace "\\", "\\\\" -replace "'", "\\'")
+}
+
+$recaptchaKey = if ($env:RECAPTCHA_SITE_KEY) { $env:RECAPTCHA_SITE_KEY } else { '' }
+$appCheckDebug = if ($env:APP_CHECK_DEBUG_TOKEN) { $env:APP_CHECK_DEBUG_TOKEN } else { '' }
+
 $content = @"
 // Generated for local development. Do not commit real keys to git.
 // Regenerate: .\scripts\run_local.ps1  or  .\scripts\generate_firebase_secrets.ps1
 abstract final class FirebaseOptionsSecrets {
-  static const String webApiKey = '$webKey';
-  static const String androidApiKey = '$androidKey';
-  static const String iosApiKey = '$iosKey';
+  static const String webApiKey = '$(Escape-DartString $webKey)';
+  static const String androidApiKey = '$(Escape-DartString $androidKey)';
+  static const String iosApiKey = '$(Escape-DartString $iosKey)';
+  static const String recaptchaSiteKey = '$(Escape-DartString $recaptchaKey)';
+  static const String appCheckDebugToken = '$(Escape-DartString $appCheckDebug)';
 }
 "@
 

@@ -1,3 +1,6 @@
+import '../../firebase_options.secrets.dart';
+import 'package:flutter/foundation.dart';
+
 abstract final class AppConstants {
   /// Legacy alias — prefer [ResponsiveLayout.contentMaxWidth] in build methods.
   static const double maxContentWidth = 1100;
@@ -15,10 +18,21 @@ abstract final class AppConstants {
 
   /// reCAPTCHA v3 site key from Firebase Console → App Check → Web.
   /// Pass at build time: --dart-define=RECAPTCHA_SITE_KEY=your_key
+  /// or set RECAPTCHA_SITE_KEY in project root `.env` and run generate_firebase_secrets.ps1.
   static const firebaseAppCheckRecaptchaSiteKey = String.fromEnvironment(
     'RECAPTCHA_SITE_KEY',
     defaultValue: '',
   );
+
+  static String get resolvedAppCheckRecaptchaSiteKey {
+    final fromDefine = firebaseAppCheckRecaptchaSiteKey.trim();
+    if (fromDefine.isNotEmpty) return fromDefine;
+    if (kDebugMode) {
+      final fromSecrets = FirebaseOptionsSecrets.recaptchaSiteKey.trim();
+      if (fromSecrets.isNotEmpty) return fromSecrets;
+    }
+    return '';
+  }
 
   /// Optional fixed App Check debug token for local mobile builds.
   /// Generate a UUID, register it in Firebase Console → App Check → Manage debug
@@ -28,6 +42,16 @@ abstract final class AppConstants {
     'APP_CHECK_DEBUG_TOKEN',
     defaultValue: '',
   );
+
+  static String get resolvedAppCheckDebugToken {
+    final fromDefine = appCheckDebugToken.trim();
+    if (fromDefine.isNotEmpty) return fromDefine;
+    if (kDebugMode) {
+      final fromSecrets = FirebaseOptionsSecrets.appCheckDebugToken.trim();
+      if (fromSecrets.isNotEmpty) return fromSecrets;
+    }
+    return '';
+  }
 
   static const Map<String, List<String>> specializationCategories = {
     'Surgery': [

@@ -60,7 +60,7 @@ abstract final class AppCheckService {
 
   static String _buildSetupHint(Object error) {
     final err = error.toString();
-    final configured = AppConstants.appCheckDebugToken.trim();
+    final configured = AppConstants.resolvedAppCheckDebugToken;
     final attestationFailed =
         err.contains('403') || err.toLowerCase().contains('attestation failed');
     final rateLimited = err.toLowerCase().contains('too many attempts');

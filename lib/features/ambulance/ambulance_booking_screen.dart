@@ -512,14 +512,14 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               if (!mounted) return;
                                               if (ok) {
                                                 _sync.stopPatientWatch();
-                                                setState(
-                                                    () => _activeBookingId = null);
+                                                setState(() =>
+                                                    _activeBookingId = null);
                                                 messenger.showSnackBar(
                                                   const SnackBar(
-                                                    content:
-                                                        Text('Request cancelled'),
-                                                    behavior:
-                                                        SnackBarBehavior.floating,
+                                                    content: Text(
+                                                        'Request cancelled'),
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
                                                   ),
                                                 );
                                               } else {
@@ -531,8 +531,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                                     content: Text(message),
                                                     backgroundColor:
                                                         const Color(0xFFDC2626),
-                                                    behavior:
-                                                        SnackBarBehavior.floating,
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
                                                   ),
                                                 );
                                               }
