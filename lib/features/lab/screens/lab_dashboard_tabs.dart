@@ -316,8 +316,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                   onPressed: onToday,
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
-                    backgroundColor:
-                        Colors.white.withValues(alpha: 0.16),
+                    backgroundColor: Colors.white.withValues(alpha: 0.16),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   ),

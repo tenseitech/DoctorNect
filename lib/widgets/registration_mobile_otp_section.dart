@@ -98,8 +98,7 @@ class _RegistrationMobileOtpSectionState
         t.cancel();
         return;
       }
-      final remaining =
-          _cooldownEnd?.difference(DateTime.now()).inSeconds ?? 0;
+      final remaining = _cooldownEnd?.difference(DateTime.now()).inSeconds ?? 0;
       setState(() {
         if (remaining <= 0) {
           _resendCooldown = 0;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme/app_colors.dart';
 
@@ -56,31 +57,18 @@ class SidebarDoctorNectLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (extended) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 8),
-        child: DoctorNectLogo(size: 32),
-      );
-    }
-
     return Center(
-      child: Image.asset(
-        'assets/images/logo_icon.png',
-        width: 32,
-        height: 32,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: AppColors.practoTeal.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(7),
-          ),
-          child: const Icon(
-            Icons.local_hospital_rounded,
-            size: 18,
-            color: AppColors.practoTeal,
-          ),
+      child: Text(
+        extended ? 'DoctorNect' : 'DN',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.inter(
+          fontSize: extended ? 20 : 18,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.4,
+          height: 1.1,
+          color: AppColors.textPrimaryOf(context),
         ),
       ),
     );

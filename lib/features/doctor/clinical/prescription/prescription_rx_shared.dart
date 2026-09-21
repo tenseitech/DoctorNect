@@ -395,9 +395,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
         style: GoogleFonts.inter(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: active
-              ? Colors.white
-              : AppColors.textSecondaryOf(context),
+          color: active ? Colors.white : AppColors.textSecondaryOf(context),
         ),
       ),
     );
@@ -435,9 +433,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
-                    color: widget.isExpanded
-                        ? Colors.white
-                        : AppColors.doctorBlue,
+                    color:
+                        widget.isExpanded ? Colors.white : AppColors.doctorBlue,
                   ),
                 ),
               ),

@@ -263,8 +263,8 @@ class HomeDoctorInlineMessage extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.patientTeal
-                  .withValues(alpha: isDark ? 0.14 : 0.08),
+              color:
+                  AppColors.patientTeal.withValues(alpha: isDark ? 0.14 : 0.08),
               shape: BoxShape.circle,
             ),
             child: Icon(
