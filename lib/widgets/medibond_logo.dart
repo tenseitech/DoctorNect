@@ -12,7 +12,7 @@ class DoctorNectLogo extends StatelessWidget {
     // Full brand mark includes icon + "DoctorNect" wordmark.
     final height = size * 1.15;
     return Image.asset(
-      'assets/images/logo.png',
+      'assets/images/logo.webp',
       width: size * 1.4,
       height: height,
       fit: BoxFit.contain,

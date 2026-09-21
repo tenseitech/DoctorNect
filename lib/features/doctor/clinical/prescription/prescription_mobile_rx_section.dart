@@ -122,6 +122,14 @@ class _PrescriptionMobileRxSectionState
     widget.onChanged();
   }
 
+  void _handleRemove(int listIndex, String id) {
+    setState(() {
+      if (_expandedMedicineId == id) _expandedMedicineId = null;
+      _expandedInstructionIds.remove(id);
+    });
+    widget.onRemove(listIndex);
+  }
+
   int get _namedCount => namedMedicineEntries(widget.medicines).length;
 
   List<Widget> _buildMedicineCards(List<MedicineEntry> named) {
@@ -140,7 +148,7 @@ class _PrescriptionMobileRxSectionState
         canDelete: true,
         onExpandToggle: () => _toggleExpand(entry.id),
         onToggleInstruction: () => _toggleInstruction(entry.id),
-        onDelete: () => widget.onRemove(listIndex),
+        onDelete: () => _handleRemove(listIndex, entry.id),
         onChanged: widget.onChanged,
         onConfirm: () => _confirmMedicine(entry.id),
       );

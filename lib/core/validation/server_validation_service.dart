@@ -110,19 +110,31 @@ abstract final class ServerValidationService {
     }
   }
 
-  static Future<bool> _fetchRulesFromServer(SharedPreferences prefs) async {
-    try {
-      final Map<String, dynamic> data;
-      if (kIsWeb) {
+  static Future<Map<String, dynamic>> _fetchRulesPayload() async {
+    if (kIsWeb) {
+      try {
         final response =
             await http.get(Uri.base.resolve('/api/validation-rules'));
-        if (response.statusCode != 200) return false;
-        data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
-      } else {
-        final callable = _functions.httpsCallable('getValidationRules');
-        final result = await callable.call<Map<String, dynamic>>({});
-        data = Map<String, dynamic>.from(result.data);
+        final body = response.body.trimLeft();
+        if (response.statusCode == 200 && body.startsWith('{')) {
+          return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+              'ServerValidationService: hosting rewrite unavailable, using callable: $e');
+        }
       }
+    }
+
+    final callable = _functions.httpsCallable('getValidationRules');
+    final result = await callable.call<Map<String, dynamic>>({});
+    return Map<String, dynamic>.from(result.data);
+  }
+
+  static Future<bool> _fetchRulesFromServer(SharedPreferences prefs) async {
+    try {
+      final data = await _fetchRulesPayload();
       final rules = data['rules'];
       final thresholds = data['vitalThresholds'];
       if (rules is Map) {

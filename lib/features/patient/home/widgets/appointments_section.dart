@@ -7,6 +7,7 @@ import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:medibond/features/shared/screens/appointment_detail_screen.dart';
 import '../../appointments/models/patient_appointment_models.dart';
+import '../../appointments/widgets/appointment_card_shared.dart';
 import '../../booking/booking_flow_screen.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -262,7 +263,7 @@ class _AppointmentCard extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.surfaceOf(context),
+                          color: Colors.white,
                           height: 1,
                         ),
                       ),
@@ -272,8 +273,7 @@ class _AppointmentCard extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.surfaceOf(context)
-                              .withValues(alpha: 0.92),
+                          color: Colors.white.withValues(alpha: 0.92),
                           letterSpacing: 0.4,
                         ),
                       ),
@@ -353,20 +353,10 @@ class _AppointmentCard extends StatelessWidget {
                         .withValues(alpha: 0.85),
                   )
                 else
-                  TextButton(
+                  OutlinedButton(
                     onPressed: () => _bookAgain(context),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.patientTeal,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      'Book again',
-                      style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          fontWeight: FontWeight.w600),
-                    ),
+                    style: compactTealOutlinedButtonStyle(),
+                    child: const Text('Book again'),
                   ),
               ],
             ),

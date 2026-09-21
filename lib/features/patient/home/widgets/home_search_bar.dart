@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -12,6 +14,22 @@ class HomeSearchBar extends StatefulWidget {
   });
 
   final VoidCallback onTap;
+
+  static const List<String> words = [
+    'Doctor',
+    'Lab',
+    'Speciality',
+    'Location',
+    'Language',
+  ];
+
+  static const List<String> placeholders = [
+    'Search for Doctor',
+    'Search for Lab',
+    'Search for Speciality',
+    'Search for Location',
+    'Search for Language',
+  ];
 
   static String placeholder({required bool compact}) {
     return compact
@@ -31,15 +49,70 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
   bool _pressed = false;
   bool _hovered = false;
 
+  int _wordIndex = 0;
+  int _charIndex = 0;
+  bool _isDeleting = false;
+  Timer? _typewriterTimer;
+
+  static const _typingDelay = Duration(milliseconds: 100);
+  static const _deletingDelay = Duration(milliseconds: 55);
+  static const _pauseFull = Duration(milliseconds: 1600);
+  static const _pauseEmpty = Duration(milliseconds: 350);
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleNextTick(_typingDelay);
+  }
+
+  void _scheduleNextTick(Duration delay) {
+    _typewriterTimer?.cancel();
+    _typewriterTimer = Timer(delay, _onTick);
+  }
+
+  void _onTick() {
+    if (!mounted) return;
+
+    final currentWord = HomeSearchBar.words[_wordIndex];
+
+    setState(() {
+      if (!_isDeleting) {
+        if (_charIndex < currentWord.length) {
+          _charIndex++;
+          _scheduleNextTick(_typingDelay);
+        } else {
+          _isDeleting = true;
+          _scheduleNextTick(_pauseFull);
+        }
+      } else {
+        if (_charIndex > 0) {
+          _charIndex--;
+          _scheduleNextTick(_deletingDelay);
+        } else {
+          _isDeleting = false;
+          _wordIndex = (_wordIndex + 1) % HomeSearchBar.words.length;
+          _scheduleNextTick(_pauseEmpty);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _typewriterTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final compact = ResponsiveLayout.isCompact(context);
-    final placeholder = HomeSearchBar.placeholder(compact: compact);
     final active = _pressed || _hovered;
+    final currentWord = HomeSearchBar.words[_wordIndex];
+    final animatedWord = currentWord.substring(0, _charIndex);
 
     return _SearchField(
       compact: compact,
-      placeholder: placeholder,
+      animatedWord: animatedWord,
       active: active,
       onTap: widget.onTap,
       onHoverChanged: (value) => setState(() => _hovered = value),
@@ -51,7 +124,7 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
 class _SearchField extends StatelessWidget {
   const _SearchField({
     required this.compact,
-    required this.placeholder,
+    required this.animatedWord,
     required this.active,
     required this.onTap,
     required this.onHoverChanged,
@@ -59,7 +132,7 @@ class _SearchField extends StatelessWidget {
   });
 
   final bool compact;
-  final String placeholder;
+  final String animatedWord;
   final bool active;
   final VoidCallback onTap;
   final ValueChanged<bool> onHoverChanged;
@@ -124,8 +197,13 @@ class _SearchField extends StatelessWidget {
                 ),
                 SizedBox(width: compact ? 10 : 12),
                 Expanded(
-                  child: Text(
-                    placeholder,
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        const TextSpan(text: 'Search for '),
+                        TextSpan(text: animatedWord),
+                      ],
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(

@@ -164,13 +164,14 @@ class AuthRegistrationStepIndicator extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < labels.length; i++) ...[
             if (i > 0)
               Expanded(
                 child: Container(
                   height: 2,
-                  margin: const EdgeInsets.only(bottom: 18),
+                  margin: const EdgeInsets.only(top: 13),
                   color: i <= activeIndex
                       ? accentColor.withValues(alpha: 0.45)
                       : AppColors.borderOf(context),

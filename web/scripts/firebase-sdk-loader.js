@@ -1,6 +1,6 @@
 /** Preload Firebase JS SDK modules before FlutterFire init (avoids inline script CSP violations). */
 window.__firebaseSdkReady = (async function loadFirebaseSdks() {
-  var version = window.flutterfire_web_sdk_version || '12.18.0';
+  var version = window.flutterfire_web_sdk_version || '12.19.0';
   var base = 'https://www.gstatic.com/firebasejs/' + version + '/';
 
   window.firebase_core = await import(base + 'firebase-app.js');

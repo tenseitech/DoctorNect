@@ -54,6 +54,7 @@ class _RegistrationMobileOtpSectionState
   int _otpKeyCounter = 0;
   int _resendCooldown = 0;
   Timer? _cooldownTimer;
+  DateTime? _cooldownEnd;
 
   bool get _phoneLocked => _otpSent && !_verified;
 
@@ -66,6 +67,7 @@ class _RegistrationMobileOtpSectionState
   @override
   void dispose() {
     _cooldownTimer?.cancel();
+    _cooldownEnd = null;
     super.dispose();
   }
 
@@ -87,18 +89,24 @@ class _RegistrationMobileOtpSectionState
 
   void _startResendCooldown() {
     _cooldownTimer?.cancel();
+    _cooldownEnd = DateTime.now().add(
+      const Duration(seconds: AppConstants.otpResendCooldownSeconds),
+    );
     setState(() => _resendCooldown = AppConstants.otpResendCooldownSeconds);
     _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) {
         t.cancel();
         return;
       }
+      final remaining =
+          _cooldownEnd?.difference(DateTime.now()).inSeconds ?? 0;
       setState(() {
-        if (_resendCooldown <= 1) {
+        if (remaining <= 0) {
           _resendCooldown = 0;
+          _cooldownEnd = null;
           t.cancel();
         } else {
-          _resendCooldown--;
+          _resendCooldown = remaining;
         }
       });
     });
@@ -107,6 +115,7 @@ class _RegistrationMobileOtpSectionState
   void _unlockPhone() {
     final mobile = widget.mobileController.text.trim();
     _cooldownTimer?.cancel();
+    _cooldownEnd = null;
     setState(() {
       _otpSent = false;
       _otp = '';
@@ -325,6 +334,13 @@ class _RegistrationMobileOtpSectionState
             accentColor: widget.accentColor,
             autofocus: true,
             onChanged: (v) => setState(() => _otp = v),
+            onCompleted: (v) {
+              _otp = v;
+              setState(() {});
+              if (!_sending) {
+                _verifyOtp();
+              }
+            },
           ),
           const SizedBox(height: 12),
           FilledButton(

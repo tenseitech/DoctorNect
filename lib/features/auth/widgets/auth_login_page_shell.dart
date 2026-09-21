@@ -173,7 +173,7 @@ class AuthLoginPageShell extends StatelessWidget {
         branding: branding!,
       );
     }
-    if (branding != null && ResponsiveLayout.isCompact(context)) {
+    if (branding != null) {
       return _MobileBrandedLoginScaffold(
         appBarTitle: appBarTitle,
         accentColor: accentColor,
@@ -536,10 +536,15 @@ class _MobileBrandedLoginScaffold extends StatelessWidget {
                     ),
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
-                    child: _AuthLoginFormCard(
-                      accentColor: accentColor,
-                      compact: true,
-                      child: body,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 480),
+                        child: _AuthLoginFormCard(
+                          accentColor: accentColor,
+                          compact: true,
+                          child: body,
+                        ),
+                      ),
                     ),
                   ),
                 ),

@@ -123,6 +123,12 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                   'Stay on top of schedules, follow-ups and patient records without the paperwork.',
               placeholderIcon: Icons.calendar_month_outlined,
             ),
+            _IntroSlideContent(
+              headline: 'Seamless consultations',
+              supportingText:
+                  'Connect with patients through in-clinic visits and video consultations with instant follow-ups.',
+              placeholderIcon: Icons.videocam_outlined,
+            ),
           ],
         UserType.patient => const [
             _IntroSlideContent(

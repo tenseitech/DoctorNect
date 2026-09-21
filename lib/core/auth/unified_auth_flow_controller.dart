@@ -41,6 +41,7 @@ class UnifiedAuthFlowController extends ChangeNotifier {
   bool _verifying = false;
   int _otpCountdown = 0;
   Timer? _countdownTimer;
+  DateTime? _countdownEnd;
   bool _disposed = false;
 
   UnifiedAuthStep get step => _step;
@@ -59,6 +60,7 @@ class UnifiedAuthFlowController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _countdownTimer?.cancel();
+    _countdownEnd = null;
     super.dispose();
   }
 
@@ -81,6 +83,9 @@ class UnifiedAuthFlowController extends ChangeNotifier {
 
   void _startOtpCountdown() {
     _countdownTimer?.cancel();
+    _countdownEnd = DateTime.now().add(
+      const Duration(seconds: AppConstants.otpResendCooldownSeconds),
+    );
     _otpCountdown = AppConstants.otpResendCooldownSeconds;
     _notify();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
@@ -88,11 +93,14 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         t.cancel();
         return;
       }
-      if (_otpCountdown <= 1) {
+      final remaining =
+          _countdownEnd?.difference(DateTime.now()).inSeconds ?? 0;
+      if (remaining <= 0) {
         t.cancel();
         _otpCountdown = 0;
+        _countdownEnd = null;
       } else {
-        _otpCountdown--;
+        _otpCountdown = remaining;
       }
       _notify();
     });

@@ -1617,10 +1617,11 @@ class _PatientPatientProfileScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: BackButton(color: AppColors.textPrimaryOf(context)),
-            ),
+            if (Navigator.canPop(context))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: BackButton(color: AppColors.textPrimaryOf(context)),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
               child: Column(

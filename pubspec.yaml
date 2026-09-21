@@ -58,7 +58,7 @@ dev_dependencies:
   fake_cloud_firestore: ^4.2.0
 
 # Icon-only mark (no wordmark) for crisp launcher/favicon at small sizes.
-# Master full logo (icon + DoctorNect text) lives at assets/images/logo.png.
+# Master full logo (icon + DoctorNect text) lives at assets/images/logo.webp.
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true

@@ -203,7 +203,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, compact ? 12 : 16),
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 16 : 20,
+                  12,
+                  compact ? 16 : 20,
+                  compact ? 12 : 16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -230,6 +235,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                               SizedBox(height: compact ? 2 : 4),
                               _PatientLocationRow(
                                 address: address,
+                                city: p.city,
                                 onTap: () => unawaited(_openAddressForm()),
                               ),
                             ],
@@ -263,7 +269,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                         items: carouselItems,
                         dotActiveColor: AppColors.patientTeal,
                         interactive: false,
-                        cardHorizontalInsetFraction: 0.09,
+                        cardHorizontalInsetFraction: 0,
+                        showNavButtons: false,
                       );
                     },
                   );
@@ -338,44 +345,65 @@ class _PatientLocationRow extends StatelessWidget {
   const _PatientLocationRow({
     required this.address,
     required this.onTap,
+    this.city,
   });
 
   final PatientAddress address;
   final VoidCallback onTap;
+  final String? city;
 
   @override
   Widget build(BuildContext context) {
-    final hasAddress = address.hasContent;
-    final label = hasAddress ? address.shortLabel : 'Change location';
+    final resolvedCity = address.shortLabel.isNotEmpty
+        ? address.shortLabel
+        : (city != null && city!.trim().isNotEmpty
+            ? city!.trim()
+            : (PatientProfileMock.profileCity.trim().isNotEmpty
+                ? PatientProfileMock.profileCity.trim()
+                : ''));
+    final hasLocation = resolvedCity.isNotEmpty;
+    final label = hasLocation ? resolvedCity : 'Change location';
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 1),
-          child: Row(
-            children: [
-              const Icon(Icons.location_on_outlined,
-                  size: 15, color: AppColors.patientTeal),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall,
-                    fontWeight: hasAddress ? FontWeight.w500 : FontWeight.w600,
-                    height: 1.2,
-                    color: hasAddress
-                        ? AppColors.textSecondaryOf(context)
-                        : AppColors.patientTeal,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          mouseCursor: SystemMouseCursors.click,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.location_on_outlined,
+                    size: 15, color: AppColors.patientTeal),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight:
+                          hasLocation ? FontWeight.w500 : FontWeight.w600,
+                      height: 1.2,
+                      color: hasLocation
+                          ? AppColors.textSecondaryOf(context)
+                          : AppColors.patientTeal,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 2),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 14,
+                  color: AppColors.patientTeal,
+                ),
+              ],
+            ),
           ),
         ),
       ),

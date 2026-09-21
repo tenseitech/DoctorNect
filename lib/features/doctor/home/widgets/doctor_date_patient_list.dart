@@ -275,7 +275,7 @@ class _TodayPatientsGrid extends StatelessWidget {
         final count = entries.length;
         final columns = switch (count) {
           1 => 1,
-          _ when maxWidth < 320 => 1,
+          _ when maxWidth < 560 => 1,
           _ when maxWidth >= 1000 => count.clamp(2, 3),
           _ => 2,
         };
@@ -424,7 +424,7 @@ class _UpcomingEqualWidthRow extends StatelessWidget {
         final count = entries.length;
         final columns = switch (count) {
           1 => 1,
-          _ when maxWidth < 320 => 1,
+          _ when maxWidth < 560 => 1,
           _ when maxWidth >= 1000 => count.clamp(2, 3),
           _ => 2,
         };
