@@ -36,8 +36,8 @@ void main() {
 
       // 1. "Start your search" must NOT be present
       expect(find.text('Start your search'), findsNothing);
-      expect(
-          find.text('Type a doctor name, lab test, package, or lab.'), findsNothing);
+      expect(find.text('Type a doctor name, lab test, package, or lab.'),
+          findsNothing);
 
       // 2. Sections: "Doctors near you", "Labs near you", "Ambulances near you"
       expect(find.text('Doctors near you'), findsOneWidget);
@@ -45,7 +45,8 @@ void main() {
       expect(find.text('Ambulances near you'), findsOneWidget);
 
       // 3. Showing nearby services banner
-      expect(find.textContaining('Showing nearby services in Mumbai'), findsOneWidget);
+      expect(find.textContaining('Showing nearby services in Mumbai'),
+          findsOneWidget);
 
       // 4. "View all" options are present
       expect(find.text('View all'), findsWidgets);

@@ -46,72 +46,72 @@ class MyDoctorSection extends StatelessWidget {
                 : '${doctors.length} doctors in your list';
 
         return Padding(
-          padding: EdgeInsets.fromLTRB(
-              16, compact ? 12 : 20, 16, compact ? 12 : 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'My Doctor',
-                            style: GoogleFonts.inter(
-                              fontSize: compact ? 14 : 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimaryOf(context),
-                            ),
+          padding:
+              EdgeInsets.fromLTRB(16, compact ? 12 : 20, 16, compact ? 12 : 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'My Doctor',
+                          style: GoogleFonts.inter(
+                            fontSize: compact ? 14 : 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimaryOf(context),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              color: AppColors.textSecondaryOf(context),
-                            ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context),
                           ),
-                        ],
-                      ),
-                    ),
-                    if (doctors.isNotEmpty) _buildAddButton(),
-                  ],
-                ),
-                SizedBox(height: compact ? 8 : 10),
-                if (doctors.isEmpty)
-                  HomeDoctorInlineMessage(
-                    icon: Icons.person_add_outlined,
-                    text:
-                        'You haven’t added any doctors yet — add one to get started.',
-                    action: _buildAddButton(),
-                  )
-                else
-                  SizedBox(
-                    height: HomeDoctorTile.cardHeight + 4,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.only(top: 4, right: 4),
-                      itemCount: doctors.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (context, index) {
-                        final doctor = doctors[index];
-                        return HomeDoctorTile(
-                          doctor: doctor,
-                          onTap: () => onDoctorTap(doctor),
-                          onBook: () => onBook(doctor),
-                          onRemove: () => _confirmRemoveDoctor(context, doctor),
-                        );
-                      },
+                        ),
+                      ],
                     ),
                   ),
-              ],
-            ),
-          );
+                  if (doctors.isNotEmpty) _buildAddButton(),
+                ],
+              ),
+              SizedBox(height: compact ? 8 : 10),
+              if (doctors.isEmpty)
+                HomeDoctorInlineMessage(
+                  icon: Icons.person_add_outlined,
+                  text:
+                      'You haven’t added any doctors yet — add one to get started.',
+                  action: _buildAddButton(),
+                )
+              else
+                SizedBox(
+                  height: HomeDoctorTile.cardHeight + 4,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.only(top: 4, right: 4),
+                    itemCount: doctors.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final doctor = doctors[index];
+                      return HomeDoctorTile(
+                        doctor: doctor,
+                        onTap: () => onDoctorTap(doctor),
+                        onBook: () => onBook(doctor),
+                        onRemove: () => _confirmRemoveDoctor(context, doctor),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
       },
     );
   }

@@ -106,12 +106,14 @@ void main() {
       await tester.pumpAndSettle();
 
       Container container = tester.widget<Container>(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Container &&
-              w.decoration is BoxDecoration &&
-              (w.decoration as BoxDecoration).border != null,
-        ).first,
+        find
+            .byWidgetPredicate(
+              (w) =>
+                  w is Container &&
+                  w.decoration is BoxDecoration &&
+                  (w.decoration as BoxDecoration).border != null,
+            )
+            .first,
       );
       BoxDecoration dec = container.decoration as BoxDecoration;
       Border border = dec.border as Border;
@@ -135,12 +137,14 @@ void main() {
       await tester.pumpAndSettle();
 
       container = tester.widget<Container>(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Container &&
-              w.decoration is BoxDecoration &&
-              (w.decoration as BoxDecoration).border != null,
-        ).first,
+        find
+            .byWidgetPredicate(
+              (w) =>
+                  w is Container &&
+                  w.decoration is BoxDecoration &&
+                  (w.decoration as BoxDecoration).border != null,
+            )
+            .first,
       );
       dec = container.decoration as BoxDecoration;
       border = dec.border as Border;
@@ -196,8 +200,7 @@ void main() {
       expect(receivedSelected, true);
     });
 
-    testWidgets(
-        'PatientAppShell web sidebar provides size 32 for Profile tab',
+    testWidgets('PatientAppShell web sidebar provides size 32 for Profile tab',
         (tester) async {
       double? receivedSize;
 
@@ -246,16 +249,77 @@ void main() {
         (tester) async {
       // Create a 1x1 transparent PNG byte array
       final testPngBytes = Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00,
-        0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-        0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89,
-        0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63,
-        0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4,
-        0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60,
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+        0x00,
+        0x00,
+        0x00,
+        0x0D,
+        0x49,
+        0x48,
+        0x44,
+        0x52,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x08,
+        0x06,
+        0x00,
+        0x00,
+        0x00,
+        0x1F,
+        0x15,
+        0xC4,
+        0x89,
+        0x00,
+        0x00,
+        0x00,
+        0x0A,
+        0x49,
+        0x44,
+        0x41,
+        0x54,
+        0x78,
+        0x9C,
+        0x63,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x00,
+        0x01,
+        0x0D,
+        0x0A,
+        0x2D,
+        0xB4,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x49,
+        0x45,
+        0x4E,
+        0x44,
+        0xAE,
+        0x42,
+        0x60,
         0x82
       ]);
 
-      PatientPhotoLocalStore.setCachedForTesting('patient_test_1', testPngBytes);
+      PatientPhotoLocalStore.setCachedForTesting(
+          'patient_test_1', testPngBytes);
 
       await tester.pumpWidget(
         MaterialApp(

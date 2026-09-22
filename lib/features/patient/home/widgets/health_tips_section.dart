@@ -16,54 +16,52 @@ class HealthTipsSection extends StatelessWidget {
     final isWide = MediaQuery.sizeOf(context).width >= 600;
 
     return Padding(
-      padding:
-          EdgeInsets.fromLTRB(16, isWide ? 20 : 12, 16, isWide ? 24 : 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.fromLTRB(16, isWide ? 20 : 12, 16, isWide ? 24 : 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Health tips',
+                style: GoogleFonts.inter(
+                  fontSize: isWide ? 17 : 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryOf(context),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                'Quick reads for daily wellness',
+                style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context)),
+              ),
+            ],
+          ),
+          SizedBox(height: isWide ? 10 : 8),
+          if (isWide)
+            Row(
               children: [
-                Text(
-                  'Health tips',
-                  style: GoogleFonts.inter(
-                    fontSize: isWide ? 17 : 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimaryOf(context),
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Quick reads for daily wellness',
-                  style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium,
-                      color: AppColors.textSecondaryOf(context)),
-                ),
+                for (var i = 0; i < tips.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 10),
+                  Expanded(child: _HealthTipTile(tip: tips[i], compact: false)),
+                ],
+              ],
+            )
+          else
+            Column(
+              children: [
+                for (var i = 0; i < tips.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  _HealthTipTile(tip: tips[i], compact: true),
+                ],
               ],
             ),
-            SizedBox(height: isWide ? 10 : 8),
-            if (isWide)
-              Row(
-                children: [
-                  for (var i = 0; i < tips.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 10),
-                    Expanded(
-                        child: _HealthTipTile(tip: tips[i], compact: false)),
-                  ],
-                ],
-              )
-            else
-              Column(
-                children: [
-                  for (var i = 0; i < tips.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 8),
-                    _HealthTipTile(tip: tips[i], compact: true),
-                  ],
-                ],
-              ),
-          ],
-        ),
-      );
+        ],
+      ),
+    );
   }
 }
 

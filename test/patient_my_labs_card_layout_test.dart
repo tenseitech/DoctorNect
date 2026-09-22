@@ -16,7 +16,8 @@ void main() {
   );
 
   group('My Labs Card Layout Tests', () {
-    testWidgets('Compact / mobile screen renders 2-part stacked layout with equal-width buttons',
+    testWidgets(
+        'Compact / mobile screen renders 2-part stacked layout with equal-width buttons',
         (tester) async {
       // Set mobile phone dimensions (360 width)
       tester.view.physicalSize = const Size(360, 700);
@@ -79,7 +80,8 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('Wide / web screen renders single-row layout with min-size buttons',
+    testWidgets(
+        'Wide / web screen renders single-row layout with min-size buttons',
         (tester) async {
       // Set desktop / web dimensions
       tester.view.physicalSize = const Size(1200, 800);

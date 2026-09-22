@@ -101,6 +101,7 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
       }
     });
   }
+
   void _stopTimer() {
     _rotationTimer?.cancel();
     _rotationTimer = null;
@@ -265,8 +266,8 @@ class _SearchField extends StatelessWidget {
                                 duration: const Duration(milliseconds: 400),
                                 transitionBuilder: (Widget child,
                                     Animation<double> animation) {
-                                  final isIncoming = child.key ==
-                                      ValueKey<int>(currentIndex);
+                                  final isIncoming =
+                                      child.key == ValueKey<int>(currentIndex);
                                   final offsetTween = isIncoming
                                       ? Tween<Offset>(
                                           begin: const Offset(0.0, 0.8),

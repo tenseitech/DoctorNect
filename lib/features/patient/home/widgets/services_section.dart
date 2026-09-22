@@ -30,52 +30,52 @@ class ServicesSection extends StatelessWidget {
         isWide ? 20 : 16,
         isWide ? 20 : 12,
       ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Services',
-              style: GoogleFonts.inter(
-                fontSize: isWide ? 17 : 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimaryOf(context),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Services',
+            style: GoogleFonts.inter(
+              fontSize: isWide ? 17 : 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimaryOf(context),
             ),
-            SizedBox(height: isWide ? 14 : 10),
-            if (isWide)
-              Row(
-                children: [
-                  for (var i = 0; i < services.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 10),
-                    Expanded(
-                      child: _ServiceTile(
-                        service: services[i],
-                        style: _ServiceStyle.forRoute(services[i].route),
-                        onTap: () => onServiceTap(services[i]),
-                      ),
+          ),
+          SizedBox(height: isWide ? 14 : 10),
+          if (isWide)
+            Row(
+              children: [
+                for (var i = 0; i < services.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 10),
+                  Expanded(
+                    child: _ServiceTile(
+                      service: services[i],
+                      style: _ServiceStyle.forRoute(services[i].route),
+                      onTap: () => onServiceTap(services[i]),
                     ),
-                  ],
+                  ),
                 ],
-              )
-            else
-              Row(
-                children: [
-                  for (var i = 0; i < services.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    Expanded(
-                      child: _ServiceTile(
-                        service: services[i],
-                        style: _ServiceStyle.forRoute(services[i].route),
-                        mobileColumn: true,
-                        onTap: () => onServiceTap(services[i]),
-                      ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                for (var i = 0; i < services.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  Expanded(
+                    child: _ServiceTile(
+                      service: services[i],
+                      style: _ServiceStyle.forRoute(services[i].route),
+                      mobileColumn: true,
+                      onTap: () => onServiceTap(services[i]),
                     ),
-                  ],
+                  ),
                 ],
-              ),
-          ],
-        ),
-      );
+              ],
+            ),
+        ],
+      ),
+    );
   }
 }
 

@@ -12,7 +12,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Patient shell bottom navigation', () {
-    testWidgets('IndexedStack tab switches keep PatientAppShell bottom bar visible',
+    testWidgets(
+        'IndexedStack tab switches keep PatientAppShell bottom bar visible',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;

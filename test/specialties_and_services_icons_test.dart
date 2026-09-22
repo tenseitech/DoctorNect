@@ -32,11 +32,15 @@ void main() {
       );
       expect(imageFinders, findsNWidgets(2));
 
-      final images =
-          tester.widgetList<Image>(imageFinders).map((img) => img.image).toList();
+      final images = tester
+          .widgetList<Image>(imageFinders)
+          .map((img) => img.image)
+          .toList();
 
-      expect(images, contains(const AssetImage('assets/images/services/records.png')));
-      expect(images, contains(const AssetImage('assets/images/services/sos.png')));
+      expect(images,
+          contains(const AssetImage('assets/images/services/records.png')));
+      expect(
+          images, contains(const AssetImage('assets/images/services/sos.png')));
     });
 
     testWidgets('ServicesSection web renders SOS and Records as Image.asset',
@@ -61,14 +65,19 @@ void main() {
       );
       expect(imageFinders, findsNWidgets(2));
 
-      final images =
-          tester.widgetList<Image>(imageFinders).map((img) => img.image).toList();
+      final images = tester
+          .widgetList<Image>(imageFinders)
+          .map((img) => img.image)
+          .toList();
 
-      expect(images, contains(const AssetImage('assets/images/services/records.png')));
-      expect(images, contains(const AssetImage('assets/images/services/sos.png')));
+      expect(images,
+          contains(const AssetImage('assets/images/services/records.png')));
+      expect(
+          images, contains(const AssetImage('assets/images/services/sos.png')));
     });
 
-    testWidgets('ExploreSection web renders Dentist, Diabetes, Homeopathy, and Veterinary with new png asset paths',
+    testWidgets(
+        'ExploreSection web renders Dentist, Diabetes, Homeopathy, and Veterinary with new png asset paths',
         (tester) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -91,8 +100,10 @@ void main() {
         matching: find.byType(Image),
       );
 
-      final images =
-          tester.widgetList<Image>(imageFinders).map((img) => img.image).toList();
+      final images = tester
+          .widgetList<Image>(imageFinders)
+          .map((img) => img.image)
+          .toList();
 
       expect(
         images,

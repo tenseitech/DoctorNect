@@ -209,8 +209,7 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
             try {
               final commaIndex = photoUrl.indexOf(',');
               if (commaIndex != -1) {
-                dataUriBytes =
-                    base64Decode(photoUrl.substring(commaIndex + 1));
+                dataUriBytes = base64Decode(photoUrl.substring(commaIndex + 1));
               }
             } catch (_) {}
             if (dataUriBytes != null && dataUriBytes.isNotEmpty) {
@@ -223,8 +222,7 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
                     _buildInitialFallback(context, widget.size),
               );
             } else {
-              avatarContent =
-                  _buildInitialFallback(context, widget.size);
+              avatarContent = _buildInitialFallback(context, widget.size);
             }
           } else {
             avatarContent = Image.network(
@@ -232,12 +230,11 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
               width: double.infinity,
               height: double.infinity,
               fit: BoxFit.cover,
-              cacheWidth: ResampledNetworkImage.cacheDimension(
-                  widget.size, context),
-              cacheHeight: ResampledNetworkImage.cacheDimension(
-                  widget.size, context),
-              frameBuilder:
-                  (context, child, frame, wasSynchronouslyLoaded) {
+              cacheWidth:
+                  ResampledNetworkImage.cacheDimension(widget.size, context),
+              cacheHeight:
+                  ResampledNetworkImage.cacheDimension(widget.size, context),
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                 if (wasSynchronouslyLoaded || frame != null) {
                   return child;
                 }

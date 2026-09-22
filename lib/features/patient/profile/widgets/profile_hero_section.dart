@@ -175,7 +175,8 @@ class MetaLine extends StatelessWidget {
 typedef _MetaLine = MetaLine;
 
 class EditProfileButton extends StatelessWidget {
-  const EditProfileButton({super.key, required this.onEdit, required this.compact});
+  const EditProfileButton(
+      {super.key, required this.onEdit, required this.compact});
 
   final VoidCallback onEdit;
   final bool compact;

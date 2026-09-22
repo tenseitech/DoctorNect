@@ -45,69 +45,69 @@ class AppointmentsSection extends StatelessWidget {
         );
 
         return Padding(
-          padding: EdgeInsets.fromLTRB(
-              16, compact ? 12 : 20, 16, compact ? 12 : 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Appointments',
-                            style: GoogleFonts.inter(
-                              fontSize: compact ? 15 : 17,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimaryOf(context),
-                            ),
+          padding:
+              EdgeInsets.fromLTRB(16, compact ? 12 : 20, 16, compact ? 12 : 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Appointments',
+                          style: GoogleFonts.inter(
+                            fontSize: compact ? 15 : 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimaryOf(context),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Your upcoming & recent visits',
-                            style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall,
-                              color: AppColors.textSecondaryOf(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: onViewAll,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.patientTeal,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'View all',
-                        style: GoogleFonts.inter(
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Your upcoming & recent visits',
+                          style: GoogleFonts.inter(
                             fontSize: AppTypography.bodySmall,
-                            fontWeight: FontWeight.w600),
-                      ),
+                            color: AppColors.textSecondaryOf(context),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  TextButton(
+                    onPressed: onViewAll,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.patientTeal,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'View all',
+                      style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodySmall,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: compact ? 10 : 14),
+              if (appointments.isEmpty)
+                _EmptyAppointments(onFindDoctor: onFindDoctor)
+              else
+                Column(
+                  children: [
+                    for (var i = 0; i < appointments.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 10),
+                      _AppointmentCard(appointment: appointments[i]),
+                    ],
                   ],
                 ),
-                SizedBox(height: compact ? 10 : 14),
-                if (appointments.isEmpty)
-                  _EmptyAppointments(onFindDoctor: onFindDoctor)
-                else
-                  Column(
-                    children: [
-                      for (var i = 0; i < appointments.length; i++) ...[
-                        if (i > 0) const SizedBox(height: 10),
-                        _AppointmentCard(appointment: appointments[i]),
-                      ],
-                    ],
-                  ),
-              ],
-            ),
-          );
+            ],
+          ),
+        );
       },
     );
   }

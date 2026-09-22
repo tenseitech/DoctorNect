@@ -1180,14 +1180,12 @@ class _PatientProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         ],
                         if (profile.mobile.trim().isNotEmpty) ...[
                           MetaLine(
-                              icon: Icons.phone_outlined,
-                              text: profile.mobile),
+                              icon: Icons.phone_outlined, text: profile.mobile),
                           const SizedBox(height: 4),
                         ],
                         if (profile.email.trim().isNotEmpty) ...[
                           MetaLine(
-                              icon: Icons.mail_outline,
-                              text: profile.email),
+                              icon: Icons.mail_outline, text: profile.email),
                         ],
                       ],
                     ),

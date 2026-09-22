@@ -23,7 +23,8 @@ class PatientTabItem {
   final IconData filledIcon;
   final String label;
   final String? shortLabel;
-  final Widget Function(BuildContext context, bool selected, Color iconColor, double size)?
+  final Widget Function(
+          BuildContext context, bool selected, Color iconColor, double size)?
       customIconBuilder;
 
   String get mobileLabel => shortLabel ?? label;
@@ -349,144 +350,148 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppColors.surfaceOf(context),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppColors.borderOf(context)),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.textPrimaryOf(context).withValues(alpha: 0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: AppColors.textPrimaryOf(context).withValues(alpha: 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Listener(
-            onPointerDown: (event) {
-              _startX = event.position.dx;
-              _startY = event.position.dy;
-            },
-            onPointerUp: (event) {
-              if (_startX == null || _startY == null) return;
-              final deltaX = event.position.dx - _startX!;
-              final deltaY = event.position.dy - _startY!;
-              _startX = null;
-              _startY = null;
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceOf(context),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: AppColors.borderOf(context)),
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      AppColors.textPrimaryOf(context).withValues(alpha: 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color:
+                      AppColors.textPrimaryOf(context).withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Listener(
+              onPointerDown: (event) {
+                _startX = event.position.dx;
+                _startY = event.position.dy;
+              },
+              onPointerUp: (event) {
+                if (_startX == null || _startY == null) return;
+                final deltaX = event.position.dx - _startX!;
+                final deltaY = event.position.dy - _startY!;
+                _startX = null;
+                _startY = null;
 
-              if (deltaX.abs() > 40 && deltaY.abs() < 50) {
-                if (deltaX < 0 &&
-                    widget.selectedIndex < widget.tabs.length - 1) {
-                  widget.onSelected(widget.selectedIndex + 1);
-                } else if (deltaX > 0 && widget.selectedIndex > 0) {
-                  widget.onSelected(widget.selectedIndex - 1);
+                if (deltaX.abs() > 40 && deltaY.abs() < 50) {
+                  if (deltaX < 0 &&
+                      widget.selectedIndex < widget.tabs.length - 1) {
+                    widget.onSelected(widget.selectedIndex + 1);
+                  } else if (deltaX > 0 && widget.selectedIndex > 0) {
+                    widget.onSelected(widget.selectedIndex - 1);
+                  }
                 }
-              }
-            },
-            child: SizedBox(
-              height: widget.tabs.length >= 5 ? 64 : 58,
-              child: Row(
-                children: List.generate(widget.tabs.length, (index) {
-                  final selected = index == widget.selectedIndex;
-                  final tab = widget.tabs[index];
-                  final isProfile = tab.label == 'Profile';
-                  final iconColor =
-                      _PatientNavActiveStyle.iconColor(context, selected);
-                  final label = tab.mobileLabel;
+              },
+              child: SizedBox(
+                height: widget.tabs.length >= 5 ? 64 : 58,
+                child: Row(
+                  children: List.generate(widget.tabs.length, (index) {
+                    final selected = index == widget.selectedIndex;
+                    final tab = widget.tabs[index];
+                    final isProfile = tab.label == 'Profile';
+                    final iconColor =
+                        _PatientNavActiveStyle.iconColor(context, selected);
+                    final label = tab.mobileLabel;
 
-                  return Expanded(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => widget.onSelected(index),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  curve: Curves.easeOutCubic,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    gradient: (selected && !isProfile)
-                                        ? const LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              AppColors.patientTeal,
-                                              Color(0xFF12836A)
-                                            ],
-                                          )
-                                        : null,
-                                    color: (selected && isProfile)
-                                        ? AppColors.patientTeal
-                                            .withValues(alpha: 0.14)
-                                        : (selected ? null : Colors.transparent),
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: (selected && !isProfile)
-                                        ? [
-                                            BoxShadow(
-                                              color: AppColors.patientTeal
-                                                  .withValues(alpha: 0.22),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 3),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: tab.buildIcon(
-                                    context,
-                                    selected: selected,
-                                    iconColor: iconColor,
-                                    size: isProfile ? 28 : 24,
-                                  ),
-                                ),
-                                if (widget.showDot(index))
-                                  Positioned(
-                                    right: 6,
-                                    top: -2,
-                                    child: NavRequestDot(
-                                      color: AppColors.patientTeal,
-                                      borderColor: selected
+                    return Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => widget.onSelected(index),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeOutCubic,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      gradient: (selected && !isProfile)
+                                          ? const LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                AppColors.patientTeal,
+                                                Color(0xFF12836A)
+                                              ],
+                                            )
+                                          : null,
+                                      color: (selected && isProfile)
                                           ? AppColors.patientTeal
-                                          : Colors.white,
+                                              .withValues(alpha: 0.14)
+                                          : (selected
+                                              ? null
+                                              : Colors.transparent),
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: (selected && !isProfile)
+                                          ? [
+                                              BoxShadow(
+                                                color: AppColors.patientTeal
+                                                    .withValues(alpha: 0.22),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 3),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    child: tab.buildIcon(
+                                      context,
+                                      selected: selected,
+                                      iconColor: iconColor,
+                                      size: isProfile ? 28 : 24,
                                     ),
                                   ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            SafeBottomNavLabel(
-                              label: compactBottomNavLabel(label),
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                height: 1.1,
-                                fontWeight: selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: selected
-                                    ? AppColors.patientTeal
-                                    : AppColors.textSecondaryOf(context),
+                                  if (widget.showDot(index))
+                                    Positioned(
+                                      right: 6,
+                                      top: -2,
+                                      child: NavRequestDot(
+                                        color: AppColors.patientTeal,
+                                        borderColor: selected
+                                            ? AppColors.patientTeal
+                                            : Colors.white,
+                                      ),
+                                    ),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+                              SafeBottomNavLabel(
+                                label: compactBottomNavLabel(label),
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  height: 1.1,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: selected
+                                      ? AppColors.patientTeal
+                                      : AppColors.textSecondaryOf(context),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+                ),
               ),
-            ),
             ),
           ),
         ),
