@@ -15,11 +15,9 @@ class HealthTipsSection extends StatelessWidget {
     final tips = PatientMockData.healthTips;
     final isWide = MediaQuery.sizeOf(context).width >= 600;
 
-    return ColoredBox(
-      color: AppColors.surfaceOf(context),
-      child: Padding(
-        padding:
-            EdgeInsets.fromLTRB(16, isWide ? 20 : 12, 16, isWide ? 24 : 16),
+    return Padding(
+      padding:
+          EdgeInsets.fromLTRB(16, isWide ? 20 : 12, 16, isWide ? 24 : 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -65,8 +63,7 @@ class HealthTipsSection extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

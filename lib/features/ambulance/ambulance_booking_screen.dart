@@ -36,11 +36,13 @@ class AmbulanceBookingScreen extends StatefulWidget {
     required this.bookedByRole,
     this.initialPatientName,
     this.initialContactPhone,
+    this.embeddedInShell = false,
   });
 
   final AmbulanceBookedByRole bookedByRole;
   final String? initialPatientName;
   final String? initialContactPhone;
+  final bool embeddedInShell;
 
   @override
   State<AmbulanceBookingScreen> createState() => _AmbulanceBookingScreenState();
@@ -377,6 +379,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
             elevation: 0,
             scrolledUnderElevation: 0,
             surfaceTintColor: Colors.transparent,
+            automaticallyImplyLeading: !widget.embeddedInShell,
             title: Row(
               children: [
                 Container(

@@ -16,17 +16,32 @@ class PatientTabItem {
     required this.filledIcon,
     required this.label,
     this.shortLabel,
+    this.customIconBuilder,
   });
 
   final IconData outlinedIcon;
   final IconData filledIcon;
   final String label;
   final String? shortLabel;
+  final Widget Function(BuildContext context, bool selected, Color iconColor, double size)?
+      customIconBuilder;
 
   String get mobileLabel => shortLabel ?? label;
 
   IconData icon({required bool selected}) =>
       selected ? filledIcon : outlinedIcon;
+
+  Widget buildIcon(
+    BuildContext context, {
+    required bool selected,
+    required Color iconColor,
+    required double size,
+  }) {
+    if (customIconBuilder != null) {
+      return customIconBuilder!(context, selected, iconColor, size);
+    }
+    return Icon(icon(selected: selected), size: size, color: iconColor);
+  }
 }
 
 abstract final class _PatientNavActiveStyle {
@@ -140,7 +155,7 @@ class PatientAppShell extends StatelessWidget {
       onPopInvokedWithResult: (didPop, _) =>
           _handleBackInvoked(context, didPop),
       child: Scaffold(
-        backgroundColor: AppColors.cardBgOf(context),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -204,8 +219,13 @@ class _PatientSideTabTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool showDot;
 
-  Widget _iconWithDot(IconData iconData, Color iconColor, double size) {
-    final icon = Icon(iconData, size: size, color: iconColor);
+  Widget _iconWithDot(BuildContext context, Color iconColor, double size) {
+    final icon = item.buildIcon(
+      context,
+      selected: selected,
+      iconColor: iconColor,
+      size: size,
+    );
     if (!showDot) return icon;
     return Stack(
       clipBehavior: Clip.none,
@@ -225,8 +245,11 @@ class _PatientSideTabTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isProfile = item.label == 'Profile';
     final iconColor = _PatientNavActiveStyle.iconColor(context, selected);
-    final labelColor = _PatientNavActiveStyle.labelColor(context, selected);
+    final labelColor = (selected && isProfile)
+        ? AppColors.patientTeal
+        : _PatientNavActiveStyle.labelColor(context, selected);
 
     if (!extended) {
       return Padding(
@@ -243,10 +266,13 @@ class _PatientSideTabTile extends StatelessWidget {
                 curve: Curves.easeOutCubic,
                 height: 52,
                 alignment: Alignment.center,
-                decoration:
-                    _PatientNavActiveStyle.decoration(selected: selected),
-                child:
-                    _iconWithDot(item.icon(selected: selected), iconColor, 24),
+                decoration: (selected && isProfile)
+                    ? BoxDecoration(
+                        color: AppColors.patientTeal.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(12),
+                      )
+                    : _PatientNavActiveStyle.decoration(selected: selected),
+                child: _iconWithDot(context, iconColor, isProfile ? 32 : 24),
               ),
             ),
           ),
@@ -265,10 +291,15 @@ class _PatientSideTabTile extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: _PatientNavActiveStyle.decoration(selected: selected),
+            decoration: (selected && isProfile)
+                ? BoxDecoration(
+                    color: AppColors.patientTeal.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                : _PatientNavActiveStyle.decoration(selected: selected),
             child: Row(
               children: [
-                _iconWithDot(item.icon(selected: selected), iconColor, 22),
+                _iconWithDot(context, iconColor, isProfile ? 32 : 22),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -315,7 +346,9 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: SafeArea(
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -364,6 +397,7 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                 children: List.generate(widget.tabs.length, (index) {
                   final selected = index == widget.selectedIndex;
                   final tab = widget.tabs[index];
+                  final isProfile = tab.label == 'Profile';
                   final iconColor =
                       _PatientNavActiveStyle.iconColor(context, selected);
                   final label = tab.mobileLabel;
@@ -385,7 +419,7 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 14, vertical: 5),
                                   decoration: BoxDecoration(
-                                    gradient: selected
+                                    gradient: (selected && !isProfile)
                                         ? const LinearGradient(
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
@@ -395,9 +429,12 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                                             ],
                                           )
                                         : null,
-                                    color: selected ? null : Colors.transparent,
+                                    color: (selected && isProfile)
+                                        ? AppColors.patientTeal
+                                            .withValues(alpha: 0.14)
+                                        : (selected ? null : Colors.transparent),
                                     borderRadius: BorderRadius.circular(16),
-                                    boxShadow: selected
+                                    boxShadow: (selected && !isProfile)
                                         ? [
                                             BoxShadow(
                                               color: AppColors.patientTeal
@@ -408,10 +445,11 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                                           ]
                                         : null,
                                   ),
-                                  child: Icon(
-                                    tab.icon(selected: selected),
-                                    size: 24,
-                                    color: iconColor,
+                                  child: tab.buildIcon(
+                                    context,
+                                    selected: selected,
+                                    iconColor: iconColor,
+                                    size: isProfile ? 28 : 24,
                                   ),
                                 ),
                                 if (widget.showDot(index))
@@ -448,6 +486,7 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                   );
                 }),
               ),
+            ),
             ),
           ),
         ),

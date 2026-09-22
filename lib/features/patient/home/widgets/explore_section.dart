@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,24 +13,15 @@ class ExploreSection extends StatelessWidget {
   const ExploreSection({super.key});
 
   static const _mobileBreakpoint = 600.0;
-  static const _homePreviewCount = 5;
-  static const _tileSpacing = 8.0;
 
   @override
   Widget build(BuildContext context) {
     final allCategories = specialtyCategories.keys.toList();
     final isWide = MediaQuery.sizeOf(context).width >= _mobileBreakpoint;
-    final previewCategories = allCategories.take(_homePreviewCount).toList();
 
-    return ColoredBox(
-      color: AppColors.surfaceOf(context),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          isWide ? 20 : 16,
-          isWide ? 20 : 12,
-          isWide ? 20 : 16,
-          isWide ? 20 : 12,
-        ),
+    if (isWide) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -40,54 +32,71 @@ class ExploreSection extends StatelessWidget {
                   child: Text(
                     'Specialities',
                     style: GoogleFonts.inter(
-                      fontSize: isWide ? 17 : 15,
+                      fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
                     ),
                   ),
                 ),
-                if (!isWide)
-                  TextButton(
-                    onPressed: () => _showAllSpecialitiesSheet(context),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.patientTeal,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      'View all',
-                      style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodySmall,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ),
               ],
             ),
-            SizedBox(height: isWide ? 16 : 12),
-            if (isWide)
-              _ExploreWideGrid(
-                categories: allCategories,
-                onCategoryTap: (category) =>
-                    _openDoctorSearchForCategory(context, category),
-              )
-            else
-              Row(
-                children: [
-                  for (var i = 0; i < previewCategories.length; i++) ...[
-                    if (i > 0) const SizedBox(width: _tileSpacing),
-                    Expanded(
-                      child: _ExploreCategoryTile(
-                        label: previewCategories[i],
-                        onTap: () => _openDoctorSearchForCategory(
-                            context, previewCategories[i]),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+            const SizedBox(height: 16),
+            _ExploreWideGrid(
+              categories: allCategories,
+              onCategoryTap: (category) =>
+                  _openDoctorSearchForCategory(context, category),
+            ),
           ],
         ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Specialities',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryOf(context),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _showAllSpecialitiesSheet(context),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.patientTeal,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'View all',
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _ExploreMobileHorizontalGrid(
+            categories: allCategories,
+            onCategoryTap: (category) =>
+                _openDoctorSearchForCategory(context, category),
+          ),
+        ],
       ),
     );
   }
@@ -113,6 +122,170 @@ class ExploreSection extends StatelessWidget {
           _openDoctorSearchForCategory(context, category);
         },
       ),
+    );
+  }
+}
+
+class _ExploreMobileHorizontalGrid extends StatefulWidget {
+  const _ExploreMobileHorizontalGrid({
+    required this.categories,
+    required this.onCategoryTap,
+  });
+
+  final List<String> categories;
+  final ValueChanged<String> onCategoryTap;
+
+  @visibleForTesting
+  static void resetNudgeForTesting() {
+    _hasShownNudge = false;
+  }
+
+  static bool _hasShownNudge = false;
+
+  @override
+  State<_ExploreMobileHorizontalGrid> createState() =>
+      _ExploreMobileHorizontalGridState();
+}
+
+class _ExploreMobileHorizontalGridState
+    extends State<_ExploreMobileHorizontalGrid> {
+  late final ScrollController _scrollController;
+  bool _canScrollRight = true;
+  Timer? _nudgeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_updateScrollIndicator);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _updateScrollIndicator();
+      if (!_ExploreMobileHorizontalGrid._hasShownNudge) {
+        _ExploreMobileHorizontalGrid._hasShownNudge = true;
+        _nudgeTimer = Timer(const Duration(milliseconds: 600), () {
+          _runNudgeAnimation();
+        });
+      }
+    });
+  }
+
+  Future<void> _runNudgeAnimation() async {
+    if (!mounted || !_scrollController.hasClients) return;
+    if (_scrollController.offset > 5) return;
+
+    try {
+      await _scrollController.animateTo(
+        36.0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+      if (!mounted || !_scrollController.hasClients) return;
+      await _scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeInOutCubic,
+      );
+    } catch (_) {}
+  }
+
+  void _updateScrollIndicator() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final offset = _scrollController.offset;
+    final canScroll = maxScroll > 8.0 && offset < (maxScroll - 8.0);
+    if (canScroll != _canScrollRight) {
+      setState(() => _canScrollRight = canScroll);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nudgeTimer?.cancel();
+    _scrollController.removeListener(_updateScrollIndicator);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth =
+            constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width;
+
+        const leftPadding = 16.0;
+        const spacing = 10.0;
+        // 3 full columns + 3 gaps + ~50% of the 4th column
+        final itemWidth =
+            ((screenWidth - leftPadding - (3 * spacing)) / 3.5).clamp(76.0, 120.0);
+
+        final textScale =
+            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3);
+        final rowHeight = 72.0 + (30.0 * textScale);
+        final gridHeight = (rowHeight * 2) + spacing;
+        final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+
+        return SizedBox(
+          height: gridHeight,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GridView.builder(
+                controller: _scrollController,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                clipBehavior: Clip.none,
+                padding: const EdgeInsets.only(left: leftPadding, right: 16),
+                itemCount: widget.categories.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: spacing,
+                  crossAxisSpacing: spacing,
+                  mainAxisExtent: itemWidth,
+                ),
+                itemBuilder: (context, index) {
+                  final category = widget.categories[index];
+                  return _ExploreCategoryTile(
+                    label: category,
+                    fixedWidth: itemWidth,
+                    iconSize: 66,
+                    onTap: () => widget.onCategoryTap(category),
+                  );
+                },
+              ),
+              Positioned(
+                top: 0,
+                bottom: 0,
+                right: 0,
+                width: 28,
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: _canScrollRight ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            scaffoldBg.withValues(alpha: 0.0),
+                            scaffoldBg,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -331,11 +504,13 @@ class _ExploreCategoryTile extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.fixedWidth,
+    this.iconSize,
   });
 
   final String label;
   final VoidCallback onTap;
   final double? fixedWidth;
+  final double? iconSize;
 
   Widget _buildFallback(BuildContext context, double iconSize) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -355,54 +530,30 @@ class _ExploreCategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final useWideTile = fixedWidth != null && fixedWidth! >= 84;
 
     Widget buildContent(double width) {
-      final iconBox = useWideTile ? 56.0 : (width * 0.78).clamp(42.0, 60.0);
-      final fontSize = useWideTile ? 11.0 : (width * 0.132).clamp(9.0, 11.0);
+      final currentIconSize = iconSize ?? (useWideTile ? 64.0 : 66.0);
+      final fontSize = useWideTile ? 11.0 : (width * 0.14).clamp(10.0, 11.5);
       final assetPath = _ExploreSpecialtyAssets.forCategory(label);
 
       return Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: iconBox,
-            height: iconBox,
-            decoration: BoxDecoration(
-              color: isDark ? Colors.black : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color:
-                    isDark ? const Color(0xFF27272A) : const Color(0xFFE2E8F0),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.6)
-                      : Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Padding(
-                padding: const EdgeInsets.all(7.0),
-                child: assetPath != null
-                    ? Image.asset(
-                        assetPath,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
-                            _buildFallback(context, iconBox * 0.45),
-                      )
-                    : _buildFallback(context, iconBox * 0.45),
-              ),
-            ),
+          SizedBox(
+            width: currentIconSize,
+            height: currentIconSize,
+            child: assetPath != null
+                ? Image.asset(
+                    assetPath,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) =>
+                        _buildFallback(context, currentIconSize * 0.65),
+                  )
+                : _buildFallback(context, currentIconSize * 0.65),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             label,
             textAlign: TextAlign.center,
@@ -449,7 +600,7 @@ abstract final class _ExploreSpecialtyAssets {
     'Child Care': 'assets/images/specialties/child_care.png',
     'Eye Specialist': 'assets/images/specialties/eye_specialist.png',
     'Ear, Nose & Throat': 'assets/images/specialties/ear_nose_throat.png',
-    // 'Dentist' will be used once dentist.png is provided
+    'Dentist': 'assets/images/specialties/dentist.png',
     'Heart Specialist': 'assets/images/specialties/heart_specialist.png',
     'Mental Wellness': 'assets/images/specialties/mental_wellness.png',
     'Skin Specialist': 'assets/images/specialties/skin_specialist.png',

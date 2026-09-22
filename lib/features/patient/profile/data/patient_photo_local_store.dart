@@ -8,6 +8,10 @@ abstract final class PatientPhotoLocalStore {
   static Uint8List? readCached(String patientId) =>
       LocalAvatarStore.readCached('patient', patientId);
 
+  @visibleForTesting
+  static void setCachedForTesting(String patientId, Uint8List? bytes) =>
+      LocalAvatarStore.setCachedForTesting('patient', patientId, bytes);
+
   static Future<Uint8List?> load(String patientId) =>
       LocalAvatarStore.load('patient', patientId);
 

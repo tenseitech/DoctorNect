@@ -15,12 +15,25 @@ abstract final class LocalAvatarStore {
 
   static Future<File?> _photoFile(String role, String id) async {
     if (kIsWeb) return null;
-    final root = await getApplicationDocumentsDirectory();
-    final dir = Directory('${root.path}/${role}_photos');
-    if (!dir.existsSync()) {
-      dir.createSync(recursive: true);
+    try {
+      final root = await getApplicationDocumentsDirectory();
+      final dir = Directory('${root.path}/${role}_photos');
+      if (!dir.existsSync()) {
+        dir.createSync(recursive: true);
+      }
+      return File('${dir.path}/$id.jpg');
+    } catch (_) {
+      return null;
     }
-    return File('${dir.path}/$id.jpg');
+  }
+
+  @visibleForTesting
+  static void setCachedForTesting(String role, String id, Uint8List? bytes) {
+    if (bytes == null) {
+      _memory.remove(_key(role, id));
+    } else {
+      _memory[_key(role, id)] = bytes;
+    }
   }
 
   static Uint8List? readCached(String role, String id) {

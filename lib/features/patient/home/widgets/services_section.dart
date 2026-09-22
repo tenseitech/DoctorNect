@@ -23,15 +23,13 @@ class ServicesSection extends StatelessWidget {
     final services = PatientMockData.services;
     final isWide = MediaQuery.sizeOf(context).width >= _wideBreakpoint;
 
-    return ColoredBox(
-      color: AppColors.cardBgOf(context),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          isWide ? 20 : 16,
-          isWide ? 20 : 12,
-          isWide ? 20 : 16,
-          isWide ? 20 : 12,
-        ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        isWide ? 20 : 16,
+        isWide ? 20 : 12,
+        isWide ? 20 : 16,
+        isWide ? 20 : 12,
+      ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -77,8 +75,7 @@ class ServicesSection extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -93,6 +90,18 @@ class _ServiceStyle {
 
   static _ServiceStyle forRoute(String route) {
     return switch (route) {
+      'records' => const _ServiceStyle(
+          gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+          subtitle: 'Health records',
+        ),
+      'sos' => const _ServiceStyle(
+          gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+          subtitle: 'Emergency help',
+        ),
+      'digital-pass' => const _ServiceStyle(
+          gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
+          subtitle: 'Digital ID pass',
+        ),
       'near-you' => const _ServiceStyle(
           gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
           subtitle: 'Dr. in city',
@@ -100,10 +109,6 @@ class _ServiceStyle {
       'my-lab' => const _ServiceStyle(
           gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
           subtitle: 'Saved labs',
-        ),
-      'records' => const _ServiceStyle(
-          gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-          subtitle: 'Health records',
         ),
       'appointments' => const _ServiceStyle(
           gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
@@ -143,9 +148,11 @@ class _ServiceTileState extends State<_ServiceTile> {
 
   String get _shortLabel {
     return switch (widget.service.route) {
+      'records' => 'Records',
+      'sos' => 'SOS',
+      'digital-pass' => 'Pass',
       'near-you' => 'Citywide',
       'my-lab' => 'My Lab',
-      'records' => 'Records',
       'appointments' => 'Visits',
       'ambulance' => 'Ambulance',
       _ => widget.service.label,

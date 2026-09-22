@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
-enum LabSearchResultKind { test, package, lab }
+enum LabSearchResultKind { test, package, lab, ambulance }
 
 class LabSearchResultTile extends StatelessWidget {
   const LabSearchResultTile({
@@ -26,12 +26,14 @@ class LabSearchResultTile extends StatelessWidget {
         LabSearchResultKind.test => Icons.science_outlined,
         LabSearchResultKind.package => Icons.local_offer_outlined,
         LabSearchResultKind.lab => Icons.biotech_outlined,
+        LabSearchResultKind.ambulance => Icons.emergency_outlined,
       };
 
   Color get _color => switch (kind) {
         LabSearchResultKind.test => AppColors.labPurple,
         LabSearchResultKind.package => const Color(0xFF7C3AED),
         LabSearchResultKind.lab => AppColors.patientTeal,
+        LabSearchResultKind.ambulance => const Color(0xFFEF4444),
       };
 
   @override
@@ -106,13 +108,17 @@ class LabSearchSectionHeader extends StatelessWidget {
   const LabSearchSectionHeader({
     super.key,
     required this.title,
-    required this.count,
+    this.count,
     this.accentColor = AppColors.labPurple,
+    this.onViewAll,
+    this.viewAllText = 'View all',
   });
 
   final String title;
-  final int count;
+  final int? count;
   final Color accentColor;
+  final VoidCallback? onViewAll;
+  final String viewAllText;
 
   @override
   Widget build(BuildContext context) {
@@ -132,23 +138,63 @@ class LabSearchSectionHeader extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryOf(context),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimaryOf(context),
+                      ),
+                    ),
+                  ),
+                  if (count != null) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      '$count',
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelSmall,
+                        fontWeight: FontWeight.w600,
+                        color: accentColor,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (onViewAll != null)
+              InkWell(
+                onTap: onViewAll,
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        viewAllText,
+                        style: GoogleFonts.inter(
+                          fontSize: AppTypography.labelSmall,
+                          fontWeight: FontWeight.w600,
+                          color: accentColor,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 14,
+                        color: accentColor,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Text(
-              '$count',
-              style: GoogleFonts.inter(
-                fontSize: AppTypography.labelSmall,
-                fontWeight: FontWeight.w600,
-                color: accentColor,
-              ),
-            ),
           ],
         ),
       ),

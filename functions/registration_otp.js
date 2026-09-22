@@ -1120,15 +1120,6 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   }
 
-  const config = await getDemoConfig();
-  if (isDemoAccount && (!config || !config.demoOtp)) {
-    throw new HttpsError('internal', 'Demo configuration missing demoOtp');
-  }
-
-  const code = isDemoAccount ? config.demoOtp : generateOtpCode();
-  // 10 years for demo expiry if we want it long lived, or just standard if not defined
-  const expiryMs = isDemoAccount ? (365 * 24 * 60 * 60 * 1000) : OTP_EXPIRY_MS;
-  }
 
   const config = await getDemoConfig();
   if (isDemoAccount && (!config || !config.demoOtp)) {
@@ -1169,6 +1160,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     expiresInSeconds: Math.floor(expiryMs / 1000),
     ...(isTestMode() && !isDemoAccount ? { debugOtp: DEV_TEST_OTP } : {}),
   };
+}
 
 async function isChallengeOtpValid({ otp, challenge, isDemoAccount, demoOtp }) {
   const entered = String(otp || '').trim();

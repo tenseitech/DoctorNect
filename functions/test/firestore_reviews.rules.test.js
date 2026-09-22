@@ -16,6 +16,11 @@ const DOCTOR_ID = 'd9876543210';
 
 let testEnv;
 
+if (!process.env.FIRESTORE_EMULATOR_HOST) {
+  test('firestore rules tests (skipped: FIRESTORE_EMULATOR_HOST not set; run npm run test:firestore-rules)', { skip: 'FIRESTORE_EMULATOR_HOST not set' }, () => {});
+  return;
+}
+
 before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,

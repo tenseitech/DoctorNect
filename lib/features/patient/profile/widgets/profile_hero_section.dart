@@ -52,7 +52,7 @@ class ProfileHeroSection extends StatelessWidget {
             ),
             if (hasBmi) ...[
               SizedBox(height: isWide ? 18 : 16),
-              _PatientBmiCard(
+              PatientBmiCard(
                 heightCm: profile.height,
                 weightKg: profile.weight,
                 isWide: isWide,
@@ -60,7 +60,7 @@ class ProfileHeroSection extends StatelessWidget {
             ],
             if (!isWide) ...[
               SizedBox(height: hasBmi ? 14 : 16),
-              _EditProfileButton(onEdit: onEdit, compact: true),
+              EditProfileButton(onEdit: onEdit, compact: true),
             ],
           ],
         ),
@@ -115,8 +115,8 @@ class _ProfileMeta extends StatelessWidget {
   }
 }
 
-class _MetaChip extends StatelessWidget {
-  const _MetaChip(this.label);
+class MetaChip extends StatelessWidget {
+  const MetaChip(this.label, {super.key});
 
   final String label;
 
@@ -141,8 +141,10 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-class _MetaLine extends StatelessWidget {
-  const _MetaLine({required this.icon, required this.text});
+typedef _MetaChip = MetaChip;
+
+class MetaLine extends StatelessWidget {
+  const MetaLine({super.key, required this.icon, required this.text});
 
   final IconData icon;
   final String text;
@@ -170,8 +172,10 @@ class _MetaLine extends StatelessWidget {
   }
 }
 
-class _EditProfileButton extends StatelessWidget {
-  const _EditProfileButton({required this.onEdit, required this.compact});
+typedef _MetaLine = MetaLine;
+
+class EditProfileButton extends StatelessWidget {
+  const EditProfileButton({super.key, required this.onEdit, required this.compact});
 
   final VoidCallback onEdit;
   final bool compact;
@@ -203,8 +207,11 @@ class _EditProfileButton extends StatelessWidget {
   }
 }
 
-class _PatientBmiCard extends StatelessWidget {
-  const _PatientBmiCard({
+typedef _EditProfileButton = EditProfileButton;
+
+class PatientBmiCard extends StatelessWidget {
+  const PatientBmiCard({
+    super.key,
     required this.heightCm,
     required this.weightKg,
     required this.isWide,

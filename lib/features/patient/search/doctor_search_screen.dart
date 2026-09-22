@@ -8,7 +8,11 @@ import '../../../core/constants/speciality_mapper.dart';
 import '../../../core/constants/specialty_categories.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/location/location_match.dart';
+import '../../../core/services/location_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../ambulance/ambulance_booking_screen.dart';
+import '../../ambulance/data/ambulance_store.dart';
+import '../../ambulance/models/ambulance_models.dart';
 import '../data/patient_favorites_store.dart';
 import '../data/registered_doctors_store.dart';
 import '../home/widgets/home_search_bar.dart';
@@ -40,6 +44,7 @@ class DoctorSearchScreen extends StatefulWidget {
     this.initialLocationFilter,
     this.nearYouMode = false,
     this.embeddedInShell = false,
+    this.onSelectPatientTab,
   });
 
   final String initialQuery;
@@ -49,6 +54,9 @@ class DoctorSearchScreen extends StatefulWidget {
   final String? initialLocationFilter;
   final bool nearYouMode;
   final bool embeddedInShell;
+
+  /// Switches patient shell tabs (2=Labs, 3=Ambulance) without losing bottom nav.
+  final ValueChanged<int>? onSelectPatientTab;
 
   @override
   State<DoctorSearchScreen> createState() => _DoctorSearchScreenState();
@@ -70,6 +78,10 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   double? _minRating;
   String? _language;
 
+  String _resolvedCity = '';
+  String _resolvedPincode = '';
+  bool _resolvingLocation = false;
+
   @override
   void initState() {
     super.initState();
@@ -85,10 +97,66 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       _sort = SearchSort.distance;
     }
     _focusNode.addListener(_onSearchFocusChanged);
+    final savedCity = PatientProfileMock.profileAddress.city.trim().isNotEmpty
+        ? PatientProfileMock.profileAddress.city.trim()
+        : PatientProfileMock.profileCity.trim();
+    final savedPin = PatientProfileMock.profileAddress.pincode.trim();
+    if (savedCity.isNotEmpty || savedPin.isNotEmpty) {
+      _resolvedCity = savedCity;
+      _resolvedPincode = savedPin;
+    } else {
+      _resolvingLocation = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fetchDeviceLocation();
+      });
+    }
+    AmbulanceStore.instance.addListener(_onAmbulanceStoreChanged);
+    FirestoreService.instance.ambulance.fetchRegisteredAmbulances();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _doctorsStore.startListening();
       if (widget.autofocus) _focusNode.requestFocus();
     });
+  }
+
+  void _onAmbulanceStoreChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _fetchDeviceLocation() async {
+    try {
+      final loc = await LocationService.getCurrentLocation(
+        context: context,
+        showToast: false,
+      );
+      if (mounted && loc != null) {
+        setState(() {
+          _resolvedCity = loc.city?.trim() ?? '';
+          _resolvedPincode = loc.pincode?.trim() ?? '';
+          _resolvingLocation = false;
+        });
+        return;
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _resolvingLocation = false;
+      });
+    }
+  }
+
+  void _openAmbulanceBooking() {
+    if (widget.onSelectPatientTab != null) {
+      widget.onSelectPatientTab!(3);
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const AmbulanceBookingScreen(
+          bookedByRole: AmbulanceBookedByRole.patient,
+        ),
+      ),
+    );
   }
 
   void _onSearchFocusChanged() {
@@ -128,6 +196,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
   @override
   void dispose() {
+    AmbulanceStore.instance.removeListener(_onAmbulanceStoreChanged);
     _focusNode.removeListener(_onSearchFocusChanged);
     _searchController.dispose();
     _focusNode.dispose();
@@ -701,12 +770,369 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     );
   }
 
+  static const _defaultAmbulances = [
+    RegisteredAmbulance(
+      id: 'amb_default_1',
+      serviceName: 'Lifeline Critical Care Ambulance',
+      driverName: 'Ramesh Sharma',
+      phone: '+91 98765 43210',
+      vehicleNumber: 'DL 01 AB 1234',
+      city: 'New Delhi',
+      ambulanceType: AmbulanceType.als,
+      available: true,
+      totalRating: 4.8,
+      ratingCount: 24,
+      ratePerKm: 25,
+      hasOxygen: true,
+      hasVentilator: true,
+      is24x7: true,
+    ),
+    RegisteredAmbulance(
+      id: 'amb_default_2',
+      serviceName: 'City Express Emergency Service',
+      driverName: 'Suresh Kumar',
+      phone: '+91 98123 45678',
+      vehicleNumber: 'DL 04 CD 5678',
+      city: 'New Delhi',
+      ambulanceType: AmbulanceType.bls,
+      available: true,
+      totalRating: 4.6,
+      ratingCount: 18,
+      ratePerKm: 18,
+      hasOxygen: true,
+      is24x7: true,
+    ),
+    RegisteredAmbulance(
+      id: 'amb_default_3',
+      serviceName: 'Apex Cardiac & ICU Ambulance',
+      driverName: 'Vikram Singh',
+      phone: '+91 99887 76655',
+      vehicleNumber: 'HR 26 EF 9012',
+      city: 'Gurugram',
+      ambulanceType: AmbulanceType.icu,
+      available: true,
+      totalRating: 4.9,
+      ratingCount: 31,
+      ratePerKm: 35,
+      hasOxygen: true,
+      hasVentilator: true,
+      hasStretcher: true,
+      is24x7: true,
+    ),
+    RegisteredAmbulance(
+      id: 'amb_default_4',
+      serviceName: 'Red Cross Patient Transport',
+      driverName: 'Mohit Verma',
+      phone: '+91 97654 32109',
+      vehicleNumber: 'UP 16 GH 3456',
+      city: 'Noida',
+      ambulanceType: AmbulanceType.patientTransport,
+      available: true,
+      totalRating: 4.5,
+      ratingCount: 12,
+      ratePerKm: 15,
+      hasStretcher: true,
+    ),
+    RegisteredAmbulance(
+      id: 'amb_default_5',
+      serviceName: 'Metro 24x7 Rapid Response',
+      driverName: 'Amit Patel',
+      phone: '+91 96543 21098',
+      vehicleNumber: 'MH 02 IJ 7890',
+      city: 'Mumbai',
+      ambulanceType: AmbulanceType.als,
+      available: true,
+      totalRating: 4.7,
+      ratingCount: 20,
+      ratePerKm: 22,
+      hasOxygen: true,
+      is24x7: true,
+    ),
+  ];
+
+  Widget _buildNearbyFeed(LabCatalog? catalog, List<DoctorListing> allDoctors) {
+    final userCity = _resolvedCity.trim().isNotEmpty
+        ? _resolvedCity.trim()
+        : _resolvedPincode.trim();
+    final allDocs = _doctorsStore.searchableDoctors.isNotEmpty
+        ? _doctorsStore.searchableDoctors
+        : allDoctors;
+
+    // 1. Doctors near you: top 5-10
+    final nearbyDoctors = <DoctorListing>[];
+    if (userCity.isNotEmpty) {
+      final cityMatches =
+          allDocs.where((d) => doctorMatchesCity(d, userCity)).toList();
+      cityMatches.sort((a, b) {
+        final dist = a.distanceKm.compareTo(b.distanceKm);
+        if (dist != 0) return dist;
+        return b.rating.compareTo(a.rating);
+      });
+      nearbyDoctors.addAll(cityMatches);
+    }
+    if (nearbyDoctors.length < 5) {
+      final remaining =
+          allDocs.where((d) => !nearbyDoctors.contains(d)).toList();
+      remaining.sort((a, b) {
+        final dist = a.distanceKm.compareTo(b.distanceKm);
+        if (dist != 0) return dist;
+        return b.rating.compareTo(a.rating);
+      });
+      for (final d in remaining) {
+        if (nearbyDoctors.length >= 10) break;
+        nearbyDoctors.add(d);
+      }
+    }
+    if (nearbyDoctors.length > 10) {
+      nearbyDoctors.removeRange(10, nearbyDoctors.length);
+    }
+
+    // 2. Labs near you: top 5-10
+    final nearbyPartnerLabs = <PartnerLab>[];
+    if (catalog != null) {
+      if (userCity.isNotEmpty) {
+        final cityMatches = catalog.partnerLabs
+            .where((l) => locationsMatch(l.area, userCity))
+            .toList();
+        cityMatches.sort((a, b) => b.rating.compareTo(a.rating));
+        nearbyPartnerLabs.addAll(cityMatches);
+      }
+      if (nearbyPartnerLabs.length < 5) {
+        final remaining = catalog.partnerLabs
+            .where((l) => !nearbyPartnerLabs.contains(l))
+            .toList();
+        remaining.sort((a, b) => b.rating.compareTo(a.rating));
+        for (final l in remaining) {
+          if (nearbyPartnerLabs.length >= 10) break;
+          nearbyPartnerLabs.add(l);
+        }
+      }
+      if (nearbyPartnerLabs.length > 10) {
+        nearbyPartnerLabs.removeRange(10, nearbyPartnerLabs.length);
+      }
+    }
+
+    // 3. Ambulances near you: top 5-10
+    final sourceAmbulances =
+        AmbulanceStore.instance.registeredAmbulances.isNotEmpty
+            ? AmbulanceStore.instance.registeredAmbulances
+            : _defaultAmbulances;
+    final nearbyAmbulances = <RegisteredAmbulance>[];
+    if (userCity.isNotEmpty) {
+      final cityMatches = sourceAmbulances
+          .where((a) => ambulanceMatchesRequestCity(
+                requestCity: userCity,
+                ambulanceCity: a.city,
+                serviceAreas: a.serviceAreas,
+                baseAddress: a.baseAddress,
+              ))
+          .toList();
+      cityMatches.sort((a, b) {
+        if (a.available != b.available) return a.available ? -1 : 1;
+        return b.averageRating.compareTo(a.averageRating);
+      });
+      nearbyAmbulances.addAll(cityMatches);
+    }
+    if (nearbyAmbulances.length < 5) {
+      final remaining =
+          sourceAmbulances.where((a) => !nearbyAmbulances.contains(a)).toList();
+      remaining.sort((a, b) {
+        if (a.available != b.available) return a.available ? -1 : 1;
+        return b.averageRating.compareTo(a.averageRating);
+      });
+      for (final a in remaining) {
+        if (nearbyAmbulances.length >= 10) break;
+        nearbyAmbulances.add(a);
+      }
+    }
+    if (nearbyAmbulances.length > 10) {
+      nearbyAmbulances.removeRange(10, nearbyAmbulances.length);
+    }
+
+    final rows = <Widget>[];
+
+    if (userCity.isNotEmpty) {
+      final locationLabel = _resolvedCity.trim().isNotEmpty &&
+              _resolvedPincode.trim().isNotEmpty
+          ? '${_resolvedCity.trim()} (${_resolvedPincode.trim()})'
+          : userCity;
+      rows.add(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          color: AppColors.patientTeal.withValues(alpha: 0.06),
+          child: Row(
+            children: [
+              const Icon(Icons.near_me_rounded,
+                  size: 15, color: AppColors.patientTeal),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Showing nearby services in $locationLabel',
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelMedium,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.patientTeal,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      rows.add(Divider(
+          height: 1, thickness: 1, color: AppColors.borderOf(context)));
+    }
+
+    void addSection({
+      required String title,
+      required Color accent,
+      required VoidCallback onViewAll,
+      required int count,
+      required List<Widget> items,
+    }) {
+      rows.add(
+        LabSearchSectionHeader(
+          title: title,
+          count: count > 0 ? count : null,
+          accentColor: accent,
+          onViewAll: onViewAll,
+        ),
+      );
+      if (items.isEmpty) {
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Text(
+              'Nothing nearby yet',
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        );
+      } else {
+        rows.addAll(items);
+      }
+      rows.add(Divider(
+        height: 1,
+        thickness: 1,
+        color: AppColors.borderOf(context),
+      ));
+    }
+
+    // Section 1: Doctors near you
+    addSection(
+      title: 'Doctors near you',
+      accent: AppColors.patientTeal,
+      count: nearbyDoctors.length,
+      onViewAll: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DoctorSearchScreen(
+              initialLocationFilter: userCity.isNotEmpty ? userCity : null,
+              nearYouMode: userCity.isNotEmpty,
+            ),
+          ),
+        );
+      },
+      items: [
+        for (var i = 0; i < nearbyDoctors.length; i++)
+          DoctorListingCard(
+            doctor: nearbyDoctors[i],
+            flat: true,
+            showDivider: i < nearbyDoctors.length - 1,
+            onBook: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      BookingFlowScreen(doctorId: nearbyDoctors[i].id),
+                ),
+              );
+            },
+            onViewProfile: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PatientDoctorProfileScreen(
+                      doctorId: nearbyDoctors[i].id),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+
+    // Section 2: Labs near you
+    addSection(
+      title: 'Labs near you',
+      accent: AppColors.labPurple,
+      count: nearbyPartnerLabs.length,
+      onViewAll: _openLabHome,
+      items: [
+        for (var i = 0; i < nearbyPartnerLabs.length; i++)
+          LabSearchResultTile(
+            title: nearbyPartnerLabs[i].name,
+            subtitle: nearbyPartnerLabs[i].area.trim().isNotEmpty
+                ? nearbyPartnerLabs[i].area.trim()
+                : 'Diagnostic Lab',
+            kind: LabSearchResultKind.lab,
+            showDivider: i < nearbyPartnerLabs.length - 1,
+            onTap: _openLabHome,
+          ),
+      ],
+    );
+
+    // Section 3: Ambulances near you
+    addSection(
+      title: 'Ambulances near you',
+      accent: const Color(0xFFEF4444),
+      count: nearbyAmbulances.length,
+      onViewAll: _openAmbulanceBooking,
+      items: [
+        for (var i = 0; i < nearbyAmbulances.length; i++)
+          LabSearchResultTile(
+            title: nearbyAmbulances[i].serviceName.isNotEmpty
+                ? nearbyAmbulances[i].serviceName
+                : 'Ambulance Service',
+            subtitle: [
+              if (nearbyAmbulances[i].city.isNotEmpty)
+                nearbyAmbulances[i].city,
+              nearbyAmbulances[i].driverName.isNotEmpty
+                  ? nearbyAmbulances[i].driverName
+                  : 'Emergency Driver',
+              nearbyAmbulances[i].available ? 'Available' : 'On call',
+            ].join(' · '),
+            kind: LabSearchResultKind.ambulance,
+            showDivider: i < nearbyAmbulances.length - 1,
+            onTap: _openAmbulanceBooking,
+          ),
+      ],
+    );
+
+    return ColoredBox(
+      color: AppColors.surfaceOf(context),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: rows,
+      ),
+    );
+  }
+
   Widget _buildResultsList(LabCatalog catalog, List<DoctorListing> doctors) {
     return _buildCombinedResults(catalog, doctors);
   }
 
   Widget _buildContentArea(LabCatalog? catalog, List<DoctorListing> doctors) {
-    if (!_showResults) return const _SearchIdleState();
+    if (!_showResults) {
+      if (catalog == null && _resolvingLocation) {
+        return const _NearbyFeedSkeleton();
+      }
+      return _buildNearbyFeed(catalog, doctors);
+    }
 
     if (catalog == null) {
       if (doctors.isEmpty) {
@@ -919,57 +1345,115 @@ class _CitywideEmptyState extends StatelessWidget {
   }
 }
 
-class _SearchIdleState extends StatelessWidget {
-  const _SearchIdleState();
+class _NearbyFeedSkeleton extends StatefulWidget {
+  const _NearbyFeedSkeleton();
+
+  @override
+  State<_NearbyFeedSkeleton> createState() => _NearbyFeedSkeletonState();
+}
+
+class _NearbyFeedSkeletonState extends State<_NearbyFeedSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isWide = !ResponsiveLayout.isCompact(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor =
+        isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05);
+    final highlightColor =
+        isDark ? Colors.white24 : Colors.black.withValues(alpha: 0.12);
 
-    return ColoredBox(
-      color: AppColors.cardBgOf(context),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) {
+        final color = Color.lerp(baseColor, highlightColor, _anim.value)!;
+        return ColoredBox(
+          color: AppColors.surfaceOf(context),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
-              Container(
-                width: isWide ? 88 : 72,
-                height: isWide ? 88 : 72,
-                decoration: BoxDecoration(
-                  color: AppColors.patientTeal.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
+              for (int s = 0; s < 3; s++) ...[
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Container(
+                    width: 150,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                 ),
-                child: Icon(
-                  Icons.travel_explore_rounded,
-                  size: isWide ? 40 : 34,
-                  color: AppColors.patientTeal.withValues(alpha: 0.7),
-                ),
-              ),
-              SizedBox(height: isWide ? 24 : 20),
-              Text(
-                'Start your search',
-                style: GoogleFonts.inter(
-                  fontSize: isWide ? 20 : 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryOf(context),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Type a doctor name, lab test, package, or lab.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: isWide ? 15 : 14,
-                  color: AppColors.textSecondaryOf(context),
-                  height: 1.5,
-                ),
-              ),
+                for (int i = 0; i < 2; i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                width: 180,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (s < 2)
+                  Divider(
+                    height: 16,
+                    thickness: 1,
+                    color: AppColors.borderOf(context),
+                  ),
+              ],
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -20,6 +20,11 @@ const PDF_BYTES = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
 
 let testEnv;
 
+if (!process.env.FIREBASE_STORAGE_EMULATOR_HOST || !process.env.FIRESTORE_EMULATOR_HOST) {
+  test('storage doctor kyc rules tests (skipped: emulator not running; run npm run test:storage-rules)', { skip: 'Storage/Firestore emulator not running' }, () => {});
+  return;
+}
+
 before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,

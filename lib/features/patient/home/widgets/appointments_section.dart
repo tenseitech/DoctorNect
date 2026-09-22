@@ -43,11 +43,9 @@ class AppointmentsSection extends StatelessWidget {
           SharedAppointmentsStore.instance.patientAppointments(),
         );
 
-        return ColoredBox(
-          color: AppColors.cardBgOf(context),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                16, compact ? 12 : 20, 16, compact ? 12 : 20),
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              16, compact ? 12 : 20, 16, compact ? 12 : 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -108,8 +106,7 @@ class AppointmentsSection extends StatelessWidget {
                   ),
               ],
             ),
-          ),
-        );
+          );
       },
     );
   }

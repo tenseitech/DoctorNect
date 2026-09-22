@@ -12,7 +12,7 @@ import 'app_notification_navigator.dart';
 import 'in_app_notification_service.dart';
 import '../../core/theme/app_typography.dart';
 
-enum _InboxFilter { newAlerts, unread }
+enum _InboxFilter { newAlerts, read }
 
 class NotificationsInboxScreen extends StatefulWidget {
   const NotificationsInboxScreen({super.key, required this.audience});
@@ -39,8 +39,8 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
 
   List<AppNotification> get _items {
     return switch (_filter) {
-      _InboxFilter.newAlerts => _inbox.toList(),
-      _InboxFilter.unread => _inbox.where((n) => !n.isRead).toList(),
+      _InboxFilter.newAlerts => _inbox.where((n) => !n.isRead).toList(),
+      _InboxFilter.read => _inbox.where((n) => n.isRead).toList(),
     };
   }
 
@@ -55,14 +55,15 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
   }
 
   Future<void> _onNotificationTap(AppNotification notification) async {
+    if (!notification.isRead) {
+      await _markRead(notification.id);
+    }
     if (!mounted) return;
     await AppNotificationNavigator.open(
       context,
       notification: notification,
       audience: widget.audience,
     );
-    if (!mounted) return;
-    await _markRead(notification.id);
   }
 
   Future<void> _markAllRead() async {
@@ -71,8 +72,6 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
     } else {
       await InAppNotificationService.instance.markAllDoctorRead();
     }
-    if (!mounted) return;
-    setState(() => _filter = _InboxFilter.unread);
   }
 
   @override
@@ -145,26 +144,33 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Row(
-                  children: [
-                    _FilterPill(
-                      label: 'New',
-                      selected: _filter == _InboxFilter.newAlerts,
-                      accent: _accent,
-                      onTap: () =>
-                          setState(() => _filter = _InboxFilter.newAlerts),
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: ResponsiveLayout.contentMaxWidth(context),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Row(
+                      children: [
+                        _FilterPill(
+                          label: 'New',
+                          selected: _filter == _InboxFilter.newAlerts,
+                          accent: _accent,
+                          onTap: () =>
+                              setState(() => _filter = _InboxFilter.newAlerts),
+                        ),
+                        const SizedBox(width: 12),
+                        _FilterPill(
+                          label: 'Read',
+                          selected: _filter == _InboxFilter.read,
+                          accent: _accent,
+                          onTap: () =>
+                              setState(() => _filter = _InboxFilter.read),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    _FilterPill(
-                      label: 'Unread',
-                      selected: _filter == _InboxFilter.unread,
-                      accent: _accent,
-                      onTap: () =>
-                          setState(() => _filter = _InboxFilter.unread),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -172,7 +178,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                 child: items.isEmpty
                     ? _EmptyInbox(
                         accent: _accent,
-                        unreadOnly: _filter == _InboxFilter.unread,
+                        filter: _filter,
                       )
                     : Center(
                         child: ConstrainedBox(
@@ -495,18 +501,19 @@ class _NotificationPalette {
 class _EmptyInbox extends StatelessWidget {
   const _EmptyInbox({
     required this.accent,
-    required this.unreadOnly,
+    required this.filter,
   });
 
   final Color accent;
-  final bool unreadOnly;
+  final _InboxFilter filter;
 
   @override
   Widget build(BuildContext context) {
-    final title = unreadOnly ? 'No unread notifications' : 'All caught up';
-    final subtitle = unreadOnly
+    final isNewTab = filter == _InboxFilter.newAlerts;
+    final title = isNewTab ? 'No new notifications' : 'No read notifications';
+    final subtitle = isNewTab
         ? 'You have read all your notifications.'
-        : 'New notifications will appear here.';
+        : 'Notifications you\'ve read will appear here.';
 
     return Center(
       child: Padding(
@@ -529,8 +536,13 @@ class _EmptyInbox extends StatelessWidget {
                     color: accent.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.notifications_none_outlined,
-                      size: 32, color: accent),
+                  child: Icon(
+                    isNewTab
+                        ? Icons.notifications_none_outlined
+                        : Icons.mark_email_read_outlined,
+                    size: 32,
+                    color: accent,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(

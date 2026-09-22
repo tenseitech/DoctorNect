@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' show lerpDouble;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:file_picker/file_picker.dart';
@@ -63,11 +64,13 @@ class PatientProfileScreen extends StatelessWidget {
     this.isDoctorView = false,
     this.patientId,
     this.onOpenAppointments,
+    this.embeddedInShell = false,
   });
 
   final bool isDoctorView;
   final String? patientId;
   final VoidCallback? onOpenAppointments;
+  final bool embeddedInShell;
 
   static Future<void> open(BuildContext context) {
     return Navigator.push<void>(
@@ -81,7 +84,10 @@ class PatientProfileScreen extends StatelessWidget {
     if (isDoctorView) {
       return _DoctorPatientProfileScreen(patientId: patientId ?? '');
     }
-    return _PatientPatientProfileScreen(onOpenAppointments: onOpenAppointments);
+    return _PatientPatientProfileScreen(
+      onOpenAppointments: onOpenAppointments,
+      embeddedInShell: embeddedInShell,
+    );
   }
 }
 
@@ -974,12 +980,325 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+class _PatientProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _PatientProfileHeaderDelegate({
+    required this.profile,
+    required this.photoUrl,
+    required this.localPhotoBytes,
+    required this.onPickPhoto,
+    required this.topPadding,
+    required this.onBack,
+    this.showBackButton = true,
+  });
+
+  final PatientProfile profile;
+  final String? photoUrl;
+  final Uint8List? localPhotoBytes;
+  final VoidCallback onPickPhoto;
+  final double topPadding;
+  final VoidCallback onBack;
+  final bool showBackButton;
+
+  static const double _collapsedHeight = 56.0;
+  static const double _expandedContentHeight = 216.0;
+
+  @override
+  double get minExtent => topPadding + _collapsedHeight;
+
+  @override
+  double get maxExtent => topPadding + _expandedContentHeight;
+
+  @override
+  bool shouldRebuild(covariant _PatientProfileHeaderDelegate oldDelegate) {
+    return oldDelegate.profile != profile ||
+        oldDelegate.photoUrl != photoUrl ||
+        oldDelegate.localPhotoBytes != localPhotoBytes ||
+        oldDelegate.topPadding != topPadding;
+  }
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final scrollRange = (maxExtent - minExtent).clamp(1.0, double.infinity);
+    final progress = (shrinkOffset / scrollRange).clamp(0.0, 1.0);
+
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+    final textPrimary = AppColors.textPrimaryOf(context);
+    final textSecondary = AppColors.textSecondaryOf(context);
+    final border = AppColors.borderOf(context);
+
+    // Dynamic interpolated values
+    final titleOpacity = (1.0 - progress * 2.5).clamp(0.0, 1.0);
+    final titleDy = -12.0 * progress;
+
+    final avatarRadius = lerpDouble(38.0, 18.0, progress)!;
+    final avatarPadding = lerpDouble(3.0, 2.0, progress)!;
+    final avatarLeft = lerpDouble(16.0, 52.0, progress)!;
+    final avatarTop =
+        lerpDouble(topPadding + 104.0, topPadding + 8.0, progress)!;
+    final cameraOpacity = (1.0 - progress * 3.2).clamp(0.0, 1.0);
+
+    final nameLeft = lerpDouble(108.0, 100.0, progress)!;
+    final nameTop =
+        lerpDouble(topPadding + 106.0, topPadding + 18.0, progress)!;
+    final nameFontSize = lerpDouble(20.0, 16.0, progress)!;
+    final nameFontWeight =
+        FontWeight.lerp(FontWeight.w700, FontWeight.w600, progress)!;
+
+    final metaDetailsOpacity = (1.0 - progress * 2.2).clamp(0.0, 1.0);
+
+    final displayName =
+        profile.name.trim().isNotEmpty ? profile.name.trim() : 'Profile';
+
+    return SizedBox.expand(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: scaffoldBg,
+          border: Border(
+            bottom: BorderSide(
+              color: border.withValues(alpha: 0.25 * progress),
+              width: 1,
+            ),
+          ),
+          boxShadow: progress > 0.6
+              ? [
+                  BoxShadow(
+                    color: textPrimary.withValues(alpha: 0.04 * progress),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: ClipRect(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (showBackButton)
+                Positioned(
+                  top: topPadding + 6.0,
+                  left: 4.0,
+                  width: 44.0,
+                  height: 44.0,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    color: textPrimary,
+                    onPressed: onBack,
+                    tooltip: 'Back',
+                  ),
+                ),
+
+              // 2. Expanded Title & Subtitle ("Profile" / "Your account & health")
+              if (titleOpacity > 0.01)
+                Positioned(
+                  top: topPadding + 44.0 + titleDy,
+                  left: 16.0,
+                  right: 16.0,
+                  child: Opacity(
+                    opacity: titleOpacity,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Profile',
+                          style: GoogleFonts.inter(
+                            fontSize: AppTypography.headlineLarge,
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Your account & health',
+                          style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            color: textSecondary,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // 3. Avatar (lerps from large to small, and slides into pinned top bar)
+              Positioned(
+                top: avatarTop,
+                left: avatarLeft,
+                child: _buildAvatar(
+                  context,
+                  radius: avatarRadius,
+                  padding: avatarPadding,
+                  cameraOpacity: cameraOpacity,
+                ),
+              ),
+
+              // 4. Name text (lerps from large next to avatar to pinned top bar next to small avatar)
+              Positioned(
+                top: nameTop,
+                left: nameLeft,
+                right: 16.0,
+                child: Text(
+                  displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: nameFontSize,
+                    fontWeight: nameFontWeight,
+                    color: textPrimary,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+
+              // 5. Expanded Meta Details (chips, phone, email)
+              if (metaDetailsOpacity > 0.01)
+                Positioned(
+                  top: topPadding + 132.0,
+                  left: 108.0,
+                  right: 16.0,
+                  child: Opacity(
+                    opacity: metaDetailsOpacity,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (profile.age > 0 ||
+                            profile.gender.trim().isNotEmpty) ...[
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              if (profile.age > 0)
+                                MetaChip('${profile.age} yrs'),
+                              if (profile.gender.trim().isNotEmpty)
+                                MetaChip(profile.gender),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                        ],
+                        if (profile.mobile.trim().isNotEmpty) ...[
+                          MetaLine(
+                              icon: Icons.phone_outlined,
+                              text: profile.mobile),
+                          const SizedBox(height: 4),
+                        ],
+                        if (profile.email.trim().isNotEmpty) ...[
+                          MetaLine(
+                              icon: Icons.mail_outline,
+                              text: profile.email),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(
+    BuildContext context, {
+    required double radius,
+    required double padding,
+    required double cameraOpacity,
+  }) {
+    final initial = (profile.photoInitial ??
+            (profile.name.isNotEmpty ? profile.name[0] : 'P'))
+        .toUpperCase();
+    final hasLocalPhoto =
+        localPhotoBytes != null && localPhotoBytes!.isNotEmpty;
+    final hasNetworkPhoto =
+        !hasLocalPhoto && photoUrl != null && photoUrl!.isNotEmpty;
+
+    ImageProvider? avatarImage;
+    if (hasLocalPhoto) {
+      avatarImage = MemoryImage(localPhotoBytes!);
+    } else if (hasNetworkPhoto) {
+      avatarImage = NetworkImage(photoUrl!);
+    }
+
+    final fontSize = radius * 0.74;
+
+    return GestureDetector(
+      onTap: onPickPhoto,
+      child: Container(
+        padding: EdgeInsets.all(padding),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0D9488), Color(0xFF0369A1)],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.patientTeal.withValues(alpha: 0.28),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            CircleAvatar(
+              radius: radius,
+              backgroundColor: AppColors.surfaceOf(context),
+              backgroundImage: avatarImage,
+              child: avatarImage == null
+                  ? Text(
+                      initial,
+                      style: GoogleFonts.inter(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.patientTeal,
+                      ),
+                    )
+                  : null,
+            ),
+            if (cameraOpacity > 0.05)
+              Positioned(
+                right: -1,
+                bottom: -1,
+                child: Opacity(
+                  opacity: cameraOpacity,
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: AppColors.patientTeal,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: AppColors.surfaceOf(context), width: 2),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt_outlined,
+                      size: 13,
+                      color: AppColors.surfaceOf(context),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // --- PATIENT VIEW IMPLEMENTATION ---
 
 class _PatientPatientProfileScreen extends StatefulWidget {
-  const _PatientPatientProfileScreen({this.onOpenAppointments});
+  const _PatientPatientProfileScreen({
+    this.onOpenAppointments,
+    this.embeddedInShell = false,
+  });
 
   final VoidCallback? onOpenAppointments;
+  final bool embeddedInShell;
 
   @override
   State<_PatientPatientProfileScreen> createState() =>
@@ -995,9 +1314,13 @@ class _PatientPatientProfileScreenState
     if (PatientSession.loggedInPatientId.isNotEmpty) {
       return PatientSession.loggedInPatientId;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.uid.isNotEmpty) {
-      return user.uid;
+    if (FirebaseBootstrap.isReady) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null && user.uid.isNotEmpty) {
+          return user.uid;
+        }
+      } catch (_) {}
     }
     return AppSession.patientId;
   }
@@ -1492,59 +1815,58 @@ class _PatientPatientProfileScreenState
   Widget build(BuildContext context) {
     final p = PatientProfileMock.profile;
     final family = PatientProfileMock.familyMembers;
-    final useWebDashboard = !ResponsiveLayout.isCompact(context);
-
-    if (useWebDashboard) {
-      return Scaffold(
-        backgroundColor: AppColors.cardBgOf(context),
-        body: ProfileWebLayout(
-          profile: p,
-          family: family,
-          avatar: _buildProfileAvatar(p, radius: 52),
-          onPickPhoto: _pickPhoto,
-          onEdit: () => _openEditProfile(p),
-          onManageFamily: _openManageFamily,
-          onAddFamily: _openAddFamily,
-          onFamilyMemberTap: (m) => _openFamilyMember(m),
-          healthActions: _healthWebActions(),
-          careActions: _careWebActions(),
-          settingsActions: _settingsWebActions(),
-        ),
-      );
-    }
-
-    return _buildMobileScaffold(p, family);
-  }
-
-  Widget _buildMobileScaffold(
-      PatientProfile p, List<FamilyProfileMember> family) {
     final maxWidth = ResponsiveLayout.contentMaxWidth(context);
+    final isCompact = ResponsiveLayout.isCompact(context);
 
     return Scaffold(
-      backgroundColor: AppColors.cardBgOf(context),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildMobileProfileHeader(context),
-              Divider(
-                  height: 1, thickness: 1, color: AppColors.borderOf(context)),
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _PatientProfileHeaderDelegate(
+                  profile: p,
+                  photoUrl: _photoUrl,
+                  localPhotoBytes: _localPhotoBytes,
+                  onPickPhoto: _pickPhoto,
+                  topPadding: MediaQuery.paddingOf(context).top,
+                  onBack: () => Navigator.maybePop(context),
+                  showBackButton: !widget.embeddedInShell,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ProfileHeroSection(
-                      profile: p,
-                      avatar: _buildProfileAvatar(p),
-                      onPickPhoto: _pickPhoto,
-                      onEdit: () => _openEditProfile(p),
+                    if (p.height > 0 && p.weight > 0) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: PatientBmiCard(
+                          heightCm: p.height,
+                          weightKg: p.weight,
+                          isWide: !isCompact,
+                        ),
+                      ),
+                    ],
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                      child: EditProfileButton(
+                        onEdit: () => _openEditProfile(p),
+                        compact: true,
+                      ),
                     ),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.borderOf(context)),
+                      height: 1,
+                      thickness: 1,
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.25),
+                    ),
                     ProfileFlatSection(
                       shaded: true,
                       title: 'Family Profiles',
@@ -1571,9 +1893,9 @@ class _PatientPatientProfileScreenState
                           ProfileMenuTile(
                             icon: Icons.groups_outlined,
                             label: 'Manage family profiles',
-                            iconGradient: [
+                            iconGradient: const [
                               Color(0xFF7C3AED),
-                              Color(0xFF6D28D9)
+                              Color(0xFF6D28D9),
                             ],
                             onTap: _openManageFamily,
                           ),
@@ -1581,72 +1903,36 @@ class _PatientPatientProfileScreenState
                       ),
                     ),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.borderOf(context)),
+                      height: 1,
+                      thickness: 1,
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.25),
+                    ),
                     _buildHealthSection(),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.borderOf(context)),
+                      height: 1,
+                      thickness: 1,
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.25),
+                    ),
                     _buildCareSection(),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.borderOf(context)),
+                      height: 1,
+                      thickness: 1,
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.25),
+                    ),
                     _buildSettingsSection(shaded: false),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                       child: Center(child: LogoutTextButton()),
                     ),
+                    SizedBox(height: isCompact ? 80 : 32),
                   ],
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMobileProfileHeader(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.surfaceOf(context),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: BackButton(color: AppColors.textPrimaryOf(context)),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Profile',
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineLarge,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimaryOf(context),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Your account & health',
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      color: AppColors.textSecondaryOf(context),
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );

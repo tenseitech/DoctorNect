@@ -34,36 +34,32 @@ class LocationDropdownFields extends StatelessWidget {
   final bool cityRequired;
   final bool usePatientFieldStyle;
 
-  List<String> get _countryOptions {
+  String get _effectiveCountry {
     final current = country?.trim();
-    if (current != null &&
-        current.isNotEmpty &&
-        !Countries.all.contains(current)) {
+    if (current != null && current.isNotEmpty) return current;
+    return Countries.defaultCountry;
+  }
+
+  List<String> get _countryOptions {
+    final current = _effectiveCountry;
+    if (!Countries.all.contains(current)) {
       return [current, ...Countries.all];
     }
     return Countries.all;
   }
 
   bool get _hasLocationData {
-    final selected = country?.trim();
-    return selected != null &&
-        selected.isNotEmpty &&
-        WorldLocations.hasData(selected);
+    return WorldLocations.hasData(_effectiveCountry);
   }
 
   List<String> get _stateOptions {
-    final selected = country?.trim();
-    if (selected == null || selected.isEmpty) return const [];
-    return WorldLocations.statesWithLegacy(selected, state);
+    return WorldLocations.statesWithLegacy(_effectiveCountry, state);
   }
 
   List<String> get _cityOptions {
-    final selectedCountry = country?.trim();
+    final selectedCountry = _effectiveCountry;
     final selectedState = state?.trim();
-    if (selectedCountry == null ||
-        selectedCountry.isEmpty ||
-        selectedState == null ||
-        selectedState.isEmpty) {
+    if (selectedState == null || selectedState.isEmpty) {
       return const [];
     }
     final options =
@@ -102,8 +98,9 @@ class LocationDropdownFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveCountry = _effectiveCountry;
     final selectedCountry =
-        country != null && _countryOptions.contains(country) ? country : null;
+        _countryOptions.contains(effectiveCountry) ? effectiveCountry : null;
     final selectedState =
         state != null && _stateOptions.contains(state) ? state : null;
     final selectedCity =
@@ -113,6 +110,7 @@ class LocationDropdownFields extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SearchableDropdownFormField(
+          key: ValueKey('country-$effectiveCountry'),
           title: 'Country',
           value: selectedCountry,
           items: _countryOptions,
@@ -127,7 +125,7 @@ class LocationDropdownFields extends StatelessWidget {
         const SizedBox(height: 12),
         if (_hasLocationData) ...[
           SearchableDropdownFormField(
-            key: ValueKey('state-$country'),
+            key: ValueKey('state-$effectiveCountry'),
             title: 'State',
             value: selectedState,
             items: _stateOptions,
@@ -141,7 +139,7 @@ class LocationDropdownFields extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SearchableDropdownFormField(
-            key: ValueKey('city-$country-$state'),
+            key: ValueKey('city-$effectiveCountry-$state'),
             title: 'City',
             value: selectedCity,
             items: _cityOptions,
@@ -149,10 +147,10 @@ class LocationDropdownFields extends StatelessWidget {
             hintText: state == null || state!.trim().isEmpty
                 ? 'Select state first'
                 : 'Select city',
-            enabled: state != null && state!.trim().isNotEmpty,
             validator: cityRequired
                 ? (v) => FormValidators.dropdown(v, field: 'City')
                 : null,
+            enabled: state != null && state!.trim().isNotEmpty,
             onChanged: onCityChanged,
           ),
         ],

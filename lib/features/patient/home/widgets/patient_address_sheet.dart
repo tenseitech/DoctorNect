@@ -5,10 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/countries.dart';
+import '../../../../core/constants/indian_cities.dart';
 import '../../../../core/constants/world_locations.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/validators/form_validators.dart';
 import '../../../../widgets/location_dropdown_fields.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../../profile/data/patient_profile_mock.dart';
@@ -79,6 +79,17 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
         : Countries.defaultCountry;
     _state = address.state.trim().isNotEmpty ? address.state.trim() : null;
     _city = address.city.trim().isNotEmpty ? address.city.trim() : null;
+
+    if (_state == null &&
+        _city != null &&
+        _country == Countries.defaultCountry) {
+      for (final entry in IndianCities.byState.entries) {
+        if (entry.value.any((c) => c.toLowerCase() == _city!.toLowerCase())) {
+          _state = entry.key;
+          break;
+        }
+      }
+    }
   }
 
   @override
@@ -91,12 +102,12 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
   }
 
   String? _validatePincode(String? value) {
-    final label =
-        WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
-    final err = FormValidators.required(value, field: label);
-    if (err != null) return err;
+    if (value == null || value.trim().isEmpty) return null;
+    final trimmed = value.trim();
     if ((_country ?? Countries.defaultCountry) == Countries.defaultCountry) {
-      return FormValidators.pincodeIndia(value);
+      if (!RegExp(r'^\d{6}$').hasMatch(trimmed)) {
+        return 'Enter a valid 6-digit pincode';
+      }
     }
     return null;
   }
@@ -110,7 +121,9 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
         PatientAddress(
           addressLine1: _line1Controller.text.trim(),
           addressLine2: _line2Controller.text.trim(),
-          country: _country?.trim() ?? Countries.defaultCountry,
+          country: _country?.trim().isNotEmpty == true
+              ? _country!.trim()
+              : Countries.defaultCountry,
           city: _city?.trim() ?? '',
           state: _state?.trim() ?? '',
           pincode: _pincodeController.text.trim(),
@@ -172,9 +185,8 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                 controller: _line1Controller,
                 label: 'House / Flat no. & Street',
                 hint: 'e.g. 12, MG Road',
-                validator: (v) =>
-                    FormValidators.required(v, field: 'Address line 1'),
                 textCapitalization: TextCapitalization.words,
+                isRequired: false,
               ),
               const SizedBox(height: 12),
               _field(
@@ -182,16 +194,20 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                 label: 'Area / Locality',
                 hint: 'e.g. Civil Lines',
                 textCapitalization: TextCapitalization.words,
+                isRequired: false,
               ),
               const SizedBox(height: 12),
               LocationDropdownFields(
                 country: _country,
                 state: _state,
                 city: _city,
+                countryRequired: true,
+                stateRequired: true,
+                cityRequired: true,
                 usePatientFieldStyle: true,
                 onCountryChanged: (value) {
                   setState(() {
-                    _country = value;
+                    _country = value ?? Countries.defaultCountry;
                     _state = null;
                     _city = null;
                   });
@@ -214,6 +230,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                       label: postalLabel,
                       keyboardType: TextInputType.number,
                       validator: _validatePincode,
+                      isRequired: false,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(
@@ -232,6 +249,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                       label: 'Landmark (optional)',
                       hint: 'e.g. Near City Mall',
                       textCapitalization: TextCapitalization.words,
+                      isRequired: false,
                     ),
                   ),
                 ],
@@ -279,6 +297,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     TextCapitalization textCapitalization = TextCapitalization.none,
+    bool isRequired = false,
   }) {
     return TextFormField(
       controller: controller,
@@ -301,7 +320,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
           ),
         ),
         label,
-        isRequired: validator != null,
+        isRequired: isRequired,
       ),
     );
   }

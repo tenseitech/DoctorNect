@@ -111,16 +111,6 @@ class PatientMockData {
   static const carouselItems = [
     HomeCarouselItem(
       banner: PromoBanner(
-        kind: HomeCarouselKind.healthTip,
-        title: 'Stay Hydrated',
-        subtitle:
-            'Drink at least 8 glasses of water daily for glowing skin and better digestion.',
-        gradientColors: [Color(0xFF0D9488), Color(0xFF0369A1)],
-        icon: Icons.water_drop_outlined,
-      ),
-    ),
-    HomeCarouselItem(
-      banner: PromoBanner(
         kind: HomeCarouselKind.productAd,
         title: 'DoctorNect Health Kit',
         subtitle: 'Get 20% off on your first First-Aid kit purchase!',
@@ -129,17 +119,6 @@ class PatientMockData {
       ),
       ctaLabel: 'Learn more',
       ctaRoute: 'help',
-    ),
-    HomeCarouselItem(
-      banner: PromoBanner(
-        kind: HomeCarouselKind.healthTip,
-        title: 'Heart Health',
-        subtitle: '30 minutes of daily walk reduces the risk of heart disease.',
-        gradientColors: [Color(0xFFBE123C), Color(0xFF9A3412)],
-        icon: Icons.favorite_outline,
-      ),
-      ctaLabel: 'Book now',
-      ctaRoute: 'search',
     ),
     HomeCarouselItem(
       banner: PromoBanner(
@@ -160,20 +139,20 @@ class PatientMockData {
 
   static const services = [
     ServiceItem(
-        label: 'Citywide',
-        icon: TablerIcons.current_location,
-        route: 'near-you'),
-    ServiceItem(label: 'My Lab', icon: TablerIcons.flask, route: 'my-lab'),
+      label: 'Medical Record',
+      icon: TablerIcons.file_description,
+      route: 'records',
+    ),
     ServiceItem(
-        label: 'Medical Record',
-        icon: TablerIcons.file_description,
-        route: 'records'),
+      label: 'SOS',
+      icon: Icons.emergency_rounded,
+      route: 'sos',
+    ),
     ServiceItem(
-        label: 'My Appointments',
-        icon: TablerIcons.calendar_check,
-        route: 'appointments'),
-    ServiceItem(
-        label: 'Ambulance', icon: TablerIcons.ambulance, route: 'ambulance'),
+      label: 'Digital Pass',
+      icon: Icons.badge_rounded,
+      route: 'digital-pass',
+    ),
   ];
 
   static List<MyDoc> get myDocs =>

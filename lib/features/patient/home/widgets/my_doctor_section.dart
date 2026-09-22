@@ -45,11 +45,9 @@ class MyDoctorSection extends StatelessWidget {
                 ? '1 doctor in your list'
                 : '${doctors.length} doctors in your list';
 
-        return ColoredBox(
-          color: AppColors.surfaceOf(context),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-                16, compact ? 12 : 20, 16, compact ? 12 : 20),
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              16, compact ? 12 : 20, 16, compact ? 12 : 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -127,8 +125,7 @@ class MyDoctorSection extends StatelessWidget {
                   ),
               ],
             ),
-          ),
-        );
+          );
       },
     );
   }

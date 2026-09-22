@@ -70,6 +70,11 @@ class RegisteredDoctorsStore extends ChangeNotifier {
     );
   }
 
+  @visibleForTesting
+  void markStreamActiveForTesting([bool active = true]) {
+    _streamActive = active;
+  }
+
   /// One-time fetch fallback (also used as initial fast-path).
   Future<void> refreshFromFirestore({bool verifiedOnly = true}) async {
     try {

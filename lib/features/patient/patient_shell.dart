@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 import '../../core/auth/role_session_guard.dart';
 import '../../core/enums/user_type.dart';
@@ -15,17 +17,262 @@ import '../../core/notifications/patient_in_app_notification_sync.dart';
 import '../../core/notifications/patient_notification_prefs_sync.dart';
 import '../../core/notifications/patient_appointment_watcher.dart';
 import '../../core/notifications/patient_lab_booking_watcher.dart';
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../core/firebase/firebase_bootstrap.dart';
+import '../../core/session/app_session.dart';
+import '../../core/widgets/resampled_network_image.dart';
 import '../../core/notifications/patient_notification_scheduler.dart';
 import '../../core/notifications/patient_push_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
-import '../../widgets/digital_health_card_sheet.dart';
-import '../../widgets/emergency_sos_sheet.dart';
+import '../ambulance/ambulance_booking_screen.dart';
+import '../ambulance/models/ambulance_models.dart';
+import 'lab/my_labs_screen.dart';
+import 'profile/data/patient_photo_local_store.dart';
+import 'profile/data/patient_profile_mock.dart';
 import '../shared/screens/patient_profile_screen.dart';
 import 'widgets/patient_app_shell.dart';
 import 'home/patient_home_screen.dart';
 import 'appointments/patient_appointments_screen.dart';
 import 'profile/widgets/profile_completion_dialog.dart';
+
+class PatientProfileTabAvatar extends StatefulWidget {
+  const PatientProfileTabAvatar({
+    super.key,
+    required this.selected,
+    required this.iconColor,
+    required this.size,
+    this.fallbackIcon,
+  });
+
+  final bool selected;
+  final Color iconColor;
+  final double size;
+  final IconData? fallbackIcon;
+
+  @override
+  State<PatientProfileTabAvatar> createState() =>
+      _PatientProfileTabAvatarState();
+}
+
+typedef _PatientProfileTabAvatar = PatientProfileTabAvatar;
+
+class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
+  Uint8List? _localBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    PatientProfileMock.listenable.addListener(_onProfileChanged);
+    _loadLocalPhoto();
+  }
+
+  @override
+  void dispose() {
+    PatientProfileMock.listenable.removeListener(_onProfileChanged);
+    super.dispose();
+  }
+
+  void _onProfileChanged() {
+    _loadLocalPhoto();
+    if (mounted) setState(() {});
+  }
+
+  String _effectivePatientId() {
+    if (PatientSession.loggedInPatientId.isNotEmpty) {
+      return PatientSession.loggedInPatientId;
+    }
+    if (FirebaseBootstrap.isReady) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null && user.uid.isNotEmpty) {
+          return user.uid;
+        }
+      } catch (_) {}
+    }
+    return AppSession.patientId;
+  }
+
+  void _loadLocalPhoto() {
+    final patientId = _effectivePatientId();
+    if (patientId.isEmpty) {
+      if (_localBytes != null) {
+        setState(() => _localBytes = null);
+      }
+      return;
+    }
+    final cached = PatientPhotoLocalStore.readCached(patientId);
+    if (cached != null && cached.isNotEmpty) {
+      _localBytes = cached;
+    } else {
+      _localBytes = null;
+      PatientPhotoLocalStore.load(patientId).then((bytes) {
+        if (mounted && bytes != null && bytes.isNotEmpty) {
+          setState(() => _localBytes = bytes);
+        }
+      });
+    }
+  }
+
+  String _getInitial() {
+    final p = PatientProfileMock.profile;
+    if (p.photoInitial != null && p.photoInitial!.trim().isNotEmpty) {
+      return p.photoInitial!.trim()[0].toUpperCase();
+    }
+    if (p.name.trim().isNotEmpty) {
+      return p.name.trim()[0].toUpperCase();
+    }
+    final sessionName = PatientSession.loggedInPatientName.trim();
+    if (sessionName.isNotEmpty) {
+      return sessionName[0].toUpperCase();
+    }
+    if (FirebaseBootstrap.isReady) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        final authName = user?.displayName?.trim();
+        if (authName != null && authName.isNotEmpty) {
+          return authName[0].toUpperCase();
+        }
+      } catch (_) {}
+    }
+    return 'P';
+  }
+
+  Widget _buildInitialFallback(
+    BuildContext context,
+    double size, {
+    bool isLoading = false,
+  }) {
+    final initial = _getInitial();
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D9488), Color(0xFF0369A1)],
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: GoogleFonts.inter(
+          fontSize: size * 0.46,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+          height: 1.0,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: PatientProfileMock.listenable,
+      builder: (context, _) {
+        final patientId = _effectivePatientId();
+        final bytes =
+            _localBytes ?? PatientPhotoLocalStore.readCached(patientId);
+        final profile = PatientProfileMock.profile;
+        String? photoUrl = profile.photoUrl?.trim();
+        if ((photoUrl == null || photoUrl.isEmpty) &&
+            FirebaseBootstrap.isReady) {
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null &&
+                user.photoURL != null &&
+                user.photoURL!.trim().isNotEmpty) {
+              photoUrl = user.photoURL!.trim();
+            }
+          } catch (_) {}
+        }
+
+        Widget avatarContent;
+        if (bytes != null && bytes.isNotEmpty) {
+          avatarContent = Image.memory(
+            bytes,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                _buildInitialFallback(context, widget.size),
+          );
+        } else if (photoUrl != null && photoUrl.isNotEmpty) {
+          if (photoUrl.startsWith('data:image')) {
+            Uint8List? dataUriBytes;
+            try {
+              final commaIndex = photoUrl.indexOf(',');
+              if (commaIndex != -1) {
+                dataUriBytes =
+                    base64Decode(photoUrl.substring(commaIndex + 1));
+              }
+            } catch (_) {}
+            if (dataUriBytes != null && dataUriBytes.isNotEmpty) {
+              avatarContent = Image.memory(
+                dataUriBytes,
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    _buildInitialFallback(context, widget.size),
+              );
+            } else {
+              avatarContent =
+                  _buildInitialFallback(context, widget.size);
+            }
+          } else {
+            avatarContent = Image.network(
+              photoUrl,
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.cover,
+              cacheWidth: ResampledNetworkImage.cacheDimension(
+                  widget.size, context),
+              cacheHeight: ResampledNetworkImage.cacheDimension(
+                  widget.size, context),
+              frameBuilder:
+                  (context, child, frame, wasSynchronouslyLoaded) {
+                if (wasSynchronouslyLoaded || frame != null) {
+                  return child;
+                }
+                return _buildInitialFallback(context, widget.size,
+                    isLoading: true);
+              },
+              errorBuilder: (_, __, ___) =>
+                  _buildInitialFallback(context, widget.size),
+            );
+          }
+        } else {
+          avatarContent = _buildInitialFallback(context, widget.size);
+        }
+
+        return Container(
+          width: widget.size,
+          height: widget.size,
+          padding: const EdgeInsets.all(1.5),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.selected
+                  ? AppColors.patientTeal
+                  : AppColors.borderOf(context).withValues(alpha: 0.4),
+              width: widget.selected ? 2.0 : 1.0,
+            ),
+          ),
+          child: ClipOval(
+            child: avatarContent,
+          ),
+        );
+      },
+    );
+  }
+}
 
 class PatientShell extends StatefulWidget {
   const PatientShell({super.key});
@@ -37,53 +284,48 @@ class PatientShell extends StatefulWidget {
 class _PatientShellState extends State<PatientShell> {
   int _index = 0;
 
-  static const _tabs = [
-    PatientTabItem(
+  static final _tabs = [
+    const PatientTabItem(
       outlinedIcon: Icons.home_outlined,
       filledIcon: Icons.home_rounded,
       label: 'Home',
     ),
-    PatientTabItem(
+    const PatientTabItem(
       outlinedIcon: Icons.event_outlined,
       filledIcon: Icons.event_rounded,
       label: 'Appointments',
       shortLabel: 'Visits',
     ),
-    PatientTabItem(
-      outlinedIcon: Icons.badge_outlined,
-      filledIcon: Icons.badge_rounded,
-      label: 'Digital Pass',
-      shortLabel: 'Pass',
+    const PatientTabItem(
+      outlinedIcon: Icons.science_outlined,
+      filledIcon: Icons.science_rounded,
+      label: 'My Labs',
+      shortLabel: 'Labs',
     ),
-    PatientTabItem(
-      outlinedIcon: Icons.emergency_outlined,
-      filledIcon: Icons.emergency_rounded,
-      label: 'SOS',
+    const PatientTabItem(
+      outlinedIcon: TablerIcons.ambulance,
+      filledIcon: TablerIcons.ambulance,
+      label: 'Ambulance',
     ),
     PatientTabItem(
       outlinedIcon: Icons.person_outline_rounded,
       filledIcon: Icons.person_rounded,
-      label: 'Account',
+      label: 'Profile',
+      customIconBuilder: (context, selected, iconColor, size) =>
+          _PatientProfileTabAvatar(
+        selected: selected,
+        iconColor: iconColor,
+        size: size,
+        fallbackIcon:
+            selected ? Icons.person_rounded : Icons.person_outline_rounded,
+      ),
     ),
   ];
 
   void _selectTab(int index) {
     Navigator.of(context).popUntil((route) => route.isFirst);
     if (!mounted) return;
-
-    switch (index) {
-      case 2:
-        DigitalHealthCardSheet.show(context, userType: UserType.patient);
-        return;
-      case 3:
-        EmergencySosSheet.show(context);
-        return;
-      case 4:
-        unawaited(PatientProfileScreen.open(context));
-        return;
-      default:
-        setState(() => _index = index);
-    }
+    setState(() => _index = index);
   }
 
   @override
@@ -200,9 +442,15 @@ class _PatientShellState extends State<PatientShell> {
   List<Widget> _buildPages() => [
         PatientHomeScreen(onSelectTab: _selectTab),
         const PatientAppointmentsScreen(),
-        const SizedBox.shrink(),
-        const SizedBox.shrink(),
-        const SizedBox.shrink(),
+        const MyLabsScreen(embeddedInShell: true),
+        const AmbulanceBookingScreen(
+          bookedByRole: AmbulanceBookedByRole.patient,
+          embeddedInShell: true,
+        ),
+        PatientProfileScreen(
+          embeddedInShell: true,
+          onOpenAppointments: () => _selectTab(1),
+        ),
       ];
 
   @override

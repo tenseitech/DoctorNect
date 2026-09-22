@@ -45,6 +45,11 @@ const PROVIDER_CASES = [
 
 let testEnv;
 
+if (!process.env.FIREBASE_STORAGE_EMULATOR_HOST || !process.env.FIRESTORE_EMULATOR_HOST) {
+  test('storage provider kyc rules tests (skipped: emulator not running; run npm run test:storage-rules)', { skip: 'Storage/Firestore emulator not running' }, () => {});
+  return;
+}
+
 before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId: PROJECT_ID,

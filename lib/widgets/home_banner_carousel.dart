@@ -48,14 +48,28 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
     final initialPage =
         widget.items.isNotEmpty ? widget.items.length * 1000 : 0;
     _controller = PageController(initialPage: initialPage);
-    _startAutoScroll();
+    if (widget.items.length > 1) {
+      _startAutoScroll();
+    }
+  }
+
+  @override
+  void didUpdateWidget(HomeBannerCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.items.length != oldWidget.items.length) {
+      if (widget.items.length <= 1) {
+        _pauseAutoScroll();
+      } else if (_autoTimer == null && !_isHovered) {
+        _startAutoScroll();
+      }
+    }
   }
 
   void _startAutoScroll() {
-    if (_isHovered) return;
+    if (_isHovered || widget.items.length <= 1) return;
     _autoTimer?.cancel();
     _autoTimer = Timer.periodic(_autoScrollInterval, (_) {
-      if (!mounted || _isHovered) return;
+      if (!mounted || _isHovered || widget.items.length <= 1) return;
       _step(1);
     });
   }
@@ -78,7 +92,7 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
   }
 
   void _step(int delta) {
-    if (widget.items.isEmpty || !_controller.hasClients) return;
+    if (widget.items.length <= 1 || !_controller.hasClients) return;
     final currentPage =
         _controller.page?.round() ?? (widget.items.length * 1000);
     _controller.animateToPage(
@@ -109,7 +123,8 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
     final sideGutter = hasCardInset
         ? screenWidth * widget.cardHorizontalInsetFraction
         : (isWide ? _legacyWideNavGutter : 0.0);
-    final showNavButtons = hasCardInset || isWide;
+    final hasMultipleSlides = widget.items.length > 1;
+    final showNavButtons = (hasCardInset || isWide) && hasMultipleSlides;
     final navButtonSize = sideGutter >= _navButtonSize
         ? _navButtonSize
         : (sideGutter * 0.82).clamp(26.0, _navButtonSize);
@@ -147,10 +162,15 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
                         onTap: () => handleNavStep(-1),
                       ),
                     ),
-                  ),
+                  )
+                else if (hasCardInset)
+                  SizedBox(width: sideGutter),
                 Expanded(
                   child: PageView.builder(
                     controller: _controller,
+                    physics: hasMultipleSlides
+                        ? null
+                        : const NeverScrollableScrollPhysics(),
                     onPageChanged: (i) =>
                         setState(() => _index = i % widget.items.length),
                     itemBuilder: (_, index) {
@@ -174,27 +194,31 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
                         onTap: () => handleNavStep(1),
                       ),
                     ),
-                  ),
+                  )
+                else if (hasCardInset)
+                  SizedBox(width: sideGutter),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(widget.items.length, (i) {
-              return Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _index == i
-                      ? widget.dotActiveColor
-                      : AppColors.borderOf(context),
-                ),
-              );
-            }),
-          ),
+          if (hasMultipleSlides) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.items.length, (i) {
+                return Container(
+                  width: 6,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _index == i
+                        ? widget.dotActiveColor
+                        : AppColors.borderOf(context),
+                  ),
+                );
+              }),
+            ),
+          ],
         ],
       ),
     );

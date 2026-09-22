@@ -10,6 +10,9 @@ import '../../../core/session/patient_session.dart';
 import '../../../features/ambulance/ambulance_booking_screen.dart';
 import '../../../features/ambulance/models/ambulance_models.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/enums/user_type.dart';
+import '../../../widgets/digital_health_card_sheet.dart';
+import '../../../widgets/emergency_sos_sheet.dart';
 import '../../../widgets/theme_toggle_button.dart';
 import '../data/patient_mock_data.dart';
 import '../data/registered_doctors_store.dart';
@@ -26,7 +29,6 @@ import '../../../widgets/home_banner_carousel.dart';
 import '../widgets/patient_favorites_sheets.dart';
 import '../../../core/models/promoted_ad_model.dart';
 import '../../../core/services/promoted_ads_service.dart';
-import 'widgets/health_tips_section.dart';
 import 'widgets/my_doctor_section.dart';
 import 'widgets/appointments_section.dart';
 import 'widgets/explore_section.dart';
@@ -42,7 +44,7 @@ class PatientHomeScreen extends StatefulWidget {
     this.onOpenAppointments,
   });
 
-  /// Switches the patient shell tab (0=Home, 1=Appointments).
+  /// Switches the patient shell tab (0=Home, 1=Visits, 2=Labs, 3=Ambulance, 4=Profile).
   final ValueChanged<int>? onSelectTab;
 
   @Deprecated('Use onSelectTab')
@@ -88,6 +90,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           nearYouMode: nearYouMode,
           autofocus:
               query.isEmpty && category == null && locationFilter == null,
+          onSelectPatientTab: widget.onSelectTab,
         ),
       ),
     );
@@ -129,6 +132,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 
   void _openMyLabs() {
+    if (widget.onSelectTab != null) {
+      widget.onSelectTab!(2);
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const MyLabsScreen()),
@@ -137,6 +144,21 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
   void _handleServiceTap(ServiceItem service) {
     final route = service.route;
+    if (route == 'records') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PatientRecordsScreen()),
+      );
+      return;
+    }
+    if (route == 'sos') {
+      EmergencySosSheet.show(context);
+      return;
+    }
+    if (route == 'digital-pass' || route == 'pass') {
+      DigitalHealthCardSheet.show(context, userType: UserType.patient);
+      return;
+    }
     if (route == 'near-you') {
       unawaited(_openNearYou());
       return;
@@ -161,22 +183,19 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       _openLab();
       return;
     }
-    if (route == 'records') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const PatientRecordsScreen()),
-      );
-      return;
-    }
     if (route == 'ambulance') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const AmbulanceBookingScreen(
-            bookedByRole: AmbulanceBookedByRole.patient,
+      if (widget.onSelectTab != null) {
+        widget.onSelectTab!(3);
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AmbulanceBookingScreen(
+              bookedByRole: AmbulanceBookedByRole.patient,
+            ),
           ),
-        ),
-      );
+        );
+      }
       return;
     }
     AppToast.info(context, '${service.label} — coming soon');
@@ -245,6 +264,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     SizedBox(height: compact ? 12 : 16),
                     HomeSearchBar(
                       onTap: () => _openSearch(),
+                      onSubmitted: (query) => _openSearch(query: query),
                     ),
                   ],
                 ),
@@ -259,6 +279,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       final activeAds = snapshot.data ?? [];
                       final carouselItems = _buildCarouselItems(activeAds,
                           patientCity: _patientCity());
+                      if (carouselItems.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
                       return HomeBannerCarousel(
                         items: carouselItems,
                         dotActiveColor: AppColors.patientTeal,
@@ -278,12 +301,14 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   Divider(
                       height: 1,
                       thickness: 1,
-                      color: AppColors.borderOf(context)),
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.25)),
                   ServicesSection(onServiceTap: _handleServiceTap),
                   Divider(
                       height: 1,
                       thickness: 1,
-                      color: AppColors.borderOf(context)),
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.25)),
                   MyDoctorSection(
                     onAdd: () =>
                         PatientFavoritesSheets.showAddDoctorSheet(context),
@@ -308,7 +333,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   Divider(
                       height: 1,
                       thickness: 1,
-                      color: AppColors.borderOf(context)),
+                      color:
+                          AppColors.borderOf(context).withValues(alpha: 0.25)),
                   AppointmentsSection(
                     onViewAll: () {
                       if (widget.onSelectTab != null) {
@@ -319,11 +345,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     },
                     onFindDoctor: _openSearch,
                   ),
-                  Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: AppColors.borderOf(context)),
-                  const HealthTipsSection(),
+                  SizedBox(height: compact ? 88 : 32),
                 ],
               ),
             ),
@@ -385,7 +407,9 @@ class _PatientLocationRow extends StatelessWidget {
 
 List<HomeCarouselItem> _buildCarouselItems(List<PromotedAdModel> activeAds,
     {String? patientCity}) {
-  final baseItems = List<HomeCarouselItem>.from(PatientMockData.carouselItems);
+  final baseItems = PatientMockData.carouselItems
+      .where((item) => item.banner.kind != HomeCarouselKind.healthTip)
+      .toList();
   if (activeAds.isEmpty) return baseItems;
 
   final filteredAds = activeAds.where((ad) {
