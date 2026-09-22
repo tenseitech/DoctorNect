@@ -600,12 +600,12 @@ abstract final class _ExploreSpecialtyAssets {
     'Child Care': 'assets/images/specialties/child_care.webp',
     'Eye Specialist': 'assets/images/specialties/eye_specialist.webp',
     'Ear, Nose & Throat': 'assets/images/specialties/ear_nose_throat.webp',
-    // 'Dentist' will be used once dentist.webp is provided
+    'Dentist': 'assets/images/specialties/dentist.png',
     'Heart Specialist': 'assets/images/specialties/heart_specialist.webp',
     'Mental Wellness': 'assets/images/specialties/mental_wellness.webp',
     'Skin Specialist': 'assets/images/specialties/skin_specialist.webp',
     'Bone & Joint': 'assets/images/specialties/bone_joint.webp',
-    'Diabetes': 'assets/images/specialties/diabetes.webp',
+    'Diabetes': 'assets/images/specialties/diabetes.png',
     'Stomach & Digestion': 'assets/images/specialties/stomach_digestion.webp',
     'Urinary Problems': 'assets/images/specialties/urinary_problems.webp',
     'Physiotherapist': 'assets/images/specialties/physiotherapist.webp',
@@ -616,8 +616,8 @@ abstract final class _ExploreSpecialtyAssets {
     'General Surgeon': 'assets/images/specialties/general_surgeon.webp',
     'Sexual Health': 'assets/images/specialties/sexual_health.webp',
     'Ayurveda': 'assets/images/specialties/ayurveda.webp',
-    'Homeopathy': 'assets/images/specialties/homeopathy.webp',
-    'Veterinary': 'assets/images/specialties/veterinary.webp',
+    'Homeopathy': 'assets/images/specialties/homeopathy.png',
+    'Veterinary': 'assets/images/specialties/veterinary.png',
   };
 
   static String? forCategory(String category) => _assetPaths[category];

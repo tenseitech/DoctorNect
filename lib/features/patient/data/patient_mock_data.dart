@@ -142,11 +142,13 @@ class PatientMockData {
       label: 'Medical Record',
       icon: TablerIcons.file_description,
       route: 'records',
+      assetPath: 'assets/images/services/records.png',
     ),
     ServiceItem(
       label: 'SOS',
       icon: Icons.emergency_rounded,
       route: 'sos',
+      assetPath: 'assets/images/services/sos.png',
     ),
     ServiceItem(
       label: 'Digital Pass',

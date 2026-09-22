@@ -92,6 +92,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/specialties/
+    - assets/images/services/
     - assets/data/indian_medicines.txt.gz
     - assets/data/icd10_diagnoses.txt
     - assets/data/symptoms.json

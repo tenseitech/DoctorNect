@@ -1,0 +1,1269 @@
+================================================================================
+DOCTORNECT — COMPREHENSIVE DATABASE SCHEMA SPECIFICATION
+================================================================================
+Platform: Google Cloud Firestore (NoSQL Document Database)
+Storage: Google Cloud Storage for Firebase
+Authentication: Firebase Authentication (Email/Password, Phone OTP via MSG91, Google OAuth)
+Project ID: medibond-45fad
+Rules Version: Firestore Rules 2 / Storage Rules 2
+Document Generated: 2026-09-22
+Codebase Edit Notice: Informational schema documentation only. No source code was modified.
+================================================================================
+
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. ARCHITECTURE OVERVIEW & IDENTITY MODEL
+2. USER ROLES & PERMISSION MATRIX
+3. PRIMARY COLLECTIONS & SUBCOLLECTIONS (A to Z)
+   3.1  abuse_rate_limits
+   3.2  admin_audit_logs
+   3.3  ambulance_broadcasts
+   3.4  ambulance_invites
+   3.5  ambulance_requests
+   3.6  ambulances
+        └── Subcollection: private/settings
+   3.7  app_config
+   3.8  appointments
+   3.9  community_body_parts
+   3.10 community_diagnoses
+   3.11 community_lab_tests
+   3.12 community_medicines
+   3.13 community_radiology
+   3.14 doctor_availability
+   3.15 doctors
+   3.16 family_members
+   3.17 health_records
+   3.18 in_app_notifications
+   3.19 lab_bookings
+   3.20 lab_catalog
+   3.21 lab_connections
+   3.22 lab_orders
+   3.23 labs
+   3.24 mail
+   3.25 medical_directory
+   3.26 medical_stores
+   3.27 otp_challenges
+   3.28 otp_rate_limits
+   3.29 otp_verification_sessions
+   3.30 patients
+        └── Subcollection: doctor_links
+   3.31 pharmacy_connections
+   3.32 pharmacy_deliveries
+   3.33 prescriptions
+   3.34 promotedAds
+   3.35 review_public
+   3.36 reviews
+        └── Subcollection: votes
+   3.37 security_events
+   3.38 support_tickets
+        └── Subcollection: messages
+   3.39 system_config
+   3.40 users
+4. FIREBASE CLOUD STORAGE BUCKET SCHEMA
+5. ENTITY RELATIONSHIP & CROSS-COLLECTION REFERENCES
+6. SECURITY & DATA PRIVACY CONSTRAINTS
+
+================================================================================
+1. ARCHITECTURE OVERVIEW & IDENTITY MODEL
+================================================================================
+DoctorNect uses Google Cloud Firestore as its primary document database. Data is
+organized into top-level collections partitioned by operational domain and actor roles,
+with subcollections used for tightly coupled or private subordinate entities.
+
+Key Identity Principles:
+- Every authenticated user has a Firebase Authentication record with a unique UID.
+- The root document `users/{uid}` establishes the account's role (`doctor`, `patient`,
+  `medicalStore`, `lab`, `ambulance`, or `super_admin`) and references the primary
+  profile document through `profileId`.
+- Profile IDs follow standardized formats:
+  * Doctors: "d1", "d2", or custom alphanumeric IDs
+  * Patients: "p{timestamp}" for registered patients, "wi{timestamp}" for clinic walk-ins
+  * Medical Stores: "ms_{timestamp}" or alphanumeric IDs
+  * Labs: "lab_{timestamp}" or alphanumeric IDs
+  * Ambulances: Driver username or alphanumeric IDs
+- Role escalation is strictly prohibited by Firestore rules: once a user document is
+  created, its `role` cannot be mutated by client requests.
+- Admin verification (`verified: true`) is required for healthcare providers (Doctors,
+  Pharmacies, Labs, Ambulances) before appearing in public directories or accepting
+  bookings.
+
+================================================================================
+2. USER ROLES & PERMISSION MATRIX
+================================================================================
+Roles supported in `users/{uid}.role`:
+1. "patient":
+   - Can read own patient profile, family members, health records, lab bookings.
+   - Can read verified doctors, verified stores, verified labs, available ambulances.
+   - Can create appointments, lab bookings, ambulance broadcasts, reviews, support tickets.
+2. "doctor":
+   - Can read/edit own profile and availability schedule.
+   - Can create prescriptions, lab orders, doctor referrals, pharmacy delivery dispatches.
+   - Can read patient clinical data only if patient has opted-in and doctor is on care team
+     (or for clinic walk-ins).
+   - Can add to community catalog (medicines, diagnoses, lab tests, radiology).
+3. "medicalStore" (Pharmacy):
+   - Can read/edit own store profile and drug license details.
+   - Can receive and fulfill pharmacy deliveries from connected doctors.
+   - Can manage doctor-store B2B connections.
+4. "lab" (Diagnostic Laboratory):
+   - Can read/edit own diagnostic lab profile.
+   - Can receive lab orders from doctors and lab bookings from patients.
+   - Can upload diagnostic lab reports and update order/booking statuses.
+   - Can create counter walk-in bookings.
+5. "ambulance":
+   - Can manage ambulance driver listing and vehicle equipment options.
+   - Can receive ambulance dispatch requests and accept emergency broadcasts.
+   - Private credentials (PIN / FCM) stored in isolated subcollection.
+6. "super_admin" / "superAdmin" / "admin":
+   - Full read/write access to verify providers, review audit logs, and manage system configs.
+   - Accounts explicitly white-listed in Firestore security rules.
+
+================================================================================
+3. PRIMARY COLLECTIONS & SUBCOLLECTIONS
+================================================================================
+
+--------------------------------------------------------------------------------
+3.1 abuse_rate_limits
+--------------------------------------------------------------------------------
+Path: /abuse_rate_limits/{bucket}
+Purpose: Backend sliding-window rate limiting for IP, user, and phone buckets.
+Access: Admin SDK / Cloud Functions only (read/write: false in client rules).
+
+Fields:
+- count (number, required): Number of attempts within the current time window.
+- windowStart (timestamp, required): Start time of current rate limit window.
+- category (string, required): Category, e.g. "api", "login", "signup", "ai", "scrape", "payment".
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.2 admin_audit_logs
+--------------------------------------------------------------------------------
+Path: /admin_audit_logs/{logId}
+Purpose: Immutable write-once audit log of administrative actions.
+Access: Super Admin read & create only. Client update/delete forbidden.
+
+Fields:
+- logId (string, document ID): Unique identifier for audit entry.
+- adminUid (string, required): Firebase Auth UID of performing admin.
+- adminEmail (string, required): Email address of performing admin.
+- action (string, required): Action tag (e.g., "APPROVE_DOCTOR", "REJECT_DOCTOR", "UPDATE_PHONE", "DEACTIVATE_ACCOUNT").
+- targetType (string, required): Target entity category ("doctor", "patient", "medical_store", "lab", "ambulance").
+- targetId (string, required): Document ID of target entity.
+- targetName (string, optional): Display name of target entity.
+- details (string, required): Human-readable description of change.
+- metadata (map, optional): Additional contextual parameters or previous/new state diff.
+- createdAt (timestamp, required): Server timestamp of action.
+
+--------------------------------------------------------------------------------
+3.3 ambulance_broadcasts
+--------------------------------------------------------------------------------
+Path: /ambulance_broadcasts/{broadcastId}
+Purpose: Live emergency ambulance booking sessions initiated by patients or doctors.
+Access: Readable by booker and accepted driver. Created with status "pending". Driver claims via atomic transition to "accepted".
+
+Fields:
+- broadcastId (string, document ID, required): Booking session identifier.
+- patientId (string, required): Patient ID, or Doctor ID if booked by a clinic.
+- patientName (string, required): Name of patient needing transport.
+- pickupLocation (string, required): Free-text pickup address or GPS locality.
+- dropLocation (string, required): Free-text hospital/destination address.
+- contactPhone (string, required): Emergency contact number.
+- notes (string, optional): Triage notes (e.g., "Oxygen needed", "Unconscious").
+- status (string, required): "pending" | "accepted" | "completed" | "cancelled".
+- acceptedDriverId (string, optional): Ambulance ID of the claiming driver.
+- acceptedDriverName (string, optional): Name of driver who accepted.
+- acceptedDriverPhone (string, optional): Phone number of driver who accepted.
+- acceptedVehicleNumber (string, optional): License plate of dispatched ambulance.
+- acceptedAmbulanceType (string, optional): Type of ambulance ("BLS", "ALS", "ICU", "Patient Transport").
+- acceptedAt (timestamp, optional): Timestamp when driver claimed the request.
+- rating (number, optional): Patient rating (1-5 stars, -1 for skipped).
+- review (string, optional): Patient feedback text.
+- createdAt (timestamp, required): Creation timestamp.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.4 ambulance_invites
+--------------------------------------------------------------------------------
+Path: /ambulance_invites/{inviteId}
+Purpose: Doctor-initiated driver invitations to onboard trusted ambulance operators.
+Access: Readable by inviting doctor, claimed driver, or admin. Created by verified doctor. Driver claims via Cloud Function or invite token.
+
+Fields:
+- inviteId (string, document ID, required): Unique invitation token ID.
+- token (string, required): Secret verification token.
+- doctorId (string, required): Doctor ID of the inviting clinician.
+- ambulanceId (string, required): Pre-allocated ambulance document ID.
+- serviceName (string, required): Ambulance agency/provider name.
+- driverName (string, required): Driver full name.
+- phone (string, required): Driver contact phone number.
+- status (string, required): "pending" | "completed" | "cancelled".
+- username (string, optional): Username assigned upon completed onboarding.
+- createdAt (timestamp, required): Creation timestamp.
+- completedAt (timestamp, optional): When driver activated the account.
+
+--------------------------------------------------------------------------------
+3.5 ambulance_requests
+--------------------------------------------------------------------------------
+Path: /ambulance_requests/{requestId}
+Purpose: Per-driver broadcast notification copies dispatched to local available ambulances.
+Access: Booker and specific assigned driver.
+
+Fields:
+- requestId (string, document ID, required): Unique request copy identifier.
+- broadcastId (string, required): Reference to parent /ambulance_broadcasts/{broadcastId}.
+- driverId (string, required): Target ambulance ID.
+- patientId (string, required): Booker patient/doctor ID.
+- patientName (string, required): Name of patient.
+- pickupLocation (string, required): Pickup address.
+- dropLocation (string, required): Destination address.
+- contactPhone (string, required): Contact phone number.
+- status (string, required): "pending" | "taken" | "accepted" | "cancelled".
+- acceptedDriverId (string, optional): Driver ID who claimed the parent broadcast.
+- createdAt (timestamp, required): Dispatch timestamp.
+- updatedAt (timestamp, required): Last status update.
+
+--------------------------------------------------------------------------------
+3.6 ambulances
+--------------------------------------------------------------------------------
+Path: /ambulances/{driverId}
+Purpose: Public registry of ambulance providers and drivers.
+Access: Public read for registered & verified listings. Driver can update availability status. Sensitive credentials stored in subcollection.
+
+Fields:
+- id / driverId (string, document ID, required): Ambulance provider identifier.
+- authUid (string, optional): Linked Firebase Auth UID.
+- serviceName (string, required): Ambulance service provider name.
+- ownerName (string, optional): Registered business owner.
+- driverName (string, required): Name of assigned primary driver.
+- phone (string, required): Contact phone number.
+- vehicleNumber (string, required): Vehicle registration / license plate number.
+- ambulanceType (string, required): "bls" | "als" | "icu" | "patientTransport".
+- city (string, required): Operational base city.
+- username (string, optional): Login username.
+- serviceAreas (array of strings, optional): Covered localities / zip codes.
+- baseAddress (string, optional): Base station address.
+- licenseNumber (string, optional): Commercial driving / transport permit number.
+- insuranceNumber (string, optional): Vehicle insurance policy number.
+- hasOxygen (boolean, optional, default: false): Equipped with oxygen cylinder.
+- hasVentilator (boolean, optional, default: false): Equipped with transport ventilator.
+- hasStretcher (boolean, optional, default: true): Equipped with stretcher.
+- is24x7 (boolean, optional, default: false): Operates round-the-clock.
+- ratePerKm (number, optional): Estimated fare per kilometer.
+- totalRating (number, optional, default: 0.0): Cumulative rating score.
+- ratingCount (number, optional, default: 0): Total completed ratings.
+- isAvailable (boolean, optional, default: true): Online dispatch toggle.
+- verified (boolean, optional, default: false): Admin verified badge.
+- address (map, optional):
+  * addressLine1 (string): Street address.
+  * addressLine2 (string): Building / Unit.
+  * city (string): City.
+  * state (string): State.
+  * country (string): Country.
+  * pinCode (string): Postal PIN code.
+- createdAt (timestamp / ISO string, optional): Registration date.
+- updatedAt (timestamp, optional): Profile update timestamp.
+
+Subcollection: /ambulances/{driverId}/private/settings
+Document ID: "settings"
+Purpose: Isolated private settings and authentication credentials.
+Access: Driver owner and Super Admin only.
+Fields:
+- pin (string, required): Hashed driver login PIN.
+- fcmToken (string, optional): Firebase Cloud Messaging push token.
+- fcmTokenUpdatedAt (timestamp, optional): Last push token update.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.7 app_config
+--------------------------------------------------------------------------------
+Path: /app_config/{configId}
+Purpose: Operational flags, demo accounts, and feature switches.
+Access: Read/write locked to Admin SDK / Super Admin.
+
+Special Document: /app_config/demo_accounts
+Fields:
+- phones (array of strings): Phone numbers bypassing SMS gateway for testing.
+
+--------------------------------------------------------------------------------
+3.8 appointments
+--------------------------------------------------------------------------------
+Path: /appointments/{appointmentId}
+Purpose: Clinical appointments between patients and doctors (in-clinic & walk-in).
+Access: Shared between booker patient and assigned doctor.
+
+Fields:
+- appointmentId (string, document ID, required): e.g. "APT1719283741"
+- doctorId (string, required): Doctor profile ID (e.g. "d1").
+- doctorName (string, required): Full doctor display name.
+- specialization (string, required): Medical specialty.
+- patientId (string, required): Patient profile ID ("p..." or walk-in "wi...").
+- patientName (string, required): Patient's full name.
+- patientAge (number, required): Age in years.
+- patientGender (string, required): "Male" | "Female" | "Other".
+- dateTime (timestamp, required): Scheduled appointment timestamp.
+- slotLabel (string, required): Formatted slot (e.g. "09:30 AM").
+- tokenNumber (number, required): Queue token number for the session.
+- visitType (string, required): "newVisit" | "followUp" | "returning".
+- patientStatus (string, required): "pending" | "confirmed" | "completed" | "cancelled".
+- doctorStatus (string, required): "pendingRequest" | "confirmed" | "inProgress" | "completed" | "cancelled" | "noShow" | "waiting".
+- clinicName (string, optional): Doctor's clinic or hospital affiliation name.
+- clinicAddress (string, optional): Physical address of the clinic.
+- mapsUrl (string, optional): Google Maps navigation link.
+- cancellationReason (string, optional): Reason if appointment was cancelled.
+- diagnosis (string, optional): Primary clinical diagnosis entered during visit.
+- hasPrescription (boolean, default: false): True if a digital prescription is linked.
+- hasReport (boolean, default: false): True if diagnostic reports are attached.
+- hasReview (boolean, default: false): True if patient submitted feedback.
+- reviewRating (number, optional): Rating score (1-5) left by patient.
+- reviewId (string, optional): ID of linked review in /reviews.
+- reviewCreatedAt (timestamp, optional): When patient submitted the review.
+- labReports (array of strings, optional): Storage URLs or IDs of attached lab tests.
+- clinicalNotes (string, optional): Private clinical remarks by doctor.
+- contactNumber (string, optional): Patient contact phone number.
+- chiefComplaints (array of strings, optional): Reason for visit (e.g. ["Fever", "Cough"]).
+- symptoms (array of strings, optional): Recorded symptoms list.
+- observations (array of strings, optional): Doctor clinical observations.
+- source (string, optional): "app" | "walkin" | "referral".
+- bookedByName (string, optional): Name of account owner if booked for family member.
+- patientRelation (string, optional): Family relation (e.g. "Spouse", "Child", "Father").
+- slotShareReason (string, optional): Reason if slot is shared (e.g. "emergency").
+- wasRescheduled (boolean, default: false): Indicates if time slot was modified.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.9 community_body_parts
+--------------------------------------------------------------------------------
+Path: /community_body_parts/{docId}
+Purpose: Crowdsourced anatomical body part terms added by verified clinicians.
+Access: Read by all signed-in users. Create by verified doctors. Update/Delete denied.
+
+Fields:
+- name (string, required): Anatomical body part name.
+- nameLower (string, optional): Normalized lowercase for indexing.
+- addedByDoctorId (string, required): Contributing doctor ID.
+- addedAt (timestamp, optional): Contribution timestamp.
+
+--------------------------------------------------------------------------------
+3.10 community_diagnoses
+--------------------------------------------------------------------------------
+Path: /community_diagnoses/{docId}
+Purpose: Crowdsourced diagnostic terms and ICD descriptions added by verified doctors.
+Access: Read by all signed-in users. Create by verified doctors. Update/Delete denied.
+
+Fields:
+- text (string, required): Diagnostic term or ICD-10 description.
+- textLower (string, optional): Lowercase normalized term.
+- addedByDoctorId (string, required): Contributing doctor ID.
+- addedAt (timestamp, optional): Contribution timestamp.
+
+--------------------------------------------------------------------------------
+3.11 community_lab_tests
+--------------------------------------------------------------------------------
+Path: /community_lab_tests/{docId}
+Purpose: Doctor-contributed laboratory test definitions.
+Access: Read by all signed-in users. Create by verified doctors. Update/Delete denied.
+
+Fields:
+- name (string, required): Laboratory test name.
+- nameLower (string, optional): Lowercase normalized test name.
+- group (string, required): Diagnostic category (e.g. "Hematology", "Biochemistry").
+- addedByDoctorId (string, required): Contributing doctor ID.
+- addedAt (timestamp, optional): Contribution timestamp.
+
+--------------------------------------------------------------------------------
+3.12 community_medicines
+--------------------------------------------------------------------------------
+Path: /community_medicines/{docId}
+Purpose: Shared pharmacopeia database of medications contributed by verified doctors.
+Access: Read by all signed-in users. Create by verified doctors. Update/Delete denied.
+
+Fields:
+- name (string, required): Commercial or generic drug name.
+- nameLower (string, optional): Lowercase normalized drug name.
+- dosageUnit (string, required): e.g. "mg", "ml", "mcg", "g", "IU".
+- form (string, required): "Tablet" | "Capsule" | "Syrup" | "Injection" | "Liquid" | "Syringe".
+- addedByDoctorId (string, required): Contributing doctor ID.
+- addedAt (timestamp, optional): Contribution timestamp.
+
+--------------------------------------------------------------------------------
+3.13 community_radiology
+--------------------------------------------------------------------------------
+Path: /community_radiology/{docId}
+Purpose: Shared radiology catalog (X-Ray, MRI, CT Scan, Ultrasound) added by doctors.
+Access: Read by all signed-in users. Create by verified doctors. Update/Delete denied.
+
+Fields:
+- name (string, required): Radiology study name (e.g. "X-Ray Chest PA View").
+- nameLower (string, optional): Lowercase normalized study name.
+- group (string, required): Modality (e.g. "X-Ray", "MRI", "CT Scan", "Ultrasound").
+- addedByDoctorId (string, required): Contributing doctor ID.
+- addedAt (timestamp, optional): Contribution timestamp.
+
+--------------------------------------------------------------------------------
+3.14 doctor_availability
+--------------------------------------------------------------------------------
+Path: /doctor_availability/{doctorId}
+Purpose: Clinical work hours, session timings, slot duration, and leave schedules.
+Access: Public read for booking discovery. Doctor writes own document only.
+
+Fields:
+- doctorId (string, document ID, required): Linked doctor ID.
+- workingDays (array of strings, required): e.g. ["Mon", "Tue", "Wed", "Thu", "Fri"].
+- morningStart (string, required): Morning start time (e.g. "09:00 AM").
+- morningEnd (string, required): Morning end time (e.g. "01:00 PM").
+- eveningEnabled (boolean, required): Whether evening clinic session is active.
+- eveningStart (string, required): Evening start time (e.g. "04:00 PM").
+- eveningEnd (string, required): Evening end time (e.g. "08:00 PM").
+- slotDurationMins (number, required, default: 15): Duration per consultation.
+- maxPatientsPerDay (number, required, default: 20): Capacity limit.
+- breakEnabled (boolean, required, default: false): Lunch/intermission break.
+- breakStart (string, optional): Break start time (e.g. "01:00 PM").
+- breakEnd (string, optional): Break end time (e.g. "02:00 PM").
+- blockedDates (array of timestamps, optional): Specific dates doctor is unavailable.
+- leaveStart (timestamp, optional): Scheduled vacation/leave start.
+- leaveEnd (timestamp, optional): Scheduled vacation/leave end.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.15 doctors
+--------------------------------------------------------------------------------
+Path: /doctors/{doctorId}
+Purpose: Primary profile of registered doctors, credentials, and clinic locations.
+Access: Public read when `verified == true`. Doctor can update own profile (excluding rating and verification fields).
+
+Fields:
+- doctorId (string, document ID, required): e.g. "d1".
+- ownerUid (string, required): Firebase Auth UID of doctor account.
+- name / fullName / displayName (string, required): Doctor's full name.
+- email (string, required): Primary contact email (lowercase).
+- mobile / phone (string, required): Primary contact phone number.
+- specialization (string, required): Primary specialty (e.g. "Cardiologist").
+- superSpecialization (string, optional): Sub-specialties separated by comma.
+- qualification (string, required): Degrees (e.g. "MBBS, MD - Medicine").
+- experienceYears (number, required): Years of medical practice.
+- consultationFee (number, optional): In-clinic visit fee.
+- clinicName (string, optional): Clinic or hospital department name.
+- area / city / locality (string, optional): City or practice area.
+- addressLine1 (string, optional): Street address.
+- pincode (string, optional): Postal code.
+- address (map, optional):
+  * addressLine1 (string)
+  * addressLine2 (string)
+  * city (string)
+  * state (string)
+  * pinCode (string)
+  * country (string)
+- stateCouncil (string, optional): State Medical Council name.
+- councilNumber (string, optional): Medical Council registration number.
+- certifications (array of strings, optional): Board certifications.
+- education (array of maps, optional):
+  * degree (string)
+  * college (string)
+  * year (number)
+- pastWorkplaces (array of strings, optional): Former hospitals / clinics.
+- memberships (array of strings, optional): Professional medical associations.
+- awards (array of strings, optional): Honors and recognition.
+- publications (array of strings, optional): Research papers.
+- about (string, optional): Doctor biographical summary.
+- languages (array of strings, default: ["English", "Hindi"]): Spoken languages.
+- photoUrl (string, optional): Profile photo URL.
+- mapsLink (string, optional): Google Maps link.
+- landmark (string, optional): Nearby physical landmark.
+- rating (number, default: 0.0): Average review rating (computed server-side).
+- reviewCount (number, default: 0): Total approved reviews.
+- verified (boolean, default: false): Admin verification status.
+- verifiedAt (timestamp, optional): Timestamp of admin approval.
+- deactivated (boolean, default: false): Account deactivation flag.
+- deactivatedAt (timestamp, optional): Deactivation timestamp.
+- reactivateBefore (timestamp, optional): Expiry date of reactivation window.
+- reactivatedAt (timestamp, optional): Timestamp of reactivation request.
+- fcmToken (string, optional): Device FCM token for push notifications.
+- fcmTokenUpdatedAt (timestamp, optional): Last push token update.
+- createdAt (timestamp, required): Account creation timestamp.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.16 family_members
+--------------------------------------------------------------------------------
+Path: /family_members/{memberId}
+Purpose: Secondary profiles managed by a primary patient account (e.g. children, parents).
+Access: Patient owner only.
+
+Fields:
+- memberId (string, document ID, required): Unique member identifier.
+- patientId (string, required): ID of managing patient account.
+- name (string, required): Full name of family member.
+- relation (string, required): "spouse" | "child" | "parent" | "sibling" | "grandparent" | "other".
+- age (number, required): Age in years.
+- gender (string, required): "Male" | "Female" | "Other".
+- bloodGroup (string, optional): Blood group (e.g. "O+", "A-").
+- allergies (array of strings, optional): Known allergies.
+- conditions (array of strings, optional): Chronic medical conditions.
+- insuranceCovered (boolean, default: false): Insurance coverage indicator.
+- dateOfBirth (timestamp, optional): Date of birth.
+- photoInitial (string, optional): UI avatar initial.
+- createdAt (timestamp, required): Creation timestamp.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.17 health_records
+--------------------------------------------------------------------------------
+Path: /health_records/{recordId}
+Purpose: Patient's digital health documents, lab reports, prescriptions, and scans.
+Access: Patient owner read/write. Verified doctors can read if patient enabled record sharing and doctor is in care team.
+
+Fields:
+- recordId (string, document ID, required): Record identifier.
+- patientId (string, required): Owner patient ID.
+- title (string, required): Display title of health record.
+- type (string, required): "prescription" | "labReport" | "dischargeSummary" | "vaccination" | "invoice" | "other".
+- date (timestamp, required): Document date.
+- source (string, required): "selfUploaded" | "doctorPrescribed" | "labGenerated".
+- fileName (string, required): Stored file basename.
+- doctorName (string, optional): Associated doctor.
+- labName (string, optional): Associated diagnostic laboratory.
+- isImage (boolean, default: false): Image vs PDF file indicator.
+- notes (string, optional): Patient or clinician notes.
+- sharedWithDoctors (boolean, default: false): Sharing permission toggle.
+- fileStorage (string, default: "none"): "none" | "localOnly" | "cloudUploaded".
+- storageUrl (string, optional): Firebase Storage download URL.
+- createdAt (timestamp, required): Record creation timestamp.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.18 in_app_notifications
+--------------------------------------------------------------------------------
+Path: /in_app_notifications/{notificationId}
+Purpose: In-app user notifications for booking updates, prescription alerts, etc.
+Access: Read and mark-as-read (`isRead: true`) by recipient. Writes restricted to Cloud Functions / Admin SDK.
+
+Fields:
+- notificationId (string, document ID, required): Notification identifier.
+- recipientUid (string, required): Firebase Auth UID of recipient.
+- title (string, required): Notification headline.
+- body (string, required): Notification message body.
+- isRead (boolean, default: false): Read receipt indicator.
+- type (string, default: "system"): "appointment" | "prescription" | "labBooking" | "ambulance" | "system".
+- target (string, optional): Navigation route target.
+- targetId (string, optional): Associated entity ID (e.g. appointmentId, prescriptionId).
+- doctorTrigger (string, optional): Trigger category for doctor notifications.
+- patientTrigger (string, optional): Trigger category for patient notifications.
+- dedupeKey (string, optional): De-duplication identifier.
+- createdAt (timestamp, required): Generation timestamp.
+
+--------------------------------------------------------------------------------
+3.19 lab_bookings
+--------------------------------------------------------------------------------
+Path: /lab_bookings/{bookingId}
+Purpose: Diagnostic test bookings initiated by patients or counter walk-ins at labs.
+Access: Read by patient and assigned lab. Patient can create. Lab can create walk-ins and update report fields.
+
+Fields:
+- bookingId (string, document ID, required): e.g. "LAB17192837410".
+- patientId (string, required): Patient profile ID ("p..." or walk-in "wi...").
+- patientName (string, required): Patient's full name.
+- patientAge (number, required): Age in years.
+- patientGender (string, optional): "Male" | "Female" | "Other".
+- contactNumber (string, optional): Phone number.
+- testId (string, required): ID of primary test.
+- testIds (array of strings, required): List of all selected test IDs.
+- testName (string, required): Formatted summary of test names.
+- testNames (array of strings, required): Full list of test names.
+- bookingForSelf (boolean, default: true): Indicates if patient booked for self.
+- familyMemberId (string, optional): Linked family member ID if booked for family.
+- collectionType (string, required): "homeCollection" | "labVisit" | "walkIn".
+- partnerLab (string, optional): Display name of selected lab.
+- labId (string, optional): Profile ID of assigned diagnostic lab.
+- address (string, optional): Home sample collection address.
+- dateTime (timestamp, required): Scheduled test appointment date and time.
+- slotLabel (string, required): Slot time (e.g. "08:00 AM").
+- status (string, required): "confirmed" | "sampleCollected" | "inAnalysis" | "completed" | "cancelled".
+- source (string, optional): "app" | "walkin".
+- reportFileName (string, optional): Uploaded test report file name.
+- reportStorageUrl (string, optional): Firebase Storage URL of the PDF/image report.
+- reportBookingId (string, optional): Master booking ID holding the physical report.
+- reportSubmittedAt (timestamp, optional): Timestamp when lab uploaded the report.
+- createdAt (timestamp, required): Booking creation timestamp.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.20 lab_catalog
+--------------------------------------------------------------------------------
+Path: /lab_catalog/{docId}
+Purpose: Diagnostic test packages, standard lab tests catalog, and slot definitions.
+Access: Public read for all users. Write restricted to Super Admin / Admin SDK.
+Default Doc: "default"
+
+Fields:
+- tests (array of maps):
+  * id (string)
+  * name (string)
+  * parameters (array of strings)
+  * fastingRequired (boolean)
+  * sampleType (string: "blood" | "urine" | "swab" | "stool")
+  * reportHours (number)
+  * popular (boolean)
+  * category (string, optional)
+- packages (array of maps):
+  * id (string)
+  * name (string)
+  * testCount (number)
+  * description (string)
+- partnerLabs (array of maps):
+  * id (string, optional)
+  * name (string)
+  * rating (number)
+  * area (string)
+- slotPeriods (map of string arrays):
+  * Morning (array of string slots)
+  * Afternoon (array of string slots)
+  * Evening (array of string slots)
+
+--------------------------------------------------------------------------------
+3.21 lab_connections
+--------------------------------------------------------------------------------
+Path: /lab_connections/{connectionId}
+Purpose: B2B network link between doctors and diagnostic laboratories.
+Access: Both connected doctor and lab can read, create, and update status.
+
+Fields:
+- id / connectionId (string, document ID, required): Connection identifier.
+- doctorId (string, required): Doctor profile ID.
+- doctorName (string, required): Doctor full name.
+- labId (string, required): Diagnostic laboratory profile ID.
+- labName (string, required): Laboratory business name.
+- status (string, required): "pending" | "active" | "rejected" | "removed".
+- requestedBy (string, required): "doctor" | "lab".
+- requestedAt (timestamp, required): Connection request timestamp.
+- respondedAt (timestamp, optional): Acceptance or rejection timestamp.
+- updatedAt (timestamp, required): Last status update.
+
+--------------------------------------------------------------------------------
+3.22 lab_orders
+--------------------------------------------------------------------------------
+Path: /lab_orders/{orderId}
+Purpose: Doctor-initiated prescription diagnostic test orders directed to labs.
+Access: Ordering doctor, target lab, and patient can read. Doctor creates. Lab updates report & status.
+
+Fields:
+- orderId (string, document ID, required): Unique order identifier.
+- doctorId (string, required): Prescribing doctor ID.
+- doctorName (string, required): Prescribing doctor full name.
+- patientId (string, required): Patient profile ID.
+- patientName (string, required): Patient full name.
+- patientAge (number, required): Patient age in years.
+- appointmentId (string, optional): Associated appointment ID.
+- labId (string, optional): Target lab profile ID (if directed to specific lab).
+- labName (string, optional): Target lab name.
+- testIds (array of strings, required): IDs of ordered tests.
+- testNames (array of strings, required): Names of tests ordered.
+- indication (string, optional): Clinical indication / reason for tests.
+- urgency (string, default: "Routine"): "Routine" | "Urgent" | "STAT".
+- fastingRequired (boolean, default: false): Fasting preparation flag.
+- homeCollection (boolean, default: false): Indicates patient requested home pickup.
+- source (string, default: "investigations"): Order source module.
+- status (string, default: "ordered"): "ordered" | "received" | "inProgress" | "completed" | "cancelled".
+- reportFileName (string, optional): Name of uploaded lab report file.
+- reportStorageUrl (string, optional): Firebase Storage download URL.
+- reportSubmittedAt (timestamp, optional): Submission timestamp.
+- createdAt (timestamp, required): Order creation timestamp.
+- updatedAt (timestamp, optional): Last status update.
+
+--------------------------------------------------------------------------------
+3.23 labs
+--------------------------------------------------------------------------------
+Path: /labs/{labId}
+Purpose: Diagnostic laboratory profiles, NABL accreditation, and facility information.
+Access: Public read for verified labs. Lab owner can update own profile.
+
+Fields:
+- labId (string, document ID, required): Lab identifier.
+- ownerUid (string, required): Firebase Auth UID of lab operator.
+- labName / name (string, required): Diagnostic center / laboratory name.
+- licenseNumber (string, required): Diagnostic license or NABL accreditation number.
+- phone (string, required): Contact phone number.
+- email (string, required): Contact email address.
+- gstNumber (string, optional): GST tax identification number.
+- rating (number, default: 0.0): Average user rating.
+- area / city (string, optional): Operational locality and city.
+- addressLine1 (string, optional): Street address.
+- addressLine2 (string, optional): Building / suite address.
+- country (string, optional): Country.
+- state (string, optional): State.
+- pincode (string, optional): Postal PIN code.
+- address (map, optional):
+  * addressLine1 (string)
+  * addressLine2 (string)
+  * city (string)
+  * state (string)
+  * pinCode (string)
+  * country (string)
+- verified (boolean, default: false): Admin verification status.
+- verifiedAt (timestamp, optional): Timestamp of admin approval.
+- deactivated (boolean, default: false): Account deactivation status.
+- createdAt (timestamp, required): Creation timestamp.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.24 mail
+--------------------------------------------------------------------------------
+Path: /mail/{mailId}
+Purpose: Transactional email queue processed by Firebase "Trigger Email" extension.
+Access: Super Admin and server-side cloud triggers only.
+
+Fields:
+- to (array of strings or string, required): Recipient email address(es).
+- message (map, required):
+  * subject (string): Email subject line.
+  * text (string, optional): Plaintext body.
+  * html (string, optional): HTML formatted email body.
+- createdAt (timestamp, required): Queue creation timestamp.
+
+--------------------------------------------------------------------------------
+3.25 medical_directory
+--------------------------------------------------------------------------------
+Path: /medical_directory/{entryId}
+Purpose: Private personal address book maintained by doctors (specialists, labs, pharmacies).
+Access: Owning doctor only (create, read, update, delete).
+
+Fields:
+- entryId (string, document ID, required): Contact entry identifier.
+- doctorId (string, required): Owning doctor ID.
+- name (string, required): Contact person or facility name.
+- type (string, required): Category ("Doctor", "Lab", "Pharmacy", "Hospital", "Other").
+- phone (string, required): Telephone number.
+- createdAt (timestamp, required): Creation timestamp.
+- updatedAt (timestamp, optional): Modification timestamp.
+
+--------------------------------------------------------------------------------
+3.26 medical_stores
+--------------------------------------------------------------------------------
+Path: /medical_stores/{storeId}
+Purpose: Pharmacy / medical store retail profiles, drug licenses, and locations.
+Access: Public read for verified stores. Store owner can edit profile.
+
+Fields:
+- storeId (string, document ID, required): Store identifier.
+- ownerUid (string, required): Firebase Auth UID of pharmacy operator.
+- storeName (string, required): Pharmacy trade name.
+- ownerName (string, required): Name of licensed pharmacist / proprietor.
+- drugLicenseNumber / licenseNumber (string, required): Pharmacy drug license number.
+- phone (string, required): Contact phone number.
+- email (string, required): Contact email address.
+- gstNumber (string, optional): GST tax identification number.
+- address (string or map, required): Full physical address.
+- addressLine1 (string, optional): Street address.
+- addressLine2 (string, optional): Building / suite.
+- city (string, optional): Operational city.
+- state (string, optional): State.
+- country (string, optional): Country.
+- pincode / pinCode (string, optional): Postal PIN code.
+- verified (boolean, default: false): Admin verification status.
+- verifiedAt (timestamp, optional): Admin approval timestamp.
+- deactivated (boolean, default: false): Account deactivation status.
+- createdAt (timestamp, required): Creation timestamp.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.27 otp_challenges
+--------------------------------------------------------------------------------
+Path: /otp_challenges/{challengeId}
+Purpose: Ephemeral active OTP challenge states for phone and email verifications.
+Access: Internal Admin SDK / Cloud Functions only (read/write: false).
+Doc ID: SHA-256 hash of `${role}_${mobileDigits}` or `${role}_${email}`
+
+Fields:
+- otpHash (string, required): Securely hashed OTP secret.
+- attempts (number, default: 0): Failed verification attempt counter.
+- isDemo (boolean, default: false): Bypassed for demo accounts.
+- sentAt (timestamp, required): Issuance timestamp.
+- expiresAt (timestamp, required): Expiry timestamp (typically 5-10 minutes).
+
+--------------------------------------------------------------------------------
+3.28 otp_rate_limits
+--------------------------------------------------------------------------------
+Path: /otp_rate_limits/{limitId}
+Purpose: Strict brute-force prevention buckets for OTP sends and verification checks.
+Access: Internal Admin SDK / Cloud Functions only (read/write: false).
+
+Fields:
+- count (number, required): Attempt counter.
+- windowStart (timestamp, required): Time window start.
+- updatedAt (timestamp, required): Modification timestamp.
+
+--------------------------------------------------------------------------------
+3.29 otp_verification_sessions
+--------------------------------------------------------------------------------
+Path: /otp_verification_sessions/{sessionId}
+Purpose: Single-use verified token proof consumed during final signup or password reset.
+Access: Internal Admin SDK / Cloud Functions only (read/write: false).
+
+Fields:
+- role (string, required): User role verified.
+- target (string, required): Phone number or email verified.
+- type (string, required): "login" | "register" | "password_reset".
+- verifiedAt (timestamp, required): Verification completion timestamp.
+- expiresAt (timestamp, required): Token expiry timestamp (e.g. 15 minutes).
+- consumed (boolean, default: false): Set to true once account is created or password reset.
+- consumedAt (timestamp, optional): When token was redeemed.
+
+--------------------------------------------------------------------------------
+3.30 patients
+--------------------------------------------------------------------------------
+Path: /patients/{patientId}
+Purpose: Private patient clinical profiles, vital records, and doctor care-team links.
+Access: Patient owner read/write. Care-team doctors can read if patient has enabled sharing.
+
+Fields:
+- patientId (string, document ID, required): e.g. "p1719283741".
+- ownerUid (string, required): Firebase Auth UID of patient account.
+- name (string, required): Patient's full name.
+- email (string, optional): Email address.
+- mobile (string, required): Primary phone number.
+- age (number, optional): Age in years.
+- gender (string, optional): "Male" | "Female" | "Other".
+- bloodGroup (string, optional): Blood group (e.g. "B+").
+- height (string, optional): Height (e.g. "175 cm").
+- weight (string, optional): Weight (e.g. "70 kg").
+- address (string, optional): Home address.
+- photoUrl (string, optional): Profile photo storage URL.
+- shareRecordsWithDoctors (boolean, default: true): Privacy master toggle.
+- primaryDoctorId (string, optional): Assigned primary care doctor.
+- invitedDoctorId (string, optional): Doctor invited via invite code.
+- careTeamDoctorIds (array of strings, optional): Doctors granted clinical read access.
+- verified (boolean, default: true): Account status.
+- fcmToken (string, optional): Push notification device token.
+- fcmTokenUpdatedAt (timestamp, optional): Last token update.
+- createdAt (timestamp, required): Account creation timestamp.
+- updatedAt (timestamp, required): Profile update timestamp.
+
+Subcollection: /patients/{patientId}/doctor_links/{doctorId}
+Document ID: {doctorId}
+Purpose: Audit-proof relationship links between patient and treating doctors.
+Access: Patient can create via appointment booking. Referring doctor can create on patient referral.
+Fields:
+- doctorId (string, required): Linked doctor ID.
+- fromDoctorId (string, optional): Referring doctor ID (if created via referral).
+- source (string, required): "appointment" | "referral".
+- referralId (string, optional): Reference to /referrals/{referralId}.
+- createdAt (timestamp, required): Link creation timestamp.
+
+--------------------------------------------------------------------------------
+3.31 pharmacy_connections
+--------------------------------------------------------------------------------
+Path: /pharmacy_connections/{connectionId}
+Purpose: B2B network link between doctors and retail pharmacies.
+Access: Connected doctor and pharmacy store can read, create, and update status.
+
+Fields:
+- id / connectionId (string, document ID, required): Connection identifier.
+- doctorId (string, required): Doctor profile ID.
+- doctorName (string, required): Doctor display name.
+- medicalStoreId (string, required): Pharmacy store profile ID.
+- storeName (string, required): Pharmacy business name.
+- status (string, required): "pending" | "active" | "rejected" | "removed".
+- requestedBy (string, required): "doctor" | "store".
+- requestedAt (timestamp, required): Connection request timestamp.
+- respondedAt (timestamp, optional): Response timestamp.
+- updatedAt (timestamp, required): Modification timestamp.
+
+--------------------------------------------------------------------------------
+3.32 pharmacy_deliveries
+--------------------------------------------------------------------------------
+Path: /pharmacy_deliveries/{deliveryId}
+Purpose: Digital prescription orders routed by doctors directly to local pharmacies.
+Access: Prescribing doctor, assigned pharmacy, and receiving patient can read. Doctor creates. Pharmacy updates fulfillment status.
+
+Fields:
+- deliveryId / id (string, document ID, required): Unique delivery order ID.
+- prescriptionId (string, required): Reference to /prescriptions/{prescriptionId}.
+- doctorId (string, required): Prescribing doctor ID.
+- doctorName (string, required): Prescribing doctor name.
+- storeId (string, required): Target pharmacy store ID.
+- storeName (string, required): Target pharmacy store name.
+- patientId (string, required): Receiving patient ID.
+- patientName (string, required): Patient full name.
+- status (string, required): "sent" | "viewed" | "partiallyDispensed" | "dispensed".
+- sentAt (timestamp, required): Timestamp when prescription was forwarded.
+- viewedAt (timestamp, optional): When pharmacy opened the order.
+- dispensedAt (timestamp, optional): When medicine was packed / delivered.
+- dispensingNotes (string, optional): Pharmacist notes on stock or substitutions.
+- medicineCount (number, required): Total medicine line items.
+- medicineLines (array of maps, required):
+  * medicineEntryId (string)
+  * availability (string: "pending" | "available" | "outOfStock" | "substituted")
+  * substituteName (string, optional)
+- draft (map, required): Full snapshot of the prescription draft (see 3.33).
+- updatedAt (timestamp, required): Last modification timestamp.
+
+--------------------------------------------------------------------------------
+3.33 prescriptions
+--------------------------------------------------------------------------------
+Path: /prescriptions/{prescriptionId}
+Purpose: Clinical digital prescriptions generated by doctors for consultations.
+Access: Prescribing doctor can create and update. Patient can read own prescriptions.
+
+Fields:
+- prescriptionId (string, document ID, required): Unique prescription identifier.
+- doctorId (string, required): Treating doctor profile ID.
+- doctorName (string, optional): Doctor display name.
+- doctorSpecialization (string, optional): Specialty title.
+- doctorQualifications (string, optional): Medical credentials.
+- doctorRegNumber (string, optional): Medical registration number.
+- clinicName (string, optional): Clinic name.
+- clinicAddress (string, optional): Clinic address.
+- doctorPhone (string, optional): Clinic telephone.
+- patientId (string, required): Treated patient ID.
+- patientName (string, required): Patient full name.
+- patientAge (number, required): Patient age in years.
+- patientGender (string, optional): Patient gender.
+- appointmentId (string, optional): Linked appointment ID.
+- prescriptionDate (string / ISO timestamp, required): Issuance date.
+- diagnosisType (string, default: "Provisional"): "Provisional" | "Final".
+- primaryDiagnosis (string, optional): Primary ICD or clinical condition.
+- secondaryDiagnosis (string, optional): Secondary comorbidities.
+- chiefComplaint (string, optional): Patient primary symptoms.
+- symptoms (string, optional): Clinical symptoms noted.
+- symptomDuration (string, optional): Duration (e.g. "3 days").
+- pastHistory (string, optional): Relevant medical history.
+- allergies (string, optional): Documented drug or environmental allergies.
+- generalExamination (string, optional): Physical exam notes.
+- vitals (map, required):
+  * bloodPressure (string): e.g. "120/80 mmHg"
+  * temperature (string): e.g. "98.6 F"
+  * pulse (string): e.g. "72 bpm"
+  * spo2 (string): e.g. "98%"
+  * weightKg (string): e.g. "68 kg"
+  * heightCm (string): e.g. "172 cm"
+  * respiratoryRate (string): e.g. "16 /min"
+- medicines (array of maps, required):
+  * id (string, required): Medicine entry ID.
+  * name (string, required): Brand or generic name.
+  * dosage (string, required): e.g. "500 mg".
+  * form (string, required): "Tablet", "Syrup", etc.
+  * frequency (string, required): e.g. "1-0-1" or custom schedule.
+  * quantity (string, required): e.g. "10".
+  * duration (string, required): e.g. "5 Days".
+  * instructions (string, optional): e.g. "After food".
+  * specialInstructions (string, optional): Precautionary advice.
+  * isSos (boolean, default: false): As-needed medication flag.
+  * substituteAllowed (boolean, default: true): Generic substitution flag.
+- investigations (array of maps, optional):
+  * name (string): Test name.
+  * type (string): "lab" | "radiology" | "custom".
+  * group (string, optional): Category group.
+  * notes (string, optional): Clinical instruction for lab.
+- advice (map, required):
+  * diet (string, optional): Dietary guidelines.
+  * activity (string, optional): Physical activity restrictions.
+  * lifestyle (string, optional): Hydration / rest instructions.
+  * general (string, optional): General medical counsel.
+- followUpNote (string, optional): Instructions for return visit.
+- nextVisit (string / ISO timestamp, optional): Recommended next visit date.
+- referrals (array of maps, optional):
+  * doctorId (string): Referred specialist ID.
+  * doctorName (string): Referred doctor name.
+  * specialization (string): Specialty.
+  * reason (string): Medical reason for referral.
+  * sent (boolean): Dispatch status.
+- createdAt (timestamp, optional): Record creation timestamp.
+- updatedAt (timestamp, optional): Last edit timestamp.
+
+--------------------------------------------------------------------------------
+3.34 promotedAds
+--------------------------------------------------------------------------------
+Path: /promotedAds/{adId}
+Purpose: Sponsored banner campaigns displayed on patient home feed carousel.
+Access: Public read for active verified ads. Provider creates draft/pending. Super Admin approves/edits.
+
+Fields:
+- adId (string, document ID, required): Advertisement identifier.
+- providerType (string, required): "doctor" | "lab" | "pharmacy" | "ambulance".
+- providerId (string, required): UID / Profile ID of sponsoring provider.
+- title (string, required): Banner headline.
+- description (string, required): Promotional offer text.
+- imageUrl (string, required): Banner image URL.
+- ctaLabel (string, required, default: "View Details"): Action button text.
+- durationHours (number, required, default: 24): Campaign duration (24, 72, 168, 720).
+- amountPaid (number, required): Amount billed in INR.
+- targetCity (string, optional): Geographic locality filter.
+- razorpayOrderId (string, optional): Razorpay payment order ID.
+- razorpayPaymentId (string, optional): Razorpay transaction payment ID.
+- paymentStatus (string, required): "pending" | "verified" | "failed".
+- status (string, required): "draft" | "pending_payment" | "active" | "expired" | "rejected".
+- startTime (timestamp, optional): Campaign activation start.
+- endTime (timestamp, optional): Campaign expiration timestamp.
+- createdAt (timestamp, required): Creation timestamp.
+- updatedAt (timestamp, optional): Modification timestamp.
+
+--------------------------------------------------------------------------------
+3.35 review_public
+--------------------------------------------------------------------------------
+Path: /review_public/{reviewId}
+Purpose: Anonymized public projection of doctor reviews (scrubbed of patient identity).
+Access: Public read for all users. Client write locked (synced via Cloud Function).
+
+Fields:
+- reviewId (string, document ID, required): Matches /reviews/{reviewId}.
+- doctorId (string, required): Reviewed doctor ID.
+- rating (number, required): Rating score (1-5).
+- comment (string, required): Review text.
+- maskedName (string, required): Anonymized patient name (e.g. "R. S.").
+- helpfulCount (number, default: 0): Cumulative upvotes.
+- doctorReply (string, optional): Public response posted by doctor.
+- createdAt (timestamp, required): Review timestamp.
+- updatedAt (timestamp, required): Last update timestamp.
+
+--------------------------------------------------------------------------------
+3.36 reviews
+--------------------------------------------------------------------------------
+Path: /reviews/{reviewId}
+Purpose: Verified patient reviews and ratings for doctors.
+Access: Patient creates (reviewId = `${patientId}_${doctorId}`). Doctor can update `doctorReply`. Super Admin full access.
+
+Fields:
+- reviewId (string, document ID, required): Formatted as `${patientId}_${doctorId}`.
+- patientId (string, required): Reviewer patient ID.
+- doctorId (string, required): Reviewed doctor ID.
+- appointmentId (string, optional): Verified consultation appointment ID.
+- patientName (string, optional): Full name of reviewing patient.
+- rating (number, required): Rating score (1 to 5).
+- comment (string, required): Detailed patient feedback.
+- doctorReply (string, optional): Formal reply written by doctor.
+- helpfulCount (number, default: 0): Helpful vote count.
+- createdAt (timestamp, required): Submission timestamp.
+- updatedAt (timestamp, required): Modification timestamp.
+
+Subcollection: /reviews/{reviewId}/votes/{voterId}
+Document ID: {patientId}
+Purpose: Upvote / helpful toggle tracking per patient.
+Access: Signed-in patient can toggle own vote.
+Fields:
+- patientId (string, required): Voting patient ID.
+- createdAt (timestamp, required): Vote timestamp.
+
+--------------------------------------------------------------------------------
+3.37 security_events
+--------------------------------------------------------------------------------
+Path: /security_events/{eventId}
+Purpose: Telemetry and audit log for authentication anomalies and rate-limit triggers.
+Access: Internal Admin SDK / Cloud Functions only (read/write: false).
+
+Fields:
+- severity (string, required): "INFO" | "WARNING" | "ERROR" | "CRITICAL".
+- category (string, required): "auth" | "api" | "traffic".
+- action (string, required): e.g. "auth.failure", "traffic.anomaly".
+- securityEvent (boolean, required, default: true).
+- timestamp (string / ISO timestamp): Event time.
+- uid (string, optional): Authenticated UID if available.
+- emailHash (string, optional): SHA-256 hash of email.
+- clientIpHash (string, required): SHA-256 hash of IP.
+- appCheckPresent (boolean, required): App Check integrity status.
+- method (string, optional): Authentication mechanism used.
+- pattern (string, optional): Anomaly type (e.g. "rate_limit", "forbidden_resource").
+- detail (string, optional): Log explanation.
+- createdAt (timestamp, required): Server timestamp.
+- expiresAt (timestamp, required): Auto-deletion TTL (30 days).
+
+--------------------------------------------------------------------------------
+3.38 support_tickets
+--------------------------------------------------------------------------------
+Path: /support_tickets/{ticketId}
+Purpose: In-app Help & Support customer service tickets.
+Access: Patient or Doctor creator can read. Support Admins process tickets.
+
+Fields:
+- ticketId (string, document ID, required): Ticket identifier.
+- patientId (string, optional): Reporting patient ID.
+- doctorId (string, optional): Reporting doctor ID.
+- issueType (string, required): "Appointment" | "Records" | "Technical" | "Other".
+- message (string, required): Detailed problem statement.
+- screenshotName (string, optional): Uploaded screenshot attachment name.
+- status (string, required, default: "open"): "open" | "in_progress" | "resolved" | "closed".
+- createdAt (timestamp, required): Submission timestamp.
+- updatedAt (timestamp, optional): Last response timestamp.
+
+Subcollection: /support_tickets/{ticketId}/messages/{messageId}
+Document ID: Auto-generated string
+Purpose: Ongoing chat dialogue between customer and support agents.
+Access: Ticket owner and support agents.
+Fields:
+- senderId (string, required): Auth UID or support agent identifier.
+- senderName (string, required): Display name of sender.
+- senderRole (string, required): "patient" | "doctor" | "support".
+- text (string, required): Chat message text.
+- createdAt (timestamp, required): Message timestamp.
+
+--------------------------------------------------------------------------------
+3.39 system_config
+--------------------------------------------------------------------------------
+Path: /system_config/{configId}
+Purpose: Platform-wide operational parameters and pricing schedules.
+Access: Public read for signed-in users. Super Admin write only.
+Key Document: /system_config/promoted_ads
+
+Fields (promoted_ads doc):
+- enabled (boolean, default: true): Banner feature toggle.
+- pricingTiers (map of hours -> INR price):
+  * "24": 300
+  * "72": 750
+  * "168": 1500
+  * "720": 5000
+- maxActiveBanners (number, default: 10): Maximum concurrent banner slots.
+- bannerNotice (string, optional): Announcement banner text.
+- updatedAt (timestamp, required): Configuration update timestamp.
+
+--------------------------------------------------------------------------------
+3.40 users
+--------------------------------------------------------------------------------
+Path: /users/{uid}
+Purpose: Master authentication mapping linking Firebase Auth UIDs to role-specific profiles.
+Access: User owner and Super Admin only. Role is immutable after registration.
+
+Fields:
+- uid (string, document ID, required): Firebase Authentication UID.
+- role (string, required): "doctor" | "patient" | "medicalStore" | "lab" | "ambulance" | "super_admin".
+- profileId (string, required): Linked domain profile ID (e.g. "p123", "d1", "ms_456").
+- displayName (string, required): Full display name.
+- email (string, required): Normalized lowercase email address.
+- mobile (string, optional): Primary telephone number.
+- verified (boolean, default: false for doctors, true for others): Account verification status.
+- verifiedAt (timestamp, optional): Verification approval timestamp.
+- deactivated (boolean, default: false): User self-deactivation flag.
+- status (string, optional, default: "approved"): Status tag.
+- photoUrl (string, optional): Avatar image URL.
+- createdAt (timestamp, required): Account creation timestamp.
+- updatedAt (timestamp, required): Last modification timestamp.
+
+================================================================================
+4. FIREBASE CLOUD STORAGE BUCKET SCHEMA
+================================================================================
+Storage Bucket: default (configured via storage.rules)
+Max File Size Limits:
+- Photos / Profile Images: < 5 MB (image/*)
+- Medical Documents / KYC Proofs / Lab Reports: < 15 MB (image/*, application/pdf)
+
+Storage Paths:
+1. /patients/{patientId}/profile_photo.jpg
+   - Purpose: Patient account avatar.
+   - Access: Patient owner read/write. Authenticated users read.
+2. /doctor_profiles/{doctorId}/profile.jpg
+   - Purpose: Doctor professional headshot.
+   - Access: Doctor owner write. Authenticated users read.
+3. /doctors/{doctorId}/{docFolder}/{fileName}
+   - Purpose: Doctor KYC credentials, registration certificates, degrees.
+   - Allowed docFolders: "certificates", "id_proof", "documents", "degrees"
+   - Access: Owning doctor write; Super Admin review only.
+4. /pharmacies/{storeId}/{docFolder}/{fileName}
+   - Purpose: Pharmacy drug licenses, GST certificates, owner ID proof.
+   - Access: Owning pharmacy write; Super Admin review only.
+5. /labs/{labId}/{docFolder}/{fileName}
+   - Purpose: Diagnostic laboratory registration, NABL accreditation documents.
+   - Access: Owning lab write; Super Admin review only.
+6. /ambulances/{ambulanceId}/{docFolder}/{fileName}
+   - Purpose: Commercial driving permits, vehicle RC book, fitness certificates.
+   - Access: Owning ambulance driver write; Super Admin review only.
+7. /verification_docs/{userId}/{fileName}
+   - Purpose: Generic provider onboarding verification folder.
+   - Access: Owning user write; Super Admin review only.
+8. /promoted_ads/{providerId}/{fileName}
+   - Purpose: Promoted campaign banner artwork.
+   - Access: Sponsoring provider write; Authenticated users read.
+9. /lab_reports/{patientId}/{bookingId}/{fileName}
+   - Purpose: Official diagnostic test reports (PDF/JPG).
+   - Access: Patient owner read; Uploading diagnostic lab write; Super Admin read.
+10. /health_records/{patientId}/{recordId}/{fileName}
+    - Purpose: Patient medical vault attachments (scans, past prescriptions).
+    - Access: Patient owner read/write; Treating care-team doctor read (if shared).
+
+================================================================================
+5. ENTITY RELATIONSHIP & CROSS-COLLECTION REFERENCES
+================================================================================
+
+                               +------------------+
+                               |    users/{uid}   |
+                               +--------+---------+
+                                        |
+               +------------------------+------------------------+
+               | (role == 'patient')                             | (role == 'doctor')
+               v                                                 v
+      +-------------------+                             +-------------------+
+      | patients/{patientId}                            | doctors/{doctorId} |
+      +---------+---------+                             +---------+---------+
+                |                                                 |
+                |--< doctor_links/{doctorId} >--------------------|
+                |                                                 |
+                |--< family_members >                             |--< doctor_availability >
+                |--< health_records >                             |--< medical_directory >
+                |                                                 |
+                +-----------------------+-------------------------+
+                                        |
+                +-----------------------+-------------------------+
+                |                                                 |
+                v                                                 v
+      +------------------------+                        +--------------------+
+      | appointments/{appId}   |                        | prescriptions/{id} |
+      +------------------------+                        +---------+----------+
+                |                                                 |
+                +-----------------------+-------------------------+
+                                        |
+                                        v
+                       +---------------------------------+
+                       | pharmacy_deliveries/{delivId}   |
+                       +----------------+----------------+
+                                        |
+                                        v
+                            +-----------------------+
+                            | medical_stores/{id}   |
+                            +-----------------------+
+
+Additional Core Relations:
+- lab_bookings:
+  * patientId -> patients/{patientId}
+  * labId -> labs/{labId}
+  * reportStorageUrl -> /lab_reports/{patientId}/{bookingId}/{file}
+- lab_orders:
+  * doctorId -> doctors/{doctorId}
+  * patientId -> patients/{patientId}
+  * labId -> labs/{labId}
+- reviews:
+  * reviewId = `${patientId}_${doctorId}`
+  * patientId -> patients/{patientId}
+  * doctorId -> doctors/{doctorId}
+  * Syncs to -> review_public/{reviewId}
+- ambulance_broadcasts & requests:
+  * broadcastId -> ambulance_broadcasts/{broadcastId}
+  * acceptedDriverId / driverId -> ambulances/{driverId}
+- pharmacy_connections & lab_connections:
+  * B2B links pairing doctors/{doctorId} with medical_stores/{storeId} or labs/{labId}.
+
+================================================================================
+6. SECURITY & DATA PRIVACY CONSTRAINTS
+================================================================================
+1. Zero Public Database Access:
+   - Direct database access is blocked without authentication (`isSignedIn()`).
+   - App Check is enforced in production to block bot scraping and API abuse.
+2. Clinical Data Isolation:
+   - Prescriptions, lab orders, and health records are confidential.
+   - Doctors can ONLY inspect a registered patient's records if:
+     a) `patients.shareRecordsWithDoctors == true`
+     b) The doctor is on the patient's `careTeamDoctorIds`, `primaryDoctorId`, or
+        has an active link in `/patients/{patientId}/doctor_links/{doctorId}`.
+3. Healthcare Provider Approval Gate:
+   - Newly registered doctors start with `verified: false`.
+   - Clinical write permissions (prescribing, referring, lab orders) are restricted
+     to `isVerifiedDoctor()`.
+   - Patients can only search and book verified doctors and accredited diagnostic labs.
+4. Anonymous Review Sanitization:
+   - Reviews contain sensitive patient names in `/reviews/{reviewId}`.
+   - Public screens query `/review_public/{reviewId}`, where patient names are
+     masked into initials (e.g. "Rahul Sharma" -> "R. S.") and direct patient UIDs
+     are stripped out by serverless cloud triggers.
+5. Isolated Driver Credentials:
+   - Ambulance drivers authenticate via username and PIN.
+   - Driver PIN and push tokens are strictly isolated in `/ambulances/{driverId}/private/settings`
+     so public ambulance listings never expose authentication secrets or tokens.
+
+================================================================================
+END OF DATABASE SCHEMA SPECIFICATION
+================================================================================

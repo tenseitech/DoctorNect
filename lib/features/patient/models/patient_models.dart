@@ -65,12 +65,17 @@ class HomeCarouselItem {
 typedef PatientCarouselItem = HomeCarouselItem;
 
 class ServiceItem {
-  const ServiceItem(
-      {required this.label, required this.icon, required this.route});
+  const ServiceItem({
+    required this.label,
+    required this.icon,
+    required this.route,
+    this.assetPath,
+  });
 
   final String label;
   final IconData icon;
   final String route;
+  final String? assetPath;
 }
 
 class MyDoc {

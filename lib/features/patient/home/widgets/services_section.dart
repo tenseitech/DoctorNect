@@ -165,7 +165,23 @@ class _ServiceTileState extends State<_ServiceTile> {
     return _shortLabel;
   }
 
+  String? get _assetPath =>
+      widget.service.assetPath ??
+      switch (widget.service.route) {
+        'records' => 'assets/images/services/records.png',
+        'sos' => 'assets/images/services/sos.png',
+        _ => null,
+      };
+
   Widget _serviceIcon(double size) {
+    if (_assetPath != null) {
+      return Image.asset(
+        _assetPath!,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+      );
+    }
     if (widget.service.route == 'ambulance') {
       return AmbulanceWithPlusIcon(size: size);
     }
@@ -203,26 +219,37 @@ class _ServiceTileState extends State<_ServiceTile> {
           ),
           child: Row(
             children: [
-              Container(
-                width: boxSize,
-                height: boxSize,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: widget.style.gradient,
+              if (_assetPath != null)
+                SizedBox(
+                  width: boxSize,
+                  height: boxSize,
+                  child: Image.asset(
+                    _assetPath!,
+                    fit: BoxFit.contain,
                   ),
-                  borderRadius: BorderRadius.circular(13),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.style.gradient.last.withValues(alpha: 0.24),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+                )
+              else
+                Container(
+                  width: boxSize,
+                  height: boxSize,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: widget.style.gradient,
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(13),
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            widget.style.gradient.last.withValues(alpha: 0.24),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Center(child: _serviceIcon(iconSize)),
                 ),
-                child: Center(child: _serviceIcon(iconSize)),
-              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -286,26 +313,37 @@ class _ServiceTileState extends State<_ServiceTile> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: iconBox,
-                height: iconBox,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: widget.style.gradient,
+              if (_assetPath != null)
+                SizedBox(
+                  width: iconBox,
+                  height: iconBox,
+                  child: Image.asset(
+                    _assetPath!,
+                    fit: BoxFit.contain,
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.style.gradient.last.withValues(alpha: 0.24),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+                )
+              else
+                Container(
+                  width: iconBox,
+                  height: iconBox,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: widget.style.gradient,
                     ),
-                  ],
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color:
+                            widget.style.gradient.last.withValues(alpha: 0.24),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Center(child: _serviceIcon(20)),
                 ),
-                child: Center(child: _serviceIcon(20)),
-              ),
               const SizedBox(height: 6),
               Text(
                 _label,
