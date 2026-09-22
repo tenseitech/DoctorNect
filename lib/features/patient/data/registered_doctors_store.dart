@@ -1,6 +1,8 @@
 import '../../../core/firebase/firestore_service.dart';
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/firebase/firebase_bootstrap.dart';
@@ -14,7 +16,9 @@ class RegisteredDoctorsStore extends ChangeNotifier {
 
   final List<DoctorListing> _registered = [];
   StreamSubscription<List<DoctorListing>>? _streamSub;
+  StreamSubscription<User?>? _authWaitSub;
   bool _streamActive = false;
+  bool _permissionDenied = false;
 
   List<DoctorListing> get searchableDoctors => List.unmodifiable(_registered);
 
@@ -35,11 +39,21 @@ class RegisteredDoctorsStore extends ChangeNotifier {
   /// only one stream is active at a time. Retries automatically if Firebase
   /// is not yet ready.
   void startListening() {
-    if (_streamActive) return;
+    if (_streamActive || _permissionDenied) return;
 
     if (!FirebaseBootstrap.isReady) {
       // Firebase not initialised yet — retry after a short delay.
       Future.delayed(const Duration(seconds: 2), startListening);
+      return;
+    }
+
+    if (FirebaseAuth.instance.currentUser == null) {
+      _authWaitSub ??= FirebaseAuth.instance.authStateChanges().listen((user) {
+        if (user == null) return;
+        _authWaitSub?.cancel();
+        _authWaitSub = null;
+        startListening();
+      });
       return;
     }
 
@@ -65,6 +79,13 @@ class RegisteredDoctorsStore extends ChangeNotifier {
       onError: (e) {
         if (kDebugMode) debugPrint('[RegisteredDoctorsStore] stream error: $e');
         _streamActive = false;
+        _streamSub?.cancel();
+        _streamSub = null;
+        // Rules/auth failures will not recover by retrying every 3s.
+        if (e is FirebaseException && e.code == 'permission-denied') {
+          _permissionDenied = true;
+          return;
+        }
         Future.delayed(const Duration(seconds: 3), startListening);
       },
     );

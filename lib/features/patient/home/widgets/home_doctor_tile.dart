@@ -232,33 +232,64 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
 }
 
 class HomeDoctorInlineMessage extends StatelessWidget {
-  const HomeDoctorInlineMessage(
-      {super.key, required this.icon, required this.text});
+  const HomeDoctorInlineMessage({
+    super.key,
+    required this.icon,
+    required this.text,
+    this.action,
+  });
 
   final IconData icon;
   final String text;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: BoxDecoration(
         color: AppColors.cardBgOf(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderOf(context)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 18, color: AppColors.patientTeal),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  color: AppColors.textSecondaryOf(context)),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color:
+                  AppColors.patientTeal.withValues(alpha: isDark ? 0.14 : 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 22,
+              color: AppColors.patientTeal,
             ),
           ),
+          const SizedBox(height: 12),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+                height: 1.35,
+              ),
+            ),
+          ),
+          if (action != null) ...[
+            const SizedBox(height: 14),
+            action!,
+          ],
         ],
       ),
     );

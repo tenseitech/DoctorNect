@@ -134,7 +134,7 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
   }
 
   void _setFullOtp(String value) {
-    final digits = value.replaceAll(RegExp(r'\D'), '');
+    final digits = _OtpTextFormatter.extractOtp(value);
     if (digits.isEmpty) return;
 
     final chars = digits.characters.take(AppConstants.otpLength).toList();
@@ -145,22 +145,43 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
         _controllers[i].clear();
       }
     }
-    final nextFocus = (chars.length < AppConstants.otpLength)
-        ? chars.length
-        : AppConstants.otpLength - 1;
-    if (_focusNodes.length > nextFocus) {
-      _focusNodes[nextFocus].requestFocus();
+
+    if (chars.length == AppConstants.otpLength) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    } else {
+      final nextFocus = chars.length;
+      if (_focusNodes.length > nextFocus) {
+        _focusNodes[nextFocus].requestFocus();
+      }
     }
+
     _notify();
     if (mounted) setState(() {});
   }
 
   void _onChanged(int index, String value) {
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    if (digits.length > 1) {
-      _setFullOtp(digits);
+    final extracted = _OtpTextFormatter.extractOtp(value);
+
+    // If a 6-digit OTP was pasted or autofilled into ANY box, populate all boxes
+    if (extracted.length == AppConstants.otpLength) {
+      _setFullOtp(extracted);
       return;
     }
+
+    // If user typed over an existing character (length > 1 but < 6)
+    if (value.length > 1) {
+      final newChar = value.characters.last;
+      _controllers[index].text = newChar;
+      _controllers[index].selection = const TextSelection.collapsed(offset: 1);
+      if (index < AppConstants.otpLength - 1) {
+        _focusNodes[index + 1].requestFocus();
+      }
+      _notify();
+      setState(() {});
+      return;
+    }
+
+    // Single character entered
     if (value.isNotEmpty && index < AppConstants.otpLength - 1) {
       _focusNodes[index + 1].requestFocus();
     }
@@ -202,7 +223,6 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
                   textAlign: TextAlign.center,
                   keyboardType: TextInputType.number,
                   autofillHints: const [AutofillHints.oneTimeCode],
-                  maxLength: 1,
                   style: TextStyle(
                     fontSize: AppTypography.headlineMedium,
                     fontWeight: FontWeight.w600,
@@ -217,7 +237,7 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
                     enabledBorder: _boxBorder(AppColors.borderOf(context)),
                     focusedBorder: _boxBorder(widget.accentColor, 1.5),
                   ),
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  inputFormatters: [_OtpTextFormatter()],
                   onChanged: (v) => _onChanged(index, v),
                   onTap: () => _controllers[index].selection = TextSelection(
                     baseOffset: 0,
@@ -234,6 +254,78 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Formatter that extracts a valid 6-digit OTP from text (including pasted SMS or formatted codes),
+/// or limits manual entry to digits.
+class _OtpTextFormatter extends TextInputFormatter {
+  static String extractOtp(String value) {
+    if (value.isEmpty) return '';
+    // 1. Standalone 6-digit number (e.g. "123456", "Your DoctorNect OTP is 123456")
+    final match = RegExp(r'\b\d{6}\b').firstMatch(value);
+    if (match != null) return match.group(0)!;
+
+    // 2. 3-3 format (e.g. "123-456" or "123 456")
+    final splitMatch = RegExp(r'\b(\d{3})[- ](\d{3})\b').firstMatch(value);
+    if (splitMatch != null) {
+      return '${splitMatch.group(1)}${splitMatch.group(2)}';
+    }
+
+    // 3. Fallback: strip non-digits; if >= 6 digits, take first 6
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.length >= AppConstants.otpLength) {
+      return digits.substring(0, AppConstants.otpLength);
+    }
+    return digits;
+  }
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final newText = newValue.text;
+    if (newText.isEmpty) return newValue;
+
+    // If text was pasted/inserted into an already populated box, isolate what was inserted
+    String inserted = newText;
+    if (oldValue.text.isNotEmpty && newText.length > oldValue.text.length) {
+      final old = oldValue.text;
+      if (newText.startsWith(old)) {
+        inserted = newText.substring(old.length);
+      } else if (newText.endsWith(old)) {
+        inserted = newText.substring(0, newText.length - old.length);
+      }
+    }
+
+    // Check if inserted text or the full text contains a valid 6-digit OTP
+    final insertedOtp = extractOtp(inserted);
+    if (insertedOtp.length == AppConstants.otpLength) {
+      return TextEditingValue(
+        text: insertedOtp,
+        selection: TextSelection.collapsed(offset: insertedOtp.length),
+      );
+    }
+
+    final fullOtp = extractOtp(newText);
+    if (fullOtp.length == AppConstants.otpLength) {
+      return TextEditingValue(
+        text: fullOtp,
+        selection: TextSelection.collapsed(offset: fullOtp.length),
+      );
+    }
+
+    // Otherwise, strip non-digits and cap at otpLength
+    final digits = newText.replaceAll(RegExp(r'\D'), '');
+    final capped = digits.length > AppConstants.otpLength
+        ? digits.substring(0, AppConstants.otpLength)
+        : digits;
+
+    return TextEditingValue(
+      text: capped,
+      selection: TextSelection.collapsed(offset: capped.length),
     );
   }
 }

@@ -208,7 +208,9 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Dr. ${doctor.name}',
+                                  doctor.name.startsWith('Dr.')
+                                      ? doctor.name
+                                      : 'Dr. ${doctor.name}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(

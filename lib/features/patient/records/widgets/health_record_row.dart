@@ -227,7 +227,7 @@ class _RecordDateBadge extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w800,
-              color: AppColors.surfaceOf(context),
+              color: Colors.white,
               height: 1,
             ),
           ),
@@ -237,7 +237,7 @@ class _RecordDateBadge extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AppColors.surfaceOf(context).withValues(alpha: 0.92),
+              color: Colors.white.withValues(alpha: 0.92),
               letterSpacing: 0.4,
             ),
           ),

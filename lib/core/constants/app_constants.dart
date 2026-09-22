@@ -9,9 +9,8 @@ abstract final class AppConstants {
   static const int splashDurationSeconds = 0;
   static const int otpLength = 6;
 
-  /// Client OTP resend cooldown. Backend [RESEND_COOLDOWN_MS] is 60s; client waits
-  /// slightly longer for network latency / clock skew so Resend never taps early.
-  static const int otpResendCooldownSeconds = 65;
+  /// Client OTP resend cooldown. Backend [RESEND_COOLDOWN_MS] is 60s.
+  static const int otpResendCooldownSeconds = 60;
 
   /// Shown on registration OTP UI so testers can confirm which app build is installed.
   static const registrationBuildFingerprint = 'H7-fix-20260723';

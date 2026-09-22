@@ -20,8 +20,12 @@ import 'features/doctor/clinical/data/symptoms_database.dart';
 import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
-  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  WidgetsFlutterBinding.ensureInitialized();
+  // Native splash is Android/iOS only (`web: false` in pubspec). Web uses the
+  // HTML splash in index.html, which flutter-first-frame already dismisses.
+  if (!kIsWeb) {
+    FlutterNativeSplash.preserve(widgetsBinding: WidgetsBinding.instance);
+  }
   GalleryImagePicker.enableAndroidPhotoPicker();
 
   await EdgeToEdgeBootstrap.configure();
@@ -40,7 +44,9 @@ Future<void> main() async {
   // Non-critical: load after first frame / in background.
   unawaited(SymptomsDatabase.instance.ensureLoaded());
 
-  FlutterNativeSplash.remove();
+  if (!kIsWeb) {
+    FlutterNativeSplash.remove();
+  }
   runApp(const DoctorNectApp());
 }
 

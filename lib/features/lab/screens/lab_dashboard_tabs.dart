@@ -296,7 +296,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: wide ? 18 : 16,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.surfaceOf(context),
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -305,8 +305,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
-                        color:
-                            AppColors.surfaceOf(context).withValues(alpha: 0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ],
@@ -317,8 +316,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                   onPressed: onToday,
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.white,
-                    backgroundColor:
-                        AppColors.surfaceOf(context).withValues(alpha: 0.16),
+                    backgroundColor: Colors.white.withValues(alpha: 0.16),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   ),

@@ -97,7 +97,7 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final roles = _roleOptions(context);
     final isWebDesktop =
-        ResponsiveLayout.isWeb && !ResponsiveLayout.isCompact(context);
+        ResponsiveLayout.isWeb && ResponsiveLayout.isExpanded(context);
 
     if (isWebDesktop) {
       return _WebWelcomeScaffold(roles: roles);

@@ -24,6 +24,22 @@ class HomeSearchBar extends StatefulWidget {
     'Search for ambulance',
   ];
 
+  static const List<String> words = [
+    'Doctor',
+    'Lab',
+    'Speciality',
+    'Location',
+    'Language',
+  ];
+
+  static const List<String> placeholders = [
+    'Search for Doctor',
+    'Search for Lab',
+    'Search for Speciality',
+    'Search for Location',
+    'Search for Language',
+  ];
+
   static String placeholder({required bool compact}) {
     return compact
         ? 'Search doctors, lab, specialities…'
@@ -85,7 +101,6 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
       }
     });
   }
-
   void _stopTimer() {
     _rotationTimer?.cancel();
     _rotationTimer = null;

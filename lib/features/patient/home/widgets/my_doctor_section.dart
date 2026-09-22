@@ -79,30 +79,16 @@ class MyDoctorSection extends StatelessWidget {
                         ],
                       ),
                     ),
-                    FilledButton(
-                      onPressed: onAdd,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.patientTeal,
-                        foregroundColor: AppColors.white,
-                        minimumSize: const Size(0, 32),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Add',
-                        style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ),
+                    if (doctors.isNotEmpty) _buildAddButton(),
                   ],
                 ),
                 SizedBox(height: compact ? 8 : 10),
                 if (doctors.isEmpty)
-                  const HomeDoctorInlineMessage(
+                  HomeDoctorInlineMessage(
                     icon: Icons.person_add_outlined,
                     text:
-                        'No doctors in your list yet. Tap Add to add your doctors.',
+                        'You haven’t added any doctors yet — add one to get started.',
+                    action: _buildAddButton(),
                   )
                 else
                   SizedBox(
@@ -127,6 +113,26 @@ class MyDoctorSection extends StatelessWidget {
             ),
           );
       },
+    );
+  }
+
+  Widget _buildAddButton() {
+    return FilledButton(
+      onPressed: onAdd,
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.patientTeal,
+        foregroundColor: AppColors.white,
+        minimumSize: const Size(0, 32),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        'Add',
+        style: GoogleFonts.inter(
+          fontSize: AppTypography.bodySmall,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 

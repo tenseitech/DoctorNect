@@ -19,6 +19,7 @@ class HomeBannerCarousel extends StatefulWidget {
     this.onCtaTap,
     this.interactive = true,
     this.cardHorizontalInsetFraction = 0,
+    this.showNavButtons = true,
   });
 
   final List<HomeCarouselItem> items;
@@ -26,6 +27,7 @@ class HomeBannerCarousel extends StatefulWidget {
   final HomeCarouselCtaHandler? onCtaTap;
   final bool interactive;
   final double cardHorizontalInsetFraction;
+  final bool showNavButtons;
 
   @override
   State<HomeBannerCarousel> createState() => _HomeBannerCarouselState();
@@ -116,15 +118,20 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isWide = screenWidth >= _wideBreakpoint;
     final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
-    final height = (isWide ? 220.0 : 120.0) * textScale;
+    final height = (isWide ? 220.0 : 130.0) * textScale;
     final hasCardInset = widget.cardHorizontalInsetFraction > 0;
     final borderRadius =
         hasCardInset || !isWide ? AppConstants.cardRadius.toDouble() : 0.0;
-    final sideGutter = hasCardInset
-        ? screenWidth * widget.cardHorizontalInsetFraction
-        : (isWide ? _legacyWideNavGutter : 0.0);
     final hasMultipleSlides = widget.items.length > 1;
-    final showNavButtons = (hasCardInset || isWide) && hasMultipleSlides;
+    final showNavButtons =
+        widget.showNavButtons && (hasCardInset || isWide) && hasMultipleSlides;
+    final sideGutter = showNavButtons
+        ? (hasCardInset
+            ? screenWidth * widget.cardHorizontalInsetFraction
+            : (isWide ? _legacyWideNavGutter : 0.0))
+        : (hasCardInset
+            ? screenWidth * widget.cardHorizontalInsetFraction
+            : 0.0);
     final navButtonSize = sideGutter >= _navButtonSize
         ? _navButtonSize
         : (sideGutter * 0.82).clamp(26.0, _navButtonSize);

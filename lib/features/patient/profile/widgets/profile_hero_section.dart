@@ -288,18 +288,17 @@ class PatientBmiCard extends StatelessWidget {
             color: AppColors.textPrimaryOf(context),
           ),
         ),
-        if (isWide) ...[
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _StatPill(
-                  label: 'Height', value: '${heightCm.toStringAsFixed(0)} cm'),
-              const SizedBox(width: 8),
-              _StatPill(
-                  label: 'Weight', value: '${weightKg.toStringAsFixed(0)} kg'),
-            ],
-          ),
-        ],
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            _StatPill(
+                label: 'Height', value: '${heightCm.toStringAsFixed(0)} cm'),
+            _StatPill(
+                label: 'Weight', value: '${weightKg.toStringAsFixed(0)} kg'),
+          ],
+        ),
       ],
     );
 

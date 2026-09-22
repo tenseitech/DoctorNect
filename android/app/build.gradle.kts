@@ -56,8 +56,10 @@ android {
 
     buildTypes {
         release {
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (keystorePropertiesFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
             }
             isMinifyEnabled = true
             isShrinkResources = true

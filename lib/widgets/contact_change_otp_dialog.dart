@@ -157,6 +157,12 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
                   _otp = value;
                   _error = null;
                 }),
+                onCompleted: (value) {
+                  _otp = value;
+                  _error = null;
+                  setState(() {});
+                  _verify();
+                },
               ),
             ],
             if (_error != null) ...[

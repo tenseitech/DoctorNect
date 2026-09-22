@@ -250,8 +250,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
-                        color:
-                            AppColors.surfaceOf(context).withValues(alpha: 0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                     const ThemeToggleButton(highlighted: true),
@@ -272,7 +271,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context).withValues(alpha: 0.18),
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -287,7 +286,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
             style: GoogleFonts.inter(
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w700,
-                color: AppColors.surfaceOf(context)),
+                color: Colors.white),
           ),
         ],
       ),
