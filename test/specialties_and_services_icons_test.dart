@@ -30,7 +30,7 @@ void main() {
         of: find.byType(ServicesSection),
         matching: find.byType(Image),
       );
-      expect(imageFinders, findsNWidgets(2));
+      expect(imageFinders, findsNWidgets(3));
 
       final images = tester
           .widgetList<Image>(imageFinders)
@@ -41,6 +41,10 @@ void main() {
           contains(const AssetImage('assets/images/services/records.png')));
       expect(
           images, contains(const AssetImage('assets/images/services/sos.png')));
+      expect(
+          images,
+          contains(
+              const AssetImage('assets/icons/common/digital_pass.png')));
     });
 
     testWidgets('ServicesSection web renders SOS and Records as Image.asset',
@@ -63,7 +67,7 @@ void main() {
         of: find.byType(ServicesSection),
         matching: find.byType(Image),
       );
-      expect(imageFinders, findsNWidgets(2));
+      expect(imageFinders, findsNWidgets(3));
 
       final images = tester
           .widgetList<Image>(imageFinders)
@@ -74,6 +78,10 @@ void main() {
           contains(const AssetImage('assets/images/services/records.png')));
       expect(
           images, contains(const AssetImage('assets/images/services/sos.png')));
+      expect(
+          images,
+          contains(
+              const AssetImage('assets/icons/common/digital_pass.png')));
     });
 
     testWidgets(

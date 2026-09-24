@@ -249,6 +249,7 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
           avatarContent = _buildInitialFallback(context, widget.size);
         }
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
           width: widget.size,
           height: widget.size,
@@ -257,8 +258,10 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
             shape: BoxShape.circle,
             border: Border.all(
               color: widget.selected
-                  ? AppColors.patientTeal
-                  : AppColors.borderOf(context).withValues(alpha: 0.4),
+                  ? (isDark ? Colors.white : AppColors.patientTeal)
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.35)
+                      : AppColors.borderOf(context).withValues(alpha: 0.4)),
               width: widget.selected ? 2.0 : 1.0,
             ),
           ),
@@ -290,8 +293,8 @@ class _PatientShellState extends State<PatientShell> {
     const PatientTabItem(
       outlinedIcon: Icons.event_outlined,
       filledIcon: Icons.event_rounded,
-      label: 'Appointments',
-      shortLabel: 'Visits',
+      label: 'Appointment',
+      shortLabel: 'Appointment',
     ),
     const PatientTabItem(
       outlinedIcon: Icons.science_outlined,

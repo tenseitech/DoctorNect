@@ -22,6 +22,7 @@ import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
+import '../../../widgets/verification_submission_card.dart';
 import '../../../core/theme/app_typography.dart';
 
 const _lineColor = Color(0xFFE2E8F0);
@@ -87,6 +88,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
               ),
               const SizedBox(height: 20),
               _LabHeroCard(lab: lab, connectedDoctors: connectedDoctors),
+              const VerificationSubmissionCard(role: UserType.lab),
               const SizedBox(height: 20),
               _LabProfileSection(
                 title: 'Lab details',

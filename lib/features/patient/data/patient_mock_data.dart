@@ -154,6 +154,7 @@ class PatientMockData {
       label: 'Digital Pass',
       icon: Icons.badge_rounded,
       route: 'digital-pass',
+      assetPath: 'assets/icons/common/digital_pass.png',
     ),
   ];
 

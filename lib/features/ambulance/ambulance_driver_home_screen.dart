@@ -15,6 +15,7 @@ import 'data/ambulance_booking_sync.dart';
 import 'data/ambulance_store.dart';
 import 'models/ambulance_models.dart';
 import '../promoted_ads/screens/promoted_ads_management_screen.dart';
+import '../../widgets/verification_status_banner.dart';
 import '../../core/theme/app_typography.dart';
 // FIXED: online/offline toggle on the post-login dashboard
 
@@ -142,6 +143,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
               acceptedCount: mine.length,
               completedCount: completed.length,
             ),
+            const VerificationStatusBanner(role: UserType.ambulance),
             Expanded(
               child: AmbulancePageLayout(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),

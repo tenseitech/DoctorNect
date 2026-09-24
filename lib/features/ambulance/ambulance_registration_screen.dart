@@ -126,6 +126,9 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
         extraFields: {
           'qualification': qualification,
           'profileCompleted': false,
+          'verified': false,
+          'verificationStatus': 'registered',
+          'status': 'pending_review',
         },
       ).timeout(const Duration(seconds: 30));
 

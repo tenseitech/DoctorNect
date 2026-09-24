@@ -33,6 +33,15 @@ class _ProfileWebActionCardState extends State<ProfileWebActionCard> {
     final gradient =
         widget.iconGradient ?? const [Color(0xFF0D9488), Color(0xFF0369A1)];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hsl = HSLColor.fromColor(gradient.first);
+    final strokeColor = isDark
+        ? hsl
+            .withLightness((hsl.lightness < 0.60) ? 0.68 : hsl.lightness)
+            .withSaturation((hsl.saturation * 0.82).clamp(0.35, 0.90))
+            .toColor()
+        : (hsl.lightness > 0.55 ? hsl.withLightness(0.44).toColor() : gradient.first);
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -58,18 +67,17 @@ class _ProfileWebActionCardState extends State<ProfileWebActionCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: gradient,
+                SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Icon(
+                      widget.icon,
+                      size: 24,
+                      color: strokeColor,
                     ),
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(widget.icon, size: 21, color: AppColors.white),
                 ),
                 const Spacer(),
                 Text(

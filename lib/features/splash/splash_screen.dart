@@ -12,7 +12,7 @@ import '../../widgets/medibond_logo.dart';
 import '../ambulance/ambulance_shell_auto.dart';
 import '../ambulance/ambulance_invite_setup_screen.dart';
 import '../dashboard/dashboard_shell.dart';
-import '../welcome/welcome_screen.dart';
+import '../auth/unified_auth_intro_screen.dart';
 import '../../core/invite/invite_deep_link_resolver.dart';
 import '../../core/invite/pending_ambulance_invite_store.dart';
 
@@ -93,7 +93,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final inviteLogin = InviteDeepLinkResolver.loginScreenFromPendingInvite();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => inviteLogin ?? const WelcomeScreen(),
+        builder: (_) => inviteLogin ?? const UnifiedAuthIntroScreen(),
       ),
     );
   }

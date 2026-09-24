@@ -1925,7 +1925,10 @@ class _PatientPatientProfileScreenState
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                       child: Center(child: LogoutTextButton()),
                     ),
-                    SizedBox(height: isCompact ? 80 : 32),
+                    SizedBox(
+                        height: isCompact
+                            ? (widget.embeddedInShell ? 110 : 80)
+                            : 32),
                   ],
                 ),
               ),

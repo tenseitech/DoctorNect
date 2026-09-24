@@ -10,6 +10,9 @@ class DoctorNectUserProfile {
     required this.displayName,
     required this.email,
     this.mobile,
+    this.verificationStatus,
+    this.rejectionReason,
+    this.submittedAt,
   });
 
   final String uid;
@@ -18,8 +21,17 @@ class DoctorNectUserProfile {
   final String displayName;
   final String email;
   final String? mobile;
+  final String? verificationStatus;
+  final String? rejectionReason;
+  final DateTime? submittedAt;
 
   factory DoctorNectUserProfile.fromMap(String uid, Map<String, dynamic> data) {
+    DateTime? parseTimestamp(dynamic val) {
+      if (val is Timestamp) return val.toDate();
+      if (val is DateTime) return val;
+      return null;
+    }
+
     return DoctorNectUserProfile(
       uid: uid,
       role: _roleFromString(data['role'] as String? ?? ''),
@@ -27,6 +39,9 @@ class DoctorNectUserProfile {
       displayName: data['displayName'] as String? ?? '',
       email: data['email'] as String? ?? '',
       mobile: data['mobile'] as String?,
+      verificationStatus: data['verificationStatus'] as String?,
+      rejectionReason: data['rejectionReason'] as String?,
+      submittedAt: parseTimestamp(data['submittedAt']),
     );
   }
 
@@ -36,6 +51,9 @@ class DoctorNectUserProfile {
         'displayName': displayName,
         'email': email,
         if (mobile != null) 'mobile': mobile,
+        if (verificationStatus != null) 'verificationStatus': verificationStatus,
+        if (rejectionReason != null) 'rejectionReason': rejectionReason,
+        if (submittedAt != null) 'submittedAt': Timestamp.fromDate(submittedAt!),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 

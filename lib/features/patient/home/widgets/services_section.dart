@@ -153,7 +153,7 @@ class _ServiceTileState extends State<_ServiceTile> {
       'digital-pass' => 'Pass',
       'near-you' => 'Citywide',
       'my-lab' => 'My Lab',
-      'appointments' => 'Visits',
+      'appointments' => 'Appointment',
       'ambulance' => 'Ambulance',
       _ => widget.service.label,
     };
@@ -170,6 +170,7 @@ class _ServiceTileState extends State<_ServiceTile> {
       switch (widget.service.route) {
         'records' => 'assets/images/services/records.png',
         'sos' => 'assets/images/services/sos.png',
+        'digital-pass' => 'assets/icons/common/digital_pass.png',
         _ => null,
       };
 
@@ -180,6 +181,8 @@ class _ServiceTileState extends State<_ServiceTile> {
         width: size,
         height: size,
         fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) =>
+            Icon(widget.service.icon, size: size, color: AppColors.white),
       );
     }
     if (widget.service.route == 'ambulance') {
@@ -213,8 +216,8 @@ class _ServiceTileState extends State<_ServiceTile> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _pressed
-                  ? widget.style.gradient.first.withValues(alpha: 0.35)
-                  : AppColors.borderOf(context),
+                ? widget.style.gradient.first.withValues(alpha: 0.35)
+                : AppColors.borderOf(context),
             ),
           ),
           child: Row(
@@ -226,6 +229,30 @@ class _ServiceTileState extends State<_ServiceTile> {
                   child: Image.asset(
                     _assetPath!,
                     fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: boxSize,
+                      height: boxSize,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: widget.style.gradient,
+                        ),
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.style.gradient.last
+                                .withValues(alpha: 0.24),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(widget.service.icon,
+                            size: iconSize, color: AppColors.white),
+                      ),
+                    ),
                   ),
                 )
               else
@@ -320,6 +347,30 @@ class _ServiceTileState extends State<_ServiceTile> {
                   child: Image.asset(
                     _assetPath!,
                     fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: iconBox,
+                      height: iconBox,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: widget.style.gradient,
+                        ),
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.style.gradient.last
+                                .withValues(alpha: 0.24),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(widget.service.icon,
+                            size: 20, color: AppColors.white),
+                      ),
+                    ),
                   ),
                 )
               else

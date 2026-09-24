@@ -57,8 +57,20 @@ class HeaderOverflowMenu extends StatelessWidget {
                       color: accentColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.qr_code_scanner_rounded,
-                        color: accentColor, size: 18),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.asset(
+                        'assets/icons/common/digital_pass.png',
+                        width: 18,
+                        height: 18,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.qr_code_scanner_rounded,
+                          color: accentColor,
+                          size: 18,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(

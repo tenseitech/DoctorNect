@@ -17,14 +17,14 @@ import 'trouble_signing_in_screen.dart';
 class UnifiedMobileAuthScreen extends StatefulWidget {
   const UnifiedMobileAuthScreen({
     super.key,
-    required this.role,
+    this.role,
     this.accentColor,
     this.initialMobile,
     this.mobileHeroTag,
     this.focusMobileAfterTransition = false,
   });
 
-  final UserType role;
+  final UserType? role;
   final Color? accentColor;
   final String? initialMobile;
   final String? mobileHeroTag;
@@ -282,6 +282,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                 _AuthTopBar(
                   onBack: _handleBack,
                   onHelp: _openTroubleSigningInHelp,
+                  canPop: Navigator.of(context).canPop() ||
+                      _flow.step == UnifiedAuthStep.otp,
                 ),
                 Expanded(
                   child: SingleChildScrollView(
@@ -293,6 +295,63 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            height: 140,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  _accent.withValues(alpha: 0.90),
+                                  _accent,
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _accent.withValues(alpha: 0.25),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Image.asset(
+                                      'assets/images/doctor_illustration.jpg',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => const Center(
+                                        child: Icon(
+                                          Icons.medical_services_rounded,
+                                          size: 48,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.black.withValues(alpha: 0.40),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                           Text(
                             _heading,
                             style: GoogleFonts.inter(
@@ -351,10 +410,12 @@ class _AuthTopBar extends StatelessWidget {
   const _AuthTopBar({
     required this.onBack,
     required this.onHelp,
+    this.canPop = true,
   });
 
   final VoidCallback onBack;
   final VoidCallback onHelp;
+  final bool canPop;
 
   @override
   Widget build(BuildContext context) {
@@ -362,12 +423,15 @@ class _AuthTopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: onBack,
-            color: AppColors.textPrimaryOf(context),
-            tooltip: 'Back',
-          ),
+          if (canPop)
+            IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: onBack,
+              color: AppColors.textPrimaryOf(context),
+              tooltip: 'Back',
+            )
+          else
+            const SizedBox(width: 48),
           const Spacer(),
           TextButton.icon(
             onPressed: onHelp,

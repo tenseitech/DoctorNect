@@ -97,3 +97,5 @@ flutter:
     - assets/data/icd10_diagnoses.txt
     - assets/data/symptoms.json
     - assets/data/symptom_lists.json
+    - assets/icons/doctor/
+    - assets/icons/common/

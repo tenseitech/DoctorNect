@@ -9,7 +9,8 @@ import '../../../core/theme/app_typography.dart';
 
 /// Shared Hero tag for the intro → full mobile auth field transition.
 abstract final class UnifiedAuthMobileHero {
-  static String tagFor(UserType role) => 'unified-auth-mobile-${role.name}';
+  static String tagFor(UserType? role) =>
+      'unified-auth-mobile-${role?.name ?? "default"}';
 }
 
 /// Split +91 | mobile input used on intro and full mobile auth screens.

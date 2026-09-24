@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/auth/unified_auth_flow_controller.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/layout/responsive_layout.dart';
+import '../../core/legal/legal_document_modal.dart';
+import '../../core/legal/medibond_legal_content.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme_controller.dart';
 import '../../core/theme/app_typography.dart';
@@ -20,11 +23,11 @@ import 'widgets/unified_auth_mobile_field.dart';
 class UnifiedAuthIntroScreen extends StatefulWidget {
   const UnifiedAuthIntroScreen({
     super.key,
-    required this.role,
+    this.role,
     this.accentColor,
   });
 
-  final UserType role;
+  final UserType? role;
   final Color? accentColor;
 
   @override
@@ -69,9 +72,7 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
   final _focusNode = FocusNode();
   final _pageController = PageController();
 
-  /// Only driven by the desktop card, which runs the flow inline. The narrow
-  /// layout hands off to [UnifiedMobileAuthScreen], which owns its own.
-  late final UnifiedAuthFlowController _desktopFlow;
+  late final UnifiedAuthFlowController _flow;
 
   bool _transitioning = false;
   int _currentSlide = 0;
@@ -387,8 +388,13 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
   @override
   void initState() {
     super.initState();
-    _desktopFlow = UnifiedAuthFlowController(role: widget.role);
+    _flow = UnifiedAuthFlowController(role: widget.role)
+      ..addListener(_onFlowChanged);
     _pageController.addListener(_onPageScroll);
+  }
+
+  void _onFlowChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -398,7 +404,9 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
     _pageController.dispose();
     _mobileController.dispose();
     _focusNode.dispose();
-    _desktopFlow.dispose();
+    _flow
+      ..removeListener(_onFlowChanged)
+      ..dispose();
     super.dispose();
   }
 
@@ -486,9 +494,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
         builder: (_) => TroubleSigningInScreen(
           accentColor: _accent,
           onReenterMobile: () {
-            // No-op on the narrow layout, which never advances this flow.
-            if (_desktopFlow.step == UnifiedAuthStep.otp) {
-              _desktopFlow.backToMobile();
+            if (_flow.step == UnifiedAuthStep.otp) {
+              _flow.backToMobile();
             }
             _focusNode.requestFocus();
           },
@@ -519,54 +526,119 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
     required double illustrationHeight,
     required bool compactHeight,
   }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: compactHeight ? 22 : 28),
-      child: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: _IntroIllustration(
-                assetPath: slide.illustrationAsset,
-                placeholderIcon: slide.placeholderIcon ?? _roleIcon,
-                height: illustrationHeight,
-                fallbackIcon: _roleIcon,
-                onDarkBackground: true,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableHeight = constraints.maxHeight;
+        if (availableHeight < 120) {
+          // Extremely compact (e.g. keyboard up on small screen): show single headline line cleanly centered
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                slide.headline,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: AppTypography.titleSmall,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.2,
+                ),
               ),
             ),
-          ),
-          SizedBox(height: compactHeight ? 10 : 16),
-          Text(
-            slide.headline,
-            maxLines: compactHeight ? 2 : 3,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: compactHeight
-                  ? AppTypography.headlineSmall
-                  : AppTypography.headlineMedium,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-              height: 1.35,
-              letterSpacing: -0.2,
+          );
+        }
+
+        if (availableHeight < 210) {
+          // Moderately compact: scalable illustration + 1-2 line headline
+          final illH = (availableHeight * 0.44).clamp(36.0, 90.0);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Center(
+                    child: _IntroIllustration(
+                      assetPath: slide.illustrationAsset,
+                      placeholderIcon: slide.placeholderIcon ?? _roleIcon,
+                      height: illH,
+                      fallbackIcon: _roleIcon,
+                      onDarkBackground: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  slide.headline,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.titleMedium,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1.25,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
             ),
-          ),
-          if (slide.supportingText != null) ...[
-            SizedBox(height: compactHeight ? 8 : 10),
-            Text(
-              slide.supportingText!,
-              maxLines: compactHeight ? 2 : 3,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                fontWeight: FontWeight.w400,
-                color: Colors.white.withValues(alpha: 0.82),
-                height: 1.5,
+          );
+        }
+
+        // Full expanded height: illustration, headline, and supporting text
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: compactHeight ? 22 : 28),
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: _IntroIllustration(
+                    assetPath: slide.illustrationAsset,
+                    placeholderIcon: slide.placeholderIcon ?? _roleIcon,
+                    height: illustrationHeight,
+                    fallbackIcon: _roleIcon,
+                    onDarkBackground: true,
+                  ),
+                ),
               ),
-            ),
-          ],
-        ],
-      ),
+              SizedBox(height: compactHeight ? 10 : 16),
+              Text(
+                slide.headline,
+                maxLines: compactHeight ? 2 : 3,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: compactHeight
+                      ? AppTypography.headlineSmall
+                      : AppTypography.headlineMedium,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.35,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              if (slide.supportingText != null) ...[
+                SizedBox(height: compactHeight ? 8 : 10),
+                Text(
+                  slide.supportingText!,
+                  maxLines: compactHeight ? 2 : 3,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withValues(alpha: 0.82),
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -751,7 +823,7 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                         delay: const Duration(milliseconds: 120),
                         child: _DesktopAuthCard(
                           accent: _accent,
-                          flow: _desktopFlow,
+                          flow: _flow,
                           mobileController: _mobileController,
                           focusNode: _focusNode,
                           onTroubleSigningIn: _openTroubleSigningInHelp,
@@ -784,19 +856,21 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
     final screenWidth = constraints.hasBoundedWidth
         ? constraints.maxWidth
         : MediaQuery.sizeOf(context).width;
-    final compactHeight = screenHeight < 680;
-    final illustrationHeight =
-        (screenHeight * (compactHeight ? 0.24 : 0.28)).clamp(140.0, 260.0);
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final hasKeyboard = keyboardInset > 0;
+    final compactHeight = screenHeight < 680 || hasKeyboard;
+    final illustrationHeight = hasKeyboard
+        ? (screenHeight * 0.12).clamp(70.0, 110.0)
+        : (screenHeight * (compactHeight ? 0.24 : 0.28)).clamp(140.0, 260.0);
     // Sized off the viewport and pushed partly off-canvas so the line-art adds
     // depth in the corner without competing with the carousel.
     final graphicSize = (screenWidth * 0.58).clamp(165.0, 250.0);
+    final canGoBack =
+        Navigator.of(context).canPop() || _flow.step == UnifiedAuthStep.otp;
 
     return Scaffold(
       backgroundColor: _gradientColors.first,
-      // Tapping the field routes to the full mobile-auth screen, so no keyboard
-      // is expected here; avoiding the inset keeps the hero section from
-      // collapsing below its intrinsic height.
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       body: GestureDetector(
         onTap: _dismissKeyboard,
         behavior: HitTestBehavior.opaque,
@@ -837,13 +911,21 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                             padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
                             child: Row(
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.arrow_back_rounded),
-                                  onPressed: () =>
-                                      Navigator.of(context).maybePop(),
-                                  color: Colors.white,
-                                  tooltip: 'Back',
-                                ),
+                                if (canGoBack)
+                                  IconButton(
+                                    icon: const Icon(Icons.arrow_back_rounded),
+                                    onPressed: () {
+                                      if (_flow.step == UnifiedAuthStep.otp) {
+                                        _flow.backToMobile();
+                                      } else {
+                                        Navigator.of(context).maybePop();
+                                      }
+                                    },
+                                    color: Colors.white,
+                                    tooltip: 'Back',
+                                  )
+                                else
+                                  const SizedBox(width: 48, height: 48),
                                 const Spacer(),
                                 const _MobileIntroThemeToggle(),
                               ],
@@ -861,7 +943,9 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                               child: _MobileBrandWordmark(),
                             ),
                           ),
-                          SizedBox(height: compactHeight ? 8 : 14),
+                          SizedBox(
+                              height:
+                                  hasKeyboard ? 4 : (compactHeight ? 8 : 14)),
                           Expanded(
                             child: PageView.builder(
                               controller: _pageController,
@@ -881,9 +965,9 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                           Padding(
                             padding: EdgeInsets.fromLTRB(
                               _IntroTheme.mobileHorizontalPadding,
-                              compactHeight ? 8 : 12,
+                              hasKeyboard ? 4 : (compactHeight ? 8 : 12),
                               _IntroTheme.mobileHorizontalPadding,
-                              compactHeight ? 14 : 20,
+                              hasKeyboard ? 4 : (compactHeight ? 14 : 20),
                             ),
                             child: Align(
                               alignment: Alignment.centerLeft,
@@ -932,13 +1016,18 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                 child: SafeArea(
                   top: false,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 22),
+                    padding: EdgeInsets.fromLTRB(
+                      hasKeyboard ? 18 : 22,
+                      8,
+                      hasKeyboard ? 18 : 22,
+                      hasKeyboard ? 14 : 22,
+                    ),
                     child: _IntroAuthForm(
                       heroTag: heroTag,
                       accent: _accent,
                       mobileController: _mobileController,
                       focusNode: _focusNode,
-                      onFieldEngaged: _onFieldEngaged,
+                      flow: _flow,
                       onTroubleSigningIn: _openTroubleSigningInHelp,
                     ),
                   ),
@@ -1107,7 +1196,7 @@ class _IntroAuthForm extends StatefulWidget {
     required this.accent,
     required this.mobileController,
     required this.focusNode,
-    required this.onFieldEngaged,
+    required this.flow,
     required this.onTroubleSigningIn,
   });
 
@@ -1115,7 +1204,7 @@ class _IntroAuthForm extends StatefulWidget {
   final Color accent;
   final TextEditingController mobileController;
   final FocusNode focusNode;
-  final VoidCallback onFieldEngaged;
+  final UnifiedAuthFlowController flow;
   final VoidCallback onTroubleSigningIn;
 
   @override
@@ -1129,11 +1218,15 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
   void initState() {
     super.initState();
     widget.focusNode.addListener(_onFocusChange);
+    widget.mobileController.addListener(_onMobileChanged);
+    widget.flow.addListener(_onFlowChanged);
   }
 
   @override
   void dispose() {
     widget.focusNode.removeListener(_onFocusChange);
+    widget.mobileController.removeListener(_onMobileChanged);
+    widget.flow.removeListener(_onFlowChanged);
     super.dispose();
   }
 
@@ -1143,10 +1236,51 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
     if (focused != _focused) setState(() => _focused = focused);
   }
 
+  void _onMobileChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onFlowChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _mobileValid {
+    final digits =
+        FormValidators.registrationMobileDigits(widget.mobileController.text);
+    return digits != null && digits.length == 10;
+  }
+
+  void _submit() {
+    final flow = widget.flow;
+    if (flow.step == UnifiedAuthStep.mobile) {
+      widget.focusNode.unfocus();
+      flow.sendOtp(context, widget.mobileController.text);
+    } else {
+      flow.verifyOtp(context);
+    }
+  }
+
+  void _changeNumber() {
+    widget.flow.backToMobile();
+    widget.focusNode.requestFocus();
+  }
+
+  void _openTerms() {
+    widget.focusNode.unfocus();
+    showLegalDocumentModal(
+      context,
+      type: LegalDocumentType.termsOfService,
+      audience: LegalAudience.patient,
+      accentColor: widget.accent,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final borderColor = AppColors.borderOf(context);
     final fieldFill = AppColors.cardBgOf(context);
+    final isMobileStep = widget.flow.step == UnifiedAuthStep.mobile;
+    final hasKeyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1156,80 +1290,342 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
           child: Container(
             width: 36,
             height: 4,
-            margin: const EdgeInsets.only(bottom: 18),
+            margin: EdgeInsets.only(bottom: hasKeyboard ? 8 : 14),
             decoration: BoxDecoration(
               color: borderColor,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
         ),
-        Text(
-          'Let\'s get started! Enter your mobile number',
-          style: GoogleFonts.inter(
-            fontSize: AppTypography.titleMedium,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryOf(context),
-            height: 1.35,
-            letterSpacing: -0.2,
+        if (isMobileStep) ...[
+          Text(
+            'Let\'s get started! Enter your mobile number',
+            style: GoogleFonts.inter(
+              fontSize: hasKeyboard
+                  ? AppTypography.titleSmall
+                  : AppTypography.titleMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimaryOf(context),
+              height: 1.3,
+              letterSpacing: -0.2,
+            ),
+          ),
+          SizedBox(height: hasKeyboard ? 12 : 16),
+          Hero(
+            tag: widget.heroTag,
+            child: Material(
+              color: Colors.transparent,
+              child: TweenAnimationBuilder<Color?>(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                tween: ColorTween(
+                  end: _focused ? widget.accent : borderColor,
+                ),
+                builder: (context, animatedBorder, _) {
+                  return UnifiedAuthMobileField(
+                    controller: widget.mobileController,
+                    focusNode: widget.focusNode,
+                    borderRadius: _IntroTheme.inputRadius,
+                    fillColor: fieldFill,
+                    borderColor: animatedBorder ?? borderColor,
+                    onSubmitted: (_) {
+                      if (_mobileValid && !widget.flow.sendingOtp) {
+                        _submit();
+                      }
+                    },
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.accent
+                            .withValues(alpha: _focused ? 0.14 : 0.0),
+                        blurRadius: 14,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+          SizedBox(height: hasKeyboard ? 12 : 16),
+          _IntroPrimaryButton(
+            label: 'Continue',
+            loadingLabel: 'Sending OTP...',
+            accent: widget.accent,
+            enabled: _mobileValid,
+            loading: widget.flow.sendingOtp,
+            onPressed: _submit,
+          ),
+          SizedBox(height: hasKeyboard ? 8 : 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: _TermsDisclaimer(
+                  accentColor: widget.accent,
+                  onTermsTap: _openTerms,
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: widget.onTroubleSigningIn,
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: widget.accent,
+                ),
+                child: Text(
+                  'Trouble signing in?',
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w500,
+                    color: widget.accent,
+                    decoration: TextDecoration.underline,
+                    decorationColor: widget.accent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ] else ...[
+          Text(
+            'Verify your number',
+            style: GoogleFonts.inter(
+              fontSize: hasKeyboard
+                  ? AppTypography.titleSmall
+                  : AppTypography.titleMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimaryOf(context),
+              height: 1.3,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Enter the 6-digit OTP sent to +91 ${widget.flow.mobileDigits ?? ''}',
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: widget.flow.busy ? null : _changeNumber,
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: widget.accent,
+                ),
+                child: Text(
+                  'Change',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: widget.accent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: hasKeyboard ? 10 : 16),
+          Center(
+            child: OtpInput(
+              accentColor: widget.accent,
+              autofocus: true,
+              onChanged: widget.flow.setOtp,
+              onCompleted: (_) => widget.flow.verifyOtp(context),
+            ),
+          ),
+          SizedBox(height: hasKeyboard ? 8 : 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: (widget.flow.busy || widget.flow.otpCountdown > 0)
+                    ? null
+                    : () => widget.flow.resendOtp(context),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  widget.flow.otpCountdown > 0
+                      ? 'Resend OTP in ${widget.flow.otpCountdown}s'
+                      : 'Resend OTP',
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600,
+                    color: widget.flow.otpCountdown > 0
+                        ? AppColors.textSecondaryOf(context)
+                        : widget.accent,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: widget.onTroubleSigningIn,
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Need help?',
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w500,
+                    color: widget.accent,
+                    decoration: TextDecoration.underline,
+                    decorationColor: widget.accent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: hasKeyboard ? 10 : 16),
+          _IntroPrimaryButton(
+            label: 'Verify & continue',
+            loadingLabel: 'Verifying...',
+            accent: widget.accent,
+            enabled: widget.flow.otpValid,
+            loading: widget.flow.verifying,
+            onPressed: _submit,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _IntroPrimaryButton extends StatelessWidget {
+  const _IntroPrimaryButton({
+    required this.label,
+    required this.accent,
+    required this.enabled,
+    required this.loading,
+    required this.onPressed,
+    this.loadingLabel,
+  });
+
+  final String label;
+  final Color accent;
+  final bool enabled;
+  final bool loading;
+  final VoidCallback onPressed;
+  final String? loadingLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasKeyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
+    return SizedBox(
+      width: double.infinity,
+      height: hasKeyboard ? 46 : 50,
+      child: FilledButton(
+        onPressed: (enabled && !loading) ? onPressed : null,
+        style: FilledButton.styleFrom(
+          backgroundColor: accent,
+          disabledBackgroundColor: AppColors.borderOf(context),
+          foregroundColor: Colors.white,
+          disabledForegroundColor: AppColors.textSecondaryOf(context),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
-        const SizedBox(height: 20),
-        Hero(
-          tag: widget.heroTag,
-          child: Material(
-            color: Colors.transparent,
-            child: TweenAnimationBuilder<Color?>(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOut,
-              tween: ColorTween(
-                end: _focused ? widget.accent : borderColor,
-              ),
-              builder: (context, animatedBorder, _) {
-                return UnifiedAuthMobileField(
-                  controller: widget.mobileController,
-                  focusNode: widget.focusNode,
-                  onTap: widget.onFieldEngaged,
-                  onChanged: (_) => widget.onFieldEngaged(),
-                  borderRadius: _IntroTheme.inputRadius,
-                  fillColor: fieldFill,
-                  borderColor: animatedBorder ?? borderColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.accent
-                          .withValues(alpha: _focused ? 0.14 : 0.0),
-                      blurRadius: 14,
-                      spreadRadius: 1,
+        child: loading
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      color: Colors.white,
+                    ),
+                  ),
+                  if (loadingLabel != null) ...[
+                    const SizedBox(width: 10),
+                    Text(
+                      loadingLabel!,
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelLarge,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
-                );
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            onPressed: widget.onTroubleSigningIn,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              foregroundColor: widget.accent,
-            ),
-            child: Text(
-              'Trouble signing in?',
-              style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                fontWeight: FontWeight.w500,
-                color: widget.accent,
-                decoration: TextDecoration.underline,
-                decorationColor: widget.accent,
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelLarge,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.1,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_rounded,
+                      size: 18, color: Colors.white),
+                ],
               ),
-            ),
+      ),
+    );
+  }
+}
+
+class _TermsDisclaimer extends StatelessWidget {
+  const _TermsDisclaimer({
+    required this.accentColor,
+    required this.onTermsTap,
+  });
+
+  final Color accentColor;
+  final VoidCallback onTermsTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bodyStyle = GoogleFonts.inter(
+      fontSize: AppTypography.bodySmall,
+      height: 1.4,
+      color: AppColors.textSecondaryOf(context),
+    );
+    final linkStyle = bodyStyle.copyWith(
+      color: accentColor,
+      fontWeight: FontWeight.w600,
+      decoration: TextDecoration.underline,
+      decorationColor: accentColor,
+    );
+
+    return Text.rich(
+      TextSpan(
+        style: bodyStyle,
+        children: [
+          const TextSpan(text: 'By continuing, you agree to our '),
+          TextSpan(
+            text: 'Terms & Conditions',
+            style: linkStyle,
+            recognizer: TapGestureRecognizer()..onTap = onTermsTap,
           ),
-        ),
-      ],
+          const TextSpan(text: '.'),
+        ],
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

@@ -224,137 +224,152 @@ class _AppointmentCard extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 52,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isUpcoming
-                          ? const [Color(0xFF0D9488), Color(0xFF0369A1)]
-                          : [
-                              status.color.withValues(alpha: 0.85),
-                              status.color
-                            ],
-                    ),
-                    borderRadius: BorderRadius.circular(13),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            (isUpcoming ? AppColors.patientTeal : status.color)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isUpcoming
+                              ? const [Color(0xFF0D9488), Color(0xFF0369A1)]
+                              : [
+                                  status.color.withValues(alpha: 0.85),
+                                  status.color
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isUpcoming
+                                    ? AppColors.patientTeal
+                                    : status.color)
                                 .withValues(alpha: 0.22),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        day,
-                        style: GoogleFonts.inter(
-                          fontSize: AppTypography.headlineSmall,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        month,
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white.withValues(alpha: 0.92),
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _formatDoctorName(appointment.doctorName),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                fontSize: AppTypography.bodyMedium,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
-                          _StatusChip(label: status.label, color: status.color),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        appointment.specialization,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context)),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.schedule,
-                              size: 14,
-                              color: AppColors.textSecondaryOf(context)
-                                  .withValues(alpha: 0.9)),
-                          const SizedBox(width: 4),
                           Text(
-                            time,
+                            day,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineSmall,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              height: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            month,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white.withValues(alpha: 0.92),
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _formatDoctorName(appointment.doctorName),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.bodyMedium,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              _StatusChip(
+                                  label: status.label, color: status.color),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            appointment.specialization,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
                                 fontSize: AppTypography.labelMedium,
                                 color: AppColors.textSecondaryOf(context)),
                           ),
-                          if (isUpcoming) ...[
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                appointment.countdownLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.schedule,
+                                  size: 14,
+                                  color: AppColors.textSecondaryOf(context)
+                                      .withValues(alpha: 0.9)),
+                              const SizedBox(width: 4),
+                              Text(
+                                time,
                                 style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelSmall,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.patientTeal,
-                                ),
+                                    fontSize: AppTypography.labelMedium,
+                                    color: AppColors.textSecondaryOf(context)),
                               ),
-                            ),
-                          ],
+                              if (isUpcoming) ...[
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    appointment.countdownLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelSmall,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.patientTeal,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
+                    ),
+                    if (isUpcoming) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 20,
+                        color: AppColors.textSecondaryOf(context)
+                            .withValues(alpha: 0.85),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                if (isUpcoming)
-                  Icon(
-                    Icons.chevron_right,
-                    size: 20,
-                    color: AppColors.textSecondaryOf(context)
-                        .withValues(alpha: 0.85),
-                  )
-                else
-                  OutlinedButton(
-                    onPressed: () => _bookAgain(context),
-                    style: compactTealOutlinedButtonStyle(),
-                    child: const Text('Book again'),
+                if (!isUpcoming) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton(
+                      onPressed: () => _bookAgain(context),
+                      style: compactTealOutlinedButtonStyle(),
+                      child: const Text('Book again'),
+                    ),
                   ),
+                ],
               ],
             ),
           ),

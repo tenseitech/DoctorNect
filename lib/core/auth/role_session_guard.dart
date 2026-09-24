@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../enums/user_type.dart';
 import '../firebase/firebase_auth_service.dart';
 import '../session/ambulance_session.dart';
+import '../session/app_session.dart';
 import '../../features/welcome/welcome_screen.dart';
 import '../firebase/firestore_service.dart';
 
@@ -76,6 +77,8 @@ abstract final class RoleSessionGuard {
         content: Text('Session mismatch detected, please log in again.'),
       ),
     );
+    await AmbulanceSession.clear();
+    AppSession.clear();
     await FirebaseAuthService.instance.signOut();
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(

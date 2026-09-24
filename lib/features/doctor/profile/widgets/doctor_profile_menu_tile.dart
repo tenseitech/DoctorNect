@@ -20,10 +20,30 @@ class DoctorProfileMenuTile extends StatelessWidget {
   final VoidCallback? onTap;
   final List<Color>? iconGradient;
 
+  /// Blends the base color for dark and light theme stroke icons.
+  static Color resolveStrokeColor(Color base, bool isDark) {
+    if (!isDark) {
+      final hsl = HSLColor.fromColor(base);
+      if (hsl.lightness > 0.55) {
+        return hsl.withLightness(0.44).toColor();
+      }
+      return base;
+    }
+    final hsl = HSLColor.fromColor(base);
+    final blendedLightness = (hsl.lightness < 0.60) ? 0.68 : hsl.lightness;
+    final blendedSaturation = (hsl.saturation * 0.82).clamp(0.35, 0.90);
+    return hsl
+        .withLightness(blendedLightness)
+        .withSaturation(blendedSaturation)
+        .toColor();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final gradient =
         iconGradient ?? const [AppColors.doctorBlue, Color(0xFF0F4A82)];
+    final strokeColor = resolveStrokeColor(gradient.first, isDark);
 
     return Material(
       color: Colors.transparent,
@@ -34,25 +54,16 @@ class DoctorProfileMenuTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             children: [
-              Container(
+              SizedBox(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: gradient,
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: strokeColor,
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: gradient.last.withValues(alpha: 0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
-                child: Icon(icon, size: 20, color: AppColors.white),
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -60,9 +60,23 @@ class _DoctorShellState extends State<DoctorShell> {
       selectedIcon: Icon(TablerIcons.users, size: 22),
       label: 'Patients',
     ),
-    const NavigationDestination(
-      icon: Icon(TablerIcons.calendar, size: 22),
-      selectedIcon: Icon(TablerIcons.calendar_filled, size: 22),
+    NavigationDestination(
+      icon: Image.asset(
+        'assets/icons/doctor/appointment.png',
+        width: 22,
+        height: 22,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) =>
+            const Icon(TablerIcons.calendar, size: 22),
+      ),
+      selectedIcon: Image.asset(
+        'assets/icons/doctor/appointment.png',
+        width: 22,
+        height: 22,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) =>
+            const Icon(TablerIcons.calendar_filled, size: 22),
+      ),
       label: 'Appointments',
     ),
     const NavigationDestination(
@@ -70,9 +84,23 @@ class _DoctorShellState extends State<DoctorShell> {
       selectedIcon: Icon(TablerIcons.pill_filled, size: 22),
       label: 'Medical Store',
     ),
-    const NavigationDestination(
-      icon: Icon(TablerIcons.flask, size: 22),
-      selectedIcon: Icon(TablerIcons.flask_filled, size: 22),
+    NavigationDestination(
+      icon: Image.asset(
+        'assets/icons/doctor/lab.png',
+        width: 22,
+        height: 22,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) =>
+            const Icon(TablerIcons.flask, size: 22),
+      ),
+      selectedIcon: Image.asset(
+        'assets/icons/doctor/lab.png',
+        width: 22,
+        height: 22,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) =>
+            const Icon(TablerIcons.flask_filled, size: 22),
+      ),
       label: 'Labs',
     ),
   ];
@@ -301,6 +329,9 @@ class _DoctorShellState extends State<DoctorShell> {
         );
       default:
         return const SizedBox.shrink();
+    }
+    if (index == 0) {
+      return tab;
     }
     return ProfileDataGate(
       role: UserType.doctor,

@@ -202,8 +202,9 @@ class PatientShellTabList extends StatelessWidget {
       return ColoredBox(color: AppColors.surfaceOf(context), child: empty);
     }
 
+    final compact = ResponsiveLayout.isCompact(context);
     final list = ListView(
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.fromLTRB(0, 0, 0, compact ? 110 : 20),
       physics: const AlwaysScrollableScrollPhysics(),
       children: children,
     );

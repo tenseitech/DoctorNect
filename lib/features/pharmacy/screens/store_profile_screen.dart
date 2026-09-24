@@ -24,6 +24,7 @@ import '../models/pharmacy_models.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
+import '../../../widgets/verification_submission_card.dart';
 import '../../../core/theme/app_typography.dart';
 
 const _lineColor = Color(0xFFE2E8F0);
@@ -306,6 +307,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                 store: store,
                 connectedDoctors: connectedDoctors,
               ),
+              const VerificationSubmissionCard(role: UserType.medicalStore),
               profileSections,
               SizedBox(height: bottomClearance),
             ],
@@ -323,6 +325,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                   store: store,
                   connectedDoctors: connectedDoctors,
                 ),
+                const VerificationSubmissionCard(role: UserType.medicalStore),
                 profileSections,
               ],
             ),
