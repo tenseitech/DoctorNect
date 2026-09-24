@@ -11,6 +11,8 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+node_modules/
+**/node_modules/
 
 # IntelliJ related
 *.iml
@@ -48,6 +50,12 @@ app.*.map.json
 # Secrets
 .env
 **/.env
+.env.*
+**/.env.*
+.env.migration
+**/.env.migration
+!.env.example
+!.env.migration.example
 lib/firebase_options.secrets.dart
 functions/.env
 functions/.env.*

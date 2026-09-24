@@ -1,0 +1,17 @@
+{
+  "name": "doctornect-migration-scripts",
+  "version": "1.0.0",
+  "description": "Production migration and reverse-sync scripts for DoctorNect Firebase to Supabase transition",
+  "main": "migrate_firestore_to_supabase.js",
+  "scripts": {
+    "migrate:dry-run": "node migrate_firestore_to_supabase.js --dry-run",
+    "migrate:live": "node migrate_firestore_to_supabase.js --live",
+    "reverse-sync": "node reverse_sync_supabase_to_firestore.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "firebase-admin": "^12.0.0",
+    "pg": "^8.11.3",
+    "uuid": "^9.0.1"
+  }
+}
