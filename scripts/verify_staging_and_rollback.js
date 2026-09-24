@@ -163,8 +163,10 @@ async function runPart3RollbackDryRun() {
       useSpec = docQuery.rows[0].specialization;
     } else {
       await pgClient.query(`
-        INSERT INTO doctors (doctor_id, name, specialization, mobile, verified, created_at, updated_at)
-        VALUES ($1, $2, $3, '9999999999', true, NOW(), NOW())
+        INSERT INTO doctors (
+          doctor_id, name, email, mobile, specialization, qualification, verified, deactivated, profile_completed, created_at, updated_at
+        )
+        VALUES ($1, $2, 'doc_rollback@test.com', '9999999999', $3, 'MBBS MD', true, false, true, NOW(), NOW())
         ON CONFLICT (doctor_id) DO NOTHING;
       `, [useDocId, useDocName, useSpec]);
     }
@@ -174,8 +176,10 @@ async function runPart3RollbackDryRun() {
       usePatName = patQuery.rows[0].name;
     } else {
       await pgClient.query(`
-        INSERT INTO patients (patient_id, name, phone, age, gender, created_at, updated_at)
-        VALUES ($1, $2, '9999999998', 35, 'Male', NOW(), NOW())
+        INSERT INTO patients (
+          patient_id, name, mobile, age, gender, share_records_with_doctors, profile_completed, verified, created_at, updated_at
+        )
+        VALUES ($1, $2, '9999999998', 35, 'Male', true, true, true, NOW(), NOW())
         ON CONFLICT (patient_id) DO NOTHING;
       `, [usePatId, usePatName]);
     }

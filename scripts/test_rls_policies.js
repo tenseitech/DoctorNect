@@ -86,16 +86,8 @@ async function runRlsTests() {
       console.log('-> Migrations successfully applied to Staging.\n');
     }
 
-    if (process.argv.includes('--apply-migrations')) {
-      const fs = require('fs');
-      const path = require('path');
-      console.log('-> Applying schema and RLS migrations to Staging...');
-      const schemaSql = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '20260923000001_doctornect_schema.sql'), 'utf8');
-      const rlsSql = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '20260923000002_doctornect_rls.sql'), 'utf8');
-      await client.query(schemaSql);
-      await client.query(rlsSql);
-      console.log('-> Migrations successfully applied to Staging.\n');
-    }
+    // Temporarily drop FK constraint to auth.users so synthetic users can be seeded
+    await client.query('ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_id_fkey;');
 
     // 1. SEED SYNTHETIC TEST FIXTURES (Running as superuser / postgres)
     console.log('-> Seeding synthetic test fixtures across all roles...');
@@ -116,9 +108,9 @@ async function runRlsTests() {
     for (const u of usersToInsert) {
       await client.query(
         `INSERT INTO users (id, firebase_uid, role, profile_id, display_name, email, mobile, profile_completed, verified, status)
-         VALUES ($1, $1, $2, $3, $4, $5, '0000000000', $6, $7, 'approved')
+         VALUES ($1::uuid, $2, $3, $4, $5, $6, '0000000000', $7, $8, 'approved')
          ON CONFLICT (id) DO NOTHING`,
-        [u[0], u[1], u[2], u[3], `${u[0]}@test.doctornect.com`, u[4], u[5]]
+        [u[0], u[0], u[1], u[2], u[3], `${u[0]}@test.doctornect.com`, u[4], u[5]]
       );
     }
 
@@ -303,11 +295,18 @@ async function runRlsTests() {
         [AUTH_UID_DOC_A, AUTH_UID_DOC_B, AUTH_UID_DOC_UNVER,
          AUTH_UID_PAT_A, AUTH_UID_PAT_B, AUTH_UID_PAT_INCOMP,
          AUTH_UID_PHARMA, AUTH_UID_LAB, AUTH_UID_AMB]);
-      // Restore the FK constraint to auth.users
+      // Restore the FK constraint to auth.users if not exists
       await client.query(`
-        ALTER TABLE public.users
-        ADD CONSTRAINT users_id_fkey
-        FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'users_id_fkey'
+          ) THEN
+            ALTER TABLE public.users
+            ADD CONSTRAINT users_id_fkey
+            FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+          END IF;
+        END $$;
       `);
       console.log('-> Cleanup complete. FK constraint restored.');
     } catch (cleanupErr) {
