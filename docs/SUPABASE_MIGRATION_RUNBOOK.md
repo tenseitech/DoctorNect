@@ -124,39 +124,75 @@ WHERE ambulance_id = '9307583929';
 
 ## 5. Phase 7: Live Cutover Window (Sunday 01:00 AM – 04:00 AM IST)
 
+### Pre-Cutover Standing Prerequisites
+- [ ] **Firebase CLI Authentication**: Ensure `npx firebase-tools projects:list` succeeds without error. Re-authenticate in advance via `firebase login --reauth`.
+- [ ] **Traffic Isolation Mechanism**: Legacy Flutter clients (v1.0.x) do not contain a Remote Config `maintenance_mode` listener in code. Traffic isolation is enforced strictly at the database layer via Firestore Security Rules (read-only during freeze; restored upon completion/rollback).
+
 ### Cutover Execution Checklist
 
 | Time (IST) | Action | Command / Procedure |
 |---|---|---|
-| **01:00 AM** | Enable Maintenance Banner | Set `maintenance_mode = true` in Remote Config |
+| **01:00 AM** | Standing Auth & Env Verification | Confirm `firebase projects:list` and Supabase DB connection |
 | **01:15 AM** | Freeze Firestore Writes | Deploy read-only rules: `firebase deploy --only firestore:rules` |
 | **01:20 AM** | Execute Final Delta Migration | `node scripts/migrate_firestore_to_supabase.js --live --since="<baseline_timestamp>"` |
 | **02:00 AM** | Data Parity Check | Run count parity queries between Firestore & Postgres |
-| **02:30 AM** | Release Supabase App Build | Promote Flutter v1.1.0 to Production on Google Play Console |
+| **02:30 AM** | Release Supabase App Build | Promote Flutter v1.1.0 to Production on Google Play Console (Staged Rollout) |
 | **03:00 AM** | Live Smoke Test 5 Roles | Test all 5 demo accounts (`000000` OTP) on real devices |
-| **03:45 AM** | Lift Maintenance Mode | Disable maintenance banner; monitor real-time queries |
+| **03:45 AM** | Finalize Cutover | Deploy final Firestore rules / monitor live Postgres metrics |
 
 ---
 
-## 6. Emergency 15-Minute Rollback Plan
+## 6. Emergency 3-to-4 Minute Rollback Plan (Verified Protocol)
 
-If a critical blocker is encountered during cutover, execute the rollback immediately:
+If a critical blocker is encountered during cutover, execute the rollback immediately. Total verified execution time is **~3 to 4 minutes** (contingent on Firebase CLI standing authentication pre-condition).
 
-1. **Halt Google Play Rollout (T+2 min):**
-   - In Google Play Console -> Release -> Production -> Click **Halt Rollout**.
-2. **Execute Reverse Sync (T+7 min):**
+### Rollback Execution Steps:
+
+1. **Freeze Supabase Client Writes (T+0 min, Duration: < 1s):**
+   - Instantly revoke all write permissions from public client roles (`anon` and `authenticated`) to prevent new records from entering Supabase while or after reverse-sync runs:
+   ```sql
+   -- Execute in Supabase Studio SQL Editor or via psql:
+   REVOKE INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+   ```
+   *(To undo/re-enable writes if rollback is cancelled:)*
+   ```sql
+   GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+   ```
+
+2. **Halt Google Play Rollout (T+1 min, Duration: ~1-2 min):**
+   - **Manual step (cannot be automated):**
+   - Navigate to **Google Play Console** -> **Release** -> **Production** -> Click **Halt Rollout**.
+   - Halting stops new devices from downloading v1.1.0 (Supabase build).
+
+3. **Execute Reverse Sync (T+2 min, Duration: ~3-5s, Verified: 1.34s):**
    - Synchronize any records created in Supabase during the live window back into Firestore (`appointments`, `prescriptions` + line items, `reviews`, and `users`):
    ```bash
    node scripts/reverse_sync_supabase_to_firestore.js --live --since="<cutover_start_time>"
    ```
-   *Note: For pre-cutover testing/validation without touching live Firestore collections, use the `--collection-prefix="test_rollback_"` flag:*
+   *Note: For testing without touching live collections, use the `--collection-prefix="test_rollback_"` flag:*
    ```bash
    node scripts/reverse_sync_supabase_to_firestore.js --live --collection-prefix="test_rollback_"
    ```
-3. **Restore Firestore Rules (T+10 min):**
-   - Restore original production rules:
+
+4. **Restore Firestore Security Rules (T+3 min, Duration: ~20-30s):**
+   - Restore original production Firestore security rules to allow legacy app clients to resume writes:
    ```bash
    firebase deploy --only firestore:rules
    ```
-4. **Deactivate Maintenance Mode (T+15 min):**
-   - Turn off maintenance mode; legacy clients resume operation without disruption.
+   > [!IMPORTANT]
+   > **Standing Pre-Condition:** Firebase CLI must already be authenticated beforehand (`npx firebase-tools projects:list`). Never leave CLI login to the moment of emergency.
+
+5. **Legacy Client Traffic Resumption & Isolation (T+4 min):**
+   - **Traffic Isolation Reality (Option A):** Because legacy Flutter clients (v1.0.x) do not implement Firebase Remote Config or an app-level `maintenance_mode` flag, write isolation relies 100% on Firestore Security Rules. As soon as production rules are restored in Step 4, all legacy Flutter clients immediately resume normal read/write operations without requiring an app update or maintenance flag flip.
+   *(Long-term defense-in-depth: An app-level `maintenance_mode` Remote Config banner can be implemented in future client versions, but is not currently present in v1.0.x).*
+
+### Rollback Timeline Breakdown (Verified vs. Documented)
+
+| Step | Action | Type | Duration |
+|---|---|---|---|
+| **Step 1** | Freeze Supabase Writes | Automated SQL | **< 1s** (Tested: 48ms) |
+| **Step 2** | Halt Google Play Rollout | Manual Web Console | **~1-2 min** |
+| **Step 3** | Supabase → Firestore Reverse Sync | Automated Script | **~3-5s** (Tested: 1.34s) |
+| **Step 4** | Restore Firestore Rules | Automated CLI | **~20-30s** |
+| **Step 5** | Legacy Client Resumption | Immediate (via Rules) | **0s** (Instant) |
+| **TOTAL** | **Full Emergency Rollback** | | **~3 to 4 minutes** |

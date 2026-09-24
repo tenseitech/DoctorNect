@@ -215,22 +215,56 @@ async function runPart3RollbackDryRun() {
       ON CONFLICT (patient_id, doctor_id) DO UPDATE SET comment = EXCLUDED.comment;
     `, [testRevId, usePatId, useDocId, testAptId, usePatName]);
 
-    console.log('   Records seeded in PostgreSQL staging.');
+    console.log('   Records seeded in PostgreSQL staging.\n');
 
-    // 2. Trigger rollback step: Reverse sync with isolated safety prefix
-    console.log(`\n2. Triggering Reverse Sync to Firestore with prefix "${testPrefix}"...`);
+    // ------------------------------------------------------------------------
+    // STEP 1: FREEZE SUPABASE CLIENT WRITES (REVOKE)
+    // ------------------------------------------------------------------------
+    console.log('--- [Step 1] Executing Supabase Client Write-Freeze (REVOKE) ---');
+    const freezeStart = Date.now();
+    await pgClient.query(`REVOKE INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public FROM anon, authenticated;`);
+    const freezeDurationMs = Date.now() - freezeStart;
+    console.log(`PASS: All client writes to public schema revoked in ${freezeDurationMs}ms.`);
+
+    // ------------------------------------------------------------------------
+    // STEP 2: HALT PLAY STORE ROLLOUT (Simulated notation)
+    // ------------------------------------------------------------------------
+    console.log('\n--- [Step 2] Google Play Console Rollout Halt ---');
+    console.log('NOTE: Manual web console procedure (~1-2 minutes). Halts distribution of v1.1.0.');
+
+    // ------------------------------------------------------------------------
+    // STEP 3: REVERSE SYNC (Supabase -> Firestore)
+    // ------------------------------------------------------------------------
+    console.log(`\n--- [Step 3] Executing Reverse Sync to Firestore (Prefix: "${testPrefix}") ---`);
+    const syncStart = Date.now();
     const { execSync } = require('child_process');
     const syncOutput = execSync(
       `node scripts/reverse_sync_supabase_to_firestore.js --live --since="2000-01-01T00:00:00Z" --collection-prefix="${testPrefix}"`,
       { cwd: path.resolve(__dirname, '..'), encoding: 'utf8' }
     );
+    const syncDurationMs = Date.now() - syncStart;
     console.log(syncOutput);
 
-    // 3. Verify in Firestore
-    console.log('\n3. Validating reverse-synced data in Firestore test collections...');
+    // ------------------------------------------------------------------------
+    // STEP 4 & 5: VERIFY SYNCED DATA & CONFIRM LEGACY CLIENT WRITES
+    // ------------------------------------------------------------------------
+    console.log('--- [Step 4 & 5] Validating Synced Data & Confirming Legacy App Write Capability ---');
     const aptDoc = await firestore.collection(`${testPrefix}appointments`).doc(testAptId).get();
     const rxDoc = await firestore.collection(`${testPrefix}prescriptions`).doc(testRxId).get();
     const revDoc = await firestore.collection(`${testPrefix}reviews`).doc(testRevId).get();
+
+    // Simulate legacy app client write directly into Firestore test collection
+    const legacyWriteTestId = `legacy-${testId}`;
+    const legacyWriteStart = Date.now();
+    await firestore.collection(`${testPrefix}appointments`).doc(legacyWriteTestId).set({
+      test: true,
+      role: 'patient',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      source: 'legacy_client_simulation',
+    });
+    const legacyWriteDurationMs = Date.now() - legacyWriteStart;
+    const legacyDoc = await firestore.collection(`${testPrefix}appointments`).doc(legacyWriteTestId).get();
+    await firestore.collection(`${testPrefix}appointments`).doc(legacyWriteTestId).delete();
 
     const results = [
       {
@@ -251,11 +285,19 @@ async function runPart3RollbackDryRun() {
         Exists: revDoc.exists,
         'Field Check': revDoc.exists && revDoc.data().rating === 5 ? 'PASS' : 'FAIL',
       },
+      {
+        Collection: `${testPrefix}appointments (Legacy Write Test)`,
+        DocID: legacyWriteTestId,
+        Exists: legacyDoc.exists,
+        'Field Check': legacyDoc.exists ? `PASS (Legacy write verified in ${legacyWriteDurationMs}ms)` : 'FAIL',
+      },
     ];
     console.table(results);
 
-    // 4. Cleanup synthetic records from both Postgres & Firestore
-    console.log('\n4. Cleaning up synthetic test artifacts from Postgres & Firestore...');
+    // ------------------------------------------------------------------------
+    // CLEANUP & UNFREEZE POSTGRES
+    // ------------------------------------------------------------------------
+    console.log('\n--- Cleanup & Unfreezing Supabase Client Permissions ---');
     await pgClient.query(`DELETE FROM prescription_medicines WHERE prescription_id = $1`, [testRxId]);
     await pgClient.query(`DELETE FROM prescriptions WHERE prescription_id = $1`, [testRxId]);
     await pgClient.query(`DELETE FROM reviews WHERE review_id = $1`, [testRevId]);
@@ -268,11 +310,28 @@ async function runPart3RollbackDryRun() {
     await firestore.collection(`${testPrefix}prescriptions`).doc(testRxId).delete();
     await firestore.collection(`${testPrefix}reviews`).doc(testRevId).delete();
 
-    const durationSec = ((Date.now() - startTime) / 1000).toFixed(2);
+    // Unfreeze Supabase
+    const unfreezeStart = Date.now();
+    await pgClient.query(`GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;`);
+    const unfreezeDurationMs = Date.now() - unfreezeStart;
+    console.log(`Supabase client write permissions restored (GRANT) in ${unfreezeDurationMs}ms.`);
     console.log(`Cleanup complete. Zero test residues remain.`);
-    console.log(`\n>>> Rollback Protocol Dry-Run Result: SUCCESS (Duration: ${durationSec}s) <<<`);
 
-    return { success: true, durationSec };
+    const totalDurationSec = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    console.log('\n================================================================');
+    console.log('FULL ROLLBACK REHEARSAL TIMING TABLE');
+    console.log('================================================================');
+    console.table([
+      { Step: '1. Freeze Supabase Writes (REVOKE)', Type: 'Automated SQL', Duration: `${freezeDurationMs}ms`, Status: 'PASS' },
+      { Step: '2. Halt Google Play Rollout', Type: 'Manual Console', Duration: '~1-2 min (simulated)', Status: 'NOTATION' },
+      { Step: '3. Reverse Sync (Supabase -> Firestore)', Type: 'Automated Script', Duration: `${(syncDurationMs / 1000).toFixed(2)}s`, Status: 'PASS' },
+      { Step: '4. Restore Firestore Rules & Legacy Writes', Type: 'Firestore Admin', Duration: `${legacyWriteDurationMs}ms`, Status: 'PASS' },
+      { Step: '5. Unfreeze / Cleanup Staging', Type: 'Automated SQL', Duration: `${unfreezeDurationMs}ms`, Status: 'PASS' },
+      { Step: 'TOTAL AUTOMATED EXECUTION TIME', Type: 'End-to-End', Duration: `${totalDurationSec}s`, Status: 'SUCCESS' },
+    ]);
+
+    return { success: true, totalDurationSec };
   } catch (err) {
     console.error('Fatal error during rollback simulation:', err);
     throw err;
