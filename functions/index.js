@@ -1865,3 +1865,24 @@ exports.sendMsg91EmailCallable = onCall(
 }),
 );
 
+// ----------------------------------------------------------------------------
+// CROSS-ROLE STAGED SYNC BRIDGE (Doctor/Firestore -> Patient/Supabase)
+// ----------------------------------------------------------------------------
+const {
+  syncFirestoreAppointmentToSupabase,
+  syncFirestorePrescriptionToSupabase,
+} = require('./cross_role_sync');
+
+exports.syncAppointmentToSupabase = onDocumentWritten({
+  document: 'appointments/{appointmentId}',
+  region: 'asia-south1',
+  retry: true,
+}, syncFirestoreAppointmentToSupabase);
+
+exports.syncPrescriptionToSupabase = onDocumentWritten({
+  document: 'prescriptions/{prescriptionId}',
+  region: 'asia-south1',
+  retry: true,
+}, syncFirestorePrescriptionToSupabase);
+
+
