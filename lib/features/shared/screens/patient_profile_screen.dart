@@ -1180,14 +1180,12 @@ class _PatientProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         ],
                         if (profile.mobile.trim().isNotEmpty) ...[
                           MetaLine(
-                              icon: Icons.phone_outlined,
-                              text: profile.mobile),
+                              icon: Icons.phone_outlined, text: profile.mobile),
                           const SizedBox(height: 4),
                         ],
                         if (profile.email.trim().isNotEmpty) ...[
                           MetaLine(
-                              icon: Icons.mail_outline,
-                              text: profile.email),
+                              icon: Icons.mail_outline, text: profile.email),
                         ],
                       ],
                     ),
@@ -1927,7 +1925,10 @@ class _PatientPatientProfileScreenState
                       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                       child: Center(child: LogoutTextButton()),
                     ),
-                    SizedBox(height: isCompact ? 80 : 32),
+                    SizedBox(
+                        height: isCompact
+                            ? (widget.embeddedInShell ? 110 : 80)
+                            : 32),
                   ],
                 ),
               ),

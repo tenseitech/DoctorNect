@@ -6,6 +6,7 @@ import '../doctor/verification/doctor_verification_gate.dart';
 import '../patient/patient_shell.dart';
 import '../pharmacy/medical_store_shell.dart';
 import '../lab/lab_shell.dart';
+import '../admin/super_admin_verification_screen.dart';
 
 class DashboardShell extends StatelessWidget {
   const DashboardShell({super.key, required this.userType});
@@ -18,6 +19,9 @@ class DashboardShell extends StatelessWidget {
   }
 
   Widget _shellFor(UserType userType) {
+    if (userType == UserType.superAdmin) {
+      return const SuperAdminVerificationScreen();
+    }
     if (userType.isDoctor) {
       return DoctorVerificationGate(doctorId: DoctorSession.loggedInDoctorId);
     }

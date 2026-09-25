@@ -346,10 +346,19 @@ class _DoctorNectPassCard extends StatelessWidget {
                               color: Colors.white.withValues(alpha: 0.22),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(
-                              Icons.medical_services_rounded,
-                              color: Colors.white,
-                              size: 20,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.asset(
+                                'assets/icons/common/digital_pass.png',
+                                width: 20,
+                                height: 20,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.medical_services_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),

@@ -298,6 +298,7 @@ class DoctorHomeStatItem {
     required this.gradient,
     required this.icon,
     required this.onTap,
+    this.assetPath,
   });
 
   final String label;
@@ -305,6 +306,7 @@ class DoctorHomeStatItem {
   final List<Color> gradient;
   final IconData icon;
   final VoidCallback onTap;
+  final String? assetPath;
 }
 
 class DoctorHomeStatsStrip extends StatelessWidget {
@@ -488,19 +490,44 @@ class _DoctorStatTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: item.gradient,
+                if (item.assetPath != null)
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Image.asset(
+                      item.assetPath!,
+                      width: 24,
+                      height: 24,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: item.gradient,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(item.icon, size: 13, color: Colors.white),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                  )
+                else
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: item.gradient,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(item.icon, size: 13, color: Colors.white),
                   ),
-                  child: Icon(item.icon, size: 13, color: Colors.white),
-                ),
                 const SizedBox(height: 3),
                 Text(
                   item.value,
@@ -548,26 +575,58 @@ class _DoctorStatTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: iconSize,
-                height: iconSize,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: item.gradient,
-                  ),
-                  borderRadius: BorderRadius.circular(compact ? 10 : 12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: item.gradient.last.withValues(alpha: 0.28),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
+              if (item.assetPath != null)
+                SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: Image.asset(
+                    item.assetPath!,
+                    width: iconSize,
+                    height: iconSize,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: iconSize,
+                      height: iconSize,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: item.gradient,
+                        ),
+                        borderRadius: BorderRadius.circular(compact ? 10 : 12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: item.gradient.last.withValues(alpha: 0.28),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(item.icon, size: iconGlyph, color: Colors.white),
                     ),
-                  ],
+                  ),
+                )
+              else
+                Container(
+                  width: iconSize,
+                  height: iconSize,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: item.gradient,
+                    ),
+                    borderRadius: BorderRadius.circular(compact ? 10 : 12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: item.gradient.last.withValues(alpha: 0.28),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(item.icon, size: iconGlyph, color: Colors.white),
                 ),
-                child: Icon(item.icon, size: iconGlyph, color: Colors.white),
-              ),
               SizedBox(height: compact ? 6 : 9),
               Text(
                 item.value,
@@ -748,6 +807,7 @@ class DoctorHomeServiceItem {
     required this.gradient,
     required this.onTap,
     this.shortLabel,
+    this.assetPath,
   });
 
   final String label;
@@ -756,6 +816,7 @@ class DoctorHomeServiceItem {
   final IconData icon;
   final List<Color> gradient;
   final VoidCallback onTap;
+  final String? assetPath;
 }
 
 class DoctorHomeServicesSection extends StatefulWidget {
@@ -1239,6 +1300,39 @@ class _ServiceIconBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (service.assetPath != null) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Image.asset(
+          service.assetPath!,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: service.gradient,
+              ),
+              borderRadius: BorderRadius.circular(13),
+              boxShadow: [
+                BoxShadow(
+                  color: service.gradient.last.withValues(alpha: 0.24),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Icon(service.icon, size: iconSize, color: Colors.white),
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: size,
       height: size,

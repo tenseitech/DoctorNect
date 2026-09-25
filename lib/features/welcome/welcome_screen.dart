@@ -12,6 +12,7 @@ import '../../widgets/role_card.dart';
 import '../../widgets/theme_toggle_button.dart';
 import '../ambulance/ambulance_invite_setup_screen.dart';
 import '../auth/unified_auth_intro_screen.dart';
+import '../../core/auth/unified_auth_navigation.dart';
 
 class _WelcomeRoleOption {
   const _WelcomeRoleOption({
@@ -30,10 +31,57 @@ class _WelcomeRoleOption {
 }
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+  const WelcomeScreen({
+    super.key,
+    this.verifiedMobile,
+    this.verifiedOtp,
+    this.isNewUser = false,
+  });
+
+  final String? verifiedMobile;
+  final String? verifiedOtp;
+  final bool isNewUser;
 
   void _openUnifiedAuth(BuildContext context, UserType role, Color accent) {
-    openUnifiedAuthIntro(context, role: role, accentColor: accent);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const UnifiedAuthIntroScreen(),
+      ),
+    );
+  }
+
+  void _onSelectRoleForNewUser(BuildContext context, UserType role) {
+    if (role == UserType.superAdmin) {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Admin Access'),
+          content: const Text(
+            'Administrator accounts cannot be self-registered. '
+            'Please contact the platform administrator to provision access.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final digits = verifiedMobile;
+    if (digits == null || digits.isEmpty) {
+      _openUnifiedAuth(context, role, AppColors.doctorBlue);
+      return;
+    }
+
+    UnifiedAuthNavigation.openRegistrationForm(
+      context,
+      role: role,
+      mobileDigits: digits,
+    );
   }
 
   List<_WelcomeRoleOption> _roleOptions(BuildContext context) => [
@@ -42,32 +90,38 @@ class WelcomeScreen extends StatelessWidget {
           subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.doctor),
           color: AppColors.doctorBlue,
           icon: Icons.medical_services_rounded,
-          onTap: () =>
-              _openUnifiedAuth(context, UserType.doctor, AppColors.doctorBlue),
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.doctor)
+              : _openUnifiedAuth(context, UserType.doctor, AppColors.doctorBlue),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.patient),
           subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.patient),
           color: AppColors.patientTeal,
           icon: Icons.person_rounded,
-          onTap: () => _openUnifiedAuth(
-              context, UserType.patient, AppColors.patientTeal),
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.patient)
+              : _openUnifiedAuth(
+                  context, UserType.patient, AppColors.patientTeal),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.medicalStore),
           subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.medicalStore),
           color: AppColors.pharmacyGreen,
           icon: Icons.local_pharmacy_rounded,
-          onTap: () => _openUnifiedAuth(
-              context, UserType.medicalStore, AppColors.pharmacyGreen),
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.medicalStore)
+              : _openUnifiedAuth(
+                  context, UserType.medicalStore, AppColors.pharmacyGreen),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.lab),
           subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.lab),
           color: AppColors.labPurple,
           icon: Icons.biotech_rounded,
-          onTap: () =>
-              _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.lab)
+              : _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
@@ -75,7 +129,7 @@ class WelcomeScreen extends StatelessWidget {
           color: const Color(0xFFDC2626),
           icon: Icons.emergency_rounded,
           onTap: () {
-            if (PendingAmbulanceInviteStore.hasPending) {
+            if (!isNewUser && PendingAmbulanceInviteStore.hasPending) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -87,14 +141,32 @@ class WelcomeScreen extends StatelessWidget {
               );
               return;
             }
-            _openUnifiedAuth(
-                context, UserType.ambulance, const Color(0xFFDC2626));
+            if (isNewUser) {
+              _onSelectRoleForNewUser(context, UserType.ambulance);
+            } else {
+              _openUnifiedAuth(
+                  context, UserType.ambulance, const Color(0xFFDC2626));
+            }
           },
+        ),
+        _WelcomeRoleOption(
+          title: 'Admin / Super Admin',
+          subtitle: 'Platform oversight & verification management',
+          color: const Color(0xFF4F46E5),
+          icon: Icons.admin_panel_settings_rounded,
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.superAdmin)
+              : _openUnifiedAuth(
+                  context, UserType.superAdmin, const Color(0xFF4F46E5)),
         ),
       ];
 
   @override
   Widget build(BuildContext context) {
+    if (!isNewUser) {
+      return const UnifiedAuthIntroScreen();
+    }
+
     final roles = _roleOptions(context);
     final isWebDesktop =
         ResponsiveLayout.isWeb && ResponsiveLayout.isExpanded(context);

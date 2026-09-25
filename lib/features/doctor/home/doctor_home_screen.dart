@@ -35,6 +35,7 @@ import '../network/invite_network_view.dart';
 import '../network/refer_doctor_view.dart';
 import '../patients/widgets/walkin_patient_sheet.dart';
 import '../../../widgets/home_banner_carousel.dart';
+import '../../../widgets/verification_status_banner.dart';
 import 'widgets/doctor_home_sections.dart';
 import 'widgets/doctor_appointment_calendar.dart';
 import 'widgets/doctor_date_patient_list.dart';
@@ -341,6 +342,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         value: '${stats.todaysAppointments}',
         gradient: const [AppColors.doctorBlue, Color(0xFF0F4A82)],
         icon: TablerIcons.calendar_event,
+        assetPath: 'assets/icons/doctor/appointment.png',
         onTap: () {
           Navigator.push(
             context,
@@ -392,6 +394,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         value: '$_referredCount',
         gradient: const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
         icon: TablerIcons.share_3,
+        assetPath: 'assets/icons/doctor/refer.png',
         onTap: _openReferredPatients,
       ),
     ];
@@ -408,6 +411,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Invite',
         subtitle: 'Grow your network',
         icon: TablerIcons.users_plus,
+        assetPath: 'assets/icons/doctor/invite.png',
         gradient: const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
         onTap: () => InviteNetworkView.show(context),
       ),
@@ -416,6 +420,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Promote',
         subtitle: 'Banner ads on Patient Home',
         icon: TablerIcons.speakerphone,
+        assetPath: 'assets/icons/doctor/promote.png',
         gradient: const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
         onTap: () {
           PromotedAdsManagementScreen.open(
@@ -449,6 +454,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Refer',
         subtitle: 'Send a referral',
         icon: TablerIcons.share_3,
+        assetPath: 'assets/icons/doctor/refer.png',
         gradient: const [Color(0xFF0F766E), Color(0xFF0D9488)],
         onTap: () => ReferDoctorView.show(context),
       ),
@@ -462,6 +468,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Availability',
         subtitle: 'Manage slots',
         icon: TablerIcons.calendar_time,
+        assetPath: 'assets/icons/doctor/availability.png',
         gradient: const [Color(0xFFEA580C), Color(0xFFC2410C)],
         onTap: () => Navigator.push(
           context,
@@ -481,6 +488,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Lab Test',
         subtitle: 'Send tests for a patient',
         icon: TablerIcons.flask,
+        assetPath: 'assets/icons/doctor/lab.png',
         gradient: const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
         onTap: _openLabOrderWithSearch,
       ),
@@ -489,6 +497,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Queue',
         subtitle: 'Today\'s patients',
         icon: TablerIcons.list_check,
+        assetPath: 'assets/icons/doctor/today_queue.png',
         gradient: const [AppColors.doctorBlue, Color(0xFF0F4A82)],
         onTap: () => widget.onOpenAppointments?.call(0),
       ),
@@ -505,6 +514,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Ambulance',
         subtitle: 'Emergency help',
         icon: TablerIcons.ambulance,
+        assetPath: 'assets/icons/doctor/ambulance.png',
         gradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
         onTap: () => Navigator.push(
           context,
@@ -550,6 +560,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
                       displayName: name,
                       verificationStatus: profile.verificationStatus,
                     ),
+                    const VerificationStatusBanner(role: UserType.doctor),
                     DoctorHomeStatsStrip(
                       items: _buildStatItems(),
                       selectedDate: _selectedDate,

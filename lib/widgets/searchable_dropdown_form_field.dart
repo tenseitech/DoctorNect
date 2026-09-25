@@ -30,8 +30,7 @@ class SearchableDropdownFormField extends FormField<String> {
             return InkWell(
               onTap: enabled
                   ? () async {
-                      final selected =
-                          await SearchableDropdownModalSheet.show(
+                      final selected = await SearchableDropdownModalSheet.show(
                         context,
                         title: title,
                         initialValue: value,
@@ -273,8 +272,8 @@ class _SearchableDropdownModalSheetState
                         ),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.cancel_rounded,
-                                    size: 18),
+                                icon:
+                                    const Icon(Icons.cancel_rounded, size: 18),
                                 onPressed: () {
                                   _searchController.clear();
                                   _onSearchChanged('');
@@ -356,8 +355,8 @@ class _SearchableDropdownModalSheetState
                         : ListView.builder(
                             controller: scrollController,
                             padding: const EdgeInsets.symmetric(vertical: 4),
-                            itemCount: _filteredItems.length +
-                                (hasCustomTile ? 1 : 0),
+                            itemCount:
+                                _filteredItems.length + (hasCustomTile ? 1 : 0),
                             itemBuilder: (context, index) {
                               if (hasCustomTile && index == 0) {
                                 return _buildCustomWriteInTile(

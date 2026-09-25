@@ -13,9 +13,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Patient Home Health Tips Removal & Carousel Behavior Tests', () {
-    test('PatientMockData.healthTips is preserved for notification scheduler', () {
+    test('PatientMockData.healthTips is preserved for notification scheduler',
+        () {
       expect(PatientMockData.healthTips.isNotEmpty, isTrue);
-      expect(PatientMockData.healthTips.any((t) => t.title.contains('heart')), isTrue);
+      expect(PatientMockData.healthTips.any((t) => t.title.contains('heart')),
+          isTrue);
     });
 
     test('PatientMockData.carouselItems contains NO health tip slides', () {
@@ -47,7 +49,8 @@ void main() {
       expect(find.byType(SizedBox), findsWidgets);
     });
 
-    testWidgets('HomeBannerCarousel with 1 item hides dots and navigation buttons',
+    testWidgets(
+        'HomeBannerCarousel with 1 item hides dots and navigation buttons',
         (tester) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -91,7 +94,8 @@ void main() {
       expect(pageView.physics, isA<NeverScrollableScrollPhysics>());
     });
 
-    testWidgets('HomeBannerCarousel with multiple items renders dynamic dots and nav buttons on wide screen',
+    testWidgets(
+        'HomeBannerCarousel with multiple items renders dynamic dots and nav buttons on wide screen',
         (tester) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1.0;
@@ -117,7 +121,8 @@ void main() {
       expect(pageView.physics, isNull);
     });
 
-    testWidgets('PatientHomeScreen does NOT render HealthTipsSection or health tip banners',
+    testWidgets(
+        'PatientHomeScreen does NOT render HealthTipsSection or health tip banners',
         (tester) async {
       RegisteredDoctorsStore.instance.markStreamActiveForTesting(true);
       addTearDown(() {

@@ -220,8 +220,8 @@ class _ExploreMobileHorizontalGridState
         const leftPadding = 16.0;
         const spacing = 10.0;
         // 3 full columns + 3 gaps + ~50% of the 4th column
-        final itemWidth =
-            ((screenWidth - leftPadding - (3 * spacing)) / 3.5).clamp(76.0, 120.0);
+        final itemWidth = ((screenWidth - leftPadding - (3 * spacing)) / 3.5)
+            .clamp(76.0, 120.0);
 
         final textScale =
             MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3);

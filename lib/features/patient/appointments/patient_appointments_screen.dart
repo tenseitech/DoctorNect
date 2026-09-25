@@ -148,7 +148,7 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
     }
 
     return PatientShellTabPage(
-      title: 'Visits',
+      title: 'Appointments',
       subtitle: 'Upcoming, completed & cancelled appointments',
       tabController: _tabController,
       tabLabels: [

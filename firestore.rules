@@ -298,12 +298,13 @@ service cloud.firestore {
       return resource.data.get('verified', false) == true;
     }
 
-    // For doctor registration, verified starts false until Super Admin approval.
-    // For all other roles (patient, pharmacy, lab, ambulance), verified can be set to true on registration.
+    // Only patient starts verified. Professional/service roles (doctor, pharmacy, lab, ambulance)
+    // start unverified until Super Admin approval.
     function registrationVerifiedFieldsValid() {
-      return (!('role' in request.resource.data) || request.resource.data.role != 'doctor')
+      return request.resource.data.get('role', '') == 'patient'
         || (
           (!('verified' in request.resource.data) || request.resource.data.verified == false)
+          && (!('verificationStatus' in request.resource.data) || request.resource.data.verificationStatus in ['registered', 'profile_incomplete'])
           && !('verifiedAt' in request.resource.data)
         );
     }
@@ -355,7 +356,9 @@ service cloud.firestore {
         || (isSignedIn()
           && request.auth.uid == uid
           && request.resource.data.role == resource.data.role
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'verifiedAt']));
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'profileId', 'verified', 'verifiedAt'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
+              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']));
       allow delete: if isSuperAdmin();
     }
 
@@ -364,13 +367,10 @@ service cloud.firestore {
 
     match /doctors/{doctorId} {
       // Cap list page size to reduce scraping / bulk export abuse.
-      allow list: if isSignedIn() && request.query.limit <= 100;
-      allow get: if isSignedIn() && (
-        isSuperAdmin()
-        || ownsDoctor(doctorId)
-        || resource.data.get('ownerUid', '') == request.auth.uid
-        || resource.data.get('verified', false) == true
-      );
+      allow list: if request.query.limit <= 100;
+      allow get: if isSuperAdmin()
+        || (isSignedIn() && (ownsDoctor(doctorId) || resource.data.get('ownerUid', '') == request.auth.uid))
+        || resource.data.get('verified', false) == true;
       allow create: if (isSignedIn()
         && request.resource.data.get('ownerUid', '') == request.auth.uid
         && request.resource.data.get('doctorId', doctorId) == doctorId
@@ -381,7 +381,9 @@ service cloud.firestore {
         || (isDoctor()
           && (ownsDoctor(doctorId) || request.auth.uid == doctorId)
           && !request.resource.data.diff(resource.data).affectedKeys()
-              .hasAny(['verified', 'verifiedAt', 'mobile', 'phone', 'rating', 'reviewCount']))
+              .hasAny(['verified', 'verifiedAt', 'mobile', 'phone', 'rating', 'reviewCount'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
+              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']))
         || (doctorEmailMatchesAuth()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid'])
             && request.resource.data.get('ownerUid', '') == request.auth.uid)
@@ -669,10 +671,15 @@ service cloud.firestore {
       );
       allow create: if (isSignedIn()
         && request.resource.data.get('ownerUid', '') == request.auth.uid
-        && request.resource.data.get('storeId', storeId) == storeId)
+        && request.resource.data.get('storeId', storeId) == storeId
+        && registrationVerifiedFieldsValid())
         || isSuperAdmin();
       allow update: if isSuperAdmin()
-        || ownsStore(storeId);
+        || (ownsStore(storeId)
+          && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['verified', 'verifiedAt', 'phone', 'mobile'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
+              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']));
       allow delete: if isSuperAdmin();
     }
 
@@ -688,10 +695,15 @@ service cloud.firestore {
       );
       allow create: if (isSignedIn()
         && request.resource.data.get('labId', labId) == labId
-        && request.resource.data.get('ownerUid', '') == request.auth.uid)
+        && request.resource.data.get('ownerUid', '') == request.auth.uid
+        && registrationVerifiedFieldsValid())
         || isSuperAdmin();
       allow update: if isSuperAdmin()
-        || ownsLab(labId);
+        || (ownsLab(labId)
+          && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['verified', 'verifiedAt', 'phone', 'mobile'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
+              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']));
       allow delete: if isSuperAdmin();
     }
 
@@ -907,13 +919,16 @@ service cloud.firestore {
       allow create: if isSuperAdmin()
         || (isSignedIn()
           && request.resource.data.get('authUid', '') == request.auth.uid
-          && !request.resource.data.keys().hasAny(['pin', 'fcmToken']));
+          && !request.resource.data.keys().hasAny(['pin', 'fcmToken'])
+          && registrationVerifiedFieldsValid());
       allow update: if isSuperAdmin()
         || (isSignedIn() && (
           (isDriverOwner(driverId)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isAvailable']))
           || (isDriverOwner(driverId)
-            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pin', 'fcmToken', 'authUid', 'ratingCount', 'totalRating']))
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pin', 'fcmToken', 'authUid', 'ratingCount', 'totalRating', 'verified', 'verifiedAt'])
+            && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
+                || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']))
           || canLinkAmbulanceAuthUid(driverId)
         ));
       allow delete: if isSuperAdmin();

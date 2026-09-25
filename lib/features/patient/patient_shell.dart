@@ -209,8 +209,7 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
             try {
               final commaIndex = photoUrl.indexOf(',');
               if (commaIndex != -1) {
-                dataUriBytes =
-                    base64Decode(photoUrl.substring(commaIndex + 1));
+                dataUriBytes = base64Decode(photoUrl.substring(commaIndex + 1));
               }
             } catch (_) {}
             if (dataUriBytes != null && dataUriBytes.isNotEmpty) {
@@ -223,8 +222,7 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
                     _buildInitialFallback(context, widget.size),
               );
             } else {
-              avatarContent =
-                  _buildInitialFallback(context, widget.size);
+              avatarContent = _buildInitialFallback(context, widget.size);
             }
           } else {
             avatarContent = Image.network(
@@ -232,12 +230,11 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
               width: double.infinity,
               height: double.infinity,
               fit: BoxFit.cover,
-              cacheWidth: ResampledNetworkImage.cacheDimension(
-                  widget.size, context),
-              cacheHeight: ResampledNetworkImage.cacheDimension(
-                  widget.size, context),
-              frameBuilder:
-                  (context, child, frame, wasSynchronouslyLoaded) {
+              cacheWidth:
+                  ResampledNetworkImage.cacheDimension(widget.size, context),
+              cacheHeight:
+                  ResampledNetworkImage.cacheDimension(widget.size, context),
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                 if (wasSynchronouslyLoaded || frame != null) {
                   return child;
                 }
@@ -252,6 +249,7 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
           avatarContent = _buildInitialFallback(context, widget.size);
         }
 
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
           width: widget.size,
           height: widget.size,
@@ -260,8 +258,10 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
             shape: BoxShape.circle,
             border: Border.all(
               color: widget.selected
-                  ? AppColors.patientTeal
-                  : AppColors.borderOf(context).withValues(alpha: 0.4),
+                  ? (isDark ? Colors.white : AppColors.patientTeal)
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.35)
+                      : AppColors.borderOf(context).withValues(alpha: 0.4)),
               width: widget.selected ? 2.0 : 1.0,
             ),
           ),
@@ -293,8 +293,8 @@ class _PatientShellState extends State<PatientShell> {
     const PatientTabItem(
       outlinedIcon: Icons.event_outlined,
       filledIcon: Icons.event_rounded,
-      label: 'Appointments',
-      shortLabel: 'Visits',
+      label: 'Appointment',
+      shortLabel: 'Appointment',
     ),
     const PatientTabItem(
       outlinedIcon: Icons.science_outlined,

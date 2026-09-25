@@ -448,7 +448,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                       : 820.0;
 
               return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 20 + bottomInset),
+                padding: EdgeInsets.fromLTRB(20, 20, 20,
+                    24 + bottomInset + (widget.embeddedInShell ? 90 : 0)),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: cardMaxWidth),
@@ -456,7 +457,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _EmergencyInfoStrip(isPatient: _isPatient),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 20),
                         DecoratedBox(
                           decoration: BoxDecoration(
                             color: AppColors.surfaceOf(context),
@@ -473,7 +474,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                             ],
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                            padding: const EdgeInsets.all(20),
                             child: Form(
                               key: _formKey,
                               child: Column(
@@ -487,7 +488,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                         setState(() => _selectedType = v),
                                   ),
                                   if (active != null) ...[
-                                    const SizedBox(height: 14),
+                                    const SizedBox(height: 20),
                                     _BookingStatusCard(
                                       booking: active,
                                       embedded: true,
@@ -543,7 +544,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                           : null,
                                     ),
                                   ],
-                                  const SizedBox(height: 14),
+                                  const SizedBox(height: 20),
                                   if (!_isPatient) ...[
                                     TextFormField(
                                       controller: _patientNameController,
@@ -555,7 +556,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               ? 'Enter patient name'
                                               : null,
                                     ),
-                                    const SizedBox(height: 10),
+                                    const SizedBox(height: 12),
                                     PhoneNumberField(
                                       controller: _phoneController,
                                       initialDialCode: _phoneDialCode,
@@ -567,14 +568,14 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                         Icons.phone_outlined,
                                       ),
                                     ),
-                                    const SizedBox(height: 14),
+                                    const SizedBox(height: 20),
                                   ],
                                   _AddressRouteInputs(
                                     pickupController: _pickupController,
                                     dropController: _dropController,
                                     enabled: canInteract,
                                   ),
-                                  const SizedBox(height: 18),
+                                  const SizedBox(height: 22),
                                   if (active == null) ...[
                                     FilledButton(
                                       onPressed: canInteract && !_submitting
@@ -622,16 +623,17 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               ],
                                             ),
                                     ),
-                                    const SizedBox(height: 10),
+                                    const SizedBox(height: 12),
                                     Text(
                                       'Request goes to all online drivers. '
                                       'You will wait up to 5 minutes for acceptance.',
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.inter(
-                                        fontSize: AppTypography.labelMedium,
+                                        fontSize: 12.5,
                                         color:
                                             AppColors.textSecondaryOf(context),
-                                        height: 1.4,
+                                        height: 1.45,
+                                        fontWeight: FontWeight.w400,
                                       ),
                                     ),
                                     if (!_isPatient) ...[
@@ -778,45 +780,51 @@ class _EmergencyInfoStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.isDark(context)
-            ? const Color(0xFF2D1515)
-            : const Color(0xFFFEF2F2),
+        color: isDark
+            ? const Color(0xFF261515)
+            : const Color(0xFFFFF5F5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.isDark(context)
-              ? const Color(0xFF5C1D1D)
-              : const Color(0xFFFECACA),
+          color: isDark
+              ? const Color(0xFF4C1D1D)
+              : const Color(0xFFFEE2E2),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
-                color: Color(0xFFDC2626),
-                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFFDC2626)
+                    .withValues(alpha: isDark ? 0.25 : 0.12),
+                shape: BoxShape.circle,
               ),
-              child: Center(
+              child: const Center(
                 child: AmbulancePlusSign(
-                    size: 18, color: AppColors.surfaceOf(context)),
+                  size: 13,
+                  color: Color(0xFFDC2626),
+                ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 isPatient
                     ? 'Share pickup and destination. Nearby online drivers get notified instantly.'
                     : 'Book for your patient. All online ambulance drivers receive the request.',
                 style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  color: AppColors.textPrimaryOf(context),
+                  fontSize: 12.5,
+                  color: isDark
+                      ? AppColors.darkTextPrimary.withValues(alpha: 0.88)
+                      : const Color(0xFF475569),
                   height: 1.4,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ),
@@ -1270,118 +1278,19 @@ class _PatientHistoryTripCard extends StatelessWidget {
   }
 }
 
-const _kAmbulanceTypeGuideEntries = <(String, String)>[
-  (
-    'BLS',
-    'Basic Life Support — non-critical, stable patient transport with basic medical support'
-  ),
-  (
-    'ALS',
-    'Advanced Life Support — critical patients needing advanced medical intervention'
-  ),
-  ('ICU', 'Intensive Care Unit — fully-equipped critical/ICU-level ambulance'),
-  (
-    'Transport',
-    'Non-emergency patient transport — no medical emergency, just transport'
-  ),
-];
-
-Widget _ambulanceTypeGuideContent(BuildContext context) {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'Ambulance type guide',
-        style: GoogleFonts.inter(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimaryOf(context),
-        ),
-      ),
-      const SizedBox(height: 12),
-      for (final (abbr, description) in _kAmbulanceTypeGuideEntries) ...[
-        RichText(
-          text: TextSpan(
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              height: 1.45,
-              color: AppColors.textSecondaryOf(context),
-            ),
-            children: [
-              TextSpan(
-                text: '$abbr = ',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryOf(context),
-                ),
-              ),
-              TextSpan(text: description),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-      ],
-    ],
-  );
-}
-
-void _showAmbulanceTypeInfo(BuildContext context) {
-  if (kIsWeb && ResponsiveLayout.isExpanded(context)) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceOf(ctx),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-        content: SizedBox(
-          width: 420,
-          child: _ambulanceTypeGuideContent(ctx),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Got it',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-    return;
+String _ambulanceTypeDefinition(AmbulanceType? type) {
+  switch (type) {
+    case null:
+      return 'Sabse fast match ke liye. Nearest available ambulance assign hogi.';
+    case AmbulanceType.bls:
+      return 'Trained EMTs ke saath basic care: oxygen, CPR, bleeding control, splinting. Stable ya non-critical patients ke liye.';
+    case AmbulanceType.als:
+      return 'Paramedics ke saath advanced care: cardiac monitor/ECG, defibrillator, IV medicines, airway management. Critical cases (heart attack, stroke, serious injury) ke liye.';
+    case AmbulanceType.icu:
+      return 'Ventilator aur ICU equipment ke saath critical care team. Severe life support ya hospital ICU transfer ke liye.';
+    case AmbulanceType.patientTransport:
+      return 'Non-emergency travel: wheelchair/stretcher support, routine checkup ya hospital discharge ke liye. Emergency care ke liye nahi.';
   }
-
-  showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: AppColors.surfaceOf(context),
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (ctx) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.borderOf(ctx),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-            ),
-            _ambulanceTypeGuideContent(ctx),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 class _AmbulanceTypeDropdown extends StatelessWidget {
@@ -1431,107 +1340,138 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
       ),
     ];
 
-    final unselectedBg =
-        isDark ? const Color(0xFF334155) : AppColors.cardBgOf(context);
+    final unselectedBg = isDark
+        ? const Color(0xFF1E293B).withValues(alpha: 0.5)
+        : const Color(0xFFF8FAFC);
     final unselectedBorder =
-        isDark ? const Color(0xFF475569) : AppColors.borderOf(context);
+        isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
     final unselectedText = isDark
-        ? AppColors.darkTextPrimary.withValues(alpha: 0.78)
-        : AppColors.textPrimaryOf(context);
+        ? AppColors.darkTextPrimary.withValues(alpha: 0.85)
+        : const Color(0xFF334155);
+    final unselectedIcon =
+        isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'Ambulance type',
-              style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimaryOf(context),
-              ),
-            ),
-            const SizedBox(width: 6),
-            InkWell(
-              onTap: () => _showAmbulanceTypeInfo(context),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: Icon(
-                  Icons.info_outline_rounded,
-                  size: 16,
-                  color: AppColors.textSecondaryOf(context),
-                ),
-              ),
-            ),
-          ],
+        Text(
+          'Ambulance type',
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.bodySmall,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimaryOf(context),
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           'Optional — leave on All Types for fastest match',
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelSmall,
-              color: AppColors.textSecondaryOf(context)),
+            fontSize: AppTypography.labelSmall,
+            color: AppColors.textSecondaryOf(context),
+          ),
         ),
-        const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: options.map((opt) {
-              final (type, label, icon, color) = opt;
-              final selected = value == type;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: enabled ? () => onChanged(type) : null,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: selected ? color : unselectedBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: selected ? color : unselectedBorder,
-                        width: selected ? 1.5 : 1,
-                      ),
-                      boxShadow: selected
-                          ? [
-                              BoxShadow(
-                                color: color.withValues(alpha: 0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ]
-                          : null,
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: options.map((opt) {
+            final (type, label, icon, color) = opt;
+            final selected = value == type;
+            final activeTextColor = isDark
+                ? Colors.white
+                : (color == const Color(0xFFCA8A04)
+                    ? const Color(0xFF854D0E)
+                    : color);
+
+            return InkWell(
+              onTap: enabled ? () => onChanged(type) : null,
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? color.withValues(alpha: isDark ? 0.22 : 0.10)
+                      : unselectedBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected ? color : unselectedBorder,
+                    width: selected ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 17,
+                      color: selected ? color : unselectedIcon,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          icon,
-                          size: 16,
-                          color:
-                              selected ? AppColors.surfaceOf(context) : color,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          label,
-                          style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall,
-                            fontWeight: FontWeight.w700,
-                            color: selected
-                                ? AppColors.surfaceOf(context)
-                                : unselectedText,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: 7),
+                    Text(
+                      label,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w500,
+                        color: selected ? activeTextColor : unselectedText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: Container(
+            key: ValueKey(value),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF1E293B).withValues(alpha: 0.6)
+                  : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, right: 8),
+                  child: Icon(
+                    Icons.info_outline_rounded,
+                    size: 15,
+                    color: isDark
+                        ? AppColors.darkTextSecondary.withValues(alpha: 0.8)
+                        : const Color(0xFF94A3B8),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    _ambulanceTypeDefinition(value),
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : const Color(0xFF64748B),
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+              ],
+            ),
           ),
         ),
       ],
@@ -1694,10 +1634,10 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
         children: [
           // Left column (Indicators)
           Padding(
-            padding: const EdgeInsets.only(left: 8, right: 14),
+            padding: const EdgeInsets.only(left: 4, right: 14),
             child: Column(
               children: [
-                const SizedBox(height: 24),
+                const SizedBox(height: 21),
                 Container(
                   width: 14,
                   height: 14,
@@ -1728,7 +1668,7 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 21),
               ],
             ),
           ),
@@ -1775,19 +1715,19 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                     filled: true,
                     fillColor: AppColors.surfaceOf(context),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 16),
+                        horizontal: 16, vertical: 17),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide:
                           BorderSide(color: AppColors.borderOf(context)),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide:
                           BorderSide(color: AppColors.borderOf(context)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
                           color: Color(0xFFDC2626), width: 1.5),
                     ),
@@ -1817,8 +1757,6 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                               'Location access is needed to auto-fill pickup.',
                               style: GoogleFonts.inter(
                                 fontSize: 11,
-                                height: 1.35,
-                                color: AppColors.textSecondaryOf(context),
                               ),
                             ),
                             InkWell(
@@ -1840,7 +1778,7 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                     ],
                   ),
                 ],
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 TextFormField(
                   controller: widget.dropController,
                   enabled: widget.enabled,
@@ -1860,19 +1798,19 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                     filled: true,
                     fillColor: AppColors.surfaceOf(context),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 16),
+                        horizontal: 16, vertical: 17),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide:
                           BorderSide(color: AppColors.borderOf(context)),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide:
                           BorderSide(color: AppColors.borderOf(context)),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
                           color: Color(0xFFDC2626), width: 1.5),
                     ),

@@ -44,7 +44,7 @@ class PatientHomeScreen extends StatefulWidget {
     this.onOpenAppointments,
   });
 
-  /// Switches the patient shell tab (0=Home, 1=Visits, 2=Labs, 3=Ambulance, 4=Profile).
+  /// Switches the patient shell tab (0=Home, 1=Appointment, 2=Labs, 3=Ambulance, 4=Profile).
   final ValueChanged<int>? onSelectTab;
 
   @Deprecated('Use onSelectTab')
@@ -352,7 +352,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     },
                     onFindDoctor: _openSearch,
                   ),
-                  SizedBox(height: compact ? 88 : 32),
+                  SizedBox(height: compact ? 112 : 32),
                 ],
               ),
             ),

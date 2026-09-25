@@ -26,6 +26,7 @@ import 'widgets/ambulance_service_form_fields.dart';
 import '../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
+import '../../widgets/verification_submission_card.dart';
 import '../../core/theme/app_typography.dart';
 
 class AmbulanceProfileScreen extends StatefulWidget {
@@ -329,6 +330,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                           const SizedBox(height: 16),
                         ],
                         _ProfileHeaderCard(ambulance: live),
+                        const VerificationSubmissionCard(role: UserType.ambulance),
                         const SizedBox(height: 16),
                         if (_editing) ...[
                           _buildEditForm(live),

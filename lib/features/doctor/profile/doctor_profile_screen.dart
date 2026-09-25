@@ -38,6 +38,7 @@ import 'sections/professional_details_section.dart';
 import 'sections/data_hub_section.dart';
 import 'sections/reviews_section.dart';
 import 'widgets/doctor_profile_hero_section.dart';
+import '../../../widgets/verification_submission_card.dart';
 import 'widgets/doctor_profile_menu_tile.dart';
 import 'widgets/doctor_profile_web_layout.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
@@ -391,6 +392,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       onPickPhoto: _pickPhoto,
                       onEdit: () => _openSection(EditProfileSection()),
                     ),
+                    const VerificationSubmissionCard(role: UserType.doctor),
                     Divider(
                         height: 1,
                         thickness: 1,

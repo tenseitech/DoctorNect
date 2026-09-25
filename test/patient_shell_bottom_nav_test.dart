@@ -12,7 +12,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Patient shell bottom navigation', () {
-    testWidgets('IndexedStack tab switches keep PatientAppShell bottom bar visible',
+    testWidgets(
+        'IndexedStack tab switches keep PatientAppShell bottom bar visible',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -40,8 +41,8 @@ void main() {
                     PatientTabItem(
                       outlinedIcon: Icons.event_outlined,
                       filledIcon: Icons.event_rounded,
-                      label: 'Appointments',
-                      shortLabel: 'Visits',
+                      label: 'Appointment',
+                      shortLabel: 'Appointment',
                     ),
                     PatientTabItem(
                       outlinedIcon: Icons.science_outlined,
@@ -64,7 +65,7 @@ void main() {
                     index: selectedIndex,
                     children: const [
                       Scaffold(body: Center(child: Text('Home Screen'))),
-                      Scaffold(body: Center(child: Text('Visits Screen'))),
+                      Scaffold(body: Center(child: Text('Appointment Screen'))),
                       MyLabsScreen(embeddedInShell: true),
                       AmbulanceBookingScreen(
                         bookedByRole: AmbulanceBookedByRole.patient,
@@ -84,7 +85,7 @@ void main() {
       await pumpShell();
       expect(find.byType(PatientAppShell), findsOneWidget);
 
-      for (final tabLabel in ['Labs', 'Ambulance', 'Visits', 'Profile']) {
+      for (final tabLabel in ['Labs', 'Ambulance', 'Appointment', 'Profile']) {
         await tester.tap(find.text(tabLabel));
         await tester.pumpAndSettle();
         expect(find.byType(PatientAppShell), findsOneWidget,

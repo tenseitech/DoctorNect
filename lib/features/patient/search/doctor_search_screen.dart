@@ -952,10 +952,10 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     final rows = <Widget>[];
 
     if (userCity.isNotEmpty) {
-      final locationLabel = _resolvedCity.trim().isNotEmpty &&
-              _resolvedPincode.trim().isNotEmpty
-          ? '${_resolvedCity.trim()} (${_resolvedPincode.trim()})'
-          : userCity;
+      final locationLabel =
+          _resolvedCity.trim().isNotEmpty && _resolvedPincode.trim().isNotEmpty
+              ? '${_resolvedCity.trim()} (${_resolvedPincode.trim()})'
+              : userCity;
       rows.add(
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -979,8 +979,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
           ),
         ),
       );
-      rows.add(Divider(
-          height: 1, thickness: 1, color: AppColors.borderOf(context)));
+      rows.add(
+          Divider(height: 1, thickness: 1, color: AppColors.borderOf(context)));
     }
 
     void addSection({
@@ -1057,8 +1057,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => PatientDoctorProfileScreen(
-                      doctorId: nearbyDoctors[i].id),
+                  builder: (_) =>
+                      PatientDoctorProfileScreen(doctorId: nearbyDoctors[i].id),
                 ),
               );
             },
@@ -1099,8 +1099,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                 ? nearbyAmbulances[i].serviceName
                 : 'Ambulance Service',
             subtitle: [
-              if (nearbyAmbulances[i].city.isNotEmpty)
-                nearbyAmbulances[i].city,
+              if (nearbyAmbulances[i].city.isNotEmpty) nearbyAmbulances[i].city,
               nearbyAmbulances[i].driverName.isNotEmpty
                   ? nearbyAmbulances[i].driverName
                   : 'Emergency Driver',

@@ -10,6 +10,7 @@ import '../../../core/constants/app_icons.dart';
 import '../../../core/session/medical_store_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/theme_toggle_button.dart';
+import '../../../widgets/verification_status_banner.dart';
 import '../data/pharmacy_connection_store.dart';
 import '../data/pharmacy_prescription_store.dart';
 import '../models/pharmacy_models.dart';
@@ -112,9 +113,16 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
             PharmacyPrescriptionStore.instance.groupedByDoctorForStore(storeId);
 
         if (doctors.isEmpty) {
-          return _emptyState(
-            'No connected doctors',
-            'Go to Connect Doctors to send connection requests to registered doctors.',
+          return Column(
+            children: [
+              const VerificationStatusBanner(role: UserType.medicalStore),
+              Expanded(
+                child: _emptyState(
+                  'No connected doctors',
+                  'Go to Connect Doctors to send connection requests to registered doctors.',
+                ),
+              ),
+            ],
           );
         }
 
@@ -141,6 +149,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
             if (wide) {
               return Column(
                 children: [
+                  const VerificationStatusBanner(role: UserType.medicalStore),
                   statsHeader,
                   Expanded(
                     child: _prescriptionPanel(
@@ -157,16 +166,23 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
                 ],
               );
             }
-            return _prescriptionPanel(
-              doctors,
-              newOrders: newOrders,
-              dispensedOrders: dispensedOrders,
-              doctorId: doctorId,
-              showTitleBlock: false,
-              isWide: wide,
-              grouped: grouped,
-              storeId: storeId,
-              statsHeader: statsHeader,
+            return Column(
+              children: [
+                const VerificationStatusBanner(role: UserType.medicalStore),
+                Expanded(
+                  child: _prescriptionPanel(
+                    doctors,
+                    newOrders: newOrders,
+                    dispensedOrders: dispensedOrders,
+                    doctorId: doctorId,
+                    showTitleBlock: false,
+                    isWide: wide,
+                    grouped: grouped,
+                    storeId: storeId,
+                    statsHeader: statsHeader,
+                  ),
+                ),
+              ],
             );
           },
         );

@@ -101,7 +101,8 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
                   ),
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                  padding: EdgeInsets.fromLTRB(
+                      20, 8, 20, widget.embeddedInShell ? 110 : 24),
                   itemCount: labs.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {

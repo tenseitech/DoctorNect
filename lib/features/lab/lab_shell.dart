@@ -179,10 +179,7 @@ class _LabShellState extends State<LabShell> {
                   child: IndexedStack(
                     index: _index,
                     children: [
-                      ProfileDataGate(
-                        role: UserType.lab,
-                        child: const LabOrdersTab(),
-                      ),
+                      const LabOrdersTab(),
                       ProfileDataGate(
                         role: UserType.lab,
                         child: const LabWalkInScreen(),

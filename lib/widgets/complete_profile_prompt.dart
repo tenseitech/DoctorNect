@@ -1,26 +1,34 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/auth/profile_completion_service.dart';
+import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
+import '../core/firebase/firestore_paths.dart';
 import '../core/session/ambulance_session.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_typography.dart';
 import '../features/ambulance/ambulance_profile_screen.dart';
 import '../features/doctor/profile/doctor_profile_screen.dart';
 import '../features/lab/screens/lab_profile_screen.dart';
 import '../features/pharmacy/screens/store_profile_screen.dart';
-import '../core/theme/app_typography.dart';
 
-/// Shown when a non-patient user tries to access role data before completing profile.
+/// Shown when a non-patient user tries to access role data before completing profile or verification.
 class CompleteProfilePrompt extends StatelessWidget {
   const CompleteProfilePrompt({
     super.key,
     required this.role,
     this.verificationPending = false,
+    this.stage,
+    this.rejectionReason,
   });
 
   final UserType role;
   final bool verificationPending;
+  final VerificationStage? stage;
+  final String? rejectionReason;
 
   Future<void> _openProfile(BuildContext context) async {
     switch (role) {
@@ -66,12 +74,46 @@ class CompleteProfilePrompt extends StatelessWidget {
       _ => AppColors.doctorBlue,
     };
 
-    final title = verificationPending
-        ? 'Profile under review'
-        : 'Complete your profile to continue';
-    final message = verificationPending
-        ? 'Your profile has been submitted. An administrator will review and approve your account. You can browse the app, but live data will appear after approval.'
-        : 'Fill in your full profile details to access appointments, orders, and other live data in your dashboard.';
+    final effectiveStage = stage ??
+        (verificationPending
+            ? VerificationStage.submittedForVerification
+            : VerificationStage.registered);
+
+    final (
+      IconData icon,
+      String title,
+      String message,
+      String? buttonText,
+    ) = switch (effectiveStage) {
+      VerificationStage.submittedForVerification => (
+          Icons.hourglass_top_rounded,
+          'Profile under review',
+          'Your profile has been submitted. An administrator will review and approve your account. You can browse the app, but live operational data will appear after approval.',
+          null,
+        ),
+      VerificationStage.revisionRequested => (
+          Icons.warning_amber_rounded,
+          'Revisions Requested by Super Admin',
+          rejectionReason != null && rejectionReason!.isNotEmpty
+              ? 'Reason: "$rejectionReason". Please update your profile details and resubmit for approval.'
+              : 'Super Admin requested updates to your submitted profile. Please review and make the necessary corrections.',
+          'Update Profile & Resubmit',
+        ),
+      VerificationStage.rejected => (
+          Icons.cancel_outlined,
+          'Verification Rejected',
+          rejectionReason != null && rejectionReason!.isNotEmpty
+              ? 'Reason: "$rejectionReason". Please update your credentials or contact administrator support.'
+              : 'Your verification was not approved. Please review your submitted details.',
+          'Review Profile',
+        ),
+      _ => (
+          Icons.person_add_alt_1_outlined,
+          'Complete your profile to continue',
+          'Fill in your full profile details and submit for verification to access appointments, orders, and live data in your dashboard.',
+          'Complete profile',
+        ),
+    };
 
     return Center(
       child: Padding(
@@ -82,9 +124,7 @@ class CompleteProfilePrompt extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                verificationPending
-                    ? Icons.hourglass_top_rounded
-                    : Icons.person_add_alt_1_outlined,
+                icon,
                 size: 56,
                 color: accent.withValues(alpha: 0.85),
               ),
@@ -108,12 +148,12 @@ class CompleteProfilePrompt extends StatelessWidget {
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
-              if (!verificationPending) ...[
+              if (buttonText != null) ...[
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () => _openProfile(context),
                   icon: const Icon(Icons.edit_outlined, size: 20),
-                  label: const Text('Complete profile'),
+                  label: Text(buttonText),
                   style: FilledButton.styleFrom(
                     backgroundColor: accent,
                     foregroundColor: Colors.white,
@@ -132,7 +172,7 @@ class CompleteProfilePrompt extends StatelessWidget {
   }
 }
 
-/// Gates data-heavy tab content behind profile completion (and optional verification).
+/// Gates data-heavy tab content behind profile completion and verification.
 class ProfileDataGate extends StatelessWidget {
   const ProfileDataGate({
     super.key,
@@ -149,12 +189,38 @@ class ProfileDataGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isProfileTab) return child;
+    if (isProfileTab || role.isPatient) return child;
 
-    return ListenableBuilder(
-      listenable: ProfileCompletionService.instance,
-      builder: (context, _) {
-        if (ProfileCompletionService.instance.isComplete) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      if (role.isAmbulance && AmbulanceSession.isLoggedIn) {
+        // Ambulance might use session login; check ambulance store / doc
+        return ListenableBuilder(
+          listenable: ProfileCompletionService.instance,
+          builder: (context, _) {
+            if (ProfileCompletionService.instance.isComplete) {
+              if (verificationPending) {
+                return CompleteProfilePrompt(
+                  role: role,
+                  verificationPending: true,
+                );
+              }
+              return child;
+            }
+            return CompleteProfilePrompt(role: role);
+          },
+        );
+      }
+      return CompleteProfilePrompt(role: role);
+    }
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection(FirestorePaths.users)
+          .doc(uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data == null) {
           if (verificationPending) {
             return CompleteProfilePrompt(
               role: role,
@@ -163,7 +229,25 @@ class ProfileDataGate extends StatelessWidget {
           }
           return child;
         }
-        return CompleteProfilePrompt(role: role);
+
+        final data = snapshot.data!.data();
+        if (data == null) return child;
+
+        final isVerified = data['verified'] == true;
+        if (isVerified) return child;
+
+        final statusStr = data['verificationStatus'] as String? ??
+            data['status'] as String? ??
+            (verificationPending ? 'submitted_for_verification' : 'registered');
+        final stage = VerificationStage.fromString(statusStr);
+        final reason = data['rejectionReason'] as String?;
+
+        return CompleteProfilePrompt(
+          role: role,
+          stage: stage,
+          rejectionReason: reason,
+          verificationPending: stage.isPending,
+        );
       },
     );
   }

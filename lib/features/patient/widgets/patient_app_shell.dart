@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -23,7 +24,8 @@ class PatientTabItem {
   final IconData filledIcon;
   final String label;
   final String? shortLabel;
-  final Widget Function(BuildContext context, bool selected, Color iconColor, double size)?
+  final Widget Function(
+          BuildContext context, bool selected, Color iconColor, double size)?
       customIconBuilder;
 
   String get mobileLabel => shortLabel ?? label;
@@ -59,13 +61,6 @@ abstract final class _PatientNavActiveStyle {
         colors: [AppColors.patientTeal, _activeEnd],
       ),
       borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: AppColors.patientTeal.withValues(alpha: 0.28),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
     );
   }
 
@@ -137,6 +132,7 @@ class PatientAppShell extends StatelessWidget {
             _handleBackInvoked(context, didPop),
         child: MobileScaffold(
           padding: EdgeInsets.zero,
+          extendBody: true,
           bottomNavigationBar: _PatientBottomTabBar(
             selectedIndex: selectedIndex,
             tabs: tabs,
@@ -346,147 +342,183 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: SafeArea(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Translucent frosted glass background matching WhatsApp pill (Image 2)
+    final pillBg = isDark
+        ? const Color(0x66111827) // ~40% opacity dark slate
+        : const Color(0x99FFFFFF); // ~60% opacity crisp white
+    final pillBorder = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.black.withValues(alpha: 0.08);
+
+    return SafeArea(
       top: false,
+      bottom: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: DecoratedBox(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Container(
           decoration: BoxDecoration(
-            color: AppColors.surfaceOf(context),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppColors.borderOf(context)),
+            borderRadius: BorderRadius.circular(40),
             boxShadow: [
               BoxShadow(
-                color: AppColors.textPrimaryOf(context).withValues(alpha: 0.08),
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
                 blurRadius: 20,
-                offset: const Offset(0, 8),
+                offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: AppColors.textPrimaryOf(context).withValues(alpha: 0.04),
+                color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
-          child: Listener(
-            onPointerDown: (event) {
-              _startX = event.position.dx;
-              _startY = event.position.dy;
-            },
-            onPointerUp: (event) {
-              if (_startX == null || _startY == null) return;
-              final deltaX = event.position.dx - _startX!;
-              final deltaY = event.position.dy - _startY!;
-              _startX = null;
-              _startY = null;
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                height: 64,
+                decoration: BoxDecoration(
+                  color: pillBg,
+                  borderRadius: BorderRadius.circular(40),
+                  border: Border.all(color: pillBorder, width: 1.0),
+                ),
+                child: Listener(
+                  onPointerDown: (event) {
+                    _startX = event.position.dx;
+                    _startY = event.position.dy;
+                  },
+                  onPointerUp: (event) {
+                    if (_startX == null || _startY == null) return;
+                    final deltaX = event.position.dx - _startX!;
+                    final deltaY = event.position.dy - _startY!;
+                    _startX = null;
+                    _startY = null;
 
-              if (deltaX.abs() > 40 && deltaY.abs() < 50) {
-                if (deltaX < 0 &&
-                    widget.selectedIndex < widget.tabs.length - 1) {
-                  widget.onSelected(widget.selectedIndex + 1);
-                } else if (deltaX > 0 && widget.selectedIndex > 0) {
-                  widget.onSelected(widget.selectedIndex - 1);
-                }
-              }
-            },
-            child: SizedBox(
-              height: widget.tabs.length >= 5 ? 64 : 58,
-              child: Row(
-                children: List.generate(widget.tabs.length, (index) {
-                  final selected = index == widget.selectedIndex;
-                  final tab = widget.tabs[index];
-                  final isProfile = tab.label == 'Profile';
-                  final iconColor =
-                      _PatientNavActiveStyle.iconColor(context, selected);
-                  final label = tab.mobileLabel;
+                    if (deltaX.abs() > 40 && deltaY.abs() < 50) {
+                      if (deltaX < 0 &&
+                          widget.selectedIndex < widget.tabs.length - 1) {
+                        widget.onSelected(widget.selectedIndex + 1);
+                      } else if (deltaX > 0 && widget.selectedIndex > 0) {
+                        widget.onSelected(widget.selectedIndex - 1);
+                      }
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      children: List.generate(widget.tabs.length, (index) {
+                        final selected = index == widget.selectedIndex;
+                        final tab = widget.tabs[index];
+                        final isProfile = tab.label == 'Profile';
+                        final label = tab.mobileLabel;
 
-                  return Expanded(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => widget.onSelected(index),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  curve: Curves.easeOutCubic,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 5),
-                                  decoration: BoxDecoration(
-                                    gradient: (selected && !isProfile)
-                                        ? const LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              AppColors.patientTeal,
-                                              Color(0xFF12836A)
-                                            ],
-                                          )
-                                        : null,
-                                    color: (selected && isProfile)
-                                        ? AppColors.patientTeal
-                                            .withValues(alpha: 0.14)
-                                        : (selected ? null : Colors.transparent),
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: (selected && !isProfile)
-                                        ? [
-                                            BoxShadow(
-                                              color: AppColors.patientTeal
-                                                  .withValues(alpha: 0.22),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 3),
+                        // Active pill container matching Image 2 (WhatsApp style)
+                        // Flat, no glow, no shadow
+                        final activePillBg = isDark
+                            ? const Color(0xFF1E2836)
+                            : AppColors.patientTeal.withValues(alpha: 0.12);
+                        final activePillBorder = isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : AppColors.patientTeal.withValues(alpha: 0.28);
+
+                        final iconColor = selected
+                            ? (isDark ? Colors.white : AppColors.patientTeal)
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.70)
+                                : const Color(0xFF64748B));
+
+                        final labelColor = selected
+                            ? (isDark ? Colors.white : AppColors.patientTeal)
+                            : (isDark
+                                ? Colors.white.withValues(alpha: 0.70)
+                                : const Color(0xFF64748B));
+
+                        return Expanded(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => widget.onSelected(index),
+                              borderRadius: BorderRadius.circular(24),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                curve: Curves.easeOutCubic,
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 2, vertical: 5),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 2, vertical: 3),
+                                decoration: selected
+                                    ? BoxDecoration(
+                                        color: activePillBg,
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                            color: activePillBorder, width: 1),
+                                      )
+                                    : null,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      height: 28,
+                                      child: Center(
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          alignment: Alignment.center,
+                                          children: [
+                                            tab.buildIcon(
+                                              context,
+                                              selected: selected,
+                                              iconColor: iconColor,
+                                              size: isProfile ? 28 : 22,
                                             ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: tab.buildIcon(
-                                    context,
-                                    selected: selected,
-                                    iconColor: iconColor,
-                                    size: isProfile ? 28 : 24,
-                                  ),
-                                ),
-                                if (widget.showDot(index))
-                                  Positioned(
-                                    right: 6,
-                                    top: -2,
-                                    child: NavRequestDot(
-                                      color: AppColors.patientTeal,
-                                      borderColor: selected
-                                          ? AppColors.patientTeal
-                                          : Colors.white,
+                                            if (widget.showDot(index))
+                                              Positioned(
+                                                right: isProfile ? -3 : -5,
+                                                top: isProfile ? -1 : -2,
+                                                child: NavRequestDot(
+                                                  color: isDark
+                                                      ? const Color(0xFF22C55E)
+                                                      : AppColors.patientTeal,
+                                                  borderColor: isDark
+                                                      ? const Color(0xFF1E2836)
+                                                      : Colors.white,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            SafeBottomNavLabel(
-                              label: compactBottomNavLabel(label),
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                height: 1.1,
-                                fontWeight: selected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: selected
-                                    ? AppColors.patientTeal
-                                    : AppColors.textSecondaryOf(context),
+                                    const SizedBox(height: 2),
+                                    SizedBox(
+                                      height: 14,
+                                      child: Center(
+                                        child: SafeBottomNavLabel(
+                                          label: compactBottomNavLabel(label),
+                                          maxLines: 1,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            height: 1.0,
+                                            fontWeight: selected
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                            color: labelColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      }),
                     ),
-                  );
-                }),
+                  ),
+                ),
               ),
-            ),
             ),
           ),
         ),

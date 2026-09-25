@@ -15,10 +15,13 @@ import '../firebase/firebase_error_messages.dart';
 import '../firebase/firestore_service.dart';
 import '../notifications/app_toast.dart';
 import '../session/ambulance_session.dart';
+import '../session/app_session.dart';
 import '../validators/form_validators.dart';
 import 'registration_otp_service.dart';
 import 'unified_auth_coordinator.dart';
 import 'unified_auth_navigation.dart';
+import '../../features/welcome/welcome_screen.dart';
+import 'mobile_registration_lookup.dart';
 
 enum UnifiedAuthStep { mobile, otp }
 
@@ -29,12 +32,13 @@ enum UnifiedAuthStep { mobile, otp }
 /// in exactly one place. Callers own the text field, the OTP widget and the
 /// layout; this only owns the flow state and the network calls.
 class UnifiedAuthFlowController extends ChangeNotifier {
-  UnifiedAuthFlowController({required this.role});
+  UnifiedAuthFlowController({this.role});
 
-  final UserType role;
+  final UserType? role;
 
   UnifiedAuthStep _step = UnifiedAuthStep.mobile;
   UnifiedAuthPath? _authPath;
+  UserType? _matchedRole;
   String? _mobileDigits;
   String _otp = '';
   bool _sendingOtp = false;
@@ -45,6 +49,8 @@ class UnifiedAuthFlowController extends ChangeNotifier {
   bool _disposed = false;
 
   UnifiedAuthStep get step => _step;
+  UnifiedAuthPath? get authPath => _authPath;
+  UserType? get matchedRole => _matchedRole;
 
   /// The 10-digit number the current OTP was sent to, once past the mobile step.
   String? get mobileDigits => _mobileDigits;
@@ -132,10 +138,51 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     _sendingOtp = true;
     _notify();
     try {
-      final path = await UnifiedAuthCoordinator.resolvePath(
-        mobile: digits,
-        role: role,
-      );
+      UnifiedAuthPath path;
+      if (role != null) {
+        path = await UnifiedAuthCoordinator.resolvePath(
+          mobile: digits,
+          role: role!,
+        );
+        _matchedRole = role;
+      } else {
+        // Detect existing vs new user across all candidate roles
+        final registrationConflict = await MobileRegistrationLookup.check(
+          digits,
+          role: UserType.patient,
+          intent: MobileLookupIntent.registration,
+        );
+
+        if (registrationConflict == true) {
+          path = UnifiedAuthPath.login;
+          const candidates = [
+            UserType.patient,
+            UserType.doctor,
+            UserType.medicalStore,
+            UserType.lab,
+            UserType.ambulance,
+            UserType.superAdmin,
+          ];
+          final checks = await Future.wait(
+            candidates.map((r) => MobileRegistrationLookup.check(
+                  digits,
+                  role: r,
+                  intent: MobileLookupIntent.login,
+                )),
+          );
+          UserType? found;
+          for (var i = 0; i < candidates.length; i++) {
+            if (checks[i] == false) {
+              found = candidates[i];
+              break;
+            }
+          }
+          _matchedRole = found;
+        } else {
+          path = UnifiedAuthPath.register;
+          _matchedRole = null;
+        }
+      }
       if (!context.mounted) return;
 
       if (path == UnifiedAuthPath.blockedWrongRole) {
@@ -146,7 +193,7 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       final otpType = UnifiedAuthCoordinator.otpTypeForPath(path);
       final res = await RegistrationOtpService.sendOtp(
         digits,
-        role: role,
+        role: _matchedRole ?? role ?? UserType.patient,
         otpType: otpType,
       );
       if (!context.mounted) return;
@@ -182,9 +229,9 @@ class UnifiedAuthFlowController extends ChangeNotifier {
 
   /// LOGIN vs REGISTER (transparent to user):
   /// - the path was resolved server-side before OTP send via
-  ///   [UnifiedAuthCoordinator.resolvePath].
+  ///   [UnifiedAuthCoordinator.resolvePath] or role auto-detection.
   /// - login: sign in with verified OTP (Firebase or ambulance mobile login).
-  /// - register: OTP session is valid; open role profile form.
+  /// - register: OTP session is valid; open role profile form or role selection.
   Future<void> verifyOtp(BuildContext context) async {
     final digits = _mobileDigits;
     final path = _authPath;
@@ -217,27 +264,32 @@ class UnifiedAuthFlowController extends ChangeNotifier {
   Future<void> _completeLogin(
     BuildContext context,
     String digits,
-    String otp,
-  ) async {
-    if (role == UserType.ambulance) {
-      await _completeAmbulanceLogin(context, digits, otp);
+    String otp, {
+    UserType? targetRole,
+  }) async {
+    final effectiveRole =
+        targetRole ?? _matchedRole ?? role ?? UserType.patient;
+    AppSession.clear();
+
+    if (effectiveRole == UserType.ambulance) {
+      await completeAmbulanceLogin(context, digits, otp);
       return;
     }
 
     final result = await FirebaseAuthService.instance.signInWithMobileOtp(
-      expectedRole: role,
+      expectedRole: effectiveRole,
       mobile: digits,
       otpCode: otp,
     );
     if (!context.mounted) return;
     await UnifiedAuthNavigation.handleSignInResult(
       context,
-      role: role,
+      role: effectiveRole,
       result: result,
     );
   }
 
-  Future<void> _completeAmbulanceLogin(
+  static Future<void> completeAmbulanceLogin(
     BuildContext context,
     String digits,
     String otp,
@@ -315,10 +367,11 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     String digits,
     String otp,
   ) async {
+    final targetRole = _matchedRole ?? role ?? UserType.patient;
     final verifyError = await RegistrationOtpService.verify(
       digits,
       otp,
-      role: role,
+      role: targetRole,
       otpType: 'registration',
     );
     if (!context.mounted) return;
@@ -332,12 +385,23 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       return;
     }
 
-    // LOGIN vs REGISTER: registration path — OTP session is valid; collect
-    // profile next.
-    UnifiedAuthNavigation.openRegistrationForm(
-      context,
-      role: role,
-      mobileDigits: digits,
-    );
+    // LOGIN vs REGISTER: registration path — OTP session is valid.
+    if (role != null) {
+      UnifiedAuthNavigation.openRegistrationForm(
+        context,
+        role: role!,
+        mobileDigits: digits,
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => WelcomeScreen(
+            verifiedMobile: digits,
+            verifiedOtp: otp,
+            isNewUser: true,
+          ),
+        ),
+      );
+    }
   }
 }

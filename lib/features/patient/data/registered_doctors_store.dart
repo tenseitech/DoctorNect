@@ -39,7 +39,7 @@ class RegisteredDoctorsStore extends ChangeNotifier {
   /// only one stream is active at a time. Retries automatically if Firebase
   /// is not yet ready.
   void startListening() {
-    if (_streamActive || _permissionDenied) return;
+    if (_streamActive) return;
 
     if (!FirebaseBootstrap.isReady) {
       // Firebase not initialised yet — retry after a short delay.
@@ -47,15 +47,14 @@ class RegisteredDoctorsStore extends ChangeNotifier {
       return;
     }
 
-    if (FirebaseAuth.instance.currentUser == null) {
-      _authWaitSub ??= FirebaseAuth.instance.authStateChanges().listen((user) {
-        if (user == null) return;
-        _authWaitSub?.cancel();
-        _authWaitSub = null;
+    _authWaitSub ??= FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null && _permissionDenied) {
+        _permissionDenied = false;
         startListening();
-      });
-      return;
-    }
+      }
+    });
+
+    if (_permissionDenied) return;
 
     // Kick off a one-time fetch immediately so the UI has data fast.
     unawaited(refreshFromFirestore(verifiedOnly: true));

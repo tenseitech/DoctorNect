@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../data/lab_worklist_store.dart';
 import '../widgets/lab_report_upload_sheet.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
+import '../../../widgets/verification_status_banner.dart';
 import '../../../core/theme/app_typography.dart';
 
 String labOrderStatusLabel(String status) => switch (status) {
@@ -224,6 +225,7 @@ class _LabOrdersTabState extends State<LabOrdersTab>
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const VerificationStatusBanner(role: UserType.lab),
                 _LabDayStatsHeader(
                   selectedDate: _selectedDate,
                   isToday: isToday,

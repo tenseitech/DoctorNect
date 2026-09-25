@@ -42,6 +42,7 @@ class DoctorRegistrationScreen extends StatelessWidget {
       'mobile': mobile,
       'email': email,
       'verified': false,
+      'verificationStatus': 'registered',
       'status': 'pending_review',
       'kycSubmitted': false,
       'profileCompleted': false,

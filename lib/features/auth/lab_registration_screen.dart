@@ -50,8 +50,9 @@ class LabRegistrationScreen extends StatelessWidget {
         'qualification': qualification,
         'phone': mobile,
         'email': email,
-        'verified': true,
-        'status': 'approved',
+        'verified': false,
+        'verificationStatus': 'registered',
+        'status': 'pending_review',
         'profileCompleted': false,
       },
     );
