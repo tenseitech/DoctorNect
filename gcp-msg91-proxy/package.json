@@ -1,0 +1,15 @@
+{
+  "name": "gcp-msg91-proxy",
+  "version": "1.0.0",
+  "description": "MSG91 egress static IP proxy for DoctorNect on Cloud Run",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

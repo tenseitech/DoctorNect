@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../core/firebase/firebase_bootstrap.dart';
 import '../../../../core/firebase/firestore_paths.dart';
+import '../../../../core/supabase/supabase_bootstrap.dart';
+import '../../../../core/supabase/supabase_patient_repository.dart';
 import '../../../../core/notifications/in_app_notification_service.dart';
 import '../../../../core/session/patient_session.dart';
 import '../../../doctor/clinical/models/clinical_models.dart';
@@ -156,8 +158,58 @@ class PatientProfileMock {
     });
   }
 
+  static void _applyFromSupabase(Map<String, dynamic> data) {
+    profile.name = data['name'] as String? ?? profile.name;
+    profile.age = (data['age'] as num?)?.toInt() ?? profile.age;
+    profile.gender = data['gender'] as String? ?? profile.gender;
+    profile.mobile = data['mobile'] as String? ?? profile.mobile;
+    profile.email = data['email'] as String? ?? profile.email;
+    profile.bloodGroup = data['blood_group'] as String? ?? profile.bloodGroup;
+    if (data['height'] != null) {
+      profile.height = double.tryParse(data['height'].toString()) ?? profile.height;
+    }
+    if (data['weight'] != null) {
+      profile.weight = double.tryParse(data['weight'].toString()) ?? profile.weight;
+    }
+    profile.photoInitial =
+        profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'P';
+    profile.photoUrl = (data['photo_url'] as String?) ?? profile.photoUrl;
+
+    profileAddress = PatientAddress(
+      city: data['city'] as String? ?? '',
+      state: data['state'] as String? ?? '',
+      pincode: data['pincode'] as String? ?? '',
+      country: data['country'] as String? ?? 'India',
+      addressLine1: data['address'] as String? ?? '',
+    );
+    profileCity = profileAddress.city;
+
+    if (data['conditions'] is List) {
+      conditions = (data['conditions'] as List).map((e) => e.toString()).toList();
+    }
+    if (data['allergies'] is List) {
+      allergies = (data['allergies'] as List).map((e) => e.toString()).toList();
+    }
+    privacyPrefs.shareRecordsWithDoctors =
+        data['share_records_with_doctors'] as bool? ?? true;
+  }
+
   static Future<void> loadFromFirestore(String patientId) async {
     listenToPatientDocument(patientId);
+
+    if (SupabaseBootstrap.isReady) {
+      try {
+        final supaData = await SupabasePatientRepository.instance.fetchProfile(patientId);
+        if (supaData != null) {
+          _applyFromSupabase(supaData);
+          notifyProfileUpdated();
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('Failed to load profile from Supabase: $e');
+      }
+    }
+
     final data = await FirestoreService.instance.patientProfile
         .fetchPatientDocument(patientId);
     if (data == null) return;
@@ -308,44 +360,80 @@ class PatientProfileMock {
   }
 
   static Future<void> persistProfile(String patientId) async {
-    await FirestoreService.instance.patientProfile
-        .savePatientDocument(patientId, {
-      'name': profile.name,
-      'age': profile.age,
-      'gender': profile.gender,
-      'mobile': profile.mobile,
-      'email': profile.email,
-      'bloodGroup': profile.bloodGroup,
-      'height': profile.height,
-      'weight': profile.weight,
-      'photoUrl': profile.photoUrl,
-      'city':
-          profileAddress.city.isNotEmpty ? profileAddress.city : profileCity,
-      'country': profileAddress.country,
-      'addressLine1': profileAddress.addressLine1,
-      'addressLine2': profileAddress.addressLine2,
-      'state': profileAddress.state,
-      'pincode': profileAddress.pincode,
-      'landmark': profileAddress.landmark,
-      'conditions': conditions,
-      'allergies': allergies,
-      'notificationPrefs': _notificationPrefsMap(),
-      'shareRecordsWithDoctors': privacyPrefs.shareRecordsWithDoctors,
-      'allowHealthInsights': privacyPrefs.allowHealthInsights,
-      'twoFactorEnabled': privacyPrefs.twoFactorEnabled,
-      'hiddenDoctorIds':
-          PatientFavoritesStore.instance.hiddenDoctorIds.toList(),
-      'hiddenLabKeys': PatientFavoritesStore.instance.hiddenLabKeys.toList(),
-      'addedDoctorIds': PatientFavoritesStore.instance.addedDoctorIds,
-      'addedDoctors': PatientFavoritesStore.instance.addedDoctorsForPersist,
-      'addedLabs': PatientFavoritesStore.instance.addedLabs
-          .map((lab) => lab.toMap())
-          .toList(),
-      if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
-        'invitedDoctorId': invitedDoctorId,
-      if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
-        'primaryDoctorId': invitedDoctorId,
-    });
+    if (SupabaseBootstrap.isReady) {
+      final supaFields = {
+        'name': profile.name,
+        'age': profile.age,
+        'gender': profile.gender,
+        'mobile': profile.mobile,
+        'email': profile.email,
+        'blood_group': profile.bloodGroup,
+        'height': profile.height > 0 ? profile.height.toString() : null,
+        'weight': profile.weight > 0 ? profile.weight.toString() : null,
+        'photo_url': profile.photoUrl,
+        'address': profileAddress.addressLine1.isNotEmpty
+            ? profileAddress.addressLine1
+            : profileAddress.fullLabel,
+        'city':
+            profileAddress.city.isNotEmpty ? profileAddress.city : profileCity,
+        'state': profileAddress.state,
+        'pincode': profileAddress.pincode,
+        'country': profileAddress.country.isNotEmpty
+            ? profileAddress.country
+            : 'India',
+        'conditions': conditions,
+        'allergies': allergies,
+        'share_records_with_doctors': privacyPrefs.shareRecordsWithDoctors,
+        'profile_completed': true,
+      };
+
+      await SupabasePatientRepository.instance.updateProfile(
+        context: null,
+        patientId: patientId,
+        fields: supaFields,
+      );
+    }
+
+    if (FirebaseBootstrap.isReady) {
+      await FirestoreService.instance.patientProfile
+          .savePatientDocument(patientId, {
+        'name': profile.name,
+        'age': profile.age,
+        'gender': profile.gender,
+        'mobile': profile.mobile,
+        'email': profile.email,
+        'bloodGroup': profile.bloodGroup,
+        'height': profile.height,
+        'weight': profile.weight,
+        'photoUrl': profile.photoUrl,
+        'city':
+            profileAddress.city.isNotEmpty ? profileAddress.city : profileCity,
+        'country': profileAddress.country,
+        'addressLine1': profileAddress.addressLine1,
+        'addressLine2': profileAddress.addressLine2,
+        'state': profileAddress.state,
+        'pincode': profileAddress.pincode,
+        'landmark': profileAddress.landmark,
+        'conditions': conditions,
+        'allergies': allergies,
+        'notificationPrefs': _notificationPrefsMap(),
+        'shareRecordsWithDoctors': privacyPrefs.shareRecordsWithDoctors,
+        'allowHealthInsights': privacyPrefs.allowHealthInsights,
+        'twoFactorEnabled': privacyPrefs.twoFactorEnabled,
+        'hiddenDoctorIds':
+            PatientFavoritesStore.instance.hiddenDoctorIds.toList(),
+        'hiddenLabKeys': PatientFavoritesStore.instance.hiddenLabKeys.toList(),
+        'addedDoctorIds': PatientFavoritesStore.instance.addedDoctorIds,
+        'addedDoctors': PatientFavoritesStore.instance.addedDoctorsForPersist,
+        'addedLabs': PatientFavoritesStore.instance.addedLabs
+            .map((lab) => lab.toMap())
+            .toList(),
+        if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
+          'invitedDoctorId': invitedDoctorId,
+        if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
+          'primaryDoctorId': invitedDoctorId,
+      });
+    }
   }
 
   static void applyRegistration({

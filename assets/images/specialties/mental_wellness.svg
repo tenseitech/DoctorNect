@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="brainGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDA4AF"/>
+      <stop offset="50%" stop-color="#FB7185"/>
+      <stop offset="100%" stop-color="#E11D48"/>
+    </linearGradient>
+  </defs>
+  <!-- Brain Profile Silhouette with Gyri Folds -->
+  <path d="M 170 360 C 130 330 120 270 135 220 C 120 180 145 130 190 110 C 240 85 320 90 370 130 C 420 170 415 250 385 310 C 370 340 340 360 300 370 C 295 400 280 430 265 425 C 255 400 245 375 240 370 C 210 375 190 370 170 360 Z" fill="url(#brainGrad)"/>
+  <!-- Internal Cerebral Grooves / Gyri lines -->
+  <g fill="none" stroke="#BE123C" stroke-width="9" stroke-linecap="round">
+    <path d="M 160 210 C 190 190 220 215 250 200 C 280 185 310 200 340 185"/>
+    <path d="M 190 150 C 220 140 250 160 290 145 C 320 135 345 150 365 170"/>
+    <path d="M 155 260 C 190 265 220 245 260 255 C 300 265 330 240 365 255"/>
+    <path d="M 185 315 C 215 300 255 315 295 305 C 330 295 350 315 365 320"/>
+    <!-- Cerebellum detail lower back -->
+    <path d="M 260 375 C 290 365 320 360 345 345"/>
+    <path d="M 270 395 C 295 385 320 380 340 365"/>
+  </g>
+</svg>

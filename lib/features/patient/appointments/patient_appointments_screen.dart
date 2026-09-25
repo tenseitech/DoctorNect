@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/data/shared_appointments_store.dart';
+import '../../../core/session/patient_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../profile/widgets/patient_profile_form_styles.dart';
 import '../search/doctor_search_screen.dart';
@@ -30,6 +31,14 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _store.addListener(_onStoreChanged);
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final patientId = PatientSession.loggedInPatientId;
+    if (patientId.isNotEmpty) {
+      await _store.refreshForPatient(patientId);
+    }
   }
 
   void _onStoreChanged() {
@@ -79,6 +88,7 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
 
     final tabBodies = [
       PatientShellTabList(
+        onRefresh: _refresh,
         empty: PatientTabEmptyState(
           icon: Icons.event_available_outlined,
           title: 'No upcoming visits',
@@ -89,6 +99,7 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
         children: _visitTiles(upcoming),
       ),
       PatientShellTabList(
+        onRefresh: _refresh,
         empty: PatientTabEmptyState(
           icon: Icons.history,
           title: 'No completed visits',
@@ -97,6 +108,7 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
         children: _visitTiles(completed),
       ),
       PatientShellTabList(
+        onRefresh: _refresh,
         empty: PatientTabEmptyState(
           icon: Icons.event_busy_outlined,
           title: 'No cancelled visits',

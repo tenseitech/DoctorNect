@@ -17,24 +17,18 @@ class HomeSearchBar extends StatefulWidget {
   final VoidCallback? onTap;
   final ValueChanged<String>? onSubmitted;
 
-  static const List<String> rotatingPlaceholders = [
-    'Search for doctor',
-    'Search for lab',
-    'Search for language or location',
-    'Search for ambulance',
-  ];
 
   static const List<String> words = [
-    'Doctor',
-    'Lab',
+    'Doctors',
+    'Labs',
     'Speciality',
     'Location',
     'Language',
   ];
 
   static const List<String> placeholders = [
-    'Search for Doctor',
-    'Search for Lab',
+    'Search for Doctors',
+    'Search for Labs',
     'Search for Speciality',
     'Search for Location',
     'Search for Language',
@@ -57,8 +51,6 @@ class HomeSearchBar extends StatefulWidget {
 class _HomeSearchBarState extends State<HomeSearchBar> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
-  Timer? _rotationTimer;
-  int _currentIndex = 0;
   bool _hovered = false;
 
   bool get _isFieldEmpty => _controller.text.isEmpty;
@@ -73,42 +65,15 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
 
     _controller.addListener(_onFieldChanged);
     _focusNode.addListener(_onFieldChanged);
-
-    _startTimer();
   }
 
   void _onFieldChanged() {
     if (!mounted) return;
     setState(() {});
-    if (_shouldShowOverlay) {
-      _startTimer();
-    } else {
-      _stopTimer();
-    }
-  }
-
-  void _startTimer() {
-    _stopTimer();
-    if (!_shouldShowOverlay) return;
-    _rotationTimer = Timer(const Duration(milliseconds: 2500), () {
-      if (!mounted) return;
-      if (_shouldShowOverlay) {
-        setState(() {
-          _currentIndex =
-              (_currentIndex + 1) % HomeSearchBar.rotatingPlaceholders.length;
-        });
-        _startTimer();
-      }
-    });
-  }
-  void _stopTimer() {
-    _rotationTimer?.cancel();
-    _rotationTimer = null;
   }
 
   @override
   void dispose() {
-    _stopTimer();
     _controller.removeListener(_onFieldChanged);
     _focusNode.removeListener(_onFieldChanged);
     _controller.dispose();
@@ -139,7 +104,6 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
       controller: _controller,
       focusNode: _focusNode,
       active: active,
-      currentIndex: _currentIndex,
       showOverlay: _shouldShowOverlay,
       onSubmitted: _handleSubmit,
       onHoverChanged: (value) => setState(() => _hovered = value),
@@ -153,7 +117,6 @@ class _SearchField extends StatelessWidget {
     required this.controller,
     required this.focusNode,
     required this.active,
-    required this.currentIndex,
     required this.showOverlay,
     required this.onSubmitted,
     required this.onHoverChanged,
@@ -163,7 +126,6 @@ class _SearchField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool active;
-  final int currentIndex;
   final bool showOverlay;
   final ValueChanged<String> onSubmitted;
   final ValueChanged<bool> onHoverChanged;
@@ -260,55 +222,9 @@ class _SearchField extends StatelessWidget {
                         child: IgnorePointer(
                           child: Align(
                             alignment: Alignment.centerLeft,
-                            child: ClipRect(
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 400),
-                                transitionBuilder: (Widget child,
-                                    Animation<double> animation) {
-                                  final isIncoming = child.key ==
-                                      ValueKey<int>(currentIndex);
-                                  final offsetTween = isIncoming
-                                      ? Tween<Offset>(
-                                          begin: const Offset(0.0, 0.8),
-                                          end: Offset.zero,
-                                        )
-                                      : Tween<Offset>(
-                                          begin: const Offset(0.0, -0.8),
-                                          end: Offset.zero,
-                                        );
-
-                                  return SlideTransition(
-                                    position: offsetTween.animate(
-                                      CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeInOutCubic,
-                                      ),
-                                    ),
-                                    child: FadeTransition(
-                                      opacity: animation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                                layoutBuilder: (Widget? currentChild,
-                                    List<Widget> previousChildren) {
-                                  return Stack(
-                                    alignment: Alignment.centerLeft,
-                                    children: <Widget>[
-                                      ...previousChildren,
-                                      if (currentChild != null) currentChild,
-                                    ],
-                                  );
-                                },
-                                child: Text(
-                                  HomeSearchBar
-                                      .rotatingPlaceholders[currentIndex],
-                                  key: ValueKey<int>(currentIndex),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: placeholderStyle,
-                                ),
-                              ),
+                            child: _TypewriterPlaceholder(
+                              words: HomeSearchBar.words,
+                              style: placeholderStyle,
                             ),
                           ),
                         ),
@@ -409,6 +325,134 @@ class _DesktopSearchActionState extends State<_DesktopSearchAction> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TypewriterPlaceholder extends StatefulWidget {
+  const _TypewriterPlaceholder({
+    required this.words,
+    required this.style,
+    this.prefix = 'Search for ',
+  });
+
+  final List<String> words;
+  final TextStyle style;
+  final String prefix;
+
+  @override
+  State<_TypewriterPlaceholder> createState() => _TypewriterPlaceholderState();
+}
+
+class _TypewriterPlaceholderState extends State<_TypewriterPlaceholder> {
+  Timer? _timer;
+  int _wordIndex = 0;
+  int _charIndex = 0;
+  bool _isDeleting = false;
+
+  static const Duration _typingDelay = Duration(milliseconds: 90);
+  static const Duration _deletingDelay = Duration(milliseconds: 45);
+  static const Duration _pauseFull = Duration(milliseconds: 1800);
+  static const Duration _pauseEmpty = Duration(milliseconds: 250);
+
+  @override
+  void initState() {
+    super.initState();
+    _startAnimation();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TypewriterPlaceholder oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.words != widget.words) {
+      _wordIndex = 0;
+      _charIndex = 0;
+      _isDeleting = false;
+      _startAnimation();
+    }
+  }
+
+  void _startAnimation() {
+    _timer?.cancel();
+    if (!mounted || widget.words.isEmpty) return;
+
+    final currentWord = widget.words[_wordIndex];
+
+    if (!_isDeleting) {
+      if (_charIndex < currentWord.length) {
+        _timer = Timer(_typingDelay, () {
+          if (!mounted) return;
+          setState(() {
+            _charIndex++;
+          });
+          _startAnimation();
+        });
+      } else {
+        _timer = Timer(_pauseFull, () {
+          if (!mounted) return;
+          setState(() {
+            _isDeleting = true;
+          });
+          _startAnimation();
+        });
+      }
+    } else {
+      if (_charIndex > 0) {
+        _timer = Timer(_deletingDelay, () {
+          if (!mounted) return;
+          setState(() {
+            _charIndex--;
+          });
+          _startAnimation();
+        });
+      } else {
+        _timer = Timer(_pauseEmpty, () {
+          if (!mounted) return;
+          setState(() {
+            _isDeleting = false;
+            _wordIndex = (_wordIndex + 1) % widget.words.length;
+          });
+          _startAnimation();
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.words.isEmpty) {
+      return Text(
+        widget.prefix,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: widget.style,
+      );
+    }
+
+    final currentWord = widget.words[_wordIndex];
+    final visibleCount = _charIndex.clamp(0, currentWord.length);
+    final typedWord = currentWord.substring(0, visibleCount);
+
+    return Text.rich(
+      TextSpan(
+        text: widget.prefix,
+        style: widget.style,
+        children: [
+          TextSpan(
+            text: typedWord,
+            style: widget.style,
+          ),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

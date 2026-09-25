@@ -18,15 +18,29 @@ abstract final class PatientWriteGuard {
   static DateTime? _lastCheckTime;
   static const Duration _cacheTtl = Duration(seconds: 30);
 
+  @visibleForTesting
+  static bool? debugMaintenanceOverride;
+
+  @visibleForTesting
+  static void resetForTesting() {
+    _cachedMaintenanceActive = false;
+    _lastCheckTime = null;
+    debugMaintenanceOverride = null;
+  }
+
   /// Checks the remote `system_config` table for the patient module status.
   static Future<bool> isMaintenanceActive({bool forceRefresh = false}) async {
-    if (!SupabaseBootstrap.isReady) return false;
+    if (debugMaintenanceOverride != null) {
+      return debugMaintenanceOverride!;
+    }
 
     if (!forceRefresh &&
         _lastCheckTime != null &&
         DateTime.now().difference(_lastCheckTime!) < _cacheTtl) {
       return _cachedMaintenanceActive;
     }
+
+    if (!SupabaseBootstrap.isReady) return false;
 
     try {
       final res = await SupabaseBootstrap.client
@@ -99,16 +113,19 @@ abstract final class PatientWriteGuard {
     showModalBottomSheet<void>(
       context: context,
       isDismissible: true,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             Container(
               width: 40,
               height: 4,
@@ -172,6 +189,7 @@ abstract final class PatientWriteGuard {
           ],
         ),
       ),
-    );
-  }
+    )),
+  );
+}
 }

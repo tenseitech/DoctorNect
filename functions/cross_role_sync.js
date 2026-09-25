@@ -40,6 +40,30 @@ function getPgPool() {
 }
 
 /**
+ * Execute an async operation with exponential backoff retry
+ */
+async function executeWithRetry(operationFn, { maxRetries = 3, baseDelayMs = 200, context = {} } = {}) {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await operationFn(attempt);
+    } catch (err) {
+      attempt++;
+      if (attempt > maxRetries) {
+        console.error(`[RetryExhausted] Failed after ${maxRetries} retries for ${context.entityType || 'entity'} ID: ${context.entityId || 'unknown'}: ${err.message}`);
+        const exhaustedErr = new Error(`Exhausted ${maxRetries} retries: ${err.message}`);
+        exhaustedErr.originalError = err;
+        exhaustedErr.retryCount = maxRetries;
+        throw exhaustedErr;
+      }
+      const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
+      console.warn(`[SyncRetry] Attempt ${attempt}/${maxRetries} failed: ${err.message}. Retrying in ${delayMs}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+}
+
+/**
  * Record a failed sync attempt to the PostgreSQL Dead-Letter Queue (DLQ).
  * Falls back to Firestore _sync_dlq collection if Supabase REST API is unreachable.
  */
@@ -90,10 +114,10 @@ async function recordDlqFailure({ direction, entityType, entityId, payload, erro
     try {
       await pool.query(
         `INSERT INTO sync_dead_letter_queue 
-          (direction, entity_type, entity_id, payload, error_message, error_stack, status, created_at)
+          (direction, entity_type, entity_id, payload, error_message, error_stack, retry_count, status, created_at)
          VALUES 
-          ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-        [dlqEntry.direction, dlqEntry.entity_type, dlqEntry.entity_id, JSON.stringify(dlqEntry.payload), dlqEntry.error_message, dlqEntry.error_stack, dlqEntry.status]
+          ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+        [dlqEntry.direction, dlqEntry.entity_type, dlqEntry.entity_id, JSON.stringify(dlqEntry.payload), dlqEntry.error_message, dlqEntry.error_stack, dlqEntry.retry_count, dlqEntry.status]
       );
       return;
     } catch (_) {}
@@ -167,74 +191,82 @@ async function syncFirestoreAppointmentToSupabase(event) {
   };
 
   try {
-    if (url && key) {
-      const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/appointments?on_conflict=appointment_id`, {
-        method: 'POST',
-        headers: {
-          'apikey': key,
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates,return=minimal',
-        },
-        body: JSON.stringify(supabasePayload),
-      });
+    await executeWithRetry(
+      async () => {
+        if (url && key) {
+          const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/appointments?on_conflict=appointment_id`, {
+            method: 'POST',
+            headers: {
+              'apikey': key,
+              'Authorization': `Bearer ${key}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates,return=minimal',
+            },
+            body: JSON.stringify(supabasePayload),
+          });
 
-      if (!resp.ok) {
-        const errBody = await resp.text();
-        throw new Error(`Supabase PostgREST error (${resp.status}): ${errBody}`);
-      }
-    } else if (pool) {
-      await pool.query(`
-        INSERT INTO appointments (
-          appointment_id, doctor_id, patient_id, doctor_name, specialization,
-          patient_name, patient_age, patient_gender, date_time, slot_label,
-          visit_type, patient_status, doctor_status, token_number, clinic_name,
-          clinic_address, cancellation_reason, diagnosis, has_prescription,
-          sync_origin, synced_by, updated_at
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW()
-        ) ON CONFLICT (appointment_id) DO UPDATE SET
-          doctor_status = EXCLUDED.doctor_status,
-          patient_status = EXCLUDED.patient_status,
-          diagnosis = EXCLUDED.diagnosis,
-          has_prescription = EXCLUDED.has_prescription,
-          sync_origin = 'doctor_firestore',
-          synced_by = 'firestore_cloud_function',
-          updated_at = NOW();
-      `, [
-        supabasePayload.appointment_id,
-        supabasePayload.doctor_id,
-        supabasePayload.patient_id,
-        supabasePayload.doctor_name,
-        supabasePayload.specialization,
-        supabasePayload.patient_name,
-        supabasePayload.patient_age,
-        supabasePayload.patient_gender,
-        supabasePayload.date_time,
-        supabasePayload.slot_label,
-        supabasePayload.visit_type,
-        supabasePayload.patient_status,
-        supabasePayload.doctor_status,
-        supabasePayload.token_number,
-        supabasePayload.clinic_name,
-        supabasePayload.clinic_address,
-        supabasePayload.cancellation_reason,
-        supabasePayload.diagnosis,
-        supabasePayload.has_prescription,
-        supabasePayload.sync_origin,
-        supabasePayload.synced_by,
-      ]);
-    }
+          if (!resp.ok) {
+            const errBody = await resp.text();
+            throw new Error(`Supabase PostgREST error (${resp.status}): ${errBody}`);
+          }
+        } else if (pool) {
+          await pool.query(`
+            INSERT INTO appointments (
+              appointment_id, doctor_id, patient_id, doctor_name, specialization,
+              patient_name, patient_age, patient_gender, date_time, slot_label,
+              visit_type, patient_status, doctor_status, token_number, clinic_name,
+              clinic_address, cancellation_reason, diagnosis, has_prescription,
+              sync_origin, synced_by, updated_at
+            ) VALUES (
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW()
+            ) ON CONFLICT (appointment_id) DO UPDATE SET
+              doctor_status = EXCLUDED.doctor_status,
+              patient_status = EXCLUDED.patient_status,
+              diagnosis = EXCLUDED.diagnosis,
+              has_prescription = EXCLUDED.has_prescription,
+              sync_origin = 'doctor_firestore',
+              synced_by = 'firestore_cloud_function',
+              updated_at = NOW();
+          `, [
+            supabasePayload.appointment_id,
+            supabasePayload.doctor_id,
+            supabasePayload.patient_id,
+            supabasePayload.doctor_name,
+            supabasePayload.specialization,
+            supabasePayload.patient_name,
+            supabasePayload.patient_age,
+            supabasePayload.patient_gender,
+            supabasePayload.date_time,
+            supabasePayload.slot_label,
+            supabasePayload.visit_type,
+            supabasePayload.patient_status,
+            supabasePayload.doctor_status,
+            supabasePayload.token_number,
+            supabasePayload.clinic_name,
+            supabasePayload.clinic_address,
+            supabasePayload.cancellation_reason,
+            supabasePayload.diagnosis,
+            supabasePayload.has_prescription,
+            supabasePayload.sync_origin,
+            supabasePayload.synced_by,
+          ]);
+        }
+      },
+      { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'appointment', entityId: appointmentId } }
+    );
   } catch (err) {
+    const retryCount = err.retryCount || 3;
+    const actualErr = err.originalError || err;
     await recordDlqFailure({
       direction: 'firestore_to_supabase',
       entityType: 'appointment',
       entityId: appointmentId,
       payload: supabasePayload,
-      errorMessage: err.message,
-      errorStack: err.stack,
+      errorMessage: actualErr.message,
+      errorStack: actualErr.stack,
+      retryCount: retryCount,
     });
-    throw err; // Re-throw to allow Cloud Functions / Cloud Tasks retry
+    throw actualErr; // Re-throw to allow Cloud Functions / Cloud Tasks retry
   }
 }
 
@@ -279,64 +311,72 @@ async function syncFirestorePrescriptionToSupabase(event) {
   };
 
   try {
-    // 1. Upsert prescription header
-    const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/prescriptions?on_conflict=prescription_id`, {
-      method: 'POST',
-      headers: {
-        'apikey': key,
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal',
+    await executeWithRetry(
+      async () => {
+        // 1. Upsert prescription header
+        const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/prescriptions?on_conflict=prescription_id`, {
+          method: 'POST',
+          headers: {
+            'apikey': key,
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates,return=minimal',
+          },
+          body: JSON.stringify(prescriptionPayload),
+        });
+
+        if (!resp.ok) {
+          const errBody = await resp.text();
+          throw new Error(`Supabase PostgREST prescription header error (${resp.status}): ${errBody}`);
+        }
+
+        // 2. Upsert medicines line items if present
+        const medicines = Array.isArray(after.medicines) ? after.medicines : [];
+        if (medicines.length > 0) {
+          const medRows = medicines.map((m, idx) => ({
+            prescription_id: prescriptionId,
+            medicine_entry_id: `${prescriptionId}_med_${idx}`,
+            name: m.name || m.medicineName || 'Medicine',
+            dosage: m.dosage || 'Standard',
+            form: m.form || 'Tablet',
+            frequency: m.frequency || '1-0-1',
+            quantity: String(m.quantity || '10'),
+            duration: m.duration || '5 days',
+            instructions: m.instructions || m.timing || 'After meals',
+          }));
+
+          const medResp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/prescription_medicines?on_conflict=prescription_id,medicine_entry_id`, {
+            method: 'POST',
+            headers: {
+              'apikey': key,
+              'Authorization': `Bearer ${key}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'resolution=merge-duplicates,return=minimal',
+            },
+            body: JSON.stringify(medRows),
+          });
+
+          if (!medResp.ok) {
+            const errBody = await medResp.text();
+            console.warn(`[SyncBridge] Warning: Medicines upsert returned ${medResp.status}: ${errBody}`);
+          }
+        }
       },
-      body: JSON.stringify(prescriptionPayload),
-    });
-
-    if (!resp.ok) {
-      const errBody = await resp.text();
-      throw new Error(`Supabase PostgREST prescription header error (${resp.status}): ${errBody}`);
-    }
-
-    // 2. Upsert medicines line items if present
-    const medicines = Array.isArray(after.medicines) ? after.medicines : [];
-    if (medicines.length > 0) {
-      const medRows = medicines.map((m, idx) => ({
-        prescription_id: prescriptionId,
-        medicine_entry_id: `${prescriptionId}_med_${idx}`,
-        name: m.name || m.medicineName || 'Medicine',
-        dosage: m.dosage || 'Standard',
-        form: m.form || 'Tablet',
-        frequency: m.frequency || '1-0-1',
-        quantity: String(m.quantity || '10'),
-        duration: m.duration || '5 days',
-        instructions: m.instructions || m.timing || 'After meals',
-      }));
-
-      const medResp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/prescription_medicines?on_conflict=prescription_id,medicine_entry_id`, {
-        method: 'POST',
-        headers: {
-          'apikey': key,
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates,return=minimal',
-        },
-        body: JSON.stringify(medRows),
-      });
-
-      if (!medResp.ok) {
-        const errBody = await medResp.text();
-        console.warn(`[SyncBridge] Warning: Medicines upsert returned ${medResp.status}: ${errBody}`);
-      }
-    }
+      { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'prescription', entityId: prescriptionId } }
+    );
   } catch (err) {
+    const retryCount = err.retryCount || 3;
+    const actualErr = err.originalError || err;
     await recordDlqFailure({
       direction: 'firestore_to_supabase',
       entityType: 'prescription',
       entityId: prescriptionId,
       payload: prescriptionPayload,
-      errorMessage: err.message,
-      errorStack: err.stack,
+      errorMessage: actualErr.message,
+      errorStack: actualErr.stack,
+      retryCount: retryCount,
     });
-    throw err;
+    throw actualErr;
   }
 }
 
@@ -344,4 +384,6 @@ module.exports = {
   syncFirestoreAppointmentToSupabase,
   syncFirestorePrescriptionToSupabase,
   recordDlqFailure,
+  executeWithRetry,
 };
+

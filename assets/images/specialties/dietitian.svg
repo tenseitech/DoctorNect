@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="appleRed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+    <linearGradient id="greenApple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A3E635"/>
+      <stop offset="100%" stop-color="#4D7C0F"/>
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDBA74"/>
+      <stop offset="50%" stop-color="#FB923C"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+  <!-- Yellow Bananas (back left) -->
+  <path d="M 120 140 C 90 240 130 360 210 380 C 130 340 100 240 130 140 Z" fill="#FACC15"/>
+  <path d="M 150 160 C 125 250 160 360 230 380 C 160 340 135 250 160 160 Z" fill="#EAB308"/>
+  <!-- Large Glossy Red Apple (center) -->
+  <path d="M 200 180 C 230 165 255 185 270 185 C 285 185 310 165 340 180 C 380 200 390 280 340 330 C 310 360 285 350 270 350 C 255 350 230 360 200 330 C 150 280 160 200 200 180 Z" fill="url(#appleRed)"/>
+  <!-- Apple Stem & Leaf -->
+  <path d="M 270 185 Q 280 140 260 130" fill="none" stroke="#78350F" stroke-width="8" stroke-linecap="round"/>
+  <ellipse cx="285" cy="140" rx="20" ry="10" transform="rotate(-30 285 140)" fill="#22C55E"/>
+  <!-- Green Apple (right) -->
+  <circle cx="360" cy="270" r="70" fill="url(#greenApple)"/>
+  <!-- Half Sliced Orange (foreground) -->
+  <g transform="translate(230, 310)">
+    <circle cx="0" cy="0" r="68" fill="url(#orangeGrad)"/>
+    <circle cx="0" cy="0" r="58" fill="#FFF7ED"/>
+    <!-- Orange citrus segments -->
+    <g fill="#EA580C">
+      <path d="M 0 -50 A 50 50 0 0 1 43 -25 L 0 0 Z"/>
+      <path d="M 43 -25 A 50 50 0 0 1 43 25 L 0 0 Z"/>
+      <path d="M 43 25 A 50 50 0 0 1 0 50 L 0 0 Z"/>
+      <path d="M 0 50 A 50 50 0 0 1 -43 25 L 0 0 Z"/>
+      <path d="M -43 25 A 50 50 0 0 1 -43 -25 L 0 0 Z"/>
+      <path d="M -43 -25 A 50 50 0 0 1 0 -50 L 0 0 Z"/>
+    </g>
+    <circle cx="0" cy="0" r="10" fill="#FFF7ED"/>
+  </g>
+  <!-- Blueberries -->
+  <circle cx="330" cy="380" r="22" fill="#2563EB"/>
+  <circle cx="370" cy="370" r="20" fill="#1D4ED8"/>
+</svg>

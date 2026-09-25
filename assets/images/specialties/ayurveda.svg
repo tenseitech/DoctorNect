@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="ayurGreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4ADE80"/>
+      <stop offset="50%" stop-color="#22C55E"/>
+      <stop offset="100%" stop-color="#15803D"/>
+    </linearGradient>
+  </defs>
+  <!-- Circular Herbal Ring -->
+  <circle cx="250" cy="250" r="195" fill="none" stroke="url(#ayurGreen)" stroke-width="26"/>
+  <!-- Central Herbal Vitality Sphere -->
+  <circle cx="250" cy="160" r="36" fill="url(#ayurGreen)"/>
+  <!-- Botanical Triple Herbal Leaves -->
+  <!-- Left Leaf -->
+  <path d="M 250 360 C 150 360 110 270 120 230 C 170 225 240 270 250 360 Z" fill="url(#ayurGreen)"/>
+  <path d="M 120 230 Q 185 295 250 360" fill="none" stroke="#FFFFFF" stroke-width="4" opacity="0.6"/>
+  <!-- Center Leaf -->
+  <path d="M 250 360 C 190 280 200 190 250 170 C 300 190 310 280 250 360 Z" fill="url(#ayurGreen)"/>
+  <line x1="250" y1="170" x2="250" y2="360" stroke="#FFFFFF" stroke-width="4" opacity="0.6"/>
+  <!-- Right Leaf -->
+  <path d="M 250 360 C 350 360 390 270 380 230 C 330 225 260 270 250 360 Z" fill="url(#ayurGreen)"/>
+  <path d="M 380 230 Q 315 295 250 360" fill="none" stroke="#FFFFFF" stroke-width="4" opacity="0.6"/>
+</svg>

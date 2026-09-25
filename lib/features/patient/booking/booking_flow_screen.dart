@@ -27,6 +27,10 @@ import 'widgets/add_family_member_sheet.dart';
 import 'widgets/booking_confirmed_view.dart';
 import 'widgets/booking_step_header.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/session/patient_session.dart';
+import '../../../core/supabase/supabase_bootstrap.dart';
+import '../../../core/supabase/supabase_patient_repository.dart';
+import '../../../core/supabase/patient_write_guard.dart';
 
 class BookingFlowScreen extends StatefulWidget {
   const BookingFlowScreen({
@@ -509,13 +513,53 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           ? old.tokenNumber
           : store.nextTokenNumberForDoctorOnDate(widget.doctorId, date);
 
+      DateTime newSlotDateTime = date;
+      final timeOfDay = parseSlotTimeLabel(slotLabel);
+      if (timeOfDay != null) {
+        newSlotDateTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          timeOfDay.hour,
+          timeOfDay.minute,
+        );
+      }
+
       try {
+        if (SupabaseBootstrap.isReady && old?.appointmentId != null) {
+          await SupabasePatientRepository.instance.bookAppointment(
+            context: context,
+            appointmentId: old!.appointmentId,
+            doctorId: widget.doctorId,
+            patientId: old.patientId ??
+                (PatientSession.loggedInPatientId.isNotEmpty
+                    ? PatientSession.loggedInPatientId
+                    : 'pat-default'),
+            doctorName: _draft.doctorName,
+            specialization: listing?.specialization ??
+                _doctor?.specialization ??
+                'General Physician',
+            patientName: combinedName,
+            patientAge: profile.age,
+            patientGender: BookingFlowHelpers.resolvePatientGender(profile.gender) ??
+                'Other',
+            dateTime: newSlotDateTime,
+            slotLabel: slotLabel,
+            visitType: 'followUp',
+            tokenNumber: newToken,
+            clinicName: _doctor?.clinicName,
+            clinicAddress: clinicAddress,
+          );
+        }
         await store.reschedulePatient(
           recordId: widget.rescheduleFromRecordId!,
           newDate: date,
           newSlotLabel: slotLabel,
           newToken: newToken,
         );
+      } on PatientMaintenanceException catch (_) {
+        // Friendly maintenance sheet already displayed by PatientWriteGuard
+        return;
       } catch (e) {
         if (!mounted) return;
         _showBookingMessage(
@@ -588,6 +632,45 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       final token = store.nextTokenNumberForDoctorOnDate(widget.doctorId, date);
       firstToken ??= token;
 
+      DateTime slotDateTime = date;
+      final timeOfDay = parseSlotTimeLabel(slotLabel);
+      if (timeOfDay != null) {
+        slotDateTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          timeOfDay.hour,
+          timeOfDay.minute,
+        );
+      }
+
+      // 1. PRIMARY WRITE: Supabase PostgreSQL (Patient Module Staged Cutover)
+      // Guarded by PatientWriteGuard for maintenance kill-switch & 42501 defense
+      if (SupabaseBootstrap.isReady) {
+        await SupabasePatientRepository.instance.bookAppointment(
+          context: context,
+          appointmentId: appointmentId,
+          doctorId: widget.doctorId,
+          patientId: PatientSession.loggedInPatientId.isNotEmpty
+              ? PatientSession.loggedInPatientId
+              : 'pat-default',
+          doctorName: _draft.doctorName,
+          specialization: listing?.specialization ??
+              _doctor?.specialization ??
+              'General Physician',
+          patientName: pName,
+          patientAge: pAge,
+          patientGender: pGender,
+          dateTime: slotDateTime,
+          slotLabel: slotLabel,
+          visitType: 'newVisit',
+          tokenNumber: token,
+          clinicName: _doctor?.clinicName,
+          clinicAddress: clinicAddress,
+        );
+      }
+
+      // 2. Synchronize local store for UI responsiveness
       final confirmed = await store.addBooking(
         doctorId: widget.doctorId,
         doctorName: _draft.doctorName,
@@ -616,32 +699,45 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         ? PatientProfileMock.profile.name
         : 'Patient';
 
-    if (_draft.bookingForSelf) {
-      final hasFamily = _draft.familyMemberIds.isNotEmpty;
-      await processBooking(
-        mainPatientName,
-        profile.age,
-        BookingFlowHelpers.resolvePatientGender(profile.gender)!,
-        _reasonControllers['self']?.text ?? '',
-        bookedBy: hasFamily ? mainPatientName : null,
-        patientRelation: hasFamily ? 'Self' : null,
-      );
-    }
+    try {
+      if (_draft.bookingForSelf) {
+        final hasFamily = _draft.familyMemberIds.isNotEmpty;
+        await processBooking(
+          mainPatientName,
+          profile.age,
+          BookingFlowHelpers.resolvePatientGender(profile.gender)!,
+          _reasonControllers['self']?.text ?? '',
+          bookedBy: hasFamily ? mainPatientName : null,
+          patientRelation: hasFamily ? 'Self' : null,
+        );
+      }
 
-    for (final id in _draft.familyMemberIds) {
-      final f = _familyMembers.firstWhere(
-        (m) => m.id == id,
-        orElse: () => FamilyMember(
-            id: id, name: 'Family Member', age: 0, relation: '', gender: ''),
+      for (final id in _draft.familyMemberIds) {
+        final f = _familyMembers.firstWhere(
+          (m) => m.id == id,
+          orElse: () => FamilyMember(
+              id: id, name: 'Family Member', age: 0, relation: '', gender: ''),
+        );
+        await processBooking(
+          f.name,
+          f.age,
+          BookingFlowHelpers.resolvePatientGender(f.gender)!,
+          _reasonControllers[id]?.text ?? '',
+          bookedBy: mainPatientName,
+          patientRelation: f.relation,
+        );
+      }
+    } on PatientMaintenanceException catch (_) {
+      // PatientWriteGuard has already presented the friendly maintenance bottom sheet
+      return;
+    } catch (e) {
+      if (!mounted) return;
+      _showBookingMessage(
+        describeUserFacingError(e,
+            fallback:
+                "Couldn't confirm this booking. Please check your connection and try again."),
       );
-      await processBooking(
-        f.name,
-        f.age,
-        BookingFlowHelpers.resolvePatientGender(f.gender)!,
-        _reasonControllers[id]?.text ?? '',
-        bookedBy: mainPatientName,
-        patientRelation: f.relation,
-      );
+      return;
     }
 
     final displayToken = firstToken ?? 1;

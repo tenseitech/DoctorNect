@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../data/shared_appointments_store.dart';
+import 'mappers/appointment_supabase_mapper.dart';
 import 'supabase_bootstrap.dart';
 import 'patient_write_guard.dart';
 
@@ -79,6 +81,10 @@ class SupabasePatientRepository {
 
     return List<Map<String, dynamic>>.from(res);
   }
+
+  /// Converts a Supabase appointment row to a [DoctorNectAppointmentRecord]
+  DoctorNectAppointmentRecord? toRecord(Map<String, dynamic> row) =>
+      AppointmentSupabaseMapper.fromRow(row);
 
   /// Cancels an appointment from the patient side
   Future<void> cancelAppointment({
@@ -173,14 +179,14 @@ class SupabasePatientRepository {
       action: () async {
         final payload = {
           ...fields,
+          'patient_id': patientId,
           'sync_origin': 'patient_supabase',
           'updated_at': DateTime.now().toIso8601String(),
         };
 
         await _client
             .from('patients')
-            .update(payload)
-            .eq('patient_id', patientId);
+            .upsert(payload, onConflict: 'patient_id');
       },
     );
   }

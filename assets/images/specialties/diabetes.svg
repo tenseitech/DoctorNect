@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="meterBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="dropRed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+  </defs>
+  <!-- Test Strip at bottom -->
+  <rect x="230" y="380" width="40" height="75" rx="6" fill="#F3F4F6" stroke="#D1D5DB" stroke-width="4"/>
+  <rect x="242" y="420" width="16" height="20" rx="3" fill="#EF4444"/>
+  <!-- Glucometer Rounded Body -->
+  <rect x="130" y="75" width="240" height="320" rx="60" fill="url(#meterBlue)"/>
+  <!-- LCD Display Screen -->
+  <rect x="165" y="115" width="170" height="150" rx="20" fill="#F8FAFC"/>
+  <!-- Glossy Blood Drop on Screen -->
+  <path d="M 250 140 C 250 140 285 195 285 220 C 285 240 269 255 250 255 C 231 255 215 240 215 220 C 215 195 250 140 250 140 Z" fill="url(#dropRed)"/>
+  <ellipse cx="262" cy="210" rx="6" ry="14" transform="rotate(-30 262 210)" fill="#FFFFFF" opacity="0.8"/>
+  <!-- Front Buttons -->
+  <rect x="175" y="295" width="60" height="40" rx="14" fill="#FFFFFF"/>
+  <rect x="265" y="295" width="60" height="40" rx="14" fill="#FFFFFF"/>
+</svg>

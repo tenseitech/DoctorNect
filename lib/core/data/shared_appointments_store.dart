@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/audio/chime_sound_service.dart';
 import '../../core/firebase/firebase_bootstrap.dart';
+import '../../core/supabase/supabase_bootstrap.dart';
+import '../../core/supabase/supabase_patient_repository.dart';
 import '../../core/session/patient_session.dart';
 import '../../features/doctor/profile/data/doctor_profile_store.dart';
 import '../../features/doctor/models/doctor_models.dart';
@@ -243,6 +245,21 @@ class SharedAppointmentsStore extends ChangeNotifier {
 
   Future<void> refreshForPatient(String patientId) async {
     if (patientId.isEmpty) return;
+    if (SupabaseBootstrap.isReady) {
+      try {
+        final rows = await SupabasePatientRepository.instance.fetchAppointments(patientId);
+        final records = rows
+            .map((r) => SupabasePatientRepository.instance.toRecord(r))
+            .whereType<DoctorNectAppointmentRecord>()
+            .toList();
+        mergeFromFirestore(records);
+        return;
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Failed to refresh appointments from Supabase: $e');
+        }
+      }
+    }
     final remote = await FirestoreService.instance.appointment.fetchForPatient(
       patientId,
       preferCache: false,
@@ -756,6 +773,27 @@ class SharedAppointmentsStore extends ChangeNotifier {
         old.doctorStatus == AppointmentStatus.noShow) {
       throw StateError(
           'Cannot cancel an appointment that is already ${old.doctorStatus.name}.');
+    }
+
+    if (SupabaseBootstrap.isReady) {
+      final previous = _records[i];
+      _records[i] = old.copyWith(
+        cancellationReason: reason,
+        doctorStatus: AppointmentStatus.cancelled,
+      );
+      notifyListeners();
+      try {
+        await SupabasePatientRepository.instance.cancelAppointment(
+          context: null,
+          appointmentId: old.appointmentId,
+          reason: reason,
+        );
+      } catch (e) {
+        _records[i] = previous;
+        notifyListeners();
+        rethrow;
+      }
+      return;
     }
 
     await _updateRecordAtIndex(

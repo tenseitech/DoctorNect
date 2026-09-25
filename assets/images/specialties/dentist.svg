@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="dentistBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#0070F3"/>
+      <stop offset="100%" stop-color="#0051B3"/>
+    </linearGradient>
+    <linearGradient id="toothGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="85%" stop-color="#F0F9FF"/>
+      <stop offset="100%" stop-color="#BAE6FD"/>
+    </linearGradient>
+    <linearGradient id="mirrorMetal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E2E8F0"/>
+      <stop offset="50%" stop-color="#94A3B8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+  </defs>
+  <!-- Blue Circular Badge Background -->
+  <circle cx="230" cy="250" r="195" fill="url(#dentistBg)"/>
+  <!-- Tooth Root & Crown -->
+  <path d="M 160 160 C 180 135 215 150 230 165 C 245 150 280 135 300 160 C 335 200 325 280 305 350 C 295 385 275 385 265 340 C 255 300 245 295 230 295 C 215 295 205 300 195 340 C 185 385 165 385 155 350 C 135 280 125 200 160 160 Z" fill="url(#toothGrad)"/>
+  <!-- Blue Smile swoosh around tooth -->
+  <path d="M 115 270 C 130 350 280 380 310 295 C 290 340 155 330 115 270 Z" fill="#38BDF8"/>
+  <!-- Dental Inspection Mirror Tool -->
+  <g transform="rotate(25 380 200)">
+    <!-- Mirror head rim -->
+    <circle cx="380" cy="130" r="46" fill="none" stroke="url(#mirrorMetal)" stroke-width="12"/>
+    <circle cx="380" cy="130" r="40" fill="#BAE6FD" opacity="0.85"/>
+    <ellipse cx="372" cy="120" rx="20" ry="12" fill="#FFFFFF" opacity="0.75"/>
+    <!-- Handle -->
+    <rect x="374" y="180" width="12" height="190" rx="6" fill="url(#mirrorMetal)"/>
+    <rect x="371" y="240" width="18" height="60" rx="4" fill="#64748B"/>
+  </g>
+</svg>

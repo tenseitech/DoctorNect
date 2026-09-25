@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="pinkCircle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCE7F3"/>
+      <stop offset="100%" stop-color="#F9A8D4"/>
+    </linearGradient>
+    <linearGradient id="hairGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4A2818"/>
+      <stop offset="100%" stop-color="#2D150B"/>
+    </linearGradient>
+    <linearGradient id="skinGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FCD3B8"/>
+      <stop offset="100%" stop-color="#F5B289"/>
+    </linearGradient>
+    <linearGradient id="coatGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E5E7EB"/>
+    </linearGradient>
+  </defs>
+  <!-- Pink circular backdrop -->
+  <circle cx="250" cy="250" r="215" fill="url(#pinkCircle)"/>
+  <!-- Doctor hair back -->
+  <ellipse cx="250" cy="210" rx="100" ry="115" fill="url(#hairGrad)"/>
+  <!-- Head & Neck -->
+  <path d="M 230 260 L 230 305 L 270 305 L 270 260 Z" fill="url(#skinGrad)"/>
+  <ellipse cx="250" cy="205" rx="72" ry="82" fill="url(#skinGrad)"/>
+  <!-- Hair front waves -->
+  <path d="M 180 180 C 180 110 320 110 320 180 C 320 220 300 240 305 270 C 290 220 270 160 250 160 C 230 160 210 220 195 270 C 200 240 180 220 180 180 Z" fill="url(#hairGrad)"/>
+  <!-- Pearl earrings -->
+  <circle cx="178" cy="215" r="8" fill="#FFFFFF"/>
+  <circle cx="322" cy="215" r="8" fill="#FFFFFF"/>
+  <!-- Inner scrub neckline -->
+  <path d="M 225 300 L 250 350 L 275 300 Z" fill="#EC4899"/>
+  <!-- White Lab Coat -->
+  <path d="M 130 450 C 130 350 200 320 220 315 L 250 380 L 280 315 C 300 320 370 350 370 450 Z" fill="url(#coatGrad)"/>
+  <!-- Stethoscope around neck -->
+  <path d="M 205 315 C 200 365 215 415 235 415 C 245 415 250 395 250 375" fill="none" stroke="#DB2777" stroke-width="12" stroke-linecap="round"/>
+  <path d="M 295 315 C 300 365 285 415 275 415 L 275 435" fill="none" stroke="#DB2777" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="275" cy="445" r="16" fill="#9CA3AF"/>
+  <circle cx="275" cy="445" r="10" fill="#E5E7EB"/>
+</svg>

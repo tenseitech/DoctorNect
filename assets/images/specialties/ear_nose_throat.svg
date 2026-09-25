@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="entHead" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="throatRed" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+  </defs>
+  <!-- Head Silhouette Profile (ENT) -->
+  <path d="M 230 40 C 290 40 370 120 370 170 C 370 185 390 195 405 210 C 415 220 400 230 385 240 C 395 255 385 270 370 275 C 380 295 375 310 350 330 C 330 345 320 370 315 460 L 195 460 C 190 350 150 290 150 240 C 150 130 180 40 230 40 Z" fill="url(#entHead)"/>
+  <!-- Internal airway channel (white contour) -->
+  <path d="M 380 230 C 310 200 280 210 250 230 C 230 250 220 280 220 460 L 255 460 C 255 300 260 270 280 250 C 310 230 350 235 380 230 Z" fill="#FFFFFF"/>
+  <!-- Red pharyngeal / vocal tract -->
+  <path d="M 345 255 C 300 255 270 280 265 460 L 295 460 C 295 300 310 275 345 255 Z" fill="url(#throatRed)"/>
+</svg>

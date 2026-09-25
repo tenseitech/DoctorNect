@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="amberGlass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#92400E"/>
+      <stop offset="25%" stop-color="#D97706"/>
+      <stop offset="75%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#78350F"/>
+    </linearGradient>
+    <linearGradient id="capGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#D1D5DB"/>
+    </linearGradient>
+  </defs>
+  <!-- White Ribbed Screw Cap -->
+  <rect x="180" y="70" width="140" height="75" rx="14" fill="url(#capGrad)" stroke="#9CA3AF" stroke-width="4"/>
+  <line x1="205" y1="75" x2="205" y2="140" stroke="#D1D5DB" stroke-width="5"/>
+  <line x1="230" y1="75" x2="230" y2="140" stroke="#D1D5DB" stroke-width="5"/>
+  <line x1="255" y1="75" x2="255" y2="140" stroke="#D1D5DB" stroke-width="5"/>
+  <line x1="280" y1="75" x2="280" y2="140" stroke="#D1D5DB" stroke-width="5"/>
+  <!-- Bottle Neck -->
+  <rect x="200" y="145" width="100" height="30" fill="url(#amberGlass)"/>
+  <!-- Amber Glass Bottle Body -->
+  <rect x="160" y="170" width="180" height="260" rx="36" fill="url(#amberGlass)"/>
+  <!-- Specular Reflection Highlight -->
+  <rect x="180" y="195" width="22" height="210" rx="10" fill="#FFFFFF" opacity="0.3"/>
+  <!-- Homeopathic Sugar Globules (White Pills) -->
+  <g fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2">
+    <circle cx="210" cy="380" r="16"/>
+    <circle cx="245" cy="385" r="16"/>
+    <circle cx="280" cy="380" r="16"/>
+    <circle cx="225" cy="355" r="16"/>
+    <circle cx="260" cy="355" r="16"/>
+    <circle cx="295" cy="355" r="16"/>
+    <circle cx="195" cy="350" r="16"/>
+    <circle cx="210" cy="325" r="16"/>
+    <circle cx="245" cy="325" r="16"/>
+    <circle cx="280" cy="325" r="16"/>
+    <circle cx="230" cy="295" r="16"/>
+    <circle cx="265" cy="295" r="16"/>
+  </g>
+</svg>

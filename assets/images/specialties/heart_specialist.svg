@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <linearGradient id="heartRed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="60%" stop-color="#DC2626"/>
+      <stop offset="100%" stop-color="#991B1B"/>
+    </linearGradient>
+    <linearGradient id="vesselBlue" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+  <!-- Aorta & Pulmonary Arteries (Blue Vessels) -->
+  <path d="M 180 180 L 180 80 L 220 80 L 220 180 Z" fill="url(#vesselBlue)"/>
+  <path d="M 280 170 C 280 110 320 80 370 90 L 375 125 C 335 120 315 140 315 170 Z" fill="url(#vesselBlue)"/>
+  <!-- Aorta arch (Red) -->
+  <path d="M 220 180 C 220 80 320 60 340 140 L 305 150 C 290 95 250 110 250 180 Z" fill="#EF4444"/>
+  <!-- Branching arteries from aorta top -->
+  <rect x="235" y="45" width="16" height="35" rx="5" fill="#EF4444"/>
+  <rect x="260" y="40" width="16" height="35" rx="5" fill="#EF4444"/>
+  <rect x="285" y="48" width="16" height="35" rx="5" fill="#EF4444"/>
+  <!-- Muscular Heart Body -->
+  <path d="M 180 180 C 130 190 120 280 160 360 C 200 440 280 470 310 450 C 370 410 410 320 380 230 C 360 170 290 170 260 180 C 230 170 190 170 180 180 Z" fill="url(#heartRed)"/>
+  <!-- Coronary blood vessels (blue veins on muscle) -->
+  <path d="M 260 180 Q 280 260 270 340 Q 260 390 285 430" fill="none" stroke="#38BDF8" stroke-width="10" stroke-linecap="round"/>
+  <path d="M 275 250 Q 325 285 345 320" fill="none" stroke="#38BDF8" stroke-width="7" stroke-linecap="round"/>
+  <path d="M 270 310 Q 230 340 215 375" fill="none" stroke="#38BDF8" stroke-width="6" stroke-linecap="round"/>
+</svg>
