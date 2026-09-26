@@ -783,14 +783,10 @@ class _EmergencyInfoStrip extends StatelessWidget {
     final isDark = AppColors.isDark(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF261515)
-            : const Color(0xFFFFF5F5),
+        color: isDark ? const Color(0xFF261515) : const Color(0xFFFFF5F5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF4C1D1D)
-              : const Color(0xFFFEE2E2),
+          color: isDark ? const Color(0xFF4C1D1D) : const Color(0xFFFEE2E2),
         ),
       ),
       child: Padding(

@@ -51,9 +51,11 @@ class DoctorNectUserProfile {
         'displayName': displayName,
         'email': email,
         if (mobile != null) 'mobile': mobile,
-        if (verificationStatus != null) 'verificationStatus': verificationStatus,
+        if (verificationStatus != null)
+          'verificationStatus': verificationStatus,
         if (rejectionReason != null) 'rejectionReason': rejectionReason,
-        if (submittedAt != null) 'submittedAt': Timestamp.fromDate(submittedAt!),
+        if (submittedAt != null)
+          'submittedAt': Timestamp.fromDate(submittedAt!),
         'updatedAt': FieldValue.serverTimestamp(),
       };
 

@@ -9,7 +9,10 @@ abstract final class AppointmentSupabaseMapper {
   static List<String> _parseStringList(dynamic raw) {
     if (raw == null) return const [];
     if (raw is List) {
-      return raw.map((e) => e.toString().trim()).where((s) => s.isNotEmpty).toList();
+      return raw
+          .map((e) => e.toString().trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
     }
     return const [];
   }
@@ -100,7 +103,8 @@ abstract final class AppointmentSupabaseMapper {
         slotLabel: row['slot_label'] as String? ?? '',
         tokenNumber: (row['token_number'] as num?)?.toInt() ?? 0,
         visitType: _parseVisitType(row['visit_type'] as String?),
-        patientStatus: _parsePatientBookingStatus(row['patient_status'] as String?),
+        patientStatus:
+            _parsePatientBookingStatus(row['patient_status'] as String?),
         doctorStatus: doctorStatus,
         clinicName: row['clinic_name'] as String?,
         clinicAddress: row['clinic_address'] as String?,

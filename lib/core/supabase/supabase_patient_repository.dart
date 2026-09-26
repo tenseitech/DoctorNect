@@ -10,7 +10,8 @@ import 'patient_write_guard.dart';
 /// two-layer maintenance write guard.
 class SupabasePatientRepository {
   SupabasePatientRepository._();
-  static final SupabasePatientRepository instance = SupabasePatientRepository._();
+  static final SupabasePatientRepository instance =
+      SupabasePatientRepository._();
 
   SupabaseClient get _client => SupabaseBootstrap.client;
 
@@ -77,7 +78,9 @@ class SupabasePatientRepository {
             rethrow;
           }
           // Fallback to direct upsert only if RPC is missing in an older environment
-          if (e.code == '42883' || e.message.contains('function book_appointment_atomic does not exist')) {
+          if (e.code == '42883' ||
+              e.message.contains(
+                  'function book_appointment_atomic does not exist')) {
             final payload = {
               'appointment_id': appointmentId,
               'doctor_id': doctorId,
@@ -151,7 +154,8 @@ class SupabasePatientRepository {
   // --------------------------------------------------------------------------
 
   /// Fetches all prescriptions for a patient including medicine line items, investigations, and referrals
-  Future<List<Map<String, dynamic>>> fetchPrescriptions(String patientId) async {
+  Future<List<Map<String, dynamic>>> fetchPrescriptions(
+      String patientId) async {
     final res = await _client
         .from('prescriptions')
         .select('''
@@ -240,7 +244,8 @@ class SupabasePatientRepository {
   // --------------------------------------------------------------------------
 
   /// Fetches all health records for a patient
-  Future<List<Map<String, dynamic>>> fetchHealthRecords(String patientId) async {
+  Future<List<Map<String, dynamic>>> fetchHealthRecords(
+      String patientId) async {
     final res = await _client
         .from('health_records')
         .select()
@@ -268,9 +273,10 @@ class SupabasePatientRepository {
     String fileStorage = 'localOnly',
     String? storageUrl,
   }) async {
-    final validFileStorage = (fileStorage == 'cloudUploaded' || fileStorage == 'firebase')
-        ? 'cloudUploaded'
-        : (fileStorage == 'none' ? 'none' : 'localOnly');
+    final validFileStorage =
+        (fileStorage == 'cloudUploaded' || fileStorage == 'firebase')
+            ? 'cloudUploaded'
+            : (fileStorage == 'none' ? 'none' : 'localOnly');
 
     return PatientWriteGuard.run(
       context: context,

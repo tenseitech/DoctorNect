@@ -90,8 +90,7 @@ class _DoctorShellState extends State<DoctorShell> {
         width: 22,
         height: 22,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) =>
-            const Icon(TablerIcons.flask, size: 22),
+        errorBuilder: (_, __, ___) => const Icon(TablerIcons.flask, size: 22),
       ),
       selectedIcon: Image.asset(
         'assets/icons/doctor/lab.png',

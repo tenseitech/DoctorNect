@@ -602,7 +602,8 @@ class _DoctorStatTile extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Icon(item.icon, size: iconGlyph, color: Colors.white),
+                      child:
+                          Icon(item.icon, size: iconGlyph, color: Colors.white),
                     ),
                   ),
                 )

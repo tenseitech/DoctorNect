@@ -16,12 +16,14 @@ abstract final class SupabaseBootstrap {
   static const String defaultAnonKey = 'your-anon-key';
 
   static String get resolvedUrl => _envUrl.isNotEmpty ? _envUrl : defaultUrl;
-  static String get resolvedAnonKey => _envAnonKey.isNotEmpty ? _envAnonKey : defaultAnonKey;
+  static String get resolvedAnonKey =>
+      _envAnonKey.isNotEmpty ? _envAnonKey : defaultAnonKey;
 
   /// Global accessor to the Supabase client instance
   static SupabaseClient get client {
     if (!isReady) {
-      throw StateError('Supabase has not been initialized. Call SupabaseBootstrap.initialize() first.');
+      throw StateError(
+          'Supabase has not been initialized. Call SupabaseBootstrap.initialize() first.');
     }
     return Supabase.instance.client;
   }
@@ -54,7 +56,8 @@ abstract final class SupabaseBootstrap {
 
       isReady = true;
       if (kDebugMode) {
-        debugPrint('[SupabaseBootstrap] Supabase initialized successfully on ${defaultTargetPlatform.name}');
+        debugPrint(
+            '[SupabaseBootstrap] Supabase initialized successfully on ${defaultTargetPlatform.name}');
       }
       return true;
     } catch (e, st) {

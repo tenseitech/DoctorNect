@@ -40,7 +40,9 @@ class _ProfileWebActionCardState extends State<ProfileWebActionCard> {
             .withLightness((hsl.lightness < 0.60) ? 0.68 : hsl.lightness)
             .withSaturation((hsl.saturation * 0.82).clamp(0.35, 0.90))
             .toColor()
-        : (hsl.lightness > 0.55 ? hsl.withLightness(0.44).toColor() : gradient.first);
+        : (hsl.lightness > 0.55
+            ? hsl.withLightness(0.44).toColor()
+            : gradient.first);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),

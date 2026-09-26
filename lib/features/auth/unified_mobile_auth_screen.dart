@@ -325,7 +325,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                                     child: Image.asset(
                                       'assets/images/doctor_illustration.jpg',
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Center(
+                                      errorBuilder: (_, __, ___) =>
+                                          const Center(
                                         child: Icon(
                                           Icons.medical_services_rounded,
                                           size: 48,
@@ -342,7 +343,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                                           end: Alignment.bottomCenter,
                                           colors: [
                                             Colors.transparent,
-                                            Colors.black.withValues(alpha: 0.40),
+                                            Colors.black
+                                                .withValues(alpha: 0.40),
                                           ],
                                         ),
                                       ),

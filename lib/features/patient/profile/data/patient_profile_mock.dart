@@ -166,10 +166,12 @@ class PatientProfileMock {
     profile.email = data['email'] as String? ?? profile.email;
     profile.bloodGroup = data['blood_group'] as String? ?? profile.bloodGroup;
     if (data['height'] != null) {
-      profile.height = double.tryParse(data['height'].toString()) ?? profile.height;
+      profile.height =
+          double.tryParse(data['height'].toString()) ?? profile.height;
     }
     if (data['weight'] != null) {
-      profile.weight = double.tryParse(data['weight'].toString()) ?? profile.weight;
+      profile.weight =
+          double.tryParse(data['weight'].toString()) ?? profile.weight;
     }
     profile.photoInitial =
         profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'P';
@@ -185,7 +187,8 @@ class PatientProfileMock {
     profileCity = profileAddress.city;
 
     if (data['conditions'] is List) {
-      conditions = (data['conditions'] as List).map((e) => e.toString()).toList();
+      conditions =
+          (data['conditions'] as List).map((e) => e.toString()).toList();
     }
     if (data['allergies'] is List) {
       allergies = (data['allergies'] as List).map((e) => e.toString()).toList();
@@ -199,7 +202,8 @@ class PatientProfileMock {
 
     if (SupabaseBootstrap.isReady) {
       try {
-        final supaData = await SupabasePatientRepository.instance.fetchProfile(patientId);
+        final supaData =
+            await SupabasePatientRepository.instance.fetchProfile(patientId);
         if (supaData != null) {
           _applyFromSupabase(supaData);
           notifyProfileUpdated();

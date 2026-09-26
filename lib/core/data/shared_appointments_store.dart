@@ -247,7 +247,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     if (patientId.isEmpty) return;
     if (SupabaseBootstrap.isReady) {
       try {
-        final rows = await SupabasePatientRepository.instance.fetchAppointments(patientId);
+        final rows = await SupabasePatientRepository.instance
+            .fetchAppointments(patientId);
         final records = rows
             .map((r) => SupabasePatientRepository.instance.toRecord(r))
             .whereType<DoctorNectAppointmentRecord>()

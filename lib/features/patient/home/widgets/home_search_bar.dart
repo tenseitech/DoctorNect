@@ -17,7 +17,6 @@ class HomeSearchBar extends StatefulWidget {
   final VoidCallback? onTap;
   final ValueChanged<String>? onSubmitted;
 
-
   static const List<String> words = [
     'Doctors',
     'Labs',

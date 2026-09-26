@@ -92,7 +92,8 @@ class WelcomeScreen extends StatelessWidget {
           icon: Icons.medical_services_rounded,
           onTap: () => isNewUser
               ? _onSelectRoleForNewUser(context, UserType.doctor)
-              : _openUnifiedAuth(context, UserType.doctor, AppColors.doctorBlue),
+              : _openUnifiedAuth(
+                  context, UserType.doctor, AppColors.doctorBlue),
         ),
         _WelcomeRoleOption(
           title: UnifiedAuthCoordinator.roleLabel(UserType.patient),

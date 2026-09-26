@@ -62,8 +62,7 @@ abstract final class PrescriptionSupabaseMapper {
       draft.vitals.spo2 = data['spo2'] as String? ?? '';
       draft.vitals.weightKg = data['weight_kg'] as String? ?? '';
       draft.vitals.heightCm = data['height_cm'] as String? ?? '';
-      draft.vitals.respiratoryRate =
-          data['respiratory_rate'] as String? ?? '';
+      draft.vitals.respiratoryRate = data['respiratory_rate'] as String? ?? '';
 
       // Advice & Follow up
       draft.dietAdvice = data['diet_advice'] as String? ?? '';
@@ -74,8 +73,7 @@ abstract final class PrescriptionSupabaseMapper {
       draft.followUpNote = data['follow_up_note'] as String? ?? '';
 
       if (data['next_visit'] != null) {
-        draft.nextVisit =
-            DateTime.tryParse(data['next_visit'].toString());
+        draft.nextVisit = DateTime.tryParse(data['next_visit'].toString());
       }
 
       // 1. Medicines
@@ -91,15 +89,12 @@ abstract final class PrescriptionSupabaseMapper {
         _applyDosage(entry, map['dosage'] as String? ?? '');
         entry.form = map['form'] as String? ?? 'Tablet';
         entry.instructions = map['instructions'] as String? ?? '';
-        entry.specialInstructions =
-            (map['special_instructions'] ?? map['specialInstructions'])
-                    as String? ??
-                '';
-        entry.isSos =
-            (map['is_sos'] ?? map['isSos']) as bool? ?? false;
+        entry.specialInstructions = (map['special_instructions'] ??
+                map['specialInstructions']) as String? ??
+            '';
+        entry.isSos = (map['is_sos'] ?? map['isSos']) as bool? ?? false;
         entry.substituteAllowed =
-            (map['substitute_allowed'] ?? map['substituteAllowed'])
-                    as bool? ??
+            (map['substitute_allowed'] ?? map['substituteAllowed']) as bool? ??
                 true;
         _applyDuration(entry, map['duration'] as String? ?? '');
         entry.quantity = map['quantity'] as String? ?? '';
@@ -108,10 +103,9 @@ abstract final class PrescriptionSupabaseMapper {
       }).toList();
 
       // 2. Investigations
-      final rawInv =
-          data['prescription_investigations'] as List<dynamic>? ??
-              data['investigations'] as List<dynamic>? ??
-              const [];
+      final rawInv = data['prescription_investigations'] as List<dynamic>? ??
+          data['investigations'] as List<dynamic>? ??
+          const [];
       draft.investigations = rawInv
           .map((raw) {
             final map = Map<String, dynamic>.from(raw as Map);
@@ -140,8 +134,10 @@ abstract final class PrescriptionSupabaseMapper {
           .map((raw) {
             final map = Map<String, dynamic>.from(raw as Map);
             return ReferralEntry(
-              doctorId: (map['to_doctor_id'] ?? map['doctorId']) as String? ?? '',
-              doctorName: (map['doctor_name'] ?? map['doctorName']) as String? ?? '',
+              doctorId:
+                  (map['to_doctor_id'] ?? map['doctorId']) as String? ?? '',
+              doctorName:
+                  (map['doctor_name'] ?? map['doctorName']) as String? ?? '',
               specialization: map['specialization'] as String? ?? '',
               reason: map['reason'] as String? ?? '',
               sent: map['sent'] as bool? ?? false,

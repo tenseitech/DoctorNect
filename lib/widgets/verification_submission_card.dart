@@ -78,9 +78,8 @@ class _VerificationSubmissionCardState
       };
 
       if (roleCol != null && profileId != null && profileId.isNotEmpty) {
-        final roleRef = FirebaseFirestore.instance
-            .collection(roleCol)
-            .doc(profileId);
+        final roleRef =
+            FirebaseFirestore.instance.collection(roleCol).doc(profileId);
         batch.set(
           roleRef,
           {
@@ -193,9 +192,7 @@ class _VerificationSubmissionCardState
                       : (stage.isPending
                           ? Icons.hourglass_top_rounded
                           : Icons.shield_outlined),
-                  color: stage.isVerified
-                      ? const Color(0xFF16A34A)
-                      : accent,
+                  color: stage.isVerified ? const Color(0xFF16A34A) : accent,
                   size: 22,
                 ),
                 const SizedBox(width: 10),

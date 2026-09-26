@@ -236,7 +236,9 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (int index = 0; index < AppConstants.otpLength; index++) ...[
+                for (int index = 0;
+                    index < AppConstants.otpLength;
+                    index++) ...[
                   if (index > 0) SizedBox(width: gap),
                   SizedBox(
                     width: boxW,
@@ -268,8 +270,8 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
                         ),
                         inputFormatters: [_OtpTextFormatter()],
                         onChanged: (v) => _onChanged(index, v),
-                        onTap: () => _controllers[index].selection =
-                            TextSelection(
+                        onTap: () =>
+                            _controllers[index].selection = TextSelection(
                           baseOffset: 0,
                           extentOffset: _controllers[index].text.length,
                         ),

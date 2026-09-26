@@ -244,7 +244,8 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     // Patient reading prescriptions in Supabase-first mode:
     if (!_isDoctorContext && SupabaseBootstrap.isReady) {
       try {
-        final rows = await SupabasePatientRepository.instance.fetchPrescriptions(patientId);
+        final rows = await SupabasePatientRepository.instance
+            .fetchPrescriptions(patientId);
         final supaItems = rows
             .map((r) => PrescriptionSupabaseMapper.fromRow(r))
             .whereType<PrescriptionDraft>()
@@ -256,7 +257,8 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('ClinicalPrescriptionStore: Supabase fetch failed, falling back to Firestore: $e');
+          debugPrint(
+              'ClinicalPrescriptionStore: Supabase fetch failed, falling back to Firestore: $e');
         }
       }
     }

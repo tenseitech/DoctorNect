@@ -28,7 +28,8 @@ enum VerificationStage {
     if (value == null) return VerificationStage.registered;
     return switch (value.trim().toLowerCase()) {
       'verified' || 'approved' => VerificationStage.verified,
-      'submitted_for_verification' || 'pending_review' =>
+      'submitted_for_verification' ||
+      'pending_review' =>
         VerificationStage.submittedForVerification,
       'revision_requested' => VerificationStage.revisionRequested,
       'rejected' => VerificationStage.rejected,
@@ -83,7 +84,8 @@ abstract final class VerificationRequirementsConfig {
           VerificationRequirementItem(
             key: 'councilNumber',
             label: 'Medical Registration Number',
-            description: 'State or National Medical Council registration number',
+            description:
+                'State or National Medical Council registration number',
           ),
           VerificationRequirementItem(
             key: 'stateCouncil',
@@ -93,7 +95,8 @@ abstract final class VerificationRequirementsConfig {
           VerificationRequirementItem(
             key: 'registrationCertificate',
             label: 'Registration Certificate',
-            description: 'Official council registration document or certificate',
+            description:
+                'Official council registration document or certificate',
             isDocument: true,
           ),
           VerificationRequirementItem(

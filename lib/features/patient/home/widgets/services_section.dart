@@ -216,8 +216,8 @@ class _ServiceTileState extends State<_ServiceTile> {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _pressed
-                ? widget.style.gradient.first.withValues(alpha: 0.35)
-                : AppColors.borderOf(context),
+                  ? widget.style.gradient.first.withValues(alpha: 0.35)
+                  : AppColors.borderOf(context),
             ),
           ),
           child: Row(

@@ -124,15 +124,20 @@ class _SuperAdminVerificationScreenState
                     avatar: Icon(
                       tab.$3,
                       size: 16,
-                      color: isSelected ? Colors.white : AppColors.textSecondaryOf(context),
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textSecondaryOf(context),
                     ),
                     label: Text(tab.$2),
                     selected: isSelected,
                     selectedColor: const Color(0xFF4F46E5),
                     labelStyle: GoogleFonts.inter(
                       fontSize: AppTypography.labelMedium,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: isSelected ? Colors.white : AppColors.textPrimaryOf(context),
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textPrimaryOf(context),
                     ),
                     onSelected: (_) =>
                         setState(() => _selectedRoleFilter = tab.$1),
@@ -158,7 +163,8 @@ class _SuperAdminVerificationScreenState
                         : const Color(0xFFEEF2FF),
                     labelStyle: GoogleFonts.inter(
                       fontSize: AppTypography.labelSmall,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected
                           ? const Color(0xFF4F46E5)
                           : AppColors.textSecondaryOf(context),
@@ -183,7 +189,8 @@ class _SuperAdminVerificationScreenState
                 }
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Error loading applications: ${snapshot.error}'),
+                    child:
+                        Text('Error loading applications: ${snapshot.error}'),
                   );
                 }
 
@@ -196,7 +203,8 @@ class _SuperAdminVerificationScreenState
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.inbox_outlined,
-                              size: 56, color: AppColors.textSecondaryOf(context)),
+                              size: 56,
+                              color: AppColors.textSecondaryOf(context)),
                           const SizedBox(height: 16),
                           Text(
                             'No applications found',
@@ -357,8 +365,8 @@ class _ApplicantCard extends StatelessWidget {
                   FilledButton.tonal(
                     onPressed: onReview,
                     style: FilledButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
                     ),
                     child: const Text('Review'),
                   ),
@@ -494,7 +502,8 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
                   ? const Color(0xFFD97706)
                   : const Color(0xFFDC2626),
             ),
-            child: Text(isRevision ? 'Send Revision Request' : 'Confirm Rejection'),
+            child: Text(
+                isRevision ? 'Send Revision Request' : 'Confirm Rejection'),
           ),
         ],
       ),
@@ -518,7 +527,8 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
       if (!mounted) return;
       setState(() => _acting = false);
       if (ok) {
-        AppToast.info(context, isRevision ? 'Revision requested.' : 'Application rejected.');
+        AppToast.info(context,
+            isRevision ? 'Revision requested.' : 'Application rejected.');
         Navigator.pop(context);
       } else {
         AppToast.error(context, 'Action failed. Please try again.');

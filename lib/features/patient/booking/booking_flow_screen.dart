@@ -541,8 +541,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                 'General Physician',
             patientName: combinedName,
             patientAge: profile.age,
-            patientGender: BookingFlowHelpers.resolvePatientGender(profile.gender) ??
-                'Other',
+            patientGender:
+                BookingFlowHelpers.resolvePatientGender(profile.gender) ??
+                    'Other',
             dateTime: newSlotDateTime,
             slotLabel: slotLabel,
             visitType: 'followUp',

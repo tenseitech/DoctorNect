@@ -41,10 +41,8 @@ void main() {
           contains(const AssetImage('assets/images/services/records.png')));
       expect(
           images, contains(const AssetImage('assets/images/services/sos.png')));
-      expect(
-          images,
-          contains(
-              const AssetImage('assets/icons/common/digital_pass.png')));
+      expect(images,
+          contains(const AssetImage('assets/icons/common/digital_pass.png')));
     });
 
     testWidgets('ServicesSection web renders SOS and Records as Image.asset',
@@ -78,10 +76,8 @@ void main() {
           contains(const AssetImage('assets/images/services/records.png')));
       expect(
           images, contains(const AssetImage('assets/images/services/sos.png')));
-      expect(
-          images,
-          contains(
-              const AssetImage('assets/icons/common/digital_pass.png')));
+      expect(images,
+          contains(const AssetImage('assets/icons/common/digital_pass.png')));
     });
 
     testWidgets(

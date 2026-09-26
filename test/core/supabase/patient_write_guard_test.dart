@@ -13,7 +13,9 @@ void main() {
   });
 
   group('PatientWriteGuard UI & Failure Path Tests', () {
-    testWidgets('TEST 3A: Soft-switch intercept renders friendly maintenance bottom sheet', (WidgetTester tester) async {
+    testWidgets(
+        'TEST 3A: Soft-switch intercept renders friendly maintenance bottom sheet',
+        (WidgetTester tester) async {
       tester.view.devicePixelRatio = 1.0;
       tester.view.physicalSize = const Size(800, 1200);
       addTearDown(() {
@@ -59,7 +61,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert write action was NEVER executed
-      expect(writeExecuted, isFalse, reason: 'Write action must be blocked when maintenance is active');
+      expect(writeExecuted, isFalse,
+          reason: 'Write action must be blocked when maintenance is active');
 
       // Assert PatientMaintenanceException was thrown
       expect(thrownError, isA<PatientMaintenanceException>());
@@ -71,7 +74,8 @@ void main() {
       // Assert the friendly UI Bottom Sheet genuinely rendered
       expect(find.text('Scheduled System Maintenance'), findsOneWidget);
       expect(
-        find.textContaining('DoctorNect is currently undergoing a brief database maintenance update'),
+        find.textContaining(
+            'DoctorNect is currently undergoing a brief database maintenance update'),
         findsOneWidget,
       );
       expect(find.text('Understand & Close'), findsOneWidget);
@@ -83,7 +87,9 @@ void main() {
       expect(find.text('Scheduled System Maintenance'), findsNothing);
     });
 
-    testWidgets('TEST 3B: Safety-net timing-gap catches 42501 permission denied and renders friendly UI', (WidgetTester tester) async {
+    testWidgets(
+        'TEST 3B: Safety-net timing-gap catches 42501 permission denied and renders friendly UI',
+        (WidgetTester tester) async {
       tester.view.devicePixelRatio = 1.0;
       tester.view.physicalSize = const Size(800, 1200);
       addTearDown(() {
@@ -137,8 +143,10 @@ void main() {
 
       // Guard caught 42501 and converted it into a clean PatientMaintenanceException (NOT raw PostgrestException)
       expect(thrownError, isA<PatientMaintenanceException>());
-      expect(thrownError is PostgrestException, isFalse, reason: 'Raw 42501 must NOT leak to client caller');
-      expect((thrownError as PatientMaintenanceException).message, contains('Database write freeze active'));
+      expect(thrownError is PostgrestException, isFalse,
+          reason: 'Raw 42501 must NOT leak to client caller');
+      expect((thrownError as PatientMaintenanceException).message,
+          contains('Database write freeze active'));
 
       // Assert the friendly UI Bottom Sheet rendered identically
       expect(find.text('Scheduled System Maintenance'), findsOneWidget);
@@ -154,7 +162,8 @@ void main() {
       expect(find.text('Scheduled System Maintenance'), findsNothing);
     });
 
-    testWidgets('TEST 3C: Normal operation executes write without bottom sheet', (WidgetTester tester) async {
+    testWidgets('TEST 3C: Normal operation executes write without bottom sheet',
+        (WidgetTester tester) async {
       PatientWriteGuard.debugMaintenanceOverride = false;
 
       bool writeExecuted = false;
@@ -171,7 +180,10 @@ void main() {
                       context: context,
                       action: () async {
                         writeExecuted = true;
-                        return {'appointment_id': 'apt-test-ok', 'status': 'confirmed'};
+                        return {
+                          'appointment_id': 'apt-test-ok',
+                          'status': 'confirmed'
+                        };
                       },
                     );
                   },
@@ -191,7 +203,9 @@ void main() {
       expect(find.text('Scheduled System Maintenance'), findsNothing);
     });
 
-    testWidgets('TEST 3D: Profile update mutation timing-gap catches 42501 permission denied on patients table and renders friendly UI', (WidgetTester tester) async {
+    testWidgets(
+        'TEST 3D: Profile update mutation timing-gap catches 42501 permission denied on patients table and renders friendly UI',
+        (WidgetTester tester) async {
       tester.view.devicePixelRatio = 1.0;
       tester.view.physicalSize = const Size(800, 1200);
       addTearDown(() {
@@ -245,13 +259,16 @@ void main() {
 
       // Guard caught 42501 and converted it into a clean PatientMaintenanceException (NOT raw PostgrestException)
       expect(thrownError, isA<PatientMaintenanceException>());
-      expect(thrownError is PostgrestException, isFalse, reason: 'Raw 42501 must NOT leak to client caller on profile update');
-      expect((thrownError as PatientMaintenanceException).message, contains('Database write freeze active'));
+      expect(thrownError is PostgrestException, isFalse,
+          reason: 'Raw 42501 must NOT leak to client caller on profile update');
+      expect((thrownError as PatientMaintenanceException).message,
+          contains('Database write freeze active'));
 
       // Assert the friendly UI Bottom Sheet rendered
       expect(find.text('Scheduled System Maintenance'), findsOneWidget);
       expect(
-        find.textContaining('DoctorNect is currently undergoing a brief database maintenance update'),
+        find.textContaining(
+            'DoctorNect is currently undergoing a brief database maintenance update'),
         findsOneWidget,
       );
       expect(find.text('Understand & Close'), findsOneWidget);

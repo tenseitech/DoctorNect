@@ -330,7 +330,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                           const SizedBox(height: 16),
                         ],
                         _ProfileHeaderCard(ambulance: live),
-                        const VerificationSubmissionCard(role: UserType.ambulance),
+                        const VerificationSubmissionCard(
+                            role: UserType.ambulance),
                         const SizedBox(height: 16),
                         if (_editing) ...[
                           _buildEditForm(live),
