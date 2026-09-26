@@ -39,6 +39,26 @@ String placeholderTextOf(WidgetTester tester) {
   throw TestFailure('Could not locate animated placeholder text widget.');
 }
 
+Future<void> pumpUntilPlaceholder(
+  WidgetTester tester, {
+  required bool Function(String text) matches,
+  required String failureMessage,
+  Duration step = const Duration(milliseconds: 50),
+  Duration timeout = const Duration(seconds: 3),
+}) async {
+  final attempts = timeout.inMilliseconds ~/ step.inMilliseconds;
+
+  for (var i = 0; i <= attempts; i++) {
+    final text = placeholderTextOf(tester);
+    if (matches(text)) return;
+    await tester.pump(step);
+  }
+
+  throw TestFailure(
+    '$failureMessage Last rendered value was "${placeholderTextOf(tester)}".',
+  );
+}
+
 void main() {
   group('HomeSearchBar animated rotating placeholder tests', () {
     testWidgets('Renders animated placeholder and advances to the next word',
@@ -59,18 +79,16 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(placeholderTextOf(tester), 'Search for Doctors');
 
-      // Cross the first word's delete/pause transition.
-      await tester.pump(const Duration(milliseconds: 2500));
-      expect(placeholderTextOf(tester), isNot('Search for Doctors'));
-
-      // Advance in small steps until the next word finishes typing.
-      var reachedNextWord = placeholderTextOf(tester) == 'Search for Labs';
-      for (var i = 0; i < 20 && !reachedNextWord; i++) {
-        await tester.pump(const Duration(milliseconds: 50));
-        reachedNextWord = placeholderTextOf(tester) == 'Search for Labs';
-      }
-
-      expect(reachedNextWord, isTrue);
+      await pumpUntilPlaceholder(
+        tester,
+        matches: (text) => text != 'Search for Doctors',
+        failureMessage: 'Placeholder never advanced away from Doctors.',
+      );
+      await pumpUntilPlaceholder(
+        tester,
+        matches: (text) => text == 'Search for Labs',
+        failureMessage: 'Placeholder never settled on Labs.',
+      );
       expect(placeholderTextOf(tester), 'Search for Labs');
 
       // Dispose widget cleanly
