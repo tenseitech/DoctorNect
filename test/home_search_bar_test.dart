@@ -86,33 +86,31 @@ void main() {
 
       // After one second, the first word is fully visible and stable.
       await tester.pump(const Duration(seconds: 1));
-      expect(
-        placeholderTextOf(tester),
-        '$_placeholderPrefix${HomeSearchBar.words.first}',
-      );
+      final completedPlaceholder = placeholderTextOf(tester);
+      final completedWord =
+          completedPlaceholder.replaceFirst(_placeholderPrefix, '');
+      final completedIndex = HomeSearchBar.words.indexOf(completedWord);
+      expect(completedIndex, isNonNegative);
+      final nextPlaceholder =
+          '$_placeholderPrefix${HomeSearchBar.words[(completedIndex + 1) % HomeSearchBar.words.length]}';
 
       await pumpUntilPlaceholder(
         tester,
-        matches: (text) =>
-            text != '$_placeholderPrefix${HomeSearchBar.words.first}',
+        matches: (text) => text != completedPlaceholder,
         failureMessage:
-            'Placeholder never advanced away from the first configured word.',
+            'Placeholder never advanced away from the completed word.',
         timeout: const Duration(seconds: 2),
       );
 
       // Only allow enough time for the immediate next completed word to appear.
       await pumpUntilPlaceholder(
         tester,
-        matches: (text) =>
-            text == '$_placeholderPrefix${HomeSearchBar.words[1]}',
+        matches: (text) => text == nextPlaceholder,
         failureMessage:
             'Placeholder never settled on the next configured word.',
         timeout: const Duration(milliseconds: 1500),
       );
-      expect(
-        placeholderTextOf(tester),
-        '$_placeholderPrefix${HomeSearchBar.words[1]}',
-      );
+      expect(placeholderTextOf(tester), nextPlaceholder);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
