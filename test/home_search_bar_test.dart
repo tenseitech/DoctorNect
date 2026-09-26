@@ -54,7 +54,7 @@ Future<void> pumpUntilPlaceholder(
 }) async {
   final attempts = timeout.inMilliseconds ~/ step.inMilliseconds;
 
-  for (var i = 0; i <= attempts; i++) {
+  for (var i = 0; i < attempts; i++) {
     if (hasPlaceholderText()) {
       final text = placeholderTextOf(tester);
       if (matches(text)) return;
