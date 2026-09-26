@@ -59,8 +59,12 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(placeholderTextOf(tester), 'Search for Doctors');
 
-      // Another 3.5s lands well inside the next word's stable display window.
-      await tester.pump(const Duration(milliseconds: 3500));
+      // Cross the first word's delete/pause transition.
+      await tester.pump(const Duration(milliseconds: 2500));
+      expect(placeholderTextOf(tester), isNot('Search for Doctors'));
+
+      // Wait long enough for the next word to finish typing and settle.
+      await tester.pump(const Duration(seconds: 1));
       expect(placeholderTextOf(tester), 'Search for Labs');
 
       // Dispose widget cleanly
