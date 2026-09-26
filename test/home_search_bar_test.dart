@@ -55,13 +55,16 @@ Future<void> pumpUntilPlaceholder(
   final attempts = timeout.inMilliseconds ~/ step.inMilliseconds;
 
   for (var i = 0; i <= attempts; i++) {
-    final text = placeholderTextOf(tester);
-    if (matches(text)) return;
+    if (hasPlaceholderText()) {
+      final text = placeholderTextOf(tester);
+      if (matches(text)) return;
+    }
     await tester.pump(step);
   }
 
   throw TestFailure(
-    '$failureMessage Last rendered value was "${placeholderTextOf(tester)}".',
+    '$failureMessage Last rendered value was '
+    '"${hasPlaceholderText() ? placeholderTextOf(tester) : '<hidden>'}".',
   );
 }
 
