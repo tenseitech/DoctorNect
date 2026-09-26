@@ -2,10 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/features/patient/home/widgets/home_search_bar.dart';
 
+String? _plainTextOf(Widget widget) {
+  if (widget is Text) {
+    return widget.data ?? widget.textSpan?.toPlainText();
+  }
+  if (widget is RichText) {
+    return widget.text.toPlainText();
+  }
+  return null;
+}
+
+Finder findAnimatedPlaceholder(String text) => find.byWidgetPredicate(
+      (widget) => _plainTextOf(widget) == text,
+      description: 'animated placeholder "$text"',
+    );
+
+Finder findAnyAnimatedPlaceholder() => find.byWidgetPredicate(
+      (widget) => (_plainTextOf(widget) ?? '').startsWith('Search for '),
+      description: 'animated placeholder',
+    );
+
 void main() {
   group('HomeSearchBar animated rotating placeholder tests', () {
     testWidgets(
-        'Renders initial placeholder and transitions through loop every 2.5s',
+        'Renders animated placeholder and transitions through search words',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -15,28 +35,16 @@ void main() {
         ),
       );
 
-      // Initial frame: "Search for doctor" must be visible
-      expect(find.text('Search for doctor'), findsOneWidget);
+      // Initial frame shows the animated placeholder prefix immediately.
+      expect(findAnyAnimatedPlaceholder(), findsOneWidget);
 
-      // Advance by 2.5s -> transitions to "Search for lab"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for lab'), findsOneWidget);
+      // The typewriter completes the first configured search word.
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(findAnimatedPlaceholder('Search for Doctors'), findsOneWidget);
 
-      // Advance by 2.5s -> transitions to "Search for language or location"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for language or location'), findsOneWidget);
-
-      // Advance by 2.5s -> transitions to "Search for ambulance"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for ambulance'), findsOneWidget);
-
-      // Advance by 2.5s -> loops back to "Search for doctor"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for doctor'), findsOneWidget);
+      // After the delete/pause/type cycle, the next configured word appears.
+      await tester.pump(const Duration(milliseconds: 2700));
+      expect(findAnimatedPlaceholder('Search for Labs'), findsOneWidget);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
@@ -53,7 +61,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Search for doctor'), findsOneWidget);
+      expect(findAnyAnimatedPlaceholder(), findsOneWidget);
 
       // Tap on TextField to focus
       final textField = find.byType(TextField);
@@ -62,26 +70,26 @@ void main() {
       await tester.pump();
 
       // Once focused, overlay should disappear
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(findAnyAnimatedPlaceholder(), findsNothing);
 
       // Enter text
       await tester.enterText(textField, 'Cardiologist');
       await tester.pump();
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(findAnyAnimatedPlaceholder(), findsNothing);
 
       // Clear text
       await tester.enterText(textField, '');
       await tester.pump();
 
       // Still focused -> overlay still hidden
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(findAnyAnimatedPlaceholder(), findsNothing);
 
       // Unfocus
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
 
       // Unfocused and empty -> overlay reappears
-      expect(find.text('Search for doctor'), findsOneWidget);
+      expect(findAnyAnimatedPlaceholder(), findsOneWidget);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
