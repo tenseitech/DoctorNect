@@ -110,9 +110,10 @@ class FormValidators {
 
   static String? _indianMobileDigits(String digits) {
     var normalized = digits.replaceAll(RegExp(r'\D'), '');
-    if (normalized.length == 12 && normalized.startsWith('91')) {
+    while (normalized.startsWith('91') && normalized.length > 10) {
       normalized = normalized.substring(2);
-    } else if (normalized.length == 11 && normalized.startsWith('0')) {
+    }
+    while (normalized.startsWith('0') && normalized.length > 10) {
       normalized = normalized.substring(1);
     }
     if (normalized.length != 10 || !RegExp(r'^[6-9]').hasMatch(normalized)) {
@@ -123,9 +124,10 @@ class FormValidators {
 
   static String? registrationMobileDigits(String value) {
     var digits = value.replaceAll(RegExp(r'\D'), '');
-    if (digits.length == 12 && digits.startsWith('91')) {
+    while (digits.startsWith('91') && digits.length > 10) {
       digits = digits.substring(2);
-    } else if (digits.length == 11 && digits.startsWith('0')) {
+    }
+    while (digits.startsWith('0') && digits.length > 10) {
       digits = digits.substring(1);
     }
     if (digits.length != 10 || !RegExp(r'^[6-9]').hasMatch(digits)) {

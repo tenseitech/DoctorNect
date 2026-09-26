@@ -8,7 +8,8 @@
 [CmdletBinding()]
 param(
     [switch]$DryRun,
-    [switch]$SkipIncrement
+    [switch]$SkipIncrement,
+    [switch]$AllowStaging
 )
 
 Set-StrictMode -Version Latest
@@ -69,7 +70,7 @@ Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or expor
     }
     $defines.Add("--dart-define=FIREBASE_API_KEY_ANDROID=$androidKey")
 
-    foreach ($name in @('GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY')) {
+    foreach ($name in @('GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY')) {
         $item = Get-Item -Path "Env:$name" -ErrorAction SilentlyContinue
         if ($null -eq $item) {
             continue
@@ -81,6 +82,34 @@ Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or expor
     }
 
     return ,$defines.ToArray()
+}
+
+function Test-ProductionBuildConfig {
+    param(
+        [switch]$AllowStaging
+    )
+
+    # Validate Supabase production configuration independently before compiling
+    $validatorScript = Join-Path $PSScriptRoot 'verify_production_build_config.js'
+    if (Test-Path -LiteralPath $validatorScript) {
+        $validatorArgs = @($validatorScript, '--client-only')
+        if ($AllowStaging -or ($env:ALLOW_STAGING_BUILD -eq 'true')) {
+            $validatorArgs += '--allow-staging'
+        }
+        if (-not [string]::IsNullOrWhiteSpace($env:SUPABASE_URL)) {
+            $validatorArgs += "--supabase-url=$($env:SUPABASE_URL)"
+        }
+        if (-not [string]::IsNullOrWhiteSpace($env:SUPABASE_ANON_KEY)) {
+            $validatorArgs += "--supabase-anon-key=$($env:SUPABASE_ANON_KEY)"
+        }
+
+        # Pipe directly to Out-Host so stdout is displayed on the console
+        # without leaking into PowerShell function return values or flutter build arguments
+        & node @validatorArgs | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            throw "Production Supabase build configuration validation failed. Release build aborted."
+        }
+    }
 }
 
 function Get-PubspecVersion {
@@ -128,6 +157,7 @@ Push-Location $projectRoot
 
 try {
     Import-DotEnv -Path (Join-Path $projectRoot '.env')
+    Test-ProductionBuildConfig -AllowStaging:$AllowStaging
     $dartDefines = Get-FlutterDartDefines
     $pubspecPath = Join-Path $projectRoot 'pubspec.yaml'
 

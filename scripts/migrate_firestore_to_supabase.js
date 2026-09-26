@@ -33,6 +33,7 @@ const DEMO_PHONES = {
 const args = process.argv.slice(2);
 const IS_DRY_RUN = !args.includes('--live');
 const VERBOSE = args.includes('--verbose');
+const AUTO_TOMBSTONE = args.includes('--auto-tombstone');
 const TARGET_ROLE = args.find((a) => a.startsWith('--role='))?.split('=')[1];
 const sinceArg = args.find((a) => a.startsWith('--since='));
 const SINCE_TIMESTAMP = sinceArg ? new Date(sinceArg.split('=')[1]) : null;
@@ -40,6 +41,7 @@ const SINCE_TIMESTAMP = sinceArg ? new Date(sinceArg.split('=')[1]) : null;
 console.log('================================================================');
 console.log(`DOCTORNECT DATA MIGRATION: FIRESTORE -> SUPABASE POSTGRESQL`);
 console.log(`MODE: ${IS_DRY_RUN ? 'DRY-RUN (Simulation only — zero DB mutations)' : '*** LIVE MIGRATION ***'}`);
+if (AUTO_TOMBSTONE) console.log(`OPTION: Auto-synthesize Tombstones for Orphaned Foreign Keys`);
 if (TARGET_ROLE) console.log(`FILTER: Target Role = ${TARGET_ROLE}`);
 if (SINCE_TIMESTAMP) console.log(`FILTER: Delta Since = ${SINCE_TIMESTAMP.toISOString()}`);
 console.log('================================================================\n');
@@ -110,7 +112,29 @@ const knownIds = {
   labs: new Set(),
   ambulances: new Set(),
   appointments: new Set(),
+  healthRecords: new Set(),
 };
+
+// Orphaned Foreign Key Tracker (Detects dangling parent references)
+const orphans = {
+  doctors: new Map(),      // doctorId -> { count, references: [] }
+  patients: new Map(),     // patientId -> { count, references: [] }
+  users: new Map(),        // userId -> { count, references: [] }
+  appointments: new Map(), // appointmentId -> { count, references: [] }
+};
+
+function trackOrphan(entityType, missingId, referencingCollection, docId) {
+  if (!missingId) return;
+  if (!orphans[entityType]) return;
+  if (!orphans[entityType].has(missingId)) {
+    orphans[entityType].set(missingId, { count: 0, references: [] });
+  }
+  const entry = orphans[entityType].get(missingId);
+  entry.count++;
+  if (entry.references.length < 5) {
+    entry.references.push(`${referencingCollection}#${docId}`);
+  }
+}
 
 // Detailed stats tracker
 const stats = {
@@ -274,6 +298,7 @@ async function migrateDoctors() {
     knownIds.doctors.add(doctorId);
 
     if (data.ownerUid && !knownIds.users.has(data.ownerUid)) {
+      trackOrphan('users', data.ownerUid, 'doctors', doctorId);
       recordStat('doctors', 'warnings', `Doctor '${doctorId}' references ownerUid '${data.ownerUid}' not found in users collection`);
     }
 
@@ -408,8 +433,10 @@ async function migratePatients() {
     const data = doc.data();
     const patientId = doc.id;
     knownIds.patients.add(patientId);
+    const ownerUuid = toUserUuid(data.ownerUid);
 
     if (data.ownerUid && !knownIds.users.has(data.ownerUid)) {
+      trackOrphan('users', data.ownerUid, 'patients', patientId);
       // Auto-synthesize missing user for registered patient
       knownIds.users.add(data.ownerUid);
       if (!IS_DRY_RUN) {
@@ -448,8 +475,6 @@ async function migratePatients() {
         );
       }
     }
-
-    const ownerUuid = toUserUuid(data.ownerUid);
 
     if (!IS_DRY_RUN) {
       await pgClient.query(
@@ -521,6 +546,7 @@ async function migratePatients() {
     const data = doc.data();
     const patientId = doc.ref.parent.parent ? doc.ref.parent.parent.id : data.patientId;
     if (!patientId || !knownIds.patients.has(patientId)) {
+      trackOrphan('patients', patientId, 'family_members', doc.id);
       recordStat('family_members', 'warnings', `Family member '${doc.id}' references missing parent patientId '${patientId}'`);
     }
 
@@ -599,6 +625,7 @@ async function migrateMedicalStores() {
     knownIds.medicalStores.add(storeId);
 
     if (data.ownerUid && !knownIds.users.has(data.ownerUid)) {
+      trackOrphan('users', data.ownerUid, 'medical_stores', storeId);
       recordStat('medical_stores', 'warnings', `Medical Store '${storeId}' references ownerUid '${data.ownerUid}' not found in users`);
     }
 
@@ -653,6 +680,7 @@ async function migrateLabs() {
     knownIds.labs.add(labId);
 
     if (data.ownerUid && !knownIds.users.has(data.ownerUid)) {
+      trackOrphan('users', data.ownerUid, 'labs', labId);
       recordStat('labs', 'warnings', `Lab '${labId}' references ownerUid '${data.ownerUid}' not found in users`);
     }
 
@@ -724,6 +752,7 @@ async function migrateAmbulances() {
     const isDemo = data.phone === DEMO_PHONES.ambulance || data.mobile === DEMO_PHONES.ambulance;
 
     if (data.authUid && !knownIds.users.has(data.authUid)) {
+      trackOrphan('users', data.authUid, 'ambulances', ambulanceId);
       // Auto-synthesize missing user for legitimate ambulance driver
       knownIds.users.add(data.authUid);
       if (!IS_DRY_RUN) {
@@ -837,6 +866,10 @@ async function migrateAppointments() {
   const snap = await query.get();
   stats.scanned['appointments'] = snap.size;
 
+  const VALID_PATIENT_STATUSES = new Set(['pending', 'confirmed', 'completed', 'cancelled']);
+  const VALID_DOCTOR_STATUSES = new Set(['pendingRequest', 'confirmed', 'inProgress', 'completed', 'cancelled', 'noShow', 'waiting']);
+  const VALID_VISIT_TYPES = new Set(['newVisit', 'followUp', 'returning']);
+
   for (const doc of snap.docs) {
     const data = doc.data();
     const aptId = doc.id;
@@ -844,20 +877,38 @@ async function migrateAppointments() {
     let hasFkError = false;
 
     if (data.doctorId && !knownIds.doctors.has(data.doctorId)) {
+      trackOrphan('doctors', data.doctorId, 'appointments', aptId);
       recordStat('appointments', 'warnings', `Appointment '${aptId}' references unknown doctorId '${data.doctorId}'`);
       hasFkError = true;
     }
     if (data.patientId && !knownIds.patients.has(data.patientId)) {
+      trackOrphan('patients', data.patientId, 'appointments', aptId);
       recordStat('appointments', 'warnings', `Appointment '${aptId}' references unknown patientId '${data.patientId}'`);
       hasFkError = true;
     }
 
-    if (!IS_DRY_RUN) {
+    // Schema enum validations & mappings
+    let patientStatus = data.patientStatus || 'confirmed';
+    if (!VALID_PATIENT_STATUSES.has(patientStatus)) {
+      patientStatus = 'confirmed';
+    }
+
+    let doctorStatus = data.doctorStatus || 'confirmed';
+    if (!VALID_DOCTOR_STATUSES.has(doctorStatus)) {
+      doctorStatus = 'confirmed';
+    }
+
+    let visitType = data.visitType || 'newVisit';
+    if (!VALID_VISIT_TYPES.has(visitType)) {
+      visitType = 'newVisit';
+    }
+
+    if (!IS_DRY_RUN && (!hasFkError || AUTO_TOMBSTONE)) {
       await pgClient.query(
         `INSERT INTO appointments (
-            appointment_id, doctor_id, patient_id, doctor_name, doctor_specialization,
-            patient_name, patient_age, patient_gender, appointment_date, time_slot,
-            token_number, consultation_type, patient_status, doctor_status, clinic_name,
+            appointment_id, doctor_id, patient_id, doctor_name, specialization,
+            patient_name, patient_age, patient_gender, date_time, slot_label,
+            token_number, visit_type, patient_status, doctor_status, clinic_name,
             cancellation_reason, diagnosis, has_prescription, has_report, has_review,
             review_rating, review_id, contact_number, source, chief_complaints,
             symptoms, created_at, updated_at
@@ -877,9 +928,9 @@ async function migrateAppointments() {
           toIso(data.dateTime) || new Date().toISOString(),
           data.slotLabel || '10:00 AM',
           parseInt(data.tokenNumber || 1, 10),
-          data.visitType || 'newVisit',
-          data.patientStatus || 'confirmed',
-          data.doctorStatus || 'confirmed',
+          visitType,
+          patientStatus,
+          doctorStatus,
           data.clinicName || null,
           data.cancellationReason || null,
           data.diagnosis || null,
@@ -917,15 +968,20 @@ async function migratePrescriptions() {
     let hasFkError = false;
 
     if (data.doctorId && !knownIds.doctors.has(data.doctorId)) {
+      trackOrphan('doctors', data.doctorId, 'prescriptions', prescId);
       recordStat('prescriptions', 'warnings', `Prescription '${prescId}' references unknown doctorId '${data.doctorId}'`);
       hasFkError = true;
     }
     if (data.patientId && !knownIds.patients.has(data.patientId)) {
+      trackOrphan('patients', data.patientId, 'prescriptions', prescId);
       recordStat('prescriptions', 'warnings', `Prescription '${prescId}' references unknown patientId '${data.patientId}'`);
       hasFkError = true;
     }
+    if (data.appointmentId && !knownIds.appointments.has(data.appointmentId)) {
+      trackOrphan('appointments', data.appointmentId, 'prescriptions', prescId);
+    }
 
-    if (!IS_DRY_RUN) {
+    if (!IS_DRY_RUN && (!hasFkError || AUTO_TOMBSTONE)) {
       await pgClient.query(
         `INSERT INTO prescriptions (
             prescription_id, doctor_id, patient_id, appointment_id, doctor_name,
@@ -988,6 +1044,74 @@ async function migratePrescriptions() {
     }
   }
   console.log(`Scanned: ${snap.size} | Valid: ${stats.valid['prescriptions'] || 0} | FK Warnings: ${stats.warnings['prescriptions'] || 0}`);
+}
+
+async function migrateHealthRecords() {
+  process.stdout.write('-> Migrating Health Records & Clinical Documents... ');
+  let query = firestore.collection('health_records');
+  if (SINCE_TIMESTAMP) query = query.where('updatedAt', '>=', admin.firestore.Timestamp.fromDate(SINCE_TIMESTAMP));
+  let snap;
+  try {
+    snap = await query.get();
+  } catch (err) {
+    console.log(`[Collection empty or not found: ${err.message}]`);
+    snap = { docs: [], size: 0 };
+  }
+  stats.scanned['health_records'] = snap.size;
+
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    const recordId = doc.id;
+    knownIds.healthRecords.add(recordId);
+    let hasFkError = false;
+
+    if (data.patientId && !knownIds.patients.has(data.patientId)) {
+      trackOrphan('patients', data.patientId, 'health_records', recordId);
+      recordStat('health_records', 'warnings', `Health record '${recordId}' references unknown patientId '${data.patientId}'`);
+      hasFkError = true;
+    }
+
+    const validFileStorage = (data.fileStorage === 'cloudUploaded' || data.fileStorage === 'firebase')
+      ? 'cloudUploaded'
+      : (data.fileStorage === 'none' ? 'none' : 'localOnly');
+
+    const validDate = toIso(data.date) || toIso(data.createdAt) || new Date().toISOString();
+
+    if (!IS_DRY_RUN && (!hasFkError || AUTO_TOMBSTONE)) {
+      await pgClient.query(
+        `INSERT INTO health_records (
+            record_id, patient_id, title, type, date, source, file_name,
+            doctor_name, lab_name, is_image, notes, shared_with_doctors,
+            file_storage, storage_url, created_at, updated_at
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+         ON CONFLICT (record_id) DO UPDATE SET
+            title = $3, notes = $11, shared_with_doctors = $12, updated_at = $16`,
+        [
+          recordId,
+          data.patientId,
+          data.title || 'Untitled Record',
+          data.type || 'other',
+          validDate,
+          data.source || 'patientUpload',
+          data.fileName || 'record.pdf',
+          data.doctorName || null,
+          data.labName || null,
+          data.isImage === true,
+          data.notes || null,
+          data.sharedWithDoctors !== false,
+          validFileStorage,
+          data.storageUrl || null,
+          toIso(data.createdAt) || new Date().toISOString(),
+          toIso(data.updatedAt) || new Date().toISOString(),
+        ]
+      );
+    }
+    if (!hasFkError) {
+      recordStat('health_records', 'valid');
+    }
+  }
+  console.log(`Scanned: ${snap.size} | Valid: ${stats.valid['health_records'] || 0} | FK Warnings: ${stats.warnings['health_records'] || 0}`);
 }
 
 async function migratePromotedAds() {
@@ -1061,6 +1185,7 @@ async function runMigration() {
     await migrateAmbulances();
     await migrateAppointments();
     await migratePrescriptions();
+    await migrateHealthRecords();
     await migratePromotedAds();
 
     console.log('\n================================================================');
@@ -1077,9 +1202,75 @@ async function runMigration() {
       }))
     );
 
+    // ORPHAN AUDIT & SUGGESTED SYNTHETIC TOMBSTONE ENTRIES
+    const totalOrphanDoctors = orphans.doctors.size;
+    const totalOrphanPatients = orphans.patients.size;
+    const totalOrphanUsers = orphans.users.size;
+    const totalOrphanAppointments = orphans.appointments.size;
+    const totalOrphans = totalOrphanDoctors + totalOrphanPatients + totalOrphanUsers + totalOrphanAppointments;
+
+    if (totalOrphans > 0) {
+      console.log('\n================================================================');
+      console.log(`ORPHAN AUDIT & SYNTHETIC TOMBSTONE GENERATOR (${totalOrphans} Orphan Entities Detected)`);
+      console.log('================================================================');
+      console.log('The following parent records are referenced by clinical transactions but missing from primary tables.');
+      console.log('To prevent foreign key constraint violations and prevent losing historical patient charts:');
+      console.log('');
+
+      if (totalOrphanDoctors > 0) {
+        console.log(`-- 🩺 1. SYNTHETIC DOCTOR TOMBSTONES (${totalOrphanDoctors} missing doctors referenced):`);
+        for (const [docId, meta] of orphans.doctors.entries()) {
+          console.log(`-- Missing Doctor ID: '${docId}' (Referenced by ${meta.count} records: ${meta.references.join(', ')})`);
+          console.log(
+            `INSERT INTO doctors (doctor_id, name, email, mobile, specialization, qualification, experience_years, consultation_fee, deactivated, profile_completed, verified, created_at, updated_at)\n` +
+            `VALUES ('${docId}', 'Archived Doctor (Tombstone - ${docId})', '${docId}@tombstone.doctornect.app', '0000000000', 'General Physician', 'MBBS', 1, 0.0, TRUE, FALSE, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)\n` +
+            `ON CONFLICT (doctor_id) DO NOTHING;\n`
+          );
+        }
+      }
+
+      if (totalOrphanPatients > 0) {
+        console.log(`-- 🧑‍🦱 2. SYNTHETIC PATIENT TOMBSTONES (${totalOrphanPatients} missing patients referenced):`);
+        for (const [pId, meta] of orphans.patients.entries()) {
+          console.log(`-- Missing Patient ID: '${pId}' (Referenced by ${meta.count} records: ${meta.references.join(', ')})`);
+          console.log(
+            `INSERT INTO patients (patient_id, name, mobile, age, gender, share_records_with_doctors, profile_completed, verified, deactivated, created_at, updated_at)\n` +
+            `VALUES ('${pId}', 'Archived Patient (Tombstone - ${pId})', '0000000000', 30, 'Other', TRUE, FALSE, FALSE, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)\n` +
+            `ON CONFLICT (patient_id) DO NOTHING;\n`
+          );
+        }
+      }
+
+      if (totalOrphanUsers > 0) {
+        console.log(`-- 👤 3. SYNTHETIC AUTH USER TOMBSTONES (${totalOrphanUsers} missing user owners referenced):`);
+        for (const [uId, meta] of orphans.users.entries()) {
+          const userUuid = toUserUuid(uId);
+          console.log(`-- Missing User UID: '${uId}' (Referenced by ${meta.count} records: ${meta.references.join(', ')})`);
+          console.log(
+            `INSERT INTO users (id, firebase_uid, role, profile_id, display_name, email, mobile, profile_completed, verified, status, created_at, updated_at)\n` +
+            `VALUES ('${userUuid}', '${uId}', 'patient', 'tomb_${uId}', 'Archived User (${uId})', '${uId}@tombstone.doctornect.app', '0000000000', FALSE, FALSE, 'deactivated', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)\n` +
+            `ON CONFLICT (id) DO NOTHING;\n`
+          );
+        }
+      }
+
+      if (totalOrphanAppointments > 0) {
+        console.log(`-- 📅 4. ORPHANED APPOINTMENT REFERENCES (${totalOrphanAppointments} missing appointments referenced):`);
+        for (const [aptId, meta] of orphans.appointments.entries()) {
+          console.log(`-- Missing Appointment ID: '${aptId}' referenced by ${meta.references.join(', ')}.`);
+        }
+      }
+      console.log('================================================================\n');
+    } else {
+      console.log('\n✅ ZERO ORPHANED RECORDS DETECTED: All relational foreign keys are strictly intact!');
+    }
+
     if (warningDetails.length > 0) {
-      console.log(`\n⚠️  WARNING DETAILS & FOREIGN KEY ISSUES (Found ${warningDetails.length} issues):`);
-      warningDetails.forEach((w, idx) => console.log(`  ${idx + 1}. ${w}`));
+      console.log(`\n⚠️  WARNING DETAILS & DATA ISSUES (Total ${warningDetails.length} warnings):`);
+      warningDetails.slice(0, 50).forEach((w, idx) => console.log(`  ${idx + 1}. ${w}`));
+      if (warningDetails.length > 50) {
+        console.log(`  ... and ${warningDetails.length - 50} more warnings (run with --verbose for all)`);
+      }
     } else {
       console.log('\n✅ Zero foreign key or schema validation warnings found across all scanned documents!\n');
     }

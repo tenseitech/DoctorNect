@@ -18,7 +18,8 @@ class SupabasePatientRepository {
   // APPOINTMENTS
   // --------------------------------------------------------------------------
 
-  /// Books a new appointment in Supabase PostgreSQL
+  /// Books a new appointment in Supabase PostgreSQL atomically with slot-level advisory lock
+  /// and capacity enforcement (kMaxPatientsPerTimeSlot = 3).
   Future<Map<String, dynamic>> bookAppointment({
     required BuildContext? context,
     required String appointmentId,
@@ -39,34 +40,74 @@ class SupabasePatientRepository {
     return PatientWriteGuard.run(
       context: context,
       action: () async {
-        final payload = {
-          'appointment_id': appointmentId,
-          'doctor_id': doctorId,
-          'patient_id': patientId,
-          'doctor_name': doctorName,
-          'specialization': specialization,
-          'patient_name': patientName,
-          'patient_age': patientAge,
-          'patient_gender': patientGender,
-          'date_time': dateTime.toIso8601String(),
-          'slot_label': slotLabel,
-          'visit_type': visitType,
-          'patient_status': 'confirmed',
-          'doctor_status': 'pendingRequest',
-          'token_number': tokenNumber,
-          'clinic_name': clinicName,
-          'clinic_address': clinicAddress,
-          'sync_origin': 'patient_supabase',
-          'updated_at': DateTime.now().toIso8601String(),
+        final rpcParams = {
+          'p_appointment_id': appointmentId,
+          'p_doctor_id': doctorId,
+          'p_patient_id': patientId,
+          'p_doctor_name': doctorName,
+          'p_specialization': specialization,
+          'p_patient_name': patientName,
+          'p_patient_age': patientAge,
+          'p_patient_gender': patientGender,
+          'p_date_time': dateTime.toIso8601String(),
+          'p_slot_label': slotLabel,
+          'p_visit_type': visitType,
+          'p_token_number': tokenNumber,
+          'p_clinic_name': clinicName,
+          'p_clinic_address': clinicAddress,
+          'p_sync_origin': 'patient_supabase',
         };
 
-        final res = await _client
-            .from('appointments')
-            .upsert(payload, onConflict: 'appointment_id')
-            .select()
-            .single();
+        try {
+          final res = await _client.rpc(
+            'book_appointment_atomic',
+            params: rpcParams,
+          );
+          if (res is Map<String, dynamic>) {
+            return res;
+          } else if (res is Map) {
+            return Map<String, dynamic>.from(res);
+          }
+        } on PostgrestException catch (e) {
+          // Re-throw capacity / duplicate / permission errors cleanly for caller
+          if (e.message.contains('SLOT_CAPACITY_REACHED') ||
+              e.message.contains('DUPLICATE_PATIENT_BOOKING') ||
+              e.code == '23505' ||
+              e.code == '42501') {
+            rethrow;
+          }
+          // Fallback to direct upsert only if RPC is missing in an older environment
+          if (e.code == '42883' || e.message.contains('function book_appointment_atomic does not exist')) {
+            final payload = {
+              'appointment_id': appointmentId,
+              'doctor_id': doctorId,
+              'patient_id': patientId,
+              'doctor_name': doctorName,
+              'specialization': specialization,
+              'patient_name': patientName,
+              'patient_age': patientAge,
+              'patient_gender': patientGender,
+              'date_time': dateTime.toIso8601String(),
+              'slot_label': slotLabel,
+              'visit_type': visitType,
+              'patient_status': 'confirmed',
+              'doctor_status': 'pendingRequest',
+              'token_number': tokenNumber,
+              'clinic_name': clinicName,
+              'clinic_address': clinicAddress,
+              'sync_origin': 'patient_supabase',
+              'updated_at': DateTime.now().toIso8601String(),
+            };
+            return await _client
+                .from('appointments')
+                .upsert(payload, onConflict: 'appointment_id')
+                .select()
+                .single();
+          }
+          rethrow;
+        }
 
-        return res;
+        return <String, dynamic>{};
       },
     );
   }

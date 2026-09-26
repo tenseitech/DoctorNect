@@ -85,7 +85,7 @@ const pgClient = new Client({
 });
 
 async function reverseSyncAppointments() {
-  console.log(`\n[1/4] Checking newly created/updated appointments in Supabase (target: ${col('appointments')})...`);
+  console.log(`\n[1/5] Checking newly created/updated appointments in Supabase (target: ${col('appointments')})...`);
   const res = await pgClient.query(
     `SELECT * FROM appointments WHERE created_at >= $1 OR updated_at >= $1`,
     [SINCE_TIMESTAMP]
@@ -105,13 +105,13 @@ async function reverseSyncAppointments() {
       contactNumber: row.contact_number,
       doctorId: row.doctor_id,
       doctorName: row.doctor_name,
-      doctorSpecialization: row.specialization,
+      doctorSpecialization: row.specialization || row.doctor_specialization || null,
       clinicName: row.clinic_name || null,
       clinicAddress: row.clinic_address || null,
-      dateTime: row.date_time ? admin.firestore.Timestamp.fromDate(new Date(row.date_time)) : null,
-      slotLabel: row.slot_label,
+      dateTime: (row.date_time || row.appointment_date) ? admin.firestore.Timestamp.fromDate(new Date(row.date_time || row.appointment_date)) : null,
+      slotLabel: row.slot_label || row.time_slot || null,
       tokenNumber: row.token_number || 0,
-      visitType: row.visit_type,
+      visitType: row.visit_type || 'newVisit',
       patientStatus: row.patient_status,
       doctorStatus: row.doctor_status,
       diagnosis: row.diagnosis || null,
@@ -139,7 +139,7 @@ async function reverseSyncAppointments() {
 }
 
 async function reverseSyncPrescriptions() {
-  console.log(`\n[2/4] Checking newly created/updated prescriptions in Supabase (target: ${col('prescriptions')})...`);
+  console.log(`\n[2/5] Checking newly created/updated prescriptions in Supabase (target: ${col('prescriptions')})...`);
   const res = await pgClient.query(
     `SELECT * FROM prescriptions WHERE created_at >= $1 OR updated_at >= $1`,
     [SINCE_TIMESTAMP]
@@ -203,8 +203,51 @@ async function reverseSyncPrescriptions() {
   return res.rows.length;
 }
 
+async function reverseSyncHealthRecords() {
+  console.log(`\n[3/5] Checking newly created/updated health records in Supabase (target: ${col('health_records')})...`);
+  const res = await pgClient.query(
+    `SELECT * FROM health_records WHERE created_at >= $1 OR updated_at >= $1`,
+    [SINCE_TIMESTAMP]
+  );
+
+  console.log(`Found ${res.rows.length} health records to reverse-sync.`);
+  let synced = 0;
+
+  for (const row of res.rows) {
+    const docRef = firestore.collection(col('health_records')).doc(row.record_id);
+    const firestoreData = {
+      recordId: row.record_id,
+      patientId: row.patient_id,
+      title: row.title,
+      type: row.type,
+      date: row.date ? admin.firestore.Timestamp.fromDate(new Date(row.date)) : null,
+      source: row.source,
+      fileName: row.file_name,
+      doctorName: row.doctor_name || null,
+      labName: row.lab_name || null,
+      isImage: Boolean(row.is_image),
+      notes: row.notes || null,
+      sharedWithDoctors: Boolean(row.shared_with_doctors),
+      fileStorage: row.file_storage || 'localOnly',
+      storageUrl: row.storage_url || null,
+      createdAt: row.created_at ? admin.firestore.Timestamp.fromDate(new Date(row.created_at)) : admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: row.updated_at ? admin.firestore.Timestamp.fromDate(new Date(row.updated_at)) : admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (IS_DRY_RUN) {
+      console.log(`  [DRY-RUN] Would sync health record ${row.record_id} (${row.title} for patient ${row.patient_id})`);
+    } else {
+      await docRef.set(firestoreData, { merge: true });
+      synced++;
+    }
+  }
+
+  console.log(`Finished health records sync: ${IS_DRY_RUN ? 'Simulated' : synced + ' synced'}.`);
+  return res.rows.length;
+}
+
 async function reverseSyncReviews() {
-  console.log(`\n[3/4] Checking newly created reviews in Supabase (target: ${col('reviews')})...`);
+  console.log(`\n[4/5] Checking newly created reviews in Supabase (target: ${col('reviews')})...`);
   const res = await pgClient.query(
     `SELECT * FROM reviews WHERE created_at >= $1 OR updated_at >= $1`,
     [SINCE_TIMESTAMP]
@@ -242,7 +285,7 @@ async function reverseSyncReviews() {
 }
 
 async function reverseSyncUsers() {
-  console.log(`\n[4/4] Checking newly created/updated users and role profiles in Supabase...`);
+  console.log(`\n[5/5] Checking newly created/updated users and role profiles in Supabase...`);
   const res = await pgClient.query(
     `SELECT * FROM users WHERE created_at >= $1 OR updated_at >= $1`,
     [SINCE_TIMESTAMP]
@@ -284,10 +327,20 @@ async function runReverseSync() {
   const startTime = Date.now();
   try {
     await pgClient.connect();
-    console.log('Connected to Supabase PostgreSQL database successfully.');
+    
+    // Safety check: Verify connecting user has administrative privileges (bypassing client anon/authenticated revocations)
+    const userRes = await pgClient.query("SELECT current_user, session_user;");
+    const currentUser = userRes.rows[0]?.current_user || 'unknown';
+    console.log(`Connected to Supabase PostgreSQL as user: '${currentUser}'.`);
+    
+    if (currentUser === 'anon' || currentUser === 'authenticated') {
+      throw new Error(`CRITICAL SECURITY FAILURE: Reverse sync attempted with restricted role '${currentUser}'. Must run with 'postgres' or 'service_role' credentials to ensure write-freeze bypass during rollback.`);
+    }
+    console.log(`✓ Administrative privilege verified (bypasses Step 3 client-level REVOKE policies).`);
 
     const aptCount = await reverseSyncAppointments();
     const rxCount = await reverseSyncPrescriptions();
+    const hrCount = await reverseSyncHealthRecords();
     const revCount = await reverseSyncReviews();
     const usrCount = await reverseSyncUsers();
 
@@ -295,7 +348,7 @@ async function runReverseSync() {
 
     console.log('\n================================================================');
     console.log(`REVERSE SYNC SUMMARY: Completed in ${elapsedSec}s.`);
-    console.log(`Total Records: ${aptCount} appointments, ${rxCount} prescriptions, ${revCount} reviews, ${usrCount} users.`);
+    console.log(`Total Records: ${aptCount} appointments, ${rxCount} prescriptions, ${hrCount} health records, ${revCount} reviews, ${usrCount} users.`);
     if (IS_DRY_RUN) {
       console.log('DRY-RUN simulation finished. Pass --live to write to Firestore.');
     } else {

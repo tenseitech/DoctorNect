@@ -722,7 +722,58 @@ async function retryMsg91SmsOtp(mobileDigits) {
 
 function postMsg91OtpRequest({ authKey, mobileDigits, code, templateId, senderId }) {
   const built = buildMsg91OtpRequest({ mobileDigits, code, templateId, senderId });
+  const proxyUrl = String(process.env.MSG91_PROXY_URL || '').trim();
+  const proxySecret = String(process.env.PROXY_SECRET || '').trim();
 
+  // If a static IP Cloud Run proxy is configured, route through it to satisfy MSG91 IP allowlisting
+  if (proxyUrl && proxySecret) {
+    return new Promise((resolve, reject) => {
+      const u = new URL(proxyUrl);
+      const postData = JSON.stringify({
+        mobile: built.mobile,
+        otp: code,
+        template_id: templateId,
+        sender: senderId,
+      });
+
+      const options = {
+        hostname: u.hostname,
+        port: u.port || (u.protocol === 'https:' ? 443 : 80),
+        path: u.pathname + u.search,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-proxy-key': proxySecret,
+          'Content-Length': Buffer.byteLength(postData),
+        },
+      };
+
+      const protocol = u.protocol === 'http:' ? require('http') : https;
+      const req = protocol.request(options, (res) => {
+        let responseData = '';
+        res.on('data', (chunk) => { responseData += chunk; });
+        res.on('end', () => {
+          resolve({
+            statusCode: res.statusCode || 0,
+            body: responseData,
+            requestPayload: {
+              template_id: templateId,
+              mobile: built.mobile,
+              sender: senderId,
+              otp: '[REDACTED]',
+              routedVia: 'cloud_run_proxy',
+            },
+          });
+        });
+      });
+
+      req.on('error', (err) => reject(err));
+      req.write(postData);
+      req.end();
+    });
+  }
+
+  // Direct fallback to control.msg91.com
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'control.msg91.com',
@@ -747,6 +798,7 @@ function postMsg91OtpRequest({ authKey, mobileDigits, code, templateId, senderId
             mobile: built.mobile,
             sender: senderId,
             otp: '[REDACTED]',
+            routedVia: 'direct',
           },
         });
       });
@@ -853,6 +905,12 @@ async function sendMsg91SmsOtp(mobileDigits, code, otpType = 'registration') {
         responseBody: body,
         parsed: parsed.parsed,
       });
+      if (parsed.parsed && (parsed.parsed.code === '418' || parsed.parsed.code === 418 || parsed.reason?.includes('AuthenticationFailure'))) {
+        throw new HttpsError(
+          'unavailable',
+          'SMS gateway authentication rejected: Server IP not whitelisted in MSG91. Please whitelist the outbound IP or route through the Cloud Run proxy.',
+        );
+      }
       throw new HttpsError(
         'unavailable',
         'Could not send OTP SMS right now. Please try again in a few minutes.',

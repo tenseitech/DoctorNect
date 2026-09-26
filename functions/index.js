@@ -106,9 +106,13 @@ assertProductionOtpSafety();
 const FIRESTORE_TRIGGER_REGION = 'asia-south2';
 const CALLABLE_REGION = 'asia-south1';
 
-/** MSG91 callable options (asia-south1) — region + Secret Manager secrets. */
+/** MSG91 callable options (asia-south1) — region + optional VPC connector for static IP egress. */
 const MSG91_VPC_OPTIONS = {
   region: 'asia-south1',
+  ...(process.env.VPC_CONNECTOR ? {
+    vpcConnector: process.env.VPC_CONNECTOR,
+    vpcConnectorEgressSettings: 'ALL_TRAFFIC',
+  } : {}),
 };
 
 /** Set ENFORCE_OTP_APP_CHECK=false in functions/.env only while App Check is being configured. */

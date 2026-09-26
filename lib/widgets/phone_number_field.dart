@@ -161,13 +161,62 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
       enabled: widget.enabled,
       keyboardType: TextInputType.phone,
       inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(_maxLength),
+        _PhoneNumberInputFormatter(
+          dialCode: _dialCode,
+          maxLength: _maxLength,
+        ),
       ],
       decoration: mergedDecoration,
       validator: widget.validator ??
           (value) => FormValidators.phoneLocal(value, dialCode: _dialCode),
       onChanged: (_) => widget.onChanged?.call(),
+    );
+  }
+}
+
+/// Formatter that strips redundant dial codes and leading zeroes when pasted,
+/// ensuring the full subscriber number fits within [maxLength].
+class _PhoneNumberInputFormatter extends TextInputFormatter {
+  _PhoneNumberInputFormatter({
+    required this.dialCode,
+    required this.maxLength,
+  });
+
+  final String dialCode;
+  final int maxLength;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var text = newValue.text;
+    if (text.isEmpty) return newValue;
+
+    // Retain only digits
+    var digits = text.replaceAll(RegExp(r'\D'), '');
+    final cleanDial = dialCode.replaceAll(RegExp(r'\D'), '');
+
+    // Strip dial code if user typed or pasted with country code (e.g. 919876543210 -> 9876543210)
+    while (cleanDial.isNotEmpty &&
+        digits.startsWith(cleanDial) &&
+        digits.length > cleanDial.length) {
+      digits = digits.substring(cleanDial.length);
+    }
+
+    // Strip leading zeroes (e.g. 09876543210 -> 9876543210)
+    while (digits.startsWith('0') && digits.length > 1) {
+      digits = digits.substring(1);
+    }
+
+    // Enforce max length
+    if (digits.length > maxLength) {
+      digits = digits.substring(0, maxLength);
+    }
+
+    return TextEditingValue(
+      text: digits,
+      selection: TextSelection.collapsed(offset: digits.length),
     );
   }
 }

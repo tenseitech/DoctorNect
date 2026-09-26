@@ -93,6 +93,15 @@ RLS POLICY AUDIT RESULTS TABLE (scripts/test_rls_policies.js)
 14. **Cross-Patient Health Records Tampering (UPDATE & DELETE):**
     - **Mechanism:** Policy `health_records_write` enforces `USING (patient_id = current_profile_id())`.
     - **Result:** Patient A attempting to update or delete Patient B's record affects 0 rows. Verified in [`scratch/test_health_records_cross_patient_rls.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_health_records_cross_patient_rls.js).
+15. **Atomic Slot-Locking RPC & Cross-Patient Capacity Concurrency Guard (`book_appointment_atomic`):**
+    - **Mechanism:** Implemented transaction-level advisory locks via `pg_advisory_xact_lock(hashtext(p_doctor_id), hashtext(p_date_time::text))` in [`supabase/migrations/20260926000001_atomic_appointment_booking.sql`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/supabase/migrations/20260926000001_atomic_appointment_booking.sql).
+    - **Enforcement:** Enforces hard cap of `kMaxPatientsPerTimeSlot = 3` cross-patient bookings per slot. If active non-cancelled bookings reach 3, raises `SLOT_CAPACITY_REACHED` (`P0001`). Prevents duplicate bookings by the same patient with `DUPLICATE_PATIENT_BOOKING` (`23505`).
+    - **Concurrency Test Evidence:** Live staging race-condition test ([`scratch/test_atomic_booking_concurrency.js`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/scratch/test_atomic_booking_concurrency.js)) proved:
+      - Sequential bookings 1, 2, 3 confirmed with tokens 1, 2, 3.
+      - 4th booking rejected cleanly with `SLOT_CAPACITY_REACHED`.
+      - Same-patient duplicate rejected with `DUPLICATE_PATIENT_BOOKING`.
+      - 5 simultaneous concurrent booking requests resulted in exactly 3 successes and 2 rejections with 0 race errors or deadlocks!
+    - **Client Integration:** Wired into `SupabasePatientRepository.instance.bookAppointment` with `PatientWriteGuard` interception.
 
 ---
 
@@ -109,7 +118,83 @@ The bidirectional synchronization bridge ensures zero data loss between legacy c
 
 ---
 
-## 4. Emergency Rollback Protocol (Verified: ~3 to 4 Minutes)
+## 4. Live Cutover Window Execution Sequence (Sunday 01:30 AM – 04:00 AM IST)
+
+This section specifies the exact minute-by-minute operational sequence inside the live cutover window.
+
+### Operational Sequence Diagram
+
+```
+[Sunday 01:15 AM IST] (T-15m)
+Standing Connectivity Check ───────► Verify Firebase CLI auth, production Postgres connectivity,
+                                     and Play Console release status ("Approved — Ready to publish")
+       │
+       ▼ [01:30 AM IST] (T+0m)
+Step 1: Soft-Freeze Firestore Writes ──► Deploy read-only rules: firebase deploy --only firestore:rules
+       │
+       ▼ [01:35 AM IST] (T+5m)
+Step 2: Execute Delta Live Migration ──► node scripts/migrate_firestore_to_supabase.js --live --since="<baseline>"
+       │
+       ▼ [01:55 AM IST] (T+25m)
+Step 3: Parity Audit & Data Verification ─► node scripts/check_sync_parity.js --live (zero count/hash drift)
+       │
+       ▼ [02:05 AM IST] (T+35m)
+Step 4: Activate Supabase Production Writes ► GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+                                              UPDATE system_config SET config_value = '{"status":"active","allow_writes":true}'
+       │
+       ▼ [02:10 AM IST] (T+40m)
+Step 5: Release Staged Rollout via Play Console ► In Publishing Overview, click "Publish changes"
+                                                  (Instantly releases pre-approved v1.1.0 to 10% bucket)
+       │
+       ▼ [02:15 AM – 02:45 AM IST] (T+45m to T+1h15m)
+Step 6: Live Smoke Test on Physical Devices ─► Verify real SMS OTP, slot booking, prescriptions, & record upload
+       │
+       ▼ [02:45 AM IST] (T+1h15m)
+Step 7: Launch Bidirectional Sync Bridge ────► Start Cloud Run / background worker: supabase_to_firestore_worker.js
+       │
+       ▼ [03:00 AM IST] (T+1h30m)
+Step 8: Restore Normal Firestore Rules ──────► firebase deploy --only firestore:rules (Re-enable doctor writes)
+       │
+       ▼ [03:30 AM IST] (T+2h00m)
+Step 9: Declare Cutover Window Complete ─────► Hand off to 24-hour Stage 1 Monitoring (DLQ depth = 0)
+```
+
+### Step-by-Step Procedure Inside the Window
+
+| Time (IST) | Step | Action | Command / Procedure | Success Verification Criteria |
+| :--- | :--- | :--- | :--- | :--- |
+| **01:15 AM** | **T-15m** | Pre-Flight Health Check | `npx firebase-tools projects:list`<br>`psql $PROD_DB_URL -c "SELECT 1;"` | Firebase CLI session active; PostgreSQL pool responsive; Play Console displays "Approved — Ready to publish". |
+| **01:30 AM** | **Step 1 (T+0)** | Soft-Freeze Firestore Writes | `firebase deploy --only firestore:rules` *(read-only rules)* | Firestore writes reject with permission-denied. Legacy clients held from modifying records during delta sync. |
+| **01:35 AM** | **Step 2 (T+5m)** | Execute Delta Migration | `node scripts/migrate_firestore_to_supabase.js --live --since="<baseline_timestamp>"` | Console logs show 0 schema errors; all delta documents migrated with matching document IDs. |
+| **01:55 AM** | **Step 3 (T+25m)** | Parity & Integrity Audit | `node scripts/check_sync_parity.js --live`<br>Query 5 demo accounts & doctor rows in Supabase | 100% count match across collections; zero missing records; demo accounts verified. |
+| **02:05 AM** | **Step 4 (T+35m)** | Activate Supabase Writes | `GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;`<br>`UPDATE system_config SET config_value = '{"status":"active","allow_writes":true}'::jsonb WHERE config_key = 'patient_module_status';` | Supabase accepts patient authenticated writes; `PatientWriteGuard.isMaintenanceActive()` returns `false`. |
+| **02:10 AM** | **Step 5 (T+40m)** | Release Staged Rollout | In Google Play Console $\rightarrow$ **Publishing overview**, click **Publish changes**. | Release v1.1.0 immediately enters rollout to 10% bucket with zero review delay. |
+| **02:15 AM** | **Step 6 (T+45m)** | Live Physical Smoke Test | Test on 2 physical Android devices (installed via Play Store Internal Testing track or 10% rollout) | Real MSG91 OTP delivery $\ge 98.5\%$; appointment booked in Supabase; prescription readable; record upload succeeds. |
+| **02:45 AM** | **Step 7 (T+1h15m)** | Launch Sync Worker | Start `scripts/supabase_to_firestore_worker.js` (Cloud Run / daemon) | Worker processes newly created test appointment and replicates to Firestore within 2.5s. |
+| **03:00 AM** | **Step 8 (T+1h30m)** | Restore Firestore Rules | `firebase deploy --only firestore:rules` *(production rules)* | Doctor, Pharmacy, and Lab apps resume write capability without disruption. |
+| **03:30 AM** | **Step 9 (T+2h00m)** | Cutover Hand-off | Verify `sync_dlq` table is empty (`SELECT count(*) FROM sync_dlq;` = 0) | System handed off to 24-hour Stage 1 monitoring team. |
+
+### Operational Roles & Problem Watchers
+
+- **Lead Engineer (Backend / Database):**
+  - Monitors PostgreSQL connection pool saturation, query latency (P95 $< 120\text{ms}$), Cloud Run sync bridge latency, and `sync_dlq` depth.
+- **Product & System Owner (App & User Experience):**
+  - Monitors physical Android test devices, MSG91 SMS gateway delivery logs, Google Play Android Vitals / Firebase Crashlytics real-time crash reports, and support channels.
+
+### Decision Gate: Rollback vs. Keep Going
+
+| Severity | Condition / Symptom | Decision | Action |
+| :--- | :--- | :--- | :--- |
+| **Sev-1 (Critical)** | Delta migration script fails unrecoverably or causes data corruption | **ABORT & ROLLBACK** | Do not proceed to Step 4. Execute Emergency Rollback Protocol (Section 5). |
+| **Sev-1 (Critical)** | MSG91 SMS OTP delivery rate $< 90\%$ on test numbers over 15 minutes | **ABORT & ROLLBACK** | Halts patient login. Execute Emergency Rollback Protocol (Section 5). |
+| **Sev-1 (Critical)** | Sync worker fails to replicate patient bookings to Firestore within 30s | **ABORT & ROLLBACK** | Prevents doctor visibility blackout. Execute Emergency Rollback Protocol (Section 5). |
+| **Sev-1 (Critical)** | v1.1.0 crash loop ($> 1\%$ crash rate) reported in Crashlytics within 30 min | **ABORT & ROLLBACK** | Halt Google Play rollout; execute Emergency Rollback Protocol (Section 5). |
+| **Sev-2 (Moderate)** | Isolated sync failure caught by `sync_dlq` and scheduled for retry | **KEEP GOING** | Investigate DLQ payload; trigger manual re-drive via `supabase_to_firestore_worker.js`. |
+| **Sev-3 (Low)** | Minor UI styling/overflow glitch on non-critical secondary screens | **KEEP GOING** | Log ticket for next hotfix build (v1.1.1); does not block cutover. |
+
+---
+
+## 5. Emergency Rollback Protocol (Verified: ~3 to 4 Minutes)
 
 In the event of an unrecoverable failure during the live cutover window or early staged rollout, the emergency rollback plan incorporates our **two-layer client defense architecture**:
 1. **Already-Installed v1.1.0 Users:** Handled gracefully via the **Soft Maintenance Kill-Switch + 30-Second Grace Window** ([`PatientWriteGuard`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/lib/core/supabase/patient_write_guard.dart)). Users are seamlessly parked in a non-crashing maintenance bottom sheet without network failures or broken UI states.
@@ -178,7 +263,7 @@ Step 6: Production Resumption & Isolation:
   ```bash
   node scripts/reverse_sync_supabase_to_firestore.js --live --since="<cutover_start_timestamp>"
   ```
-- **Coverage:** Syncs `appointments`, `prescriptions` + line items, `reviews`, and `users` to ensure zero data loss for appointments created in Supabase.
+- **Coverage & Privilege Safety:** Syncs `appointments`, `prescriptions` + line items, `health_records`, `reviews`, and `users` to ensure zero data loss for records created in Supabase. Runs under administrative connection credentials (`postgres` / `service_role`) to strictly bypass Step 3 client permission revocations.
 
 #### Step 6: Restore Firestore Security Rules (T+3 min, Duration: ~20-30s)
 - **Action:** Restore production Firestore security rules to allow legacy clients to resume writing:
@@ -197,7 +282,7 @@ Step 6: Production Resumption & Isolation:
 
 ---
 
-## 5. Client-Side Safety Nets (`PatientWriteGuard`)
+## 6. Client-Side Safety Nets (`PatientWriteGuard`)
 
 The client application includes two layers of defense to protect user experience during operational interventions:
 
@@ -210,23 +295,29 @@ The client application includes two layers of defense to protect user experience
 
 ---
 
-## 6. Open / Pending Items Before Production Cutover
+## 7. Open / Pending Items Before Production Cutover
 
 Before executing the live cutover, the following items must be addressed and signed off:
 
-- [ ] **Doctor & Staff Module Parity:**
-  - Decide whether doctor-authored prescriptions will be authored via Supabase or Firestore during the initial cutover phase. (The sync bridge currently handles prescriptions written in either database).
+- [x] **Doctor & Staff Module Parity (Resolved & Closed):**
+  - **Decision:** The Doctor role stays on Firebase/Firestore for this cutover phase. The bidirectional sync bridge continues handling doctor-authored prescriptions, appointment status updates, and reviews in both directions, exactly as built and verified on staging. Doctor, Pharmacy, Lab, and Ambulance modules remain untouched on Firestore. Full migration of provider/staff modules will be scheduled as a separate phase after the Patient module stabilizes in production.
+- [x] **Production Baseline Data Migration Dry-Run & Orphan Detection (`migrate_firestore_to_supabase.js`):**
+  - Verified via `node scripts/migrate_firestore_to_supabase.js --dry-run`. Performs full schema validation, type mappings, enum normalization, and referential integrity checks against production schema definitions without executing DB writes.
+  - Automatically identifies orphaned records across tables (e.g. missing parent patient `p1784184727525` and user UIDs) and generates exact synthetic tombstone statements and `--auto-tombstone` handling to preserve clinical history without foreign key violations.
+- [x] **Production Build Configuration Guard (`verify_production_build_config.js`):**
+  - Automated pre-build check: `node scripts/verify_production_build_config.js` implemented and verified.
+  - Validates `SUPABASE_URL` and `SUPABASE_ANON_KEY`, asserts that `SUPABASE_URL` does NOT contain the staging reference (`irpkyedfmdsuvapfnrim`), validates MSG91 proxy/templates, and ensures Razorpay keys are live (`rzp_live_`) and not sandbox mock defaults.
+  - Fully integrated into `scripts/release_build.ps1` via `--client-only` pre-compilation check.
 - [ ] **Production Supabase Secrets Verification:**
   - Confirm production project secrets (`MSG91_PROXY_URL`, `PROXY_SECRET`, `MSG91_TEMPLATE_ID_*`, `RAZORPAY_KEY_*`) are configured on the production Supabase project via `supabase secrets set`.
-- [ ] **Production Baseline Data Migration Dry-Run:**
-  - Execute `node scripts/migrate_firestore_to_supabase.js --dry-run` against production Firestore to confirm zero foreign key or type mapping discrepancies.
-- [ ] **Google Play Release Bundle:**
-  - Build signed production release bundle (`aab`) for Flutter v1.1.0 with Supabase credentials configured.
-  - Upload to Play Console Internal Testing track for final smoke testing on physical Android devices.
+- [ ] **Google Play Release Bundle (Managed Publishing Workflow):**
+  - Submit signed release bundle (`aab`) for Flutter v1.1.0 to Google Play Console **2 to 3 days in advance** (Thursday or Friday) with **Managed Publishing turned ON** and Staged Rollout set to 10%.
+  - Google reviews and approves the release (12–36 hours). The release enters status **"Approved — Ready to publish"** in the Publishing overview.
+  - At cutover time (Step 5 at 02:10 AM IST), clicking "Publish changes" instantly releases v1.1.0 to the 10% bucket with **zero review wait time**.
 
 ---
 
-## 7. Post-Cutover Monitoring Plan & Promotion Criteria
+## 8. Post-Cutover Monitoring Plan & Promotion Criteria
 
 Following the initial deployment (Hour 0), the system enters a **48 to 72 hour staged rollout** adhering to the following thresholds:
 
@@ -267,9 +358,9 @@ Following the initial deployment (Hour 0), the system enters a **48 to 72 hour s
 
 ---
 
-## 8. Sign-Off & Approval Gate
+## 9. Sign-Off & Approval Gate
 
 | Role | Name / Identifier | Current Gate Status | Sign-Off Condition | Date |
 | :--- | :--- | :--- | :--- | :--- |
-| **Lead Engineer** | Antigravity AI Pair Programmer | **Staging Verified — Production Prerequisites Pending** | Awaiting completion of Section 6 items (Secrets, Dry-Run, Release AAB, Parity Decision) | 2026-09-26 |
+| **Lead Engineer** | Antigravity AI Pair Programmer | **Staging Verified — Production Prerequisites Pending** | Awaiting execution of remaining Section 7 prerequisites (Secrets, Dry-Run, Release AAB) | 2026-09-26 |
 | **Product & System Owner** | User Review | **Pending Joint Review** | Reviewing staging evidence & cutover schedule | |
