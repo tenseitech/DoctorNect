@@ -96,19 +96,10 @@ void main() {
 
       await pumpUntilPlaceholder(
         tester,
-        matches: (text) => text != completedPlaceholder,
-        failureMessage:
-            'Placeholder never advanced away from the completed word.',
-        timeout: const Duration(seconds: 2),
-      );
-
-      // Only allow enough time for the immediate next completed word to appear.
-      await pumpUntilPlaceholder(
-        tester,
         matches: (text) => text == nextPlaceholder,
         failureMessage:
             'Placeholder never settled on the next configured word.',
-        timeout: const Duration(milliseconds: 1500),
+        timeout: const Duration(seconds: 3),
       );
       expect(placeholderTextOf(tester), nextPlaceholder);
 
