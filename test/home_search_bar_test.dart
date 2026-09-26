@@ -59,8 +59,8 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(placeholderTextOf(tester), 'Search for Doctors');
 
-      // Three more seconds lands inside the next word's stable display window.
-      await tester.pump(const Duration(seconds: 3));
+      // Another 3.5s lands well inside the next word's stable display window.
+      await tester.pump(const Duration(milliseconds: 3500));
       expect(placeholderTextOf(tester), 'Search for Labs');
 
       // Dispose widget cleanly
