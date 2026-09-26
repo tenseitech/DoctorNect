@@ -22,6 +22,26 @@ Finder findAnyAnimatedPlaceholder() => find.byWidgetPredicate(
       description: 'animated placeholder',
     );
 
+const _typingDelayMs = 90;
+const _deletingDelayMs = 45;
+const _pauseFullMs = 1800;
+const _pauseEmptyMs = 250;
+
+Duration _fullWordDelay(String word) =>
+    Duration(milliseconds: word.length * _typingDelayMs);
+
+Duration _transitionToNextWordDelay({
+  required String currentWord,
+  required String nextWord,
+}) {
+  return Duration(
+    milliseconds: _pauseFullMs +
+        (currentWord.length * _deletingDelayMs) +
+        _pauseEmptyMs +
+        (nextWord.length * _typingDelayMs),
+  );
+}
+
 void main() {
   group('HomeSearchBar animated rotating placeholder tests', () {
     testWidgets(
@@ -39,11 +59,16 @@ void main() {
       expect(findAnyAnimatedPlaceholder(), findsOneWidget);
 
       // The typewriter completes the first configured search word.
-      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump(_fullWordDelay('Doctors'));
       expect(findAnimatedPlaceholder('Search for Doctors'), findsOneWidget);
 
       // After the delete/pause/type cycle, the next configured word appears.
-      await tester.pump(const Duration(milliseconds: 2700));
+      await tester.pump(
+        _transitionToNextWordDelay(
+          currentWord: 'Doctors',
+          nextWord: 'Labs',
+        ),
+      );
       expect(findAnimatedPlaceholder('Search for Labs'), findsOneWidget);
 
       // Dispose widget cleanly
