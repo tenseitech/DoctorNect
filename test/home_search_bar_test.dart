@@ -63,8 +63,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 2500));
       expect(placeholderTextOf(tester), isNot('Search for Doctors'));
 
-      // Wait long enough for the next word to finish typing and settle.
-      await tester.pump(const Duration(seconds: 1));
+      // Advance in small steps until the next word finishes typing.
+      var reachedNextWord = placeholderTextOf(tester) == 'Search for Labs';
+      for (var i = 0; i < 20 && !reachedNextWord; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+        reachedNextWord = placeholderTextOf(tester) == 'Search for Labs';
+      }
+
+      expect(reachedNextWord, isTrue);
       expect(placeholderTextOf(tester), 'Search for Labs');
 
       // Dispose widget cleanly
