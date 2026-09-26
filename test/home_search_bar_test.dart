@@ -26,7 +26,7 @@ Finder _placeholderTextFinder({required bool richText}) => find.descendant(
       ),
     );
 
-bool hasPlaceholderText(WidgetTester tester) {
+bool hasPlaceholderText() {
   return _placeholderTextFinder(richText: false).evaluate().isNotEmpty ||
       _placeholderTextFinder(richText: true).evaluate().isNotEmpty;
 }
@@ -78,7 +78,7 @@ void main() {
       );
 
       // Initial frame shows the animated placeholder prefix immediately.
-      expect(hasPlaceholderText(tester), isTrue);
+      expect(hasPlaceholderText(), isTrue);
       expect(placeholderTextOf(tester), startsWith(_placeholderPrefix));
 
       // After one second, the first word is fully visible and stable.
@@ -126,7 +126,7 @@ void main() {
         ),
       );
 
-      expect(hasPlaceholderText(tester), isTrue);
+      expect(hasPlaceholderText(), isTrue);
 
       // Tap on TextField to focus
       final textField = find.byType(TextField);
@@ -135,26 +135,26 @@ void main() {
       await tester.pump();
 
       // Once focused, overlay should disappear
-      expect(hasPlaceholderText(tester), isFalse);
+      expect(hasPlaceholderText(), isFalse);
 
       // Enter text
       await tester.enterText(textField, 'Cardiologist');
       await tester.pump();
-      expect(hasPlaceholderText(tester), isFalse);
+      expect(hasPlaceholderText(), isFalse);
 
       // Clear text
       await tester.enterText(textField, '');
       await tester.pump();
 
       // Still focused -> overlay still hidden
-      expect(hasPlaceholderText(tester), isFalse);
+      expect(hasPlaceholderText(), isFalse);
 
       // Unfocus
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
 
       // Unfocused and empty -> overlay reappears
-      expect(hasPlaceholderText(tester), isTrue);
+      expect(hasPlaceholderText(), isTrue);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
