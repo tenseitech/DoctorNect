@@ -41,14 +41,7 @@ String placeholderTextOf(WidgetTester tester) {
 
 void main() {
   group('HomeSearchBar animated rotating placeholder tests', () {
-    test('Configured rotating search words stay in expected order', () {
-      expect(
-        HomeSearchBar.words,
-        const ['Doctors', 'Labs', 'Speciality', 'Location', 'Language'],
-      );
-    });
-
-    testWidgets('Renders animated placeholder overlay when unfocused',
+    testWidgets('Renders animated placeholder and advances to the next word',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -61,6 +54,14 @@ void main() {
       // Initial frame shows the animated placeholder prefix immediately.
       expect(findPlaceholderOverlay(), findsOneWidget);
       expect(placeholderTextOf(tester), startsWith(_placeholderPrefix));
+
+      // After one second, the first word is fully visible and stable.
+      await tester.pump(const Duration(seconds: 1));
+      expect(placeholderTextOf(tester), 'Search for Doctors');
+
+      // Three more seconds lands inside the next word's stable display window.
+      await tester.pump(const Duration(seconds: 3));
+      expect(placeholderTextOf(tester), 'Search for Labs');
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
