@@ -109,13 +109,18 @@ class SupabasePatientRepository {
   // PRESCRIPTIONS & HEALTH RECORDS (Reads)
   // --------------------------------------------------------------------------
 
-  /// Fetches all prescriptions for a patient including medicine line items
+  /// Fetches all prescriptions for a patient including medicine line items, investigations, and referrals
   Future<List<Map<String, dynamic>>> fetchPrescriptions(String patientId) async {
     final res = await _client
         .from('prescriptions')
-        .select('*, prescription_medicines(*)')
+        .select('''
+          *,
+          prescription_medicines(*),
+          prescription_investigations(*),
+          prescription_referrals(*)
+        ''')
         .eq('patient_id', patientId)
-        .order('created_at', ascending: false);
+        .order('prescription_date', ascending: false);
 
     return List<Map<String, dynamic>>.from(res);
   }
@@ -187,6 +192,74 @@ class SupabasePatientRepository {
         await _client
             .from('patients')
             .upsert(payload, onConflict: 'patient_id');
+      },
+    );
+  }
+
+  // --------------------------------------------------------------------------
+
+  /// Fetches all health records for a patient
+  Future<List<Map<String, dynamic>>> fetchHealthRecords(String patientId) async {
+    final res = await _client
+        .from('health_records')
+        .select()
+        .eq('patient_id', patientId)
+        .order('date', ascending: false);
+
+    return List<Map<String, dynamic>>.from(res);
+  }
+
+  /// Uploads/creates a health record for a patient (guarded write)
+  Future<Map<String, dynamic>> addHealthRecord({
+    required BuildContext? context,
+    required String recordId,
+    required String patientId,
+    required String title,
+    required String type,
+    required DateTime date,
+    required String source,
+    required String fileName,
+    String? doctorName,
+    String? labName,
+    bool isImage = false,
+    String? notes,
+    bool sharedWithDoctors = true,
+    String fileStorage = 'localOnly',
+    String? storageUrl,
+  }) async {
+    final validFileStorage = (fileStorage == 'cloudUploaded' || fileStorage == 'firebase')
+        ? 'cloudUploaded'
+        : (fileStorage == 'none' ? 'none' : 'localOnly');
+
+    return PatientWriteGuard.run(
+      context: context,
+      action: () async {
+        final payload = {
+          'record_id': recordId,
+          'patient_id': patientId,
+          'title': title,
+          'type': type,
+          'date': date.toIso8601String(),
+          'source': source,
+          'file_name': fileName,
+          'doctor_name': doctorName,
+          'lab_name': labName,
+          'is_image': isImage,
+          'notes': notes,
+          'shared_with_doctors': sharedWithDoctors,
+          'file_storage': validFileStorage,
+          'storage_url': storageUrl,
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+
+        final res = await _client
+            .from('health_records')
+            .upsert(payload, onConflict: 'record_id')
+            .select()
+            .single();
+
+        return res;
       },
     );
   }

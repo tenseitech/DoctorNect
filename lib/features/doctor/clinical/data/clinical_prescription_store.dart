@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/session/doctor_session.dart';
+import '../../../../core/supabase/supabase_bootstrap.dart';
+import '../../../../core/supabase/supabase_patient_repository.dart';
+import '../../../../core/supabase/mappers/prescription_supabase_mapper.dart';
 import '../models/clinical_models.dart';
 import '../../profile/data/doctor_profile_store.dart';
 
@@ -236,6 +239,26 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
       _purgePatientPrescriptions(patientId);
       _hasMorePatient = false;
       return;
+    }
+
+    // Patient reading prescriptions in Supabase-first mode:
+    if (!_isDoctorContext && SupabaseBootstrap.isReady) {
+      try {
+        final rows = await SupabasePatientRepository.instance.fetchPrescriptions(patientId);
+        final supaItems = rows
+            .map((r) => PrescriptionSupabaseMapper.fromRow(r))
+            .whereType<PrescriptionDraft>()
+            .toList();
+        if (supaItems.isNotEmpty) {
+          mergeFirestoreRecords(supaItems);
+          _hasMorePatient = false;
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('ClinicalPrescriptionStore: Supabase fetch failed, falling back to Firestore: $e');
+        }
+      }
     }
 
     try {
