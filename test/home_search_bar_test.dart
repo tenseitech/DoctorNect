@@ -19,13 +19,24 @@ Finder findPlaceholderOverlay() => find.descendant(
       matching: find.byType(IgnorePointer),
     );
 
-Finder findPlaceholderText() => find.descendant(
-      of: findPlaceholderOverlay(),
-      matching: find.byType(Text),
-    );
-
 String placeholderTextOf(WidgetTester tester) {
-  return _plainTextOf(tester.widget<Text>(findPlaceholderText()))!;
+  final textFinder = find.descendant(
+    of: findPlaceholderOverlay(),
+    matching: find.byType(Text),
+  );
+  if (textFinder.evaluate().isNotEmpty) {
+    return _plainTextOf(tester.firstWidget<Text>(textFinder))!;
+  }
+
+  final richTextFinder = find.descendant(
+    of: findPlaceholderOverlay(),
+    matching: find.byType(RichText),
+  );
+  if (richTextFinder.evaluate().isNotEmpty) {
+    return _plainTextOf(tester.firstWidget<RichText>(richTextFinder))!;
+  }
+
+  throw TestFailure('Could not locate animated placeholder text widget.');
 }
 
 const _typingDelayMs = 90;
@@ -65,7 +76,7 @@ void main() {
       expect(findPlaceholderOverlay(), findsOneWidget);
 
       // The typewriter completes the first configured search word.
-      await tester.pump(_fullWordDelay('Doctors'));
+      await tester.pump(_fullWordDelay(HomeSearchBar.words.first));
       expect(
         placeholderTextOf(tester),
         '$_placeholderPrefix${HomeSearchBar.words.first}',
