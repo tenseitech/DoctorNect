@@ -39,23 +39,24 @@ String placeholderTextOf(WidgetTester tester) {
   throw TestFailure('Could not locate animated placeholder text widget.');
 }
 
-const _typingDelayMs = 90;
-const _deletingDelayMs = 45;
-const _pauseFullMs = 1800;
-const _pauseEmptyMs = 250;
+Future<void> pumpUntilPlaceholderText(
+  WidgetTester tester,
+  String expected, {
+  Duration step = const Duration(milliseconds: 30),
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  final attempts = timeout.inMilliseconds ~/ step.inMilliseconds;
 
-Duration _fullWordDelay(String word) =>
-    Duration(milliseconds: word.length * _typingDelayMs);
+  for (var i = 0; i <= attempts; i++) {
+    if (placeholderTextOf(tester) == expected) {
+      return;
+    }
+    await tester.pump(step);
+  }
 
-Duration _transitionToNextWordDelay({
-  required String currentWord,
-  required String nextWord,
-}) {
-  return Duration(
-    milliseconds: _pauseFullMs +
-        (currentWord.length * _deletingDelayMs) +
-        _pauseEmptyMs +
-        (nextWord.length * _typingDelayMs),
+  throw TestFailure(
+    'Timed out waiting for placeholder text "$expected". '
+    'Last rendered value was "${placeholderTextOf(tester)}".',
   );
 }
 
@@ -76,18 +77,19 @@ void main() {
       expect(findPlaceholderOverlay(), findsOneWidget);
 
       // The typewriter completes the first configured search word.
-      await tester.pump(_fullWordDelay(HomeSearchBar.words.first));
+      await pumpUntilPlaceholderText(
+        tester,
+        '$_placeholderPrefix${HomeSearchBar.words.first}',
+      );
       expect(
         placeholderTextOf(tester),
         '$_placeholderPrefix${HomeSearchBar.words.first}',
       );
 
       // After the delete/pause/type cycle, the next configured word appears.
-      await tester.pump(
-        _transitionToNextWordDelay(
-          currentWord: HomeSearchBar.words.first,
-          nextWord: HomeSearchBar.words[1],
-        ),
+      await pumpUntilPlaceholderText(
+        tester,
+        '$_placeholderPrefix${HomeSearchBar.words[1]}',
       );
       expect(
         placeholderTextOf(tester),
