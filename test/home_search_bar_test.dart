@@ -14,7 +14,10 @@ String? _plainTextOf(Widget widget) {
 
 const _placeholderPrefix = 'Search for ';
 
-Finder findPlaceholderOverlay() => find.byType(IgnorePointer);
+Finder findPlaceholderOverlay() => find.descendant(
+      of: find.byType(HomeSearchBar),
+      matching: find.byType(IgnorePointer),
+    );
 
 Finder findPlaceholderText() => find.descendant(
       of: findPlaceholderOverlay(),
