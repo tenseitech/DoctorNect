@@ -14,24 +14,30 @@ String? _plainTextOf(Widget widget) {
 
 const _placeholderPrefix = 'Search for ';
 
-Finder findPlaceholderOverlay() => find.descendant(
+Finder _placeholderTextFinder({required bool richText}) => find.descendant(
       of: find.byType(HomeSearchBar),
-      matching: find.byType(IgnorePointer),
+      matching: find.byWidgetPredicate(
+        (widget) {
+          if (richText && widget is! RichText) return false;
+          if (!richText && widget is! Text) return false;
+          return (_plainTextOf(widget) ?? '').startsWith(_placeholderPrefix);
+        },
+        description: richText ? 'placeholder rich text' : 'placeholder text',
+      ),
     );
 
+bool hasPlaceholderText(WidgetTester tester) {
+  return _placeholderTextFinder(richText: false).evaluate().isNotEmpty ||
+      _placeholderTextFinder(richText: true).evaluate().isNotEmpty;
+}
+
 String placeholderTextOf(WidgetTester tester) {
-  final textFinder = find.descendant(
-    of: findPlaceholderOverlay(),
-    matching: find.byType(Text),
-  );
+  final textFinder = _placeholderTextFinder(richText: false);
   if (textFinder.evaluate().isNotEmpty) {
     return _plainTextOf(tester.firstWidget<Text>(textFinder))!;
   }
 
-  final richTextFinder = find.descendant(
-    of: findPlaceholderOverlay(),
-    matching: find.byType(RichText),
-  );
+  final richTextFinder = _placeholderTextFinder(richText: true);
   if (richTextFinder.evaluate().isNotEmpty) {
     return _plainTextOf(tester.firstWidget<RichText>(richTextFinder))!;
   }
@@ -72,7 +78,7 @@ void main() {
       );
 
       // Initial frame shows the animated placeholder prefix immediately.
-      expect(findPlaceholderOverlay(), findsOneWidget);
+      expect(hasPlaceholderText(tester), isTrue);
       expect(placeholderTextOf(tester), startsWith(_placeholderPrefix));
 
       // After one second, the first word is fully visible and stable.
@@ -110,7 +116,7 @@ void main() {
         ),
       );
 
-      expect(findPlaceholderOverlay(), findsOneWidget);
+      expect(hasPlaceholderText(tester), isTrue);
 
       // Tap on TextField to focus
       final textField = find.byType(TextField);
@@ -119,26 +125,26 @@ void main() {
       await tester.pump();
 
       // Once focused, overlay should disappear
-      expect(findPlaceholderOverlay(), findsNothing);
+      expect(hasPlaceholderText(tester), isFalse);
 
       // Enter text
       await tester.enterText(textField, 'Cardiologist');
       await tester.pump();
-      expect(findPlaceholderOverlay(), findsNothing);
+      expect(hasPlaceholderText(tester), isFalse);
 
       // Clear text
       await tester.enterText(textField, '');
       await tester.pump();
 
       // Still focused -> overlay still hidden
-      expect(findPlaceholderOverlay(), findsNothing);
+      expect(hasPlaceholderText(tester), isFalse);
 
       // Unfocus
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
 
       // Unfocused and empty -> overlay reappears
-      expect(findPlaceholderOverlay(), findsOneWidget);
+      expect(hasPlaceholderText(tester), isTrue);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
