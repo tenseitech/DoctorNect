@@ -12,15 +12,18 @@ String? _plainTextOf(Widget widget) {
   return null;
 }
 
-Finder findAnimatedPlaceholder(String text) => find.byWidgetPredicate(
-      (widget) => _plainTextOf(widget) == text,
-      description: 'animated placeholder "$text"',
+const _placeholderPrefix = 'Search for ';
+
+Finder findPlaceholderOverlay() => find.byType(IgnorePointer);
+
+Finder findPlaceholderText() => find.descendant(
+      of: findPlaceholderOverlay(),
+      matching: find.byType(Text),
     );
 
-Finder findAnyAnimatedPlaceholder() => find.byWidgetPredicate(
-      (widget) => (_plainTextOf(widget) ?? '').startsWith('Search for '),
-      description: 'animated placeholder',
-    );
+String placeholderTextOf(WidgetTester tester) {
+  return _plainTextOf(tester.widget<Text>(findPlaceholderText()))!;
+}
 
 const _typingDelayMs = 90;
 const _deletingDelayMs = 45;
@@ -56,20 +59,26 @@ void main() {
       );
 
       // Initial frame shows the animated placeholder prefix immediately.
-      expect(findAnyAnimatedPlaceholder(), findsOneWidget);
+      expect(findPlaceholderOverlay(), findsOneWidget);
 
       // The typewriter completes the first configured search word.
       await tester.pump(_fullWordDelay('Doctors'));
-      expect(findAnimatedPlaceholder('Search for Doctors'), findsOneWidget);
+      expect(
+        placeholderTextOf(tester),
+        '$_placeholderPrefix${HomeSearchBar.words.first}',
+      );
 
       // After the delete/pause/type cycle, the next configured word appears.
       await tester.pump(
         _transitionToNextWordDelay(
-          currentWord: 'Doctors',
-          nextWord: 'Labs',
+          currentWord: HomeSearchBar.words.first,
+          nextWord: HomeSearchBar.words[1],
         ),
       );
-      expect(findAnimatedPlaceholder('Search for Labs'), findsOneWidget);
+      expect(
+        placeholderTextOf(tester),
+        '$_placeholderPrefix${HomeSearchBar.words[1]}',
+      );
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
@@ -86,7 +95,7 @@ void main() {
         ),
       );
 
-      expect(findAnyAnimatedPlaceholder(), findsOneWidget);
+      expect(findPlaceholderOverlay(), findsOneWidget);
 
       // Tap on TextField to focus
       final textField = find.byType(TextField);
@@ -95,26 +104,26 @@ void main() {
       await tester.pump();
 
       // Once focused, overlay should disappear
-      expect(findAnyAnimatedPlaceholder(), findsNothing);
+      expect(findPlaceholderOverlay(), findsNothing);
 
       // Enter text
       await tester.enterText(textField, 'Cardiologist');
       await tester.pump();
-      expect(findAnyAnimatedPlaceholder(), findsNothing);
+      expect(findPlaceholderOverlay(), findsNothing);
 
       // Clear text
       await tester.enterText(textField, '');
       await tester.pump();
 
       // Still focused -> overlay still hidden
-      expect(findAnyAnimatedPlaceholder(), findsNothing);
+      expect(findPlaceholderOverlay(), findsNothing);
 
       // Unfocus
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
 
       // Unfocused and empty -> overlay reappears
-      expect(findAnyAnimatedPlaceholder(), findsOneWidget);
+      expect(findPlaceholderOverlay(), findsOneWidget);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
