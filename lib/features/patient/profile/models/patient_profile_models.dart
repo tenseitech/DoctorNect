@@ -105,6 +105,8 @@ class PatientProfile {
     this.weight = 0.0,
     this.photoInitial,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
   });
 
   String name;
@@ -117,6 +119,8 @@ class PatientProfile {
   double weight;
   String? photoInitial;
   String? photoUrl;
+  String? photoKey;
+  String? photoStorage;
 }
 
 class FamilyProfileMember {

@@ -8,7 +8,9 @@ import '../../../core/session/patient_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../profile/data/patient_photo_local_store.dart';
 import '../profile/data/patient_profile_mock.dart';
+import '../profile/models/patient_profile_models.dart';
 import 'package:medibond/features/shared/screens/patient_profile_screen.dart';
+import '../../../core/widgets/s3_aware_network_image.dart';
 
 class PatientProfileAvatarButton extends StatefulWidget {
   const PatientProfileAvatarButton({super.key, this.radius = 20});
@@ -52,17 +54,19 @@ class _PatientProfileAvatarButtonState
     setState(() => _localPhotoBytes = bytes);
   }
 
-  ImageProvider? _avatarImage(String? photoUrl) {
+  ImageProvider? _avatarImage(PatientProfile profile) {
     final patientId = PatientSession.loggedInPatientId;
     final bytes =
         _localPhotoBytes ?? PatientPhotoLocalStore.readCached(patientId);
-    if (bytes != null && bytes.isNotEmpty) {
-      return MemoryImage(bytes);
-    }
-    if (photoUrl != null && photoUrl.trim().isNotEmpty) {
-      return NetworkImage(photoUrl.trim());
-    }
-    return null;
+    return S3AwareImageProvider.resolveProvider(
+      photoKey: profile.photoKey,
+      photoStorage: profile.photoStorage,
+      legacyUrl: profile.photoUrl,
+      photoBytes: bytes,
+      context: context,
+      width: widget.radius * 2,
+      height: widget.radius * 2,
+    );
   }
 
   @override
@@ -72,7 +76,7 @@ class _PatientProfileAvatarButtonState
         ? profile.name
         : PatientSession.loggedInPatientName;
     final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'P';
-    final avatarImage = _avatarImage(profile.photoUrl);
+    final avatarImage = _avatarImage(profile);
 
     return Material(
       color: Colors.transparent,

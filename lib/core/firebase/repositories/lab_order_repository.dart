@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:flutter/foundation.dart';
+
 import '../firebase_bootstrap.dart';
 import '../lab_report_file_store.dart';
 import '../../storage/storage_service.dart';
@@ -17,6 +19,11 @@ class LabOrderRepository {
   LabOrderRepository._();
 
   static final LabOrderRepository instance = LabOrderRepository._();
+
+  @visibleForTesting
+  FirebaseFirestore? firestoreOverride;
+
+  FirebaseFirestore get firestore => firestoreOverride ?? FirebaseFirestore.instance;
 
   Future<void> save(DoctorLabOrder order) async {
     if (!FirebaseBootstrap.isReady) return;
@@ -218,7 +225,9 @@ class LabOrderRepository {
     required Uint8List bytes,
     String? existingReportStorageKey,
   }) async {
-    if (!FirebaseBootstrap.isReady || orderId.isEmpty || patientId.isEmpty) {
+    if ((!FirebaseBootstrap.isReady && firestoreOverride == null) ||
+        orderId.isEmpty ||
+        patientId.isEmpty) {
       throw StateError('Firebase is not ready');
     }
     if (bytes.isEmpty || bytes.length > LabReportFileStore.maxFileBytes) {
@@ -256,7 +265,7 @@ class LabOrderRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
-    await FirebaseFirestore.instance
+    await firestore
         .collection(FirestorePaths.labOrders)
         .doc(orderId)
         .update(updatePayload)

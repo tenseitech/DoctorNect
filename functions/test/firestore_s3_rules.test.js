@@ -409,3 +409,95 @@ test('lab_orders: doctor cannot set report fields', async () => {
     }),
   );
 });
+
+test('patients: owner can set valid S3 profile photo fields', async () => {
+  await seedUsers();
+  const patientCtx = testEnv.authenticatedContext(PATIENT_UID);
+  await assertSucceeds(
+    patientCtx.firestore().collection('patients').doc(PATIENT_ID).update({
+      photoKey: `patients/${PATIENT_ID}/profile/avatar123.jpg`,
+      photoStorage: 's3',
+      hasLocalPhoto: true,
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+test('patients: owner cannot set S3 profile photo with non-profile or wrong patient prefix', async () => {
+  await seedUsers();
+  const patientCtx = testEnv.authenticatedContext(PATIENT_UID);
+  // Traversal / wrong purpose
+  await assertFails(
+    patientCtx.firestore().collection('patients').doc(PATIENT_ID).update({
+      photoKey: `health_records/${PATIENT_ID}/record.pdf`,
+      photoStorage: 's3',
+    }),
+  );
+  // Other patient's id
+  await assertFails(
+    patientCtx.firestore().collection('patients').doc(PATIENT_ID).update({
+      photoKey: `patients/${OTHER_PATIENT_ID}/profile/avatar.jpg`,
+      photoStorage: 's3',
+    }),
+  );
+});
+
+test('patients: non-owner cannot update patient photo fields', async () => {
+  await seedUsers();
+  const otherPatientCtx = testEnv.authenticatedContext(OTHER_PATIENT_UID);
+  await assertFails(
+    otherPatientCtx.firestore().collection('patients').doc(PATIENT_ID).update({
+      photoKey: `patients/${PATIENT_ID}/profile/avatar.jpg`,
+      photoStorage: 's3',
+    }),
+  );
+});
+
+test('doctors: doctor can update own profile photo with valid prefix', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  await assertSucceeds(
+    doctorCtx.firestore().collection('doctors').doc(DOCTOR_ID).update({
+      photoKey: `doctor_profiles/${DOCTOR_ID}/profile/avatar.jpg`,
+      photoStorage: 's3',
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+test('doctors: doctor cannot update profile photo with clinical or mismatched prefix', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  await assertFails(
+    doctorCtx.firestore().collection('doctors').doc(DOCTOR_ID).update({
+      photoKey: `patients/${PATIENT_ID}/profile/avatar.jpg`,
+      photoStorage: 's3',
+    }),
+  );
+  await assertFails(
+    doctorCtx.firestore().collection('doctors').doc(DOCTOR_ID).update({
+      photoKey: `doctor_profiles/other_doctor/profile/avatar.jpg`,
+      photoStorage: 's3',
+    }),
+  );
+});
+
+test('users: user can update own photo fields with matching prefix but not arbitrary prefix', async () => {
+  await seedUsers();
+  const patientCtx = testEnv.authenticatedContext(PATIENT_UID);
+  await assertSucceeds(
+    patientCtx.firestore().collection('users').doc(PATIENT_UID).update({
+      photoKey: `patients/${PATIENT_ID}/profile/avatar.jpg`,
+      photoStorage: 's3',
+      updatedAt: new Date(),
+    }),
+  );
+
+  await assertFails(
+    patientCtx.firestore().collection('users').doc(PATIENT_UID).update({
+      photoKey: `health_records/${PATIENT_ID}/avatar.jpg`,
+      photoStorage: 's3',
+    }),
+  );
+});
+

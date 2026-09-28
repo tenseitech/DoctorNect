@@ -20,6 +20,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../widgets/logout_button.dart';
 import '../../../../widgets/image_viewer_dialog.dart';
 import '../../../../widgets/profile_photo_avatar.dart';
+import '../../../core/widgets/s3_aware_network_image.dart';
 import '../../patient/profile/about/about_screen.dart';
 import '../../patient/profile/widgets/profile_flat_section.dart';
 import '../../patient/profile/widgets/profile_web_layout.dart';
@@ -92,12 +93,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
   Future<void> _pickPhoto() async {
     final profile = DoctorProfileStore.instance.profile;
-    ImageProvider? currentImage;
-    if (_localPhotoBytes != null && _localPhotoBytes!.isNotEmpty) {
-      currentImage = MemoryImage(_localPhotoBytes!);
-    } else if (profile.photoUrl != null && profile.photoUrl!.isNotEmpty) {
-      currentImage = NetworkImage(profile.photoUrl!);
-    }
+    final currentImage = S3AwareImageProvider.resolveProvider(
+      photoKey: profile.photoKey,
+      photoStorage: profile.photoStorage,
+      legacyUrl: profile.photoUrl,
+      photoBytes: _localPhotoBytes,
+      context: context,
+    );
 
     final picked = await pickProfilePhoto(
       context,
@@ -154,17 +156,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     final localBytes = profile.photoBytes ??
         _localPhotoBytes ??
         DoctorPhotoLocalStore.readCached(DoctorSession.loggedInDoctorId);
-    final hasLocalPhoto = localBytes != null && localBytes.isNotEmpty;
-    final hasNetworkPhoto = !hasLocalPhoto &&
-        profile.photoUrl != null &&
-        profile.photoUrl!.trim().isNotEmpty;
-
-    ImageProvider? avatarImage;
-    if (hasLocalPhoto) {
-      avatarImage = MemoryImage(localBytes);
-    } else if (hasNetworkPhoto) {
-      avatarImage = NetworkImage(profile.photoUrl!.trim());
-    }
+    final avatarImage = S3AwareImageProvider.resolveProvider(
+      photoKey: profile.photoKey,
+      photoStorage: profile.photoStorage,
+      legacyUrl: profile.photoUrl,
+      photoBytes: localBytes,
+      context: context,
+      width: radius * 2,
+      height: radius * 2,
+    );
 
     final fontSize = radius * 0.74;
 

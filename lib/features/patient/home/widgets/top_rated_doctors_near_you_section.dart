@@ -5,14 +5,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../widgets/profile_photo_image_io.dart'
-    if (dart.library.html) '../../../../widgets/profile_photo_image_stub.dart';
 import '../../booking/booking_flow_screen.dart';
 import '../../data/registered_doctors_store.dart';
 import '../../doctor_profile/patient_doctor_profile_screen.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 import '../../profile/data/patient_profile_mock.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/s3_aware_network_image.dart';
 
 /// Promotional banner section on the Patient Home Screen showcasing
 /// top-rated verified doctors near the patient's location.
@@ -353,6 +352,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
                   displayName: doctor.name,
                   photoPath: photo.path,
                   photoUrl: photo.url,
+                  photoKey: photo.photoKey,
+                  photoStorage: photo.photoStorage,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -551,20 +552,21 @@ class _TopRatedDoctorCard extends StatelessWidget {
 }
 
 class _DoctorPhotoData {
-  const _DoctorPhotoData({this.path, this.url});
+  const _DoctorPhotoData({this.path, this.url, this.photoKey, this.photoStorage});
 
   final String? path;
   final String? url;
+  final String? photoKey;
+  final String? photoStorage;
 }
 
 _DoctorPhotoData _resolveDoctorPhoto(DoctorListing doctor) {
-  if (doctor.photoUrl != null && doctor.photoUrl!.trim().isNotEmpty) {
-    return _DoctorPhotoData(url: doctor.photoUrl);
-  }
-  if (doctor.photoPath != null && doctor.photoPath!.trim().isNotEmpty) {
-    return _DoctorPhotoData(path: doctor.photoPath);
-  }
-  return const _DoctorPhotoData();
+  return _DoctorPhotoData(
+    url: doctor.photoUrl,
+    path: doctor.photoPath,
+    photoKey: doctor.photoKey,
+    photoStorage: doctor.photoStorage,
+  );
 }
 
 class _DoctorPhotoAvatar extends StatelessWidget {
@@ -572,22 +574,27 @@ class _DoctorPhotoAvatar extends StatelessWidget {
     required this.displayName,
     this.photoPath,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String displayName;
   final String? photoPath;
   final String? photoUrl;
-
-  ImageProvider? get _provider {
-    if (photoUrl != null && photoUrl!.trim().isNotEmpty) {
-      return NetworkImage(photoUrl!.trim());
-    }
-    return profilePhotoFileProvider(photoPath);
-  }
+  final String? photoKey;
+  final String? photoStorage;
 
   @override
   Widget build(BuildContext context) {
-    final image = _provider;
+    final image = S3AwareImageProvider.resolveProvider(
+      photoKey: photoKey,
+      photoStorage: photoStorage,
+      legacyUrl: photoUrl,
+      photoPath: photoPath,
+      context: context,
+      width: 68,
+      height: 68,
+    );
     final initial = displayName.trim().isNotEmpty
         ? displayName.trim()[0].toUpperCase()
         : 'D';

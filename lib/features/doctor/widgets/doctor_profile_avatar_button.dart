@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../profile/data/doctor_photo_local_store.dart';
 import '../profile/data/doctor_profile_store.dart';
 import '../profile/doctor_profile_screen.dart';
+import '../../../core/widgets/s3_aware_network_image.dart';
 
 class DoctorProfileAvatarButton extends StatefulWidget {
   const DoctorProfileAvatarButton({super.key, this.radius = 20});
@@ -57,19 +58,16 @@ class _DoctorProfileAvatarButtonState extends State<DoctorProfileAvatarButton> {
     final bytes = profileBytes ??
         _localPhotoBytes ??
         DoctorPhotoLocalStore.readCached(doctorId);
-    if (bytes != null && bytes.isNotEmpty) {
-      return MemoryImage(bytes);
-    }
-    if (photoUrl != null && photoUrl.trim().isNotEmpty) {
-      final cachePx =
-          (widget.radius * 2 * MediaQuery.devicePixelRatioOf(context)).round();
-      return ResizeImage(
-        NetworkImage(photoUrl.trim()),
-        width: cachePx,
-        height: cachePx,
-      );
-    }
-    return null;
+    final profile = DoctorProfileStore.instance.profile;
+    return S3AwareImageProvider.resolveProvider(
+      photoKey: profile.photoKey,
+      photoStorage: profile.photoStorage,
+      legacyUrl: photoUrl,
+      photoBytes: bytes,
+      context: context,
+      width: widget.radius * 2,
+      height: widget.radius * 2,
+    );
   }
 
   @override

@@ -13,6 +13,9 @@ class DoctorNectUserProfile {
     this.verificationStatus,
     this.rejectionReason,
     this.submittedAt,
+    this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String uid;
@@ -24,6 +27,9 @@ class DoctorNectUserProfile {
   final String? verificationStatus;
   final String? rejectionReason;
   final DateTime? submittedAt;
+  final String? photoUrl;
+  final String? photoKey;
+  final String? photoStorage;
 
   factory DoctorNectUserProfile.fromMap(String uid, Map<String, dynamic> data) {
     DateTime? parseTimestamp(dynamic val) {
@@ -42,6 +48,9 @@ class DoctorNectUserProfile {
       verificationStatus: data['verificationStatus'] as String?,
       rejectionReason: data['rejectionReason'] as String?,
       submittedAt: parseTimestamp(data['submittedAt']),
+      photoUrl: data['photoUrl'] as String? ?? data['photoURL'] as String?,
+      photoKey: data['photoKey'] as String?,
+      photoStorage: data['photoStorage'] as String?,
     );
   }
 
@@ -56,6 +65,9 @@ class DoctorNectUserProfile {
         if (rejectionReason != null) 'rejectionReason': rejectionReason,
         if (submittedAt != null)
           'submittedAt': Timestamp.fromDate(submittedAt!),
+        if (photoUrl != null) 'photoUrl': photoUrl,
+        if (photoKey != null) 'photoKey': photoKey,
+        if (photoStorage != null) 'photoStorage': photoStorage,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 

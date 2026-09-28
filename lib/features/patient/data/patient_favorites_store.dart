@@ -73,6 +73,8 @@ class SavedDoctorEntry {
     this.city = '',
     this.photoUrl,
     this.photoPath,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String id;
@@ -83,6 +85,8 @@ class SavedDoctorEntry {
   final String city;
   final String? photoUrl;
   final String? photoPath;
+  final String? photoKey;
+  final String? photoStorage;
 
   MyDoc toMyDoc() => MyDoc(
         id: id,
@@ -93,6 +97,8 @@ class SavedDoctorEntry {
         city: city,
         photoUrl: photoUrl,
         photoPath: photoPath,
+        photoKey: photoKey,
+        photoStorage: photoStorage,
       );
 
   Map<String, dynamic> toMap() => {
@@ -106,6 +112,10 @@ class SavedDoctorEntry {
           'photoUrl': photoUrl,
         if (photoPath != null && photoPath!.trim().isNotEmpty)
           'photoPath': photoPath,
+        if (photoKey != null && photoKey!.trim().isNotEmpty)
+          'photoKey': photoKey,
+        if (photoStorage != null && photoStorage!.trim().isNotEmpty)
+          'photoStorage': photoStorage,
       };
 
   factory SavedDoctorEntry.fromMap(Map<String, dynamic> data) {
@@ -118,6 +128,8 @@ class SavedDoctorEntry {
       city: data['city'] as String? ?? '',
       photoUrl: data['photoUrl'] as String?,
       photoPath: data['photoPath'] as String?,
+      photoKey: data['photoKey'] as String?,
+      photoStorage: data['photoStorage'] as String?,
     );
   }
 
@@ -131,6 +143,8 @@ class SavedDoctorEntry {
       city: listing.area,
       photoUrl: listing.photoUrl,
       photoPath: listing.photoPath,
+      photoKey: listing.photoKey,
+      photoStorage: listing.photoStorage,
     );
   }
 }
@@ -321,6 +335,8 @@ class PatientFavoritesStore extends ChangeNotifier {
         city: listing.area,
         photoUrl: listing.photoUrl,
         photoPath: listing.photoPath,
+        photoKey: listing.photoKey,
+        photoStorage: listing.photoStorage,
       );
     }
 

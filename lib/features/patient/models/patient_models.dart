@@ -88,6 +88,8 @@ class MyDoc {
     required this.city,
     this.photoUrl,
     this.photoPath,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String id;
@@ -98,6 +100,8 @@ class MyDoc {
   final String city;
   final String? photoUrl;
   final String? photoPath;
+  final String? photoKey;
+  final String? photoStorage;
 }
 
 class RecentAppointment {
@@ -143,6 +147,8 @@ class DoctorListing {
     this.city = '',
     this.photoPath,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String id;
@@ -165,6 +171,8 @@ class DoctorListing {
   final String city;
   final String? photoPath;
   final String? photoUrl;
+  final String? photoKey;
+  final String? photoStorage;
 
   String get locationLabel {
     final parts = <String>[];

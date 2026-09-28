@@ -151,8 +151,22 @@ class PatientProfileMock {
       final data = snap.data()!;
       final url =
           (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
+      final key = data['photoKey'] as String?;
+      final storage = data['photoStorage'] as String?;
+      bool changed = false;
       if (url != profile.photoUrl) {
         profile.photoUrl = url;
+        changed = true;
+      }
+      if (key != profile.photoKey) {
+        profile.photoKey = key;
+        changed = true;
+      }
+      if (storage != profile.photoStorage) {
+        profile.photoStorage = storage;
+        changed = true;
+      }
+      if (changed) {
         notifyProfileUpdated();
       }
     });
@@ -176,6 +190,8 @@ class PatientProfileMock {
     profile.photoInitial =
         profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'P';
     profile.photoUrl = (data['photo_url'] as String?) ?? profile.photoUrl;
+    profile.photoKey = (data['photo_key'] as String?) ?? profile.photoKey;
+    profile.photoStorage = (data['photo_storage'] as String?) ?? profile.photoStorage;
 
     profileAddress = PatientAddress(
       city: data['city'] as String? ?? '',
@@ -231,6 +247,8 @@ class PatientProfileMock {
     profile.photoUrl = (data['photoUrl'] as String?) ??
         (data['photoURL'] as String?) ??
         profile.photoUrl;
+    profile.photoKey = (data['photoKey'] as String?) ?? profile.photoKey;
+    profile.photoStorage = (data['photoStorage'] as String?) ?? profile.photoStorage;
     profileAddress = PatientAddress.fromMap(data);
     if (!profileAddress.hasContent) {
       final city = data['city'] as String? ?? '';
@@ -375,6 +393,8 @@ class PatientProfileMock {
         'height': profile.height > 0 ? profile.height.toString() : null,
         'weight': profile.weight > 0 ? profile.weight.toString() : null,
         'photo_url': profile.photoUrl,
+        if (profile.photoKey != null) 'photo_key': profile.photoKey,
+        if (profile.photoStorage != null) 'photo_storage': profile.photoStorage,
         'address': profileAddress.addressLine1.isNotEmpty
             ? profileAddress.addressLine1
             : profileAddress.fullLabel,
@@ -410,6 +430,8 @@ class PatientProfileMock {
         'height': profile.height,
         'weight': profile.weight,
         'photoUrl': profile.photoUrl,
+        if (profile.photoKey != null) 'photoKey': profile.photoKey,
+        if (profile.photoStorage != null) 'photoStorage': profile.photoStorage,
         'city':
             profileAddress.city.isNotEmpty ? profileAddress.city : profileCity,
         'country': profileAddress.country,

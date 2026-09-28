@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -12,9 +10,6 @@ import '../../../core/auth/contact_change_otp_service.dart';
 import '../../../core/auth/contact_change_verification.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/country_phone_codes.dart';
-import '../../../core/firebase/firebase_bootstrap.dart';
-import '../../../core/firebase/firestore_paths.dart';
-import '../../../core/firebase/firestore_service.dart';
 import '../../../core/media/gallery_image_picker.dart';
 import '../../../core/notifications/app_toast.dart';
 import '../../../core/session/app_session.dart';
@@ -30,6 +25,8 @@ import 'models/patient_profile_models.dart';
 import 'utils/patient_bmi_utils.dart';
 import 'widgets/patient_profile_form_styles.dart';
 import 'widgets/profile_edit_widgets.dart';
+import '../../../core/storage/profile_photo_uploader.dart';
+import '../../../core/widgets/s3_aware_network_image.dart';
 import '../../../core/theme/app_typography.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -155,16 +152,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         PatientProfileMock.profile.photoUrl;
     final localBytes = _localPhotoBytes ??
         PatientPhotoLocalStore.readCached(_effectivePatientId());
-    final hasLocalPhoto = localBytes != null && localBytes.isNotEmpty;
-    final hasNetworkPhoto =
-        !hasLocalPhoto && photoUrl != null && photoUrl.isNotEmpty;
-
-    ImageProvider? currentImage;
-    if (hasLocalPhoto) {
-      currentImage = MemoryImage(localBytes);
-    } else if (hasNetworkPhoto) {
-      currentImage = NetworkImage(photoUrl);
-    }
+    final currentImage = S3AwareImageProvider.resolveProvider(
+      photoKey: widget.profile.photoKey,
+      photoStorage: widget.profile.photoStorage,
+      legacyUrl: photoUrl,
+      photoBytes: localBytes,
+      context: context,
+    );
 
     final source = await showModalBottomSheet<String>(
       context: context,
@@ -213,43 +207,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (source == 'remove') {
       final patientId = _effectivePatientId();
       if (patientId.isNotEmpty) {
-        await PatientPhotoLocalStore.clear(patientId);
-        if (FirebaseBootstrap.isReady) {
-          try {
-            await FirestoreService.instance.patientProfile.savePatientDocument(
-              patientId,
-              {
-                'hasLocalPhoto': false,
-                'photoStorage': null,
-                'photoUrl': FieldValue.delete(),
-                'photoURL': FieldValue.delete(),
-              },
-            );
-          } catch (_) {}
-          try {
-            await FirebaseFirestore.instance
-                .collection(FirestorePaths.users)
-                .doc(patientId)
-                .set({
-              'photoUrl': FieldValue.delete(),
-              'photoURL': FieldValue.delete(),
-            }, SetOptions(merge: true));
-          } catch (_) {}
-          try {
-            final user = FirebaseAuth.instance.currentUser;
-            if (user != null) {
-              await user.updatePhotoURL(null);
-              await user.reload();
-            }
-          } catch (_) {}
-        }
+        await ProfilePhotoUploader.instance.removePatientPhoto(
+          patientId: patientId,
+          currentPhotoKey: widget.profile.photoKey,
+        );
       }
       if (!mounted) return;
       setState(() {
         _localPhotoBytes = null;
         _photoUrl = null;
         widget.profile.photoUrl = null;
+        widget.profile.photoKey = null;
+        widget.profile.photoStorage = null;
         PatientProfileMock.profile.photoUrl = null;
+        PatientProfileMock.profile.photoKey = null;
+        PatientProfileMock.profile.photoStorage = null;
       });
       PatientProfileMock.notifyProfileUpdated();
       return;
@@ -303,64 +275,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     try {
-      // 2. Upload to Firebase Storage
-      String? remoteUrl;
-      if (FirebaseBootstrap.isReady) {
-        try {
-          remoteUrl = await PatientPhotoLocalStore.uploadToFirebaseStorage(
-              patientId, bytes);
-        } catch (e) {
-          if (kDebugMode)
-            debugPrint('[EditProfile] Storage upload warning: $e');
-        }
-      }
+      final uploadRes = await ProfilePhotoUploader.instance.uploadPatientPhoto(
+        patientId: patientId,
+        bytes: bytes,
+        oldPhotoKey: widget.profile.photoKey,
+      );
 
-      final finalUrl =
-          remoteUrl ?? 'data:image/jpeg;base64,${base64Encode(bytes)}';
-
-      // 3. Save to Firestore in patients & users collections
-      if (FirebaseBootstrap.isReady) {
-        try {
-          await FirestoreService.instance.patientProfile.savePatientDocument(
-            patientId,
-            {
-              'hasLocalPhoto': true,
-              'photoStorage': remoteUrl != null ? 'firebase' : 'base64',
-              'photoUrl': remoteUrl ?? finalUrl,
-              'photoURL': remoteUrl ?? finalUrl,
-              'updatedAt': FieldValue.serverTimestamp(),
-            },
-          );
-        } catch (_) {}
-
-        try {
-          await FirebaseFirestore.instance
-              .collection(FirestorePaths.users)
-              .doc(patientId)
-              .set({
-            'photoUrl': remoteUrl ?? finalUrl,
-            'photoURL': remoteUrl ?? finalUrl,
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        } catch (_) {}
-
-        try {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null && remoteUrl != null) {
-            await user.updatePhotoURL(remoteUrl);
-          }
-        } catch (_) {}
+      if (!uploadRes.success) {
+        if (!mounted) return;
+        AppToast.info(context, 'Failed to save photo');
+        return;
       }
 
       if (!mounted) return;
       setState(() {
         _localPhotoBytes = bytes;
-        _photoUrl = remoteUrl ?? finalUrl;
-        widget.profile.photoUrl = remoteUrl ?? finalUrl;
-        PatientProfileMock.profile.photoUrl = remoteUrl ?? finalUrl;
+        if (uploadRes.photoUrl != null) {
+          _photoUrl = uploadRes.photoUrl;
+          widget.profile.photoUrl = uploadRes.photoUrl;
+          PatientProfileMock.profile.photoUrl = uploadRes.photoUrl;
+        }
+        if (uploadRes.photoKey != null) {
+          widget.profile.photoKey = uploadRes.photoKey;
+          widget.profile.photoStorage = uploadRes.photoStorage;
+          PatientProfileMock.profile.photoKey = uploadRes.photoKey;
+          PatientProfileMock.profile.photoStorage = uploadRes.photoStorage;
+        }
       });
       PatientProfileMock.notifyProfileUpdated();
-      if (!mounted) return;
     } catch (e) {
       if (!mounted) return;
       AppToast.info(context, 'Failed to save photo: $e');
@@ -603,16 +545,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         PatientProfileMock.profile.photoUrl;
     final localBytes = _localPhotoBytes ??
         PatientPhotoLocalStore.readCached(_effectivePatientId());
-    final hasLocalPhoto = localBytes != null && localBytes.isNotEmpty;
-    final hasNetworkPhoto =
-        !hasLocalPhoto && photoUrl != null && photoUrl.isNotEmpty;
-
-    ImageProvider? avatarImage;
-    if (hasLocalPhoto) {
-      avatarImage = MemoryImage(localBytes);
-    } else if (hasNetworkPhoto) {
-      avatarImage = NetworkImage(photoUrl);
-    }
+    final avatarImage = S3AwareImageProvider.resolveProvider(
+      photoKey: widget.profile.photoKey,
+      photoStorage: widget.profile.photoStorage,
+      legacyUrl: photoUrl,
+      photoBytes: localBytes,
+      context: context,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),

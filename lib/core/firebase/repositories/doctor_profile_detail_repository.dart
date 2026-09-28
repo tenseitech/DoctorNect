@@ -56,6 +56,9 @@ class DoctorProfileDetailRepository {
     final photoUrl = data?['photoUrl'] as String? ??
         data?['photoURL'] as String? ??
         listing?.photoUrl;
+    final photoKey = data?['photoKey'] as String? ?? listing?.photoKey;
+    final photoStorage =
+        data?['photoStorage'] as String? ?? listing?.photoStorage;
     String mobile = data?['mobile'] as String? ?? '';
     if (mobile.isEmpty && data != null && data['ownerUid'] != null) {
       try {
@@ -175,6 +178,8 @@ class DoctorProfileDetailRepository {
       clinicName: clinicName,
       area: city,
       photoUrl: photoUrl,
+      photoKey: photoKey,
+      photoStorage: photoStorage,
     );
   }
 

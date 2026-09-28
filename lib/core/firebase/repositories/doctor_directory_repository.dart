@@ -155,6 +155,8 @@ class DoctorDirectoryRepository {
         photoPath: readString(['photoPath']),
         photoUrl:
             readString(['photoUrl', 'photoURL', 'profilePhoto', 'avatarUrl']),
+        photoKey: readString(['photoKey']),
+        photoStorage: readString(['photoStorage']),
         distanceKm: readNum(['distanceKm', 'distance'])?.toDouble() ?? 0,
         availability: DoctorAvailability.later,
         nextSlot: readString(['nextSlot', 'slot']) ?? 'Check availability',

@@ -28,6 +28,9 @@ abstract final class LabReportFileStore {
   @visibleForTesting
   static Future<String?> Function(String patientId, String bookingId, String fileName, Uint8List bytes)? mockFirebaseUpload;
 
+  @visibleForTesting
+  static S3StorageService? s3Override;
+
   static String _cacheKey(
           String patientId, String bookingId, String fileName, [String? storageKey]) =>
       (storageKey != null && storageKey.trim().isNotEmpty)
@@ -119,7 +122,8 @@ abstract final class LabReportFileStore {
     if (StorageFeatureFlag.useS3Storage) {
       final contentType = mimeTypeFor(fileName) ?? 'application/octet-stream';
       try {
-        final result = await S3StorageService.instance.uploadBytes(
+        final s3 = s3Override ?? S3StorageService.instance;
+        final result = await s3.uploadBytes(
           purpose: 'lab_reports',
           parentId: '$patientId/$bookingId',
           fileName: fileName,
@@ -155,7 +159,8 @@ abstract final class LabReportFileStore {
   static Future<void> deleteS3Report(String? storageKey) async {
     if (storageKey == null || storageKey.trim().isEmpty) return;
     try {
-      await S3StorageService.instance.deleteObject(storageKey.trim());
+      final s3 = s3Override ?? S3StorageService.instance;
+      await s3.deleteObject(storageKey.trim());
     } catch (e) {
       if (kDebugMode) {
         debugPrint('LabReportFileStore.deleteS3Report best-effort error: $e');
@@ -308,7 +313,8 @@ abstract final class LabReportFileStore {
           ? storageKey.trim()
           : storageUrl?.trim();
       if (key != null && key.isNotEmpty) {
-        final s3Url = await S3StorageService.instance.getDownloadUrl(key);
+        final s3 = s3Override ?? S3StorageService.instance;
+        final s3Url = await s3.getDownloadUrl(key);
         if (s3Url != null) {
           try {
             final client = httpClient;

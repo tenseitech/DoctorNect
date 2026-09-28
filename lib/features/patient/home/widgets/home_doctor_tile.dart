@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/s3_aware_network_image.dart';
 
 class HomeDoctorTile extends StatefulWidget {
   const HomeDoctorTile({
@@ -33,8 +34,14 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
   Widget build(BuildContext context) {
     final doctor = widget.doctor;
     final initial = doctor.name.isNotEmpty ? doctor.name[0].toUpperCase() : 'D';
-    final hasPhoto =
-        doctor.photoUrl != null && doctor.photoUrl!.trim().isNotEmpty;
+    final imageProvider = S3AwareImageProvider.resolveProvider(
+      photoKey: doctor.photoKey,
+      photoStorage: doctor.photoStorage,
+      legacyUrl: doctor.photoUrl,
+      context: context,
+      width: 42,
+      height: 42,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -95,10 +102,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                       ),
                       child: CircleAvatar(
                         backgroundColor: AppColors.surfaceOf(context),
-                        backgroundImage: hasPhoto
-                            ? NetworkImage(doctor.photoUrl!.trim())
-                            : null,
-                        child: hasPhoto
+                        backgroundImage: imageProvider,
+                        child: imageProvider != null
                             ? null
                             : Text(
                                 initial,

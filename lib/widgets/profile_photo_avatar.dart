@@ -5,9 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/media/gallery_image_picker.dart';
 import '../core/theme/app_colors.dart';
-import 'profile_photo_image_io.dart'
-    if (dart.library.html) 'profile_photo_image_stub.dart';
 import '../core/theme/app_typography.dart';
+import '../core/widgets/s3_aware_network_image.dart';
 
 class PickedProfilePhoto {
   const PickedProfilePhoto({this.path, this.bytes});
@@ -118,6 +117,8 @@ class ProfilePhotoAvatar extends StatelessWidget {
     this.photoPath,
     this.photoBytes,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
     this.radius = 44,
     this.backgroundColor,
     this.fallbackColor,
@@ -127,30 +128,24 @@ class ProfilePhotoAvatar extends StatelessWidget {
   final String? photoPath;
   final Uint8List? photoBytes;
   final String? photoUrl;
+  final String? photoKey;
+  final String? photoStorage;
   final double radius;
   final Color? backgroundColor;
   final Color? fallbackColor;
 
-  ImageProvider? _networkImageProvider(String url, BuildContext context) {
-    final cachePx =
-        (radius * 2 * MediaQuery.devicePixelRatioOf(context)).round();
-    return ResizeImage(
-      NetworkImage(url),
-      width: cachePx,
-      height: cachePx,
-    );
-  }
-
   ImageProvider? _imageProvider(BuildContext context) {
-    if (photoBytes != null && photoBytes!.isNotEmpty) {
-      return MemoryImage(photoBytes!);
-    }
-    final fileProvider = profilePhotoFileProvider(photoPath);
-    if (fileProvider != null) return fileProvider;
-    if (photoUrl != null && photoUrl!.trim().isNotEmpty) {
-      return _networkImageProvider(photoUrl!.trim(), context);
-    }
-    return null;
+    final diameter = radius * 2;
+    return S3AwareImageProvider.resolveProvider(
+      photoKey: photoKey,
+      photoStorage: photoStorage,
+      legacyUrl: photoUrl,
+      photoBytes: photoBytes,
+      photoPath: photoPath,
+      context: context,
+      width: diameter,
+      height: diameter,
+    );
   }
 
   @override

@@ -28,6 +28,7 @@ import 'widgets/patient_doctor_profile_shared.dart';
 import 'models/doctor_profile_detail.dart';
 import 'data/review_vote_store.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/s3_aware_network_image.dart';
 
 class PatientDoctorProfileScreen extends StatefulWidget {
   const PatientDoctorProfileScreen({super.key, required this.doctorId});
@@ -469,13 +470,15 @@ class _HeroAvatarState extends State<_HeroAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final url = widget.doctor.photoUrl;
-    ImageProvider? provider;
-    if (url != null && url.trim().isNotEmpty) {
-      provider = NetworkImage(url.trim());
-    } else if (_localBytes != null && _localBytes!.isNotEmpty) {
-      provider = MemoryImage(_localBytes!);
-    }
+    final provider = S3AwareImageProvider.resolveProvider(
+      photoKey: widget.doctor.photoKey,
+      photoStorage: widget.doctor.photoStorage,
+      legacyUrl: widget.doctor.photoUrl,
+      photoBytes: _localBytes,
+      context: context,
+      width: 88,
+      height: 88,
+    );
 
     final name = widget.doctor.name;
     final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'D';

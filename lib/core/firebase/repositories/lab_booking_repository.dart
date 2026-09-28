@@ -90,6 +90,11 @@ class LabBookingRepository {
 
   static final LabBookingRepository instance = LabBookingRepository._();
 
+  @visibleForTesting
+  FirebaseFirestore? firestoreOverride;
+
+  FirebaseFirestore get firestore => firestoreOverride ?? FirebaseFirestore.instance;
+
   static String newBookingId({int suffix = 0}) {
     final stamp = DateTime.now().microsecondsSinceEpoch;
     return 'LAB$stamp$suffix';
@@ -371,7 +376,9 @@ class LabBookingRepository {
     List<String> linkedBookingIds = const [],
     String? existingReportStorageKey,
   }) async {
-    if (!FirebaseBootstrap.isReady || bookingId.isEmpty || patientId.isEmpty) {
+    if ((!FirebaseBootstrap.isReady && firestoreOverride == null) ||
+        bookingId.isEmpty ||
+        patientId.isEmpty) {
       throw StateError('Firebase is not ready');
     }
     if (bytes.isEmpty || bytes.length > LabReportFileStore.maxFileBytes) {
@@ -416,16 +423,16 @@ class LabBookingRepository {
     }.where((id) => id.trim().isNotEmpty).toList();
 
     if (bookingIds.length == 1) {
-      await FirebaseFirestore.instance
+      await firestore
           .collection(FirestorePaths.labBookings)
           .doc(bookingIds.first)
           .update(updatePayload)
           .timeout(const Duration(seconds: 20));
     } else {
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = firestore.batch();
       for (final id in bookingIds) {
         batch.update(
-          FirebaseFirestore.instance
+          firestore
               .collection(FirestorePaths.labBookings)
               .doc(id),
           updatePayload,

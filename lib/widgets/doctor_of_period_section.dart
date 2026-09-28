@@ -12,8 +12,7 @@ import 'package:medibond/features/patient/data/featured_doctors_service.dart';
 import 'package:medibond/features/patient/doctor_profile/patient_doctor_profile_screen.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 import 'package:medibond/core/theme/app_typography.dart';
-import 'package:medibond/widgets/profile_photo_image_io.dart'
-    if (dart.library.html) 'package:medibond/widgets/profile_photo_image_stub.dart';
+import '../../core/widgets/s3_aware_network_image.dart';
 
 enum DoctorOfPeriodAudience { patient, doctor }
 
@@ -181,6 +180,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                             photoPath: photo.path,
                             photoBytes: photo.bytes,
                             photoUrl: photo.url,
+                            photoKey: photo.photoKey,
+                            photoStorage: photo.photoStorage,
                             size: isCompact ? 58 : 72,
                           ),
                           SizedBox(width: isCompact ? 10 : 12),
@@ -365,14 +366,18 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
       if (profile.photoPath != null && profile.photoPath!.trim().isNotEmpty) {
         return _FeaturedPhotoData(path: profile.photoPath);
       }
+      return _FeaturedPhotoData(
+        url: profile.photoUrl ?? doctor.photoUrl,
+        photoKey: profile.photoKey ?? doctor.photoKey,
+        photoStorage: profile.photoStorage ?? doctor.photoStorage,
+      );
     }
-    if (doctor.photoUrl != null && doctor.photoUrl!.trim().isNotEmpty) {
-      return _FeaturedPhotoData(url: doctor.photoUrl);
-    }
-    if (doctor.photoPath != null && doctor.photoPath!.trim().isNotEmpty) {
-      return _FeaturedPhotoData(path: doctor.photoPath);
-    }
-    return const _FeaturedPhotoData();
+    return _FeaturedPhotoData(
+      url: doctor.photoUrl,
+      path: doctor.photoPath,
+      photoKey: doctor.photoKey,
+      photoStorage: doctor.photoStorage,
+    );
   }
 
   String _resolveAddress(DoctorListing doctor) {
@@ -401,11 +406,19 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
 }
 
 class _FeaturedPhotoData {
-  const _FeaturedPhotoData({this.path, this.bytes, this.url});
+  const _FeaturedPhotoData({
+    this.path,
+    this.bytes,
+    this.url,
+    this.photoKey,
+    this.photoStorage,
+  });
 
   final String? path;
   final Uint8List? bytes;
   final String? url;
+  final String? photoKey;
+  final String? photoStorage;
 }
 
 class _FeaturedDoctorPhoto extends StatelessWidget {
@@ -414,6 +427,8 @@ class _FeaturedDoctorPhoto extends StatelessWidget {
     this.photoPath,
     this.photoBytes,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
     this.size = 72,
   });
 
@@ -421,21 +436,22 @@ class _FeaturedDoctorPhoto extends StatelessWidget {
   final String? photoPath;
   final Uint8List? photoBytes;
   final String? photoUrl;
+  final String? photoKey;
+  final String? photoStorage;
   final double size;
-
-  ImageProvider? get _provider {
-    if (photoBytes != null && photoBytes!.isNotEmpty) {
-      return MemoryImage(photoBytes!);
-    }
-    if (photoUrl != null && photoUrl!.trim().isNotEmpty) {
-      return NetworkImage(photoUrl!.trim());
-    }
-    return profilePhotoFileProvider(photoPath);
-  }
 
   @override
   Widget build(BuildContext context) {
-    final image = _provider;
+    final image = S3AwareImageProvider.resolveProvider(
+      photoKey: photoKey,
+      photoStorage: photoStorage,
+      legacyUrl: photoUrl,
+      photoBytes: photoBytes,
+      photoPath: photoPath,
+      context: context,
+      width: size,
+      height: size,
+    );
     final initial = displayName.trim().isNotEmpty
         ? displayName.trim()[0].toUpperCase()
         : 'D';
