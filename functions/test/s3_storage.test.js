@@ -560,3 +560,241 @@ test('unauthenticated call rejected on upload and download', async () => {
     /User profile document not found|unauthenticated|Cannot read properties of null/,
   );
 });
+
+// ----------------------------------------------------------------------------
+// 8. LAB ORDERS — UPLOAD AUTHORIZATION
+// ----------------------------------------------------------------------------
+test('assigned lab allowed to upload report for lab_order via parentId "{patientId}/{orderId}"', async () => {
+  const db = createMockDb({
+    users: {
+      uid_lab_1: { role: 'lab', profileId: 'lab_1', profileCompleted: true },
+    },
+    lab_orders: {
+      order_200: {
+        patientId: 'p_42',
+        doctorId: 'doc_7',
+        labId: 'lab_1',
+        status: 'in_progress',
+      },
+    },
+  });
+
+  const auth = { uid: 'uid_lab_1' };
+  const data = {
+    purpose: 'lab_reports',
+    parentId: 'p_42/order_200',
+    fileName: 'cbc_report.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 4096,
+  };
+
+  const res = await getS3UploadUrlHandler(data, auth, db);
+  assert.ok(res.objectKey.startsWith('lab_reports/p_42/order_200/'));
+  assert.ok(res.objectKey.endsWith('.pdf'));
+  assert.ok(res.uploadUrl);
+});
+
+test('wrong lab blocked from uploading report for lab_order', async () => {
+  const db = createMockDb({
+    users: {
+      uid_lab_1: { role: 'lab', profileId: 'lab_1', profileCompleted: true },
+    },
+    lab_orders: {
+      order_201: {
+        patientId: 'p_42',
+        doctorId: 'doc_7',
+        labId: 'lab_99', // Assigned to lab_99, not lab_1
+        status: 'in_progress',
+      },
+    },
+  });
+
+  const auth = { uid: 'uid_lab_1' };
+  const data = {
+    purpose: 'lab_reports',
+    parentId: 'p_42/order_201',
+    fileName: 'report.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+  };
+
+  await assert.rejects(
+    async () => getS3UploadUrlHandler(data, auth, db),
+    /This lab order is not assigned to your laboratory/,
+  );
+});
+
+test('cancelled lab_order upload is rejected', async () => {
+  const db = createMockDb({
+    users: {
+      uid_lab_1: { role: 'lab', profileId: 'lab_1', profileCompleted: true },
+    },
+    lab_orders: {
+      order_cancelled: {
+        patientId: 'p_42',
+        doctorId: 'doc_7',
+        labId: 'lab_1',
+        status: 'cancelled',
+      },
+    },
+  });
+
+  const auth = { uid: 'uid_lab_1' };
+  const data = {
+    purpose: 'lab_reports',
+    parentId: 'p_42/order_cancelled',
+    fileName: 'report.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+  };
+
+  await assert.rejects(
+    async () => getS3UploadUrlHandler(data, auth, db),
+    /Cannot upload report for a cancelled lab order/,
+  );
+});
+
+// ----------------------------------------------------------------------------
+// 9. LAB ORDERS — DOWNLOAD AUTHORIZATION
+// ----------------------------------------------------------------------------
+test('patient owner allowed to download lab_order report', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p42: { role: 'patient', profileId: 'p_42' },
+    },
+  });
+
+  const auth = { uid: 'uid_p42' };
+  const data = { objectKey: 'lab_reports/p_42/order_200/uuid123.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+  assert.equal(res.expiresIn, 600);
+});
+
+test('unrelated patient blocked from downloading lab_order report', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p99: { role: 'patient', profileId: 'p_99' },
+    },
+  });
+
+  const auth = { uid: 'uid_p99' };
+  const data = { objectKey: 'lab_reports/p_42/order_200/uuid123.pdf' };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
+});
+
+test('unrelated doctor blocked from downloading lab_order report', async () => {
+  const db = createMockDb({
+    users: {
+      uid_doc_1: { role: 'doctor', profileId: 'doc_1' },
+    },
+  });
+
+  const auth = { uid: 'uid_doc_1' };
+  const data = { objectKey: 'lab_reports/p_42/order_200/uuid123.pdf' };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
+});
+
+test('assigned lab allowed to download lab_order report', async () => {
+  const db = createMockDb({
+    users: {
+      uid_lab_1: { role: 'lab', profileId: 'lab_1' },
+    },
+    lab_orders: {
+      order_200: {
+        patientId: 'p_42',
+        doctorId: 'doc_7',
+        labId: 'lab_1',
+        status: 'completed',
+      },
+    },
+  });
+
+  const auth = { uid: 'uid_lab_1' };
+  const data = { objectKey: 'lab_reports/p_42/order_200/uuid123.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+});
+
+test('wrong lab blocked from downloading lab_order report', async () => {
+  const db = createMockDb({
+    users: {
+      uid_lab_wrong: { role: 'lab', profileId: 'lab_wrong' },
+    },
+    lab_orders: {
+      order_200: {
+        patientId: 'p_42',
+        doctorId: 'doc_7',
+        labId: 'lab_1', // Assigned to lab_1, not lab_wrong
+        status: 'completed',
+      },
+    },
+  });
+
+  const auth = { uid: 'uid_lab_wrong' };
+  const data = { objectKey: 'lab_reports/p_42/order_200/uuid123.pdf' };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
+});
+
+// ----------------------------------------------------------------------------
+// 10. LAB ORDERS — DELETE AUTHORIZATION
+// ----------------------------------------------------------------------------
+test('assigned lab allowed to delete lab_order report', async () => {
+  const db = createMockDb({
+    users: {
+      uid_lab_1: { role: 'lab', profileId: 'lab_1' },
+    },
+    lab_orders: {
+      order_200: {
+        patientId: 'p_42',
+        doctorId: 'doc_7',
+        labId: 'lab_1',
+        status: 'completed',
+      },
+    },
+  });
+
+  const auth = { uid: 'uid_lab_1' };
+  const data = { objectKey: 'lab_reports/p_42/order_200/uuid123.pdf' };
+
+  const res = await deleteS3ObjectHandler(data, auth, db);
+  assert.equal(res.success, true);
+});
+
+test('wrong lab blocked from deleting lab_order report', async () => {
+  const db = createMockDb({
+    users: {
+      uid_lab_wrong: { role: 'lab', profileId: 'lab_wrong' },
+    },
+    lab_orders: {
+      order_200: {
+        patientId: 'p_42',
+        doctorId: 'doc_7',
+        labId: 'lab_1',
+        status: 'completed',
+      },
+    },
+  });
+
+  const auth = { uid: 'uid_lab_wrong' };
+  const data = { objectKey: 'lab_reports/p_42/order_200/uuid123.pdf' };
+
+  await assert.rejects(
+    async () => deleteS3ObjectHandler(data, auth, db),
+    /You do not have permission to delete this file/,
+  );
+});

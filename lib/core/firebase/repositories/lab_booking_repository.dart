@@ -390,13 +390,6 @@ class LabBookingRepository {
       );
     }
 
-    // Best-effort delete old S3 report if replacing
-    if (existingReportStorageKey != null &&
-        existingReportStorageKey.trim().isNotEmpty &&
-        existingReportStorageKey != uploadResult.objectKey) {
-      await LabReportFileStore.deleteS3Report(existingReportStorageKey);
-    }
-
     await LabReportFileStore.cacheLocally(
       patientId: patientId,
       bookingId: bookingId,
@@ -439,6 +432,13 @@ class LabBookingRepository {
         );
       }
       await batch.commit().timeout(const Duration(seconds: 20));
+    }
+
+    // Best-effort delete old S3 report ONLY after Firestore update succeeded
+    if (existingReportStorageKey != null &&
+        existingReportStorageKey.trim().isNotEmpty &&
+        existingReportStorageKey != uploadResult.objectKey) {
+      await LabReportFileStore.deleteS3Report(existingReportStorageKey);
     }
 
     return uploadResult;
