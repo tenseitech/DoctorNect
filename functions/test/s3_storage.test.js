@@ -497,7 +497,7 @@ test('batch download caps at 20 keys', async () => {
   );
 });
 
-test('batch download resolves signed URLs for public profile photos', async () => {
+test('batch download resolves signed URLs for public profile photos and banners', async () => {
   const db = createMockDb({
     users: { uid_user: { role: 'patient', profileId: 'p_1' } },
   });
@@ -513,6 +513,120 @@ test('batch download resolves signed URLs for public profile photos', async () =
   assert.ok(res.urls['patients/p_1/profile/1.jpg']);
   assert.ok(res.urls['doctor_profiles/d_1/profile/2.jpg']);
   assert.ok(res.urls['promoted_ads/prov_1/ad_1/3.jpg']);
+});
+
+test('batch download rejects health_records key with invalid-argument', async () => {
+  const db = createMockDb({
+    users: { uid_user: { role: 'patient', profileId: 'p_1' } },
+  });
+  const auth = { uid: 'uid_user' };
+  const keys = ['health_records/p_1/hr_1/file.pdf'];
+
+  await assert.rejects(
+    async () => getS3DownloadUrlsHandler({ objectKeys: keys }, auth, db),
+    /only accepts public-media keys/,
+  );
+});
+
+test('batch download rejects lab_reports key with invalid-argument', async () => {
+  const db = createMockDb({
+    users: { uid_user: { role: 'patient', profileId: 'p_1' } },
+  });
+  const auth = { uid: 'uid_user' };
+  const keys = ['lab_reports/p_1/bk_1/file.pdf'];
+
+  await assert.rejects(
+    async () => getS3DownloadUrlsHandler({ objectKeys: keys }, auth, db),
+    /only accepts public-media keys/,
+  );
+});
+
+test('batch download rejects mixed batch entirely', async () => {
+  const db = createMockDb({
+    users: { uid_user: { role: 'patient', profileId: 'p_1' } },
+  });
+  const auth = { uid: 'uid_user' };
+  const keys = [
+    'patients/p_1/profile/1.jpg',
+    'health_records/p_1/hr_1/file.pdf',
+  ];
+
+  await assert.rejects(
+    async () => getS3DownloadUrlsHandler({ objectKeys: keys }, auth, db),
+    /only accepts public-media keys/,
+  );
+});
+
+test('batch download rejects path traversal key', async () => {
+  const db = createMockDb({
+    users: { uid_user: { role: 'patient', profileId: 'p_1' } },
+  });
+  const auth = { uid: 'uid_user' };
+  const keys = ['patients/p_1/profile/../../secret.txt'];
+
+  await assert.rejects(
+    async () => getS3DownloadUrlsHandler({ objectKeys: keys }, auth, db),
+    /path traversal/,
+  );
+});
+
+test('endpoints reject path traversal, leading slashes, and double slashes', async () => {
+  const db = createMockDb({
+    users: { uid_p1: { role: 'patient', profileId: 'p_1' } },
+  });
+  const auth = { uid: 'uid_p1' };
+
+  // getS3DownloadUrl
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler({ objectKey: '../health_records/p_1/1.pdf' }, auth, db),
+    /path traversal/,
+  );
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler({ objectKey: '/patients/p_1/profile/1.jpg' }, auth, db),
+    /path traversal/,
+  );
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler({ objectKey: 'patients//p_1/profile/1.jpg' }, auth, db),
+    /path traversal/,
+  );
+
+  // deleteS3Object
+  await assert.rejects(
+    async () => deleteS3ObjectHandler({ objectKey: 'patients/p_1/../other/1.jpg' }, auth, db),
+    /path traversal/,
+  );
+
+  // getS3UploadUrl with invalid parentId or fileName
+  await assert.rejects(
+    async () =>
+      getS3UploadUrlHandler(
+        {
+          purpose: 'patient_profile',
+          parentId: '../p_1',
+          fileName: 'avatar.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: 1024,
+        },
+        auth,
+        db,
+      ),
+    /path traversal/,
+  );
+  await assert.rejects(
+    async () =>
+      getS3UploadUrlHandler(
+        {
+          purpose: 'patient_profile',
+          parentId: 'p_1',
+          fileName: '../../avatar.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: 1024,
+        },
+        auth,
+        db,
+      ),
+    /path traversal/,
+  );
 });
 
 // ----------------------------------------------------------------------------

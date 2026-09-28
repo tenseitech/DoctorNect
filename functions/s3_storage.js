@@ -150,6 +150,58 @@ function validateContentTypeAndSize(purpose, contentType, sizeBytes) {
 }
 
 /**
+ * Validates that an S3 object key does not contain path traversal tricks,
+ * consecutive slashes, leading slashes, or unexpected characters.
+ */
+function isValidObjectKey(key) {
+  if (typeof key !== 'string' || !key) return false;
+  if (key.startsWith('/')) return false;
+  if (key.includes('//')) return false;
+  if (key.includes('..')) return false;
+  if (key.includes('\\')) return false;
+  // Allowed characters: letters, numbers, '.', '_', '-', '/'
+  if (!/^[a-zA-Z0-9._/-]+$/.test(key)) return false;
+  const segments = key.split('/');
+  for (const seg of segments) {
+    if (!seg || seg === '.' || seg === '..') return false;
+  }
+  return true;
+}
+
+function assertValidObjectKey(key, paramName = 'objectKey') {
+  if (!isValidObjectKey(key)) {
+    throw new HttpsError(
+      'invalid-argument',
+      `Invalid ${paramName}: path traversal ('..'), '//', leading '/', and special characters are not allowed.`,
+    );
+  }
+}
+
+/**
+ * Checks if a key belongs to public-media purposes:
+ * - patients/{id}/profile/...
+ * - doctor_profiles/{id}/profile/...
+ * - promoted_ads/...
+ */
+function isPublicMediaKey(key) {
+  if (!isValidObjectKey(key)) return false;
+  const parts = key.split('/');
+  if (parts[0] === 'patients') {
+    // patients/{id}/profile/{fileName}
+    return parts.length >= 4 && parts[1].length > 0 && parts[2] === 'profile' && parts[3].length > 0;
+  }
+  if (parts[0] === 'doctor_profiles') {
+    // doctor_profiles/{id}/profile/{fileName}
+    return parts.length >= 4 && parts[1].length > 0 && parts[2] === 'profile' && parts[3].length > 0;
+  }
+  if (parts[0] === 'promoted_ads') {
+    // promoted_ads/{providerId}/{adId}/{fileName} or promoted_ads/...
+    return parts.length >= 3 && parts.every((p) => p.length > 0);
+  }
+  return false;
+}
+
+/**
  * Resolves caller profile from users/{uid}.
  */
 async function resolveCallerUser(db, uid) {
@@ -209,6 +261,19 @@ async function getS3UploadUrlHandler(data, auth, db) {
   }
   if (!fileName) {
     throw new HttpsError('invalid-argument', 'fileName is required.');
+  }
+
+  assertValidObjectKey(parentId, 'parentId');
+  if (
+    fileName.includes('..') ||
+    fileName.includes('/') ||
+    fileName.includes('\\') ||
+    !/^[a-zA-Z0-9._-]+$/.test(fileName)
+  ) {
+    throw new HttpsError(
+      'invalid-argument',
+      "Invalid fileName: path traversal ('..'), slashes, and special characters are not allowed.",
+    );
   }
 
   validateContentTypeAndSize(purpose, contentType, sizeBytes);
@@ -325,6 +390,8 @@ async function getS3UploadUrlHandler(data, auth, db) {
     default:
       throw new HttpsError('invalid-argument', `Unknown storage purpose: '${purpose}'.`);
   }
+
+  assertValidObjectKey(objectKey, 'objectKey');
 
   const s3 = getS3Client();
   const command = new PutObjectCommand({
@@ -504,6 +571,7 @@ async function getS3DownloadUrlHandler(data, auth, db) {
   if (!objectKey) {
     throw new HttpsError('invalid-argument', 'objectKey is required.');
   }
+  assertValidObjectKey(objectKey, 'objectKey');
 
   const caller = await resolveCallerUser(db, auth.uid);
   const allowed = await authorizeRead(objectKey, caller, auth, db);
@@ -528,6 +596,11 @@ async function getS3DownloadUrlHandler(data, auth, db) {
 
 /**
  * 3. getS3DownloadUrls batch handler (max 20).
+ * Accepts ONLY public-media keys:
+ * - patients/{id}/profile/...
+ * - doctor_profiles/{id}/profile/...
+ * - promoted_ads/...
+ * Rejects health_records/, lab_reports/, and unknown prefixes with invalid-argument for the WHOLE request.
  */
 async function getS3DownloadUrlsHandler(data, auth, db) {
   const objectKeys = data?.objectKeys;
@@ -538,6 +611,21 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
     throw new HttpsError('invalid-argument', 'A maximum of 20 objectKeys can be requested at once.');
   }
 
+  // Reject the WHOLE request if ANY key is invalid or not a public-media key
+  for (const rawKey of objectKeys) {
+    const key = typeof rawKey === 'string' ? rawKey.trim() : '';
+    if (!key) {
+      throw new HttpsError('invalid-argument', 'objectKeys cannot contain empty strings.');
+    }
+    assertValidObjectKey(key, 'objectKeys item');
+    if (!isPublicMediaKey(key)) {
+      throw new HttpsError(
+        'invalid-argument',
+        `Invalid key '${key}': getS3DownloadUrls only accepts public-media keys (patients/{id}/profile/, doctor_profiles/{id}/profile/, promoted_ads/). Clinical and unknown prefixes are rejected.`,
+      );
+    }
+  }
+
   const caller = await resolveCallerUser(db, auth.uid);
   const s3 = getS3Client();
   const urls = {};
@@ -545,7 +633,6 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
 
   for (const rawKey of objectKeys) {
     const key = String(rawKey || '').trim();
-    if (!key) continue;
 
     const allowed = await authorizeRead(key, caller, auth, db);
     if (!allowed) continue;
@@ -572,6 +659,7 @@ async function deleteS3ObjectHandler(data, auth, db) {
   if (!objectKey) {
     throw new HttpsError('invalid-argument', 'objectKey is required.');
   }
+  assertValidObjectKey(objectKey, 'objectKey');
 
   const caller = await resolveCallerUser(db, auth.uid);
   const allowed = await authorizeDelete(objectKey, caller, auth, db);
@@ -643,4 +731,7 @@ exports._test = {
   authorizeRead,
   authorizeDelete,
   isSuperAdmin,
+  isValidObjectKey,
+  assertValidObjectKey,
+  isPublicMediaKey,
 };
