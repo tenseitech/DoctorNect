@@ -29,6 +29,10 @@ abstract final class LabOrderFirestoreMapper {
           'reportFileName': order.reportFileName,
         if (order.reportStorageUrl != null)
           'reportStorageUrl': order.reportStorageUrl,
+        if (order.reportStorageKey != null)
+          'reportStorageKey': order.reportStorageKey,
+        if (order.reportStorageProvider != null)
+          'reportStorageProvider': order.reportStorageProvider,
         if (order.reportSubmittedAt != null)
           'reportSubmittedAt': order.reportSubmittedAt,
       };
@@ -66,6 +70,8 @@ abstract final class LabOrderFirestoreMapper {
         createdAt: parsedDate,
         reportFileName: data['reportFileName'] as String?,
         reportStorageUrl: data['reportStorageUrl'] as String?,
+        reportStorageKey: data['reportStorageKey'] as String?,
+        reportStorageProvider: data['reportStorageProvider'] as String?,
         reportSubmittedAt: _optionalParseDate(data['reportSubmittedAt']),
       );
     } catch (_) {

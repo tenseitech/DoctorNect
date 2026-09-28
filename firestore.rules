@@ -147,6 +147,8 @@ service cloud.firestore {
         'updatedAt',
         'reportFileName',
         'reportStorageUrl',
+        'reportStorageKey',
+        'reportStorageProvider',
         'reportSubmittedAt',
         'reportBookingId',
       ];
@@ -567,6 +569,12 @@ service cloud.firestore {
 
     // ─── lab_bookings/{bookingId} ──────────────────────────────────────────
 
+    function validLabReportStorage(data, patientId, targetId) {
+      return data.get('reportStorageProvider', '') != 's3'
+        || (data.get('reportStorageKey', '') is string
+            && data.get('reportStorageKey', '').matches('^lab_reports/' + patientId + '/' + targetId + '/.+'));
+    }
+
     match /lab_bookings/{bookingId} {
       allow read: if (isPatient() && resource.data.patientId == myPatientId())
         || (isLab() && resource.data.labId == myLabId()); // FIXED: lab reads bookings addressed to them
@@ -576,11 +584,13 @@ service cloud.firestore {
       allow update: if (isPatient()
           && resource.data.patientId == myPatientId()
           && request.resource.data.patientId == resource.data.patientId
-          && request.resource.data.get('labId', '') == resource.data.get('labId', ''))
+          && request.resource.data.get('labId', '') == resource.data.get('labId', '')
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['reportStorageKey', 'reportStorageProvider', 'reportStorageUrl', 'reportFileName', 'reportSubmittedAt', 'reportBookingId']))
         || (isLab() && resource.data.get('labId', '') == myLabId()
           && request.resource.data.patientId == resource.data.patientId
           && request.resource.data.get('labId', '') == resource.data.get('labId', '')
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(labBookingLabUpdateKeys())); // FIXED: lab can submit report fields
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(labBookingLabUpdateKeys())
+          && validLabReportStorage(request.resource.data, resource.data.patientId, bookingId));
       allow delete: if false;
     }
 
@@ -634,11 +644,13 @@ service cloud.firestore {
           && resource.data.doctorId == myDoctorId()
           && request.resource.data.doctorId == resource.data.doctorId
           && request.resource.data.patientId == resource.data.patientId
-          && doctorCanReadPatientClinicalData(resource.data.get('patientId', '')))
+          && doctorCanReadPatientClinicalData(resource.data.get('patientId', ''))
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['reportStorageKey', 'reportStorageProvider', 'reportStorageUrl', 'reportFileName', 'reportSubmittedAt']))
         || (isLab() && resource.data.get('labId', '') == myLabId()
           && request.resource.data.patientId == resource.data.patientId
           && request.resource.data.doctorId == resource.data.doctorId
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'reportFileName', 'reportStorageUrl', 'reportSubmittedAt'])); // FIXED: lab can update status and reports
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'reportFileName', 'reportStorageUrl', 'reportStorageKey', 'reportStorageProvider', 'reportSubmittedAt'])
+          && validLabReportStorage(request.resource.data, resource.data.patientId, orderId));
       allow delete: if false;
     }
 

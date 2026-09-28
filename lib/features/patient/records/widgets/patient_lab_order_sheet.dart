@@ -157,6 +157,8 @@ class _PatientLabOrderSheet extends StatelessWidget {
                           patientId: order.patientId,
                           reportFileName: order.reportFileName,
                           storageUrl: order.reportStorageUrl,
+                          reportStorageKey: order.reportStorageKey,
+                          reportStorageProvider: order.reportStorageProvider,
                         ),
                       ),
                     );

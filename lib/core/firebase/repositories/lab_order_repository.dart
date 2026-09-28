@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../firebase_bootstrap.dart';
 import '../lab_report_file_store.dart';
+import '../../storage/storage_service.dart';
 import '../firestore_paths.dart';
 import '../firestore_query_limits.dart';
 import '../firestore_read_helper.dart';
@@ -210,11 +211,12 @@ class LabOrderRepository {
     });
   }
 
-  Future<String> submitReport({
+  Future<StorageUploadResult> submitReport({
     required String orderId,
     required String patientId,
     required String fileName,
     required Uint8List bytes,
+    String? existingReportStorageKey,
   }) async {
     if (!FirebaseBootstrap.isReady || orderId.isEmpty || patientId.isEmpty) {
       throw StateError('Firebase is not ready');
@@ -223,16 +225,23 @@ class LabOrderRepository {
       throw ArgumentError('Invalid report file size');
     }
 
-    final storageUrl = await LabReportFileStore.uploadToStorage(
+    final uploadResult = await LabReportFileStore.uploadReport(
       patientId: patientId,
       bookingId: orderId, // We use orderId as the unique ID for storage
       fileName: fileName,
       bytes: bytes,
     );
-    if (storageUrl == null || storageUrl.isEmpty) {
+    if (uploadResult == null) {
       throw StateError(
-        'Could not upload report. Check Firebase Storage rules and your connection, then try again.',
+        'Could not upload report. Check storage rules and your connection, then try again.',
       );
+    }
+
+    // Best-effort delete old S3 report if replacing
+    if (existingReportStorageKey != null &&
+        existingReportStorageKey.trim().isNotEmpty &&
+        existingReportStorageKey != uploadResult.objectKey) {
+      await LabReportFileStore.deleteS3Report(existingReportStorageKey);
     }
 
     await LabReportFileStore.cacheLocally(
@@ -240,18 +249,26 @@ class LabOrderRepository {
       bookingId: orderId,
       fileName: fileName,
       bytes: bytes,
+      storageKey: uploadResult.objectKey,
     );
+
+    final updatePayload = <String, dynamic>{
+      'status': 'completed',
+      'reportFileName': fileName,
+      if (uploadResult.downloadUrl != null)
+        'reportStorageUrl': uploadResult.downloadUrl,
+      'reportStorageKey': uploadResult.objectKey,
+      'reportStorageProvider': uploadResult.provider,
+      'reportSubmittedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
 
     await FirebaseFirestore.instance
         .collection(FirestorePaths.labOrders)
         .doc(orderId)
-        .update({
-      'status': 'completed',
-      'reportFileName': fileName,
-      'reportStorageUrl': storageUrl,
-      'reportSubmittedAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }).timeout(const Duration(seconds: 20));
-    return storageUrl;
+        .update(updatePayload)
+        .timeout(const Duration(seconds: 20));
+
+    return uploadResult;
   }
 }

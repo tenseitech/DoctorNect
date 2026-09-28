@@ -215,7 +215,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
     try {
       if (widget.booking != null) {
         final b = widget.booking!;
-        final storageUrl =
+        final uploadResult =
             await FirestoreService.instance.labBooking.submitReport(
           bookingId: b.bookingId,
           patientId: b.patientId,
@@ -225,6 +225,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
           ),
           bytes: bytes,
           linkedBookingIds: b.linkedBookingIds,
+          existingReportStorageKey: b.reportStorageKey,
         );
 
         LabWorklistStore.instance.applyBookingReportLocal(
@@ -246,7 +247,9 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
               testName: b.displayTestName,
               originalFileName: file.name,
             ),
-            reportStorageUrl: storageUrl,
+            reportStorageUrl: uploadResult.downloadUrl,
+            reportStorageKey: uploadResult.objectKey,
+            reportStorageProvider: uploadResult.provider,
             reportSubmittedAt: DateTime.now(),
             reportBookingId: b.bookingId,
           ),
@@ -258,12 +261,13 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
               o.testNames.isNotEmpty ? o.testNames.join(', ') : 'Lab test',
           originalFileName: file.name,
         );
-        final storageUrl =
+        final uploadResult =
             await FirestoreService.instance.labOrder.submitReport(
           orderId: o.orderId,
           patientId: o.patientId,
           fileName: reportFileName,
           bytes: bytes,
+          existingReportStorageKey: o.reportStorageKey,
         );
 
         LabWorklistStore.instance.applyOrderReportLocal(
@@ -287,7 +291,9 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             source: o.source,
             status: 'completed',
             reportFileName: reportFileName,
-            reportStorageUrl: storageUrl,
+            reportStorageUrl: uploadResult.downloadUrl,
+            reportStorageKey: uploadResult.objectKey,
+            reportStorageProvider: uploadResult.provider,
             reportSubmittedAt: DateTime.now(),
           ),
         );

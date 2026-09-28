@@ -20,6 +20,8 @@ class DoctorLabOrder {
     this.status = 'ordered',
     this.reportFileName,
     this.reportStorageUrl,
+    this.reportStorageKey,
+    this.reportStorageProvider,
     this.reportSubmittedAt,
   });
 
@@ -44,11 +46,13 @@ class DoctorLabOrder {
   final DateTime createdAt;
   final String? reportFileName;
   final String? reportStorageUrl;
+  final String? reportStorageKey;
+  final String? reportStorageProvider;
   final DateTime? reportSubmittedAt;
 
   bool get hasReport =>
       reportFileName != null &&
       reportFileName!.trim().isNotEmpty &&
-      reportStorageUrl != null &&
-      reportStorageUrl!.trim().isNotEmpty;
+      ((reportStorageKey != null && reportStorageKey!.trim().isNotEmpty) ||
+          (reportStorageUrl != null && reportStorageUrl!.trim().isNotEmpty));
 }

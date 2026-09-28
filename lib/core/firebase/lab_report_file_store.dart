@@ -2,12 +2,16 @@ import 'dart:async';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 import '../security/file_encryption_service.dart';
+import '../storage/s3_storage_service.dart';
+import '../storage/storage_feature_flag.dart';
+import '../storage/storage_service.dart';
 import 'firebase_bootstrap.dart';
 
-/// Uploads lab reports to Firebase Storage and caches them locally (encrypted) for preview.
+/// Uploads lab reports to S3 (when enabled) or Firebase Storage, and caches them locally (encrypted) for preview.
 abstract final class LabReportFileStore {
   static const maxFileBytes = 8 * 1024 * 1024;
   static const uploadTimeout = Duration(seconds: 45);
@@ -15,9 +19,20 @@ abstract final class LabReportFileStore {
 
   static final Map<String, Uint8List> _webBytes = {};
 
+  @visibleForTesting
+  static http.Client? httpClient;
+
+  @visibleForTesting
+  static Future<Uint8List?> Function(String url)? mockDownloadFromUrl;
+
+  @visibleForTesting
+  static Future<String?> Function(String patientId, String bookingId, String fileName, Uint8List bytes)? mockFirebaseUpload;
+
   static String _cacheKey(
-          String patientId, String bookingId, String fileName) =>
-      '$patientId/$bookingId/${_sanitizeFileName(fileName)}';
+          String patientId, String bookingId, String fileName, [String? storageKey]) =>
+      (storageKey != null && storageKey.trim().isNotEmpty)
+          ? storageKey.trim()
+          : '$patientId/$bookingId/${_sanitizeFileName(fileName)}';
 
   static String _sanitizeFileName(String name) =>
       name.replaceAll(RegExp(r'[^\w.\-]'), '_');
@@ -92,31 +107,102 @@ abstract final class LabReportFileStore {
         lower.endsWith('.jpeg');
   }
 
+  /// Unified upload entrypoint: uploads to AWS S3 if enabled, otherwise falls back to Firebase Storage.
+  static Future<StorageUploadResult?> uploadReport({
+    required String patientId,
+    required String bookingId,
+    required String fileName,
+    required Uint8List bytes,
+  }) async {
+    if (bytes.isEmpty || bytes.length > maxFileBytes) return null;
+
+    if (StorageFeatureFlag.useS3Storage) {
+      final contentType = mimeTypeFor(fileName) ?? 'application/octet-stream';
+      try {
+        final result = await S3StorageService.instance.uploadBytes(
+          purpose: 'lab_reports',
+          parentId: '$patientId/$bookingId',
+          fileName: fileName,
+          contentType: contentType,
+          bytes: bytes,
+        );
+        return result;
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('LabReportFileStore.uploadReport S3 failed: $e\n$st');
+        }
+        return null;
+      }
+    }
+
+    final url = await uploadToStorage(
+      patientId: patientId,
+      bookingId: bookingId,
+      fileName: fileName,
+      bytes: bytes,
+    );
+    if (url != null) {
+      return StorageUploadResult(
+        objectKey: storagePath(patientId, bookingId, fileName),
+        downloadUrl: url,
+        provider: 'firebase',
+      );
+    }
+    return null;
+  }
+
+  /// Deletes an existing S3 report object (best effort).
+  static Future<void> deleteS3Report(String? storageKey) async {
+    if (storageKey == null || storageKey.trim().isEmpty) return;
+    try {
+      await S3StorageService.instance.deleteObject(storageKey.trim());
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('LabReportFileStore.deleteS3Report best-effort error: $e');
+      }
+    }
+  }
+
   static Future<String?> uploadToStorage({
     required String patientId,
     required String bookingId,
     required String fileName,
     required Uint8List bytes,
   }) async {
+    if (mockFirebaseUpload != null) {
+      return mockFirebaseUpload!(patientId, bookingId, fileName, bytes);
+    }
+
     if (!FirebaseBootstrap.isReady ||
         bytes.isEmpty ||
         bytes.length > maxFileBytes) {
       return null;
     }
 
-    final ref = FirebaseStorage.instance.ref(
-      storagePath(patientId, bookingId, fileName),
-    );
-    await ref
-        .putData(
-          bytes,
-          SettableMetadata(contentType: mimeTypeFor(fileName)),
-        )
-        .timeout(uploadTimeout);
-    return await ref.getDownloadURL().timeout(const Duration(seconds: 15));
+    try {
+      final ref = FirebaseStorage.instance.ref(
+        storagePath(patientId, bookingId, fileName),
+      );
+      await ref
+          .putData(
+            bytes,
+            SettableMetadata(contentType: mimeTypeFor(fileName)),
+          )
+          .timeout(uploadTimeout);
+      return await ref.getDownloadURL().timeout(const Duration(seconds: 15));
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('LabReportFileStore.uploadToStorage failed: $e\n$st');
+      }
+      return null;
+    }
   }
 
   static Future<Uint8List?> downloadFromUrl(String storageUrl) async {
+    if (mockDownloadFromUrl != null) {
+      return mockDownloadFromUrl!(storageUrl);
+    }
+
     if (!FirebaseBootstrap.isReady || storageUrl.trim().isEmpty) return null;
     try {
       final ref = FirebaseStorage.instance.refFromURL(storageUrl);
@@ -133,22 +219,26 @@ abstract final class LabReportFileStore {
     required String bookingId,
     required String fileName,
     required Uint8List bytes,
+    String? storageKey,
   }) async {
     if (bytes.isEmpty) return;
 
     await FileEncryptionService.ensureInitialized();
 
     if (kIsWeb) {
-      _webBytes[_cacheKey(patientId, bookingId, fileName)] =
+      _webBytes[_cacheKey(patientId, bookingId, fileName, storageKey)] =
           await FileEncryptionService.encryptForMemoryCache(bytes);
       return;
     }
 
     try {
       final dir = await _localDirPath(patientId, bookingId);
+      final diskName = (storageKey != null && storageKey.trim().isNotEmpty)
+          ? _sanitizeFileName(storageKey)
+          : _sanitizeFileName(fileName);
       await FileEncryptionService.writeDiskFile(
         directoryPath: dir,
-        sanitizedFileName: _sanitizeFileName(fileName),
+        sanitizedFileName: diskName,
         plain: bytes,
       );
     } catch (_) {}
@@ -158,20 +248,24 @@ abstract final class LabReportFileStore {
     required String patientId,
     required String bookingId,
     required String fileName,
+    String? storageKey,
   }) async {
     await FileEncryptionService.ensureInitialized();
 
     if (kIsWeb) {
       return FileEncryptionService.decryptFromMemoryCache(
-        _webBytes[_cacheKey(patientId, bookingId, fileName)],
+        _webBytes[_cacheKey(patientId, bookingId, fileName, storageKey)],
       );
     }
 
     try {
       final dir = await _localDirPath(patientId, bookingId);
+      final diskName = (storageKey != null && storageKey.trim().isNotEmpty)
+          ? _sanitizeFileName(storageKey)
+          : _sanitizeFileName(fileName);
       return await FileEncryptionService.readDiskFileWithLegacyMigration(
         directoryPath: dir,
-        sanitizedFileName: _sanitizeFileName(fileName),
+        sanitizedFileName: diskName,
       );
     } catch (_) {
       return null;
@@ -195,13 +289,41 @@ abstract final class LabReportFileStore {
     required String bookingId,
     required String fileName,
     String? storageUrl,
+    String? storageKey,
+    String? storageProvider,
   }) async {
     final cached = await readCached(
       patientId: patientId,
       bookingId: bookingId,
       fileName: fileName,
+      storageKey: storageKey,
     );
     if (cached != null && cached.isNotEmpty) return cached;
+
+    final isS3 = storageProvider == 's3' ||
+        (storageKey != null && storageKey.trim().isNotEmpty);
+
+    if (isS3) {
+      final key = (storageKey != null && storageKey.trim().isNotEmpty)
+          ? storageKey.trim()
+          : storageUrl?.trim();
+      if (key != null && key.isNotEmpty) {
+        final s3Url = await S3StorageService.instance.getDownloadUrl(key);
+        if (s3Url != null) {
+          try {
+            final client = httpClient;
+            final response = client != null
+                ? await client.get(Uri.parse(s3Url)).timeout(downloadTimeout)
+                : await http.get(Uri.parse(s3Url)).timeout(downloadTimeout);
+            if (response.statusCode >= 200 &&
+                response.statusCode < 300 &&
+                response.bodyBytes.isNotEmpty) {
+              return response.bodyBytes;
+            }
+          } catch (_) {}
+        }
+      }
+    }
 
     if (storageUrl != null && storageUrl.trim().isNotEmpty) {
       final fromUrl = await downloadFromUrl(storageUrl);
@@ -216,6 +338,8 @@ abstract final class LabReportFileStore {
     required String bookingId,
     required String fileName,
     String? storageUrl,
+    String? storageKey,
+    String? storageProvider,
     List<String> alternateBookingIds = const [],
   }) async {
     final bookingIds = <String>{
@@ -231,6 +355,8 @@ abstract final class LabReportFileStore {
         bookingId: id,
         fileName: fileName,
         storageUrl: i == 0 ? storageUrl : null,
+        storageKey: i == 0 ? storageKey : null,
+        storageProvider: i == 0 ? storageProvider : null,
       );
       if (downloaded != null && downloaded.isNotEmpty) break;
     }
@@ -247,8 +373,10 @@ abstract final class LabReportFileStore {
         bookingId: bookingId,
         fileName: fileName,
         bytes: downloaded,
+        storageKey: storageKey,
       );
     }
     return downloaded;
   }
 }
+

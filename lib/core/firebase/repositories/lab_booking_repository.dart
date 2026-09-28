@@ -7,6 +7,7 @@ import '../../constants/app_constants.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
 import '../../../features/patient/lab/utils/patient_selected_investigations_mapper.dart';
 import '../lab_report_file_store.dart';
+import '../../storage/storage_service.dart';
 import '../../session/patient_session.dart'; // FIXED: scope slot queries to the current patient
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
@@ -30,6 +31,8 @@ class LabBookingRecord {
     this.labName,
     this.reportFileName,
     this.reportStorageUrl,
+    this.reportStorageKey,
+    this.reportStorageProvider,
     this.reportSubmittedAt,
     this.reportBookingId,
     this.createdAt,
@@ -50,6 +53,8 @@ class LabBookingRecord {
   final String status;
   final String? reportFileName;
   final String? reportStorageUrl;
+  final String? reportStorageKey;
+  final String? reportStorageProvider;
   final DateTime? reportSubmittedAt;
 
   /// Booking row that owns the uploaded report file (may differ in grouped checkouts).
@@ -59,8 +64,8 @@ class LabBookingRecord {
   bool get hasReport =>
       reportFileName != null &&
       reportFileName!.trim().isNotEmpty &&
-      reportStorageUrl != null &&
-      reportStorageUrl!.trim().isNotEmpty;
+      ((reportStorageKey != null && reportStorageKey!.trim().isNotEmpty) ||
+          (reportStorageUrl != null && reportStorageUrl!.trim().isNotEmpty));
 
   String get reportOwnerBookingId => reportBookingId?.trim().isNotEmpty == true
       ? reportBookingId!.trim()
@@ -358,12 +363,13 @@ class LabBookingRepository {
     });
   }
 
-  Future<String> submitReport({
+  Future<StorageUploadResult> submitReport({
     required String bookingId,
     required String patientId,
     required String fileName,
     required Uint8List bytes,
     List<String> linkedBookingIds = const [],
+    String? existingReportStorageKey,
   }) async {
     if (!FirebaseBootstrap.isReady || bookingId.isEmpty || patientId.isEmpty) {
       throw StateError('Firebase is not ready');
@@ -372,16 +378,23 @@ class LabBookingRepository {
       throw ArgumentError('Invalid report file size');
     }
 
-    final storageUrl = await LabReportFileStore.uploadToStorage(
+    final uploadResult = await LabReportFileStore.uploadReport(
       patientId: patientId,
       bookingId: bookingId,
       fileName: fileName,
       bytes: bytes,
     );
-    if (storageUrl == null || storageUrl.isEmpty) {
+    if (uploadResult == null) {
       throw StateError(
-        'Could not upload report. Check Firebase Storage rules and your connection, then try again.',
+        'Could not upload report. Check storage rules and your connection, then try again.',
       );
+    }
+
+    // Best-effort delete old S3 report if replacing
+    if (existingReportStorageKey != null &&
+        existingReportStorageKey.trim().isNotEmpty &&
+        existingReportStorageKey != uploadResult.objectKey) {
+      await LabReportFileStore.deleteS3Report(existingReportStorageKey);
     }
 
     await LabReportFileStore.cacheLocally(
@@ -389,12 +402,16 @@ class LabBookingRepository {
       bookingId: bookingId,
       fileName: fileName,
       bytes: bytes,
+      storageKey: uploadResult.objectKey,
     );
 
-    final updatePayload = {
+    final updatePayload = <String, dynamic>{
       'status': 'completed',
       'reportFileName': fileName,
-      'reportStorageUrl': storageUrl,
+      if (uploadResult.downloadUrl != null)
+        'reportStorageUrl': uploadResult.downloadUrl,
+      'reportStorageKey': uploadResult.objectKey,
+      'reportStorageProvider': uploadResult.provider,
       'reportBookingId': bookingId,
       'reportSubmittedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -424,7 +441,7 @@ class LabBookingRepository {
       await batch.commit().timeout(const Duration(seconds: 20));
     }
 
-    return storageUrl;
+    return uploadResult;
   }
 
   LabBookingRecord? _fromMap(String docId, Map<String, dynamic> data) {
@@ -458,6 +475,8 @@ class LabBookingRepository {
         status: data['status'] as String? ?? 'confirmed',
         reportFileName: data['reportFileName'] as String?,
         reportStorageUrl: data['reportStorageUrl'] as String?,
+        reportStorageKey: data['reportStorageKey'] as String?,
+        reportStorageProvider: data['reportStorageProvider'] as String?,
         reportSubmittedAt: (data['reportSubmittedAt'] as Timestamp?)?.toDate(),
         reportBookingId: data['reportBookingId'] as String? ?? docId,
         createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
