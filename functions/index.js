@@ -1889,4 +1889,19 @@ exports.syncPrescriptionToSupabase = onDocumentWritten({
   retry: true,
 }, syncFirestorePrescriptionToSupabase);
 
+// ----------------------------------------------------------------------------
+// AWS S3 STORAGE INTEGRATION (asia-south1, onCall v2)
+// ----------------------------------------------------------------------------
+const {
+  getS3UploadUrl,
+  getS3DownloadUrl,
+  getS3DownloadUrls,
+  deleteS3Object,
+} = require('./s3_storage');
+
+exports.getS3UploadUrl = getS3UploadUrl;
+exports.getS3DownloadUrl = getS3DownloadUrl;
+exports.getS3DownloadUrls = getS3DownloadUrls;
+exports.deleteS3Object = deleteS3Object;
+
 
