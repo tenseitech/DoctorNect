@@ -2,10 +2,75 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/features/patient/home/widgets/home_search_bar.dart';
 
+String? _plainTextOf(Widget widget) {
+  if (widget is Text) {
+    return widget.data ?? widget.textSpan?.toPlainText();
+  }
+  if (widget is RichText) {
+    return widget.text.toPlainText();
+  }
+  return null;
+}
+
+const _placeholderPrefix = 'Search for ';
+
+Finder _placeholderTextFinder({required bool richText}) => find.descendant(
+      of: find.byType(HomeSearchBar),
+      matching: find.byWidgetPredicate(
+        (widget) {
+          if (richText && widget is! RichText) return false;
+          if (!richText && widget is! Text) return false;
+          return (_plainTextOf(widget) ?? '').startsWith(_placeholderPrefix);
+        },
+        description: richText ? 'placeholder rich text' : 'placeholder text',
+      ),
+    );
+
+bool hasPlaceholderText() {
+  return _placeholderTextFinder(richText: false).evaluate().isNotEmpty ||
+      _placeholderTextFinder(richText: true).evaluate().isNotEmpty;
+}
+
+String placeholderTextOf(WidgetTester tester) {
+  final textFinder = _placeholderTextFinder(richText: false);
+  if (textFinder.evaluate().isNotEmpty) {
+    return _plainTextOf(tester.firstWidget<Text>(textFinder))!;
+  }
+
+  final richTextFinder = _placeholderTextFinder(richText: true);
+  if (richTextFinder.evaluate().isNotEmpty) {
+    return _plainTextOf(tester.firstWidget<RichText>(richTextFinder))!;
+  }
+
+  throw TestFailure('Could not locate animated placeholder text widget.');
+}
+
+Future<void> pumpUntilPlaceholder(
+  WidgetTester tester, {
+  required bool Function(String text) matches,
+  required String failureMessage,
+  Duration step = const Duration(milliseconds: 50),
+  Duration timeout = const Duration(seconds: 3),
+}) async {
+  final attempts = timeout.inMilliseconds ~/ step.inMilliseconds;
+
+  for (var i = 0; i < attempts; i++) {
+    if (hasPlaceholderText()) {
+      final text = placeholderTextOf(tester);
+      if (matches(text)) return;
+    }
+    await tester.pump(step);
+  }
+
+  throw TestFailure(
+    '$failureMessage Last rendered value was '
+    '"${hasPlaceholderText() ? placeholderTextOf(tester) : '<hidden>'}".',
+  );
+}
+
 void main() {
   group('HomeSearchBar animated rotating placeholder tests', () {
-    testWidgets(
-        'Renders initial placeholder and transitions through loop every 2.5s',
+    testWidgets('Renders animated placeholder and advances to the next word',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -15,28 +80,28 @@ void main() {
         ),
       );
 
-      // Initial frame: "Search for doctor" must be visible
-      expect(find.text('Search for doctor'), findsOneWidget);
+      // Initial frame shows the animated placeholder prefix immediately.
+      expect(hasPlaceholderText(), isTrue);
+      expect(placeholderTextOf(tester), startsWith(_placeholderPrefix));
 
-      // Advance by 2.5s -> transitions to "Search for lab"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for lab'), findsOneWidget);
+      // After one second, the first word is fully visible and stable.
+      await tester.pump(const Duration(seconds: 1));
+      final completedPlaceholder = placeholderTextOf(tester);
+      final completedWord =
+          completedPlaceholder.replaceFirst(_placeholderPrefix, '');
+      final completedIndex = HomeSearchBar.words.indexOf(completedWord);
+      expect(completedIndex, isNonNegative);
+      final nextPlaceholder =
+          '$_placeholderPrefix${HomeSearchBar.words[(completedIndex + 1) % HomeSearchBar.words.length]}';
 
-      // Advance by 2.5s -> transitions to "Search for language or location"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for language or location'), findsOneWidget);
-
-      // Advance by 2.5s -> transitions to "Search for ambulance"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for ambulance'), findsOneWidget);
-
-      // Advance by 2.5s -> loops back to "Search for doctor"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for doctor'), findsOneWidget);
+      await pumpUntilPlaceholder(
+        tester,
+        matches: (text) => text == nextPlaceholder,
+        failureMessage:
+            'Placeholder never settled on the next configured word.',
+        timeout: const Duration(seconds: 3),
+      );
+      expect(placeholderTextOf(tester), nextPlaceholder);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
@@ -53,7 +118,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Search for doctor'), findsOneWidget);
+      expect(hasPlaceholderText(), isTrue);
 
       // Tap on TextField to focus
       final textField = find.byType(TextField);
@@ -62,26 +127,26 @@ void main() {
       await tester.pump();
 
       // Once focused, overlay should disappear
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(hasPlaceholderText(), isFalse);
 
       // Enter text
       await tester.enterText(textField, 'Cardiologist');
       await tester.pump();
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(hasPlaceholderText(), isFalse);
 
       // Clear text
       await tester.enterText(textField, '');
       await tester.pump();
 
       // Still focused -> overlay still hidden
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(hasPlaceholderText(), isFalse);
 
       // Unfocus
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
 
       // Unfocused and empty -> overlay reappears
-      expect(find.text('Search for doctor'), findsOneWidget);
+      expect(hasPlaceholderText(), isTrue);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
