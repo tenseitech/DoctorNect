@@ -65,6 +65,8 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
         recordId: record.id,
         fileName: record.fileName,
         storageUrl: record.storageUrl,
+        storageKey: record.storageKey,
+        storageProvider: record.storageProvider,
       );
       if (!mounted) return;
       setState(() {

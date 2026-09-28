@@ -61,6 +61,8 @@ abstract final class DoctorReportOpener {
           recordId: record.id,
           fileName: reportName,
           storageUrl: record.storageUrl,
+          storageKey: record.storageKey,
+          storageProvider: record.storageProvider,
         );
         if (bytes != null) {
           if (!context.mounted) return;
@@ -81,6 +83,8 @@ abstract final class DoctorReportOpener {
             sharedWithDoctors: record.sharedWithDoctors,
             fileStorage: record.fileStorage,
             storageUrl: record.storageUrl,
+            storageKey: record.storageKey,
+            storageProvider: record.storageProvider,
           );
           await Navigator.push<void>(
             context,

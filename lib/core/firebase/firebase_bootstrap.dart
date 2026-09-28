@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../../firebase_options.dart';
 import '../constants/app_constants.dart';
 import '../security/app_check_service.dart';
+import '../storage/storage_feature_flag.dart';
 import '../validation/server_validation_service.dart';
 import 'firebase_error_messages.dart';
 
@@ -41,6 +42,8 @@ abstract final class FirebaseBootstrap {
       }
       // Load validation rules from Cloud Functions (non-blocking).
       unawaited(_loadValidationRules());
+      // Initialize Remote Config for storage feature flags (non-blocking).
+      unawaited(StorageFeatureFlag.initialize());
       return true;
     } catch (e, st) {
       isReady = false;

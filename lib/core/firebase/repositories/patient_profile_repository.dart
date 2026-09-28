@@ -212,6 +212,8 @@ class PatientProfileRepository {
               ? HealthRecordFileStorage.values.byName(storageStatus)
               : HealthRecordFileStorage.none,
           storageUrl: data['storageUrl'] as String?,
+          storageKey: data['storageKey'] as String?,
+          storageProvider: data['storageProvider'] as String?,
         );
       }).toList()
         ..sort((a, b) => b.date.compareTo(a.date));
@@ -270,6 +272,9 @@ class PatientProfileRepository {
       if (record.fileStorage != HealthRecordFileStorage.none)
         'fileStorage': record.fileStorage.name,
       if (record.storageUrl != null) 'storageUrl': record.storageUrl,
+      if (record.storageKey != null) 'storageKey': record.storageKey,
+      if (record.storageProvider != null)
+        'storageProvider': record.storageProvider,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -286,11 +291,13 @@ class PatientProfileRepository {
     if (data != null) {
       final patientId = data['patientId'] as String? ?? '';
       final fileName = data['fileName'] as String? ?? '';
-      if (patientId.isNotEmpty && fileName.isNotEmpty) {
+      final storageKey = data['storageKey'] as String?;
+      if (patientId.isNotEmpty && (fileName.isNotEmpty || storageKey != null)) {
         await HealthRecordFileStore.deleteRecordFiles(
           patientId: patientId,
           recordId: recordId,
           fileName: fileName,
+          storageKey: storageKey,
         );
       }
     }

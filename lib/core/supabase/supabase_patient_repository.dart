@@ -272,6 +272,8 @@ class SupabasePatientRepository {
     bool sharedWithDoctors = true,
     String fileStorage = 'localOnly',
     String? storageUrl,
+    String? storageKey,
+    String? storageProvider,
   }) async {
     final validFileStorage =
         (fileStorage == 'cloudUploaded' || fileStorage == 'firebase')
@@ -296,6 +298,8 @@ class SupabasePatientRepository {
           'shared_with_doctors': sharedWithDoctors,
           'file_storage': validFileStorage,
           'storage_url': storageUrl,
+          if (storageKey != null) 'storage_key': storageKey,
+          if (storageProvider != null) 'storage_provider': storageProvider,
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         };

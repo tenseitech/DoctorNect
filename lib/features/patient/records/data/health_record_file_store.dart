@@ -3,10 +3,14 @@ import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../core/firebase/firebase_bootstrap.dart';
 import '../../../../core/security/file_encryption_service.dart';
+import '../../../../core/storage/s3_storage_service.dart';
+import '../../../../core/storage/storage_feature_flag.dart';
+import '../../../../core/storage/storage_service.dart';
 
 /// Persists health-record files locally (encrypted) and syncs to Firebase Storage when available.
 abstract final class HealthRecordFileStore {
@@ -90,34 +94,111 @@ abstract final class HealthRecordFileStore {
     }
   }
 
+  /// Unified upload entrypoint: uploads to AWS S3 if enabled, otherwise falls back to Firebase Storage.
+  static Future<StorageUploadResult?> uploadRecord({
+    required String patientId,
+    required String recordId,
+    required String fileName,
+    required Uint8List bytes,
+  }) async {
+    if (bytes.isEmpty || bytes.length > maxFileBytes) return null;
+
+    if (StorageFeatureFlag.useS3Storage) {
+      final contentType = mimeTypeFor(fileName) ?? 'application/octet-stream';
+      try {
+        final result = await S3StorageService.instance.uploadBytes(
+          purpose: 'health_records',
+          parentId: '$patientId/$recordId',
+          fileName: fileName,
+          contentType: contentType,
+          bytes: bytes,
+        );
+        return result;
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('HealthRecordFileStore.uploadRecord S3 failed: $e\n$st');
+        }
+        return null;
+      }
+    }
+
+    final url = await uploadToFirebaseStorage(
+      patientId: patientId,
+      recordId: recordId,
+      fileName: fileName,
+      bytes: bytes,
+    );
+    if (url != null) {
+      return StorageUploadResult(
+        objectKey: storagePath(patientId, recordId, fileName),
+        downloadUrl: url,
+        provider: 'firebase',
+      );
+    }
+    return null;
+  }
+
   static Future<Uint8List?> readBytes({
     required String patientId,
     required String recordId,
     required String fileName,
     String? storageUrl,
+    String? storageKey,
+    String? storageProvider,
   }) async {
     return loadRecord(
       patientId: patientId,
       recordId: recordId,
       fileName: fileName,
       storageUrl: storageUrl,
+      storageKey: storageKey,
+      storageProvider: storageProvider,
     );
   }
 
-  /// Local encrypted cache first, then [storageUrl], then canonical Storage path.
+  /// Local encrypted cache first, then S3 presigned URL (if storageKey/provider), then [storageUrl], then canonical Storage path.
   static Future<Uint8List?> loadRecord({
     required String patientId,
     required String recordId,
     required String fileName,
     String? storageUrl,
+    String? storageKey,
+    String? storageProvider,
   }) async {
     await FileEncryptionService.ensureInitialized();
+
+    final isS3 = storageProvider == 's3' ||
+        (storageKey != null && storageKey.trim().isNotEmpty);
 
     if (kIsWeb) {
       final cached = await FileEncryptionService.decryptFromMemoryCache(
         _webBytes[_cacheKey(patientId, recordId, fileName)],
       );
       if (cached != null && cached.isNotEmpty) return cached;
+
+      if (isS3) {
+        final key = (storageKey != null && storageKey.trim().isNotEmpty)
+            ? storageKey.trim()
+            : storageUrl?.trim();
+        if (key != null && key.isNotEmpty) {
+          final s3Url = await S3StorageService.instance.getDownloadUrl(key);
+          if (s3Url != null) {
+            try {
+              final response = await http
+                  .get(Uri.parse(s3Url))
+                  .timeout(downloadTimeout);
+              if (response.statusCode >= 200 &&
+                  response.statusCode < 300 &&
+                  response.bodyBytes.isNotEmpty) {
+                _webBytes[_cacheKey(patientId, recordId, fileName)] =
+                    await FileEncryptionService.encryptForMemoryCache(
+                        response.bodyBytes);
+                return response.bodyBytes;
+              }
+            } catch (_) {}
+          }
+        }
+      }
 
       if (storageUrl != null && storageUrl.trim().isNotEmpty) {
         final fromUrl = await downloadFromUrl(storageUrl);
@@ -143,6 +224,33 @@ abstract final class HealthRecordFileStore {
       sanitizedFileName: _sanitizeFileName(fileName),
     );
     if (local != null && local.isNotEmpty) return local;
+
+    if (isS3) {
+      final key = (storageKey != null && storageKey.trim().isNotEmpty)
+          ? storageKey.trim()
+          : storageUrl?.trim();
+      if (key != null && key.isNotEmpty) {
+        final s3Url = await S3StorageService.instance.getDownloadUrl(key);
+        if (s3Url != null) {
+          try {
+            final response = await http
+                .get(Uri.parse(s3Url))
+                .timeout(downloadTimeout);
+            if (response.statusCode >= 200 &&
+                response.statusCode < 300 &&
+                response.bodyBytes.isNotEmpty) {
+              await saveFile(
+                patientId: patientId,
+                recordId: recordId,
+                fileName: fileName,
+                bytes: response.bodyBytes,
+              );
+              return response.bodyBytes;
+            }
+          } catch (_) {}
+        }
+      }
+    }
 
     if (storageUrl != null && storageUrl.trim().isNotEmpty) {
       final fromUrl = await downloadFromUrl(storageUrl);
@@ -245,8 +353,11 @@ abstract final class HealthRecordFileStore {
     required String patientId,
     required String recordId,
     String? fileName,
+    String? storageKey,
   }) async {
-    if (fileName != null) {
+    if (storageKey != null && storageKey.trim().isNotEmpty) {
+      await S3StorageService.instance.deleteObject(storageKey.trim());
+    } else if (fileName != null) {
       await deleteFromStorage(
         patientId: patientId,
         recordId: recordId,

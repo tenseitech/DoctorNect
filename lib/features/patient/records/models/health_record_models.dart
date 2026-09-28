@@ -41,6 +41,8 @@ class HealthRecord {
     this.sharedWithDoctors = false,
     this.fileStorage = HealthRecordFileStorage.none,
     this.storageUrl,
+    this.storageKey,
+    this.storageProvider,
     this.prescriptionId,
     this.labOrderId,
     this.labBookingId,
@@ -62,6 +64,12 @@ class HealthRecord {
   /// `local` = saved on this device; `firebase` = [storageUrl] when Storage is enabled.
   final HealthRecordFileStorage fileStorage;
   final String? storageUrl;
+
+  /// AWS S3 object key (e.g. `health_records/p1/hr1/uuid.pdf`).
+  final String? storageKey;
+
+  /// Storage provider identifier ('s3', 'firebase', 'legacy').
+  final String? storageProvider;
 
   /// Set when [source] is [RecordSource.doctorSent] — links to Firestore clinical data.
   final String? prescriptionId;
@@ -95,7 +103,9 @@ class HealthRecord {
 
   bool get hasUploadedFile =>
       fileStorage == HealthRecordFileStorage.local ||
-      fileStorage == HealthRecordFileStorage.firebase;
+      fileStorage == HealthRecordFileStorage.firebase ||
+      (storageKey != null && storageKey!.trim().isNotEmpty) ||
+      storageProvider == 's3';
 }
 
 class VitalsLog {
