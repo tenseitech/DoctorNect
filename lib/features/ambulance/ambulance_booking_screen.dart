@@ -441,15 +441,22 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
           ),
           body: LayoutBuilder(
             builder: (context, constraints) {
-              final cardMaxWidth = ResponsiveLayout.isCompact(context)
+              final isCompact = ResponsiveLayout.isCompact(context);
+              final cardMaxWidth = isCompact
                   ? constraints.maxWidth
                   : ResponsiveLayout.isMedium(context)
                       ? 720.0
                       : 820.0;
 
               return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 20, 20,
-                    24 + bottomInset + (widget.embeddedInShell ? 90 : 0)),
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  isCompact ? 24 : 20,
+                  20,
+                  (isCompact ? 28 : 24) +
+                      bottomInset +
+                      (widget.embeddedInShell ? 90 : 0),
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: cardMaxWidth),
@@ -457,7 +464,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _EmergencyInfoStrip(isPatient: _isPatient),
-                        const SizedBox(height: 20),
+                        SizedBox(height: isCompact ? 24 : 20),
                         DecoratedBox(
                           decoration: BoxDecoration(
                             color: AppColors.surfaceOf(context),
@@ -474,7 +481,10 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                             ],
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(20),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: isCompact ? 24 : 20,
+                            ),
                             child: Form(
                               key: _formKey,
                               child: Column(
@@ -483,12 +493,12 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                 children: [
                                   _AmbulanceTypeDropdown(
                                     value: _selectedType,
-                                    enabled: canInteract,
+                                    enabled: !_submitting,
                                     onChanged: (v) =>
                                         setState(() => _selectedType = v),
                                   ),
                                   if (active != null) ...[
-                                    const SizedBox(height: 20),
+                                    SizedBox(height: isCompact ? 24 : 20),
                                     _BookingStatusCard(
                                       booking: active,
                                       embedded: true,
@@ -544,7 +554,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                           : null,
                                     ),
                                   ],
-                                  const SizedBox(height: 20),
+                                  SizedBox(height: isCompact ? 26 : 20),
                                   if (!_isPatient) ...[
                                     TextFormField(
                                       controller: _patientNameController,
@@ -556,7 +566,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               ? 'Enter patient name'
                                               : null,
                                     ),
-                                    const SizedBox(height: 12),
+                                    SizedBox(height: isCompact ? 18 : 12),
                                     PhoneNumberField(
                                       controller: _phoneController,
                                       initialDialCode: _phoneDialCode,
@@ -568,14 +578,14 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                         Icons.phone_outlined,
                                       ),
                                     ),
-                                    const SizedBox(height: 20),
+                                    SizedBox(height: isCompact ? 26 : 20),
                                   ],
                                   _AddressRouteInputs(
                                     pickupController: _pickupController,
                                     dropController: _dropController,
                                     enabled: canInteract,
                                   ),
-                                  const SizedBox(height: 22),
+                                  SizedBox(height: isCompact ? 28 : 22),
                                   if (active == null) ...[
                                     FilledButton(
                                       onPressed: canInteract && !_submitting
@@ -623,7 +633,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               ],
                                             ),
                                     ),
-                                    const SizedBox(height: 12),
+                                    SizedBox(height: isCompact ? 14 : 12),
                                     Text(
                                       'Request goes to all online drivers. '
                                       'You will wait up to 5 minutes for acceptance.',
@@ -637,7 +647,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       ),
                                     ),
                                     if (!_isPatient) ...[
-                                      const SizedBox(height: 18),
+                                      SizedBox(height: isCompact ? 24 : 18),
                                       OutlinedButton(
                                         onPressed: canInteract
                                             ? () {
@@ -680,7 +690,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(height: 6),
+                                      SizedBox(height: isCompact ? 8 : 6),
                                       Text(
                                         'Register a new ambulance service and send the driver an invite link.',
                                         textAlign: TextAlign.center,
@@ -1274,18 +1284,18 @@ class _PatientHistoryTripCard extends StatelessWidget {
   }
 }
 
-String _ambulanceTypeDefinition(AmbulanceType? type) {
+String ambulanceTypeDefinition(AmbulanceType? type) {
   switch (type) {
     case null:
-      return 'Sabse fast match ke liye. Nearest available ambulance assign hogi.';
+      return 'For the fastest match. The nearest available ambulance will be assigned.';
     case AmbulanceType.bls:
-      return 'Trained EMTs ke saath basic care: oxygen, CPR, bleeding control, splinting. Stable ya non-critical patients ke liye.';
+      return 'Basic care with trained EMTs: oxygen, CPR, bleeding control, splinting. For stable or non-critical patients.';
     case AmbulanceType.als:
-      return 'Paramedics ke saath advanced care: cardiac monitor/ECG, defibrillator, IV medicines, airway management. Critical cases (heart attack, stroke, serious injury) ke liye.';
+      return 'Advanced care with paramedics: cardiac monitor/ECG, defibrillator, IV medicines, airway management. For critical cases (heart attack, stroke, serious injury).';
     case AmbulanceType.icu:
-      return 'Ventilator aur ICU equipment ke saath critical care team. Severe life support ya hospital ICU transfer ke liye.';
+      return 'Critical care team with ventilator and ICU equipment. For severe life support or hospital ICU transfers.';
     case AmbulanceType.patientTransport:
-      return 'Non-emergency travel: wheelchair/stretcher support, routine checkup ya hospital discharge ke liye. Emergency care ke liye nahi.';
+      return 'Non-emergency travel: wheelchair/stretcher support, for routine checkups or hospital discharge. Not for emergency care.';
   }
 }
 
@@ -1303,6 +1313,7 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark(context);
+    final isCompact = ResponsiveLayout.isCompact(context);
     final options = <(AmbulanceType?, String, IconData, Color)>[
       (
         null,
@@ -1358,7 +1369,7 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
             color: AppColors.textPrimaryOf(context),
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: isCompact ? 6 : 4),
         Text(
           'Optional — leave on All Types for fastest match',
           style: GoogleFonts.inter(
@@ -1366,61 +1377,75 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
             color: AppColors.textSecondaryOf(context),
           ),
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: options.map((opt) {
-            final (type, label, icon, color) = opt;
-            final selected = value == type;
-            final activeTextColor = isDark
-                ? Colors.white
-                : (color == const Color(0xFFCA8A04)
-                    ? const Color(0xFF854D0E)
-                    : color);
+        SizedBox(height: isCompact ? 16 : 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final chipMinWidth = isCompact && constraints.maxWidth.isFinite
+                ? ((constraints.maxWidth - 24) / 3.25).clamp(84.0, 128.0)
+                : 0.0;
 
-            return InkWell(
-              onTap: enabled ? () => onChanged(type) : null,
-              borderRadius: BorderRadius.circular(12),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? color.withValues(alpha: isDark ? 0.22 : 0.10)
-                      : unselectedBg,
+            return Wrap(
+              spacing: isCompact ? 12 : 10,
+              runSpacing: isCompact ? 12 : 10,
+              children: options.map((opt) {
+                final (type, label, icon, color) = opt;
+                final selected = value == type;
+                final activeTextColor = isDark
+                    ? Colors.white
+                    : (color == const Color(0xFFCA8A04)
+                        ? const Color(0xFF854D0E)
+                        : color);
+
+                return InkWell(
+                  onTap: enabled ? () => onChanged(type) : null,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected ? color : unselectedBorder,
-                    width: selected ? 1.5 : 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      size: 17,
-                      color: selected ? color : unselectedIcon,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    height: isCompact ? 46 : 44,
+                    constraints: chipMinWidth > 0
+                        ? BoxConstraints(minWidth: chipMinWidth)
+                        : null,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isCompact ? 16 : 14,
                     ),
-                    const SizedBox(width: 7),
-                    Text(
-                      label,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w500,
-                        color: selected ? activeTextColor : unselectedText,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? color.withValues(alpha: isDark ? 0.22 : 0.10)
+                          : unselectedBg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: selected ? color : unselectedBorder,
+                        width: selected ? 1.5 : 1,
                       ),
                     ),
-                  ],
-                ),
-              ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          icon,
+                          size: 17,
+                          color: selected ? color : unselectedIcon,
+                        ),
+                        const SizedBox(width: 7),
+                        Text(
+                          label,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight:
+                                selected ? FontWeight.w600 : FontWeight.w500,
+                            color: selected ? activeTextColor : unselectedText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
             );
-          }).toList(),
+          },
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: isCompact ? 16 : 12),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           transitionBuilder: (child, animation) {
@@ -1429,7 +1454,10 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
           child: Container(
             key: ValueKey(value),
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: isCompact ? 12 : 10,
+            ),
             decoration: BoxDecoration(
               color: isDark
                   ? const Color(0xFF1E293B).withValues(alpha: 0.6)
@@ -1455,7 +1483,7 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    _ambulanceTypeDefinition(value),
+                    ambulanceTypeDefinition(value),
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       height: 1.45,
@@ -1625,6 +1653,8 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = ResponsiveLayout.isCompact(context);
+
     return IntrinsicHeight(
       child: Row(
         children: [
@@ -1774,7 +1804,7 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                     ],
                   ),
                 ],
-                const SizedBox(height: 14),
+                SizedBox(height: isCompact ? 18 : 14),
                 TextFormField(
                   controller: widget.dropController,
                   enabled: widget.enabled,

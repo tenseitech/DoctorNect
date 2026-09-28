@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/enums/user_type.dart';
+import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/doctor_invite_action_button.dart';
 import '../../../widgets/nav_request_dot.dart';
@@ -74,13 +75,14 @@ class DoctorConnectedPartnersBaseView extends StatefulWidget {
     required this.onReject,
     required this.onRevoke,
     required this.onSendRequest,
-    required this.onOpenAddPartner,
+    this.onOpenAddPartner,
     required this.onOpenInviteSheet,
     required this.attachFirestoreSync,
     required this.detachFirestoreSync,
     required this.isConnected,
     required this.isPendingSent,
     required this.isPendingFromPartner,
+    this.inlineCityDiscovery = false,
     this.showAppBar = true,
     this.appBarTitle,
   });
@@ -105,13 +107,14 @@ class DoctorConnectedPartnersBaseView extends StatefulWidget {
   final void Function(String connectionId, String partnerName) onReject;
   final void Function(String connectionId, String partnerName) onRevoke;
   final String? Function(DoctorPartnerProfileItem partner) onSendRequest;
-  final void Function() onOpenAddPartner;
+  final void Function()? onOpenAddPartner;
   final void Function() onOpenInviteSheet;
   final void Function() attachFirestoreSync;
   final void Function() detachFirestoreSync;
   final bool Function(String partnerId) isConnected;
   final bool Function(String partnerId) isPendingSent;
   final bool Function(String partnerId) isPendingFromPartner;
+  final bool inlineCityDiscovery;
   final bool showAppBar;
   final String? appBarTitle;
 
@@ -124,6 +127,7 @@ class _DoctorConnectedPartnersBaseViewState
     extends State<DoctorConnectedPartnersBaseView> {
   final _searchController = TextEditingController();
   bool get _isAddMode =>
+      !widget.inlineCityDiscovery &&
       widget.showAppBar &&
       widget.appBarTitle == 'Add ${widget.partnerTypeLabel}';
 
@@ -157,9 +161,9 @@ class _DoctorConnectedPartnersBaseViewState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Disconnect from ${connection.partnerName}?'),
+        title: Text('Disconnect ${connection.partnerName}?'),
         content: Text(
-          "You won't be able to send new orders/prescriptions to this ${widget.partnerTypeLabel.toLowerCase()} until you reconnect.",
+          'Disconnect ${connection.partnerName}? This cannot be undone.',
           style: GoogleFonts.inter(
               fontSize: AppTypography.bodyMedium,
               color: AppColors.textSecondaryOf(context)),
@@ -260,41 +264,64 @@ class _DoctorConnectedPartnersBaseViewState
 
         final pendingCount =
             pendingFromPartner.length + pendingFromDoctor.length;
+        final wide = !ResponsiveLayout.isCompact(context);
+        final horizontalPadding = wide ? 20.0 : 16.0;
+        final cityLabel = widget.cityFilterLabel()?.trim();
+        final discoveryPartners = widget.inlineCityDiscovery
+            ? (widget
+                .searchResults()
+                .where((p) => !widget.isConnected(p.id))
+                .toList()
+              ..sort(
+                (a, b) => a.name.trim().toLowerCase().compareTo(
+                      b.name.trim().toLowerCase(),
+                    ),
+              ))
+            : const <DoctorPartnerProfileItem>[];
 
         return ListView(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            16,
+            horizontalPadding,
+            wide ? 16 : 96,
+          ),
           children: [
             DoctorScreenTitleBar(
               title: widget.partnerHeaderTitle,
               subtitle: widget.partnerHeaderSubtitle,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+              padding: EdgeInsets.zero,
+              trailing: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  FilledButton.icon(
-                    onPressed: widget.onOpenAddPartner,
-                    icon: IconWithRequestDot(
-                      showDot: pendingCount > 0,
-                      dotColor: widget.accentColor,
-                      icon: const Icon(Icons.add, size: 18),
+                  if (!widget.inlineCityDiscovery &&
+                      widget.onOpenAddPartner != null)
+                    FilledButton.icon(
+                      onPressed: widget.onOpenAddPartner,
+                      icon: IconWithRequestDot(
+                        showDot: pendingCount > 0,
+                        dotColor: widget.accentColor,
+                        icon: const Icon(Icons.add, size: 18),
+                      ),
+                      label: Text(
+                        pendingCount > 0
+                            ? 'Add ${widget.partnerTypeLabel} ($pendingCount)'
+                            : 'Add ${widget.partnerTypeLabel}',
+                        style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: AppTypography.bodySmall),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: widget.accentColor,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
                     ),
-                    label: Text(
-                      pendingCount > 0
-                          ? 'Add ${widget.partnerTypeLabel} ($pendingCount)'
-                          : 'Add ${widget.partnerTypeLabel}',
-                      style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: AppTypography.bodySmall),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: widget.accentColor,
-                      foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   OutlinedButton.icon(
                     onPressed: widget.onOpenInviteSheet,
                     icon: const Icon(Icons.link, size: 18),
@@ -319,15 +346,17 @@ class _DoctorConnectedPartnersBaseViewState
             const SizedBox(height: 8),
             if (active.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 32),
+                padding: EdgeInsets.symmetric(
+                  vertical: widget.inlineCityDiscovery ? 20 : 32,
+                ),
                 child: Center(
                   child: Column(
                     children: [
                       Icon(Icons.storefront_outlined,
-                          size: 48,
+                          size: widget.inlineCityDiscovery ? 40 : 48,
                           color: AppColors.textSecondaryOf(context)
                               .withValues(alpha: 0.4)),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Text(
                           'No ${widget.partnerTypeLabel.toLowerCase()}s connected yet',
                           style: GoogleFonts.inter(
@@ -335,7 +364,9 @@ class _DoctorConnectedPartnersBaseViewState
                               fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
                       Text(
-                        'Tap "Add ${widget.partnerTypeLabel}" to search and connect.',
+                        widget.inlineCityDiscovery
+                            ? 'Connect with a ${widget.partnerTypeLabel.toLowerCase()} below to get started.'
+                            : 'Tap "Add ${widget.partnerTypeLabel}" to search and connect.',
                         style: GoogleFonts.inter(
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context)),
@@ -355,6 +386,46 @@ class _DoctorConnectedPartnersBaseViewState
                   onDisconnect: () => _confirmDisconnect(c),
                 ),
               ),
+            if (widget.inlineCityDiscovery) ...[
+              const SizedBox(height: 14),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.borderOf(context),
+              ),
+              const SizedBox(height: 18),
+              _DocSectionHeader(
+                title: (cityLabel != null && cityLabel.isNotEmpty)
+                    ? 'All ${widget.partnerHeaderTitle} in $cityLabel'
+                    : 'All ${widget.partnerHeaderTitle}',
+                count: discoveryPartners.length,
+              ),
+              const SizedBox(height: 8),
+              if (discoveryPartners.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                      (cityLabel != null && cityLabel.isNotEmpty)
+                          ? 'No other ${widget.partnerHeaderTitle.toLowerCase()} found in $cityLabel'
+                          : 'No other ${widget.partnerHeaderTitle.toLowerCase()} found',
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                ...discoveryPartners.map(
+                  (p) => _DocDiscoveryPartnerRow(
+                    partner: p,
+                    accentColor: widget.accentColor,
+                    isPendingSent: widget.isPendingSent(p.id),
+                    onConnect: () => _sendRequest(p),
+                  ),
+                ),
+            ],
           ],
         );
       },
@@ -383,9 +454,16 @@ class _DoctorConnectedPartnersBaseViewState
   ) {
     final results = widget.searchResults();
     final cityLabel = widget.cityFilterLabel();
+    final wide = !ResponsiveLayout.isCompact(context);
+    final horizontalPadding = wide ? 20.0 : 16.0;
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        16,
+        horizontalPadding,
+        wide ? 16 : 96,
+      ),
       children: [
         _buildSearchBar(),
         const SizedBox(height: 16),
@@ -510,7 +588,7 @@ class _DocConnectedPartnerRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(AppConstants.cardRadius),
@@ -519,7 +597,7 @@ class _DocConnectedPartnerRow extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 20,
+            radius: 18,
             backgroundColor: accentColor.withValues(alpha: 0.12),
             child: Text(
               connection.partnerName.trim().isNotEmpty
@@ -533,35 +611,180 @@ class _DocConnectedPartnerRow extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(connection.partnerName,
-                    style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodyLarge,
-                        fontWeight: FontWeight.w600)),
-                Text(subtitle,
-                    style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context))),
+                Text(
+                  connection.partnerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
+                ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           OutlinedButton(
             onPressed: onViewPatients,
             style: OutlinedButton.styleFrom(
               foregroundColor: accentColor,
               side: BorderSide(color: accentColor),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: const Text('View Patients',
-                style: TextStyle(fontSize: AppTypography.labelMedium)),
+                style: TextStyle(
+                  fontSize: AppTypography.labelSmall,
+                  fontWeight: FontWeight.w600,
+                )),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.link_off, size: 18, color: AppColors.error),
             tooltip: 'Disconnect',
             onPressed: onDisconnect,
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: const EdgeInsets.all(4),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DocDiscoveryPartnerRow extends StatelessWidget {
+  const _DocDiscoveryPartnerRow({
+    required this.partner,
+    required this.accentColor,
+    required this.isPendingSent,
+    required this.onConnect,
+  });
+
+  final DoctorPartnerProfileItem partner;
+  final Color accentColor;
+  final bool isPendingSent;
+  final VoidCallback onConnect;
+
+  String? _subtitleText() {
+    final city = partner.city.trim();
+    final addr = partner.address.trim();
+    if (city.isNotEmpty && addr.isNotEmpty) {
+      if (addr.toLowerCase().contains(city.toLowerCase())) {
+        return addr;
+      }
+      return '$addr, $city';
+    }
+    if (city.isNotEmpty) return city;
+    if (addr.isNotEmpty) return addr;
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = _subtitleText();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceOf(context),
+        borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+        border: Border.all(color: AppColors.borderOf(context)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: accentColor.withValues(alpha: 0.12),
+            child: Text(
+              partner.name.trim().isNotEmpty
+                  ? partner.name.trim()[0].toUpperCase()
+                  : 'P',
+              style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w700, color: accentColor),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  partner.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (isPendingSent)
+            OutlinedButton(
+              onPressed: null,
+              style: OutlinedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Pending',
+                style: TextStyle(
+                  fontSize: AppTypography.labelSmall,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            OutlinedButton(
+              onPressed: onConnect,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: accentColor,
+                side: BorderSide(color: accentColor),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text(
+                'Connect',
+                style: TextStyle(
+                  fontSize: AppTypography.labelSmall,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -598,10 +821,14 @@ class _DocPendingInviteRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600)),
                 Text(dateLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context))),
@@ -654,10 +881,14 @@ class _DocPartnerSearchTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(partner.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600)),
                 Text(partner.address,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context))),
@@ -732,10 +963,14 @@ class _DocPendingCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600)),
                 Text(dateLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context))),

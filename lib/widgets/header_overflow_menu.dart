@@ -46,73 +46,76 @@ class HeaderOverflowMenu extends StatelessWidget {
               EmergencySosSheet.show(context);
             }
           },
-          itemBuilder: (ctx) => [
-            PopupMenuItem<String>(
-              value: 'pass',
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: accentColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.asset(
-                        'assets/icons/common/digital_pass.png',
-                        width: 18,
-                        height: 18,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: accentColor,
-                          size: 18,
+          itemBuilder: (ctx) {
+            if (userType == UserType.doctor) {
+              return const <PopupMenuEntry<String>>[];
+            }
+            return [
+              PopupMenuItem<String>(
+                value: 'pass',
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.asset(
+                          'assets/icons/common/digital_pass.png',
+                          width: 18,
+                          height: 18,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.qr_code_scanner_rounded,
+                            color: accentColor,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    userType == UserType.doctor
-                        ? 'Doctor Pass (QR)'
-                        : 'Health Pass ID',
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimaryOf(context),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Health Pass ID',
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimaryOf(context),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const PopupMenuDivider(),
-            PopupMenuItem<String>(
-              value: 'emergency',
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDC2626).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+              const PopupMenuDivider(),
+              PopupMenuItem<String>(
+                value: 'emergency',
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC2626).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.emergency_rounded,
+                          color: Color(0xFFDC2626), size: 18),
                     ),
-                    child: const Icon(Icons.emergency_rounded,
-                        color: Color(0xFFDC2626), size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Emergency SOS',
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFFDC2626),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Emergency SOS',
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFDC2626),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ];
+          },
         );
       },
     );

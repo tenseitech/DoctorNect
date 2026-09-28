@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../core/auth/demo_auth_config.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
 
@@ -94,7 +95,10 @@ class VerificationStatusBanner extends StatelessWidget {
         final data = snapshot.data!.data();
         if (data == null) return const SizedBox.shrink();
 
-        final verified = data['verified'] == true;
+        final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+        final isDemoDoctor =
+            role == UserType.doctor && DemoAuthConfig.isDemoDoctorPhone(mobile);
+        final verified = data['verified'] == true || isDemoDoctor;
         if (verified) return const SizedBox.shrink();
 
         final statusStr = data['verificationStatus'] as String? ??

@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/enums/user_type.dart';
+import '../../../core/firebase/firebase_bootstrap.dart';
 import '../../../core/firebase/firestore_screen_sync.dart';
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/location/location_match.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../pharmacy/data/medical_store_registry.dart';
 import '../../pharmacy/data/pharmacy_connection_store.dart';
 import '../../pharmacy/data/pharmacy_prescription_store.dart';
 import '../../pharmacy/models/pharmacy_models.dart';
@@ -32,7 +34,7 @@ class DoctorConnectedStoresScreen extends StatefulWidget {
 
 class _DoctorConnectedStoresScreenState
     extends State<DoctorConnectedStoresScreen> {
-  List<DoctorPartnerProfileItem> _searchResults = [];
+  String _searchQuery = '';
   StreamSubscription<List<PharmacyPrescriptionDelivery>>? _deliverySub;
 
   String? _doctorCity() => pharmacyCityFilter(
@@ -40,14 +42,12 @@ class _DoctorConnectedStoresScreenState
         address: DoctorProfileStore.instance.profile.addressLine1,
       );
 
-  @override
-  void initState() {
-    super.initState();
+  List<DoctorPartnerProfileItem> _cityStores() {
     final stores = PharmacyConnectionStore.instance.searchStores(
-      '',
+      _searchQuery,
       cityFilter: _doctorCity(),
     );
-    _searchResults = stores
+    return stores
         .map((s) => DoctorPartnerProfileItem(
               id: s.id,
               name: s.storeName,
@@ -62,28 +62,12 @@ class _DoctorConnectedStoresScreenState
   }
 
   void _searchStores(String query) {
-    final stores = PharmacyConnectionStore.instance.searchStores(
-      query,
-      cityFilter: _doctorCity(),
-    );
-    final mapped = stores
-        .map((s) => DoctorPartnerProfileItem(
-              id: s.id,
-              name: s.storeName,
-              ownerName: s.ownerName,
-              address: s.address,
-              phone: s.phone,
-              email: s.email,
-              city: s.city,
-              registrationNumber: s.drugLicenseNumber,
-            ))
-        .toList();
     if (!mounted) {
-      _searchResults = mapped;
+      _searchQuery = query;
       return;
     }
     setState(() {
-      _searchResults = mapped;
+      _searchQuery = query;
     });
   }
 
@@ -106,9 +90,15 @@ class _DoctorConnectedStoresScreenState
           'Connect with verified pharmacies to send digital prescriptions.',
       partnerTypeLabel: 'Medical Store',
       accentColor: AppColors.pharmacyGreen,
+      inlineCityDiscovery: true,
       showAppBar: widget.showAppBar,
       appBarTitle: widget.appBarTitle,
-      listenables: [connStore, prescStore],
+      listenables: [
+        connStore,
+        prescStore,
+        MedicalStoreRegistry.instance,
+        DoctorProfileStore.instance,
+      ],
       activeConnections: () => connStore
           .activeForDoctor(doctorId)
           .map((c) => DoctorPartnerConnectionItem(
@@ -139,7 +129,7 @@ class _DoctorConnectedStoresScreenState
                 respondedAt: c.respondedAt,
               ))
           .toList(),
-      searchResults: () => _searchResults,
+      searchResults: _cityStores,
       searchHintText: 'Store name, area, license no...',
       cityFilterLabel: _doctorCity,
       activitySubtitleBuilder: (partnerId) {
@@ -165,16 +155,6 @@ class _DoctorConnectedStoresScreenState
       onRevoke: (connectionId, _) => connStore.removeConnection(connectionId),
       onSendRequest: (partner) => connStore.sendRequestFromDoctor(
           doctorId: doctorId, storeId: partner.id),
-      onOpenAddPartner: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => const DoctorConnectedStoresScreen(
-              showAppBar: true,
-              appBarTitle: 'Add Medical Store',
-            ),
-          ),
-        );
-      },
       onOpenInviteSheet: () => InviteDoctorSheet.show(context),
       attachFirestoreSync: () {
         FirestoreScreenSync.attachPendingConnections(
@@ -188,6 +168,10 @@ class _DoctorConnectedStoresScreenState
             preferCache: true,
           ),
         );
+        if (FirebaseBootstrap.isReady) {
+          unawaited(
+              MedicalStoreRegistry.refreshFromFirestore(preferCache: true));
+        }
         _deliverySub?.cancel();
         _deliverySub = FirestoreService.instance.pharmacyFirestore
             .watchDeliveriesForDoctor(doctorId)

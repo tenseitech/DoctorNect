@@ -3,14 +3,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../core/auth/demo_auth_config.dart';
 import '../core/auth/profile_completion_service.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
+import '../core/firebase/firebase_bootstrap.dart';
 import '../core/firebase/firestore_paths.dart';
 import '../core/session/ambulance_session.dart';
+import '../core/session/doctor_session.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 import '../features/ambulance/ambulance_profile_screen.dart';
+import '../features/doctor/profile/data/doctor_profile_store.dart';
 import '../features/doctor/profile/doctor_profile_screen.dart';
 import '../features/lab/screens/lab_profile_screen.dart';
 import '../features/pharmacy/screens/store_profile_screen.dart';
@@ -191,7 +195,22 @@ class ProfileDataGate extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isProfileTab || role.isPatient) return child;
 
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final authPhone = FirebaseBootstrap.isReady
+        ? FirebaseAuth.instance.currentUser?.phoneNumber
+        : null;
+
+    final isDemoDoctor = role == UserType.doctor &&
+        (DemoAuthConfig.isDemoDoctorPhone(
+                DoctorProfileStore.instance.profile.mobile) ||
+            DemoAuthConfig.isDemoDoctorPhone(authPhone) ||
+            DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
+            DoctorSession.loggedInDoctorId
+                .contains(DemoAuthConfig.demoDoctorPhone));
+    if (isDemoDoctor) return child;
+
+    final uid = FirebaseBootstrap.isReady
+        ? FirebaseAuth.instance.currentUser?.uid
+        : null;
     if (uid == null || uid.isEmpty) {
       if (role.isAmbulance && AmbulanceSession.isLoggedIn) {
         // Ambulance might use session login; check ambulance store / doc
@@ -221,6 +240,7 @@ class ProfileDataGate extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == null) {
+          if (isDemoDoctor) return child;
           if (verificationPending) {
             return CompleteProfilePrompt(
               role: role,
@@ -231,9 +251,42 @@ class ProfileDataGate extends StatelessWidget {
         }
 
         final data = snapshot.data!.data();
-        if (data == null) return child;
+        if (data == null) {
+          if (isDemoDoctor) return child;
+          return child;
+        }
 
-        final isVerified = data['verified'] == true;
+        final mobile = data['mobile'] as String? ??
+            data['phone'] as String? ??
+            data['phoneNumber'] as String?;
+        final profileId = data['profileId'] as String? ?? '';
+        final email = data['email'] as String? ?? '';
+        final isDemo = role == UserType.doctor &&
+            (isDemoDoctor ||
+                DemoAuthConfig.isDemoDoctorPhone(mobile) ||
+                DemoAuthConfig.isDemoDoctorPhone(profileId) ||
+                profileId.contains(DemoAuthConfig.demoDoctorPhone) ||
+                (email.toLowerCase().contains('demo') &&
+                    email.toLowerCase().contains('doctor')));
+        if (isDemo) {
+          if (data['verified'] != true ||
+              data['verificationStatus'] != 'verified') {
+            FirebaseFirestore.instance
+                .collection(FirestorePaths.users)
+                .doc(uid)
+                .set({
+              'verified': true,
+              'verificationStatus': 'verified',
+              'status': 'approved',
+              'profileCompleted': true,
+            }, SetOptions(merge: true));
+          }
+          return child;
+        }
+
+        final isVerified = data['verified'] == true ||
+            data['verificationStatus'] == 'verified' ||
+            data['status'] == 'approved';
         if (isVerified) return child;
 
         final statusStr = data['verificationStatus'] as String? ??

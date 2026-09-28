@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../data/doctor_profile_store.dart';
@@ -113,6 +112,7 @@ class _ReviewsSectionState extends State<ReviewsSection> {
     final p = DoctorProfileStore.instance.profile;
     final breakdown = _breakdown;
     final maxCount = breakdown.values.fold<int>(0, (a, b) => a > b ? a : b);
+    final sortedReviews = _sortedReviews;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reviews')),
@@ -123,46 +123,87 @@ class _ReviewsSectionState extends State<ReviewsSection> {
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Rating Summary Stat Block
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: AppColors.cardBgOf(context),
-                          borderRadius:
-                              BorderRadius.circular(AppConstants.cardRadius),
+                          color: AppColors.surfaceOf(context),
+                          borderRadius: BorderRadius.circular(14),
                           border:
                               Border.all(color: AppColors.borderOf(context)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '${p.rating}',
-                              style: GoogleFonts.inter(
-                                  fontSize: AppTypography.displayLarge,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.doctorBlue),
-                            ),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(
-                                  5,
-                                  (i) => Icon(
-                                        i < p.rating.round()
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        color: const Color(0xFFF59E0B),
-                                        size: 18,
-                                      )),
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '${p.rating}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.displayLarge,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1.0,
+                                    color: AppColors.doctorBlue,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: List.generate(
+                                          5,
+                                          (i) => Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 2),
+                                            child: Icon(
+                                              i < p.rating.round()
+                                                  ? Icons.star_rounded
+                                                  : Icons.star_border_rounded,
+                                              color: const Color(0xFFF59E0B),
+                                              size: 20,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${p.reviewCount} total reviews',
+                                        style: GoogleFonts.inter(
+                                          fontSize: AppTypography.labelMedium,
+                                          color: AppColors.textSecondaryOf(
+                                              context),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text('${p.reviewCount} total reviews',
-                                style: GoogleFonts.inter(
-                                    fontSize: AppTypography.labelMedium,
-                                    color: AppColors.textSecondaryOf(context))),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
+                            Divider(
+                              height: 1,
+                              color: AppColors.borderOf(context),
+                            ),
+                            const SizedBox(height: 12),
                             ...List.generate(5, (i) {
                               final stars = 5 - i;
                               final count = breakdown[stars] ?? 0;
@@ -170,33 +211,46 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                   maxCount == 0 ? 0.0 : count / maxCount;
                               return Padding(
                                 padding:
-                                    const EdgeInsets.symmetric(vertical: 3),
+                                    const EdgeInsets.symmetric(vertical: 4.5),
                                 child: Row(
                                   children: [
                                     SizedBox(
-                                      width: 28,
-                                      child: Text('$stars★',
-                                          style: GoogleFonts.inter(
-                                              fontSize:
-                                                  AppTypography.labelSmall)),
-                                    ),
-                                    Expanded(
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: LinearProgressIndicator(
-                                          value: fraction,
-                                          minHeight: 8,
-                                          backgroundColor:
-                                              AppColors.borderOf(context),
-                                          color: AppColors.doctorBlue,
+                                      width: 30,
+                                      child: Text(
+                                        '$stars★',
+                                        style: GoogleFonts.inter(
+                                          fontSize: AppTypography.labelSmall,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textSecondaryOf(
+                                              context),
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text('$count',
+                                    Expanded(
+                                      child: LinearProgressIndicator(
+                                        value: fraction,
+                                        minHeight: 8,
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        backgroundColor:
+                                            AppColors.borderOf(context),
+                                        color: AppColors.doctorBlue,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    SizedBox(
+                                      width: 22,
+                                      child: Text(
+                                        '$count',
+                                        textAlign: TextAlign.right,
                                         style: GoogleFonts.inter(
-                                            fontSize:
-                                                AppTypography.labelSmall)),
+                                          fontSize: AppTypography.labelSmall,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textSecondaryOf(
+                                              context),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               );
@@ -204,7 +258,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
+                      // Consistent Pill Filter Chips
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
@@ -219,109 +274,226 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                               child: FilterChip(
                                 label: Text(label),
                                 selected: selected,
+                                showCheckmark: false,
                                 onSelected: (_) =>
                                     setState(() => _reviewSort = s),
-                                selectedColor: AppColors.doctorBlue
-                                    .withValues(alpha: 0.15),
-                                checkmarkColor: AppColors.doctorBlue,
+                                shape: const StadiumBorder(),
+                                side: BorderSide(
+                                  color: selected
+                                      ? AppColors.doctorBlue
+                                      : AppColors.borderOf(context),
+                                  width: 1.2,
+                                ),
+                                backgroundColor: AppColors.surfaceOf(context),
+                                selectedColor: AppColors.doctorBlue,
+                                labelStyle: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodySmall,
+                                  fontWeight: FontWeight.w600,
+                                  color: selected
+                                      ? Colors.white
+                                      : AppColors.textSecondaryOf(context),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 6,
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
                               ),
                             );
                           }).toList(),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      ..._sortedReviews.map((r) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardBgOf(context),
-                            borderRadius:
-                                BorderRadius.circular(AppConstants.cardRadius),
-                            border:
-                                Border.all(color: AppColors.borderOf(context)),
+                      const SizedBox(height: 10),
+                      // Review Cards List
+                      for (var idx = 0; idx < sortedReviews.length; idx++) ...[
+                        if (idx > 0)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Divider(
+                              height: 1,
+                              color: AppColors.borderOf(context)
+                                  .withValues(alpha: 0.6),
+                            ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(r.maskedName,
-                                        style: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w600)),
-                                  ),
-                                  Row(
-                                    children: List.generate(
-                                        5,
-                                        (i) => Icon(
-                                              i < r.rating
-                                                  ? Icons.star
-                                                  : Icons.star_border,
-                                              size: 14,
-                                              color: const Color(0xFFF59E0B),
-                                            )),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                DateFormat('dd MMM yyyy').format(r.date),
-                                style: GoogleFonts.inter(
-                                    fontSize: AppTypography.labelSmall,
-                                    color: AppColors.textSecondaryOf(context)),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(r.text,
-                                  style: GoogleFonts.inter(
-                                      fontSize: AppTypography.bodySmall,
-                                      height: 1.4)),
-                              if (r.doctorReply != null) ...[
-                                const SizedBox(height: 10),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.doctorBlue
-                                        .withValues(alpha: 0.06),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Your reply',
-                                          style: GoogleFonts.inter(
-                                              fontSize:
-                                                  AppTypography.labelSmall,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.doctorBlue)),
-                                      Text(r.doctorReply!,
-                                          style: GoogleFonts.inter(
-                                              fontSize:
-                                                  AppTypography.labelMedium)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () => _reply(r),
-                                  child: Text(r.doctorReply == null
-                                      ? 'Reply'
-                                      : 'Edit Reply'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
+                        _buildReviewCard(context, sortedReviews[idx]),
+                      ],
                     ],
                   ),
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildReviewCard(BuildContext context, PatientReview r) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceOf(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderOf(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _ReviewerAvatar(name: r.maskedName),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      r.maskedName,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textPrimaryOf(context),
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      DateFormat('dd MMM yyyy').format(r.date),
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelSmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  5,
+                  (i) => Icon(
+                    i < r.rating ? Icons.star : Icons.star_border,
+                    size: 14,
+                    color: const Color(0xFFF59E0B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (r.text.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              r.text,
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                height: 1.38,
+                color: AppColors.textPrimaryOf(context),
+              ),
+            ),
+          ],
+          if (r.doctorReply != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.doctorBlue.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your reply',
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.doctorBlue,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    r.doctorReply!,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton(
+              onPressed: () => _reply(r),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 30),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                foregroundColor: AppColors.doctorBlue,
+                side: BorderSide(
+                  color: AppColors.doctorBlue.withValues(alpha: 0.45),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                textStyle: GoogleFonts.inter(
+                  fontSize: AppTypography.labelSmall,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: Text(r.doctorReply == null ? 'Reply' : 'Edit Reply'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewerAvatar extends StatelessWidget {
+  const _ReviewerAvatar({required this.name});
+
+  final String name;
+
+  static const List<Color> _palette = [
+    AppColors.doctorBlue,
+    Color(0xFF0D9488),
+    Color(0xFF7C3AED),
+    Color(0xFFEA580C),
+    Color(0xFF16A34A),
+    Color(0xFFDB2777),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = name.trim();
+    final initial = trimmed.isNotEmpty ? trimmed[0].toUpperCase() : '?';
+    final hash = trimmed.codeUnits.fold<int>(0, (acc, c) => acc + c);
+    final color = _palette[hash % _palette.length];
+
+    return CircleAvatar(
+      radius: 18,
+      backgroundColor: color.withValues(alpha: 0.14),
+      child: Text(
+        initial,
+        style: GoogleFonts.inter(
+          fontSize: AppTypography.bodySmall,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
     );
   }
 }

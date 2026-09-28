@@ -65,31 +65,7 @@ class AmbulanceStore extends ChangeNotifier {
     final index = _providers.indexWhere((a) => a.id == ambulanceId);
     if (index >= 0) {
       final amb = _providers[index];
-      _providers[index] = RegisteredAmbulance(
-        id: amb.id,
-        serviceName: amb.serviceName,
-        ownerName: amb.ownerName,
-        driverName: amb.driverName,
-        phone: amb.phone,
-        vehicleNumber: amb.vehicleNumber,
-        ambulanceType: amb.ambulanceType,
-        city: amb.city,
-        username: amb.username,
-        serviceAreas: amb.serviceAreas,
-        baseAddress: amb.baseAddress,
-        licenseNumber: amb.licenseNumber,
-        insuranceNumber: amb.insuranceNumber,
-        hasOxygen: amb.hasOxygen,
-        hasVentilator: amb.hasVentilator,
-        hasStretcher: amb.hasStretcher,
-        is24x7: amb.is24x7,
-        ratePerKm: amb.ratePerKm,
-        pin: amb.pin,
-        totalRating: amb.totalRating,
-        ratingCount: amb.ratingCount,
-        available: available,
-        createdAt: amb.createdAt,
-      );
+      _providers[index] = amb.copyWith(available: available);
       notifyListeners();
     }
   }

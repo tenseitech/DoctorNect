@@ -45,6 +45,9 @@ class _ProfessionalDetailsSectionState
       _p.stateCouncil.trim().isEmpty ? null : _p.stateCouncil.trim();
   late bool _stateCouncilEditable = _p.stateCouncil.trim().isEmpty;
   late final _awards = TextEditingController(text: _p.awards);
+  late final _regCertCtrl =
+      TextEditingController(text: _p.registrationCertificate);
+  late final _idProofCtrl = TextEditingController(text: _p.idProof);
   late final List<String> _certs = List<String>.from(_p.certifications);
   late final List<String> _pubs = List<String>.from(_p.publications);
   late final bool _consultsAdultsOnly = _p.consultsAdultsOnly;
@@ -93,6 +96,8 @@ class _ProfessionalDetailsSectionState
     final councilWasEditable = _councilEditable;
     _p.councilNumber = _councilNumber.text.trim();
     _p.stateCouncil = _stateCouncil!.trim();
+    _p.registrationCertificate = _regCertCtrl.text.trim();
+    _p.idProof = _idProofCtrl.text.trim();
     _p.awards = _awards.text.trim();
     _p.certifications = List<String>.from(_certs);
     _p.publications = List<String>.from(_pubs);
@@ -124,6 +129,8 @@ class _ProfessionalDetailsSectionState
     _superSpecInput.dispose();
     _councilNumber.dispose();
     _awards.dispose();
+    _regCertCtrl.dispose();
+    _idProofCtrl.dispose();
     _certInput.dispose();
     _pubInput.dispose();
     super.dispose();
@@ -354,6 +361,27 @@ class _ProfessionalDetailsSectionState
                                       _markDirty();
                                     }
                                   : null,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _regCertCtrl,
+                              decoration: const InputDecoration(
+                                labelText:
+                                    'Registration Certificate (Document / Ref ID)',
+                                hintText:
+                                    'Certificate document name or reference number',
+                              ),
+                              onChanged: (_) => _markDirty(),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _idProofCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Identity Proof (Document / ID)',
+                                hintText:
+                                    'Government ID document or reference number',
+                              ),
+                              onChanged: (_) => _markDirty(),
                             ),
                             const SizedBox(height: 16),
                             Text('Additional certifications',

@@ -50,6 +50,8 @@ class DoctorProfileData {
     this.notificationChannels = const ['App', 'SMS'],
     this.twoFactorEnabled = false,
     this.recoveryEmail = '',
+    this.registrationCertificate = '',
+    this.idProof = '',
     this.reviews = const [],
   });
 
@@ -98,6 +100,8 @@ class DoctorProfileData {
   List<String> notificationChannels;
   bool twoFactorEnabled;
   String recoveryEmail;
+  String registrationCertificate;
+  String idProof;
   List<PatientReview> reviews;
 
   DoctorProfileData copy() {
@@ -147,6 +151,8 @@ class DoctorProfileData {
       notificationChannels: List<String>.from(notificationChannels),
       twoFactorEnabled: twoFactorEnabled,
       recoveryEmail: recoveryEmail,
+      registrationCertificate: registrationCertificate,
+      idProof: idProof,
       reviews: reviews.map((r) => r.copy()).toList(),
     );
   }

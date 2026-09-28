@@ -100,7 +100,8 @@ class _AmbulanceNotificationsScreenState
                       ],
                     ),
                   ),
-                  if (unreadCount > 0)
+                  if (unreadCount > 0) ...[
+                    const SizedBox(width: 8),
                     OutlinedButton(
                       onPressed: () {
                         AmbulanceStore.instance.markAlertsRead(ambulanceId);
@@ -109,16 +110,20 @@ class _AmbulanceNotificationsScreenState
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _accent,
                         side: const BorderSide(color: _accent),
+                        visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                            horizontal: 12, vertical: 10),
                       ),
                       child: Text(
                         'Mark all read',
+                        maxLines: 1,
+                        softWrap: false,
                         style: GoogleFonts.inter(
                             fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600),
                       ),
                     ),
+                  ],
                 ],
               ),
               const SizedBox(height: 16),

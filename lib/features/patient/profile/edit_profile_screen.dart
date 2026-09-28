@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import '../../../core/auth/contact_change_otp_service.dart';
 import '../../../core/auth/contact_change_verification.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/countries.dart';
 import '../../../core/constants/country_phone_codes.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
 import '../../../core/firebase/firestore_paths.dart';
@@ -91,9 +92,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (PatientSession.loggedInPatientId.isNotEmpty) {
       return PatientSession.loggedInPatientId;
     }
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.uid.isNotEmpty) {
-      return user.uid;
+    if (FirebaseBootstrap.isReady) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && user.uid.isNotEmpty) {
+        return user.uid;
+      }
     }
     return AppSession.patientId;
   }
@@ -127,14 +130,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (ProfileEditWidgets.bloodGroups.contains(blood)) {
       _selectedBloodGroup = blood;
     }
-    _country = PatientProfileMock.profileAddress.country.isNotEmpty
-        ? PatientProfileMock.profileAddress.country
+    _country = PatientProfileMock.profileAddress.country.trim().isNotEmpty
+        ? PatientProfileMock.profileAddress.country.trim()
+        : Countries.defaultCountry;
+    _state = PatientProfileMock.profileAddress.state.trim().isNotEmpty
+        ? PatientProfileMock.profileAddress.state.trim()
         : null;
-    _state = PatientProfileMock.profileAddress.state.isNotEmpty
-        ? PatientProfileMock.profileAddress.state
-        : null;
-    _city = PatientProfileMock.profileAddress.city.isNotEmpty
-        ? PatientProfileMock.profileAddress.city
+    _city = PatientProfileMock.profileAddress.city.trim().isNotEmpty
+        ? PatientProfileMock.profileAddress.city.trim()
         : null;
 
     _calculateBmi(notify: false);
@@ -568,13 +571,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     PatientProfileMock.profileAddress =
         PatientProfileMock.profileAddress.copyWith(
-      country: _country,
-      state: _state,
-      city: _city,
+      country: _country?.trim().isNotEmpty == true
+          ? _country!.trim()
+          : Countries.defaultCountry,
+      state: _state?.trim() ?? '',
+      city: _city?.trim() ?? '',
       addressLine1: _address1Controller.text.trim(),
       addressLine2: _address2Controller.text.trim(),
       pincode: _pincodeController.text.trim(),
     );
+    if (_city != null && _city!.trim().isNotEmpty) {
+      PatientProfileMock.profileCity = _city!.trim();
+    }
 
     try {
       await PatientProfileMock.persistCurrentProfile();
@@ -811,13 +819,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         initialCountry: _country,
                         initialState: _state,
                         initialCity: _city,
-                        onCountryChanged: (v) => setState(() => _country = v),
-                        onStateChanged: (v) => setState(() => _state = v),
+                        onCountryChanged: (v) => setState(() {
+                          _country = v;
+                          _state = null;
+                          _city = null;
+                        }),
+                        onStateChanged: (v) => setState(() {
+                          _state = v;
+                          _city = null;
+                        }),
                         onCityChanged: (v) => setState(() => _city = v),
                         address1Controller: _address1Controller,
                         address2Controller: _address2Controller,
                         pinCodeController: _pincodeController,
                         accentColor: AppColors.patientTeal,
+                        pinCodeRequired: false,
+                        addressLine1Required: false,
                       ),
                     ),
                   ],

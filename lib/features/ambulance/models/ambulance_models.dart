@@ -83,6 +83,7 @@ class RegisteredAmbulance {
     this.country = '',
     this.state = '',
     this.pincode = '',
+    this.verified = false,
   });
 
   final String id;
@@ -113,6 +114,7 @@ class RegisteredAmbulance {
   final String country;
   final String state;
   final String pincode;
+  final bool verified;
 
   double get averageRating => ratingCount > 0 ? totalRating / ratingCount : 0.0;
 
@@ -144,6 +146,7 @@ class RegisteredAmbulance {
     String? country,
     String? state,
     String? pincode,
+    bool? verified,
   }) {
     return RegisteredAmbulance(
       id: id,
@@ -174,6 +177,7 @@ class RegisteredAmbulance {
       country: country ?? this.country,
       state: state ?? this.state,
       pincode: pincode ?? this.pincode,
+      verified: verified ?? this.verified,
     );
   }
 
@@ -206,6 +210,7 @@ class RegisteredAmbulance {
         'totalRating': totalRating,
         'ratingCount': ratingCount,
         'isAvailable': available,
+        'verified': verified,
         'createdAt': createdAt?.toIso8601String(),
         'address': {
           'addressLine1': addressLine1,
@@ -266,6 +271,7 @@ class RegisteredAmbulance {
       totalRating: (data['totalRating'] as num?)?.toDouble() ?? 0.0,
       ratingCount: data['ratingCount'] as int? ?? 0,
       available: data['isAvailable'] as bool? ?? true,
+      verified: data['verified'] as bool? ?? false,
       addressLine1: aLine1,
       addressLine2: aLine2,
       country: aCountry,

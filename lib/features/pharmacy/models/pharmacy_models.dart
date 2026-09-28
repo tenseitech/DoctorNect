@@ -24,6 +24,7 @@ class MedicalStoreProfile {
     this.country = '',
     this.state = '',
     this.pincode = '',
+    this.verified = false,
   });
 
   final String id;
@@ -40,6 +41,7 @@ class MedicalStoreProfile {
   final String country;
   final String state;
   final String pincode;
+  final bool verified;
 
   MedicalStoreProfile copyWith({
     String? storeName,
@@ -56,6 +58,7 @@ class MedicalStoreProfile {
     String? country,
     String? state,
     String? pincode,
+    bool? verified,
   }) {
     return MedicalStoreProfile(
       id: id,
@@ -72,6 +75,7 @@ class MedicalStoreProfile {
       country: country ?? this.country,
       state: state ?? this.state,
       pincode: pincode ?? this.pincode,
+      verified: verified ?? this.verified,
     );
   }
 }

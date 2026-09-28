@@ -42,13 +42,6 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
     required String regNumber,
     required String stateCouncil,
   }) async {
-    if (isDoctor) {
-      await Share.share(
-        'Dr. $name — Council Reg: $regNumber ($stateCouncil). Verified via DoctorNect.',
-      );
-      return;
-    }
-
     if (_sharingPass) return;
     setState(() => _sharingPass = true);
 
@@ -69,18 +62,30 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
         throw StateError('Could not encode pass card image');
       }
 
+      final fileName = isDoctor
+          ? 'doctornect_doctor_pass.png'
+          : 'doctornect_health_pass.png';
+      final shareText = isDoctor
+          ? '$name — Council Reg: $regNumber ($stateCouncil). Verified DoctorNect Pass ✅'
+          : 'My DoctorNect Health Pass — Verified ✅';
+
       final xFile = XFile.fromData(
         byteData.buffer.asUint8List(),
         mimeType: 'image/png',
-        name: 'doctornect_health_pass.png',
+        name: fileName,
       );
       await Share.shareXFiles(
         [xFile],
-        text: 'My DoctorNect Health Pass — Verified ✅',
+        text: shareText,
       );
     } catch (_) {
       if (mounted) {
-        AppToast.info(context, 'Could not share health pass image');
+        AppToast.info(
+          context,
+          isDoctor
+              ? 'Could not share credentials pass image'
+              : 'Could not share health pass image',
+        );
       }
     } finally {
       if (mounted) {
@@ -97,9 +102,11 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
     final patientProfile = PatientProfileMock.profile;
 
     final name = isDoctor
-        ? (doctorProfile.fullName.isEmpty
+        ? (doctorProfile.fullName.trim().isEmpty
             ? 'Dr. Doctor'
-            : 'Dr. ${doctorProfile.fullName}')
+            : (doctorProfile.fullName.trim().toLowerCase().startsWith('dr.')
+                ? doctorProfile.fullName.trim()
+                : 'Dr. ${doctorProfile.fullName.trim()}'))
         : (patientProfile.name.isEmpty ? 'Patient' : patientProfile.name);
 
     final subtitle = isDoctor
@@ -122,155 +129,118 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
 
     final accent = isDoctor ? AppColors.doctorBlue : AppColors.patientTeal;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: AppColors.borderOf(context),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                isDoctor
-                    ? 'Digital Doctor Credentials Pass'
-                    : 'Digital Health Card ID',
-                style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineSmall,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimaryOf(context),
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surfaceOf(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.borderOf(context),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          RepaintBoundary(
-            key: _passCardBoundaryKey,
-            child: _DoctorNectPassCard(
-              isDoctor: isDoctor,
-              name: name,
-              subtitle: subtitle,
-              regNumber: regNumber,
-              stateCouncil: stateCouncil,
-              accent: accent,
             ),
-          ),
-          const SizedBox(height: 24),
-          if (isDoctor) ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.cardBgOf(context),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderOf(context)),
-              ),
-              child: Row(
-                children: [
-                  CustomPaint(
-                    size: const Size(80, 80),
-                    painter: _QrCanvasPainter(
-                        color: AppColors.textPrimaryOf(context)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Scan to Verify Pass',
-                          style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodyMedium,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimaryOf(context),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Allows patients and pharmacies to quickly verify doctor registration & credentials.',
-                          style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context),
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    isDoctor
+                        ? 'Digital Doctor Credentials Pass'
+                        : 'Digital Health Card ID',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryOf(context),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _sharingPass
-                      ? null
-                      : () => _sharePass(
-                            isDoctor: isDoctor,
-                            name: name,
-                            subtitle: subtitle,
-                            regNumber: regNumber,
-                            stateCouncil: stateCouncil,
-                          ),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                    side: BorderSide(color: accent),
-                    foregroundColor: accent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: _sharingPass
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: accent,
-                          ),
-                        )
-                      : const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Share Pass'),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () => Navigator.pop(context),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: accent,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Done'),
                 ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            RepaintBoundary(
+              key: _passCardBoundaryKey,
+              child: _DoctorNectPassCard(
+                isDoctor: isDoctor,
+                name: name,
+                subtitle: subtitle,
+                regNumber: regNumber,
+                stateCouncil: stateCouncil,
+                accent: accent,
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _sharingPass
+                        ? null
+                        : () => _sharePass(
+                              isDoctor: isDoctor,
+                              name: name,
+                              subtitle: subtitle,
+                              regNumber: regNumber,
+                              stateCouncil: stateCouncil,
+                            ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                      side: BorderSide(color: accent),
+                      foregroundColor: accent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: _sharingPass
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: accent,
+                            ),
+                          )
+                        : const Icon(Icons.share_outlined, size: 18),
+                    label: const Text('Share Pass'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: accent,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Done'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -425,52 +395,67 @@ class _DoctorNectPassCard extends StatelessWidget {
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isDoctor ? 'REGISTRATION NO.' : 'DETAILS',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.65),
-                            letterSpacing: 0.8,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isDoctor ? 'REGISTRATION NO.' : 'DETAILS',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.65),
+                              letterSpacing: 0.8,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          regNumber,
-                          style: GoogleFonts.inter(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                          const SizedBox(height: 2),
+                          Text(
+                            regNumber,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          isDoctor ? 'COUNCIL' : 'GENDER/AGE',
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.65),
-                            letterSpacing: 0.8,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            isDoctor ? 'COUNCIL' : 'GENDER/AGE',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.65),
+                              letterSpacing: 0.8,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          stateCouncil,
-                          style: GoogleFonts.inter(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                          const SizedBox(height: 2),
+                          Text(
+                            stateCouncil,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: GoogleFonts.inter(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -481,51 +466,4 @@ class _DoctorNectPassCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _QrCanvasPainter extends CustomPainter {
-  _QrCanvasPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final tileSize = size.width / 7;
-
-    // Corner Finder Patterns
-    void drawFinder(double x, double y) {
-      canvas.drawRect(Rect.fromLTWH(x, y, tileSize * 2, tileSize * 2), paint);
-      final whitePaint = Paint()..color = Colors.white;
-      canvas.drawRect(
-        Rect.fromLTWH(
-            x + tileSize * 0.5, y + tileSize * 0.5, tileSize, tileSize),
-        whitePaint,
-      );
-    }
-
-    drawFinder(0, 0);
-    drawFinder(size.width - tileSize * 2, 0);
-    drawFinder(0, size.height - tileSize * 2);
-
-    // Random Data Pixels for QR simulation
-    final positions = [
-      Offset(tileSize * 3, tileSize * 1),
-      Offset(tileSize * 4, tileSize * 2),
-      Offset(tileSize * 2, tileSize * 4),
-      Offset(tileSize * 5, tileSize * 5),
-      Offset(tileSize * 3, tileSize * 3),
-      Offset(tileSize * 6, tileSize * 4),
-      Offset(tileSize * 4, tileSize * 6),
-      Offset(tileSize * 5, tileSize * 3),
-    ];
-
-    for (final pos in positions) {
-      canvas.drawRect(
-          Rect.fromLTWH(pos.dx, pos.dy, tileSize * 0.8, tileSize * 0.8), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

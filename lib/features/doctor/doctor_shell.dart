@@ -1,13 +1,19 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
+import '../../core/auth/demo_auth_config.dart';
 import '../../core/auth/profile_completion_service.dart';
 import '../../core/auth/role_session_guard.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/firebase_auth_service.dart';
+import '../../core/firebase/firebase_bootstrap.dart';
+import '../../core/firebase/firestore_paths.dart';
 import '../../core/firebase/firestore_screen_sync.dart';
+import '../../core/session/app_session.dart';
 import '../../core/session/doctor_session.dart';
 
 import '../../core/notifications/app_notification.dart';
@@ -60,23 +66,9 @@ class _DoctorShellState extends State<DoctorShell> {
       selectedIcon: Icon(TablerIcons.users, size: 22),
       label: 'Patients',
     ),
-    NavigationDestination(
-      icon: Image.asset(
-        'assets/icons/doctor/appointment.png',
-        width: 22,
-        height: 22,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) =>
-            const Icon(TablerIcons.calendar, size: 22),
-      ),
-      selectedIcon: Image.asset(
-        'assets/icons/doctor/appointment.png',
-        width: 22,
-        height: 22,
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) =>
-            const Icon(TablerIcons.calendar_filled, size: 22),
-      ),
+    const NavigationDestination(
+      icon: Icon(TablerIcons.calendar, size: 22),
+      selectedIcon: Icon(TablerIcons.calendar_filled, size: 22),
       label: 'Appointments',
     ),
     const NavigationDestination(
@@ -118,9 +110,56 @@ class _DoctorShellState extends State<DoctorShell> {
     }
   }
 
+  bool get _isDemoDoctor {
+    final authPhone = FirebaseBootstrap.isReady
+        ? FirebaseAuth.instance.currentUser?.phoneNumber
+        : null;
+    return DemoAuthConfig.isDemoDoctorPhone(
+            DoctorProfileStore.instance.profile.mobile) ||
+        DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
+        DemoAuthConfig.isDemoDoctorPhone(AppSession.doctorId) ||
+        DoctorSession.loggedInDoctorId
+            .contains(DemoAuthConfig.demoDoctorPhone) ||
+        AppSession.doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
+        DemoAuthConfig.isDemoDoctorPhone(authPhone);
+  }
+
+  void _ensureDemoDoctorVerified() {
+    if (!FirebaseBootstrap.isReady || !_isDemoDoctor) return;
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null && uid.isNotEmpty) {
+        FirebaseFirestore.instance
+            .collection(FirestorePaths.users)
+            .doc(uid)
+            .set({
+          'verified': true,
+          'verificationStatus': 'verified',
+          'status': 'approved',
+          'profileCompleted': true,
+        }, SetOptions(merge: true));
+      }
+      final doctorId = DoctorSession.loggedInDoctorId.isNotEmpty
+          ? DoctorSession.loggedInDoctorId
+          : AppSession.doctorId;
+      if (doctorId.isNotEmpty) {
+        FirebaseFirestore.instance
+            .collection(FirestorePaths.doctors)
+            .doc(doctorId)
+            .set({
+          'verified': true,
+          'verificationStatus': 'verified',
+          'status': 'approved',
+          'profileCompleted': true,
+        }, SetOptions(merge: true));
+      }
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
+    _ensureDemoDoctorVerified();
     _pageController.addListener(_onPageScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       RoleSessionGuard.verifyRole(context, UserType.doctor);
@@ -130,8 +169,10 @@ class _DoctorShellState extends State<DoctorShell> {
   }
 
   void _attachConnectionListeners() {
-    if (!ProfileCompletionService.instance.isComplete) return;
-    if (widget.verificationPending) return;
+    if (!_isDemoDoctor) {
+      if (!ProfileCompletionService.instance.isComplete) return;
+      if (widget.verificationPending) return;
+    }
     final doctorId = DoctorSession.loggedInDoctorId;
     if (doctorId.isEmpty) return;
     FirestoreScreenSync.attachPendingConnections(
@@ -329,7 +370,7 @@ class _DoctorShellState extends State<DoctorShell> {
       default:
         return const SizedBox.shrink();
     }
-    if (index == 0) {
+    if (index == 0 || _isDemoDoctor) {
       return tab;
     }
     return ProfileDataGate(
@@ -366,7 +407,7 @@ class _DoctorShellState extends State<DoctorShell> {
               selectedIndex: _index,
               onDestinationSelected: _onTabSelected,
               accentColor: AppColors.doctorBlue,
-              filledActiveTabs: true,
+              filledActiveTabs: false,
               showMobileTopBar: false,
               destinations: _destinations,
               requestDots: _requestDots(doctorId),

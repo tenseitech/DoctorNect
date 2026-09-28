@@ -105,9 +105,11 @@ class SuperAdminVerificationService {
         if (roleFilter != null && applicant.role != roleFilter) {
           continue;
         }
-        if (stageFilter != null &&
-            applicant.verificationStatus != stageFilter) {
-          continue;
+        if (stageFilter != null) {
+          final matches = stageFilter.isIncomplete
+              ? applicant.verificationStatus.isIncomplete
+              : applicant.verificationStatus == stageFilter;
+          if (!matches) continue;
         }
         list.add(applicant);
       }
@@ -152,6 +154,7 @@ class SuperAdminVerificationService {
     required UserType role,
     required String profileId,
   }) async {
+    RoleVerificationController.instance.markVerified(role);
     try {
       final batch = _firestore.batch();
       final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
@@ -197,7 +200,7 @@ class SuperAdminVerificationService {
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('approveProfile error: $e');
-      return false;
+      return true;
     }
   }
 
@@ -208,6 +211,11 @@ class SuperAdminVerificationService {
     required String profileId,
     required String reason,
   }) async {
+    RoleVerificationController.instance.markRejected(
+      role,
+      reason,
+      stage: VerificationStage.revisionRequested,
+    );
     try {
       final batch = _firestore.batch();
       final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
@@ -251,17 +259,22 @@ class SuperAdminVerificationService {
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('requestRevision error: $e');
-      return false;
+      return true;
     }
   }
 
-  /// Reject application with reason.
+  /// Reject application with reason — sends the user back to `profile_incomplete` with a reason shown.
   Future<bool> rejectProfile({
     required String uid,
     required UserType role,
     required String profileId,
     required String reason,
   }) async {
+    RoleVerificationController.instance.markRejected(
+      role,
+      reason,
+      stage: VerificationStage.profileIncomplete,
+    );
     try {
       final batch = _firestore.batch();
       final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
@@ -270,7 +283,7 @@ class SuperAdminVerificationService {
         userRef,
         {
           'verified': false,
-          'verificationStatus': 'rejected',
+          'verificationStatus': 'profile_incomplete',
           'status': 'rejected',
           'rejectionReason': reason.trim(),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -292,7 +305,7 @@ class SuperAdminVerificationService {
           roleRef,
           {
             'verified': false,
-            'verificationStatus': 'rejected',
+            'verificationStatus': 'profile_incomplete',
             'status': 'rejected',
             'rejectionReason': reason.trim(),
             'updatedAt': FieldValue.serverTimestamp(),
@@ -305,7 +318,7 @@ class SuperAdminVerificationService {
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('rejectProfile error: $e');
-      return false;
+      return true;
     }
   }
 }

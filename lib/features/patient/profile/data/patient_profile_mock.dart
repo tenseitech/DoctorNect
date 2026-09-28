@@ -40,8 +40,6 @@ class PatientProfileMock {
     check(profileAddress.country.isNotEmpty);
     check(profileAddress.state.isNotEmpty);
     check(profileAddress.city.isNotEmpty);
-    check(profileAddress.addressLine1.isNotEmpty);
-    check(profileAddress.pincode.isNotEmpty);
 
     if (total == 0) return 0;
     return ((completed / total) * 100).round();
@@ -448,21 +446,31 @@ class PatientProfileMock {
     required String mobile,
     required String email,
     required String city,
+    String? bloodGroup,
     String? state,
     String? country,
+    String? addressLine1,
+    String? addressLine2,
+    String? pincode,
     String? invitedDoctorId,
   }) {
     profile.name = name;
     profile.age = age;
     profile.gender = gender;
+    if (bloodGroup != null && bloodGroup.isNotEmpty) {
+      profile.bloodGroup = bloodGroup;
+    }
     profile.mobile = mobile;
     profile.email = email;
     profile.photoInitial = name.isNotEmpty ? name[0].toUpperCase() : 'P';
     profileCity = city;
     profileAddress = PatientAddress(
+      addressLine1: addressLine1 ?? '',
+      addressLine2: addressLine2 ?? '',
       city: city,
       state: state ?? '',
       country: country ?? '',
+      pincode: pincode ?? '',
     );
     PatientProfileMock.invitedDoctorId = invitedDoctorId;
     PatientSession.setPatient(id: id, name: name);

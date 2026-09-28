@@ -18,6 +18,7 @@ import '../security/abuse_protection_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
 import '../auth/profile_completion_service.dart';
+import '../auth/verification_lifecycle.dart';
 import '../enums/user_type.dart';
 import '../data/shared_appointments_store.dart';
 import '../notifications/app_notification.dart';
@@ -739,16 +740,6 @@ class FirebaseAuthService {
       return profile.role;
     }
 
-    final approved = await FirestoreService.instance.roleAccount.isVerified(
-      profile.role,
-      profile.profileId,
-      preferCache: true,
-    );
-    if (!approved) {
-      await _auth.signOut();
-      return null;
-    }
-
     await _applyProfile(profile,
         awaitPrefetch: false, deferPatientProfile: true);
     return profile.role;
@@ -766,6 +757,7 @@ class FirebaseAuthService {
     PatientProfileMock.resetNotificationPrefsSession();
     DoctorProfileStore.resetNotificationPrefsSession();
     InAppNotificationService.instance.clearSessionState();
+    RoleVerificationController.instance.reset();
     AppSession.clear();
     await SessionExpiry.clear();
     if (FirebaseBootstrap.isReady) {
@@ -833,6 +825,19 @@ class FirebaseAuthService {
     bool deferPatientProfile = false,
   }) async {
     AppSession.clear();
+    if (profile.role != UserType.patient &&
+        profile.role != UserType.superAdmin) {
+      final resolvedStage = profile.verificationStatus != null
+          ? VerificationStage.fromString(profile.verificationStatus)
+          : VerificationStage.profileIncomplete;
+      RoleVerificationController.instance.setRoleState(
+        profile.role,
+        stage: resolvedStage == VerificationStage.registered
+            ? VerificationStage.profileIncomplete
+            : resolvedStage,
+        rejectionReason: profile.rejectionReason,
+      );
+    }
     var skipPrefetch = false;
     switch (profile.role) {
       case UserType.superAdmin:

@@ -21,6 +21,8 @@ class RegistrationAddressSection extends StatefulWidget {
     this.initialCountry,
     this.initialState,
     this.initialCity,
+    this.pinCodeRequired = true,
+    this.addressLine1Required = true,
   });
 
   final ValueChanged<String?> onCountryChanged;
@@ -34,6 +36,8 @@ class RegistrationAddressSection extends StatefulWidget {
   final String? initialCountry;
   final String? initialState;
   final String? initialCity;
+  final bool pinCodeRequired;
+  final bool addressLine1Required;
 
   @override
   State<RegistrationAddressSection> createState() =>
@@ -133,7 +137,10 @@ class _RegistrationAddressSectionState
         const SizedBox(height: 16),
         TextFormField(
           controller: widget.pinCodeController,
-          decoration: _decor(WorldLocations.postalCodeLabel(_selectedCountry)),
+          decoration: _decor(
+            WorldLocations.postalCodeLabel(_selectedCountry),
+            isRequired: widget.pinCodeRequired,
+          ),
           keyboardType: _selectedCountry.toLowerCase() == 'india'
               ? TextInputType.number
               : TextInputType.text,
@@ -146,16 +153,23 @@ class _RegistrationAddressSectionState
               : [
                   LengthLimitingTextInputFormatter(10),
                 ],
-          validator: (v) =>
-              FormValidators.pincode(v, country: _selectedCountry),
+          validator: (v) => widget.pinCodeRequired
+              ? FormValidators.pincode(v, country: _selectedCountry)
+              : FormValidators.optionalPincode(v, country: _selectedCountry),
         ),
         const SizedBox(height: 16),
         TextFormField(
           controller: widget.address1Controller,
-          decoration: _decor('Address Line 1'),
+          decoration: _decor(
+            'Address Line 1',
+            isRequired: widget.addressLine1Required,
+          ),
           textInputAction: TextInputAction.next,
-          validator: (v) =>
-              (v == null || v.trim().isEmpty) ? 'Enter address line 1' : null,
+          validator: widget.addressLine1Required
+              ? (v) => (v == null || v.trim().isEmpty)
+                  ? 'Enter address line 1'
+                  : null
+              : null,
         ),
         const SizedBox(height: 16),
         TextFormField(

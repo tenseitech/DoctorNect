@@ -43,34 +43,10 @@ class WelcomeScreen extends StatelessWidget {
   final bool isNewUser;
 
   void _openUnifiedAuth(BuildContext context, UserType role, Color accent) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const UnifiedAuthIntroScreen(),
-      ),
-    );
+    openUnifiedAuthIntro(context, role: role, accentColor: accent);
   }
 
   void _onSelectRoleForNewUser(BuildContext context, UserType role) {
-    if (role == UserType.superAdmin) {
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Admin Access'),
-          content: const Text(
-            'Administrator accounts cannot be self-registered. '
-            'Please contact the platform administrator to provision access.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
     final digits = verifiedMobile;
     if (digits == null || digits.isEmpty) {
       _openUnifiedAuth(context, role, AppColors.doctorBlue);
@@ -149,16 +125,6 @@ class WelcomeScreen extends StatelessWidget {
                   context, UserType.ambulance, const Color(0xFFDC2626));
             }
           },
-        ),
-        _WelcomeRoleOption(
-          title: 'Admin / Super Admin',
-          subtitle: 'Platform oversight & verification management',
-          color: const Color(0xFF4F46E5),
-          icon: Icons.admin_panel_settings_rounded,
-          onTap: () => isNewUser
-              ? _onSelectRoleForNewUser(context, UserType.superAdmin)
-              : _openUnifiedAuth(
-                  context, UserType.superAdmin, const Color(0xFF4F46E5)),
         ),
       ];
 

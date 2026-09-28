@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../core/auth/demo_auth_config.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
 
@@ -128,14 +129,17 @@ class _VerificationSubmissionCardState
           return const SizedBox.shrink();
         }
         final data = snapshot.data!.data() ?? {};
-        final isVerified = data['verified'] == true;
+        final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+        final isDemoDoctor = widget.role == UserType.doctor &&
+            DemoAuthConfig.isDemoDoctorPhone(mobile);
+        final isVerified = data['verified'] == true || isDemoDoctor;
         final statusStr = data['verificationStatus'] as String? ??
             data['status'] as String? ??
             'registered';
         final stage = isVerified
             ? VerificationStage.verified
             : VerificationStage.fromString(statusStr);
-        final reason = data['rejectionReason'] as String?;
+        final reason = isDemoDoctor ? null : data['rejectionReason'] as String?;
 
         return _buildCard(context, uid, profileId, stage, reason);
       },

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../auth/demo_auth_config.dart';
 import '../../enums/user_type.dart';
 
 class DoctorNectUserProfile {
@@ -32,15 +33,21 @@ class DoctorNectUserProfile {
       return null;
     }
 
+    final role = _roleFromString(data['role'] as String? ?? '');
+    final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+    final isDemoDoctor =
+        role == UserType.doctor && DemoAuthConfig.isDemoDoctorPhone(mobile);
+
     return DoctorNectUserProfile(
       uid: uid,
-      role: _roleFromString(data['role'] as String? ?? ''),
+      role: role,
       profileId: data['profileId'] as String? ?? '',
       displayName: data['displayName'] as String? ?? '',
       email: data['email'] as String? ?? '',
-      mobile: data['mobile'] as String?,
-      verificationStatus: data['verificationStatus'] as String?,
-      rejectionReason: data['rejectionReason'] as String?,
+      mobile: mobile,
+      verificationStatus:
+          isDemoDoctor ? 'verified' : data['verificationStatus'] as String?,
+      rejectionReason: isDemoDoctor ? null : data['rejectionReason'] as String?,
       submittedAt: parseTimestamp(data['submittedAt']),
     );
   }

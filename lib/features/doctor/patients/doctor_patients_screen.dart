@@ -117,8 +117,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
   Widget build(BuildContext context) {
     final wide = !ResponsiveLayout.isCompact(context);
     final horizontalPadding = wide ? 24.0 : 16.0;
-    final fabBottom = wide ? 16.0 : 80.0;
-    final fabClearance = _fabMenuOpen ? 200.0 : 72.0;
+    final fabBottom = wide ? 16.0 : 96.0;
 
     return ColoredBox(
       color: wide ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
@@ -174,11 +173,13 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                                     return RefreshIndicator(
                                       onRefresh: _ensureLoaded,
                                       child: ListView.builder(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
                                         padding: EdgeInsets.fromLTRB(
                                           horizontalPadding,
                                           12,
                                           horizontalPadding,
-                                          wide ? 20 : fabClearance + fabBottom,
+                                          wide ? 24.0 : 180.0,
                                         ),
                                         itemCount: patients.length,
                                         itemBuilder: (context, index) {

@@ -270,11 +270,15 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
         name: name,
         age: age,
         gender: _gender ?? 'Female',
+        bloodGroup: _bloodGroup ?? 'O+',
         mobile: mobile,
         email: storedEmail ?? '',
         city: _city?.trim() ?? '',
-        state: _state,
-        country: _country,
+        state: _state?.trim(),
+        country: _country?.trim(),
+        addressLine1: _address1Controller.text.trim(),
+        addressLine2: _address2Controller.text.trim(),
+        pincode: _pincodeController.text.trim(),
         invitedDoctorId: invitedDoctorId,
       );
       PendingDoctorInviteStore.clear();
@@ -669,6 +673,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       address2Controller: _address2Controller,
                       pinCodeController: _pincodeController,
                       accentColor: accent,
+                      pinCodeRequired: false,
+                      addressLine1Required: false,
                     ),
                     if (_locationError != null)
                       Padding(

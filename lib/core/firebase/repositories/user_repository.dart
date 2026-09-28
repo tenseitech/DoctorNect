@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../auth/demo_auth_config.dart';
 import '../../enums/user_type.dart';
 import '../../validators/form_validators.dart';
 import '../firestore_paths.dart';
@@ -36,6 +37,14 @@ class UserRepository {
     final userRef = _db.collection(FirestorePaths.users).doc(user.uid);
     final normalizedMobile =
         mobile == null ? null : FormValidators.mobileDigits(mobile);
+    final isDemoDoctor = role == UserType.doctor &&
+        (DemoAuthConfig.isDemoDoctorPhone(normalizedMobile) ||
+            DemoAuthConfig.isDemoDoctorPhone(mobile));
+    final requiresVerification = (role == UserType.doctor ||
+            role == UserType.medicalStore ||
+            role == UserType.lab ||
+            role == UserType.ambulance) &&
+        !isDemoDoctor;
     await userRef.set({
       'role': switch (role) {
         UserType.superAdmin => 'super_admin',
@@ -51,13 +60,15 @@ class UserRepository {
           ? user.email
           : roleData?['email'] as String?),
       if (normalizedMobile != null) 'mobile': normalizedMobile,
-      if (mobileVerified) ...{
+      if (mobileVerified || isDemoDoctor) ...{
         'mobileVerified': true,
         'mobileVerifiedAt': FieldValue.serverTimestamp(),
       },
-      'verified': role == UserType.doctor ? false : true,
-      'status': role == UserType.doctor ? 'pending_review' : 'approved',
-      'profileCompleted': false,
+      'verified': !requiresVerification,
+      'verificationStatus':
+          requiresVerification ? 'profile_incomplete' : 'verified',
+      'status': requiresVerification ? 'pending_review' : 'approved',
+      'profileCompleted': isDemoDoctor ? true : false,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -140,6 +151,14 @@ class UserRepository {
       ),
       if (data['mobile'] is String) 'mobile': data['mobile'],
       if (data['phone'] is String) 'mobile': data['phone'],
+      if (expectedRole == UserType.doctor &&
+          DemoAuthConfig.isDemoDoctorPhone(
+              data['mobile'] as String? ?? data['phone'] as String?)) ...{
+        'verified': true,
+        'verificationStatus': 'verified',
+        'status': 'approved',
+        'profileCompleted': true,
+      },
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });

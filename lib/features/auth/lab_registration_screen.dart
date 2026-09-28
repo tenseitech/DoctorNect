@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/auth/registration_credentials.dart';
 import '../../core/auth/registration_otp_service.dart';
+import '../../core/auth/verification_lifecycle.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/firebase_auth_service.dart';
 import '../../core/firebase/firebase_bootstrap.dart';
@@ -9,6 +10,7 @@ import '../../core/notifications/app_toast.dart';
 import '../../core/session/lab_session.dart';
 import '../../core/validators/form_validators.dart';
 import '../dashboard/dashboard_shell.dart';
+import '../lab/data/lab_registry.dart';
 import 'widgets/simple_role_registration_form.dart';
 
 class LabRegistrationScreen extends StatelessWidget {
@@ -32,7 +34,13 @@ class LabRegistrationScreen extends StatelessWidget {
     final mobileDigits = FormValidators.mobileDigits(mobile) ?? '';
     final email = RegistrationCredentials.emailForMobile(mobileDigits);
     final password = RegistrationCredentials.generatePassword();
-    final labId = 'lab${DateTime.now().millisecondsSinceEpoch}';
+    final labId = LabRegistry.register(
+      labName: '$name Lab',
+      address: '',
+      licenseNumber: '',
+      phone: mobile,
+      email: email,
+    );
 
     final result = await FirebaseAuthService.instance.registerProfile(
       role: UserType.lab,
@@ -51,7 +59,7 @@ class LabRegistrationScreen extends StatelessWidget {
         'phone': mobile,
         'email': email,
         'verified': false,
-        'verificationStatus': 'registered',
+        'verificationStatus': 'profile_incomplete',
         'status': 'pending_review',
         'profileCompleted': false,
       },
@@ -64,6 +72,10 @@ class LabRegistrationScreen extends StatelessWidget {
     }
 
     LabSession.setLab(id: labId, name: name);
+    RoleVerificationController.instance.setRoleState(
+      UserType.lab,
+      stage: VerificationStage.profileIncomplete,
+    );
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => const DashboardShell(userType: UserType.lab),

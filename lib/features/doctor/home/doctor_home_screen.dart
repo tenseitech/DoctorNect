@@ -42,6 +42,8 @@ import 'widgets/doctor_date_patient_list.dart';
 import 'widgets/doctor_referred_patients_screen.dart';
 import 'widgets/patient_picker_sheet.dart';
 import 'widgets/doctor_global_search_sheet.dart';
+import '../../../widgets/digital_health_card_sheet.dart';
+import '../../../widgets/emergency_sos_sheet.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({
@@ -306,12 +308,17 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
       return;
     }
 
+    final patientCount = DoctorPatientsService.summariesForDoctor(
+      DoctorSession.loggedInDoctorId,
+    ).length;
+
     final picked = await PatientPickerSheet.show(
       context,
       title: 'Reschedule Appointment',
       subtitle: 'Search and pick an appointment',
       appointments: reschedulable,
       showAppointmentDate: true,
+      maxVisibleItems: patientCount > 0 ? patientCount : null,
     );
     if (picked == null || !mounted) return;
 
@@ -360,6 +367,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         value: '${stats.pending}',
         gradient: const [Color(0xFFEA580C), Color(0xFFC2410C)],
         icon: TablerIcons.clock,
+        assetPath: 'assets/icons/doctor/pending.png',
         onTap: () {
           Navigator.push(
             context,
@@ -377,6 +385,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         value: '${stats.completed}',
         gradient: const [Color(0xFF16A34A), Color(0xFF15803D)],
         icon: TablerIcons.circle_check,
+        assetPath: 'assets/icons/doctor/done.png',
         onTap: () {
           Navigator.push(
             context,
@@ -438,6 +447,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Add Patient',
         subtitle: 'Walk-in registration',
         icon: TablerIcons.user_plus,
+        assetPath: 'assets/icons/doctor/add_patient.png',
         gradient: const [Color(0xFF0D9488), Color(0xFF0369A1)],
         onTap: _openAddNewPatient,
       ),
@@ -446,12 +456,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Reviews',
         subtitle: 'Patient feedback',
         icon: TablerIcons.star,
+        assetPath: 'assets/icons/doctor/review.png',
         gradient: const [Color(0xFFCA8A04), Color(0xFFA16207)],
         onTap: _openReviews,
       ),
       DoctorHomeServiceItem(
-        label: 'Refer another Doctor',
-        shortLabel: 'Refer',
+        label: 'Refer a Colleague',
+        shortLabel: 'Refer a Colleague',
         subtitle: 'Send a referral',
         icon: TablerIcons.share_3,
         assetPath: 'assets/icons/doctor/refer.png',
@@ -480,6 +491,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Prescription',
         subtitle: 'Write for patient',
         icon: AppIcons.prescription,
+        assetPath: 'assets/icons/doctor/prescription.png',
         gradient: const [Color(0xFF16A34A), Color(0xFF15803D)],
         onTap: _openPrescriptionWithSearch,
       ),
@@ -506,6 +518,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
         shortLabel: 'Reschedule',
         subtitle: 'Move a visit',
         icon: AppIcons.reschedule,
+        assetPath: 'assets/icons/doctor/appointment.png',
         gradient: const [Color(0xFF0891B2), Color(0xFF0E7490)],
         onTap: _openRescheduleWithSearch,
       ),
@@ -524,6 +537,26 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
             ),
           ),
         ),
+      ),
+      DoctorHomeServiceItem(
+        label: 'Doctor Pass',
+        shortLabel: 'Doctor Pass',
+        subtitle: 'Doctor credentials & QR',
+        icon: Icons.badge_rounded,
+        assetPath: 'assets/icons/common/digital_pass.png',
+        gradient: const [Color(0xFF0D9488), Color(0xFF0369A1)],
+        onTap: () => DigitalHealthCardSheet.show(
+          context,
+          userType: UserType.doctor,
+        ),
+      ),
+      DoctorHomeServiceItem(
+        label: 'Emergency SOS',
+        shortLabel: 'Emergency SOS',
+        subtitle: '24/7 emergency response',
+        icon: Icons.emergency_rounded,
+        gradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
+        onTap: () => EmergencySosSheet.show(context),
       ),
     ];
   }
@@ -551,8 +584,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
                     ? profile.name.trim()
                     : DoctorSession.loggedInDoctorName.trim();
 
-                final compact = ResponsiveLayout.isCompact(context);
-
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -565,12 +596,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
                       items: _buildStatItems(),
                       selectedDate: _selectedDate,
                       onCalendarTap: _openCalendarPopup,
-                      onSearchTap: compact ? _openGlobalSearch : null,
+                      onSearchTap: _openGlobalSearch,
                     ),
-                    if (!compact)
-                      DoctorHomePatientSearchBar(
-                        onTap: _openGlobalSearch,
-                      ),
                   ],
                 );
               },
@@ -678,7 +705,11 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
             store: _store,
             onViewAppointment: _viewAppointment,
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: ResponsiveLayout.isCompact(context) ? 104 : 32,
+            ),
+          ),
         ],
       ),
     );

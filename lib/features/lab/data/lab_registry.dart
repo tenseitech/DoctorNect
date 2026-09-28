@@ -44,9 +44,40 @@ class LabRegistry extends ChangeNotifier {
     instance.notifyListeners();
   }
 
+  static int _seq = 0;
+
+  static String register({
+    String? id,
+    required String labName,
+    required String address,
+    required String licenseNumber,
+    String phone = '',
+    String email = '',
+    String? gstNumber,
+    bool verified = false,
+  }) {
+    final labId = id ?? 'lab${DateTime.now().millisecondsSinceEpoch}_${++_seq}';
+    instance._labs.removeWhere((l) => l.id == labId);
+    instance._labs.add(
+      RegisteredLabProfile(
+        id: labId,
+        labName: labName,
+        address: address,
+        licenseNumber: licenseNumber,
+        phone: phone,
+        email: email,
+        gstNumber: gstNumber,
+        verified: verified,
+      ),
+    );
+    instance.notifyListeners();
+    return labId;
+  }
+
   static Future<String?> updateLabProfile({
     required String labId,
     String? labName,
+    String? licenseNumber,
     String? phone,
     String? email,
     String? gstNumber,
@@ -57,6 +88,7 @@ class LabRegistry extends ChangeNotifier {
     String? state,
     String? city,
     String? pincode,
+    bool? verified,
   }) async {
     var index = instance._labs.indexWhere((l) => l.id == labId);
     if (index < 0) {
@@ -94,6 +126,7 @@ class LabRegistry extends ChangeNotifier {
       await FirestoreService.instance.lab.updateLabFields(
         labId,
         labName: labName,
+        licenseNumber: licenseNumber,
         address: addressMap,
         phone: phone,
         email: normalizedEmail,
@@ -108,6 +141,7 @@ class LabRegistry extends ChangeNotifier {
 
     instance._labs[index] = current.copyWith(
       labName: labName,
+      licenseNumber: licenseNumber,
       address: addressStr,
       addressLine1: addressLine1,
       addressLine2: addressLine2,
@@ -119,18 +153,21 @@ class LabRegistry extends ChangeNotifier {
       email: normalizedEmail,
       gstNumber: gstNumber,
       clearGstNumber: clearGstNumber,
+      verified: verified,
     );
     if (labName != null && labId == LabSession.loggedInLabId) {
       LabSession.setLab(id: labId, name: labName);
     }
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    unawaited(
-      ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
-        role: UserType.lab,
-        uid: uid,
-        profileId: labId,
-      ),
-    );
+    if (FirebaseBootstrap.isReady) {
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      unawaited(
+        ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
+          role: UserType.lab,
+          uid: uid,
+          profileId: labId,
+        ),
+      );
+    }
     instance.notifyListeners();
     return null;
   }

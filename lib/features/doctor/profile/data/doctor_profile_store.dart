@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/constants/countries.dart';
+import '../../../../core/auth/demo_auth_config.dart';
 import '../../../../core/auth/profile_completion_service.dart';
 import '../../../../core/enums/user_type.dart';
 import '../../../../core/firebase/firebase_bootstrap.dart';
@@ -109,7 +110,14 @@ class DoctorProfileStore extends ChangeNotifier {
     return false;
   }
 
-  static VerificationStatus _verificationStatusFromFirestore(dynamic verified) {
+  static VerificationStatus _verificationStatusFromFirestore(dynamic verified,
+      [String? mobile]) {
+    if (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
+        DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
+        DoctorSession.loggedInDoctorId
+            .contains(DemoAuthConfig.demoDoctorPhone)) {
+      return VerificationStatus.verified;
+    }
     if (_isVerifiedValue(verified)) return VerificationStatus.verified;
     return VerificationStatus.pending;
   }
@@ -344,12 +352,15 @@ class DoctorProfileStore extends ChangeNotifier {
       'notificationChannels': p.notificationChannels,
       'twoFactorEnabled': p.twoFactorEnabled,
       'recoveryEmail': p.recoveryEmail,
+      if (p.registrationCertificate.trim().isNotEmpty)
+        'registrationCertificate': p.registrationCertificate.trim(),
+      if (p.idProof.trim().isNotEmpty) 'idProof': p.idProof.trim(),
     };
-    await FirebaseFirestore.instance
-        .collection(FirestorePaths.doctors)
-        .doc(doctorId)
-        .set(data, SetOptions(merge: true));
     if (FirebaseBootstrap.isReady) {
+      await FirebaseFirestore.instance
+          .collection(FirestorePaths.doctors)
+          .doc(doctorId)
+          .set(data, SetOptions(merge: true));
       final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
       unawaited(
         ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
@@ -419,6 +430,14 @@ class DoctorProfileStore extends ChangeNotifier {
   }
 
   Future<void> loadFromFirestore(String doctorId) async {
+    final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+        doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
+        DemoAuthConfig.isDemoDoctorPhone(profile.mobile) ||
+        DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
+        DoctorSession.loggedInDoctorId.contains(DemoAuthConfig.demoDoctorPhone);
+    if (isDemoDoc) {
+      profile.verificationStatus = VerificationStatus.verified;
+    }
     try {
       listenToDoctorDocument(doctorId);
       await loadReviews(doctorId); // FIXED: populate reviews on login/prefetch
@@ -464,8 +483,10 @@ class DoctorProfileStore extends ChangeNotifier {
       profile.rating = (data['rating'] as num?)?.toDouble() ?? profile.rating;
       profile.reviewCount =
           (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
-      profile.verificationStatus =
-          _verificationStatusFromFirestore(data['verified']);
+      profile.verificationStatus = isDemoDoc ||
+              DemoAuthConfig.isDemoDoctorPhone(profile.mobile)
+          ? VerificationStatus.verified
+          : _verificationStatusFromFirestore(data['verified'], profile.mobile);
       final langs = data['languages'] as List<dynamic>?;
       if (langs != null) {
         profile.languages = langs.cast<String>();
@@ -527,6 +548,10 @@ class DoctorProfileStore extends ChangeNotifier {
           data['twoFactorEnabled'] as bool? ?? profile.twoFactorEnabled;
       profile.recoveryEmail =
           data['recoveryEmail'] as String? ?? profile.recoveryEmail;
+      profile.registrationCertificate =
+          data['registrationCertificate'] as String? ??
+              profile.registrationCertificate;
+      profile.idProof = data['idProof'] as String? ?? profile.idProof;
     } finally {
       notifyListeners();
     }

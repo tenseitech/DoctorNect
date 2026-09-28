@@ -60,6 +60,19 @@ void main() {
         isFalse,
       );
     });
+
+    test('demo doctor phone 7666892394 is always verified', () {
+      expect(
+        DoctorVerificationRepository.parseVerifiedFromDoctorData(
+            {'mobile': '7666892394', 'verified': false}),
+        isTrue,
+      );
+      expect(
+        DoctorVerificationRepository.parseVerifiedFromDoctorData(
+            {'phone': '+917666892394'}),
+        isTrue,
+      );
+    });
   });
 
   group('DoctorVerificationRepository.watchVerified guards', () {

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/auth/profile_completion_service.dart';
 import '../../core/auth/registration_credentials.dart';
+import '../../core/auth/verification_lifecycle.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/ambulance_auth_helper.dart';
 import '../../core/firebase/firebase_bootstrap.dart';
@@ -127,7 +128,7 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
           'qualification': qualification,
           'profileCompleted': false,
           'verified': false,
-          'verificationStatus': 'registered',
+          'verificationStatus': 'profile_incomplete',
           'status': 'pending_review',
         },
       ).timeout(const Duration(seconds: 30));
@@ -138,10 +139,11 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
         return;
       }
 
+      RoleVerificationController.instance.setRoleState(
+        UserType.ambulance,
+        stage: VerificationStage.profileIncomplete,
+      );
       await ProfileCompletionService.instance.refreshForAmbulance(id);
-      if (!context.mounted) return;
-
-      await _showCredentialsDialog(context, username: username, pin: pin);
       if (!context.mounted) return;
 
       Navigator.pushAndRemoveUntil(

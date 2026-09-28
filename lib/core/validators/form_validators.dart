@@ -188,6 +188,12 @@ class FormValidators {
     return null;
   }
 
+  static String? optionalPincode(String? value, {String? country}) {
+    final trimmed = (value ?? '').trim();
+    if (trimmed.isEmpty) return null;
+    return pincode(trimmed, country: country);
+  }
+
   static String? age(String? value, {int min = 1, int max = 120}) =>
       ValidationEngine.validate(
         'age',

@@ -275,7 +275,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                                   horizontalPadding,
                                   12,
                                   horizontalPadding,
-                                  20,
+                                  wide ? 20 : 96,
                                 ),
                                 itemCount: list.length,
                                 itemBuilder: (context, index) {

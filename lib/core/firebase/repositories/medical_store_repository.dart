@@ -85,6 +85,7 @@ class MedicalStoreRepository {
         phone: data['phone'] as String? ?? '',
         email: data['email'] as String? ?? '',
         gstNumber: _optionalGst(data['gstNumber'] as String?),
+        verified: data['verified'] as bool? ?? false,
       );
     } catch (_) {
       return null;
@@ -112,6 +113,8 @@ class MedicalStoreRepository {
   Future<void> updateStoreFields(
     String storeId, {
     String? storeName,
+    String? ownerName,
+    String? drugLicenseNumber,
     Map<String, dynamic>? address,
     String? phone,
     String? email,
@@ -124,6 +127,11 @@ class MedicalStoreRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     };
     if (storeName != null) updates['storeName'] = storeName;
+    if (ownerName != null) updates['ownerName'] = ownerName;
+    if (drugLicenseNumber != null) {
+      updates['drugLicenseNumber'] = drugLicenseNumber;
+      updates['licenseNumber'] = drugLicenseNumber;
+    }
     if (address != null) updates['address'] = address;
     if (phone != null) updates['phone'] = phone;
     if (email != null) updates['email'] = email.trim().toLowerCase();

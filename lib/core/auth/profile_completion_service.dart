@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import 'demo_auth_config.dart';
 import 'profile_completion_checker.dart';
 import '../enums/user_type.dart';
 import '../firebase/firebase_bootstrap.dart';
@@ -40,8 +41,24 @@ class ProfileCompletionService extends ChangeNotifier {
             .doc(uid),
         preferCache: false,
       );
+      if (role == UserType.doctor &&
+          (DemoAuthConfig.isDemoDoctorPhone(profileId) ||
+              (profileId != null &&
+                  profileId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+        _isComplete = true;
+        notifyListeners();
+        return;
+      }
       final userData = userSnap.data();
       if (userData != null) {
+        final mobile =
+            userData['mobile'] as String? ?? userData['phone'] as String?;
+        if (role == UserType.doctor &&
+            DemoAuthConfig.isDemoDoctorPhone(mobile)) {
+          _isComplete = true;
+          notifyListeners();
+          return;
+        }
         final flag = userData['profileCompleted'];
         if (flag is bool) {
           _isComplete = flag;

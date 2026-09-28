@@ -1,7 +1,16 @@
+import 'demo_auth_config.dart';
+
 /// Mirrors the fields that were required on the legacy registration forms.
 abstract final class ProfileCompletionChecker {
   static bool isDoctorDocComplete(Map<String, dynamic>? data) {
     if (data == null) return false;
+    final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+    if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
+    final docId = data['doctorId'] as String? ?? data['id'] as String?;
+    if (DemoAuthConfig.isDemoDoctorPhone(docId) ||
+        (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone))) {
+      return true;
+    }
     if (_empty(data['name'])) return false;
     if (_empty(data['qualification'])) return false;
     if (_empty(data['specialization'])) return false;

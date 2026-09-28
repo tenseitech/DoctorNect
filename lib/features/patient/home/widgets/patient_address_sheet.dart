@@ -9,6 +9,7 @@ import '../../../../core/constants/indian_cities.dart';
 import '../../../../core/constants/world_locations.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/validators/form_validators.dart';
 import '../../../../widgets/location_dropdown_fields.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../../profile/data/patient_profile_mock.dart';
@@ -101,16 +102,10 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
     super.dispose();
   }
 
-  String? _validatePincode(String? value) {
-    if (value == null || value.trim().isEmpty) return null;
-    final trimmed = value.trim();
-    if ((_country ?? Countries.defaultCountry) == Countries.defaultCountry) {
-      if (!RegExp(r'^\d{6}$').hasMatch(trimmed)) {
-        return 'Enter a valid 6-digit pincode';
-      }
-    }
-    return null;
-  }
+  String? _validatePincode(String? value) => FormValidators.optionalPincode(
+        value,
+        country: _country ?? Countries.defaultCountry,
+      );
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;

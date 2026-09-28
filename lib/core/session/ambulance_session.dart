@@ -12,6 +12,8 @@ abstract final class AmbulanceSession {
 
   static String loggedInAmbulanceId = '';
   static String loggedInAmbulanceName = '';
+  static String get loggedInServiceName => loggedInAmbulanceName;
+  static set loggedInServiceName(String v) => loggedInAmbulanceName = v;
   static String loggedInDriverName = '';
   static DateTime? _startedAt;
 

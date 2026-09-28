@@ -82,6 +82,8 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
         final items = _items;
         final unreadCount = _unreadCount;
 
+        final compact = ResponsiveLayout.isCompact(context);
+
         return Scaffold(
           backgroundColor: AppColors.cardBgOf(context),
           appBar: AppBar(
@@ -90,20 +92,28 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
             elevation: 0,
             scrolledUnderElevation: 0,
             surfaceTintColor: Colors.transparent,
+            leadingWidth: compact ? 44 : null,
+            titleSpacing: compact ? 4 : null,
             title: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Notifications',
-                  style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineSmall,
-                      fontWeight: FontWeight.w700),
+                Flexible(
+                  child: Text(
+                    'Notifications',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: compact ? 17 : AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
                 if (unreadCount > 0) ...[
-                  const SizedBox(width: 10),
+                  SizedBox(width: compact ? 8 : 10),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 8 : 9,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: _accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
@@ -111,8 +121,10 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                     ),
                     child: Text(
                       '$unreadCount unread',
+                      maxLines: 1,
+                      softWrap: false,
                       style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
+                        fontSize: compact ? 11.5 : AppTypography.labelMedium,
                         fontWeight: FontWeight.w700,
                         color: _accent,
                       ),
@@ -123,19 +135,28 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: EdgeInsets.only(right: compact ? 6 : 8),
                 child: TextButton(
                   onPressed: unreadCount > 0 ? _markAllRead : null,
                   style: TextButton.styleFrom(
                     foregroundColor: _accent,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    visualDensity: compact
+                        ? VisualDensity.compact
+                        : VisualDensity.standard,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 8 : 12,
+                      vertical: 8,
+                    ),
                   ),
                   child: Text(
                     'Mark all read',
+                    maxLines: 1,
+                    softWrap: false,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        fontWeight: FontWeight.w600),
+                      fontSize: compact ? 12.5 : AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),

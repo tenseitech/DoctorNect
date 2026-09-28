@@ -125,7 +125,7 @@ class LocationDropdownFields extends StatelessWidget {
         const SizedBox(height: 12),
         if (_hasLocationData) ...[
           SearchableDropdownFormField(
-            key: ValueKey('state-$effectiveCountry'),
+            key: ValueKey('state-$effectiveCountry-$selectedState'),
             title: 'State',
             value: selectedState,
             items: _stateOptions,
@@ -139,7 +139,8 @@ class LocationDropdownFields extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SearchableDropdownFormField(
-            key: ValueKey('city-$effectiveCountry-$state'),
+            key:
+                ValueKey('city-$effectiveCountry-$selectedState-$selectedCity'),
             title: 'City',
             value: selectedCity,
             items: _cityOptions,

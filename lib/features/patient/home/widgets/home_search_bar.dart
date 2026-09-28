@@ -1,11 +1,11 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../widgets/rotating_search_placeholder.dart';
 
 class HomeSearchBar extends StatefulWidget {
   const HomeSearchBar({
@@ -31,6 +31,13 @@ class HomeSearchBar extends StatefulWidget {
     'Search for Speciality',
     'Search for Location',
     'Search for Language',
+  ];
+
+  static const List<String> rotatingPlaceholders = [
+    'Search for doctor',
+    'Search for lab',
+    'Search for language or location',
+    'Search for ambulance',
   ];
 
   static String placeholder({required bool compact}) {
@@ -216,18 +223,17 @@ class _SearchField extends StatelessWidget {
                         contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    if (showOverlay)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: _TypewriterPlaceholder(
-                              words: HomeSearchBar.words,
-                              style: placeholderStyle,
-                            ),
-                          ),
+                    Positioned.fill(
+                      child: Offstage(
+                        offstage: !showOverlay,
+                        child: RotatingSearchPlaceholder(
+                          placeholders: HomeSearchBar.rotatingPlaceholders,
+                          style: placeholderStyle,
+                          paused: !showOverlay,
+                          ignorePointer: true,
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
