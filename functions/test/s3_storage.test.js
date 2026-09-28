@@ -101,6 +101,8 @@ function createMockS3Client() {
       accessKeyId: 'mock-access-key',
       secretAccessKey: 'mock-secret-key',
     },
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   });
   client.send = async () => ({});
   return client;
@@ -213,6 +215,53 @@ test('patient owner allowed to upload health record', async () => {
   assert.ok(res.objectKey.startsWith('health_records/p_1/hr_100/'));
   assert.ok(res.objectKey.endsWith('.pdf'));
   assert.ok(res.uploadUrl);
+  // Presigned PUT size & type enforcement: content-length and content-type MUST be in signed headers
+  assert.match(res.uploadUrl, /X-Amz-SignedHeaders=[^&]*content-length/i);
+  assert.match(res.uploadUrl, /X-Amz-SignedHeaders=[^&]*content-type/i);
+  // Checksum params must be completely absent from URL
+  assert.doesNotMatch(res.uploadUrl.toLowerCase(), /checksum/);
+});
+
+test('presigned PUT URL enforces Content-Length signature and excludes checksum params', async () => {
+  const db = createMockDb({
+    users: {
+      uid_patient_1: { role: 'patient', profileId: 'p_1', profileCompleted: true },
+    },
+  });
+
+  const auth = { uid: 'uid_patient_1' };
+  const data = {
+    purpose: 'health_records',
+    parentId: 'hr_500',
+    fileName: 'scan.png',
+    contentType: 'image/png',
+    sizeBytes: 2048576, // ~2 MB
+  };
+
+  const res = await getS3UploadUrlHandler(data, auth, db);
+  const parsedUrl = new URL(res.uploadUrl);
+  const signedHeaders = parsedUrl.searchParams.get('X-Amz-SignedHeaders') || '';
+
+  // 1. Assert content-length is present in signed headers
+  assert.ok(
+    signedHeaders.split(';').includes('content-length'),
+    `Expected 'content-length' in X-Amz-SignedHeaders, got: ${signedHeaders}`,
+  );
+
+  // 2. Assert content-type is present in signed headers
+  assert.ok(
+    signedHeaders.split(';').includes('content-type'),
+    `Expected 'content-type' in X-Amz-SignedHeaders, got: ${signedHeaders}`,
+  );
+
+  // 3. Assert no checksum parameter exists in the URL query string
+  for (const param of parsedUrl.searchParams.keys()) {
+    assert.doesNotMatch(
+      param.toLowerCase(),
+      /checksum/,
+      `Unexpected checksum parameter found in presigned PUT URL: ${param}`,
+    );
+  }
 });
 
 test('wrong lab blocked from uploading report for another lab booking', async () => {

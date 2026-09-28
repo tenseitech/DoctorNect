@@ -77,6 +77,8 @@ function getS3Client() {
       accessKeyId: keyId.trim(),
       secretAccessKey: secretKey.trim(),
     },
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
   });
 }
 
@@ -329,9 +331,13 @@ async function getS3UploadUrlHandler(data, auth, db) {
     Bucket: S3_BUCKET,
     Key: objectKey,
     ContentType: contentType,
+    ContentLength: sizeBytes,
   });
 
-  const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
+  const uploadUrl = await getSignedUrl(s3, command, {
+    expiresIn: 300,
+    signableHeaders: new Set(['content-type', 'content-length', 'host']),
+  });
 
   return {
     uploadUrl,
