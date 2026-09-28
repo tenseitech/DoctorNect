@@ -16,7 +16,10 @@ class S3StorageService implements StorageService {
   })  : _api = api ?? S3PresignApi.instance,
         _http = httpClient ?? http.Client();
 
-  static final S3StorageService instance = S3StorageService();
+  static S3StorageService _instance = S3StorageService();
+  static S3StorageService get instance => _instance;
+  @visibleForTesting
+  static set instance(S3StorageService service) => _instance = service;
 
   final S3PresignApi _api;
   final http.Client _http;

@@ -23,6 +23,18 @@ abstract final class FileEncryptionService {
   static encrypt.Key? _cachedKey;
   static Future<void>? _initFuture;
 
+  @visibleForTesting
+  static void setKeyForTesting([encrypt.Key? key]) {
+    _cachedKey = key ?? encrypt.Key.fromLength(32);
+    _initFuture = Future.value();
+  }
+
+  @visibleForTesting
+  static void resetForTesting() {
+    _cachedKey = null;
+    _initFuture = null;
+  }
+
   static Future<void> ensureInitialized() {
     return _initFuture ??= _loadOrCreateKey();
   }

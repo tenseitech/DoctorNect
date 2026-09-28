@@ -20,6 +20,15 @@ abstract final class HealthRecordFileStore {
 
   static final Map<String, Uint8List> _webBytes = {};
 
+  @visibleForTesting
+  static http.Client? httpClient;
+
+  @visibleForTesting
+  static Future<Uint8List?> Function(String url)? mockDownloadFromUrl;
+
+  @visibleForTesting
+  static Future<String?> Function(String patientId, String recordId, String fileName, Uint8List bytes)? mockFirebaseUpload;
+
   static String _cacheKey(String patientId, String recordId, String fileName) =>
       '$patientId/$recordId/$fileName';
 
@@ -71,6 +80,9 @@ abstract final class HealthRecordFileStore {
   }
 
   static Future<Uint8List?> downloadFromUrl(String storageUrl) async {
+    if (mockDownloadFromUrl != null) {
+      return mockDownloadFromUrl!(storageUrl);
+    }
     if (!FirebaseBootstrap.isReady || storageUrl.trim().isEmpty) return null;
     try {
       final ref = FirebaseStorage.instance.refFromURL(storageUrl);
@@ -184,9 +196,10 @@ abstract final class HealthRecordFileStore {
           final s3Url = await S3StorageService.instance.getDownloadUrl(key);
           if (s3Url != null) {
             try {
-              final response = await http
-                  .get(Uri.parse(s3Url))
-                  .timeout(downloadTimeout);
+              final client = httpClient;
+              final response = client != null
+                  ? await client.get(Uri.parse(s3Url)).timeout(downloadTimeout)
+                  : await http.get(Uri.parse(s3Url)).timeout(downloadTimeout);
               if (response.statusCode >= 200 &&
                   response.statusCode < 300 &&
                   response.bodyBytes.isNotEmpty) {
@@ -233,9 +246,10 @@ abstract final class HealthRecordFileStore {
         final s3Url = await S3StorageService.instance.getDownloadUrl(key);
         if (s3Url != null) {
           try {
-            final response = await http
-                .get(Uri.parse(s3Url))
-                .timeout(downloadTimeout);
+            final client = httpClient;
+            final response = client != null
+                ? await client.get(Uri.parse(s3Url)).timeout(downloadTimeout)
+                : await http.get(Uri.parse(s3Url)).timeout(downloadTimeout);
             if (response.statusCode >= 200 &&
                 response.statusCode < 300 &&
                 response.bodyBytes.isNotEmpty) {
@@ -308,6 +322,9 @@ abstract final class HealthRecordFileStore {
     required String fileName,
     required Uint8List bytes,
   }) async {
+    if (mockFirebaseUpload != null) {
+      return mockFirebaseUpload!(patientId, recordId, fileName, bytes);
+    }
     if (!FirebaseBootstrap.isReady ||
         bytes.isEmpty ||
         bytes.length > maxFileBytes) {
