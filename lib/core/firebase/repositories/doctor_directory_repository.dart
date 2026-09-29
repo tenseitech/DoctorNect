@@ -18,12 +18,14 @@ class DoctorDirectoryRepository {
     return fetchAllDoctors(verifiedOnly: true);
   }
 
-  Future<List<DoctorListing>> fetchAllDoctors(
-      {bool verifiedOnly = false}) async {
+  Future<List<DoctorListing>> fetchAllDoctors({
+    bool verifiedOnly = false,
+  }) async {
     if (!FirebaseBootstrap.isReady) return const [];
 
-    Query<Map<String, dynamic>> query =
-        FirebaseFirestore.instance.collection(FirestorePaths.doctors);
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
+      FirestorePaths.doctors,
+    );
     if (verifiedOnly) {
       query = query.where('verified', isEqualTo: true);
     }
@@ -42,8 +44,9 @@ class DoctorDirectoryRepository {
   Stream<List<DoctorListing>> streamAllDoctors({bool verifiedOnly = false}) {
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
-    Query<Map<String, dynamic>> query =
-        FirebaseFirestore.instance.collection(FirestorePaths.doctors);
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
+      FirestorePaths.doctors,
+    );
     if (verifiedOnly) {
       query = query.where('verified', isEqualTo: true);
     }
@@ -51,10 +54,12 @@ class DoctorDirectoryRepository {
     return query
         .limit(FirestoreQueryLimits.connectionsPage * 2)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => _fromMap(doc.id, doc.data()))
-            .whereType<DoctorListing>()
-            .toList());
+        .map(
+          (snap) => snap.docs
+              .map((doc) => _fromMap(doc.id, doc.data()))
+              .whereType<DoctorListing>()
+              .toList(),
+        );
   }
 
   Future<bool> isDoctorVerified(
@@ -132,29 +137,37 @@ class DoctorDirectoryRepository {
       final listing = DoctorListing(
         id: docId,
         name: name,
-        specialization: readString(['specialization', 'spec', 'specialty']) ??
+        specialization:
+            readString(['specialization', 'spec', 'specialty']) ??
             'General Physician',
         qualification: readString(['qualification', 'degree']) ?? 'MBBS',
         experienceYears:
             readNum(['experienceYears', 'experience', 'yearsExperience'])
-                    ?.toInt() ??
-                1,
+                ?.toInt() ??
+            1,
         rating: readNum(['rating', 'avgRating'])?.toDouble() ?? 0.0,
         reviewCount:
             readNum(['reviewCount', 'reviews', 'totalReviews'])?.toInt() ?? 0,
-        clinicName: readString(['clinicName', 'clinic', 'hospitalName']) ??
+        clinicName:
+            readString(['clinicName', 'clinic', 'hospitalName']) ??
             '$name Clinic',
         area: nestedCity ?? readString(['area', 'locality', 'location']) ?? '',
         city: nestedCity ?? readString(['city']) ?? '',
-        addressLine1: nestedLine1 ??
+        addressLine1:
+            nestedLine1 ??
             readString(['addressLine1', 'address', 'addr', 'line1']) ??
             '',
-        state: nestedState ??
+        state:
+            nestedState ??
             readString(['state', 'stateCouncil', 'stateName']) ??
             '',
         photoPath: readString(['photoPath']),
-        photoUrl:
-            readString(['photoUrl', 'photoURL', 'profilePhoto', 'avatarUrl']),
+        photoUrl: readString([
+          'photoUrl',
+          'photoURL',
+          'profilePhoto',
+          'avatarUrl',
+        ]),
         photoKey: readString(['photoKey']),
         photoStorage: readString(['photoStorage']),
         distanceKm: readNum(['distanceKm', 'distance'])?.toDouble() ?? 0,
@@ -178,7 +191,8 @@ class DoctorDirectoryRepository {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            '[DoctorDirectoryRepository] _fromMap error for doc $id: $e\n$st');
+          '[DoctorDirectoryRepository] _fromMap error for doc $id: $e\n$st',
+        );
       }
       return null;
     }

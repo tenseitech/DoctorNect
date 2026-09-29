@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme_controller.dart';
 
@@ -20,7 +21,8 @@ class ThemeToggleButton extends StatelessWidget {
       listenable: AppThemeController.instance,
       builder: (context, _) {
         final isDark = AppThemeController.instance.isDarkMode;
-        final iconColor = color ??
+        final iconColor =
+            color ??
             (highlighted
                 ? AppColors.textPrimaryOf(context)
                 : (isDark ? const Color(0xFFFDE047) : const Color(0xFF0F172A)));
@@ -30,13 +32,10 @@ class ThemeToggleButton extends StatelessWidget {
           duration: const Duration(milliseconds: 300),
           transitionBuilder: (child, anim) => ScaleTransition(
             scale: anim,
-            child: RotationTransition(
-              turns: anim,
-              child: child,
-            ),
+            child: RotationTransition(turns: anim, child: child),
           ),
           child: Icon(
-            isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
             key: ValueKey(isDark),
             color: iconColor,
             size: iconSize,

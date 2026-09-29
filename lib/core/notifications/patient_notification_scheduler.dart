@@ -39,10 +39,13 @@ class PatientNotificationScheduler {
   List<PatientAppointment> get _upcoming {
     final all = SharedAppointmentsStore.instance.patientAppointments();
     return all
-        .where((a) =>
-            a.cancellationReason == null &&
-            a.dateTime
-                .isAfter(DateTime.now().subtract(const Duration(minutes: 30))))
+        .where(
+          (a) =>
+              a.cancellationReason == null &&
+              a.dateTime.isAfter(
+                DateTime.now().subtract(const Duration(minutes: 30)),
+              ),
+        )
         .toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
@@ -103,7 +106,8 @@ class PatientNotificationScheduler {
       final diff = a.dateTime.difference(now);
       if (diff.inMinutes >= 28 && diff.inMinutes <= 32) {
         PatientNotificationEmitter.notifyReminderThirtyMin(
-            doctorName: a.doctorName);
+          doctorName: a.doctorName,
+        );
       }
     }
   }
@@ -178,8 +182,7 @@ class PatientNotificationScheduler {
     final upcoming = PatientProfileMock.vaccinations.where((v) {
       final daysUntil = v.date.difference(now).inDays;
       return daysUntil >= 0 && daysUntil <= 7;
-    }).toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
+    }).toList()..sort((a, b) => a.date.compareTo(b.date));
     if (upcoming.isEmpty) return;
     final next = upcoming.first;
     PatientNotificationEmitter.notifyVaccinationDue(

@@ -10,8 +10,10 @@ import '../../../../core/theme/app_typography.dart';
 abstract final class PatientProfileFormStyles {
   static const maxContentWidth = 560.0;
   static const pagePadding = EdgeInsets.symmetric(horizontal: 16, vertical: 24);
-  static const contentPadding =
-      EdgeInsets.symmetric(horizontal: 20, vertical: 24);
+  static const contentPadding = EdgeInsets.symmetric(
+    horizontal: 20,
+    vertical: 24,
+  );
 
   static InputDecoration fieldDecoration(
     BuildContext context, {
@@ -37,8 +39,10 @@ abstract final class PatientProfileFormStyles {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide:
-              const BorderSide(color: AppColors.patientTeal, width: 1.5),
+          borderSide: const BorderSide(
+            color: AppColors.patientTeal,
+            width: 1.5,
+          ),
         ),
       ),
       labelText,
@@ -63,10 +67,7 @@ abstract final class PatientProfileFormStyles {
       );
     }
 
-    return TextButton(
-      onPressed: onPressed,
-      child: label,
-    );
+    return TextButton(onPressed: onPressed, child: label);
   }
 
   static Widget sectionLabel(String text) {
@@ -90,7 +91,9 @@ abstract final class PatientProfileFormStyles {
   }
 
   static double resolveContentWidth(
-      BuildContext context, BoxConstraints constraints) {
+    BuildContext context,
+    BoxConstraints constraints,
+  ) {
     var viewportWidth = constraints.maxWidth;
     if (!viewportWidth.isFinite || viewportWidth <= 0) {
       viewportWidth = MediaQuery.sizeOf(context).width;
@@ -171,8 +174,10 @@ abstract final class PatientProfileFormStyles {
   }
 
   /// UI FIX: constrained layout — white surface card with standard padding.
-  static Widget contentSurface(
-      {required Widget child, required BuildContext context}) {
+  static Widget contentSurface({
+    required Widget child,
+    required BuildContext context,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
@@ -184,14 +189,18 @@ abstract final class PatientProfileFormStyles {
     );
   }
 
-  static Widget profileCard(
-      {required Widget child, required BuildContext context}) {
+  static Widget profileCard({
+    required Widget child,
+    required BuildContext context,
+  }) {
     return contentSurface(context: context, child: child);
   }
 
   /// UI FIX: constrained layout — bordered record/list item card.
-  static Widget recordItemCard(
-      {required Widget child, required BuildContext context}) {
+  static Widget recordItemCard({
+    required Widget child,
+    required BuildContext context,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -226,8 +235,9 @@ abstract final class PatientProfileFormStyles {
   static AppBar profileAppBar(String title, {BuildContext? context}) {
     return AppBar(
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-      backgroundColor:
-          context != null ? AppColors.surfaceOf(context) : Colors.white,
+      backgroundColor: context != null
+          ? AppColors.surfaceOf(context)
+          : Colors.white,
       foregroundColor: context != null
           ? AppColors.textPrimaryOf(context)
           : AppColors.textPrimary,
@@ -265,21 +275,26 @@ abstract final class PatientProfileFormStyles {
                       label,
                       isRequired: isRequired,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                     SizedBox(height: 2),
                     Text(
                       valueText,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodyLarge,
-                          color: AppColors.textPrimaryOf(context)),
+                        fontSize: AppTypography.bodyLarge,
+                        color: AppColors.textPrimaryOf(context),
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.calendar_today_outlined,
-                  color: AppColors.textSecondaryOf(context), size: 20),
+              Icon(
+                Icons.calendar_today_outlined,
+                color: AppColors.textSecondaryOf(context),
+                size: 20,
+              ),
             ],
           ),
         ),
@@ -314,11 +329,13 @@ abstract final class PatientProfileFormStyles {
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),
             side: BorderSide(
-                color: isSelected
-                    ? AppColors.patientTeal
-                    : AppColors.borderOf(context)),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              color: isSelected
+                  ? AppColors.patientTeal
+                  : AppColors.borderOf(context),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
           );
         }).toList(),
       ),
@@ -342,8 +359,9 @@ abstract final class PatientProfileFormStyles {
           backgroundColor: AppColors.patientTeal,
           foregroundColor: AppColors.white,
           minimumSize: const Size(0, 48),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );

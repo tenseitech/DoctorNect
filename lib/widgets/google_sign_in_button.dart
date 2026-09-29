@@ -12,9 +12,7 @@ class GoogleLogo extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _GoogleLogoPainter(),
-      ),
+      child: CustomPaint(painter: _GoogleLogoPainter()),
     );
   }
 }
@@ -120,11 +118,13 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
         ? (_isHovered ? const Color(0xFF1E293B) : const Color(0xFF151C2C))
         : (_isHovered ? const Color(0xFFF8FAFC) : Colors.white);
 
-    final borderColor =
-        isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFCBD5E1);
 
-    final textColor =
-        isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B);
+    final textColor = isDark
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFF1E293B);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -135,24 +135,21 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: borderColor,
-            width: 1.2,
-          ),
+          border: Border.all(color: borderColor, width: 1.2),
           boxShadow: isDark
               ? [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.25),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ]
               : [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
-                  )
+                  ),
                 ],
         ),
         child: Material(
@@ -212,20 +209,15 @@ class AuthOrDivider extends StatelessWidget {
     final lineColor = isDark
         ? const Color(0xFF334155).withValues(alpha: 0.8)
         : const Color(0xFFE2E8F0);
-    final textColor =
-        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final textColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: Row(
         children: [
-          Expanded(
-            child: Divider(
-              color: lineColor,
-              thickness: 1,
-              height: 1,
-            ),
-          ),
+          Expanded(child: Divider(color: lineColor, thickness: 1, height: 1)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Text(
@@ -238,13 +230,7 @@ class AuthOrDivider extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Divider(
-              color: lineColor,
-              thickness: 1,
-              height: 1,
-            ),
-          ),
+          Expanded(child: Divider(color: lineColor, thickness: 1, height: 1)),
         ],
       ),
     );

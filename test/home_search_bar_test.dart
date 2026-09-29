@@ -5,41 +5,46 @@ import 'package:medibond/features/patient/home/widgets/home_search_bar.dart';
 void main() {
   group('HomeSearchBar animated rotating placeholder tests', () {
     testWidgets(
-        'Renders initial placeholder and transitions through typewriter loop',
-        (tester) async {
+      'Renders initial placeholder and transitions through loop every 2.5s',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: HomeSearchBar())),
+        );
+
+        // Initial frame: "Search for doctor" must be visible
+        expect(find.text('Search for doctor'), findsOneWidget);
+
+        // Advance by 2.5s -> transitions to "Search for lab"
+        await tester.pump(const Duration(milliseconds: 2500));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Search for lab'), findsOneWidget);
+
+        // Advance by 2.5s -> transitions to "Search for language or location"
+        await tester.pump(const Duration(milliseconds: 2500));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Search for language or location'), findsOneWidget);
+
+        // Advance by 2.5s -> transitions to "Search for ambulance"
+        await tester.pump(const Duration(milliseconds: 2500));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Search for ambulance'), findsOneWidget);
+
+        // Advance by 2.5s -> loops back to "Search for doctor"
+        await tester.pump(const Duration(milliseconds: 2500));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Search for doctor'), findsOneWidget);
+
+        // Dispose widget cleanly
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('Focusing or typing hides the placeholder overlay', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: HomeSearchBar(),
-          ),
-        ),
-      );
-
-      // Initial frame: "Search for " prefix must be visible
-      expect(find.textContaining('Search for'), findsOneWidget);
-
-      // Advance through typing "Doctors" (7 chars * 90ms = 630ms)
-      await tester.pump(const Duration(milliseconds: 700));
-      expect(find.textContaining('Doctors'), findsOneWidget);
-
-      // Advance through pause + backspacing + pause + typing "Labs"
-      // Pause 1800ms + 7*45ms (315ms) + 250ms + 4*90ms (360ms) = ~2800ms
-      await tester.pump(const Duration(milliseconds: 3000));
-      expect(find.textContaining('Labs'), findsOneWidget);
-
-      // Dispose widget cleanly
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
-
-    testWidgets('Focusing or typing hides the placeholder overlay',
-        (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: HomeSearchBar(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: HomeSearchBar())),
       );
 
       expect(find.textContaining('Search for'), findsOneWidget);
@@ -77,16 +82,15 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('Search button submits query or triggers callback',
-        (tester) async {
+    testWidgets('Search button submits query or triggers callback', (
+      tester,
+    ) async {
       String submittedQuery = '';
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: HomeSearchBar(
-              onSubmitted: (q) => submittedQuery = q,
-            ),
+            body: HomeSearchBar(onSubmitted: (q) => submittedQuery = q),
           ),
         ),
       );

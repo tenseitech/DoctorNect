@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -35,7 +36,8 @@ class _NotificationsSettingsScreenState
     InAppNotificationService.instance.onPatientNotificationPrefsChanged();
     if (_p.medicationReminders) {
       unawaited(
-          MedicationReminderService.updateScheduledReminders(_p.medications));
+        MedicationReminderService.updateScheduledReminders(_p.medications),
+      );
     } else {
       unawaited(MedicationReminderService.cancelAllReminders());
     }
@@ -54,8 +56,11 @@ class _NotificationsSettingsScreenState
         final nameCtrl = TextEditingController();
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            Widget buildTimeRow(MedicationTimeSlot slot, String? time,
-                ValueChanged<String?> onChanged) {
+            Widget buildTimeRow(
+              MedicationTimeSlot slot,
+              String? time,
+              ValueChanged<String?> onChanged,
+            ) {
               final title = MedicationTimeSlots.label(slot);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4),
@@ -66,8 +71,10 @@ class _NotificationsSettingsScreenState
                       value: time != null,
                       onChanged: (checked) {
                         if (checked == true) {
-                          onChanged(MedicationTimeSlots.defaultTime(slot)
-                              .format(context));
+                          onChanged(
+                            MedicationTimeSlots.defaultTime(slot)
+                                .format(context),
+                          );
                         } else {
                           onChanged(null);
                         }
@@ -78,15 +85,19 @@ class _NotificationsSettingsScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(title,
-                              style: GoogleFonts.inter(
-                                  fontSize: AppTypography.bodyMedium,
-                                  fontWeight: FontWeight.w600)),
+                          Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodyMedium,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           Text(
                             MedicationTimeSlots.rangeLabel(slot),
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelSmall,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelSmall,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         ],
                       ),
@@ -102,10 +113,12 @@ class _NotificationsSettingsScreenState
                           if (picked != null) onChanged(picked);
                         },
                         style: TextButton.styleFrom(
-                            foregroundColor: AppColors.patientTeal),
-                        child: Text(time,
-                            style:
-                                GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                          foregroundColor: AppColors.patientTeal,
+                        ),
+                        child: Text(
+                          time,
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                        ),
                       ),
                   ],
                 ),
@@ -122,8 +135,9 @@ class _NotificationsSettingsScreenState
                     children: [
                       TextFormField(
                         controller: nameCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Medicine name'),
+                        decoration: const InputDecoration(
+                          labelText: 'Medicine name',
+                        ),
                         validator: (v) =>
                             FormValidators.tagText(v, field: 'Medicine name'),
                       ),
@@ -156,7 +170,8 @@ class _NotificationsSettingsScreenState
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   style: TextButton.styleFrom(
-                      foregroundColor: AppColors.textSecondaryOf(context)),
+                    foregroundColor: AppColors.textSecondaryOf(context),
+                  ),
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
@@ -167,17 +182,21 @@ class _NotificationsSettingsScreenState
                         eveningTime == null &&
                         nightTime == null) {
                       AppToast.info(
-                          context, 'Please select at least one time.');
+                        context,
+                        'Please select at least one time.',
+                      );
                       return;
                     }
                     setState(() {
-                      _p.medications.add(MedicationReminder(
-                        name: nameCtrl.text.trim(),
-                        morningTime: morningTime,
-                        afternoonTime: afternoonTime,
-                        eveningTime: eveningTime,
-                        nightTime: nightTime,
-                      ));
+                      _p.medications.add(
+                        MedicationReminder(
+                          name: nameCtrl.text.trim(),
+                          morningTime: morningTime,
+                          afternoonTime: afternoonTime,
+                          eveningTime: eveningTime,
+                          nightTime: nightTime,
+                        ),
+                      );
                     });
                     _persist();
                     Navigator.pop(ctx);
@@ -200,8 +219,10 @@ class _NotificationsSettingsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Notifications',
-          context: context),
+      appBar: PatientProfileFormStyles.profileAppBar(
+        'Notifications',
+        context: context,
+      ),
       body: PatientProfileFormStyles.constrainedScrollBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -214,8 +235,9 @@ class _NotificationsSettingsScreenState
                   Text(
                     'All alerts are delivered inside DoctorNect. Push/SMS/WhatsApp tags show alert type only — nothing is sent outside the app.',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   SwitchListTile(
@@ -291,8 +313,11 @@ class _NotificationsSettingsScreenState
                         context: context,
                         child: Row(
                           children: [
-                            const Icon(Icons.medication_outlined,
-                                color: AppColors.patientTeal, size: 20),
+                            const Icon(
+                              Icons.medication_outlined,
+                              color: AppColors.patientTeal,
+                              size: 20,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -300,20 +325,21 @@ class _NotificationsSettingsScreenState
                                 children: [
                                   Text(m.name),
                                   Text(
-                                      [
-                                        if (m.morningTime != null)
-                                          'Morning (${m.morningTime})',
-                                        if (m.afternoonTime != null)
-                                          'Afternoon (${m.afternoonTime})',
-                                        if (m.eveningTime != null)
-                                          'Evening (${m.eveningTime})',
-                                        if (m.nightTime != null)
-                                          'Night (${m.nightTime})',
-                                      ].join(' • '),
-                                      style: GoogleFonts.inter(
-                                          fontSize: AppTypography.labelMedium,
-                                          color: AppColors.textSecondaryOf(
-                                              context))),
+                                    [
+                                      if (m.morningTime != null)
+                                        'Morning (${m.morningTime})',
+                                      if (m.afternoonTime != null)
+                                        'Afternoon (${m.afternoonTime})',
+                                      if (m.eveningTime != null)
+                                        'Evening (${m.eveningTime})',
+                                      if (m.nightTime != null)
+                                        'Night (${m.nightTime})',
+                                    ].join(' • '),
+                                    style: GoogleFonts.inter(
+                                      fontSize: AppTypography.labelMedium,
+                                      color: AppColors.textSecondaryOf(context),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),

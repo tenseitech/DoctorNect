@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -59,15 +60,17 @@ class LabOrderStore extends ChangeNotifier {
     if (hadOrders) notifyListeners();
   }
 
-  Future<bool> _isPatientVisibleToDoctor(String patientId,
-      {bool preferCache = true}) async {
+  Future<bool> _isPatientVisibleToDoctor(
+    String patientId, {
+    bool preferCache = true,
+  }) async {
     if (!_isDoctorContext) return true;
     if (patientId.isEmpty) return true;
     return FirestoreService.instance.patientProfile
         .isPatientSharingClinicalDataWithDoctors(
-      patientId,
-      preferCache: preferCache,
-    );
+          patientId,
+          preferCache: preferCache,
+        );
   }
 
   Future<List<DoctorLabOrder>> _filterOrdersForDoctor(
@@ -93,8 +96,10 @@ class LabOrderStore extends ChangeNotifier {
         continue;
       }
 
-      final allowed =
-          await _isPatientVisibleToDoctor(patientId, preferCache: preferCache);
+      final allowed = await _isPatientVisibleToDoctor(
+        patientId,
+        preferCache: preferCache,
+      );
       decided[patientId] = allowed;
       if (allowed) {
         visible.add(order);
@@ -109,7 +114,8 @@ class LabOrderStore extends ChangeNotifier {
   Future<void> add(DoctorLabOrder order) async {
     // FIXED: async + awaited so Firestore save failures surface
     await FirestoreService.instance.labOrder.save(
-        order); // FIXED: persist before updating local state; rethrows on failure
+      order,
+    ); // FIXED: persist before updating local state; rethrows on failure
     _orders.removeWhere((o) => o.orderId == order.orderId);
     _orders.insert(0, order);
     notifyListeners();
@@ -129,8 +135,10 @@ class LabOrderStore extends ChangeNotifier {
     List<DoctorLabOrder> remote, {
     bool preferCache = true,
   }) async {
-    final visible =
-        await _filterOrdersForDoctor(remote, preferCache: preferCache);
+    final visible = await _filterOrdersForDoctor(
+      remote,
+      preferCache: preferCache,
+    );
     mergeFromFirestore(visible);
   }
 
@@ -150,15 +158,19 @@ class LabOrderStore extends ChangeNotifier {
       startAfter: _lastPage,
       preferCache: preferCache,
     );
-    final visible =
-        await _filterOrdersForDoctor(page.items, preferCache: preferCache);
+    final visible = await _filterOrdersForDoctor(
+      page.items,
+      preferCache: preferCache,
+    );
     mergeFromFirestore(visible);
     _lastPage = page.lastDocument;
     _hasMore = page.hasMore;
   }
 
-  Future<void> refreshForPatient(String patientId,
-      {bool preferCache = true}) async {
+  Future<void> refreshForPatient(
+    String patientId, {
+    bool preferCache = true,
+  }) async {
     if (_isDoctorContext &&
         !await _isPatientVisibleToDoctor(patientId, preferCache: preferCache)) {
       _purgePatientOrders(patientId);
@@ -174,8 +186,10 @@ class LabOrderStore extends ChangeNotifier {
     await loadMoreForPatient(patientId, preferCache: preferCache);
   }
 
-  Future<void> loadMoreForPatient(String patientId,
-      {bool preferCache = true}) async {
+  Future<void> loadMoreForPatient(
+    String patientId, {
+    bool preferCache = true,
+  }) async {
     if (!_hasMorePatient || patientId.isEmpty) return;
 
     if (_isDoctorContext &&

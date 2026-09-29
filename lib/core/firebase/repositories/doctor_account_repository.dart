@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../auth/demo_auth_config.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../firestore_read_helper.dart';
@@ -39,7 +40,9 @@ class DoctorAccountRepository {
   }) async {
     if (!FirebaseBootstrap.isReady) {
       return const DoctorDeactivationStatus(
-          deactivated: false, canReactivate: false);
+        deactivated: false,
+        canReactivate: false,
+      );
     }
 
     try {
@@ -51,7 +54,9 @@ class DoctorAccountRepository {
       );
       if (!snap.exists || snap.data() == null) {
         return const DoctorDeactivationStatus(
-            deactivated: false, canReactivate: false);
+          deactivated: false,
+          canReactivate: false,
+        );
       }
 
       final data = snap.data()!;
@@ -68,7 +73,9 @@ class DoctorAccountRepository {
 
       if (!deactivated) {
         return const DoctorDeactivationStatus(
-            deactivated: false, canReactivate: false);
+          deactivated: false,
+          canReactivate: false,
+        );
       }
 
       final canReactivate =
@@ -81,18 +88,28 @@ class DoctorAccountRepository {
       );
     } catch (_) {
       return const DoctorDeactivationStatus(
-          deactivated: false, canReactivate: false);
+        deactivated: false,
+        canReactivate: false,
+      );
     }
   }
 
-  Future<bool> isDeactivated(String doctorId,
-      {bool preferCache = false}) async {
-    final status =
-        await fetchDeactivationStatus(doctorId, preferCache: preferCache);
+  Future<bool> isDeactivated(
+    String doctorId, {
+    bool preferCache = false,
+  }) async {
+    final status = await fetchDeactivationStatus(
+      doctorId,
+      preferCache: preferCache,
+    );
     return status.deactivated;
   }
 
   Future<bool> isVerified(String doctorId, {bool preferCache = false}) async {
+    if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+        doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
+      return true;
+    }
     if (!FirebaseBootstrap.isReady) return false;
     try {
       final snap = await FirestoreReadHelper.getDocument(
@@ -102,7 +119,13 @@ class DoctorAccountRepository {
         preferCache: preferCache,
       );
       if (!snap.exists || snap.data() == null) return false;
-      return _isTruthy(snap.data()!['verified']);
+      final data = snap.data()!;
+      final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+      if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
+      if (data['verificationStatus'] == 'verified' ||
+          data['status'] == 'approved')
+        return true;
+      return _isTruthy(data['verified']);
     } catch (_) {
       return false;
     }
@@ -164,8 +187,7 @@ class DoctorAccountRepository {
 
     batch.update(doctorRef, {
       'deactivated': false,
-      'verified':
-          false, // FIXED: reactivation must go through admin re-approval, like registration
+      'verified': false, // FIXED: reactivation must go through admin re-approval, like registration
       'reactivatedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });

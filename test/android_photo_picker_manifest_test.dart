@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('main AndroidManifest strips broad gallery media permissions', () {
-    final manifest =
-        File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
+    final manifest = File('android/app/src/main/AndroidManifest.xml')
+        .readAsStringSync();
 
     for (final permission in [
       'android.permission.READ_MEDIA_IMAGES',
@@ -23,8 +23,8 @@ void main() {
   });
 
   test('gallery image picking uses Android Photo Picker entry point', () {
-    final picker =
-        File('lib/core/media/gallery_image_picker.dart').readAsStringSync();
+    final picker = File('lib/core/media/gallery_image_picker.dart')
+        .readAsStringSync();
     final main = File('lib/main.dart').readAsStringSync();
 
     expect(picker, contains('useAndroidPhotoPicker = true'));

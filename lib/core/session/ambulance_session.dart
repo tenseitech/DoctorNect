@@ -12,6 +12,8 @@ abstract final class AmbulanceSession {
 
   static String loggedInAmbulanceId = '';
   static String loggedInAmbulanceName = '';
+  static String get loggedInServiceName => loggedInAmbulanceName;
+  static set loggedInServiceName(String v) => loggedInAmbulanceName = v;
   static String loggedInDriverName = '';
   static DateTime? _startedAt;
 
@@ -104,7 +106,8 @@ abstract final class AmbulanceSession {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'AmbulanceSession: failed to clear persisted session: $e\n$st');
+          'AmbulanceSession: failed to clear persisted session: $e\n$st',
+        );
       }
       return false;
     }
@@ -129,7 +132,8 @@ abstract final class AmbulanceSession {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'AmbulanceSession: hasPersistedSession read failed: $e\n$st');
+          'AmbulanceSession: hasPersistedSession read failed: $e\n$st',
+        );
       }
       return false;
     }

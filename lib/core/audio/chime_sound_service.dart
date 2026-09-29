@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import 'chime_sound_stub.dart' if (dart.library.html) 'chime_sound_web.dart';
 
 abstract final class ChimeSoundService {

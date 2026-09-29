@@ -91,8 +91,10 @@ class _Banner extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border:
-                  Border.all(color: accent.withValues(alpha: 0.4), width: 2),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.4),
+                width: 2,
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,8 +108,9 @@ class _Banner extends StatelessWidget {
                       Text(
                         notification.title,
                         style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w700,
-                            fontSize: AppTypography.bodyMedium),
+                          fontWeight: FontWeight.w700,
+                          fontSize: AppTypography.bodyMedium,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -115,8 +118,9 @@ class _Banner extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(

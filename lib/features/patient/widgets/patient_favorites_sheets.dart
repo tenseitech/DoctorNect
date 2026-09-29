@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/patient_favorites_store.dart';
 import '../data/registered_doctors_store.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../../../core/theme/app_typography.dart';
 
 abstract final class PatientFavoritesSheets {
@@ -33,7 +35,9 @@ abstract final class PatientFavoritesSheets {
   }
 
   static Future<bool> confirmRemoveDoctor(
-      BuildContext context, MyDoc doctor) async {
+    BuildContext context,
+    MyDoc doctor,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -41,8 +45,9 @@ abstract final class PatientFavoritesSheets {
         content: Text('Remove Dr. ${doctor.name} from your list?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
@@ -126,15 +131,17 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
           Text(
             'Add to My Doctor',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.headlineSmall,
-                fontWeight: FontWeight.w700),
+              fontSize: AppTypography.headlineSmall,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Search registered doctors to add to your list.',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -154,7 +161,8 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
           const SizedBox(height: 12),
           ConstrainedBox(
             constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.55),
+              maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+            ),
             child: doctors.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24),
@@ -162,7 +170,8 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
                       'No registered doctors found.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                          color: AppColors.textSecondaryOf(context)),
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   )
                 : ListView.separated(
@@ -178,14 +187,16 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
                         title: Text(
                           'Dr. ${doctor.name}',
                           style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w600,
-                              fontSize: AppTypography.bodyMedium),
+                            fontWeight: FontWeight.w600,
+                            fontSize: AppTypography.bodyMedium,
+                          ),
                         ),
                         subtitle: Text(
                           '${doctor.specialization}${doctor.area.trim().isNotEmpty ? ' · ${doctor.area}' : ''}',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                         trailing: FilledButton(
                           onPressed: added
@@ -193,13 +204,15 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
                               : () => _favorites.addDoctor(doctor.id),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.patientTeal,
-                            disabledBackgroundColor:
-                                AppColors.borderOf(context),
+                            disabledBackgroundColor: AppColors.borderOf(
+                              context,
+                            ),
                             minimumSize: const Size(64, 32),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             textStyle: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                fontWeight: FontWeight.w600),
+                              fontSize: AppTypography.labelMedium,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           child: Text(added ? 'Added' : 'Add'),
                         ),
@@ -276,15 +289,17 @@ class _AddLabSheetState extends State<_AddLabSheet> {
           Text(
             'Add to My Lab',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.headlineSmall,
-                fontWeight: FontWeight.w700),
+              fontSize: AppTypography.headlineSmall,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             'Search registered labs to add to your list.',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -304,7 +319,8 @@ class _AddLabSheetState extends State<_AddLabSheet> {
           const SizedBox(height: 12),
           ConstrainedBox(
             constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.55),
+              maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+            ),
             child: FutureBuilder<List<SavedLabEntry>>(
               future: _labsFuture,
               builder: (context, snapshot) {
@@ -312,8 +328,9 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                   return const Center(
                     child: Padding(
                       padding: EdgeInsets.all(24),
-                      child:
-                          CircularProgressIndicator(color: AppColors.labPurple),
+                      child: CircularProgressIndicator(
+                        color: AppColors.labPurple,
+                      ),
                     ),
                   );
                 }
@@ -326,7 +343,8 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                       'No registered labs found.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                          color: AppColors.textSecondaryOf(context)),
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   );
                 }
@@ -344,16 +362,18 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                       title: Text(
                         lab.name,
                         style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: AppTypography.bodyMedium),
+                          fontWeight: FontWeight.w600,
+                          fontSize: AppTypography.bodyMedium,
+                        ),
                       ),
                       subtitle: Text(
                         lab.area.trim().isNotEmpty
                             ? lab.area
                             : 'Registered lab',
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                       trailing: FilledButton(
                         onPressed: added ? null : () => _favorites.addLab(lab),
@@ -363,8 +383,9 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                           minimumSize: const Size(64, 32),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           textStyle: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              fontWeight: FontWeight.w600),
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         child: Text(added ? 'Added' : 'Add'),
                       ),

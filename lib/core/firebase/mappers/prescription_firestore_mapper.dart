@@ -9,7 +9,8 @@ abstract final class PrescriptionFirestoreMapper {
       final draft = PrescriptionDraft(
         patient: PatientClinicalContext(
           patientName: data['patientName'] as String? ?? 'Patient',
-          age: (data['patientAge'] as num?)?.toInt() ??
+          age:
+              (data['patientAge'] as num?)?.toInt() ??
               0, // FIXED: restore real age instead of hardcoded 0
           gender: data['patientGender'] as String?, // FIXED: restore gender
           patientId: data['patientId'] as String?,
@@ -18,7 +19,7 @@ abstract final class PrescriptionFirestoreMapper {
         prescriptionId: prescriptionId,
         prescriptionDate:
             DateTime.tryParse(data['prescriptionDate'] as String? ?? '') ??
-                DateTime.now(),
+            DateTime.now(),
       );
 
       // Doctor/clinic snapshot (written since v2 of the schema).
@@ -56,8 +57,8 @@ abstract final class PrescriptionFirestoreMapper {
       draft.medicines = medicines.map((raw) {
         final map = Map<String, dynamic>.from(raw as Map);
         final entry = MedicineEntry(
-            id: map['id']
-                as String?); // FIXED: restore medicine id so dispense lines match after reload
+          id: map['id'] as String?,
+        ); // FIXED: restore medicine id so dispense lines match after reload
         entry.name = map['name'] as String? ?? '';
         _applyDosage(entry, map['dosage'] as String? ?? '');
         entry.form = map['form'] as String? ?? 'Tablet';
@@ -71,14 +72,16 @@ abstract final class PrescriptionFirestoreMapper {
         return entry;
       }).toList();
 
-      final investigations = data['investigations'] as List<dynamic>? ??
+      final investigations =
+          data['investigations'] as List<dynamic>? ??
           const []; // FIXED: restore investigations
       draft.investigations = investigations
           .map((raw) {
             final map = Map<String, dynamic>.from(raw as Map);
             return InvestigationEntry(
               type: InvestigationType.values.byName(
-                  map['type'] as String? ?? InvestigationType.custom.name),
+                map['type'] as String? ?? InvestigationType.custom.name,
+              ),
               name: map['name'] as String? ?? '',
               group: map['group'] as String? ?? '',
               notes: map['notes'] as String? ?? '',
@@ -213,8 +216,7 @@ abstract final class PrescriptionFirestoreMapper {
       'medicines': draft.validMedicines
           .map(
             (m) => {
-              'id': m
-                  .id, // FIXED: persist medicine id so pharmacy dispense lines match after reload
+              'id': m.id, // FIXED: persist medicine id so pharmacy dispense lines match after reload
               'name': m.name,
               'dosage': m.dosageLabel,
               'form': m.form,
@@ -229,12 +231,14 @@ abstract final class PrescriptionFirestoreMapper {
           )
           .toList(),
       'investigations': draft.validInvestigations
-          .map((i) => {
-                'name': i.name,
-                'type': i.type.name,
-                if (i.group.isNotEmpty) 'group': i.group,
-                'notes': i.notes,
-              })
+          .map(
+            (i) => {
+              'name': i.name,
+              'type': i.type.name,
+              if (i.group.isNotEmpty) 'group': i.group,
+              'notes': i.notes,
+            },
+          )
           .toList(),
       'advice': {
         'diet': draft.dietAdvice,

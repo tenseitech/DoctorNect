@@ -1,5 +1,6 @@
 import '../notifications/app_toast.dart';
 import '../security/input_sanitize.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -91,7 +92,9 @@ class ExternalLauncher {
         await Clipboard.setData(ClipboardData(text: normalized));
         if (context != null && context.mounted) {
           AppToast.info(
-              context, 'Could not open dialer. Number copied: $normalized');
+            context,
+            'Could not open dialer. Number copied: $normalized',
+          );
         }
         return false;
       }
@@ -117,10 +120,13 @@ class ExternalLauncher {
       return await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
       await Clipboard.setData(
-          ClipboardData(text: '$body\n\nSend to: $normalized'));
+        ClipboardData(text: '$body\n\nSend to: $normalized'),
+      );
       if (context != null && context.mounted) {
         AppToast.info(
-            context, 'SMS app not available. Message copied to clipboard.');
+          context,
+          'SMS app not available. Message copied to clipboard.',
+        );
       }
       return false;
     }
@@ -142,7 +148,9 @@ class ExternalLauncher {
       await Clipboard.setData(ClipboardData(text: body));
       if (context != null && context.mounted) {
         AppToast.info(
-            context, 'SMS not available. Message copied to clipboard.');
+          context,
+          'SMS not available. Message copied to clipboard.',
+        );
       }
       return false;
     }
@@ -158,7 +166,8 @@ class ExternalLauncher {
     final uri = waDigits == null
         ? Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}')
         : Uri.parse(
-            'https://wa.me/$waDigits?text=${Uri.encodeComponent(text)}');
+            'https://wa.me/$waDigits?text=${Uri.encodeComponent(text)}',
+          );
 
     try {
       return await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -174,8 +183,9 @@ class ExternalLauncher {
     String? url,
     BuildContext? context,
   }) async {
-    final shareUrl =
-        url?.trim().isNotEmpty == true ? url!.trim() : 'https://doctornect.com';
+    final shareUrl = url?.trim().isNotEmpty == true
+        ? url!.trim()
+        : 'https://doctornect.com';
     final tgWeb = Uri.parse(
       'https://t.me/share/url?url=${Uri.encodeComponent(shareUrl)}&text=${Uri.encodeComponent(text)}',
     );

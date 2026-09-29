@@ -17,7 +17,8 @@ abstract final class FileEncryptionService {
 
   static const _secureStorage = FlutterSecureStorage(
     iOptions: IOSOptions(
-        accessibility: KeychainAccessibility.first_unlock_this_device),
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
   );
 
   static encrypt.Key? _cachedKey;
@@ -55,7 +56,8 @@ abstract final class FileEncryptionService {
     final key = _cachedKey;
     if (key == null) {
       throw StateError(
-          'FileEncryptionService.ensureInitialized() was not called.');
+        'FileEncryptionService.ensureInitialized() was not called.',
+      );
     }
     return key;
   }
@@ -95,7 +97,8 @@ abstract final class FileEncryptionService {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'FileEncryptionService.decryptFromMemoryCache failed: $e\n$st');
+          'FileEncryptionService.decryptFromMemoryCache failed: $e\n$st',
+        );
       }
       return null;
     }
@@ -117,8 +120,9 @@ abstract final class FileEncryptionService {
     }
 
     final encrypted = await encryptBytes(plain);
-    final encFile =
-        File('$directoryPath/${encryptedFileName(sanitizedFileName)}');
+    final encFile = File(
+      '$directoryPath/${encryptedFileName(sanitizedFileName)}',
+    );
     await encFile.writeAsBytes(encrypted, flush: true);
 
     final legacy = File('$directoryPath/$sanitizedFileName');
@@ -135,8 +139,9 @@ abstract final class FileEncryptionService {
     required String directoryPath,
     required String sanitizedFileName,
   }) async {
-    final encFile =
-        File('$directoryPath/${encryptedFileName(sanitizedFileName)}');
+    final encFile = File(
+      '$directoryPath/${encryptedFileName(sanitizedFileName)}',
+    );
     if (encFile.existsSync()) {
       final raw = await encFile.readAsBytes();
       if (looksEncrypted(raw)) {
@@ -145,7 +150,8 @@ abstract final class FileEncryptionService {
         } catch (e, st) {
           if (kDebugMode) {
             debugPrint(
-                'FileEncryptionService.readDiskFile decrypt failed: $e\n$st');
+              'FileEncryptionService.readDiskFile decrypt failed: $e\n$st',
+            );
           }
           return null;
         }
@@ -170,8 +176,9 @@ abstract final class FileEncryptionService {
     required String directoryPath,
     required String sanitizedFileName,
   }) async {
-    final encFile =
-        File('$directoryPath/${encryptedFileName(sanitizedFileName)}');
+    final encFile = File(
+      '$directoryPath/${encryptedFileName(sanitizedFileName)}',
+    );
     if (encFile.existsSync()) {
       try {
         await encFile.delete();
@@ -197,8 +204,9 @@ class _CipherPayload {
 Uint8List _encryptPayload(_CipherPayload payload) {
   final key = encrypt.Key(payload.keyBytes);
   final iv = encrypt.IV.fromSecureRandom(FileEncryptionService._nonceLength);
-  final encrypter =
-      encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.gcm));
+  final encrypter = encrypt.Encrypter(
+    encrypt.AES(key, mode: encrypt.AESMode.gcm),
+  );
   final cipher = encrypter.encryptBytes(payload.data, iv: iv);
 
   final out = Uint8List(
@@ -208,8 +216,11 @@ Uint8List _encryptPayload(_CipherPayload payload) {
         cipher.bytes.length,
   );
   var offset = 0;
-  out.setRange(offset, offset + FileEncryptionService._magic.length,
-      FileEncryptionService._magic.codeUnits);
+  out.setRange(
+    offset,
+    offset + FileEncryptionService._magic.length,
+    FileEncryptionService._magic.codeUnits,
+  );
   offset += FileEncryptionService._magic.length;
   out[offset] = FileEncryptionService._formatVersion;
   offset += 1;
@@ -226,15 +237,19 @@ Uint8List _decryptPayload(_CipherPayload payload) {
   }
 
   var offset = FileEncryptionService._magic.length + 1;
-  final iv = encrypt
-      .IV(bytes.sublist(offset, offset + FileEncryptionService._nonceLength));
+  final iv = encrypt.IV(
+    bytes.sublist(offset, offset + FileEncryptionService._nonceLength),
+  );
   offset += FileEncryptionService._nonceLength;
   final cipherBytes = bytes.sublist(offset);
 
   final key = encrypt.Key(payload.keyBytes);
-  final encrypter =
-      encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.gcm));
-  final decrypted =
-      encrypter.decryptBytes(encrypt.Encrypted(cipherBytes), iv: iv);
+  final encrypter = encrypt.Encrypter(
+    encrypt.AES(key, mode: encrypt.AESMode.gcm),
+  );
+  final decrypted = encrypter.decryptBytes(
+    encrypt.Encrypted(cipherBytes),
+    iv: iv,
+  );
   return Uint8List.fromList(decrypted);
 }

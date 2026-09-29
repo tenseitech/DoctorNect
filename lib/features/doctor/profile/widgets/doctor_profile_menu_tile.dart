@@ -57,13 +57,7 @@ class DoctorProfileMenuTile extends StatelessWidget {
               SizedBox(
                 width: 40,
                 height: 40,
-                child: Center(
-                  child: Icon(
-                    icon,
-                    size: 22,
-                    color: strokeColor,
-                  ),
-                ),
+                child: Center(child: Icon(icon, size: 22, color: strokeColor)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -97,8 +91,8 @@ class DoctorProfileMenuTile extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 size: 20,
-                color:
-                    AppColors.textSecondaryOf(context).withValues(alpha: 0.85),
+                color: AppColors.textSecondaryOf(context)
+                    .withValues(alpha: 0.85),
               ),
             ],
           ),

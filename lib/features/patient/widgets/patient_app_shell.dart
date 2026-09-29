@@ -1,4 +1,5 @@
 import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -25,8 +26,12 @@ class PatientTabItem {
   final String label;
   final String? shortLabel;
   final Widget Function(
-          BuildContext context, bool selected, Color iconColor, double size)?
-      customIconBuilder;
+    BuildContext context,
+    bool selected,
+    Color iconColor,
+    double size,
+  )?
+  customIconBuilder;
 
   String get mobileLabel => shortLabel ?? label;
 
@@ -42,7 +47,11 @@ class PatientTabItem {
     if (customIconBuilder != null) {
       return customIconBuilder!(context, selected, iconColor, size);
     }
-    return Icon(icon(selected: selected), size: size, color: iconColor);
+    return Icon(
+      icon(selected: selected),
+      size: size,
+      color: iconColor,
+    );
   }
 }
 
@@ -190,7 +199,10 @@ class PatientAppShell extends StatelessWidget {
                 ),
               ),
               VerticalDivider(
-                  width: 1, thickness: 1, color: AppColors.borderOf(context)),
+                width: 1,
+                thickness: 1,
+                color: AppColors.borderOf(context),
+              ),
               Expanded(child: child),
             ],
           ),
@@ -426,14 +438,14 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                         final iconColor = selected
                             ? (isDark ? Colors.white : AppColors.patientTeal)
                             : (isDark
-                                ? Colors.white.withValues(alpha: 0.70)
-                                : const Color(0xFF64748B));
+                                  ? Colors.white.withValues(alpha: 0.70)
+                                  : const Color(0xFF64748B));
 
                         final labelColor = selected
                             ? (isDark ? Colors.white : AppColors.patientTeal)
                             : (isDark
-                                ? Colors.white.withValues(alpha: 0.70)
-                                : const Color(0xFF64748B));
+                                  ? Colors.white.withValues(alpha: 0.70)
+                                  : const Color(0xFF64748B));
 
                         return Expanded(
                           child: Material(
@@ -445,15 +457,21 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                                 duration: const Duration(milliseconds: 200),
                                 curve: Curves.easeOutCubic,
                                 margin: const EdgeInsets.symmetric(
-                                    horizontal: 2, vertical: 5),
+                                  horizontal: 2,
+                                  vertical: 5,
+                                ),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 2, vertical: 3),
+                                  horizontal: 2,
+                                  vertical: 3,
+                                ),
                                 decoration: selected
                                     ? BoxDecoration(
                                         color: activePillBg,
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
-                                            color: activePillBorder, width: 1),
+                                          color: activePillBorder,
+                                          width: 1,
+                                        ),
                                       )
                                     : null,
                                 child: Column(

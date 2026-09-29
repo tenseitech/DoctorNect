@@ -1,4 +1,5 @@
 import '../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -60,8 +61,9 @@ class _StorePrescriptionDetailScreenState
   }
 
   Future<void> _markDispensed(PharmacyPrescriptionDelivery delivery) async {
-    final hasPending = delivery.medicineLines
-        .any((l) => l.availability == MedicineAvailability.pending);
+    final hasPending = delivery.medicineLines.any(
+      (l) => l.availability == MedicineAvailability.pending,
+    );
     if (hasPending) {
       final proceed = await showDialog<bool>(
         context: context,
@@ -72,11 +74,13 @@ class _StorePrescriptionDetailScreenState
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
             TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Dispense anyway')),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Dispense anyway'),
+            ),
           ],
         ),
       );
@@ -112,7 +116,7 @@ class _StorePrescriptionDetailScreenState
         final draft = delivery.draft;
         final isDispensed =
             delivery.status == PharmacyDeliveryStatus.dispensed ||
-                delivery.status == PharmacyDeliveryStatus.partiallyDispensed;
+            delivery.status == PharmacyDeliveryStatus.partiallyDispensed;
         final reviewed = delivery.medicineLines
             .where((l) => l.availability != MedicineAvailability.pending)
             .length;
@@ -120,10 +124,13 @@ class _StorePrescriptionDetailScreenState
         return Scaffold(
           backgroundColor: AppColors.surfaceOf(context),
           appBar: AppBar(
-            title: Text(draft.prescriptionId,
-                style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyLarge,
-                    fontWeight: FontWeight.w600)),
+            title: Text(
+              draft.prescriptionId,
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyLarge,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             backgroundColor: AppColors.surfaceOf(context),
             elevation: 0,
             scrolledUnderElevation: 0,
@@ -136,8 +143,9 @@ class _StorePrescriptionDetailScreenState
           body: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
-              constraints:
-                  const BoxConstraints(maxWidth: _detailContentMaxWidth),
+              constraints: const BoxConstraints(
+                maxWidth: _detailContentMaxWidth,
+              ),
               child: Column(
                 children: [
                   Expanded(
@@ -164,24 +172,27 @@ class _StorePrescriptionDetailScreenState
                             readOnly: isDispensed,
                             onStatusChanged:
                                 (line, availability, substitute) async {
-                              final messenger = ScaffoldMessenger.of(context);
-                              try {
-                                await PharmacyPrescriptionStore.instance
-                                    .updateMedicineLine(
-                                  deliveryId: delivery.id,
-                                  medicineEntryId: line.medicineEntryId,
-                                  availability: availability,
-                                  substituteName: substitute,
-                                );
-                              } catch (_) {
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        'Failed to update medicine availability. Please retry.'),
-                                  ),
-                                );
-                              }
-                            },
+                                  final messenger = ScaffoldMessenger.of(
+                                    context,
+                                  );
+                                  try {
+                                    await PharmacyPrescriptionStore.instance
+                                        .updateMedicineLine(
+                                          deliveryId: delivery.id,
+                                          medicineEntryId: line.medicineEntryId,
+                                          availability: availability,
+                                          substituteName: substitute,
+                                        );
+                                  } catch (_) {
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Failed to update medicine availability. Please retry.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -232,31 +243,37 @@ class _PrescriptionHeader extends StatelessWidget {
                 Text(
                   draft.patient.patientName,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineLarge,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimaryOf(context),
-                      letterSpacing: -0.5),
+                    fontSize: AppTypography.headlineLarge,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimaryOf(context),
+                    letterSpacing: -0.5,
+                  ),
                 ),
                 SizedBox(height: 6),
                 Text(
                   '${draft.patient.age} yrs · ${draft.patient.gender ?? '—'} · ${_pharmacyDoctorLabel(delivery.doctorName)}',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodyMedium,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
                 SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.access_time_rounded,
-                        size: 14, color: AppColors.textSecondaryOf(context)),
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 14,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Received ${DateFormat('dd MMM yyyy, hh:mm a').format(delivery.sentAt)}',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelMedium,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   ],
                 ),
@@ -295,8 +312,10 @@ class _PrescriptionHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: status.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -304,9 +323,10 @@ class _PrescriptionHeader extends StatelessWidget {
                 child: Text(
                   status.label,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium,
-                      fontWeight: FontWeight.w700,
-                      color: status.color),
+                    fontSize: AppTypography.labelMedium,
+                    fontWeight: FontWeight.w700,
+                    color: status.color,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -319,9 +339,10 @@ class _PrescriptionHeader extends StatelessWidget {
                 child: Text(
                   '$reviewedCount / $totalCount reviewed',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.labelSmall,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
               ),
             ],
@@ -340,14 +361,22 @@ class _DeliveryStatusStyle {
 
   static _DeliveryStatusStyle from(PharmacyDeliveryStatus status) =>
       switch (status) {
-        PharmacyDeliveryStatus.sent =>
-          _DeliveryStatusStyle(label: 'New', color: AppColors.doctorBlue),
-        PharmacyDeliveryStatus.viewed =>
-          _DeliveryStatusStyle(label: 'Viewed', color: const Color(0xFFCA8A04)),
+        PharmacyDeliveryStatus.sent => _DeliveryStatusStyle(
+          label: 'New',
+          color: AppColors.doctorBlue,
+        ),
+        PharmacyDeliveryStatus.viewed => _DeliveryStatusStyle(
+          label: 'Viewed',
+          color: const Color(0xFFCA8A04),
+        ),
         PharmacyDeliveryStatus.partiallyDispensed => _DeliveryStatusStyle(
-            label: 'Partially dispensed', color: const Color(0xFFEA580C)),
+          label: 'Partially dispensed',
+          color: const Color(0xFFEA580C),
+        ),
         PharmacyDeliveryStatus.dispensed => _DeliveryStatusStyle(
-            label: 'Dispensed', color: AppColors.pharmacyGreen),
+          label: 'Dispensed',
+          color: AppColors.pharmacyGreen,
+        ),
       };
 }
 
@@ -361,8 +390,11 @@ class _SectionBreak extends StatelessWidget {
 }
 
 class _DetailSection extends StatelessWidget {
-  const _DetailSection(
-      {required this.title, this.subtitle, required this.child});
+  const _DetailSection({
+    required this.title,
+    this.subtitle,
+    required this.child,
+  });
 
   final String title;
   final String? subtitle;
@@ -381,27 +413,35 @@ class _DetailSection extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                      width: 4,
-                      height: 16,
-                      decoration: BoxDecoration(
-                          color: AppColors.pharmacyGreen,
-                          borderRadius: BorderRadius.circular(2))),
+                    width: 4,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: AppColors.pharmacyGreen,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                   const SizedBox(width: 10),
-                  Text(title,
-                      style: GoogleFonts.inter(
-                          fontSize: AppTypography.headlineSmall,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimaryOf(context))),
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryOf(context),
+                    ),
+                  ),
                 ],
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 6),
                 Padding(
                   padding: const EdgeInsets.only(left: 13),
-                  child: Text(subtitle!,
-                      style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context))),
+                  child: Text(
+                    subtitle!,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -426,7 +466,7 @@ class _PatientDetailsGrid extends StatelessWidget {
       ('Patient', draft.patient.patientName),
       (
         'Age / Gender',
-        '${draft.patient.age} yrs · ${draft.patient.gender ?? '—'}'
+        '${draft.patient.age} yrs · ${draft.patient.gender ?? '—'}',
       ),
       ('Doctor', _pharmacyDoctorLabel(delivery.doctorName)),
       ('Rx ID', draft.prescriptionId),
@@ -454,26 +494,33 @@ class _PatientDetailsGrid extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                        color: AppColors.textPrimaryOf(context)
-                            .withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2)),
+                      color: AppColors.textPrimaryOf(context)
+                          .withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(d.$1,
-                        style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context),
-                            fontWeight: FontWeight.w500)),
+                    Text(
+                      d.$1,
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(height: 6),
-                    Text(d.$2,
-                        style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodyMedium,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimaryOf(context))),
+                    Text(
+                      d.$2,
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyMedium,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimaryOf(context),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -494,8 +541,12 @@ class _MedicinesResponsiveSection extends StatelessWidget {
 
   final PharmacyPrescriptionDelivery delivery;
   final bool readOnly;
-  final Future<void> Function(MedicineDispenseLine line,
-      MedicineAvailability availability, String substitute) onStatusChanged;
+  final Future<void> Function(
+    MedicineDispenseLine line,
+    MedicineAvailability availability,
+    String substitute,
+  )
+  onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -528,8 +579,12 @@ class _MedicinesListSection extends StatelessWidget {
 
   final PharmacyPrescriptionDelivery delivery;
   final bool readOnly;
-  final Future<void> Function(MedicineDispenseLine line,
-      MedicineAvailability availability, String substitute) onStatusChanged;
+  final Future<void> Function(
+    MedicineDispenseLine line,
+    MedicineAvailability availability,
+    String substitute,
+  )
+  onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -545,13 +600,15 @@ class _MedicinesListSection extends StatelessWidget {
               color: AppColors.surfaceOf(context),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                  color: AppColors.borderOf(context).withValues(alpha: 0.5)),
+                color: AppColors.borderOf(context).withValues(alpha: 0.5),
+              ),
               boxShadow: [
                 BoxShadow(
-                    color: AppColors.textPrimaryOf(context)
-                        .withValues(alpha: 0.03),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4)),
+                  color: AppColors.textPrimaryOf(context)
+                      .withValues(alpha: 0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
               ],
             ),
             padding: const EdgeInsets.all(16),
@@ -561,8 +618,9 @@ class _MedicinesListSection extends StatelessWidget {
                 Text(
                   line.medicineName,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodyMedium,
-                      fontWeight: FontWeight.w700),
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -581,9 +639,10 @@ class _MedicinesListSection extends StatelessWidget {
                   Text(
                     'Note: ${line.specialInstructions}',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context),
-                        fontStyle: FontStyle.italic),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -614,15 +673,21 @@ class _InfoChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('$label: ',
-            style: GoogleFonts.inter(
-                fontSize: AppTypography.labelSmall,
-                color: AppColors.textSecondaryOf(context))),
-        Text(value,
-            style: GoogleFonts.inter(
-                fontSize: AppTypography.labelSmall,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimaryOf(context))),
+        Text(
+          '$label: ',
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.labelSmall,
+            color: AppColors.textSecondaryOf(context),
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.labelSmall,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimaryOf(context),
+          ),
+        ),
       ],
     );
   }
@@ -637,8 +702,12 @@ class _MedicinesTableSection extends StatelessWidget {
 
   final PharmacyPrescriptionDelivery delivery;
   final bool readOnly;
-  final Future<void> Function(MedicineDispenseLine line,
-      MedicineAvailability availability, String substitute) onStatusChanged;
+  final Future<void> Function(
+    MedicineDispenseLine line,
+    MedicineAvailability availability,
+    String substitute,
+  )
+  onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -650,9 +719,11 @@ class _MedicinesTableSection extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Table(
           border: TableBorder.symmetric(
-              inside: BorderSide(
-                  color: AppColors.borderOf(context).withValues(alpha: 0.5),
-                  width: 1)),
+            inside: BorderSide(
+              color: AppColors.borderOf(context).withValues(alpha: 0.5),
+              width: 1,
+            ),
+          ),
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           columnWidths: const {
             0: FixedColumnWidth(28),
@@ -678,7 +749,7 @@ class _MedicinesTableSection extends StatelessWidget {
                   'Freq',
                   'Dur',
                   'Note',
-                  'Status'
+                  'Status',
                 ])
                   _HeaderCell(h),
               ],
@@ -698,12 +769,16 @@ class _MedicinesTableSection extends StatelessWidget {
                   _BodyCell(lines[i].quantity),
                   _BodyCell(lines[i].frequencyLabel),
                   _BodyCell(lines[i].durationLabel),
-                  _BodyCell(lines[i].specialInstructions.isEmpty
-                      ? '—'
-                      : lines[i].specialInstructions),
+                  _BodyCell(
+                    lines[i].specialInstructions.isEmpty
+                        ? '—'
+                        : lines[i].specialInstructions,
+                  ),
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 8,
+                    ),
                     child: _MedicineStatusPicker(
                       line: lines[i],
                       readOnly: readOnly,
@@ -740,9 +815,10 @@ class _DispensingPanel extends StatelessWidget {
         color: AppColors.surfaceOf(context),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 24,
-              offset: const Offset(0, -8)),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+          ),
         ],
       ),
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -753,16 +829,21 @@ class _DispensingPanel extends StatelessWidget {
           Row(
             children: [
               Container(
-                  width: 4,
-                  height: 16,
-                  decoration: BoxDecoration(
-                      color: AppColors.pharmacyGreen,
-                      borderRadius: BorderRadius.circular(2))),
+                width: 4,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: AppColors.pharmacyGreen,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               const SizedBox(width: 10),
-              Text('Dispensing',
-                  style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineSmall,
-                      fontWeight: FontWeight.w700)),
+              Text(
+                'Dispensing',
+                style: GoogleFonts.inter(
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -770,9 +851,10 @@ class _DispensingPanel extends StatelessWidget {
             Text(
               'Dispensed ${delivery.dispensedAt != null ? DateFormat('dd MMM yyyy, hh:mm a').format(delivery.dispensedAt!) : ''}',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.pharmacyGreen),
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w600,
+                color: AppColors.pharmacyGreen,
+              ),
             ),
             if (delivery.dispensingNotes.isNotEmpty)
               Padding(
@@ -780,9 +862,10 @@ class _DispensingPanel extends StatelessWidget {
                 child: Text(
                   delivery.dispensingNotes,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      color: AppColors.textSecondaryOf(context),
-                      height: 1.4),
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
+                    height: 1.4,
+                  ),
                 ),
               ),
           ] else ...[
@@ -792,14 +875,18 @@ class _DispensingPanel extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
               decoration: InputDecoration(
                 labelText: 'Dispensing notes (optional)',
-                labelStyle:
-                    GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+                labelStyle: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                ),
                 filled: true,
                 fillColor: AppColors.cardBgOf(context),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(color: _lineColor),
@@ -807,7 +894,9 @@ class _DispensingPanel extends StatelessWidget {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: const BorderSide(
-                      color: AppColors.pharmacyGreen, width: 1.4),
+                    color: AppColors.pharmacyGreen,
+                    width: 1.4,
+                  ),
                 ),
               ),
             ),
@@ -821,13 +910,15 @@ class _DispensingPanel extends StatelessWidget {
                   foregroundColor: AppColors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: Text(
                   'Mark as Dispensed',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodyMedium,
-                      fontWeight: FontWeight.w600),
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -860,11 +951,8 @@ class _HeaderCell extends StatelessWidget {
 }
 
 class _BodyCell extends StatelessWidget {
-  const _BodyCell(
-    this.text, {
-    this.bold = false,
-    this.align = TextAlign.left,
-  }) : muted = false;
+  const _BodyCell(this.text, {this.bold = false, this.align = TextAlign.left})
+    : muted = false;
 
   final String text;
   final bool bold;
@@ -901,7 +989,7 @@ class _MedicineStatusPicker extends StatelessWidget {
   final MedicineDispenseLine line;
   final bool readOnly;
   final void Function(MedicineAvailability availability, String substitute)
-      onChanged;
+  onChanged;
 
   Future<void> _showSubstituteDialog(BuildContext context) async {
     final ctrl = TextEditingController(text: line.substituteName);
@@ -916,10 +1004,13 @@ class _MedicineStatusPicker extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-              child: const Text('Save')),
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -977,7 +1068,10 @@ class _MedicineStatusPicker extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                  fontSize: 10, color: AppColors.doctorBlue, height: 1.3),
+                fontSize: 10,
+                color: AppColors.doctorBlue,
+                height: 1.3,
+              ),
             ),
           ),
       ],
@@ -1016,8 +1110,8 @@ class _StatusSegment extends StatelessWidget {
               color: selected
                   ? color
                   : (disabled
-                      ? AppColors.surfaceOf(context)
-                      : AppColors.cardBgOf(context)),
+                        ? AppColors.surfaceOf(context)
+                        : AppColors.cardBgOf(context)),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -1029,8 +1123,8 @@ class _StatusSegment extends StatelessWidget {
                 color: selected
                     ? AppColors.surfaceOf(context)
                     : (disabled
-                        ? AppColors.textPrimaryOf(context)
-                        : AppColors.textSecondaryOf(context)),
+                          ? AppColors.textPrimaryOf(context)
+                          : AppColors.textSecondaryOf(context)),
               ),
             ),
           ),

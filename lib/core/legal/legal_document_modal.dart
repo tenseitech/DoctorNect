@@ -59,7 +59,8 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
-    final atBottom = position.maxScrollExtent <= 0 ||
+    final atBottom =
+        position.maxScrollExtent <= 0 ||
         position.pixels >= position.maxScrollExtent - 24;
     if (atBottom && !_reachedBottom) {
       setState(() => _reachedBottom = true);
@@ -70,7 +71,9 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
   Widget build(BuildContext context) {
     final title = DoctorNectLegalContent.title(widget.type);
     final sections = DoctorNectLegalContent.sections(
-        type: widget.type, audience: widget.audience);
+      type: widget.type,
+      audience: widget.audience,
+    );
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -98,8 +101,10 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close,
-                        color: AppColors.textSecondaryOf(context)),
+                    icon: Icon(
+                      Icons.close,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                 ],
               ),
@@ -173,8 +178,9 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
               width: double.infinity,
               padding: EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: BoxDecoration(
-                border:
-                    Border(top: BorderSide(color: AppColors.borderOf(context))),
+                border: Border(
+                  top: BorderSide(color: AppColors.borderOf(context)),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -195,8 +201,9 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                         : null,
                     style: FilledButton.styleFrom(
                       backgroundColor: widget.accentColor,
-                      disabledBackgroundColor:
-                          widget.accentColor.withValues(alpha: 0.35),
+                      disabledBackgroundColor: widget.accentColor.withValues(
+                        alpha: 0.35,
+                      ),
                       minimumSize: const Size(double.infinity, 48),
                     ),
                     child: const Text('I Agree'),

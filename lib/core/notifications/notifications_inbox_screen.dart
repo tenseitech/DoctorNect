@@ -82,6 +82,8 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
         final items = _items;
         final unreadCount = _unreadCount;
 
+        final compact = ResponsiveLayout.isCompact(context);
+
         return Scaffold(
           backgroundColor: AppColors.cardBgOf(context),
           appBar: AppBar(
@@ -90,20 +92,28 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
             elevation: 0,
             scrolledUnderElevation: 0,
             surfaceTintColor: Colors.transparent,
+            leadingWidth: compact ? 44 : null,
+            titleSpacing: compact ? 4 : null,
             title: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Notifications',
-                  style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineSmall,
-                      fontWeight: FontWeight.w700),
+                Flexible(
+                  child: Text(
+                    'Notifications',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: compact ? 17 : AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
                 if (unreadCount > 0) ...[
-                  const SizedBox(width: 10),
+                  SizedBox(width: compact ? 8 : 10),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 8 : 9,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: _accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
@@ -111,8 +121,10 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                     ),
                     child: Text(
                       '$unreadCount unread',
+                      maxLines: 1,
+                      softWrap: false,
                       style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
+                        fontSize: compact ? 11.5 : AppTypography.labelMedium,
                         fontWeight: FontWeight.w700,
                         color: _accent,
                       ),
@@ -123,19 +135,28 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: EdgeInsets.only(right: compact ? 6 : 8),
                 child: TextButton(
                   onPressed: unreadCount > 0 ? _markAllRead : null,
                   style: TextButton.styleFrom(
                     foregroundColor: _accent,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    visualDensity: compact
+                        ? VisualDensity.compact
+                        : VisualDensity.standard,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 8 : 12,
+                      vertical: 8,
+                    ),
                   ),
                   child: Text(
                     'Mark all read',
+                    maxLines: 1,
+                    softWrap: false,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        fontWeight: FontWeight.w600),
+                      fontSize: compact ? 12.5 : AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -176,10 +197,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
               const SizedBox(height: 12),
               Expanded(
                 child: items.isEmpty
-                    ? _EmptyInbox(
-                        accent: _accent,
-                        filter: _filter,
-                      )
+                    ? _EmptyInbox(accent: _accent, filter: _filter)
                     : Center(
                         child: ConstrainedBox(
                           constraints: BoxConstraints(
@@ -316,7 +334,8 @@ class _NotificationTile extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: accent,
                       borderRadius: const BorderRadius.horizontal(
-                          right: Radius.circular(4)),
+                        right: Radius.circular(4),
+                      ),
                     ),
                   ),
                 ),
@@ -337,15 +356,19 @@ class _NotificationTile extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                palette.gradient.last.withValues(alpha: 0.22),
+                            color: palette.gradient.last.withValues(
+                              alpha: 0.22,
+                            ),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      child:
-                          Icon(palette.icon, size: 22, color: AppColors.white),
+                      child: Icon(
+                        palette.icon,
+                        size: 22,
+                        color: AppColors.white,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -372,12 +395,15 @@ class _NotificationTile extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2),
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: accent.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                        color: accent.withValues(alpha: 0.25)),
+                                      color: accent.withValues(alpha: 0.25),
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -386,8 +412,9 @@ class _NotificationTile extends StatelessWidget {
                                         width: 5,
                                         height: 5,
                                         decoration: BoxDecoration(
-                                            color: accent,
-                                            shape: BoxShape.circle),
+                                          color: accent,
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
@@ -418,8 +445,9 @@ class _NotificationTile extends StatelessWidget {
                           Text(
                             time,
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelSmall,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelSmall,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         ],
                       ),
@@ -436,10 +464,7 @@ class _NotificationTile extends StatelessWidget {
 }
 
 class _NotificationPalette {
-  const _NotificationPalette({
-    required this.gradient,
-    required this.icon,
-  });
+  const _NotificationPalette({required this.gradient, required this.icon});
 
   final List<Color> gradient;
   final IconData icon;
@@ -447,62 +472,59 @@ class _NotificationPalette {
   static _NotificationPalette forType(AppNotificationType type, Color accent) {
     return switch (type) {
       AppNotificationType.appointment => _NotificationPalette(
-          gradient: [accent, accent.withValues(alpha: 0.75)],
-          icon: Icons.event_available_outlined,
-        ),
+        gradient: [accent, accent.withValues(alpha: 0.75)],
+        icon: Icons.event_available_outlined,
+      ),
       AppNotificationType.booking => _NotificationPalette(
-          gradient: [accent, accent.withValues(alpha: 0.75)],
-          icon: Icons.calendar_month_outlined,
-        ),
+        gradient: [accent, accent.withValues(alpha: 0.75)],
+        icon: Icons.calendar_month_outlined,
+      ),
       AppNotificationType.cancellation => const _NotificationPalette(
-          gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
-          icon: Icons.event_busy_outlined,
-        ),
+        gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+        icon: Icons.event_busy_outlined,
+      ),
       AppNotificationType.labReport => const _NotificationPalette(
-          gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-          icon: Icons.biotech_outlined,
-        ),
+        gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+        icon: Icons.biotech_outlined,
+      ),
       AppNotificationType.prescription => const _NotificationPalette(
-          gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-          icon: AppIcons.prescription,
-        ),
+        gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+        icon: AppIcons.prescription,
+      ),
       AppNotificationType.reminder => const _NotificationPalette(
-          gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
-          icon: Icons.alarm_outlined,
-        ),
+        gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
+        icon: Icons.alarm_outlined,
+      ),
       AppNotificationType.review => const _NotificationPalette(
-          gradient: [Color(0xFFCA8A04), Color(0xFFA16207)],
-          icon: Icons.star_outline,
-        ),
+        gradient: [Color(0xFFCA8A04), Color(0xFFA16207)],
+        icon: Icons.star_outline,
+      ),
       AppNotificationType.payout => const _NotificationPalette(
-          gradient: [Color(0xFF059669), Color(0xFF047857)],
-          icon: Icons.payments_outlined,
-        ),
+        gradient: [Color(0xFF059669), Color(0xFF047857)],
+        icon: Icons.payments_outlined,
+      ),
       AppNotificationType.chat => _NotificationPalette(
-          gradient: [accent, accent.withValues(alpha: 0.75)],
-          icon: Icons.chat_bubble_outline,
-        ),
+        gradient: [accent, accent.withValues(alpha: 0.75)],
+        icon: Icons.chat_bubble_outline,
+      ),
       AppNotificationType.kyc => const _NotificationPalette(
-          gradient: [Color(0xFF0891B2), Color(0xFF0E7490)],
-          icon: Icons.verified_user_outlined,
-        ),
+        gradient: [Color(0xFF0891B2), Color(0xFF0E7490)],
+        icon: Icons.verified_user_outlined,
+      ),
       AppNotificationType.wellness => const _NotificationPalette(
-          gradient: [Color(0xFF16A34A), Color(0xFF15803D)],
-          icon: Icons.favorite_outline,
-        ),
+        gradient: [Color(0xFF16A34A), Color(0xFF15803D)],
+        icon: Icons.favorite_outline,
+      ),
       AppNotificationType.system => const _NotificationPalette(
-          gradient: [Color(0xFF64748B), Color(0xFF475569)],
-          icon: Icons.info_outline,
-        ),
+        gradient: [Color(0xFF64748B), Color(0xFF475569)],
+        icon: Icons.info_outline,
+      ),
     };
   }
 }
 
 class _EmptyInbox extends StatelessWidget {
-  const _EmptyInbox({
-    required this.accent,
-    required this.filter,
-  });
+  const _EmptyInbox({required this.accent, required this.filter});
 
   final Color accent;
   final _InboxFilter filter;
@@ -548,17 +570,19 @@ class _EmptyInbox extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineSmall,
-                      fontWeight: FontWeight.w700),
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      color: AppColors.textSecondaryOf(context),
-                      height: 1.45),
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
+                    height: 1.45,
+                  ),
                 ),
               ],
             ),

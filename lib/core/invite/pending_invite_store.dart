@@ -28,12 +28,15 @@ abstract final class PendingInviteStore {
 
     final portalParam = uri.queryParameters['portal']?.trim().toLowerCase();
     final adminParam = uri.queryParameters['admin']?.trim().toLowerCase();
-    final hasAdminPath = uri.pathSegments.any((s) =>
-        s == '_admin_portal' ||
-        s == 'ops-portal' ||
-        s == 'super-admin-portal' ||
-        s == '_admin');
-    final hasAdminFragment = uri.fragment.contains('_admin_portal') ||
+    final hasAdminPath = uri.pathSegments.any(
+      (s) =>
+          s == '_admin_portal' ||
+          s == 'ops-portal' ||
+          s == 'super-admin-portal' ||
+          s == '_admin',
+    );
+    final hasAdminFragment =
+        uri.fragment.contains('_admin_portal') ||
         uri.fragment.contains('ops-portal') ||
         uri.fragment.contains('super-admin-portal') ||
         uri.fragment.contains('_admin');

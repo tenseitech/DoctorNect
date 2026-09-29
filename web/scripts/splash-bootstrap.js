@@ -13,24 +13,4 @@ async function startFlutter() {
   document.body.appendChild(s);
 }
 
-window.addEventListener('flutter-first-frame', function () {
-  var splash = document.getElementById('app-loading-splash');
-  if (splash) {
-    splash.style.opacity = '0';
-    setTimeout(function () {
-      splash.remove();
-    }, 400);
-  }
-});
-
-setTimeout(function () {
-  var splash = document.getElementById('app-loading-splash');
-  if (splash && splash.parentNode) {
-    splash.style.opacity = '0';
-    setTimeout(function () {
-      if (splash.parentNode) splash.remove();
-    }, 400);
-  }
-}, 6000);
-
 startFlutter();

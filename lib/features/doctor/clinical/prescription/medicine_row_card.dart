@@ -20,7 +20,7 @@ List<String> _mergedDosageUnits(String current) =>
 List<String> _mergedMedicineForms(String current) {
   final forms = <String>{
     ...ClinicalMockData.medicineForms,
-    ...kCommunityMedicineForms
+    ...kCommunityMedicineForms,
   };
   if (current.isNotEmpty) forms.add(current);
   return forms.toList();
@@ -55,7 +55,9 @@ class MedicineRowCard extends StatelessWidget {
   final VoidCallback? onMoveDown;
 
   void _applyMedicineSelection(
-      MedicineEntry entry, MedicineSearchSuggestion item) {
+    MedicineEntry entry,
+    MedicineSearchSuggestion item,
+  ) {
     entry.name = item.name;
     if (item.dosageUnit != null && item.dosageUnit!.isNotEmpty) {
       entry.dosageUnit = item.dosageUnit!;
@@ -66,7 +68,9 @@ class MedicineRowCard extends StatelessWidget {
   }
 
   void _applyCommunityMedicine(
-      MedicineEntry entry, CommunityMedicine medicine) {
+    MedicineEntry entry,
+    CommunityMedicine medicine,
+  ) {
     entry.name = medicine.name;
     entry.dosageUnit = medicine.dosageUnit;
     entry.form = medicine.form;
@@ -103,8 +107,10 @@ class MedicineRowCard extends StatelessWidget {
               if (entry.isSos) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEA580C).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -124,21 +130,22 @@ class MedicineRowCard extends StatelessWidget {
                   onPressed: onMoveUp,
                   icon: const Icon(Icons.arrow_upward, size: 18),
                   padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                 ),
               if (canMoveDown)
                 IconButton(
                   onPressed: onMoveDown,
                   icon: const Icon(Icons.arrow_downward, size: 18),
                   padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 28, minHeight: 28),
+                  constraints: const BoxConstraints(
+                    minWidth: 28,
+                    minHeight: 28,
+                  ),
                 ),
-              LabeledAddButton(
-                label: 'Add Medicine',
-                onPressed: onAdd,
-              ),
+              LabeledAddButton(label: 'Add Medicine', onPressed: onAdd),
               LabeledRemoveButton(
                 label: 'Remove',
                 onPressed: canDelete ? onDelete : null,
@@ -171,8 +178,10 @@ class MedicineRowCard extends StatelessWidget {
 
               return Container(
                 width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.cardBgOf(context),
                   borderRadius: BorderRadius.circular(10),
@@ -193,8 +202,10 @@ class MedicineRowCard extends StatelessWidget {
                     LabeledAddButton(
                       label: '+ Add Medicine',
                       onPressed: () async {
-                        final medicine =
-                            await AddCommunityMedicineDialog.show(context, raw);
+                        final medicine = await AddCommunityMedicineDialog.show(
+                          context,
+                          raw,
+                        );
                         if (!context.mounted || medicine == null) return;
                         await CommunityMedicineRepository.instance.fetchAll();
                         if (!context.mounted) return;
@@ -215,14 +226,18 @@ class MedicineRowCard extends StatelessWidget {
                 flex: 2,
                 child: TextFormField(
                   initialValue: entry.dosageAmount,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: const [
                     DecimalInputFormatter(
-                        maxIntegerDigits: 4, maxDecimalDigits: 2),
+                      maxIntegerDigits: 4,
+                      maxDecimalDigits: 2,
+                    ),
                   ],
-                  decoration:
-                      const InputDecoration(labelText: 'Dosage / Strength'),
+                  decoration: const InputDecoration(
+                    labelText: 'Dosage / Strength',
+                  ),
                   onChanged: (v) {
                     entry.dosageAmount = v;
                     onChanged();
@@ -266,10 +281,13 @@ class MedicineRowCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text('Frequency (M · A · N)',
-              style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context))),
+          Text(
+            'Frequency (M · A · N)',
+            style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
+          ),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -324,18 +342,23 @@ class MedicineRowCard extends StatelessWidget {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  initialValue: entry.instructions.isEmpty ||
-                          !ClinicalMockData.instructionOptions
-                              .contains(entry.instructions)
+                  initialValue:
+                      entry.instructions.isEmpty ||
+                          !ClinicalMockData.instructionOptions.contains(
+                            entry.instructions,
+                          )
                       ? ''
                       : entry.instructions,
                   decoration: const InputDecoration(labelText: 'Timing'),
                   isExpanded: true,
                   items: [
                     const DropdownMenuItem<String>(
-                        value: '', child: Text('None')),
-                    ...ClinicalMockData.instructionOptions
-                        .map((i) => DropdownMenuItem(value: i, child: Text(i))),
+                      value: '',
+                      child: Text('None'),
+                    ),
+                    ...ClinicalMockData.instructionOptions.map(
+                      (i) => DropdownMenuItem(value: i, child: Text(i)),
+                    ),
                   ],
                   onChanged: (v) {
                     entry.instructions = v ?? '';
@@ -386,8 +409,9 @@ class MedicineRowCard extends StatelessWidget {
                   initialValue: entry.quantity,
                   keyboardType: TextInputType.number,
                   inputFormatters: const [DigitsMaxInputFormatter(4)],
-                  decoration:
-                      const InputDecoration(labelText: 'Quantity (auto)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Quantity (auto)',
+                  ),
                   onChanged: (v) {
                     entry.quantity = v;
                     onChanged();
@@ -399,8 +423,9 @@ class MedicineRowCard extends StatelessWidget {
                 flex: 2,
                 child: TextFormField(
                   initialValue: entry.specialInstructions,
-                  decoration:
-                      const InputDecoration(labelText: 'Special instructions'),
+                  decoration: const InputDecoration(
+                    labelText: 'Special instructions',
+                  ),
                   onChanged: (v) {
                     entry.specialInstructions = v;
                     onChanged();

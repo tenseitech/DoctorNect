@@ -4,18 +4,15 @@ import '../core/theme/app_colors.dart';
 
 /// Label with a red asterisk for mandatory form fields.
 class RequiredFieldLabel extends StatelessWidget {
-  const RequiredFieldLabel(
-    this.text, {
-    super.key,
-    this.style,
-  });
+  const RequiredFieldLabel(this.text, {super.key, this.style});
 
   final String text;
   final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = style ??
+    final baseStyle =
+        style ??
         Theme.of(context).inputDecorationTheme.labelStyle ??
         DefaultTextStyle.of(context).style;
 

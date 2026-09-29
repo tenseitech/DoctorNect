@@ -25,10 +25,7 @@ class MobileScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget bodyChild = Padding(
-      padding: padding,
-      child: child,
-    );
+    Widget bodyChild = Padding(padding: padding, child: child);
     if (scrollable) {
       bodyChild = SingleChildScrollView(
         physics: const BouncingScrollPhysics(

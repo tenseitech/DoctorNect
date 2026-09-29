@@ -35,8 +35,9 @@ class DoctorPlaceholderScreen extends StatelessWidget {
           Text(
             subtitle,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodyMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.bodyMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
           const SizedBox(height: 32),
           Expanded(

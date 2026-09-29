@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -111,8 +112,9 @@ Future<bool> showAmbulanceRatingDialog({
                     controller: reviewCtrl,
                     maxLines: 2,
                     maxLength: 200,
-                    style:
-                        GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyMedium,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Write a short review (optional)',
                       hintStyle: GoogleFonts.inter(
@@ -124,13 +126,15 @@ Future<bool> showAmbulanceRatingDialog({
                       fillColor: AppColors.cardBgOf(context),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: AppColors.borderOf(context)),
+                        borderSide: BorderSide(
+                          color: AppColors.borderOf(context),
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: AppColors.borderOf(context)),
+                        borderSide: BorderSide(
+                          color: AppColors.borderOf(context),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -169,21 +173,22 @@ Future<bool> showAmbulanceRatingDialog({
                       onPressed: selectedStars > 0
                           ? () async {
                               final ok = await FirestoreService
-                                  .instance.ambulance
+                                  .instance
+                                  .ambulance
                                   .rateBroadcast(
-                                broadcastId: bookingId,
-                                stars: selectedStars,
-                                review: reviewCtrl.text.trim().isEmpty
-                                    ? null
-                                    : reviewCtrl.text.trim(),
-                              );
+                                    broadcastId: bookingId,
+                                    stars: selectedStars,
+                                    review: reviewCtrl.text.trim().isEmpty
+                                        ? null
+                                        : reviewCtrl.text.trim(),
+                                  );
                               if (ctx.mounted) Navigator.pop(ctx, ok);
                             }
                           : null,
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFF59E0B),
-                        disabledBackgroundColor:
-                            const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                        disabledBackgroundColor: const Color(0xFFF59E0B)
+                            .withValues(alpha: 0.3),
                         minimumSize: const Size(0, 44),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -206,10 +211,10 @@ Future<bool> showAmbulanceRatingDialog({
 }
 
 String _ratingLabel(int stars) => switch (stars) {
-      1 => 'Poor',
-      2 => 'Below Average',
-      3 => 'Average',
-      4 => 'Good',
-      5 => 'Excellent!',
-      _ => '',
-    };
+  1 => 'Poor',
+  2 => 'Below Average',
+  3 => 'Average',
+  4 => 'Good',
+  5 => 'Excellent!',
+  _ => '',
+};

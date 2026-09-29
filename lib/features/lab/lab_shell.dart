@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/auth/profile_completion_service.dart';
 import '../../core/auth/role_session_guard.dart';
@@ -11,17 +10,17 @@ import '../../core/firebase/firestore_screen_sync.dart';
 import '../../core/session/lab_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
-import '../../widgets/adaptive_app_shell.dart';
 import '../../widgets/complete_profile_prompt.dart';
+import '../../widgets/shell/role_shell.dart';
 import 'data/lab_connection_store.dart';
-import 'data/lab_registry.dart';
 import 'data/lab_notification_store.dart';
+import 'data/lab_registry.dart';
+import 'data/lab_worklist_store.dart';
 import 'screens/lab_connect_doctors_screen.dart';
 import 'screens/lab_dashboard_tabs.dart';
 import 'screens/lab_notifications_screen.dart';
 import 'screens/lab_profile_screen.dart';
 import 'screens/lab_walkin_screen.dart';
-import '../../core/theme/app_typography.dart';
 
 class LabShell extends StatefulWidget {
   const LabShell({super.key});
@@ -32,14 +31,6 @@ class LabShell extends StatefulWidget {
 
 class _LabShellState extends State<LabShell> {
   int _index = 0;
-
-  static const _tabs = [
-    (icon: TablerIcons.flask, label: 'Orders'),
-    (icon: TablerIcons.user_plus, label: 'Patient'),
-    (icon: TablerIcons.search, label: 'Connect'),
-    (icon: TablerIcons.bell, label: 'Notifications'),
-    (icon: TablerIcons.user, label: 'Profile'),
-  ];
 
   @override
   void initState() {
@@ -95,6 +86,30 @@ class _LabShellState extends State<LabShell> {
     );
   }
 
+  int _ordersBadgeCount(String labId) {
+    // If not verified, prevent badge leakage on gated operational tab
+    if (!ProfileCompletionService.instance.isComplete) return 0;
+    final orders = LabWorklistStore.instance.orders;
+    final bookings = LabWorklistStore.instance.bookings;
+    final newOrders = orders
+        .where(
+          (o) =>
+              (labId.isEmpty || o.labId == labId) &&
+              o.status != 'completed' &&
+              o.status != 'declined',
+        )
+        .length;
+    final newBookings = bookings
+        .where(
+          (b) =>
+              (labId.isEmpty || b.labId == labId) &&
+              b.status != 'completed' &&
+              b.status != 'cancelled',
+        )
+        .length;
+    return newOrders + newBookings;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -107,97 +122,89 @@ class _LabShellState extends State<LabShell> {
       child: ListenableBuilder(
         listenable: Listenable.merge([
           LabRegistry.instance,
+          LabWorklistStore.instance,
           LabNotificationStore.instance,
           LabConnectionStore.instance,
+          ProfileCompletionService.instance,
         ]),
         builder: (context, _) {
           final labId = LabSession.loggedInLabId;
           final lab = LabRegistry.findById(labId);
           final labName = lab?.labName ?? LabSession.loggedInLabName;
-          final displayName = labName.isNotEmpty ? labName : 'Lab';
-          final connectPending = labId.isNotEmpty &&
+          final displayName = labName.isNotEmpty ? labName : 'KD Labs';
+
+          final ordersBadge = _ordersBadgeCount(labId);
+          final unreadAlerts = LabNotificationStore.instance.unreadCountForLab(
+            labId,
+          );
+          final connectPending =
+              labId.isNotEmpty &&
               (LabConnectionStore.instance
                       .pendingForLabFromDoctor(labId)
                       .isNotEmpty ||
                   LabConnectionStore.instance
                       .pendingSentByLab(labId)
                       .isNotEmpty);
-          final requestDots = [false, false, connectPending, false, false];
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Material(
-                color: Theme.of(context).colorScheme.surface,
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.biotech_outlined,
-                            color: AppColors.labPurple),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                displayName,
-                                style: GoogleFonts.inter(
-                                  fontSize: AppTypography.headlineSmall,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              Text(
-                                'Diagnostic Lab',
-                                style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelMedium,
-                                  color: AppColors.textSecondaryOf(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+          final navItems = [
+            RoleNavItem(
+              icon: TablerIcons.flask,
+              selectedIcon: TablerIcons.flask,
+              label: 'Orders',
+              mobileLabel: 'Orders',
+              badgeCount: ordersBadge > 0 ? ordersBadge : null,
+            ),
+            const RoleNavItem(
+              icon: TablerIcons.user_plus,
+              selectedIcon: TablerIcons.user_plus,
+              label: 'Walk-in',
+              mobileLabel: 'Walk-in',
+            ),
+            RoleNavItem(
+              icon: TablerIcons.link,
+              selectedIcon: TablerIcons.link,
+              label: 'Connect',
+              mobileLabel: 'Connect',
+              showDotBadge: connectPending,
+            ),
+            RoleNavItem(
+              icon: TablerIcons.bell,
+              selectedIcon: TablerIcons.bell_filled,
+              label: 'Notifications',
+              mobileLabel: 'Alerts',
+              badgeCount: unreadAlerts > 0 ? unreadAlerts : null,
+            ),
+            const RoleNavItem(
+              icon: TablerIcons.user,
+              selectedIcon: TablerIcons.user_filled,
+              label: 'Profile',
+              mobileLabel: 'Profile',
+            ),
+          ];
+
+          return RoleShell(
+            selectedIndex: _index,
+            onDestinationSelected: _onTabSelected,
+            roleTitle: 'Diagnostic Lab',
+            entityName: displayName,
+            entityIcon: TablerIcons.flask,
+            accentColor: AppColors.labPurple,
+            accentGradientEnd: const Color(0xFF7C3AED),
+            sidebarWidth: 268.0,
+            navItems: navItems,
+            child: IndexedStack(
+              index: _index,
+              children: [
+                ProfileDataGate(
+                  role: UserType.lab,
+                  child: const LabOrdersTab(),
                 ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: AdaptiveAppShell(
-                  showMobileLogout: false,
-                  selectedIndex: _index,
-                  onDestinationSelected: _onTabSelected,
-                  accentColor: AppColors.labPurple,
-                  requestDots: requestDots,
-                  destinations: _tabs
-                      .map((t) => NavigationDestination(
-                          icon: Icon(t.icon), label: t.label))
-                      .toList(),
-                  child: IndexedStack(
-                    index: _index,
-                    children: [
-                      const LabOrdersTab(),
-                      ProfileDataGate(
-                        role: UserType.lab,
-                        child: const LabWalkInScreen(),
-                      ),
-                      ProfileDataGate(
-                        role: UserType.lab,
-                        child: const LabConnectDoctorsScreen(),
-                      ),
-                      ProfileDataGate(
-                        role: UserType.lab,
-                        child: const LabNotificationsScreen(),
-                      ),
-                      const LabProfileScreen(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+                const LabWalkInScreen(),
+                const LabConnectDoctorsScreen(),
+                const LabNotificationsScreen(),
+                const LabProfileScreen(),
+              ],
+            ),
           );
         },
       ),

@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/patient_sharing_messages.dart';
@@ -23,9 +24,7 @@ abstract final class DoctorReportOpener {
 
     try {
       if (!await FirestoreService.instance.patientProfile
-          .isPatientSharingClinicalDataWithDoctors(
-        patientId,
-      )) {
+          .isPatientSharingClinicalDataWithDoctors(patientId)) {
         if (!context.mounted) return;
         _showMessage(
           context,
@@ -44,10 +43,8 @@ abstract final class DoctorReportOpener {
         await Navigator.push<void>(
           context,
           MaterialPageRoute(
-            builder: (_) => RecordPreviewScreen(
-              record: match,
-              viewerPatientId: patientId,
-            ),
+            builder: (_) =>
+                RecordPreviewScreen(record: match, viewerPatientId: patientId),
           ),
         );
         return;
@@ -75,7 +72,8 @@ abstract final class DoctorReportOpener {
             fileName: reportName,
             doctorName: record.doctorName,
             labName: record.labName,
-            isImage: reportName.toLowerCase().endsWith('.jpg') ||
+            isImage:
+                reportName.toLowerCase().endsWith('.jpg') ||
                 reportName.toLowerCase().endsWith('.jpeg') ||
                 reportName.toLowerCase().endsWith('.png') ||
                 reportName.toLowerCase().endsWith('.webp'),
@@ -103,8 +101,7 @@ abstract final class DoctorReportOpener {
       _showMessage(
         context,
         title: reportName,
-        message:
-            'Report file is not available on this device. Ask the patient to upload and share it from the Records tab.',
+        message: 'Report file is not available on this device. Ask the patient to upload and share it from the Records tab.',
       );
     } catch (_) {
       if (!context.mounted) return;
@@ -117,7 +114,9 @@ abstract final class DoctorReportOpener {
   }
 
   static HealthRecord? _findRecord(
-      List<HealthRecord> records, String reportName) {
+    List<HealthRecord> records,
+    String reportName,
+  ) {
     final normalized = reportName.trim().toLowerCase();
     for (final record in records) {
       final fileName = record.fileName.trim().toLowerCase();
@@ -145,7 +144,9 @@ abstract final class DoctorReportOpener {
         content: Text(message),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
         ],
       ),
     );

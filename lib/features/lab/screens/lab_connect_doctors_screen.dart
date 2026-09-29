@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -46,33 +47,39 @@ class LabConnectDoctorsScreen extends StatelessWidget {
       listenables: [connStore, worklistStore],
       activeConnections: () => connStore
           .activeForLab(labId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       fromDoctorRequests: () => connStore
           .pendingForLabFromDoctor(labId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       sentByPartnerInvites: () => connStore
           .pendingSentByLab(labId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       cityFilter: _labCityLabel,
       searchDoctorsFn: (query) => sortDoctorsAlphabetically(
@@ -88,7 +95,8 @@ class LabConnectDoctorsScreen extends StatelessWidget {
             .forLabAndDoctor(labId, doctorId)
             .firstOrNull
             ?.createdAt;
-        return '$count test orders${last != null ? ' · Last: ${DateFormat('dd MMM').format(last)}' : ''}';
+        final orderLabel = count == 1 ? '1 test order' : '$count test orders';
+        return '$orderLabel${last != null ? ' · Last: ${DateFormat('dd MMM').format(last)}' : ''}';
       },
       onApproveConnection: (id, doctorName) => connStore.approveByLab(id),
       onRejectConnection: (id, doctorName) => connStore.rejectByLab(id),

@@ -60,7 +60,10 @@ abstract final class PromotedAdsService {
 
   /// Uploads ad banner image bytes to Firebase Storage and returns public URL.
   static Future<String> uploadAdImage(
-      String providerId, String adId, Uint8List bytes) async {
+    String providerId,
+    String adId,
+    Uint8List bytes,
+  ) async {
     if (!FirebaseBootstrap.isReady) {
       throw StateError('Firebase is not initialized.');
     }
@@ -70,11 +73,14 @@ abstract final class PromotedAdsService {
       field: 'Banner image',
     );
     if (sizeErr != null) throw ArgumentError(sizeErr);
-    final safeProvider =
-        InputSanitize.fileName(providerId, fallback: 'provider');
+    final safeProvider = InputSanitize.fileName(
+      providerId,
+      fallback: 'provider',
+    );
     final safeAd = InputSanitize.fileName(adId, fallback: 'ad');
-    final ref =
-        FirebaseStorage.instance.ref('promoted_ads/$safeProvider/$safeAd.jpg');
+    final ref = FirebaseStorage.instance.ref(
+      'promoted_ads/$safeProvider/$safeAd.jpg',
+    );
     await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
     return await ref.getDownloadURL();
   }
@@ -333,34 +339,29 @@ abstract final class PromotedAdsService {
       final now = DateTime.now();
       final active = lastAds
           .where((ad) => ad.endTime == null || ad.endTime!.isAfter(now))
-          .take(lastConfig.maxActiveBanners > 0
-              ? lastConfig.maxActiveBanners
-              : 10)
+          .take(
+            lastConfig.maxActiveBanners > 0 ? lastConfig.maxActiveBanners : 10,
+          )
           .toList();
       active.shuffle();
       controller.add(active);
     }
 
-    final configSub = BannerConfigService.streamConfig().listen(
-      (config) {
-        lastConfig = config;
-        emit();
-      },
-      onError: (_) => emit(),
-    );
+    final configSub = BannerConfigService.streamConfig().listen((config) {
+      lastConfig = config;
+      emit();
+    }, onError: (_) => emit());
 
     final adsSub = _db
         .collection(_collection)
         .where('status', isEqualTo: 'active')
         .snapshots()
-        .listen(
-      (snap) {
-        lastAds =
-            snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
-        emit();
-      },
-      onError: (_) => emit(),
-    );
+        .listen((snap) {
+          lastAds = snap.docs
+              .map((d) => PromotedAdModel.fromFirestore(d))
+              .toList();
+          emit();
+        }, onError: (_) => emit());
 
     controller.onCancel = () {
       configSub.cancel();
@@ -379,11 +380,15 @@ abstract final class PromotedAdsService {
         .where('providerId', isEqualTo: providerId)
         .snapshots()
         .map((snap) {
-      final list =
-          snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
-      list.sort((a, b) => (b.createdAt ?? DateTime.now())
-          .compareTo(a.createdAt ?? DateTime.now()));
-      return list;
-    });
+          final list = snap.docs
+              .map((d) => PromotedAdModel.fromFirestore(d))
+              .toList();
+          list.sort(
+            (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+              a.createdAt ?? DateTime.now(),
+            ),
+          );
+          return list;
+        });
   }
 }

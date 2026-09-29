@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -102,7 +103,9 @@ class ExploreSection extends StatelessWidget {
   }
 
   static void _openDoctorSearchForCategory(
-      BuildContext context, String category) {
+    BuildContext context,
+    String category,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -214,8 +217,8 @@ class _ExploreMobileHorizontalGridState
       builder: (context, constraints) {
         final screenWidth =
             constraints.maxWidth.isFinite && constraints.maxWidth > 0
-                ? constraints.maxWidth
-                : MediaQuery.sizeOf(context).width;
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
 
         const leftPadding = 16.0;
         const spacing = 10.0;
@@ -223,8 +226,9 @@ class _ExploreMobileHorizontalGridState
         final itemWidth = ((screenWidth - leftPadding - (3 * spacing)) / 3.5)
             .clamp(76.0, 120.0);
 
-        final textScale =
-            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3);
+        final textScale = MediaQuery.textScalerOf(context)
+            .scale(1)
+            .clamp(1.0, 1.3);
         final rowHeight = 72.0 + (30.0 * textScale);
         final gridHeight = (rowHeight * 2) + spacing;
         final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
@@ -329,8 +333,9 @@ class _ExploreWideGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = _columnCount(constraints.maxWidth, categories.length);
-        final textScale =
-            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
+        final textScale = MediaQuery.textScalerOf(context)
+            .scale(1)
+            .clamp(1.0, 1.4);
         final rowExtent = _rowHeight * textScale;
 
         return GridView.builder(
@@ -406,8 +411,9 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
           return Container(
             decoration: BoxDecoration(
               color: AppColors.surfaceOf(context),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -450,8 +456,10 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       hintText: 'Search speciality',
-                      prefixIcon: const Icon(Icons.search,
-                          color: AppColors.patientTeal),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: AppColors.patientTeal,
+                      ),
                       filled: true,
                       fillColor: AppColors.cardBgOf(context),
                       border: OutlineInputBorder(
@@ -467,7 +475,8 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                           child: Text(
                             'No specialities found',
                             style: GoogleFonts.inter(
-                                color: AppColors.textSecondaryOf(context)),
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         )
                       : GridView.builder(
@@ -475,11 +484,11 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 10,
-                            mainAxisExtent: 108 * textScale,
-                          ),
+                                crossAxisCount: 4,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 10,
+                                mainAxisExtent: 108 * textScale,
+                              ),
                           itemCount: filtered.length,
                           itemBuilder: (_, index) {
                             final category = filtered[index];
@@ -576,8 +585,8 @@ class _ExploreCategoryTile extends StatelessWidget {
             builder: (context, constraints) {
               final width =
                   constraints.maxWidth.isFinite && constraints.maxWidth > 0
-                      ? constraints.maxWidth
-                      : 92.0;
+                  ? constraints.maxWidth
+                  : 92.0;
               return buildContent(width);
             },
           );

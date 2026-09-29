@@ -38,10 +38,14 @@ class OtpInput extends StatefulWidget {
 }
 
 class _OtpInputState extends State<OtpInput> with CodeAutoFill {
-  final List<TextEditingController> _controllers =
-      List.generate(AppConstants.otpLength, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(AppConstants.otpLength, (_) => FocusNode());
+  final List<TextEditingController> _controllers = List.generate(
+    AppConstants.otpLength,
+    (_) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(
+    AppConstants.otpLength,
+    (_) => FocusNode(),
+  );
 
   bool get _supportsAndroidSmsAutofill =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
@@ -218,15 +222,15 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
 
           final double gap = needsScaling
               ? ((availableForBoxesAndGaps - (AppConstants.otpLength * 38.0)) /
-                      (AppConstants.otpLength - 1))
-                  .clamp(4.0, OtpInput._boxGap)
+                        (AppConstants.otpLength - 1))
+                    .clamp(4.0, OtpInput._boxGap)
               : OtpInput._boxGap;
 
           final double totalGaps = (AppConstants.otpLength - 1) * gap;
           final double boxW = needsScaling
               ? ((availableForBoxesAndGaps - totalGaps) /
-                      AppConstants.otpLength)
-                  .clamp(34.0, OtpInput._boxWidth)
+                        AppConstants.otpLength)
+                    .clamp(34.0, OtpInput._boxWidth)
               : OtpInput._boxWidth;
 
           return FittedBox(
@@ -236,9 +240,11 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (int index = 0;
-                    index < AppConstants.otpLength;
-                    index++) ...[
+                for (
+                  int index = 0;
+                  index < AppConstants.otpLength;
+                  index++
+                ) ...[
                   if (index > 0) SizedBox(width: gap),
                   SizedBox(
                     width: boxW,
@@ -264,17 +270,18 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
                           fillColor: AppColors.cardBgOf(context),
                           contentPadding: EdgeInsets.zero,
                           border: _boxBorder(AppColors.borderOf(context)),
-                          enabledBorder:
-                              _boxBorder(AppColors.borderOf(context)),
+                          enabledBorder: _boxBorder(
+                            AppColors.borderOf(context),
+                          ),
                           focusedBorder: _boxBorder(widget.accentColor, 1.5),
                         ),
                         inputFormatters: [_OtpTextFormatter()],
                         onChanged: (v) => _onChanged(index, v),
                         onTap: () =>
                             _controllers[index].selection = TextSelection(
-                          baseOffset: 0,
-                          extentOffset: _controllers[index].text.length,
-                        ),
+                              baseOffset: 0,
+                              extentOffset: _controllers[index].text.length,
+                            ),
                         onEditingComplete: () {
                           if (index < AppConstants.otpLength - 1) {
                             _focusNodes[index + 1].requestFocus();

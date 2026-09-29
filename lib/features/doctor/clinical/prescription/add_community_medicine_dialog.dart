@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,7 +15,9 @@ class AddCommunityMedicineDialog extends StatefulWidget {
   final String initialName;
 
   static Future<CommunityMedicine?> show(
-      BuildContext context, String initialName) {
+    BuildContext context,
+    String initialName,
+  ) {
     return showDialog<CommunityMedicine>(
       context: context,
       builder: (ctx) => AddCommunityMedicineDialog(initialName: initialName),
@@ -86,8 +89,10 @@ class _AddCommunityMedicineDialogState
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Add Medicine to Database?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+      title: Text(
+        'Add Medicine to Database?',
+        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -136,7 +141,9 @@ class _AddCommunityMedicineDialogState
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Add to Database'),
         ),

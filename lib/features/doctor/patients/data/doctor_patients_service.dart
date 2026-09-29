@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -7,7 +8,9 @@ import '../../../../core/session/doctor_session.dart';
 import '../../clinical/data/clinical_prescription_store.dart';
 import '../../clinical/models/clinical_models.dart';
 import '../../models/doctor_models.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../../../patient/appointments/models/patient_appointment_models.dart';
 
 /// Builds doctor-facing patient lists from real appointment records.
@@ -34,8 +37,10 @@ abstract final class DoctorPatientsService {
     if (patientId != null && patientId.isNotEmpty) return patientId;
 
     final name = record.patientName.trim().toLowerCase();
-    final digits =
-        (record.contactNumber ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    final digits = (record.contactNumber ?? '').replaceAll(
+      RegExp(r'[^0-9]'),
+      '',
+    );
     if (name.isNotEmpty && digits.length >= 10) {
       return 'phone_${digits.substring(digits.length - 10)}';
     }
@@ -68,30 +73,36 @@ abstract final class DoctorPatientsService {
       final activeVisits = visits.where((v) => !v.isCancelled).toList();
       final referenceVisits = activeVisits.isNotEmpty ? activeVisits : visits;
 
-      final cached =
-          _registeredPatientsCache.where((s) => s.id == entry.key).firstOrNull;
+      final cached = _registeredPatientsCache
+          .where((s) => s.id == entry.key)
+          .firstOrNull;
 
       return DoctorPatientSummary(
         id: entry.key,
         name: cached?.name ?? latest.patientName,
         age: cached?.age ?? latest.patientAge,
-        gender: cached?.gender ??
+        gender:
+            cached?.gender ??
             AppConstants.normalizePatientGender(latest.patientGender),
         mobile: cached?.mobile ?? _bestMobile(visits),
         lastVisitDate: referenceVisits.first.dateTime,
         totalVisits: visits.length,
         conditions: const [],
-        isNew: referenceVisits.length == 1 &&
-            referenceVisits
-                .every((v) => v.visitType == AppointmentType.newVisit),
-        isFollowUp:
-            referenceVisits.any((v) => v.visitType == AppointmentType.followUp),
+        isNew:
+            referenceVisits.length == 1 &&
+            referenceVisits.every(
+              (v) => v.visitType == AppointmentType.newVisit,
+            ),
+        isFollowUp: referenceVisits.any(
+          (v) => v.visitType == AppointmentType.followUp,
+        ),
       );
     }).toList();
 
     final existingIds = dynamicSummaries.map((s) => s.id).toSet();
-    final existingNames =
-        dynamicSummaries.map((s) => s.name.toLowerCase().trim()).toSet();
+    final existingNames = dynamicSummaries
+        .map((s) => s.name.toLowerCase().trim())
+        .toSet();
 
     final otherRegistered = _registeredPatientsCache
         .where(
@@ -133,8 +144,9 @@ abstract final class DoctorPatientsService {
       }
     }
 
-    medications
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    medications.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return medications;
   }
 
@@ -162,23 +174,23 @@ abstract final class DoctorPatientsService {
     final registeredId = _registeredIdFromKey(patientKey);
     if (registeredId == null) return true;
     return FirestoreService.instance.patientProfile
-        .isPatientSharingClinicalDataWithDoctors(
-      registeredId,
-    );
+        .isPatientSharingClinicalDataWithDoctors(registeredId);
   }
 
-  static Future<DoctorPatientProfile?> profileFor(String patientKey,
-      {String? doctorId}) async {
+  static Future<DoctorPatientProfile?> profileFor(
+    String patientKey, {
+    String? doctorId,
+  }) async {
     final docId = doctorId ?? DoctorSession.loggedInDoctorId;
     final records = SharedAppointmentsStore.instance.records.where((r) {
       if (r.doctorId != docId) return false;
       return patientGroupKey(r) == patientKey;
-    }).toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    }).toList()..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
     if (records.isEmpty) {
-      final cached =
-          _registeredPatientsCache.where((s) => s.id == patientKey).firstOrNull;
+      final cached = _registeredPatientsCache
+          .where((s) => s.id == patientKey)
+          .firstOrNull;
       if (cached == null) return null;
 
       final dummyRecord = DoctorNectAppointmentRecord(
@@ -204,7 +216,8 @@ abstract final class DoctorPatientsService {
 
       return DoctorPatientProfile(
         summary: cached,
-        dateOfBirth: demographics.dateOfBirth ??
+        dateOfBirth:
+            demographics.dateOfBirth ??
             DateTime(DateTime.now().year - cached.age, 1, 1),
         bloodGroup: demographics.bloodGroup,
         email: demographics.email,
@@ -231,7 +244,8 @@ abstract final class DoctorPatientsService {
       lastVisitDate: latest.dateTime,
       totalVisits: records.length,
       conditions: const [],
-      isNew: records.length == 1 &&
+      isNew:
+          records.length == 1 &&
           records.every((v) => v.visitType == AppointmentType.newVisit),
       isFollowUp: records.any((v) => v.visitType == AppointmentType.followUp),
     );
@@ -241,7 +255,8 @@ abstract final class DoctorPatientsService {
           (r) => VisitRecord(
             id: r.id,
             date: r.dateTime,
-            diagnosis: r.diagnosis ??
+            diagnosis:
+                r.diagnosis ??
                 (r.chiefComplaints.isNotEmpty
                     ? r.chiefComplaintsLabel
                     : 'Consultation'),
@@ -255,8 +270,9 @@ abstract final class DoctorPatientsService {
         )
         .toList();
 
-    final canViewClinicalHistory =
-        await canViewClinicalHistoryForKey(patientKey);
+    final canViewClinicalHistory = await canViewClinicalHistoryForKey(
+      patientKey,
+    );
 
     final cachedPrescriptions = canViewClinicalHistory
         ? ClinicalPrescriptionStore.instance.forPatient(patientKey)
@@ -278,7 +294,8 @@ abstract final class DoctorPatientsService {
 
     return DoctorPatientProfile(
       summary: summary,
-      dateOfBirth: demographics.dateOfBirth ??
+      dateOfBirth:
+          demographics.dateOfBirth ??
           DateTime(DateTime.now().year - latest.patientAge, 1, 1),
       bloodGroup: demographics.bloodGroup,
       email: demographics.email,
@@ -358,9 +375,9 @@ abstract final class DoctorPatientsService {
       if (doctorId.isNotEmpty) {
         await FirestoreService.instance.patientProfile
             .grantDoctorCareTeamAccess(
-          patientId: patientDocId,
-          doctorId: doctorId,
-        );
+              patientId: patientDocId,
+              doctorId: doctorId,
+            );
       }
       final data = await FirestoreService.instance.patientProfile
           .fetchPatientDocumentForDoctor(patientDocId);
@@ -375,8 +392,10 @@ abstract final class DoctorPatientsService {
         if (mobile != null &&
             mobile.isNotEmpty &&
             emergencyContact.phone == '—') {
-          emergencyContact =
-              EmergencyContact(name: latest.patientName, phone: mobile);
+          emergencyContact = EmergencyContact(
+            name: latest.patientName,
+            phone: mobile,
+          );
         }
 
         knownConditions = (data['conditions'] as List<dynamic>? ?? const [])
@@ -411,15 +430,19 @@ abstract final class DoctorPatientsService {
 
   /// Loads prescriptions from Firestore (or cache) and returns deduped medication list.
   static Future<List<MedicationRecord>> loadMedicationsForProfile(
-      String patientKey) async {
+    String patientKey,
+  ) async {
     if (!await canViewClinicalHistoryForKey(patientKey)) {
       return const [];
     }
 
-    await ClinicalPrescriptionStore.instance
-        .refreshForPatient(patientKey, preferCache: true);
-    final prescriptions =
-        ClinicalPrescriptionStore.instance.forPatient(patientKey);
+    await ClinicalPrescriptionStore.instance.refreshForPatient(
+      patientKey,
+      preferCache: true,
+    );
+    final prescriptions = ClinicalPrescriptionStore.instance.forPatient(
+      patientKey,
+    );
     return _currentMedicationsFromPrescriptions(prescriptions);
   }
 }

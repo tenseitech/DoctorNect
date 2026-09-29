@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/session/patient_session.dart';
@@ -9,7 +10,8 @@ import 'models/patient_appointment_models.dart';
 
 abstract final class PatientPrescriptionOpener {
   static Future<PrescriptionDraft?> loadDraft(
-      PatientAppointment appointment) async {
+    PatientAppointment appointment,
+  ) async {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return null;
 
@@ -36,9 +38,7 @@ abstract final class PatientPrescriptionOpener {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -103,8 +103,7 @@ abstract final class PatientPrescriptionOpener {
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   static void _snack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

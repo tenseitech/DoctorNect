@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../core/auth/demo_auth_config.dart';
 import '../../core/auth/registration_credentials.dart';
 import '../../core/auth/registration_otp_service.dart';
+import '../../core/auth/verification_lifecycle.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/firebase_auth_service.dart';
 import '../../core/firebase/firebase_bootstrap.dart';
@@ -30,6 +32,7 @@ class DoctorRegistrationScreen extends StatelessWidget {
     }
 
     final mobileDigits = FormValidators.mobileDigits(mobile) ?? '';
+    final isDemoDoctor = DemoAuthConfig.isDemoDoctorPhone(mobileDigits);
     final email = RegistrationCredentials.emailForMobile(mobileDigits);
     final password = RegistrationCredentials.generatePassword();
     final doctorId = 'd${DateTime.now().millisecondsSinceEpoch}';
@@ -41,14 +44,23 @@ class DoctorRegistrationScreen extends StatelessWidget {
       'qualification': qualification,
       'mobile': mobile,
       'email': email,
-      'verified': false,
-      'verificationStatus': 'registered',
-      'status': 'pending_review',
-      'kycSubmitted': false,
-      'profileCompleted': false,
+      'verified': isDemoDoctor ? true : false,
+      'verificationStatus': isDemoDoctor ? 'verified' : 'profile_incomplete',
+      'status': isDemoDoctor ? 'approved' : 'pending_review',
+      'kycSubmitted': isDemoDoctor ? true : false,
+      'profileCompleted': isDemoDoctor ? true : false,
       'clinicName': '$name Clinic',
-      'rating': 0,
-      'reviewCount': 0,
+      'rating': isDemoDoctor ? 4.9 : 0,
+      'reviewCount': isDemoDoctor ? 24 : 0,
+      if (isDemoDoctor) ...{
+        'councilNumber': 'MCI-7666892394',
+        'stateCouncil': 'Maharashtra Medical Council',
+        'registrationYear': 2016,
+        'yearsExperience': 10,
+        'registrationCertificate':
+            'https://storage.googleapis.com/demo/medical_council_cert.pdf',
+        'idProof': 'https://storage.googleapis.com/demo/doctor_id_proof.pdf',
+      },
       if (invitedStoreId != null && invitedStoreId.isNotEmpty)
         'invitedByStoreId': invitedStoreId,
     };
@@ -71,6 +83,12 @@ class DoctorRegistrationScreen extends StatelessWidget {
     }
 
     DoctorSession.setDoctor(id: doctorId, name: name);
+    RoleVerificationController.instance.setRoleState(
+      UserType.doctor,
+      stage: isDemoDoctor
+          ? VerificationStage.verified
+          : VerificationStage.profileIncomplete,
+    );
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => const DashboardShell(userType: UserType.doctor),
@@ -91,11 +109,11 @@ class DoctorRegistrationScreen extends StatelessWidget {
       preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
-        context,
-        name: name,
-        qualification: qualification,
-        mobile: mobile,
-      ),
+            context,
+            name: name,
+            qualification: qualification,
+            mobile: mobile,
+          ),
     );
   }
 }

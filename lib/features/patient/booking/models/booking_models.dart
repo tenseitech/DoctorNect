@@ -11,8 +11,11 @@ const kMaxPatientsPerTimeSlot = 3;
 final _slotParseFormat = DateFormat('hh:mm a');
 
 /// True when [slotLabel] on [date] is today and its start time has already passed.
-bool isSlotTimeInPast(DateTime date, String slotLabel,
-    [DateTime? referenceTime]) {
+bool isSlotTimeInPast(
+  DateTime date,
+  String slotLabel, [
+  DateTime? referenceTime,
+]) {
   final now = referenceTime ?? DateTime.now();
   final day = DateTime(date.year, date.month, date.day);
   final today = DateTime(now.year, now.month, now.day);
@@ -20,8 +23,13 @@ bool isSlotTimeInPast(DateTime date, String slotLabel,
   if (day.isAfter(today)) return false;
   try {
     final parsed = _slotParseFormat.parse(slotLabel.trim());
-    final slotStart =
-        DateTime(day.year, day.month, day.day, parsed.hour, parsed.minute);
+    final slotStart = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      parsed.hour,
+      parsed.minute,
+    );
     return !slotStart.isAfter(now);
   } catch (_) {
     return false;
@@ -30,9 +38,7 @@ bool isSlotTimeInPast(DateTime date, String slotLabel,
 
 /// Formats [time] as a 12-hour slot label (e.g. `10:30 AM`).
 String formatSlotTimeLabel(TimeOfDay time) {
-  return _slotParseFormat.format(
-    DateTime(2000, 1, 1, time.hour, time.minute),
-  );
+  return _slotParseFormat.format(DateTime(2000, 1, 1, time.hour, time.minute));
 }
 
 /// Parses a slot label into [TimeOfDay], or null if invalid.
@@ -135,10 +141,10 @@ class BookingDraft {
     List<String>? reportFiles,
     this.slotShareReasonType,
     this.slotShareReasonText = '',
-  })  : familyMemberIds = List<String>.from(familyMemberIds ?? const []),
-        memberReasons = Map<String, String>.from(memberReasons ?? const {}),
-        symptoms = List<String>.from(symptoms ?? const []),
-        reportFiles = List<String>.from(reportFiles ?? const []);
+  }) : familyMemberIds = List<String>.from(familyMemberIds ?? const []),
+       memberReasons = Map<String, String>.from(memberReasons ?? const {}),
+       symptoms = List<String>.from(symptoms ?? const []),
+       reportFiles = List<String>.from(reportFiles ?? const []);
 
   final String doctorId;
   final String doctorName;

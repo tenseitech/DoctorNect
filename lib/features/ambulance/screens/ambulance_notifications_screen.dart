@@ -12,10 +12,7 @@ import '../../../core/theme/app_typography.dart';
 enum _AlertFilter { all, unread, read }
 
 class AmbulanceNotificationsScreen extends StatefulWidget {
-  const AmbulanceNotificationsScreen({
-    super.key,
-    this.onOpenRequests,
-  });
+  const AmbulanceNotificationsScreen({super.key, this.onOpenRequests});
 
   final VoidCallback? onOpenRequests;
 
@@ -40,7 +37,8 @@ class _AmbulanceNotificationsScreenState
   }
 
   Map<String, List<AmbulanceDriverAlert>> _groupByDay(
-      List<AmbulanceDriverAlert> items) {
+    List<AmbulanceDriverAlert> items,
+  ) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -48,12 +46,15 @@ class _AmbulanceNotificationsScreenState
     final groups = <String, List<AmbulanceDriverAlert>>{};
     for (final item in items) {
       final day = DateTime(
-          item.createdAt.year, item.createdAt.month, item.createdAt.day);
+        item.createdAt.year,
+        item.createdAt.month,
+        item.createdAt.day,
+      );
       final label = day == today
           ? 'Today'
           : day == yesterday
-              ? 'Yesterday'
-              : DateFormat('dd MMM yyyy').format(item.createdAt);
+          ? 'Yesterday'
+          : DateFormat('dd MMM yyyy').format(item.createdAt);
       groups.putIfAbsent(label, () => []).add(item);
     }
     return groups;
@@ -67,8 +68,9 @@ class _AmbulanceNotificationsScreenState
       child: Builder(
         builder: (context) {
           final allItems = AmbulanceStore.instance.alertsFor(ambulanceId);
-          final unreadCount =
-              AmbulanceStore.instance.unreadAlertCount(ambulanceId);
+          final unreadCount = AmbulanceStore.instance.unreadAlertCount(
+            ambulanceId,
+          );
           final items = _filtered(allItems);
           final groups = _groupByDay(items);
 
@@ -85,8 +87,9 @@ class _AmbulanceNotificationsScreenState
                         Text(
                           'Notifications',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.headlineLarge,
-                              fontWeight: FontWeight.w700),
+                            fontSize: AppTypography.headlineLarge,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -94,13 +97,15 @@ class _AmbulanceNotificationsScreenState
                               ? '$unreadCount unread · new requests & trip updates'
                               : 'New requests, acceptances, and trip alerts',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  if (unreadCount > 0)
+                  if (unreadCount > 0) ...[
+                    const SizedBox(width: 8),
                     OutlinedButton(
                       onPressed: () {
                         AmbulanceStore.instance.markAlertsRead(ambulanceId);
@@ -109,16 +114,23 @@ class _AmbulanceNotificationsScreenState
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _accent,
                         side: const BorderSide(color: _accent),
+                        visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                       ),
                       child: Text(
                         'Mark all read',
+                        maxLines: 1,
+                        softWrap: false,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall,
-                            fontWeight: FontWeight.w600),
+                          fontSize: AppTypography.bodySmall,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
+                  ],
                 ],
               ),
               const SizedBox(height: 16),
@@ -200,8 +212,10 @@ class _AmbulanceNotificationsScreenState
                                 alert: alert,
                                 onTap: () {
                                   if (!alert.isRead) {
-                                    AmbulanceStore.instance
-                                        .markAlertRead(ambulanceId, alert.id);
+                                    AmbulanceStore.instance.markAlertRead(
+                                      ambulanceId,
+                                      alert.id,
+                                    );
                                   }
                                   if (alert.bookingId != null) {
                                     widget.onOpenRequests?.call();
@@ -296,8 +310,9 @@ class _AlertCard extends StatelessWidget {
             : const Color(0xFFFFF7ED),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color:
-              alert.isRead ? const Color(0xFFE2E8F0) : const Color(0xFFFDBA74),
+          color: alert.isRead
+              ? const Color(0xFFE2E8F0)
+              : const Color(0xFFFDBA74),
         ),
       ),
       child: Material(
@@ -317,8 +332,11 @@ class _AlertCard extends StatelessWidget {
                     color: const Color(0xFFDC2626).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.notifications_active_outlined,
-                      color: Color(0xFFDC2626), size: 20),
+                  child: const Icon(
+                    Icons.notifications_active_outlined,
+                    color: Color(0xFFDC2626),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -328,23 +346,26 @@ class _AlertCard extends StatelessWidget {
                       Text(
                         alert.title,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodyMedium,
-                            fontWeight: FontWeight.w700),
+                          fontSize: AppTypography.bodyMedium,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         alert.body,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall,
-                            color: AppColors.textSecondaryOf(context),
-                            height: 1.35),
+                          fontSize: AppTypography.bodySmall,
+                          color: AppColors.textSecondaryOf(context),
+                          height: 1.35,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         DateFormat('hh:mm a').format(alert.createdAt),
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelSmall,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                     ],
                   ),

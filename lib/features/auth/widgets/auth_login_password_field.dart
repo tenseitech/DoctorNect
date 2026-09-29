@@ -102,8 +102,11 @@ class _AuthLoginPasswordFieldState extends State<AuthLoginPasswordField> {
             context: context,
             accentColor: widget.accentColor,
             hintText: widget.hint ?? 'Enter your password',
-            prefixIcon: Icon(Icons.lock_outline_rounded,
-                size: 20, color: AppColors.textSecondaryOf(context)),
+            prefixIcon: Icon(
+              Icons.lock_outline_rounded,
+              size: 20,
+              color: AppColors.textSecondaryOf(context),
+            ),
             suffixIcon: IconButton(
               tooltip: _obscure ? 'Show password' : 'Hide password',
               icon: Icon(
@@ -119,10 +122,7 @@ class _AuthLoginPasswordFieldState extends State<AuthLoginPasswordField> {
         ),
         if (widget.footer != null) ...[
           const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: widget.footer!,
-          ),
+          Align(alignment: Alignment.centerRight, child: widget.footer!),
         ],
       ],
     );

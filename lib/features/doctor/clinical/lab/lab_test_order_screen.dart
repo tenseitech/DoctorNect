@@ -1,5 +1,6 @@
 import '../../../../core/firebase/firestore_service.dart';
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -120,8 +121,9 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
       return;
     }
 
-    final selectedTests =
-        _allTests.where((t) => _selectedTestIds.contains(t.id)).toList();
+    final selectedTests = _allTests
+        .where((t) => _selectedTestIds.contains(t.id))
+        .toList();
     final selected = _labOptions
         .where((o) => o.name == _labController.text.trim())
         .firstOrNull;
@@ -133,7 +135,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
         patient: widget.patient,
         testIds: selectedTests.map((t) => t.id).toList(),
         testNames: selectedTests.map((t) => t.name).toList(),
-        labId: selected?.id ??
+        labId:
+            selected?.id ??
             _selectedLabId, // FIXED: pass registered lab id when selected
         labName: lab.isNotEmpty ? lab : null,
         indication: _indicationController.text.trim(),
@@ -191,8 +194,9 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
           child: Text(
             '${widget.patient.patientName} · ${widget.patient.age} yrs',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodyMedium,
-                fontWeight: FontWeight.w500),
+              fontSize: AppTypography.bodyMedium,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         ClinicalSectionCard(
@@ -213,22 +217,23 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: [
-                      'All',
-                      ..._categories,
-                    ].map((cat) {
+                    children: ['All', ..._categories].map((cat) {
                       final selected = _categoryFilter == cat;
                       return Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: FilterChip(
-                          label: Text(cat,
-                              style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelSmall)),
+                          label: Text(
+                            cat,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelSmall,
+                            ),
+                          ),
                           selected: selected,
                           onSelected: (_) =>
                               setState(() => _categoryFilter = cat),
-                          selectedColor:
-                              AppColors.doctorBlue.withValues(alpha: 0.15),
+                          selectedColor: AppColors.doctorBlue.withValues(
+                            alpha: 0.15,
+                          ),
                           checkmarkColor: AppColors.doctorBlue,
                         ),
                       );
@@ -240,8 +245,9 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                 Text(
                   'No tests found in catalog',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 )
               else
                 ..._filteredTests.map((test) {
@@ -250,14 +256,18 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                     value: selected,
-                    title: Text(test.name,
-                        style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall)),
+                    title: Text(
+                      test.name,
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                      ),
+                    ),
                     subtitle: Text(
                       _categoryFor(test),
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelSmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                     activeColor: AppColors.doctorBlue,
                     onChanged: (v) => setState(() {
@@ -330,12 +340,17 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                       ? _labController.text.trim()
                       : null,
                   items: _labOptions
-                      .map((l) =>
-                          DropdownMenuItem(value: l.name, child: Text(l.name)))
+                      .map(
+                        (l) => DropdownMenuItem(
+                          value: l.name,
+                          child: Text(l.name),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
-                    final picked =
-                        _labOptions.where((o) => o.name == v).firstOrNull;
+                    final picked = _labOptions
+                        .where((o) => o.name == v)
+                        .firstOrNull;
                     setState(() {
                       _labController.text = v ?? '';
                       _selectedLabId = picked?.id;
@@ -362,8 +377,9 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                       Text(
                         'Connect a diagnostic lab to send test orders.',
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
@@ -371,8 +387,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) =>
-                                    const DoctorConnectedLabsScreen()),
+                              builder: (_) => const DoctorConnectedLabsScreen(),
+                            ),
                           ).then((_) => _loadCatalog());
                         },
                         icon: const Icon(Icons.biotech_outlined, size: 18),
@@ -395,7 +411,9 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Send Order'),
         ),
@@ -439,16 +457,20 @@ class _LabOrderSentSheet extends StatelessWidget {
                         color: const Color(0xFF16A34A).withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check_circle,
-                          color: Color(0xFF16A34A), size: 28),
+                      child: const Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF16A34A),
+                        size: 28,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Lab order sent successfully',
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.headlineSmall,
-                            fontWeight: FontWeight.w700),
+                          fontSize: AppTypography.headlineSmall,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
@@ -475,38 +497,45 @@ class _LabOrderSentSheet extends StatelessWidget {
                 Text(
                   'Tests ordered (${testNames.length})',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
                 SizedBox(height: 8),
-                ...testNames.map((t) => Padding(
-                      padding: EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        children: [
-                          Icon(Icons.circle,
-                              size: 6,
-                              color: AppColors.textSecondaryOf(context)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              t,
-                              style: GoogleFonts.inter(
-                                  fontSize: AppTypography.bodySmall),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                ...testNames.map(
+                  (t) => Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          size: 6,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            t,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                    )),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.doctorBlue),
+                      backgroundColor: AppColors.doctorBlue,
+                    ),
                     child: const Text('Done'),
                   ),
                 ),
@@ -542,15 +571,21 @@ class _SentTo extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label,
-                  style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall,
-                      color: AppColors.textSecondaryOf(context))),
-              Text(name,
-                  style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodyMedium,
-                      fontWeight: FontWeight.w600,
-                      color: color)),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelSmall,
+                  color: AppColors.textSecondaryOf(context),
+                ),
+              ),
+              Text(
+                name,
+                style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodyMedium,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ),

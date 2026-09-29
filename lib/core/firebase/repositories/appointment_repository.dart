@@ -14,8 +14,10 @@ class AppointmentRepository {
 
   static final AppointmentRepository instance = AppointmentRepository._();
 
-  Future<void> save(DoctorNectAppointmentRecord record,
-      {String? patientId}) async {
+  Future<void> save(
+    DoctorNectAppointmentRecord record, {
+    String? patientId,
+  }) async {
     if (!FirebaseBootstrap.isReady) return;
 
     // H3 debug-only write failure simulation. kDebugMode is false in release/profile
@@ -56,7 +58,8 @@ class AppointmentRepository {
     } on FirebaseException catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'Appointment save failed (${record.id}): ${e.code} ${e.message}\n$st');
+          'Appointment save failed (${record.id}): ${e.code} ${e.message}\n$st',
+        );
       }
       rethrow;
     }
@@ -116,11 +119,14 @@ class AppointmentRepository {
   List<DoctorNectAppointmentRecord> _recordsFromSnapshot(
     QuerySnapshot<Map<String, dynamic>> snapshot,
   ) {
-    final records = snapshot.docs
-        .map((doc) => AppointmentFirestoreMapper.fromMap(doc.id, doc.data()))
-        .whereType<DoctorNectAppointmentRecord>()
-        .toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final records =
+        snapshot.docs
+            .map(
+              (doc) => AppointmentFirestoreMapper.fromMap(doc.id, doc.data()),
+            )
+            .whereType<DoctorNectAppointmentRecord>()
+            .toList()
+          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return records;
   }
 
@@ -138,11 +144,14 @@ class AppointmentRepository {
       preferCache: preferCache,
     );
 
-    final records = snapshot.docs
-        .map((doc) => AppointmentFirestoreMapper.fromMap(doc.id, doc.data()))
-        .whereType<DoctorNectAppointmentRecord>()
-        .toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final records =
+        snapshot.docs
+            .map(
+              (doc) => AppointmentFirestoreMapper.fromMap(doc.id, doc.data()),
+            )
+            .whereType<DoctorNectAppointmentRecord>()
+            .toList()
+          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return records;
   }
 }

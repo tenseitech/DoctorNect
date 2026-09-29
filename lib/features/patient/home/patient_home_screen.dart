@@ -1,4 +1,5 @@
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -16,7 +17,9 @@ import '../../../widgets/emergency_sos_sheet.dart';
 import '../../../widgets/theme_toggle_button.dart';
 import '../data/patient_mock_data.dart';
 import '../data/registered_doctors_store.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../profile/data/patient_profile_mock.dart';
 import '../profile/models/patient_profile_models.dart';
 import '../booking/booking_flow_screen.dart';
@@ -128,7 +131,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
   void _openLab() {
     Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const LabHomeScreen()));
+      context,
+      MaterialPageRoute(builder: (_) => const LabHomeScreen()),
+    );
   }
 
   void _openMyLabs() {
@@ -247,8 +252,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                                   fontSize: compact ? 18 : 22,
                                   fontWeight: FontWeight.w700,
                                   height: 1.15,
-                                  color:
-                                      Theme.of(context).colorScheme.onSurface,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
                                 ),
                               ),
                               SizedBox(height: compact ? 2 : 4),
@@ -264,7 +270,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                         const ThemeToggleButton(),
                         const SizedBox(width: 4),
                         const NotificationBellButton(
-                            audience: NotificationAudience.patient),
+                          audience: NotificationAudience.patient,
+                        ),
                       ],
                     ),
                     SizedBox(height: compact ? 12 : 16),
@@ -283,8 +290,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     stream: PromotedAdsService.streamActiveAds(),
                     builder: (context, snapshot) {
                       final activeAds = snapshot.data ?? [];
-                      final carouselItems = _buildCarouselItems(activeAds,
-                          patientCity: _patientCity());
+                      final carouselItems = _buildCarouselItems(
+                        activeAds,
+                        patientCity: _patientCity(),
+                      );
                       if (carouselItems.isEmpty) {
                         return const SizedBox.shrink();
                       }
@@ -306,16 +315,16 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                 children: [
                   ExploreSection(),
                   Divider(
-                      height: 1,
-                      thickness: 1,
-                      color:
-                          AppColors.borderOf(context).withValues(alpha: 0.25)),
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.borderOf(context).withValues(alpha: 0.25),
+                  ),
                   ServicesSection(onServiceTap: _handleServiceTap),
                   Divider(
-                      height: 1,
-                      thickness: 1,
-                      color:
-                          AppColors.borderOf(context).withValues(alpha: 0.25)),
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.borderOf(context).withValues(alpha: 0.25),
+                  ),
                   MyDoctorSection(
                     onAdd: () =>
                         PatientFavoritesSheets.showAddDoctorSheet(context),
@@ -338,10 +347,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     },
                   ),
                   Divider(
-                      height: 1,
-                      thickness: 1,
-                      color:
-                          AppColors.borderOf(context).withValues(alpha: 0.25)),
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.borderOf(context).withValues(alpha: 0.25),
+                  ),
                   AppointmentsSection(
                     onViewAll: () {
                       if (widget.onSelectTab != null) {
@@ -379,10 +388,10 @@ class _PatientLocationRow extends StatelessWidget {
     final resolvedCity = address.shortLabel.isNotEmpty
         ? address.shortLabel
         : (city != null && city!.trim().isNotEmpty
-            ? city!.trim()
-            : (PatientProfileMock.profileCity.trim().isNotEmpty
-                ? PatientProfileMock.profileCity.trim()
-                : ''));
+              ? city!.trim()
+              : (PatientProfileMock.profileCity.trim().isNotEmpty
+                    ? PatientProfileMock.profileCity.trim()
+                    : ''));
     final hasLocation = resolvedCity.isNotEmpty;
     final label = hasLocation ? resolvedCity : 'Change location';
 
@@ -399,8 +408,11 @@ class _PatientLocationRow extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.location_on_outlined,
-                    size: 15, color: AppColors.patientTeal),
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 15,
+                  color: AppColors.patientTeal,
+                ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
@@ -409,8 +421,9 @@ class _PatientLocationRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.bodySmall,
-                      fontWeight:
-                          hasLocation ? FontWeight.w500 : FontWeight.w600,
+                      fontWeight: hasLocation
+                          ? FontWeight.w500
+                          : FontWeight.w600,
                       height: 1.2,
                       color: hasLocation
                           ? AppColors.textSecondaryOf(context)
@@ -433,8 +446,10 @@ class _PatientLocationRow extends StatelessWidget {
   }
 }
 
-List<HomeCarouselItem> _buildCarouselItems(List<PromotedAdModel> activeAds,
-    {String? patientCity}) {
+List<HomeCarouselItem> _buildCarouselItems(
+  List<PromotedAdModel> activeAds, {
+  String? patientCity,
+}) {
   final baseItems = PatientMockData.carouselItems
       .where((item) => item.banner.kind != HomeCarouselKind.healthTip)
       .toList();

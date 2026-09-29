@@ -98,8 +98,9 @@ class _PatientProfileAvatarButtonState
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.patientTeal
-                    .withValues(alpha: _pressed ? 0.16 : 0.22),
+                color: AppColors.patientTeal.withValues(
+                  alpha: _pressed ? 0.16 : 0.22,
+                ),
                 blurRadius: _pressed ? 4 : 6,
                 offset: Offset(0, _pressed ? 1 : 2),
               ),

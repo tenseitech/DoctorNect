@@ -1,4 +1,5 @@
 import '../../core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -61,8 +62,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
       serviceName: widget.ambulance.serviceName,
       driverName: widget.ambulance.driverName,
     );
-    await ProfileCompletionService.instance
-        .refreshForAmbulance(widget.ambulance.id);
+    await ProfileCompletionService.instance.refreshForAmbulance(
+      widget.ambulance.id,
+    );
     await _prepareAuth();
     if (!mounted) return;
     if (FirebaseAuth.instance.currentUser?.isAnonymous != true) {
@@ -84,15 +86,17 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
   Future<void> _prepareAuth() async {
     final ok = await AmbulanceAuthHelper.ensureSignedIn();
     if (ok) {
-      await FirestoreService.instance.ambulance
-          .linkDriverAuth(widget.ambulance.id);
+      await FirestoreService.instance.ambulance.linkDriverAuth(
+        widget.ambulance.id,
+      );
       await AmbulancePushService.registerDriver(widget.ambulance.id);
     }
   }
 
   Future<void> _refreshProfile() async {
-    final fresh = await FirestoreService.instance.ambulance
-        .fetchAmbulanceById(widget.ambulance.id);
+    final fresh = await FirestoreService.instance.ambulance.fetchAmbulanceById(
+      widget.ambulance.id,
+    );
     if (fresh != null) {
       AmbulanceStore.instance.updateRegisteredAmbulance(fresh);
     }
@@ -112,15 +116,19 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Logout',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+        title: Text(
+          'Logout',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
         content: Text(
           'Are you sure you want to logout from ${widget.ambulance.serviceName}?',
           style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -141,8 +149,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                     content: Text(
                       'Signed out, but session data may not have cleared fully. '
                       'If you still auto-login after refresh, clear site data for this browser.',
-                      style:
-                          GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                      ),
                     ),
                     duration: const Duration(seconds: 6),
                   ),
@@ -164,8 +173,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final ambulanceTheme =
-        isDark ? AppTheme.dark(_accent) : AppTheme.light(_accent);
+    final ambulanceTheme = isDark
+        ? AppTheme.dark(_accent)
+        : AppTheme.light(_accent);
 
     return Theme(
       data: ambulanceTheme,
@@ -175,17 +185,18 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
           final ambulanceId = AmbulanceSession.loggedInAmbulanceId;
           final ambulance =
               AmbulanceStore.instance.findAmbulance(ambulanceId) ??
-                  widget.ambulance;
+              widget.ambulance;
           final unread = AmbulanceStore.instance.unreadAlertCount(ambulanceId);
-          final hasPendingRequests = AmbulanceStore.instance.bookings
-              .any((b) => b.isPending && b.acceptedAmbulanceId == null);
+          final hasPendingRequests = AmbulanceStore.instance.bookings.any(
+            (b) => b.isPending && b.acceptedAmbulanceId == null,
+          );
           final isOnline = ambulance.available;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Material(
-                color: Theme.of(context).colorScheme.surface,
+                color: ambulanceTheme.colorScheme.surface,
                 child: SafeArea(
                   bottom: false,
                   child: Padding(
@@ -203,8 +214,11 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                             ),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.local_hospital,
-                              color: Colors.white, size: 22),
+                          child: const Icon(
+                            Icons.local_hospital,
+                            color: Colors.white,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -214,8 +228,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                               Text(
                                 ambulance.serviceName,
                                 style: GoogleFonts.inter(
-                                    fontSize: AppTypography.headlineSmall,
-                                    fontWeight: FontWeight.w700),
+                                  fontSize: AppTypography.headlineSmall,
+                                  fontWeight: FontWeight.w700,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -236,8 +251,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                                       '${ambulance.driverName} · ${isOnline ? 'Online' : 'Offline'}',
                                       style: GoogleFonts.inter(
                                         fontSize: AppTypography.labelMedium,
-                                        color:
-                                            AppColors.textSecondaryOf(context),
+                                        color: AppColors.textSecondaryOf(
+                                          context,
+                                        ),
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -263,7 +279,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                   requestDots: [hasPendingRequests, false, false],
                   destinations: [
                     NavigationDestination(
-                        icon: Icon(_tabs[0].icon), label: _tabs[0].label),
+                      icon: Icon(_tabs[0].icon),
+                      label: _tabs[0].label,
+                    ),
                     NavigationDestination(
                       icon: Badge(
                         isLabelVisible: unread > 0,
@@ -273,7 +291,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                       label: _tabs[1].label,
                     ),
                     NavigationDestination(
-                        icon: Icon(_tabs[2].icon), label: _tabs[2].label),
+                      icon: Icon(_tabs[2].icon),
+                      label: _tabs[2].label,
+                    ),
                   ],
                   child: IndexedStack(
                     index: _index,
@@ -285,7 +305,8 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                       ProfileDataGate(
                         role: UserType.ambulance,
                         child: AmbulanceNotificationsScreen(
-                            onOpenRequests: _openRequestsTab),
+                          onOpenRequests: _openRequestsTab,
+                        ),
                       ),
                       AmbulanceProfileScreen(
                         ambulanceId: ambulance.id,

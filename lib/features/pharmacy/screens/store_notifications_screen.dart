@@ -32,9 +32,12 @@ class StoreNotificationsScreen extends StatelessWidget {
           final items = PharmacyNotificationStore.instance.forStore(storeId);
           if (items.isEmpty) {
             return Center(
-              child: Text('No notifications',
-                  style: GoogleFonts.inter(
-                      color: AppColors.textSecondaryOf(context))),
+              child: Text(
+                'No notifications',
+                style: GoogleFonts.inter(
+                  color: AppColors.textSecondaryOf(context),
+                ),
+              ),
             );
           }
           return ListView.separated(
@@ -47,8 +50,10 @@ class StoreNotificationsScreen extends StatelessWidget {
                 tileColor: n.isRead
                     ? null
                     : AppColors.pharmacyGreen.withValues(alpha: 0.06),
-                title: Text(n.title,
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                title: Text(
+                  n.title,
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -56,8 +61,9 @@ class StoreNotificationsScreen extends StatelessWidget {
                     Text(
                       DateFormat('dd MMM yyyy, hh:mm a').format(n.createdAt),
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelSmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   ],
                 ),
@@ -69,7 +75,8 @@ class StoreNotificationsScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => StorePrescriptionDetailScreen(
-                            deliveryId: n.referenceId!),
+                          deliveryId: n.referenceId!,
+                        ),
                       ),
                     );
                   }

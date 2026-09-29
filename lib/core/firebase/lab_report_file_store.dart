@@ -32,7 +32,11 @@ abstract final class LabReportFileStore {
   static S3StorageService? s3Override;
 
   static String _cacheKey(
-          String patientId, String bookingId, String fileName, [String? storageKey]) =>
+    String patientId,
+    String bookingId,
+    String fileName, [
+    String? storageKey,
+  ]) =>
       (storageKey != null && storageKey.trim().isNotEmpty)
           ? storageKey.trim()
           : '$patientId/$bookingId/${_sanitizeFileName(fileName)}';
@@ -41,11 +45,15 @@ abstract final class LabReportFileStore {
       name.replaceAll(RegExp(r'[^\w.\-]'), '_');
 
   static String storagePath(
-          String patientId, String bookingId, String fileName) =>
-      'lab_reports/$patientId/$bookingId/${_sanitizeFileName(fileName)}';
+    String patientId,
+    String bookingId,
+    String fileName,
+  ) => 'lab_reports/$patientId/$bookingId/${_sanitizeFileName(fileName)}';
 
   static Future<String> _localDirPath(
-      String patientId, String bookingId) async {
+    String patientId,
+    String bookingId,
+  ) async {
     final root = await getApplicationDocumentsDirectory();
     return '${root.path}/lab_reports/$patientId/$bookingId';
   }
@@ -59,8 +67,8 @@ abstract final class LabReportFileStore {
     final ext = lower.endsWith('.png')
         ? '.png'
         : lower.endsWith('.jpg') || lower.endsWith('.jpeg')
-            ? '.jpg'
-            : '.pdf';
+        ? '.jpg'
+        : '.pdf';
     final slug = testName
         .replaceAll(RegExp(r'[^\w\s-]'), '')
         .trim()

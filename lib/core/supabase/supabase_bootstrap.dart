@@ -23,16 +23,14 @@ abstract final class SupabaseBootstrap {
   static SupabaseClient get client {
     if (!isReady) {
       throw StateError(
-          'Supabase has not been initialized. Call SupabaseBootstrap.initialize() first.');
+        'Supabase has not been initialized. Call SupabaseBootstrap.initialize() first.',
+      );
     }
     return Supabase.instance.client;
   }
 
   /// Initializes Supabase client with local persistence and auto refresh
-  static Future<bool> initialize({
-    String? url,
-    String? anonKey,
-  }) async {
+  static Future<bool> initialize({String? url, String? anonKey}) async {
     if (isReady) return true;
 
     final targetUrl = url ?? resolvedUrl;
@@ -49,15 +47,14 @@ abstract final class SupabaseBootstrap {
           authFlowType: AuthFlowType.pkce,
           autoRefreshToken: true,
         ),
-        realtimeClientOptions: const RealtimeClientOptions(
-          eventsPerSecond: 10,
-        ),
+        realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 10),
       );
 
       isReady = true;
       if (kDebugMode) {
         debugPrint(
-            '[SupabaseBootstrap] Supabase initialized successfully on ${defaultTargetPlatform.name}');
+          '[SupabaseBootstrap] Supabase initialized successfully on ${defaultTargetPlatform.name}',
+        );
       }
       return true;
     } catch (e, st) {

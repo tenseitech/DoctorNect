@@ -6,7 +6,9 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../widgets/doctor_ui_widgets.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../../../../core/theme/app_typography.dart';
 
 class PatientListCard extends StatelessWidget {
@@ -36,8 +38,9 @@ class PatientListCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             border: Border.all(color: AppColors.borderOf(context)),
           ),
-          child:
-              wide ? _buildWideLayout(context) : _buildCompactLayout(context),
+          child: wide
+              ? _buildWideLayout(context)
+              : _buildCompactLayout(context),
         ),
       ),
     );
@@ -72,16 +75,14 @@ class PatientListCard extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 160,
-            child:
-                _ConditionChips(conditions: patient.conditions, maxVisible: 2),
+            child: _ConditionChips(
+              conditions: patient.conditions,
+              maxVisible: 2,
+            ),
           ),
         ],
         const SizedBox(width: 16),
-        Container(
-          width: 1,
-          height: 56,
-          color: AppColors.borderOf(context),
-        ),
+        Container(width: 1, height: 56, color: AppColors.borderOf(context)),
         const SizedBox(width: 16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -117,10 +118,7 @@ class _PatientHeader extends StatelessWidget {
 }
 
 class _PatientDetails extends StatelessWidget {
-  const _PatientDetails({
-    required this.patient,
-    this.showTypeBadge = false,
-  });
+  const _PatientDetails({required this.patient, this.showTypeBadge = false});
 
   final DoctorPatientSummary patient;
   final bool showTypeBadge;
@@ -153,7 +151,9 @@ class _PatientDetails extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: StatusBadge(
-                    label: 'Follow-up', color: const Color(0xFF7C3AED)),
+                  label: 'Follow-up',
+                  color: const Color(0xFF7C3AED),
+                ),
               ),
           ],
         ),
@@ -163,15 +163,17 @@ class _PatientDetails extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelMedium,
-              color: AppColors.textSecondaryOf(context)),
+            fontSize: AppTypography.labelMedium,
+            color: AppColors.textSecondaryOf(context),
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           'Last visit: ${DateFormat('dd MMM yyyy').format(patient.lastVisitDate)}',
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelMedium,
-              color: AppColors.textSecondaryOf(context)),
+            fontSize: AppTypography.labelMedium,
+            color: AppColors.textSecondaryOf(context),
+          ),
         ),
       ],
     );
@@ -204,18 +206,16 @@ class _VisitsBadge extends StatelessWidget {
 }
 
 class _ConditionChips extends StatelessWidget {
-  const _ConditionChips({
-    required this.conditions,
-    this.maxVisible,
-  });
+  const _ConditionChips({required this.conditions, this.maxVisible});
 
   final List<String> conditions;
   final int? maxVisible;
 
   @override
   Widget build(BuildContext context) {
-    final visible =
-        maxVisible == null ? conditions : conditions.take(maxVisible!).toList();
+    final visible = maxVisible == null
+        ? conditions
+        : conditions.take(maxVisible!).toList();
     final hidden = maxVisible == null ? 0 : conditions.length - visible.length;
 
     return Wrap(
@@ -229,8 +229,9 @@ class _ConditionChips extends StatelessWidget {
           Text(
             '+$hidden more',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelSmall,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.labelSmall,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
       ],
     );
@@ -254,14 +255,14 @@ class _ViewProfileButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
           'View Profile',
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelMedium, fontWeight: FontWeight.w600),
+            fontSize: AppTypography.labelMedium,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );

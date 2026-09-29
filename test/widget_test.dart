@@ -4,8 +4,9 @@ import 'package:medibond/main.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('DoctorNectApp shows splash tagline on first frame',
-      (tester) async {
+  testWidgets('DoctorNectApp shows splash tagline on first frame', (
+    tester,
+  ) async {
     await tester.pumpWidget(const DoctorNectApp());
     await tester.pump();
 

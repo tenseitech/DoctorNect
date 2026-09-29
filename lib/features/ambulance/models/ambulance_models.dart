@@ -83,6 +83,7 @@ class RegisteredAmbulance {
     this.country = '',
     this.state = '',
     this.pincode = '',
+    this.verified = false,
   });
 
   final String id;
@@ -113,6 +114,7 @@ class RegisteredAmbulance {
   final String country;
   final String state;
   final String pincode;
+  final bool verified;
 
   double get averageRating => ratingCount > 0 ? totalRating / ratingCount : 0.0;
 
@@ -144,6 +146,7 @@ class RegisteredAmbulance {
     String? country,
     String? state,
     String? pincode,
+    bool? verified,
   }) {
     return RegisteredAmbulance(
       id: id,
@@ -174,54 +177,57 @@ class RegisteredAmbulance {
       country: country ?? this.country,
       state: state ?? this.state,
       pincode: pincode ?? this.pincode,
+      verified: verified ?? this.verified,
     );
   }
 
   String get ambulanceTypeLabel => switch (ambulanceType) {
-        AmbulanceType.bls => 'BLS (Basic)',
-        AmbulanceType.als => 'ALS (Advanced)',
-        AmbulanceType.icu => 'ICU',
-        AmbulanceType.patientTransport => 'Patient Transport',
-      };
+    AmbulanceType.bls => 'BLS (Basic)',
+    AmbulanceType.als => 'ALS (Advanced)',
+    AmbulanceType.icu => 'ICU',
+    AmbulanceType.patientTransport => 'Patient Transport',
+  };
 
   Map<String, dynamic> toMap({bool includePrivateFields = true}) => {
-        'serviceName': serviceName,
-        'ownerName': ownerName,
-        'driverName': driverName,
-        'phone': phone,
-        'vehicleNumber': vehicleNumber,
-        'ambulanceType': ambulanceType.name,
-        'username': username,
-        'city': city,
-        'serviceAreas': serviceAreas,
-        'baseAddress': baseAddress,
-        'licenseNumber': licenseNumber,
-        'insuranceNumber': insuranceNumber,
-        'hasOxygen': hasOxygen,
-        'hasVentilator': hasVentilator,
-        'hasStretcher': hasStretcher,
-        'is24x7': is24x7,
-        if (ratePerKm != null) 'ratePerKm': ratePerKm,
-        if (includePrivateFields && pin.isNotEmpty) 'pin': pin,
-        'totalRating': totalRating,
-        'ratingCount': ratingCount,
-        'isAvailable': available,
-        'createdAt': createdAt?.toIso8601String(),
-        'address': {
-          'addressLine1': addressLine1,
-          'addressLine2': addressLine2,
-          'country': country,
-          'state': state,
-          'city': city,
-          'pinCode': pincode,
-        },
-      };
+    'serviceName': serviceName,
+    'ownerName': ownerName,
+    'driverName': driverName,
+    'phone': phone,
+    'vehicleNumber': vehicleNumber,
+    'ambulanceType': ambulanceType.name,
+    'username': username,
+    'city': city,
+    'serviceAreas': serviceAreas,
+    'baseAddress': baseAddress,
+    'licenseNumber': licenseNumber,
+    'insuranceNumber': insuranceNumber,
+    'hasOxygen': hasOxygen,
+    'hasVentilator': hasVentilator,
+    'hasStretcher': hasStretcher,
+    'is24x7': is24x7,
+    if (ratePerKm != null) 'ratePerKm': ratePerKm,
+    if (includePrivateFields && pin.isNotEmpty) 'pin': pin,
+    'totalRating': totalRating,
+    'ratingCount': ratingCount,
+    'isAvailable': available,
+    'verified': verified,
+    'createdAt': createdAt?.toIso8601String(),
+    'address': {
+      'addressLine1': addressLine1,
+      'addressLine2': addressLine2,
+      'country': country,
+      'state': state,
+      'city': city,
+      'pinCode': pincode,
+    },
+  };
 
   factory RegisteredAmbulance.fromMap(String id, Map<String, dynamic> data) {
     AmbulanceType type = AmbulanceType.bls;
     final raw = data['ambulanceType'] as String?;
     if (raw != null) {
-      type = AmbulanceType.values.where((t) => t.name == raw).firstOrNull ??
+      type =
+          AmbulanceType.values.where((t) => t.name == raw).firstOrNull ??
           AmbulanceType.bls;
     }
 
@@ -266,6 +272,7 @@ class RegisteredAmbulance {
       totalRating: (data['totalRating'] as num?)?.toDouble() ?? 0.0,
       ratingCount: data['ratingCount'] as int? ?? 0,
       available: data['isAvailable'] as bool? ?? true,
+      verified: data['verified'] as bool? ?? false,
       addressLine1: aLine1,
       addressLine2: aLine2,
       country: aCountry,
@@ -438,11 +445,11 @@ class AmbulanceDriverAlert {
   final bool isRead;
 
   AmbulanceDriverAlert copyWith({bool? isRead}) => AmbulanceDriverAlert(
-        id: id,
-        title: title,
-        body: body,
-        createdAt: createdAt,
-        bookingId: bookingId,
-        isRead: isRead ?? this.isRead,
-      );
+    id: id,
+    title: title,
+    body: body,
+    createdAt: createdAt,
+    bookingId: bookingId,
+    isRead: isRead ?? this.isRead,
+  );
 }

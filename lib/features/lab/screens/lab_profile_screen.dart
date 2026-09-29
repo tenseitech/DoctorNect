@@ -1,7 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../core/firebase/firestore_service.dart';
+import '../../../core/layout/responsive_layout.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
+
 import 'dart:async';
+
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/auth/app_logout.dart';
@@ -18,7 +24,7 @@ import '../../patient/profile/about/about_screen.dart';
 import '../../auth/widgets/registration_address_section.dart';
 import '../data/lab_connection_store.dart';
 import '../data/lab_registry.dart';
-import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+import '../../shared/widgets/lab_page_layout.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
@@ -63,11 +69,17 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
         final lab = LabRegistry.findById(labId);
         if (lab == null) {
           return const Center(
-              child: CircularProgressIndicator(color: _labPurple));
+            child: CircularProgressIndicator(color: _labPurple),
+          );
         }
 
-        final connectedDoctors =
-            LabConnectionStore.instance.activeForLab(labId).length;
+        final connectedDoctors = LabConnectionStore.instance
+            .activeForLab(labId)
+            .length;
+        final compact = ResponsiveLayout.isCompact(context);
+        final user = FirebaseAuth.instance.currentUser;
+        final hasPasswordAuth =
+            user?.providerData.any((p) => p.providerId == 'password') ?? false;
 
         return LabPageLayout(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -76,15 +88,17 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
               Text(
                 'Profile',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.headlineLarge,
-                    fontWeight: FontWeight.w700),
+                  fontSize: AppTypography.headlineLarge,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Lab details, contact info & account settings',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
               const SizedBox(height: 20),
               _LabHeroCard(lab: lab, connectedDoctors: connectedDoctors),
@@ -120,8 +134,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                     label: 'License number',
                     value: lab.licenseNumber,
                     locked: true,
-                    supportMessage:
-                        'License number cannot be changed after registration. Contact support@doctornect.com if this needs to be corrected.',
+                    supportMessage: 'License number cannot be changed after registration. Contact support@doctornect.com if this needs to be corrected.',
+                    tooltipText: 'Cannot be changed after verification',
                   ),
                   _LabInfoTile(
                     icon: Icons.receipt_long_outlined,
@@ -156,8 +170,11 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                   ),
                   _LabInfoTile(
                     icon: Icons.email_outlined,
-                    label: 'Email (immutable)',
+                    label: 'Email',
                     value: lab.email,
+                    locked: true,
+                    supportMessage: 'Email address cannot be changed.',
+                    tooltipText: 'Cannot be changed after verification',
                   ),
                 ],
               ),
@@ -219,24 +236,26 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                       );
                     },
                   ),
-                  _LabActionTile(
-                    icon: Icons.lock_reset_outlined,
-                    label: 'Change password',
-                    subtitle: 'Update your login password',
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const _ChangePasswordDialog(),
-                      );
-                    },
-                  ),
-                  _LabActionTile(
-                    icon: Icons.logout,
-                    label: 'Log out',
-                    subtitle: 'Sign out from this lab account',
-                    destructive: true,
-                    onTap: () => AppLogout.confirmAndSignOut(context),
-                  ),
+                  if (hasPasswordAuth)
+                    _LabActionTile(
+                      icon: Icons.lock_reset_outlined,
+                      label: 'Change password',
+                      subtitle: 'Update your login password',
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => const _ChangePasswordDialog(),
+                        );
+                      },
+                    ),
+                  if (compact)
+                    _LabActionTile(
+                      icon: Icons.logout,
+                      label: 'Log out',
+                      subtitle: 'Sign out from this lab account',
+                      destructive: true,
+                      onTap: () => AppLogout.confirmAndSignOut(context),
+                    ),
                 ],
               ),
             ],
@@ -254,8 +273,9 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
     bool optional = false,
   }) async {
     final parsedPhone = FormValidators.parsePhone(currentValue);
-    final initialText =
-        field == 'Phone' ? parsedPhone.localNumber : currentValue;
+    final initialText = field == 'Phone'
+        ? parsedPhone.localNumber
+        : currentValue;
     final controller = TextEditingController(text: initialText);
     var dialCode = parsedPhone.dialCode;
     var saving = false;
@@ -280,8 +300,10 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                 }
               }
               if (field == 'Phone') {
-                final phoneError = FormValidators.phoneLocal(controller.text,
-                    dialCode: dialCode);
+                final phoneError = FormValidators.phoneLocal(
+                  controller.text,
+                  dialCode: dialCode,
+                );
                 if (phoneError != null) {
                   setDialogState(() => errorText = phoneError);
                   return;
@@ -300,7 +322,9 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
 
               if (field == 'Phone' &&
                   !ContactChangeVerification.mobilesEqual(
-                      phoneValue!, currentValue)) {
+                    phoneValue!,
+                    currentValue,
+                  )) {
                 final verified = await ContactChangeVerification.verifyIfNeeded(
                   context: context,
                   channel: ContactVerificationChannel.mobile,
@@ -315,7 +339,9 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
 
               if (field == 'Email' &&
                   !ContactChangeVerification.emailsEqual(
-                      emailValue!, currentValue)) {
+                    emailValue!,
+                    currentValue,
+                  )) {
                 final verified = await ContactChangeVerification.verifyIfNeeded(
                   context: context,
                   channel: ContactVerificationChannel.email,
@@ -340,8 +366,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                 email: emailValue,
                 gstNumber:
                     field == 'GST number (optional)' && trimmed.isNotEmpty
-                        ? trimmed
-                        : null,
+                    ? trimmed
+                    : null,
                 clearGstNumber:
                     field == 'GST number (optional)' && trimmed.isEmpty,
               );
@@ -360,9 +386,12 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
 
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              title: Text('Edit $field',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                'Edit $field',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -372,8 +401,9 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                       Text(
                         errorText!,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall,
-                            color: AppColors.error),
+                          fontSize: AppTypography.bodySmall,
+                          color: AppColors.error,
+                        ),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -384,8 +414,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                         onDialCodeChanged: (code) => dialCode = code,
                         decoration: const InputDecoration(
                           labelText: 'Phone',
-                          helperText:
-                              'OTP verification required when changing your number',
+                          helperText: 'OTP verification required when changing your number',
                           border: OutlineInputBorder(),
                         ),
                       )
@@ -402,8 +431,9 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                             : TextCapitalization.sentences,
                         decoration: InputDecoration(
                           labelText: field,
-                          hintText:
-                              optional ? 'Leave blank if not applicable' : null,
+                          hintText: optional
+                              ? 'Leave blank if not applicable'
+                              : null,
                           helperText: field == 'Email'
                               ? 'OTP verification required when changing your email'
                               : null,
@@ -427,7 +457,9 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Save'),
                 ),
@@ -443,10 +475,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
 }
 
 class _LabHeroCard extends StatelessWidget {
-  const _LabHeroCard({
-    required this.lab,
-    required this.connectedDoctors,
-  });
+  const _LabHeroCard({required this.lab, required this.connectedDoctors});
 
   final RegisteredLabProfile lab;
   final int connectedDoctors;
@@ -483,8 +512,8 @@ class _LabHeroCard extends StatelessWidget {
                   color: AppColors.surfaceOf(context).withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                      color:
-                          AppColors.surfaceOf(context).withValues(alpha: 0.28)),
+                    color: AppColors.surfaceOf(context).withValues(alpha: 0.28),
+                  ),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -528,8 +557,9 @@ class _LabHeroCard extends StatelessWidget {
                       children: [
                         _HeroChip(
                           icon: Icons.verified_outlined,
-                          label:
-                              lab.verified ? 'Verified lab' : 'Diagnostic Lab',
+                          label: lab.verified
+                              ? 'Verified lab'
+                              : 'Diagnostic Lab',
                         ),
                         if (connectedDoctors > 0)
                           _HeroChip(
@@ -554,8 +584,11 @@ class _LabHeroCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.badge_outlined,
-                      size: 16, color: Colors.white.withValues(alpha: 0.9)),
+                  Icon(
+                    Icons.badge_outlined,
+                    size: 16,
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -627,16 +660,20 @@ class _LabProfileSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: GoogleFonts.inter(
-                fontSize: AppTypography.bodyLarge,
-                fontWeight: FontWeight.w700)),
+        Text(
+          title,
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.bodyLarge,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 3),
         Text(
           subtitle,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelMedium,
-              color: AppColors.textSecondaryOf(context)),
+            fontSize: AppTypography.labelMedium,
+            color: AppColors.textSecondaryOf(context),
+          ),
         ),
         const SizedBox(height: 10),
         Container(
@@ -668,6 +705,7 @@ class _LabInfoTile extends StatelessWidget {
     this.onEdit,
     this.locked = false,
     this.supportMessage,
+    this.tooltipText,
   });
 
   final IconData icon;
@@ -677,6 +715,7 @@ class _LabInfoTile extends StatelessWidget {
   final VoidCallback? onEdit;
   final bool locked;
   final String? supportMessage;
+  final String? tooltipText;
 
   @override
   Widget build(BuildContext context) {
@@ -705,9 +744,10 @@ class _LabInfoTile extends StatelessWidget {
                 Text(
                   label,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.labelSmall,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -741,7 +781,7 @@ class _LabInfoTile extends StatelessWidget {
                     },
               icon: const Icon(Icons.lock_outline, size: 18),
               color: AppColors.textSecondaryOf(context),
-              tooltip: 'Locked',
+              tooltip: tooltipText ?? 'Cannot be changed after verification',
               visualDensity: VisualDensity.compact,
             ),
         ],
@@ -804,16 +844,19 @@ class _LabActionTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right,
-                  size: 20,
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.7)),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: AppColors.textSecondaryOf(context)
+                    .withValues(alpha: 0.7),
+              ),
             ],
           ),
         ),
@@ -871,8 +914,10 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text('Change password',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+      title: Text(
+        'Change password',
+        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+      ),
       content: scrollableDialogContent(
         context: context,
         child: Column(
@@ -880,10 +925,13 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (_error != null) ...[
-              Text(_error!,
-                  style: GoogleFonts.inter(
-                      color: AppColors.error,
-                      fontSize: AppTypography.bodySmall)),
+              Text(
+                _error!,
+                style: GoogleFonts.inter(
+                  color: AppColors.error,
+                  fontSize: AppTypography.bodySmall,
+                ),
+              ),
               const SizedBox(height: 12),
             ],
             TextField(
@@ -919,7 +967,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Update'),
         ),
@@ -939,15 +989,19 @@ class _AddressEditDialog extends StatefulWidget {
 }
 
 class _AddressEditDialogState extends State<_AddressEditDialog> {
-  late final _address1Controller =
-      TextEditingController(text: widget.lab.addressLine1);
-  late final _address2Controller =
-      TextEditingController(text: widget.lab.addressLine2);
-  late final _pincodeController =
-      TextEditingController(text: widget.lab.pincode);
+  late final _address1Controller = TextEditingController(
+    text: widget.lab.addressLine1,
+  );
+  late final _address2Controller = TextEditingController(
+    text: widget.lab.addressLine2,
+  );
+  late final _pincodeController = TextEditingController(
+    text: widget.lab.pincode,
+  );
 
-  late String? _country =
-      widget.lab.country.isNotEmpty ? widget.lab.country : null;
+  late String? _country = widget.lab.country.isNotEmpty
+      ? widget.lab.country
+      : null;
   late String? _state = widget.lab.state.isNotEmpty ? widget.lab.state : null;
   late String? _city = widget.lab.city.isNotEmpty ? widget.lab.city : null;
 
@@ -1004,8 +1058,10 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Edit Address',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+      title: Text(
+        'Edit Address',
+        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1015,7 +1071,9 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
               Text(
                 _errorText!,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall, color: AppColors.error),
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.error,
+                ),
               ),
               const SizedBox(height: 12),
             ],
@@ -1047,7 +1105,9 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Save'),
         ),

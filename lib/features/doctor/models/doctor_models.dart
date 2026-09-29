@@ -17,10 +17,7 @@ enum AppointmentStatus {
 enum AppointmentListTab { today, upcoming, pending, completed, cancelled }
 
 class DoctorProfile {
-  const DoctorProfile({
-    required this.name,
-    required this.verificationStatus,
-  });
+  const DoctorProfile({required this.name, required this.verificationStatus});
 
   final String name;
   final VerificationStatus verificationStatus;

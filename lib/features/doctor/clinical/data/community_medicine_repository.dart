@@ -68,8 +68,10 @@ class CommunityMedicineRepository {
           .collection(FirestorePaths.communityMedicines)
           .orderBy('name')
           .limit(_fetchLimit);
-      final snap =
-          await FirestoreReadHelper.getQuery(query: query, preferCache: true);
+      final snap = await FirestoreReadHelper.getQuery(
+        query: query,
+        preferCache: true,
+      );
 
       _cache
         ..clear()
@@ -176,13 +178,13 @@ class CommunityMedicineRepository {
     final doc = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityMedicines)
         .add({
-      'name': trimmed,
-      'nameLower': trimmed.toLowerCase(),
-      'dosageUnit': dosageUnit,
-      'form': form,
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
-    });
+          'name': trimmed,
+          'nameLower': trimmed.toLowerCase(),
+          'dosageUnit': dosageUnit,
+          'form': form,
+          'addedByDoctorId': doctorId,
+          'addedAt': FieldValue.serverTimestamp(),
+        });
 
     final medicine = CommunityMedicine(
       id: doc.id,
@@ -197,7 +199,8 @@ class CommunityMedicineRepository {
   }
 
   static CommunityMedicine _fromDoc(
-      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data();
     return CommunityMedicine(
       id: doc.id,

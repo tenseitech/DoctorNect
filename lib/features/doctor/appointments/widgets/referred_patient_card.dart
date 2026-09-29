@@ -21,8 +21,8 @@ class ReferredPatientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel =
-        DateFormat('dd MMM yyyy, hh:mm a').format(referral.createdAt);
+    final dateLabel = DateFormat('dd MMM yyyy, hh:mm a')
+        .format(referral.createdAt);
 
     final canConsult = incoming && onOpenConsult != null;
 
@@ -52,7 +52,9 @@ class ReferredPatientCard extends StatelessWidget {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.isDark(context)
                             ? const Color(0xFF22C55E).withValues(alpha: 0.16)
@@ -78,8 +80,9 @@ class ReferredPatientCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.end,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelSmall,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                     ),
                   ],
@@ -106,7 +109,10 @@ class ReferredPatientCard extends StatelessWidget {
                 ),
                 if (incoming)
                   _detailRow(
-                      context, 'Specialization', referral.toSpecialization),
+                    context,
+                    'Specialization',
+                    referral.toSpecialization,
+                  ),
                 if (referral.reason != null &&
                     referral.reason!.trim().isNotEmpty)
                   _detailRow(context, 'Reason', referral.reason!.trim()),

@@ -12,7 +12,9 @@ import '../firebase/firestore_service.dart';
 /// Firestore profile matches the role of the dashboard/shell being rendered.
 abstract final class RoleSessionGuard {
   static Future<bool> verifyRole(
-      BuildContext context, UserType expectedRole) async {
+    BuildContext context,
+    UserType expectedRole,
+  ) async {
     if (expectedRole == UserType.ambulance) {
       return verifyAmbulanceSession(
         context,

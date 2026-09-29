@@ -28,8 +28,10 @@ abstract final class BannerConfigService {
     if (!FirebaseBootstrap.isReady) return const BannerConfigModel();
 
     try {
-      final snap =
-          await _db.collection(_configCollection).doc(_configDoc).get();
+      final snap = await _db
+          .collection(_configCollection)
+          .doc(_configDoc)
+          .get();
       return BannerConfigModel.fromFirestore(snap);
     } catch (e) {
       if (kDebugMode) debugPrint('[BannerConfigService] fetchConfig error: $e');

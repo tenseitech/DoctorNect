@@ -17,25 +17,25 @@ class PatientPharmacyStatus {
   final DateTime sentAt;
 
   String get label => switch (status) {
-        PharmacyDeliveryStatus.sent => 'Sent to $storeName',
-        PharmacyDeliveryStatus.viewed => '$storeName is preparing your order',
-        PharmacyDeliveryStatus.partiallyDispensed =>
-          'Partially ready at $storeName',
-        PharmacyDeliveryStatus.dispensed => 'Ready for pickup at $storeName',
-      };
+    PharmacyDeliveryStatus.sent => 'Sent to $storeName',
+    PharmacyDeliveryStatus.viewed => '$storeName is preparing your order',
+    PharmacyDeliveryStatus.partiallyDispensed =>
+      'Partially ready at $storeName',
+    PharmacyDeliveryStatus.dispensed => 'Ready for pickup at $storeName',
+  };
 
   Color get color => switch (status) {
-        PharmacyDeliveryStatus.sent => Colors.blue.shade700,
-        PharmacyDeliveryStatus.viewed => Colors.orange.shade700,
-        PharmacyDeliveryStatus.partiallyDispensed => Colors.purple.shade700,
-        PharmacyDeliveryStatus.dispensed => AppColors.pharmacyGreen,
-      };
+    PharmacyDeliveryStatus.sent => Colors.blue.shade700,
+    PharmacyDeliveryStatus.viewed => Colors.orange.shade700,
+    PharmacyDeliveryStatus.partiallyDispensed => Colors.purple.shade700,
+    PharmacyDeliveryStatus.dispensed => AppColors.pharmacyGreen,
+  };
 
   IconData get icon => switch (status) {
-        PharmacyDeliveryStatus.dispensed => Icons.check_circle_outline,
-        PharmacyDeliveryStatus.partiallyDispensed => Icons.inventory_2_outlined,
-        _ => Icons.local_pharmacy_outlined,
-      };
+    PharmacyDeliveryStatus.dispensed => Icons.check_circle_outline,
+    PharmacyDeliveryStatus.partiallyDispensed => Icons.inventory_2_outlined,
+    _ => Icons.local_pharmacy_outlined,
+  };
 }
 
 class PatientPharmacyStatusChip extends StatelessWidget {
@@ -61,9 +61,10 @@ class PatientPharmacyStatusChip extends StatelessWidget {
             child: Text(
               status.label,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  fontWeight: FontWeight.w600,
-                  color: status.color),
+                fontSize: AppTypography.labelMedium,
+                fontWeight: FontWeight.w600,
+                color: status.color,
+              ),
             ),
           ),
         ],

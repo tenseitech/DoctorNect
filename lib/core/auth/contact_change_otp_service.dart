@@ -10,8 +10,10 @@ abstract final class ContactChangeOtpService {
 
   static String? _normalizeMobile(String raw) {
     final parsed = FormValidators.parsePhone(raw);
-    final err = FormValidators.phoneLocal(parsed.localNumber,
-        dialCode: parsed.dialCode);
+    final err = FormValidators.phoneLocal(
+      parsed.localNumber,
+      dialCode: parsed.dialCode,
+    );
     if (err != null) return null;
     return FormValidators.formatFullPhone(parsed.dialCode, parsed.localNumber);
   }
@@ -98,7 +100,8 @@ abstract final class ContactChangeOtpService {
 
   static String _maskMobile(String raw) {
     final canonical = _normalizeMobile(raw);
-    final digits = canonical?.replaceAll(RegExp(r'\D'), '') ??
+    final digits =
+        canonical?.replaceAll(RegExp(r'\D'), '') ??
         raw.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 4) return raw;
     return '******${digits.substring(digits.length - 4)}';

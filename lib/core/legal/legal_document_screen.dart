@@ -20,14 +20,18 @@ class LegalDocumentScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = DoctorNectLegalContent.title(type);
-    final sections =
-        DoctorNectLegalContent.sections(type: type, audience: audience);
+    final sections = DoctorNectLegalContent.sections(
+      type: type,
+      audience: audience,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        title:
-            Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text(
+          title,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
@@ -59,8 +63,9 @@ class LegalDocumentScreen extends StatelessWidget {
                 Text(
                   DoctorNectLegalContent.lastUpdated,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
               ],
             ),

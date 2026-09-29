@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/auth/registration_credentials.dart';
 import '../../core/auth/registration_otp_service.dart';
+import '../../core/auth/verification_lifecycle.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/firebase/firebase_auth_service.dart';
 import '../../core/firebase/firebase_bootstrap.dart';
@@ -58,7 +59,7 @@ class MedicalStoreRegistrationScreen extends StatelessWidget {
         'phone': mobile,
         'email': email,
         'verified': false,
-        'verificationStatus': 'registered',
+        'verificationStatus': 'profile_incomplete',
         'status': 'pending_review',
         'profileCompleted': false,
       },
@@ -71,6 +72,10 @@ class MedicalStoreRegistrationScreen extends StatelessWidget {
     }
 
     MedicalStoreSession.setStore(id: storeId, name: name);
+    RoleVerificationController.instance.setRoleState(
+      UserType.medicalStore,
+      stage: VerificationStage.profileIncomplete,
+    );
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
         builder: (_) => const DashboardShell(userType: UserType.medicalStore),
@@ -92,11 +97,11 @@ class MedicalStoreRegistrationScreen extends StatelessWidget {
       preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
-        context,
-        name: name,
-        qualification: qualification,
-        mobile: mobile,
-      ),
+            context,
+            name: name,
+            qualification: qualification,
+            mobile: mobile,
+          ),
     );
   }
 }

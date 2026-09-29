@@ -45,7 +45,11 @@ abstract final class LabSearchMatcher {
 
   static int relevanceScoreTest(LabTestItem test, String rawQuery) {
     return _score(
-        _testHaystack(test), test.name, rawQuery, test.popular ? 8 : 0);
+      _testHaystack(test),
+      test.name,
+      rawQuery,
+      test.popular ? 8 : 0,
+    );
   }
 
   static int relevanceScorePackage(LabHealthPackage package, String rawQuery) {
@@ -99,7 +103,11 @@ abstract final class LabSearchMatcher {
   }
 
   static int _score(
-      String haystack, String primaryName, String rawQuery, int bonus) {
+    String haystack,
+    String primaryName,
+    String rawQuery,
+    int bonus,
+  ) {
     final query = rawQuery.trim().toLowerCase();
     if (query.isEmpty) return 0;
 

@@ -42,7 +42,8 @@ class SimpleRoleRegistrationForm extends StatefulWidget {
     required String name,
     required String qualification,
     required String mobile,
-  }) onSubmit;
+  })
+  onSubmit;
 
   /// When set, mobile OTP was already verified in [UnifiedMobileAuthScreen].
   final String? preVerifiedMobile;
@@ -73,7 +74,7 @@ class _SimpleRoleRegistrationFormState
     final digits = preMobile == null
         ? null
         : (FormValidators.registrationMobileDigits(preMobile) ??
-            FormValidators.mobileDigits(preMobile));
+              FormValidators.mobileDigits(preMobile));
     if (digits != null) {
       _mobileController.text = digits;
       _mobileVerified = true;
@@ -114,7 +115,9 @@ class _SimpleRoleRegistrationFormState
     }
     if (!_legalAccepted) {
       AppToast.info(
-          context, 'Please accept the Terms of Service and Privacy Policy');
+        context,
+        'Please accept the Terms of Service and Privacy Policy',
+      );
       return;
     }
 
@@ -135,19 +138,19 @@ class _SimpleRoleRegistrationFormState
   }
 
   LegalAudience get _legalAudience => switch (widget.role) {
-        UserType.doctor => LegalAudience.doctor,
-        UserType.medicalStore => LegalAudience.pharmacy,
-        UserType.lab => LegalAudience.lab,
-        UserType.ambulance => LegalAudience.ambulance,
-        _ => LegalAudience.doctor,
-      };
+    UserType.doctor => LegalAudience.doctor,
+    UserType.medicalStore => LegalAudience.pharmacy,
+    UserType.lab => LegalAudience.lab,
+    UserType.ambulance => LegalAudience.ambulance,
+    _ => LegalAudience.doctor,
+  };
 
   @override
   Widget build(BuildContext context) {
     return Theme(
       data: Theme.of(context).copyWith(
-        colorScheme:
-            Theme.of(context).colorScheme.copyWith(primary: widget.accentColor),
+        colorScheme: Theme.of(context).colorScheme
+            .copyWith(primary: widget.accentColor),
       ),
       child: AuthLoginPageShell(
         appBarTitle: widget.appBarTitle,
@@ -209,8 +212,10 @@ class _SimpleRoleRegistrationFormState
                             setState(() => _mobileDialCode = v),
                         phoneDecoration: _fieldDecoration(
                           'Mobile number *',
-                          prefixIcon:
-                              const Icon(Icons.phone_outlined, size: 20),
+                          prefixIcon: const Icon(
+                            Icons.phone_outlined,
+                            size: 20,
+                          ),
                         ),
                         onVerifiedChanged: (v) =>
                             setState(() => _mobileVerified = v),
@@ -242,10 +247,7 @@ class _SimpleRoleRegistrationFormState
 }
 
 class _VerifiedMobileField extends StatelessWidget {
-  const _VerifiedMobileField({
-    required this.mobile,
-    required this.accentColor,
-  });
+  const _VerifiedMobileField({required this.mobile, required this.accentColor});
 
   final String mobile;
   final Color accentColor;

@@ -76,19 +76,19 @@ class AppNotification {
   final String? dedupeKey;
 
   AppNotification copyWith({bool? isRead}) => AppNotification(
-        id: id,
-        title: title,
-        body: body,
-        createdAt: createdAt,
-        type: type,
-        isRead: isRead ?? this.isRead,
-        target: target,
-        targetId: targetId,
-        doctorTrigger: doctorTrigger,
-        patientTrigger: patientTrigger,
-        priority: priority,
-        channelTags: channelTags,
-        primaryAction: primaryAction,
-        dedupeKey: dedupeKey,
-      );
+    id: id,
+    title: title,
+    body: body,
+    createdAt: createdAt,
+    type: type,
+    isRead: isRead ?? this.isRead,
+    target: target,
+    targetId: targetId,
+    doctorTrigger: doctorTrigger,
+    patientTrigger: patientTrigger,
+    priority: priority,
+    channelTags: channelTags,
+    primaryAction: primaryAction,
+    dedupeKey: dedupeKey,
+  );
 }

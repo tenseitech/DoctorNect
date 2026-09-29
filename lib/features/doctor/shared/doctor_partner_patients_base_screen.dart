@@ -39,7 +39,11 @@ class DoctorPartnerPatientsBaseView<T> extends StatefulWidget {
   final List<String> tableHeaders;
   final Map<int, TableColumnWidth> columnWidths;
   final List<Widget> Function(
-      BuildContext context, T item, DateFormat dateFormat) rowBuilder;
+    BuildContext context,
+    T item,
+    DateFormat dateFormat,
+  )
+  rowBuilder;
 
   @override
   State<DoctorPartnerPatientsBaseView<T>> createState() =>
@@ -134,10 +138,13 @@ class _DoctorPartnerPatientsBaseViewState<T>
     return Scaffold(
       backgroundColor: AppColors.surfaceOf(context),
       appBar: AppBar(
-        title: Text(widget.partnerTitle,
-            style: GoogleFonts.inter(
-                fontSize: AppTypography.headlineSmall,
-                fontWeight: FontWeight.w600)),
+        title: Text(
+          widget.partnerTitle,
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.headlineSmall,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         backgroundColor: AppColors.surfaceOf(context),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -174,19 +181,21 @@ class _DoctorPartnerPatientsBaseViewState<T>
                             Text(
                               widget.sectionTitle,
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.headlineSmall,
-                                  fontWeight: FontWeight.w700),
+                                fontSize: AppTypography.headlineSmall,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               _showAllDates
                                   ? 'All records • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total'
                                   : _isToday
-                                      ? 'Today • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total'
-                                      : '${_dateFormat.format(_selectedDate)} • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total',
+                                  ? 'Today • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total'
+                                  : '${_dateFormat.format(_selectedDate)} • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total',
                               style: GoogleFonts.inter(
-                                  fontSize: 12.5,
-                                  color: AppColors.textSecondaryOf(context)),
+                                fontSize: 12.5,
+                                color: AppColors.textSecondaryOf(context),
+                              ),
                             ),
                           ],
                         ),
@@ -204,17 +213,22 @@ class _DoctorPartnerPatientsBaseViewState<T>
                             InkWell(
                               onTap: () => setState(() => _showAllDates = true),
                               borderRadius: const BorderRadius.horizontal(
-                                  left: Radius.circular(7)),
+                                left: Radius.circular(7),
+                              ),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 7),
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
                                 decoration: BoxDecoration(
                                   color: _showAllDates
-                                      ? widget.accentColor
-                                          .withValues(alpha: 0.15)
+                                      ? widget.accentColor.withValues(
+                                          alpha: 0.15,
+                                        )
                                       : Colors.transparent,
                                   borderRadius: const BorderRadius.horizontal(
-                                      left: Radius.circular(7)),
+                                    left: Radius.circular(7),
+                                  ),
                                 ),
                                 child: Text(
                                   'All (${all.length})',
@@ -235,17 +249,22 @@ class _DoctorPartnerPatientsBaseViewState<T>
                               onTap: () =>
                                   setState(() => _showAllDates = false),
                               borderRadius: const BorderRadius.horizontal(
-                                  right: Radius.circular(7)),
+                                right: Radius.circular(7),
+                              ),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 7),
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
                                 decoration: BoxDecoration(
                                   color: !_showAllDates
-                                      ? widget.accentColor
-                                          .withValues(alpha: 0.15)
+                                      ? widget.accentColor.withValues(
+                                          alpha: 0.15,
+                                        )
                                       : Colors.transparent,
                                   borderRadius: const BorderRadius.horizontal(
-                                      right: Radius.circular(7)),
+                                    right: Radius.circular(7),
+                                  ),
                                 ),
                                 child: Text(
                                   'By Date',
@@ -278,7 +297,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                             backgroundColor: cardColor,
                             side: BorderSide(color: borderColor),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -288,7 +308,9 @@ class _DoctorPartnerPatientsBaseViewState<T>
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 11),
+                                horizontal: 12,
+                                vertical: 11,
+                              ),
                               decoration: BoxDecoration(
                                 color: cardColor,
                                 borderRadius: BorderRadius.circular(8),
@@ -296,10 +318,11 @@ class _DoctorPartnerPatientsBaseViewState<T>
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.calendar_today_outlined,
-                                      size: 18,
-                                      color:
-                                          AppColors.textSecondaryOf(context)),
+                                  Icon(
+                                    Icons.calendar_today_outlined,
+                                    size: 18,
+                                    color: AppColors.textSecondaryOf(context),
+                                  ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
@@ -313,9 +336,10 @@ class _DoctorPartnerPatientsBaseViewState<T>
                                       ),
                                     ),
                                   ),
-                                  Icon(Icons.arrow_drop_down,
-                                      color:
-                                          AppColors.textSecondaryOf(context)),
+                                  Icon(
+                                    Icons.arrow_drop_down,
+                                    color: AppColors.textSecondaryOf(context),
+                                  ),
                                 ],
                               ),
                             ),
@@ -330,7 +354,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                             backgroundColor: cardColor,
                             side: BorderSide(color: borderColor),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                         ),
                         if (!_isToday) ...[
@@ -340,12 +365,17 @@ class _DoctorPartnerPatientsBaseViewState<T>
                             style: TextButton.styleFrom(
                               foregroundColor: AppColors.doctorBlue,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 12),
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
                             ),
-                            child: Text('Today',
-                                style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: AppTypography.bodySmall)),
+                            child: Text(
+                              'Today',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                fontSize: AppTypography.bodySmall,
+                              ),
+                            ),
                           ),
                         ],
                       ],
@@ -356,18 +386,22 @@ class _DoctorPartnerPatientsBaseViewState<T>
                     controller: _searchController,
                     onChanged: (_) => setState(() {}),
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        color: AppColors.textPrimaryOf(context)),
+                      fontSize: AppTypography.bodySmall,
+                      color: AppColors.textPrimaryOf(context),
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Search patient name...',
                       hintStyle: GoogleFonts.inter(
-                          fontSize: AppTypography.bodySmall,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       prefixIcon: const Icon(Icons.search, size: 20),
                       filled: true,
                       fillColor: cardColor,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: borderColor),
@@ -378,8 +412,10 @@ class _DoctorPartnerPatientsBaseViewState<T>
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide:
-                            BorderSide(color: widget.accentColor, width: 1.4),
+                        borderSide: BorderSide(
+                          color: widget.accentColor,
+                          width: 1.4,
+                        ),
                       ),
                     ),
                   ),
@@ -392,12 +428,13 @@ class _DoctorPartnerPatientsBaseViewState<T>
                           all.isEmpty
                               ? widget.emptyAllMessage
                               : !_showAllDates && forDate.isEmpty
-                                  ? 'No records on ${_dateFormat.format(_selectedDate)}. Switch to "All" or pick another date.'
-                                  : 'No records match your search.',
+                              ? 'No records on ${_dateFormat.format(_selectedDate)}. Switch to "All" or pick another date.'
+                              : 'No records match your search.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                       ),
                     )
@@ -411,8 +448,9 @@ class _DoctorPartnerPatientsBaseViewState<T>
                         ),
                         child: Table(
                           border: TableBorder.all(
-                              color: borderColor.withValues(alpha: 0.5),
-                              width: 0.5),
+                            color: borderColor.withValues(alpha: 0.5),
+                            width: 0.5,
+                          ),
                           defaultVerticalAlignment:
                               TableCellVerticalAlignment.middle,
                           columnWidths: widget.columnWidths,
@@ -432,7 +470,10 @@ class _DoctorPartnerPatientsBaseViewState<T>
                                       : cardColor.withValues(alpha: 0.35),
                                 ),
                                 children: widget.rowBuilder(
-                                    context, filtered[i], _dateFormat),
+                                  context,
+                                  filtered[i],
+                                  _dateFormat,
+                                ),
                               ),
                           ],
                         ),
@@ -470,8 +511,12 @@ class DocPartnerTableHeaderCell extends StatelessWidget {
 }
 
 class DocPartnerTableBodyCell extends StatelessWidget {
-  const DocPartnerTableBodyCell(this.text,
-      {super.key, this.bold = false, this.color});
+  const DocPartnerTableBodyCell(
+    this.text, {
+    super.key,
+    this.bold = false,
+    this.color,
+  });
 
   final String text;
   final bool bold;

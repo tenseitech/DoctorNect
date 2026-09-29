@@ -13,8 +13,10 @@ import 'package:medibond/features/patient/sharing/patient_sharing_utils.dart';
 
 import 'helpers/booking_fixtures.dart';
 
-HealthRecord _healthRecord(
-    {required String id, bool sharedWithDoctors = false}) {
+HealthRecord _healthRecord({
+  required String id,
+  bool sharedWithDoctors = false,
+}) {
   return HealthRecord(
     id: id,
     title: 'Report $id',
@@ -67,13 +69,15 @@ void main() {
       expect(PatientProfileRepository.sharesRecordsWithDoctors(null), isFalse);
       expect(PatientProfileRepository.sharesRecordsWithDoctors({}), isTrue);
       expect(
-        PatientProfileRepository.sharesRecordsWithDoctors(
-            {'shareRecordsWithDoctors': false}),
+        PatientProfileRepository.sharesRecordsWithDoctors({
+          'shareRecordsWithDoctors': false,
+        }),
         isFalse,
       );
       expect(
-        PatientProfileRepository.sharesRecordsWithDoctors(
-            {'shareRecordsWithDoctors': true}),
+        PatientProfileRepository.sharesRecordsWithDoctors({
+          'shareRecordsWithDoctors': true,
+        }),
         isTrue,
       );
     });
@@ -81,15 +85,21 @@ void main() {
 
   group('PatientSharingUtils — registration invite opt-in', () {
     test('invite link enables shareRecordsWithDoctors', () {
-      expect(PatientSharingUtils.deriveInitialShareRecordsWithDoctors('d178'),
-          isTrue);
+      expect(
+        PatientSharingUtils.deriveInitialShareRecordsWithDoctors('d178'),
+        isTrue,
+      );
     });
 
     test('organic signup keeps sharing off until patient opts in', () {
-      expect(PatientSharingUtils.deriveInitialShareRecordsWithDoctors(null),
-          isFalse);
-      expect(PatientSharingUtils.deriveInitialShareRecordsWithDoctors(''),
-          isFalse);
+      expect(
+        PatientSharingUtils.deriveInitialShareRecordsWithDoctors(null),
+        isFalse,
+      );
+      expect(
+        PatientSharingUtils.deriveInitialShareRecordsWithDoctors(''),
+        isFalse,
+      );
     });
   });
 
@@ -174,70 +184,83 @@ void main() {
 
   group('Appointment.isSharedSlotEmergency', () {
     test('detects emergency case-insensitively', () {
-      expect(_appointment(slotShareReason: 'Emergency').isSharedSlotEmergency,
-          isTrue);
       expect(
-          _appointment(slotShareReason: '  emergency ').isSharedSlotEmergency,
-          isTrue);
+        _appointment(slotShareReason: 'Emergency').isSharedSlotEmergency,
+        isTrue,
+      );
+      expect(
+        _appointment(slotShareReason: '  emergency ').isSharedSlotEmergency,
+        isTrue,
+      );
     });
 
     test('custom share reason is not emergency', () {
       expect(
-          _appointment(slotShareReason: 'Family visit').isSharedSlotEmergency,
-          isFalse);
+        _appointment(slotShareReason: 'Family visit').isSharedSlotEmergency,
+        isFalse,
+      );
       expect(
-          _appointment(slotShareReason: null).isSharedSlotEmergency, isFalse);
+        _appointment(slotShareReason: null).isSharedSlotEmergency,
+        isFalse,
+      );
     });
   });
 
   group('HealthRecord sharing filter', () {
-    test('filterHealthRecordsSharedWithDoctors keeps only opted-in records',
-        () {
-      final filtered =
-          PatientSharingUtils.filterHealthRecordsSharedWithDoctors([
-        _healthRecord(id: 'private', sharedWithDoctors: false),
-        _healthRecord(id: 'shared', sharedWithDoctors: true),
-      ]);
-      expect(filtered.map((r) => r.id), ['shared']);
-    });
+    test(
+      'filterHealthRecordsSharedWithDoctors keeps only opted-in records',
+      () {
+        final filtered =
+            PatientSharingUtils.filterHealthRecordsSharedWithDoctors([
+              _healthRecord(id: 'private', sharedWithDoctors: false),
+              _healthRecord(id: 'shared', sharedWithDoctors: true),
+            ]);
+        expect(filtered.map((r) => r.id), ['shared']);
+      },
+    );
   });
 
   group('AppointmentFirestoreMapper — sharing metadata round-trip', () {
-    test('slotShareReason, bookedByName, patientRelation survive toMap/fromMap',
-        () {
-      final original = bookingRecord(
-        id: 'rec_share',
-        appointmentId: 'APT_SHARE',
-        slotLabel: '11:00 AM',
-      );
-      final enriched = DoctorNectAppointmentRecord(
-        id: original.id,
-        appointmentId: original.appointmentId,
-        doctorId: original.doctorId,
-        doctorName: original.doctorName,
-        specialization: original.specialization,
-        patientName: original.patientName,
-        patientAge: original.patientAge,
-        patientGender: original.patientGender,
-        dateTime: original.dateTime,
-        slotLabel: original.slotLabel,
-        tokenNumber: original.tokenNumber,
-        visitType: original.visitType,
-        patientStatus: original.patientStatus,
-        doctorStatus: original.doctorStatus,
-        bookedByName: 'Account Holder',
-        patientRelation: 'Spouse',
-        slotShareReason: 'Emergency',
-      );
+    test(
+      'slotShareReason, bookedByName, patientRelation survive toMap/fromMap',
+      () {
+        final original = bookingRecord(
+          id: 'rec_share',
+          appointmentId: 'APT_SHARE',
+          slotLabel: '11:00 AM',
+        );
+        final enriched = DoctorNectAppointmentRecord(
+          id: original.id,
+          appointmentId: original.appointmentId,
+          doctorId: original.doctorId,
+          doctorName: original.doctorName,
+          specialization: original.specialization,
+          patientName: original.patientName,
+          patientAge: original.patientAge,
+          patientGender: original.patientGender,
+          dateTime: original.dateTime,
+          slotLabel: original.slotLabel,
+          tokenNumber: original.tokenNumber,
+          visitType: original.visitType,
+          patientStatus: original.patientStatus,
+          doctorStatus: original.doctorStatus,
+          bookedByName: 'Account Holder',
+          patientRelation: 'Spouse',
+          slotShareReason: 'Emergency',
+        );
 
-      final map = AppointmentFirestoreMapper.toMap(enriched, patientId: 'p100');
-      final restored = AppointmentFirestoreMapper.fromMap('rec_share', map);
+        final map = AppointmentFirestoreMapper.toMap(
+          enriched,
+          patientId: 'p100',
+        );
+        final restored = AppointmentFirestoreMapper.fromMap('rec_share', map);
 
-      expect(restored, isNotNull);
-      expect(restored!.bookedByName, 'Account Holder');
-      expect(restored.patientRelation, 'Spouse');
-      expect(restored.slotShareReason, 'Emergency');
-    });
+        expect(restored, isNotNull);
+        expect(restored!.bookedByName, 'Account Holder');
+        expect(restored.patientRelation, 'Spouse');
+        expect(restored.slotShareReason, 'Emergency');
+      },
+    );
   });
 
   group('FamilyProfileMember.relationLabel', () {

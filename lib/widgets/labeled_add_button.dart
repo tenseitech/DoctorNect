@@ -34,7 +34,9 @@ class LabeledAddButton extends StatelessWidget {
         backgroundColor: color,
         foregroundColor: AppColors.white,
         padding: EdgeInsets.symmetric(
-            horizontal: compact ? 8 : 12, vertical: compact ? 6 : 8),
+          horizontal: compact ? 8 : 12,
+          vertical: compact ? 6 : 8,
+        ),
         minimumSize: Size(0, compact ? 32 : 36),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,

@@ -79,13 +79,21 @@ void main() {
 
     test('registrationMobileDigits normalizes Indian formats', () {
       expect(
-          FormValidators.registrationMobileDigits('9876543210'), '9876543210');
-      expect(FormValidators.registrationMobileDigits('+919876543210'),
-          '9876543210');
+        FormValidators.registrationMobileDigits('9876543210'),
+        '9876543210',
+      );
       expect(
-          FormValidators.registrationMobileDigits('09876543210'), '9876543210');
-      expect(FormValidators.registrationMobileDigits('919876543210'),
-          '9876543210');
+        FormValidators.registrationMobileDigits('+919876543210'),
+        '9876543210',
+      );
+      expect(
+        FormValidators.registrationMobileDigits('09876543210'),
+        '9876543210',
+      );
+      expect(
+        FormValidators.registrationMobileDigits('919876543210'),
+        '9876543210',
+      );
     });
 
     test('registrationMobileDigits rejects wrong length or invalid prefix', () {
@@ -95,7 +103,9 @@ void main() {
 
     test('phoneLocal rejects invalid Indian prefix', () {
       expect(
-          FormValidators.phoneLocal('5876543210', dialCode: '+91'), isNotNull);
+        FormValidators.phoneLocal('5876543210', dialCode: '+91'),
+        isNotNull,
+      );
     });
 
     test('parsePhone handles E.164 and local formats', () {
@@ -111,7 +121,9 @@ void main() {
     test('phoneLocal validates 10-digit Indian mobile', () {
       expect(FormValidators.phoneLocal(validMobile, dialCode: '+91'), isNull);
       expect(
-          FormValidators.phoneLocal('1234567890', dialCode: '+91'), isNotNull);
+        FormValidators.phoneLocal('1234567890', dialCode: '+91'),
+        isNotNull,
+      );
     });
 
     test('otp requires exactly six digits', () {

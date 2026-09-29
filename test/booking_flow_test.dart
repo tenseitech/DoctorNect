@@ -25,28 +25,28 @@ void main() {
   group('booking_models — slot time', () {
     test('isSlotTimeInPast treats yesterday as past', () {
       final ref = DateTime(2026, 7, 28, 12, 0);
-      expect(
-        isSlotTimeInPast(DateTime(2026, 7, 27), '10:00 AM', ref),
-        isTrue,
-      );
+      expect(isSlotTimeInPast(DateTime(2026, 7, 27), '10:00 AM', ref), isTrue);
     });
 
     test('isSlotTimeInPast treats tomorrow as not past', () {
       final ref = DateTime(2026, 7, 28, 12, 0);
-      expect(
-        isSlotTimeInPast(DateTime(2026, 7, 29), '10:00 AM', ref),
-        isFalse,
-      );
+      expect(isSlotTimeInPast(DateTime(2026, 7, 29), '10:00 AM', ref), isFalse);
     });
 
     test('isSlotTimeInPast compares today against slot start', () {
       final day = DateTime(2026, 7, 28);
-      expect(isSlotTimeInPast(day, '10:00 AM', DateTime(2026, 7, 28, 9, 30)),
-          isFalse);
-      expect(isSlotTimeInPast(day, '10:00 AM', DateTime(2026, 7, 28, 10, 0)),
-          isTrue);
-      expect(isSlotTimeInPast(day, '10:00 AM', DateTime(2026, 7, 28, 10, 1)),
-          isTrue);
+      expect(
+        isSlotTimeInPast(day, '10:00 AM', DateTime(2026, 7, 28, 9, 30)),
+        isFalse,
+      );
+      expect(
+        isSlotTimeInPast(day, '10:00 AM', DateTime(2026, 7, 28, 10, 0)),
+        isTrue,
+      );
+      expect(
+        isSlotTimeInPast(day, '10:00 AM', DateTime(2026, 7, 28, 10, 1)),
+        isTrue,
+      );
     });
 
     test('formatSlotTimeLabel and parseSlotTimeLabel round-trip', () {
@@ -79,8 +79,10 @@ void main() {
         sampleSlot(label: '10:00 AM'),
         sampleSlot(label: '10:15 AM'),
       ];
-      final match =
-          matchSlotForTime(slots, const TimeOfDay(hour: 10, minute: 0));
+      final match = matchSlotForTime(
+        slots,
+        const TimeOfDay(hour: 10, minute: 0),
+      );
       expect(match?.label, '10:00 AM');
     });
 
@@ -89,8 +91,10 @@ void main() {
         sampleSlot(label: '10:00 AM'),
         sampleSlot(label: '10:15 AM'),
       ];
-      final match =
-          matchSlotForTime(slots, const TimeOfDay(hour: 10, minute: 7));
+      final match = matchSlotForTime(
+        slots,
+        const TimeOfDay(hour: 10, minute: 7),
+      );
       expect(match?.label, '10:00 AM');
     });
   });
@@ -124,24 +128,16 @@ void main() {
 
     test('weekly off returns reason', () {
       final saturday = DateTime(2026, 8, 1);
-      final reason =
-          FirestoreService.instance.doctorAvailability.unavailabilityReason(
-        schedule,
-        saturday,
-      );
+      final reason = FirestoreService.instance.doctorAvailability
+          .unavailabilityReason(schedule, saturday);
       expect(reason, contains('weekly off'));
     });
 
     test('blocked date returns holiday reason', () {
       final blockedDay = DateTime(2026, 8, 4);
-      final custom = schedule.copyWith(
-        blockedDates: {blockedDay},
-      );
-      final reason =
-          FirestoreService.instance.doctorAvailability.unavailabilityReason(
-        custom,
-        blockedDay,
-      );
+      final custom = schedule.copyWith(blockedDates: {blockedDay});
+      final reason = FirestoreService.instance.doctorAvailability
+          .unavailabilityReason(custom, blockedDay);
       expect(reason, contains('holiday'));
     });
 
@@ -151,11 +147,8 @@ void main() {
         leaveStart: DateTime(2026, 8, 4),
         leaveEnd: DateTime(2026, 8, 6),
       );
-      final reason =
-          FirestoreService.instance.doctorAvailability.unavailabilityReason(
-        custom,
-        leaveDay,
-      );
+      final reason = FirestoreService.instance.doctorAvailability
+          .unavailabilityReason(custom, leaveDay);
       expect(reason, contains('leave'));
     });
 
@@ -179,11 +172,14 @@ void main() {
 
   group('FirestoreService.instance.doctorAvailability.normalizeTimeLabel', () {
     test('parse and format is idempotent for slot keys', () {
-      final normalized =
-          DoctorAvailabilityRepository.normalizeTimeLabel('10:00 AM');
+      final normalized = DoctorAvailabilityRepository.normalizeTimeLabel(
+        '10:00 AM',
+      );
       expect(normalized, isNotEmpty);
-      expect(DoctorAvailabilityRepository.normalizeTimeLabel(normalized),
-          normalized);
+      expect(
+        DoctorAvailabilityRepository.normalizeTimeLabel(normalized),
+        normalized,
+      );
       expect(
         DoctorAvailabilityRepository.normalizeTimeLabel(' 10:00 AM '),
         normalized,
@@ -193,14 +189,19 @@ void main() {
 
   group('FirestoreService.instance.doctorAvailability.slotsForDate', () {
     test('generates morning and evening slots on a working day', () async {
-      final slots =
-          await FirestoreService.instance.doctorAvailability.slotsForDate(
-        doctorId: 'doc_test',
-        date: kBookingTestMonday,
-        existingAppointments: const [],
-        referenceTime: DateTime(kBookingTestMonday.year,
-            kBookingTestMonday.month, kBookingTestMonday.day, 8, 0),
-      );
+      final slots = await FirestoreService.instance.doctorAvailability
+          .slotsForDate(
+            doctorId: 'doc_test',
+            date: kBookingTestMonday,
+            existingAppointments: const [],
+            referenceTime: DateTime(
+              kBookingTestMonday.year,
+              kBookingTestMonday.month,
+              kBookingTestMonday.day,
+              8,
+              0,
+            ),
+          );
 
       expect(slots, isNotEmpty);
       expect(slots.first.label, '09:00 AM');
@@ -218,14 +219,19 @@ void main() {
         ),
       );
 
-      final slots =
-          await FirestoreService.instance.doctorAvailability.slotsForDate(
-        doctorId: 'doc_test',
-        date: kBookingTestMonday,
-        existingAppointments: existing,
-        referenceTime: DateTime(kBookingTestMonday.year,
-            kBookingTestMonday.month, kBookingTestMonday.day, 8, 0),
-      );
+      final slots = await FirestoreService.instance.doctorAvailability
+          .slotsForDate(
+            doctorId: 'doc_test',
+            date: kBookingTestMonday,
+            existingAppointments: existing,
+            referenceTime: DateTime(
+              kBookingTestMonday.year,
+              kBookingTestMonday.month,
+              kBookingTestMonday.day,
+              8,
+              0,
+            ),
+          );
 
       final tenAm = slots.firstWhere((s) => s.label == '10:00 AM');
       expect(tenAm.bookingCount, 3);
@@ -234,18 +240,21 @@ void main() {
     });
 
     test('partial slot shows booking count but stays available', () async {
-      final existing = [
-        bookingRecord(id: 'rec1', slotLabel: '10:00 AM'),
-      ];
+      final existing = [bookingRecord(id: 'rec1', slotLabel: '10:00 AM')];
 
-      final slots =
-          await FirestoreService.instance.doctorAvailability.slotsForDate(
-        doctorId: 'doc_test',
-        date: kBookingTestMonday,
-        existingAppointments: existing,
-        referenceTime: DateTime(kBookingTestMonday.year,
-            kBookingTestMonday.month, kBookingTestMonday.day, 8, 0),
-      );
+      final slots = await FirestoreService.instance.doctorAvailability
+          .slotsForDate(
+            doctorId: 'doc_test',
+            date: kBookingTestMonday,
+            existingAppointments: existing,
+            referenceTime: DateTime(
+              kBookingTestMonday.year,
+              kBookingTestMonday.month,
+              kBookingTestMonday.day,
+              8,
+              0,
+            ),
+          );
 
       final tenAm = slots.firstWhere((s) => s.label == '10:00 AM');
       expect(tenAm.bookingCount, 1);
@@ -254,13 +263,13 @@ void main() {
     });
 
     test('returns empty list on weekly off', () async {
-      final slots =
-          await FirestoreService.instance.doctorAvailability.slotsForDate(
-        doctorId: 'doc_test',
-        date: DateTime(2026, 8, 1),
-        existingAppointments: const [],
-        referenceTime: DateTime(2026, 8, 1, 8, 0),
-      );
+      final slots = await FirestoreService.instance.doctorAvailability
+          .slotsForDate(
+            doctorId: 'doc_test',
+            date: DateTime(2026, 8, 1),
+            existingAppointments: const [],
+            referenceTime: DateTime(2026, 8, 1, 8, 0),
+          );
       expect(slots, isEmpty);
     });
   });
@@ -270,11 +279,7 @@ void main() {
       SharedAppointmentsStore.instance.mergeFromFirestore([
         bookingRecord(id: 'rec1', appointmentId: 'APT1', slotLabel: '10:00 AM'),
         bookingRecord(id: 'rec2', appointmentId: 'APT2', slotLabel: '10:00 AM'),
-        bookingRecord(
-          id: 'rec3',
-          appointmentId: 'APT3',
-          slotLabel: '11:00 AM',
-        ),
+        bookingRecord(id: 'rec3', appointmentId: 'APT3', slotLabel: '11:00 AM'),
       ]);
 
       expect(
@@ -373,16 +378,18 @@ void main() {
   });
 
   group('Issue #16 regressions — booking confirm guards', () {
-    test('resolvePatientGender accepts Male, Female, Other and legacy codes',
-        () {
-      expect(BookingFlowHelpers.resolvePatientGender('Male'), 'Male');
-      expect(BookingFlowHelpers.resolvePatientGender('Female'), 'Female');
-      expect(BookingFlowHelpers.resolvePatientGender('Other'), 'Other');
-      expect(BookingFlowHelpers.resolvePatientGender('M'), 'Male');
-      expect(BookingFlowHelpers.resolvePatientGender('F'), 'Female');
-      expect(BookingFlowHelpers.resolvePatientGender('O'), 'Other');
-      expect(BookingFlowHelpers.resolvePatientGender('female'), 'Female');
-    });
+    test(
+      'resolvePatientGender accepts Male, Female, Other and legacy codes',
+      () {
+        expect(BookingFlowHelpers.resolvePatientGender('Male'), 'Male');
+        expect(BookingFlowHelpers.resolvePatientGender('Female'), 'Female');
+        expect(BookingFlowHelpers.resolvePatientGender('Other'), 'Other');
+        expect(BookingFlowHelpers.resolvePatientGender('M'), 'Male');
+        expect(BookingFlowHelpers.resolvePatientGender('F'), 'Female');
+        expect(BookingFlowHelpers.resolvePatientGender('O'), 'Other');
+        expect(BookingFlowHelpers.resolvePatientGender('female'), 'Female');
+      },
+    );
 
     test('resolvePatientGender rejects empty and unknown values', () {
       expect(BookingFlowHelpers.resolvePatientGender(''), isNull);
@@ -392,8 +399,9 @@ void main() {
 
     test('newAppointmentId uses Firestore auto-ids, not legacy APT prefix', () {
       final firestore = FakeFirebaseFirestore();
-      BookingFlowHelpers.debugAppointmentsCollection =
-          firestore.collection('appointments');
+      BookingFlowHelpers.debugAppointmentsCollection = firestore.collection(
+        'appointments',
+      );
 
       final ids = List.generate(
         25,

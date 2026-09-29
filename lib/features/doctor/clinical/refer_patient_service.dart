@@ -3,7 +3,9 @@ import '../../../core/firebase/models/doctor_referral.dart';
 import '../../../core/notifications/patient_notification_emitter.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../patient/data/registered_doctors_store.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../profile/data/doctor_profile_store.dart';
 import 'models/clinical_models.dart';
 

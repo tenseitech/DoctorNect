@@ -1,4 +1,5 @@
 import 'package:medibond/core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -35,8 +36,9 @@ abstract final class DoctorPushService {
     _initialized = true;
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      const androidInit =
-          AndroidInitializationSettings('@drawable/ic_notification');
+      const androidInit = AndroidInitializationSettings(
+        '@drawable/ic_notification',
+      );
       await _localNotifications.initialize(
         const InitializationSettings(android: androidInit),
         onDidReceiveNotificationResponse: _onLocalNotificationTap,
@@ -44,7 +46,8 @@ abstract final class DoctorPushService {
 
       await _localNotifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(
             const AndroidNotificationChannel(
               _channelId,
@@ -56,8 +59,9 @@ abstract final class DoctorPushService {
     }
 
     _foregroundSub ??= FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-    _openedSub ??=
-        FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
+    _openedSub ??= FirebaseMessaging.onMessageOpenedApp.listen(
+      _onMessageOpened,
+    );
 
     final initial = await FirebaseMessaging.instance.getInitialMessage();
     if (initial != null) {
@@ -81,15 +85,19 @@ abstract final class DoctorPushService {
 
     final token = await messaging.getToken();
     if (token != null && token.isNotEmpty) {
-      await FirestoreService.instance.doctorProfile
-          .saveDoctorFcmToken(doctorId, token);
+      await FirestoreService.instance.doctorProfile.saveDoctorFcmToken(
+        doctorId,
+        token,
+      );
     }
 
     await _tokenRefreshSub?.cancel();
     _tokenRefreshSub = messaging.onTokenRefresh.listen((newToken) async {
       if (_activeDoctorId == null || newToken.isEmpty) return;
-      await FirestoreService.instance.doctorProfile
-          .saveDoctorFcmToken(_activeDoctorId!, newToken);
+      await FirestoreService.instance.doctorProfile.saveDoctorFcmToken(
+        _activeDoctorId!,
+        newToken,
+      );
     });
   }
 

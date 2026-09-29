@@ -36,8 +36,10 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
   @override
   void initState() {
     super.initState();
-    _focusedMonth =
-        DateTime(widget.selectedDate.year, widget.selectedDate.month);
+    _focusedMonth = DateTime(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
 
@@ -45,8 +47,10 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
   void didUpdateWidget(PatientBookingDateRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!_sameMonth(_focusedMonth, widget.selectedDate)) {
-      _focusedMonth =
-          DateTime(widget.selectedDate.year, widget.selectedDate.month);
+      _focusedMonth = DateTime(
+        widget.selectedDate.year,
+        widget.selectedDate.month,
+      );
     }
     if (!_sameDay(oldWidget.selectedDate, widget.selectedDate)) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
@@ -68,10 +72,11 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
   List<DateTime> get _daysInFocusedMonth {
     final count = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0).day;
     return List.generate(count, (i) {
-      return DateTime(_focusedMonth.year, _focusedMonth.month, i + 1);
-    })
-        .where((d) =>
-            widget.isDayEnabled(d) || (widget.isHoliday?.call(d) ?? false))
+          return DateTime(_focusedMonth.year, _focusedMonth.month, i + 1);
+        })
+        .where(
+          (d) => widget.isDayEnabled(d) || (widget.isHoliday?.call(d) ?? false),
+        )
         .toList();
   }
 
@@ -103,9 +108,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
   void _onDayTap(DateTime date) {
     final message = widget.holidayMessage?.call(date);
     if (message != null && message.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     if (!widget.isDayEnabled(date)) return;
@@ -128,12 +132,14 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
 
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Text(
                 'Select month & year',
                 style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppTypography.headlineSmall),
+                  fontWeight: FontWeight.w700,
+                  fontSize: AppTypography.headlineSmall,
+                ),
               ),
               content: SizedBox(
                 width: 300,
@@ -154,26 +160,33 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                       key: ValueKey(year),
                       initialValue: year,
                       decoration: InputDecoration(
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: AppColors.borderOf(context)),
+                          borderSide: BorderSide(
+                            color: AppColors.borderOf(context),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: AppColors.borderOf(context)),
+                          borderSide: BorderSide(
+                            color: AppColors.borderOf(context),
+                          ),
                         ),
                       ),
                       items: years
                           .map(
                             (y) => DropdownMenuItem(
                               value: y,
-                              child: Text('$y',
-                                  style: GoogleFonts.inter(
-                                      fontSize: AppTypography.bodyMedium)),
+                              child: Text(
+                                '$y',
+                                style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodyMedium,
+                                ),
+                              ),
                             ),
                           )
                           .toList(),
@@ -201,8 +214,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                       children: List.generate(12, (index) {
                         final m = index + 1;
                         final isSelected = m == month;
-                        final label =
-                            DateFormat('MMM').format(DateTime(2024, m));
+                        final label = DateFormat('MMM')
+                            .format(DateTime(2024, m));
 
                         return Material(
                           color: Colors.transparent,
@@ -243,20 +256,26 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: Text('Cancel',
-                      style: GoogleFonts.inter(
-                          color: AppColors.textSecondaryOf(context))),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.inter(
+                      color: AppColors.textSecondaryOf(context),
+                    ),
+                  ),
                 ),
                 FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.patientTeal,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   onPressed: () =>
                       Navigator.pop(dialogContext, (year: year, month: month)),
-                  child: Text('Apply',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Apply',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             );
@@ -341,8 +360,11 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                                   height: 1.1,
                                 ),
                               ),
-                              const Icon(Icons.arrow_drop_down,
-                                  size: 14, color: AppColors.patientTeal),
+                              const Icon(
+                                Icons.arrow_drop_down,
+                                size: 14,
+                                color: AppColors.patientTeal,
+                              ),
                             ],
                           ),
                         ),
@@ -364,8 +386,9 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                     child: Text(
                       'No dates this month',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   )
                 : SizedBox(
@@ -383,23 +406,23 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                         final bgColor = selected
                             ? AppColors.patientTeal
                             : isHoliday
-                                ? const Color(0xFFFFF7ED)
-                                : AppColors.cardBgOf(context);
+                            ? const Color(0xFFFFF7ED)
+                            : AppColors.cardBgOf(context);
                         final borderColor = selected
                             ? AppColors.patientTeal
                             : isHoliday
-                                ? const Color(0xFFFDBA74)
-                                : AppColors.borderOf(context);
+                            ? const Color(0xFFFDBA74)
+                            : AppColors.borderOf(context);
                         final dayColor = selected
                             ? AppColors.white
                             : isHoliday
-                                ? const Color(0xFFC2410C)
-                                : AppColors.textPrimaryOf(context);
+                            ? const Color(0xFFC2410C)
+                            : AppColors.textPrimaryOf(context);
                         final weekdayColor = selected
                             ? AppColors.white
                             : isHoliday
-                                ? const Color(0xFFEA580C)
-                                : AppColors.textSecondaryOf(context);
+                            ? const Color(0xFFEA580C)
+                            : AppColors.textSecondaryOf(context);
 
                         return GestureDetector(
                           onTap: () => _onDayTap(d),

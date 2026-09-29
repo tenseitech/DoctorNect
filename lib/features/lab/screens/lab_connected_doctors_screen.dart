@@ -23,33 +23,39 @@ class LabConnectedDoctorsScreen extends StatelessWidget {
       listenables: [connStore, worklistStore],
       activeConnections: () => connStore
           .activeForLab(labId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       fromDoctorRequests: () => connStore
           .pendingForLabFromDoctor(labId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       sentByPartnerInvites: () => connStore
           .pendingSentByLab(labId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       activitySubtitleBuilder: (doctorId) {
         final count = worklistStore.forLabAndDoctor(labId, doctorId).length;

@@ -7,10 +7,7 @@ enum AppointmentStatusPatient { upcoming, completed, cancelled }
 enum SearchSort { relevance, rating, experience, distance }
 
 class PatientContext {
-  const PatientContext({
-    required this.name,
-    required this.city,
-  });
+  const PatientContext({required this.name, required this.city});
 
   final String name;
   final String city;
@@ -54,11 +51,7 @@ class PromoBanner {
 }
 
 class HomeCarouselItem {
-  const HomeCarouselItem({
-    required this.banner,
-    this.ctaLabel,
-    this.ctaRoute,
-  });
+  const HomeCarouselItem({required this.banner, this.ctaLabel, this.ctaRoute});
 
   final PromoBanner banner;
   final String? ctaLabel;
@@ -345,5 +338,5 @@ enum PatientFilter {
   newPatient,
   followUp,
   dueForVisit,
-  abnormalLabs
+  abnormalLabs,
 }

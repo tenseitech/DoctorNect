@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -40,8 +41,6 @@ class PatientProfileMock {
     check(profileAddress.country.isNotEmpty);
     check(profileAddress.state.isNotEmpty);
     check(profileAddress.city.isNotEmpty);
-    check(profileAddress.addressLine1.isNotEmpty);
-    check(profileAddress.pincode.isNotEmpty);
 
     if (total == 0) return 0;
     return ((completed / total) * 100).round();
@@ -69,13 +68,13 @@ class PatientProfileMock {
   static final vaccinations = <({String name, DateTime date})>[];
   static List<FamilyProfileMember> familyMembers = [];
   static final Map<String, List<PatientPrescription>>
-      _prescriptionsByPatientKey = {};
+  _prescriptionsByPatientKey = {};
 
   static String? _notificationPrefsLoadedForPatientId;
   static Future<void>? _notificationPrefsLoadFuture;
 
   static StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-      _patientSub;
+  _patientSub;
 
   static void reset() {
     _patientSub?.cancel();
@@ -118,11 +117,8 @@ class PatientProfileMock {
 
   static Future<void> _loadNotificationPrefs(String patientId) async {
     try {
-      final data =
-          await FirestoreService.instance.patientProfile.fetchPatientDocument(
-        patientId,
-        preferCache: false,
-      );
+      final data = await FirestoreService.instance.patientProfile
+          .fetchPatientDocument(patientId, preferCache: false);
       final prefs = data?['notificationPrefs'] as Map<String, dynamic>?;
       if (prefs != null) {
         _applyNotificationPrefs(prefs);
@@ -187,8 +183,9 @@ class PatientProfileMock {
       profile.weight =
           double.tryParse(data['weight'].toString()) ?? profile.weight;
     }
-    profile.photoInitial =
-        profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'P';
+    profile.photoInitial = profile.name.isNotEmpty
+        ? profile.name[0].toUpperCase()
+        : 'P';
     profile.photoUrl = (data['photo_url'] as String?) ?? profile.photoUrl;
     profile.photoKey = (data['photo_key'] as String?) ?? profile.photoKey;
     profile.photoStorage = (data['photo_storage'] as String?) ?? profile.photoStorage;
@@ -203,8 +200,9 @@ class PatientProfileMock {
     profileCity = profileAddress.city;
 
     if (data['conditions'] is List) {
-      conditions =
-          (data['conditions'] as List).map((e) => e.toString()).toList();
+      conditions = (data['conditions'] as List)
+          .map((e) => e.toString())
+          .toList();
     }
     if (data['allergies'] is List) {
       allergies = (data['allergies'] as List).map((e) => e.toString()).toList();
@@ -218,8 +216,9 @@ class PatientProfileMock {
 
     if (SupabaseBootstrap.isReady) {
       try {
-        final supaData =
-            await SupabasePatientRepository.instance.fetchProfile(patientId);
+        final supaData = await SupabasePatientRepository.instance.fetchProfile(
+          patientId,
+        );
         if (supaData != null) {
           _applyFromSupabase(supaData);
           notifyProfileUpdated();
@@ -242,9 +241,11 @@ class PatientProfileMock {
     profile.bloodGroup = data['bloodGroup'] as String? ?? profile.bloodGroup;
     profile.height = (data['height'] as num?)?.toDouble() ?? profile.height;
     profile.weight = (data['weight'] as num?)?.toDouble() ?? profile.weight;
-    profile.photoInitial =
-        profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'P';
-    profile.photoUrl = (data['photoUrl'] as String?) ??
+    profile.photoInitial = profile.name.isNotEmpty
+        ? profile.name[0].toUpperCase()
+        : 'P';
+    profile.photoUrl =
+        (data['photoUrl'] as String?) ??
         (data['photoURL'] as String?) ??
         profile.photoUrl;
     profile.photoKey = (data['photoKey'] as String?) ?? profile.photoKey;
@@ -261,10 +262,10 @@ class PatientProfileMock {
         ? profileAddress.city
         : data['city'] as String? ?? '';
 
-    conditions =
-        (data['conditions'] as List<dynamic>? ?? const []).cast<String>();
-    allergies =
-        (data['allergies'] as List<dynamic>? ?? const []).cast<String>();
+    conditions = (data['conditions'] as List<dynamic>? ?? const [])
+        .cast<String>();
+    allergies = (data['allergies'] as List<dynamic>? ?? const [])
+        .cast<String>();
 
     final prefs = data['notificationPrefs'] as Map<String, dynamic>?;
     if (prefs != null) _applyNotificationPrefs(prefs);
@@ -275,8 +276,8 @@ class PatientProfileMock {
         data['allowHealthInsights'] as bool? ?? false;
     privacyPrefs.twoFactorEnabled = data['twoFactorEnabled'] as bool? ?? false;
 
-    familyMembers =
-        await FirestoreService.instance.familyMember.fetchForPatient(patientId);
+    familyMembers = await FirestoreService.instance.familyMember
+        .fetchForPatient(patientId);
     PatientFavoritesStore.instance.applyFromPatientData(data);
     notifyProfileUpdated();
   }
@@ -331,13 +332,15 @@ class PatientProfileMock {
       'reminderTiming': p.reminderTiming.name,
       'medicationReminders': p.medicationReminders,
       'medications': p.medications
-          .map((m) => {
-                'name': m.name,
-                if (m.morningTime != null) 'morningTime': m.morningTime,
-                if (m.afternoonTime != null) 'afternoonTime': m.afternoonTime,
-                if (m.eveningTime != null) 'eveningTime': m.eveningTime,
-                if (m.nightTime != null) 'nightTime': m.nightTime,
-              })
+          .map(
+            (m) => {
+              'name': m.name,
+              if (m.morningTime != null) 'morningTime': m.morningTime,
+              if (m.afternoonTime != null) 'afternoonTime': m.afternoonTime,
+              if (m.eveningTime != null) 'eveningTime': m.eveningTime,
+              if (m.nightTime != null) 'nightTime': m.nightTime,
+            },
+          )
           .toList(),
       'labReportAlert': p.labReportAlert,
       'healthTips': p.healthTips,
@@ -398,8 +401,9 @@ class PatientProfileMock {
         'address': profileAddress.addressLine1.isNotEmpty
             ? profileAddress.addressLine1
             : profileAddress.fullLabel,
-        'city':
-            profileAddress.city.isNotEmpty ? profileAddress.city : profileCity,
+        'city': profileAddress.city.isNotEmpty
+            ? profileAddress.city
+            : profileCity,
         'state': profileAddress.state,
         'pincode': profileAddress.pincode,
         'country': profileAddress.country.isNotEmpty
@@ -419,46 +423,50 @@ class PatientProfileMock {
     }
 
     if (FirebaseBootstrap.isReady) {
-      await FirestoreService.instance.patientProfile
-          .savePatientDocument(patientId, {
-        'name': profile.name,
-        'age': profile.age,
-        'gender': profile.gender,
-        'mobile': profile.mobile,
-        'email': profile.email,
-        'bloodGroup': profile.bloodGroup,
-        'height': profile.height,
-        'weight': profile.weight,
-        'photoUrl': profile.photoUrl,
-        if (profile.photoKey != null) 'photoKey': profile.photoKey,
-        if (profile.photoStorage != null) 'photoStorage': profile.photoStorage,
-        'city':
-            profileAddress.city.isNotEmpty ? profileAddress.city : profileCity,
-        'country': profileAddress.country,
-        'addressLine1': profileAddress.addressLine1,
-        'addressLine2': profileAddress.addressLine2,
-        'state': profileAddress.state,
-        'pincode': profileAddress.pincode,
-        'landmark': profileAddress.landmark,
-        'conditions': conditions,
-        'allergies': allergies,
-        'notificationPrefs': _notificationPrefsMap(),
-        'shareRecordsWithDoctors': privacyPrefs.shareRecordsWithDoctors,
-        'allowHealthInsights': privacyPrefs.allowHealthInsights,
-        'twoFactorEnabled': privacyPrefs.twoFactorEnabled,
-        'hiddenDoctorIds':
-            PatientFavoritesStore.instance.hiddenDoctorIds.toList(),
-        'hiddenLabKeys': PatientFavoritesStore.instance.hiddenLabKeys.toList(),
-        'addedDoctorIds': PatientFavoritesStore.instance.addedDoctorIds,
-        'addedDoctors': PatientFavoritesStore.instance.addedDoctorsForPersist,
-        'addedLabs': PatientFavoritesStore.instance.addedLabs
-            .map((lab) => lab.toMap())
-            .toList(),
-        if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
-          'invitedDoctorId': invitedDoctorId,
-        if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
-          'primaryDoctorId': invitedDoctorId,
-      });
+      await FirestoreService.instance.patientProfile.savePatientDocument(
+        patientId,
+        {
+          'name': profile.name,
+          'age': profile.age,
+          'gender': profile.gender,
+          'mobile': profile.mobile,
+          'email': profile.email,
+          'bloodGroup': profile.bloodGroup,
+          'height': profile.height,
+          'weight': profile.weight,
+          'photoUrl': profile.photoUrl,
+          if (profile.photoKey != null) 'photoKey': profile.photoKey,
+          if (profile.photoStorage != null) 'photoStorage': profile.photoStorage,
+          'city': profileAddress.city.isNotEmpty
+              ? profileAddress.city
+              : profileCity,
+          'country': profileAddress.country,
+          'addressLine1': profileAddress.addressLine1,
+          'addressLine2': profileAddress.addressLine2,
+          'state': profileAddress.state,
+          'pincode': profileAddress.pincode,
+          'landmark': profileAddress.landmark,
+          'conditions': conditions,
+          'allergies': allergies,
+          'notificationPrefs': _notificationPrefsMap(),
+          'shareRecordsWithDoctors': privacyPrefs.shareRecordsWithDoctors,
+          'allowHealthInsights': privacyPrefs.allowHealthInsights,
+          'twoFactorEnabled': privacyPrefs.twoFactorEnabled,
+          'hiddenDoctorIds': PatientFavoritesStore.instance.hiddenDoctorIds
+              .toList(),
+          'hiddenLabKeys': PatientFavoritesStore.instance.hiddenLabKeys
+              .toList(),
+          'addedDoctorIds': PatientFavoritesStore.instance.addedDoctorIds,
+          'addedDoctors': PatientFavoritesStore.instance.addedDoctorsForPersist,
+          'addedLabs': PatientFavoritesStore.instance.addedLabs
+              .map((lab) => lab.toMap())
+              .toList(),
+          if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
+            'invitedDoctorId': invitedDoctorId,
+          if (invitedDoctorId != null && invitedDoctorId!.isNotEmpty)
+            'primaryDoctorId': invitedDoctorId,
+        },
+      );
     }
   }
 
@@ -470,21 +478,31 @@ class PatientProfileMock {
     required String mobile,
     required String email,
     required String city,
+    String? bloodGroup,
     String? state,
     String? country,
+    String? addressLine1,
+    String? addressLine2,
+    String? pincode,
     String? invitedDoctorId,
   }) {
     profile.name = name;
     profile.age = age;
     profile.gender = gender;
+    if (bloodGroup != null && bloodGroup.isNotEmpty) {
+      profile.bloodGroup = bloodGroup;
+    }
     profile.mobile = mobile;
     profile.email = email;
     profile.photoInitial = name.isNotEmpty ? name[0].toUpperCase() : 'P';
     profileCity = city;
     profileAddress = PatientAddress(
+      addressLine1: addressLine1 ?? '',
+      addressLine2: addressLine2 ?? '',
       city: city,
       state: state ?? '',
       country: country ?? '',
+      pincode: pincode ?? '',
     );
     PatientProfileMock.invitedDoctorId = invitedDoctorId;
     PatientSession.setPatient(id: id, name: name);
@@ -518,10 +536,10 @@ class PatientProfileMock {
             date: p.prescriptionId != null
                 ? p.date
                 : p.id == 'rx1'
-                    ? now.subtract(const Duration(days: 10))
-                    : p.id == 'rx2'
-                        ? now.subtract(const Duration(days: 28))
-                        : p.date,
+                ? now.subtract(const Duration(days: 10))
+                : p.id == 'rx2'
+                ? now.subtract(const Duration(days: 28))
+                : p.date,
             fileName: p.fileName,
             prescriptionId: p.prescriptionId,
           ),
@@ -541,7 +559,9 @@ class PatientProfileMock {
         : draft.primaryDiagnosis.trim();
 
     final list = _prescriptionsByPatientKey.putIfAbsent(
-        key, () => <PatientPrescription>[]);
+      key,
+      () => <PatientPrescription>[],
+    );
     list.removeWhere((p) => p.prescriptionId == draft.prescriptionId);
     list.insert(
       0,
@@ -563,7 +583,9 @@ class PatientProfileMock {
   }) {
     final name = doctorName.startsWith('Dr.') ? doctorName : 'Dr. $doctorName';
     final list = _prescriptionsByPatientKey.putIfAbsent(
-        PatientSession.patientKey, () => <PatientPrescription>[]);
+      PatientSession.patientKey,
+      () => <PatientPrescription>[],
+    );
     list.insert(
       0,
       PatientPrescription(
@@ -583,13 +605,11 @@ class PatientProfileMock {
   static const faqs = [
     FaqItem(
       question: 'How do I reschedule an appointment?',
-      answer:
-          'Open Appointments → Upcoming → tap Reschedule on your booking, or contact the clinic directly.',
+      answer: 'Open Appointments → Upcoming → tap Reschedule on your booking, or contact the clinic directly.',
     ),
     FaqItem(
       question: 'When will I receive my lab report?',
-      answer:
-          'Most lab partners upload reports within 24–48 hours. You will get an app notification when ready.',
+      answer: 'Most lab partners upload reports within 24–48 hours. You will get an app notification when ready.',
     ),
     FaqItem(
       question: 'Can I share records with my doctor?',

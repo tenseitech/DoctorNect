@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -32,12 +33,15 @@ class PharmacyConnectionStore extends ChangeNotifier {
 
   List<PharmacyConnection> activeForDoctor(String doctorId) => _connections
       .where(
-          (c) => c.doctorId == doctorId && c.status == ConnectionStatus.active)
+        (c) => c.doctorId == doctorId && c.status == ConnectionStatus.active,
+      )
       .toList();
 
   List<PharmacyConnection> activeForStore(String storeId) => _connections
-      .where((c) =>
-          c.medicalStoreId == storeId && c.status == ConnectionStatus.active)
+      .where(
+        (c) =>
+            c.medicalStoreId == storeId && c.status == ConnectionStatus.active,
+      )
       .toList();
 
   /// Pending requests that stores sent — doctor must approve.
@@ -81,16 +85,19 @@ class PharmacyConnectionStore extends ChangeNotifier {
       )
       .toList();
 
-  bool isConnected(String doctorId, String storeId) => _connections.any((c) =>
-      c.doctorId == doctorId &&
-      c.medicalStoreId == storeId &&
-      c.status == ConnectionStatus.active);
+  bool isConnected(String doctorId, String storeId) => _connections.any(
+    (c) =>
+        c.doctorId == doctorId &&
+        c.medicalStoreId == storeId &&
+        c.status == ConnectionStatus.active,
+  );
 
   bool hasPendingRequest(String doctorId, String storeId) => _connections.any(
-      (c) =>
-          c.doctorId == doctorId &&
-          c.medicalStoreId == storeId &&
-          c.status == ConnectionStatus.pending);
+    (c) =>
+        c.doctorId == doctorId &&
+        c.medicalStoreId == storeId &&
+        c.status == ConnectionStatus.pending,
+  );
 
   bool hasPendingFromDoctor(String doctorId, String storeId) =>
       _connections.any(
@@ -102,28 +109,32 @@ class PharmacyConnectionStore extends ChangeNotifier {
       );
 
   bool hasPendingFromStore(String doctorId, String storeId) => _connections.any(
-        (c) =>
-            c.doctorId == doctorId &&
-            c.medicalStoreId == storeId &&
-            c.status == ConnectionStatus.pending &&
-            c.requestedBy == ConnectionRequester.store,
-      );
+    (c) =>
+        c.doctorId == doctorId &&
+        c.medicalStoreId == storeId &&
+        c.status == ConnectionStatus.pending &&
+        c.requestedBy == ConnectionRequester.store,
+  );
 
-  bool isPendingSentByStore(
-          {required String storeId, required String doctorId}) =>
-      hasPendingFromStore(doctorId, storeId);
+  bool isPendingSentByStore({
+    required String storeId,
+    required String doctorId,
+  }) => hasPendingFromStore(doctorId, storeId);
 
-  bool isPendingFromDoctor(
-          {required String storeId, required String doctorId}) =>
-      hasPendingFromDoctor(doctorId, storeId);
+  bool isPendingFromDoctor({
+    required String storeId,
+    required String doctorId,
+  }) => hasPendingFromDoctor(doctorId, storeId);
 
-  bool isPendingSentByDoctor(
-          {required String doctorId, required String storeId}) =>
-      hasPendingFromDoctor(doctorId, storeId);
+  bool isPendingSentByDoctor({
+    required String doctorId,
+    required String storeId,
+  }) => hasPendingFromDoctor(doctorId, storeId);
 
-  bool isPendingFromStore(
-          {required String doctorId, required String storeId}) =>
-      hasPendingFromStore(doctorId, storeId);
+  bool isPendingFromStore({
+    required String doctorId,
+    required String storeId,
+  }) => hasPendingFromStore(doctorId, storeId);
 
   List<MedicalStoreProfile> searchStores(String query, {String? cityFilter}) {
     final q = query.trim().toLowerCase();
@@ -148,8 +159,10 @@ class PharmacyConnectionStore extends ChangeNotifier {
   }
 
   /// Doctor sends connection request to a registered medical store.
-  String? sendRequestFromDoctor(
-      {required String doctorId, required String storeId}) {
+  String? sendRequestFromDoctor({
+    required String doctorId,
+    required String storeId,
+  }) {
     if (isConnected(doctorId, storeId)) {
       return 'Already connected with this store';
     }
@@ -307,8 +320,9 @@ class PharmacyConnectionStore extends ChangeNotifier {
 
     final store = MedicalStoreRegistry.findById(storeId);
     final storeName = store?.storeName ?? 'Medical Store';
-    final trimmedDoctorName =
-        doctorName.trim().isEmpty ? 'Doctor' : doctorName.trim();
+    final trimmedDoctorName = doctorName.trim().isEmpty
+        ? 'Doctor'
+        : doctorName.trim();
 
     final conn = PharmacyConnection(
       id: 'conn${DateTime.now().millisecondsSinceEpoch}',
@@ -438,17 +452,17 @@ class PharmacyConnectionStore extends ChangeNotifier {
       case UserType.doctor:
         final doctorPage = await FirestoreService.instance.pharmacyFirestore
             .fetchActiveConnectionsForDoctor(
-          profileId,
-          preferCache: preferCache,
-        );
+              profileId,
+              preferCache: preferCache,
+            );
         mergeFirestoreConnections(doctorPage.items);
         break;
       case UserType.medicalStore:
         final storePage = await FirestoreService.instance.pharmacyFirestore
             .fetchActiveConnectionsForStore(
-          profileId,
-          preferCache: preferCache,
-        );
+              profileId,
+              preferCache: preferCache,
+            );
         mergeFirestoreConnections(storePage.items);
       case UserType.patient:
         break;

@@ -42,7 +42,9 @@ class _SuperAdminVerificationScreenState
   ];
 
   void _openReviewModal(
-      BuildContext context, VerificationApplicant applicant) async {
+    BuildContext context,
+    VerificationApplicant applicant,
+  ) async {
     final roleDetails = await SuperAdminVerificationService.instance
         .fetchRoleDetails(applicant.role, applicant.profileId);
     if (!context.mounted) return;
@@ -51,10 +53,8 @@ class _SuperAdminVerificationScreenState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _ApplicantReviewSheet(
-        applicant: applicant,
-        roleDetails: roleDetails,
-      ),
+      builder: (ctx) =>
+          _ApplicantReviewSheet(applicant: applicant, roleDetails: roleDetails),
     );
   }
 
@@ -73,8 +73,11 @@ class _SuperAdminVerificationScreenState
                 color: const Color(0xFF4F46E5).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.admin_panel_settings_rounded,
-                  color: Color(0xFF4F46E5), size: 22),
+              child: const Icon(
+                Icons.admin_panel_settings_rounded,
+                color: Color(0xFF4F46E5),
+                size: 22,
+              ),
             ),
             const SizedBox(width: 10),
             Column(
@@ -133,8 +136,9 @@ class _SuperAdminVerificationScreenState
                     selectedColor: const Color(0xFF4F46E5),
                     labelStyle: GoogleFonts.inter(
                       fontSize: AppTypography.labelMedium,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: isSelected
                           ? Colors.white
                           : AppColors.textPrimaryOf(context),
@@ -163,8 +167,9 @@ class _SuperAdminVerificationScreenState
                         : const Color(0xFFEEF2FF),
                     labelStyle: GoogleFonts.inter(
                       fontSize: AppTypography.labelSmall,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: isSelected
                           ? const Color(0xFF4F46E5)
                           : AppColors.textSecondaryOf(context),
@@ -189,8 +194,9 @@ class _SuperAdminVerificationScreenState
                 }
                 if (snapshot.hasError) {
                   return Center(
-                    child:
-                        Text('Error loading applications: ${snapshot.error}'),
+                    child: Text(
+                      'Error loading applications: ${snapshot.error}',
+                    ),
                   );
                 }
 
@@ -202,9 +208,11 @@ class _SuperAdminVerificationScreenState
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.inbox_outlined,
-                              size: 56,
-                              color: AppColors.textSecondaryOf(context)),
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 56,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             'No applications found',
@@ -251,10 +259,7 @@ class _SuperAdminVerificationScreenState
 }
 
 class _ApplicantCard extends StatelessWidget {
-  const _ApplicantCard({
-    required this.applicant,
-    required this.onReview,
-  });
+  const _ApplicantCard({required this.applicant, required this.onReview});
 
   final VerificationApplicant applicant;
   final VoidCallback onReview;
@@ -280,8 +285,8 @@ class _ApplicantCard extends StatelessWidget {
     final dateStr = applicant.submittedAt != null
         ? DateFormat('d MMM yyyy, h:mm a').format(applicant.submittedAt!)
         : (applicant.createdAt != null
-            ? DateFormat('d MMM yyyy').format(applicant.createdAt!)
-            : 'Recently');
+              ? DateFormat('d MMM yyyy').format(applicant.createdAt!)
+              : 'Recently');
 
     return Card(
       elevation: 0,
@@ -340,8 +345,11 @@ class _ApplicantCard extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.phone_outlined,
-                      size: 14, color: AppColors.textSecondaryOf(context)),
+                  Icon(
+                    Icons.phone_outlined,
+                    size: 14,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     applicant.mobile.isNotEmpty ? applicant.mobile : 'No phone',
@@ -351,8 +359,11 @@ class _ApplicantCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Icon(Icons.badge_outlined,
-                      size: 14, color: AppColors.textSecondaryOf(context)),
+                  Icon(
+                    Icons.badge_outlined,
+                    size: 14,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     'ID: ${applicant.profileId}',
@@ -366,7 +377,9 @@ class _ApplicantCard extends StatelessWidget {
                     onPressed: onReview,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
                     ),
                     child: const Text('Review'),
                   ),
@@ -389,25 +402,22 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (Color bg, Color text) = switch (stage) {
       VerificationStage.verified => (
-          const Color(0xFFDCFCE7),
-          const Color(0xFF15803D),
-        ),
+        const Color(0xFFDCFCE7),
+        const Color(0xFF15803D),
+      ),
       VerificationStage.submittedForVerification => (
-          const Color(0xFFDBEAFE),
-          const Color(0xFF1D4ED8),
-        ),
+        const Color(0xFFDBEAFE),
+        const Color(0xFF1D4ED8),
+      ),
       VerificationStage.revisionRequested => (
-          const Color(0xFFFEF3C7),
-          const Color(0xFFB45309),
-        ),
+        const Color(0xFFFEF3C7),
+        const Color(0xFFB45309),
+      ),
       VerificationStage.rejected => (
-          const Color(0xFFFEE2E2),
-          const Color(0xFFB91C1C),
-        ),
-      _ => (
-          const Color(0xFFF1F5F9),
-          const Color(0xFF475569),
-        ),
+        const Color(0xFFFEE2E2),
+        const Color(0xFFB91C1C),
+      ),
+      _ => (const Color(0xFFF1F5F9), const Color(0xFF475569)),
     };
 
     return Container(
@@ -503,7 +513,8 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
                   : const Color(0xFFDC2626),
             ),
             child: Text(
-                isRevision ? 'Send Revision Request' : 'Confirm Rejection'),
+              isRevision ? 'Send Revision Request' : 'Confirm Rejection',
+            ),
           ),
         ],
       ),
@@ -527,8 +538,10 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
       if (!mounted) return;
       setState(() => _acting = false);
       if (ok) {
-        AppToast.info(context,
-            isRevision ? 'Revision requested.' : 'Application rejected.');
+        AppToast.info(
+          context,
+          isRevision ? 'Revision requested.' : 'Application rejected.',
+        );
         Navigator.pop(context);
       } else {
         AppToast.error(context, 'Action failed. Please try again.');
@@ -539,8 +552,9 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
   @override
   Widget build(BuildContext context) {
     final app = widget.applicant;
-    final requirements =
-        VerificationRequirementsConfig.requirementsForRole(app.role);
+    final requirements = VerificationRequirementsConfig.requirementsForRole(
+      app.role,
+    );
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,

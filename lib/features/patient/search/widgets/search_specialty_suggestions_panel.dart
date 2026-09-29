@@ -58,9 +58,10 @@ class SearchSpecialtySuggestionsPanel extends StatelessWidget {
               for (var i = 0; i < suggestions.length; i++) ...[
                 if (i > 0)
                   Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: AppColors.borderOf(context)),
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.borderOf(context),
+                  ),
                 _SuggestionTile(
                   suggestion: suggestions[i],
                   onTap: () => onSelected(suggestions[i]),
@@ -75,10 +76,7 @@ class SearchSpecialtySuggestionsPanel extends StatelessWidget {
 }
 
 class _SuggestionTile extends StatefulWidget {
-  const _SuggestionTile({
-    required this.suggestion,
-    required this.onTap,
-  });
+  const _SuggestionTile({required this.suggestion, required this.onTap});
 
   final SpecialtySearchSuggestion suggestion;
   final VoidCallback onTap;
@@ -155,8 +153,8 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                 Icon(
                   Icons.north_west_rounded,
                   size: 16,
-                  color:
-                      AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.7),
                 ),
               ],
             ),

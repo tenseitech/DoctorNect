@@ -79,9 +79,13 @@ class _PrescriptionMobileRxSectionState
   }
 
   Future<void> _openAddCommunityDialog(
-      BuildContext context, String initialName) async {
-    final medicine =
-        await AddCommunityMedicineDialog.show(context, initialName);
+    BuildContext context,
+    String initialName,
+  ) async {
+    final medicine = await AddCommunityMedicineDialog.show(
+      context,
+      initialName,
+    );
     if (!context.mounted || medicine == null) return;
     await CommunityMedicineRepository.instance.fetchAll();
     if (!context.mounted) return;
@@ -172,10 +176,8 @@ class _PrescriptionMobileRxSectionState
           onChanged: _runSearch,
           onSelect: _selectSearchResult,
           trailing: IconButton.filledTonal(
-            onPressed: () => _openAddCommunityDialog(
-              context,
-              _searchController.text.trim(),
-            ),
+            onPressed: () =>
+                _openAddCommunityDialog(context, _searchController.text.trim()),
             icon: const Icon(Icons.add, size: 18),
             tooltip: 'Add custom medicine',
             style: IconButton.styleFrom(

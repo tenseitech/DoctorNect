@@ -1,5 +1,6 @@
 import '../../../core/constants/speciality_mapper.dart';
 import '../../../core/constants/specialty_categories.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
 
 /// Matches patient free-text queries against doctor listings across name,
@@ -116,13 +117,16 @@ abstract final class DoctorSearchMatcher {
   static List<String> _searchTokens(String normalizedQuery) {
     var withoutPatterns = normalizedQuery
         .replaceAll(
-            RegExp(r'\b\d+(?:\.\d+)?\s*(?:\+|\*)?\s*(?:star|stars|rating|★)\b'),
-            ' ')
+          RegExp(r'\b\d+(?:\.\d+)?\s*(?:\+|\*)?\s*(?:star|stars|rating|★)\b'),
+          ' ',
+        )
         .replaceAll(RegExp(r'\b(?:rating|stars?)\s*\d+(?:\.\d+)?\b'), ' ')
         .replaceAll(
-            RegExp(
-                r'\b\d+\s*(?:\+|\s*)?(?:years?|yrs?|y\.?o\.?|exp(?:erience)?)\b'),
-            ' ')
+          RegExp(
+            r'\b\d+\s*(?:\+|\s*)?(?:years?|yrs?|y\.?o\.?|exp(?:erience)?)\b',
+          ),
+          ' ',
+        )
         .replaceAll(RegExp(r'\b(?:available|open)\s+today\b'), ' ')
         .replaceAll(RegExp(r'\btoday\s+(?:available|open)\b'), ' ')
         .replaceAll(RegExp(r'\bverified\b'), ' ')
@@ -206,7 +210,8 @@ abstract final class DoctorSearchMatcher {
   static int? _parseMinExperience(String query) {
     final patterns = [
       RegExp(
-          r'(\d+)\s*(?:\+|\s*)?(?:years?|yrs?|y\.?o\.?)\s*(?:exp(?:erience)?)?'),
+        r'(\d+)\s*(?:\+|\s*)?(?:years?|yrs?|y\.?o\.?)\s*(?:exp(?:erience)?)?',
+      ),
       RegExp(r'(\d+)\s*(?:\+|\s*)?(?:exp(?:erience)?|experience)'),
       RegExp(r'(?:exp(?:erience)?|experience)\s*(\d+)'),
     ];

@@ -145,15 +145,14 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
   }
 
   void _snack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel =
-        DateFormat('EEE, dd MMM yyyy · hh:mm a').format(_dateTime);
+    final dateLabel = DateFormat('EEE, dd MMM yyyy · hh:mm a')
+        .format(_dateTime);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -178,15 +177,17 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
               Text(
                 'Add Walk-in Patient',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.headlineSmall,
-                    fontWeight: FontWeight.w700),
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Register a patient who is at the clinic without an app booking.',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -263,8 +264,9 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
                 addButtonLabel: '+ Add Entry',
                 tags: _chiefComplaints,
                 onAdd: (value) => setState(() {
-                  if (!_chiefComplaints
-                      .any((c) => c.toLowerCase() == value.toLowerCase())) {
+                  if (!_chiefComplaints.any(
+                    (c) => c.toLowerCase() == value.toLowerCase(),
+                  )) {
                     _chiefComplaints.add(value);
                   }
                 }),
@@ -282,8 +284,10 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.doctorBlue,
                   side: const BorderSide(color: AppColors.doctorBlue),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 12,
+                  ),
                   alignment: Alignment.centerLeft,
                 ),
               ),

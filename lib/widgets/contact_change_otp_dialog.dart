@@ -54,14 +54,14 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
   String? _error;
 
   String get _codeTypeLabel => switch (widget.channel) {
-        ContactVerificationChannel.mobile => 'OTP',
-        ContactVerificationChannel.email => 'Verification Code',
-      };
+    ContactVerificationChannel.mobile => 'OTP',
+    ContactVerificationChannel.email => 'Verification Code',
+  };
 
   String get _channelLabel => switch (widget.channel) {
-        ContactVerificationChannel.mobile => 'Mobile Number',
-        ContactVerificationChannel.email => 'Email Address',
-      };
+    ContactVerificationChannel.mobile => 'Mobile Number',
+    ContactVerificationChannel.email => 'Email Address',
+  };
 
   Future<void> _sendOtp() async {
     setState(() {
@@ -99,8 +99,10 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final masked =
-        ContactChangeOtpService.maskTarget(widget.channel, widget.destination);
+    final masked = ContactChangeOtpService.maskTarget(
+      widget.channel,
+      widget.destination,
+    );
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -119,9 +121,10 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
                   ? 'To ${widget.purpose}, enter the 6-digit verification code sent to your new email ($masked).'
                   : 'To ${widget.purpose}, enter the 6-digit OTP sent to your new mobile number ($masked).',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodyMedium,
-                  color: AppColors.textSecondaryOf(context),
-                  height: 1.45),
+                fontSize: AppTypography.bodyMedium,
+                color: AppColors.textSecondaryOf(context),
+                height: 1.45,
+              ),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -132,9 +135,11 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(_otpSent
-                      ? 'Resend $_codeTypeLabel'
-                      : 'Send $_codeTypeLabel'),
+                  : Text(
+                      _otpSent
+                          ? 'Resend $_codeTypeLabel'
+                          : 'Send $_codeTypeLabel',
+                    ),
             ),
             if (_otpSent) ...[
               const SizedBox(height: 16),
@@ -144,8 +149,9 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
                   Text(
                     'Enter $_codeTypeLabel',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        fontWeight: FontWeight.w600),
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -170,8 +176,9 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
               Text(
                 _error!,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.error),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.error,
+                ),
               ),
             ],
           ],

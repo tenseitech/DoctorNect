@@ -17,8 +17,10 @@ class DoctorAvailabilityRepository {
 
   static final _timeFormat = DateFormat('hh:mm a');
 
-  Future<DoctorAvailability?> fetch(String doctorId,
-      {bool preferCache = true}) async {
+  Future<DoctorAvailability?> fetch(
+    String doctorId, {
+    bool preferCache = true,
+  }) async {
     if (!FirebaseBootstrap.isReady) return null;
 
     final snap = await FirestoreReadHelper.getDocument(
@@ -42,7 +44,9 @@ class DoctorAvailabilityRepository {
   List<DateTime> nextBookableDays({int count = 7}) {
     final now = DateTime.now();
     return List.generate(
-        count, (i) => DateTime(now.year, now.month, now.day + i));
+      count,
+      (i) => DateTime(now.year, now.month, now.day + i),
+    );
   }
 
   Future<List<TimeSlot>> slotsForDate({
@@ -76,7 +80,8 @@ class DoctorAvailabilityRepository {
       if (!day.isBefore(start) && !day.isAfter(end)) return const [];
     }
 
-    final booked = existingAppointments ??
+    final booked =
+        existingAppointments ??
         SharedAppointmentsStore.instance.records.where((r) {
           return r.doctorId == doctorId &&
               !r.isCancelled &&
@@ -161,7 +166,8 @@ class DoctorAvailabilityRepository {
       final slotEnd = current.add(Duration(minutes: durationMins));
       if (slotEnd.isAfter(end)) break;
 
-      final inBreak = breakStartTime != null &&
+      final inBreak =
+          breakStartTime != null &&
           breakEndTime != null &&
           current.isBefore(breakEndTime) &&
           slotEnd.isAfter(breakStartTime);

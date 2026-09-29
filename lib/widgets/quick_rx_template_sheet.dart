@@ -41,8 +41,7 @@ const List<QuickRxTemplate> kRxTemplates = [
       'Tab. Telmisartan 40 mg (1-0-0 before breakfast x 30 days)',
       'Tab. Amlodipine 5 mg (0-0-1 after dinner x 30 days)',
     ],
-    advice:
-        'Low salt diet (<3g/day), daily morning blood pressure tracking, 30 mins brisk walking.',
+    advice: 'Low salt diet (<3g/day), daily morning blood pressure tracking, 30 mins brisk walking.',
   ),
   QuickRxTemplate(
     title: 'Type 2 Diabetes Routine Check',
@@ -52,8 +51,7 @@ const List<QuickRxTemplate> kRxTemplates = [
       'Tab. Metformin 500 mg SR (1-0-1 after meals x 30 days)',
       'Tab. Teneligliptin 20 mg (1-0-0 before breakfast x 30 days)',
     ],
-    advice:
-        'Fasting & PP Blood Sugar test after 15 days, avoid refined sugars and carbs.',
+    advice: 'Fasting & PP Blood Sugar test after 15 days, avoid refined sugars and carbs.',
   ),
   QuickRxTemplate(
     title: 'Acidity, Gastritis & GERD',
@@ -146,8 +144,9 @@ class QuickRxTemplateSheet extends StatelessWidget {
           Text(
             'Select a standard template to instantly pre-fill diagnosis, medicines, dosage, and dietary advice:',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
           const SizedBox(height: 16),
           Flexible(
@@ -168,8 +167,9 @@ class QuickRxTemplateSheet extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.cardBgOf(context),
                             borderRadius: BorderRadius.circular(14),
-                            border:
-                                Border.all(color: AppColors.borderOf(context)),
+                            border: Border.all(
+                              color: AppColors.borderOf(context),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,10 +188,13 @@ class QuickRxTemplateSheet extends StatelessWidget {
                                   ),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.doctorBlue
-                                          .withValues(alpha: 0.1),
+                                      color: AppColors.doctorBlue.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -221,14 +224,17 @@ class QuickRxTemplateSheet extends StatelessWidget {
                                     .map(
                                       (m) => Container(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: AppColors.surfaceOf(context),
-                                          borderRadius:
-                                              BorderRadius.circular(6),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                           border: Border.all(
-                                              color:
-                                                  AppColors.borderOf(context)),
+                                            color: AppColors.borderOf(context),
+                                          ),
                                         ),
                                         child: Text(
                                           m,
@@ -236,7 +242,8 @@ class QuickRxTemplateSheet extends StatelessWidget {
                                             fontSize: AppTypography.labelSmall,
                                             fontWeight: FontWeight.w500,
                                             color: AppColors.textPrimaryOf(
-                                                context),
+                                              context,
+                                            ),
                                           ),
                                         ),
                                       ),

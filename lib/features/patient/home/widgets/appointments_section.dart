@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
+
 import 'package:medibond/features/shared/screens/appointment_detail_screen.dart';
+
 import '../../appointments/models/patient_appointment_models.dart';
 import '../../appointments/widgets/appointment_card_shared.dart';
 import '../../booking/booking_flow_screen.dart';
@@ -22,15 +24,14 @@ class AppointmentsSection extends StatelessWidget {
   final VoidCallback onFindDoctor;
 
   static List<PatientAppointment> _homeAppointments(
-      List<PatientAppointment> all) {
-    final upcoming = all
-        .where((a) => a.cancellationReason == null && a.isUpcoming)
-        .toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-    final rest = all
-        .where((a) => a.cancellationReason != null || !a.isUpcoming)
-        .toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    List<PatientAppointment> all,
+  ) {
+    final upcoming =
+        all.where((a) => a.cancellationReason == null && a.isUpcoming).toList()
+          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    final rest =
+        all.where((a) => a.cancellationReason != null || !a.isUpcoming).toList()
+          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return [...upcoming, ...rest].take(3).toList();
   }
 
@@ -45,8 +46,12 @@ class AppointmentsSection extends StatelessWidget {
         );
 
         return Padding(
-          padding:
-              EdgeInsets.fromLTRB(16, compact ? 12 : 20, 16, compact ? 12 : 20),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            compact ? 12 : 20,
+            16,
+            compact ? 12 : 20,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -87,8 +92,9 @@ class AppointmentsSection extends StatelessWidget {
                     child: Text(
                       'View all',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodySmall,
-                          fontWeight: FontWeight.w600),
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -136,23 +142,29 @@ class _EmptyAppointments extends StatelessWidget {
               color: AppColors.patientTeal.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.event_available_outlined,
-                color: AppColors.patientTeal, size: 26),
+            child: const Icon(
+              Icons.event_available_outlined,
+              color: AppColors.patientTeal,
+              size: 26,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             'No appointments yet',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodyLarge, fontWeight: FontWeight.w700),
+              fontSize: AppTypography.bodyLarge,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             'Book your first consultation to see upcoming visits here.',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                color: AppColors.textSecondaryOf(context),
-                height: 1.4),
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textSecondaryOf(context),
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 14),
           FilledButton(
@@ -162,7 +174,8 @@ class _EmptyAppointments extends StatelessWidget {
               foregroundColor: AppColors.white,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: Text(
               'Find a doctor',
@@ -242,16 +255,17 @@ class _AppointmentCard extends StatelessWidget {
                               ? const [Color(0xFF0D9488), Color(0xFF0369A1)]
                               : [
                                   status.color.withValues(alpha: 0.85),
-                                  status.color
+                                  status.color,
                                 ],
                         ),
                         borderRadius: BorderRadius.circular(13),
                         boxShadow: [
                           BoxShadow(
-                            color: (isUpcoming
-                                    ? AppColors.patientTeal
-                                    : status.color)
-                                .withValues(alpha: 0.22),
+                            color:
+                                (isUpcoming
+                                        ? AppColors.patientTeal
+                                        : status.color)
+                                    .withValues(alpha: 0.22),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -302,7 +316,9 @@ class _AppointmentCard extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               _StatusChip(
-                                  label: status.label, color: status.color),
+                                label: status.label,
+                                color: status.color,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 3),
@@ -311,22 +327,26 @@ class _AppointmentCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              Icon(Icons.schedule,
-                                  size: 14,
-                                  color: AppColors.textSecondaryOf(context)
-                                      .withValues(alpha: 0.9)),
+                              Icon(
+                                Icons.schedule,
+                                size: 14,
+                                color: AppColors.textSecondaryOf(context)
+                                    .withValues(alpha: 0.9),
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 time,
                                 style: GoogleFonts.inter(
-                                    fontSize: AppTypography.labelMedium,
-                                    color: AppColors.textSecondaryOf(context)),
+                                  fontSize: AppTypography.labelMedium,
+                                  color: AppColors.textSecondaryOf(context),
+                                ),
                               ),
                               if (isUpcoming) ...[
                                 const SizedBox(width: 8),
@@ -396,7 +416,10 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: FontWeight.w700, color: color),
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
@@ -410,7 +433,8 @@ String _formatDoctorName(String name) {
 }
 
 ({String label, Color color}) _appointmentStatusStyle(
-    PatientAppointment appointment) {
+  PatientAppointment appointment,
+) {
   if (appointment.cancellationReason != null) {
     return (label: 'Cancelled', color: const Color(0xFFDC2626));
   }

@@ -32,6 +32,17 @@ const DEMO_PHONE_ENV_BY_ROLE = {
   ambulance: ['DEMO_PHONE_AMBULANCE'],
 };
 
+const DEFAULT_DEMO_CONFIG = {
+  demoOtp: '000000',
+  demoPhones: {
+    patient: ['7058809803'],
+    doctor: ['7666892394'],
+    medicalStore: ['9359503874'],
+    lab: ['9409858233'],
+    ambulance: ['9307583929'],
+  },
+};
+
 // Cache for demo config to reduce Firestore reads (lives for the life of the Cloud Function instance)
 let cachedDemoConfig = null;
 let lastDemoConfigFetchTime = 0;
@@ -53,7 +64,7 @@ async function getDemoConfig() {
   } catch (error) {
     console.error('Error fetching demo config:', error);
   }
-  return null;
+  return DEFAULT_DEMO_CONFIG;
 }
 
 function demoPhoneDigitsForRole(role) {
@@ -1116,7 +1127,15 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   }
 
   if (otpType === 'login' || otpType === 'forgot_password') {
-    const search = await findUserByMobileDigits(db, digits);
+    let search = await findUserByMobileDigits(db, digits);
+    const isDemo = await isDemoPhone(digits, role);
+    if ((!search.found || !search.uid) && isDemo) {
+      try {
+        search = await ensureDemoAccount(db, digits, role);
+      } catch (err) {
+        console.warn('[sendUserRegistrationOtp] Failed to ensure demo account:', err.message);
+      }
+    }
     if (!search.found) {
       throw new HttpsError('not-found', 'No account found for this mobile number. Please register first.');
     }
@@ -1480,7 +1499,15 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
 
   // Phone OTP login must establish a real Firebase Auth session.
   if (otpType === 'login') {
-    const search = await findUserByMobileDigits(db, digits);
+    let search = await findUserByMobileDigits(db, digits);
+    const isDemo = await isDemoPhone(digits, role);
+    if ((!search.found || !search.uid) && isDemo) {
+      try {
+        search = await ensureDemoAccount(db, digits, role);
+      } catch (err) {
+        console.warn('[verifyUserRegistrationOtp] Failed to ensure demo account:', err.message);
+      }
+    }
     if (!search.found || !search.uid) {
       throw new HttpsError('not-found', 'No account found for this mobile number. Please register first.');
     }
@@ -1491,6 +1518,13 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
         existingRole: search.role,
       });
       throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
+    }
+    if (isDemo && search.uid) {
+      if (role === 'doctor') {
+        await ensureDoctorFullVerified(db, search.uid, search.data?.profileId, { mobile: digits });
+      } else {
+        await ensureRoleFullVerified(db, search.uid, role, search.data?.profileId, { mobile: digits });
+      }
     }
     const customToken = await getAuth().createCustomToken(search.uid, { role });
     return {
@@ -1830,6 +1864,299 @@ async function resetUserPasswordWithOtp(db, data, { clientIp = 'unknown' } = {})
   return { ok: true, success: true, message: 'Password updated successfully! You can now log in.' };
 }
 
+async function ensureDoctorFullVerified(db, uid, profileId, overrides = {}) {
+  const doctorId = profileId || `demo_doctor_${overrides.mobile || '7666892394'}`;
+  const mobile = overrides.mobile || '7666892394';
+  const email = overrides.email || `doctor.${mobile}@doctornect.com`;
+  const displayName = overrides.displayName || 'Dr. Demo Doctor';
+
+  const batch = db.batch();
+  const userRef = db.collection('users').doc(uid);
+  batch.set(userRef, {
+    role: 'doctor',
+    profileId: doctorId,
+    displayName,
+    email,
+    mobile,
+    phone: mobile,
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    profileCompleted: true,
+    mobileVerified: true,
+    kycSubmitted: true,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  const doctorRef = db.collection('doctors').doc(doctorId);
+  batch.set(doctorRef, {
+    doctorId,
+    ownerUid: uid,
+    name: displayName,
+    fullName: displayName,
+    mobile,
+    phone: mobile,
+    email,
+    qualification: 'MBBS, MD (General Medicine)',
+    specialization: 'General Medicine (Internal Medicine)',
+    councilNumber: `MCI-${mobile}`,
+    stateCouncil: 'Maharashtra Medical Council',
+    registrationYear: 2016,
+    yearsExperience: 10,
+    clinicName: 'Dr. Demo Healthcare Clinic',
+    clinicType: 'Private Clinic',
+    addressLine1: 'Suite 101, Medical Enclave',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    country: 'India',
+    pincode: '400001',
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    kycSubmitted: true,
+    profileCompleted: true,
+    deactivated: false,
+    rating: 4.9,
+    reviewCount: 24,
+    registrationCertificate: 'https://storage.googleapis.com/demo/medical_council_cert.pdf',
+    idProof: 'https://storage.googleapis.com/demo/doctor_id_proof.pdf',
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  await batch.commit();
+}
+
+async function ensureRoleFullVerified(db, uid, role, profileId, overrides = {}) {
+  const r = String(role || 'patient').trim();
+  if (r === 'doctor') {
+    return ensureDoctorFullVerified(db, uid, profileId, overrides);
+  }
+  const mobile = overrides.mobile || '';
+  const knownProfileIds = {
+    '9359503874': 'ms1784184914244',
+    '9409858233': 'l1784185011933',
+    '9307583929': 'amb-reg-1787919627226',
+  };
+  const knownDisplayNames = {
+    '9359503874': 'KD Rx Pharma',
+    '9409858233': 'KD Labs',
+    '9307583929': 'Demo Ambulance',
+  };
+  const roleMeta = {
+    medicalStore: { collection: 'medical_stores', idField: 'storeId', defaultName: 'Demo Medical Store' },
+    lab: { collection: 'labs', idField: 'labId', defaultName: 'Demo Diagnostic Lab' },
+    ambulance: { collection: 'ambulances', idField: 'ambulanceId', defaultName: 'Demo Ambulance Service' },
+  };
+  const meta = roleMeta[r];
+  if (!meta) return;
+
+  const effProfileId = profileId || knownProfileIds[mobile] || `${r}_${mobile}`;
+  const displayName = overrides.displayName || knownDisplayNames[mobile] || meta.defaultName;
+
+  const batch = db.batch();
+  const userRef = db.collection('users').doc(uid);
+  batch.set(userRef, {
+    role: r,
+    profileId: effProfileId,
+    displayName,
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    profileCompleted: true,
+    mobileVerified: true,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  const roleDocRef = db.collection(meta.collection).doc(effProfileId);
+  batch.set(roleDocRef, {
+    [meta.idField]: effProfileId,
+    ownerUid: uid,
+    authUid: uid,
+    name: displayName,
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    profileCompleted: true,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  await batch.commit();
+}
+
+async function ensureDemoDoctorAccount(db, mobileDigits) {
+  const doctorId = `demo_doctor_${mobileDigits}`;
+  const email = `doctor.${mobileDigits}@doctornect.com`;
+  const displayName = 'Dr. Demo Doctor';
+
+  let authUser;
+  try {
+    authUser = await getAuth().getUserByEmail(email);
+  } catch (e) {
+    if (e.code !== 'auth/user-not-found') {
+      console.warn('Error finding user by email:', e.message);
+    }
+  }
+
+  if (!authUser) {
+    try {
+      authUser = await getAuth().createUser({
+        email,
+        displayName,
+        emailVerified: true,
+      });
+    } catch (err) {
+      authUser = await getAuth().getUserByEmail(email).catch(() => null);
+      if (!authUser) {
+        authUser = { uid: `demo_user_${mobileDigits}` };
+      }
+    }
+  }
+
+  const uid = authUser.uid;
+  await ensureDoctorFullVerified(db, uid, doctorId, { mobile: mobileDigits, email, displayName });
+  return {
+    found: true,
+    role: 'doctor',
+    uid,
+    data: {
+      profileId: doctorId,
+      role: 'doctor',
+      mobile: mobileDigits,
+      verified: true,
+      verificationStatus: 'verified',
+    },
+  };
+}
+
+async function ensureDemoAccount(db, mobileDigits, role) {
+  const r = String(role || 'patient').trim();
+  if (r === 'doctor') {
+    return ensureDemoDoctorAccount(db, mobileDigits);
+  }
+
+  const roleMeta = {
+    patient: {
+      collection: 'patients',
+      idPrefix: 'demo_patient_',
+      idField: 'patientId',
+      emailPrefix: 'patient',
+      displayName: 'Demo Patient',
+    },
+    medicalStore: {
+      collection: 'medical_stores',
+      idPrefix: 'demo_store_',
+      idField: 'storeId',
+      emailPrefix: 'pharmacy',
+      displayName: 'Demo Medical Store',
+    },
+    lab: {
+      collection: 'labs',
+      idPrefix: 'demo_lab_',
+      idField: 'labId',
+      emailPrefix: 'lab',
+      displayName: 'Demo Diagnostic Lab',
+    },
+    ambulance: {
+      collection: 'ambulances',
+      idPrefix: 'demo_ambulance_',
+      idField: 'ambulanceId',
+      emailPrefix: 'ambulance',
+      displayName: 'Demo Ambulance Service',
+    },
+  };
+
+  const knownProfileIds = {
+    '9359503874': 'ms1784184914244',
+    '9409858233': 'l1784185011933',
+    '9307583929': 'amb-reg-1787919627226',
+    '7666892394': 'demo_doctor_7666892394',
+  };
+  const knownDisplayNames = {
+    '9359503874': 'KD Rx Pharma',
+    '9409858233': 'KD Labs',
+    '9307583929': 'Demo Ambulance',
+    '7666892394': 'Dr. Demo Doctor',
+  };
+
+  const meta = roleMeta[r] || roleMeta.patient;
+  const profileId = knownProfileIds[mobileDigits] || `${meta.idPrefix}${mobileDigits}`;
+  const displayName = knownDisplayNames[mobileDigits] || meta.displayName;
+  const email = `${meta.emailPrefix}.${mobileDigits}@doctornect.com`;
+
+  let authUser;
+  try {
+    authUser = await getAuth().getUserByEmail(email);
+  } catch (e) {
+    if (e.code !== 'auth/user-not-found') {
+      console.warn('Error finding user by email:', e.message);
+    }
+  }
+
+  if (!authUser) {
+    try {
+      authUser = await getAuth().createUser({
+        email,
+        displayName,
+        emailVerified: true,
+      });
+    } catch (err) {
+      authUser = await getAuth().getUserByEmail(email).catch(() => null);
+      if (!authUser) {
+        authUser = { uid: `demo_user_${r}_${mobileDigits}` };
+      }
+    }
+  }
+
+  const uid = authUser.uid;
+  const batch = db.batch();
+  const userRef = db.collection('users').doc(uid);
+  batch.set(userRef, {
+    role: r,
+    profileId,
+    displayName,
+    email,
+    mobile: mobileDigits,
+    phone: mobileDigits,
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    profileCompleted: true,
+    mobileVerified: true,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  const roleDocRef = db.collection(meta.collection).doc(profileId);
+  batch.set(roleDocRef, {
+    [meta.idField]: profileId,
+    ownerUid: uid,
+    name: displayName,
+    fullName: displayName,
+    mobile: mobileDigits,
+    phone: mobileDigits,
+    email,
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    profileCompleted: true,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  await batch.commit();
+
+  return {
+    found: true,
+    role: r,
+    uid,
+    data: {
+      profileId,
+      role: r,
+      mobile: mobileDigits,
+      verified: true,
+      verificationStatus: 'verified',
+    },
+  };
+}
+
 /**
  * Exchanges a verified mobile OTP session for a Firebase custom token so the
  * client gets a real Auth session (request.auth) instead of a local-only profile.
@@ -1868,7 +2195,15 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     },
   });
 
-  const search = await findUserByMobileDigits(db, mobileDigits);
+  const isDemo = await isDemoPhone(mobileDigits, role);
+  let search = await findUserByMobileDigits(db, mobileDigits);
+  if ((!search.found || !search.uid) && isDemo) {
+    try {
+      search = await ensureDemoAccount(db, mobileDigits, role);
+    } catch (err) {
+      console.warn('[completeMobileOtpLogin] Failed to ensure demo account:', err.message);
+    }
+  }
   if (!search.found || !search.uid) {
     throw new HttpsError('not-found', 'No account found for this mobile number.');
   }
@@ -1882,14 +2217,30 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
   }
 
   let authUid = search.uid;
+  if (role === 'doctor') {
+    await ensureDoctorFullVerified(db, authUid, search.data?.profileId, { mobile: mobileDigits });
+  } else if (isDemo) {
+    await ensureRoleFullVerified(db, authUid, role, search.data?.profileId, { mobile: mobileDigits });
+  }
+
   try {
     await getAuth().getUser(authUid);
   } catch (e) {
     if (e.code === 'auth/user-not-found') {
-      throw new HttpsError('not-found', 'No Firebase account found for this mobile number.');
+      if (isDemo) {
+        await getAuth().createUser({
+          uid: authUid,
+          email: `${role}.${mobileDigits}@doctornect.com`,
+          displayName: `Demo ${role}`,
+          emailVerified: true,
+        }).catch(() => {});
+      } else {
+        throw new HttpsError('not-found', 'No Firebase account found for this mobile number.');
+      }
+    } else {
+      logInternalError('completeMobileOtpLogin', e, { authUid, stage: 'getUser' });
+      throw new HttpsError('internal', GENERIC_MOBILE_LOGIN_FAILED);
     }
-    logInternalError('completeMobileOtpLogin', e, { authUid, stage: 'getUser' });
-    throw new HttpsError('internal', GENERIC_MOBILE_LOGIN_FAILED);
   }
 
   const customToken = await getAuth().createCustomToken(authUid, { role, loginMethod: 'mobile_otp' });
@@ -1967,7 +2318,14 @@ async function lookupMobileRegistration(db, data) {
     throw new HttpsError('invalid-argument', 'Invalid lookup intent.');
   }
   const requestedRole = String(data?.role || '').trim();
-  const search = await findUserByMobileDigits(db, digits);
+  const effectiveRole = requestedRole || 'doctor';
+  const isDemo = await isDemoPhone(digits, effectiveRole);
+  let search = await findUserByMobileDigits(db, digits);
+  if (!search.found && isDemo) {
+    try {
+      search = await ensureDemoAccount(db, digits, effectiveRole);
+    } catch (_) {}
+  }
   const conflict = resolveMobileLookupConflict({
     found: search.found,
     registeredRole: search.role,

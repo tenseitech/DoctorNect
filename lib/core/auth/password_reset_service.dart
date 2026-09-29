@@ -10,8 +10,7 @@ abstract final class PasswordResetService {
   }) async {
     return (
       success: false,
-      message:
-          'Email password reset is disabled. Please reset your password directly using Phone SMS OTP verification.',
+      message: 'Email password reset is disabled. Please reset your password directly using Phone SMS OTP verification.',
     );
   }
 
@@ -21,8 +20,7 @@ abstract final class PasswordResetService {
   }) async {
     return (
       success: false,
-      message:
-          'Email password reset is disabled. Please reset your password using your registered mobile number and SMS OTP.',
+      message: 'Email password reset is disabled. Please reset your password using your registered mobile number and SMS OTP.',
     );
   }
 }

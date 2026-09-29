@@ -164,11 +164,13 @@ class UnifiedAuthFlowController extends ChangeNotifier {
             UserType.superAdmin,
           ];
           final checks = await Future.wait(
-            candidates.map((r) => MobileRegistrationLookup.check(
-                  digits,
-                  role: r,
-                  intent: MobileLookupIntent.login,
-                )),
+            candidates.map(
+              (r) => MobileRegistrationLookup.check(
+                digits,
+                role: r,
+                intent: MobileLookupIntent.login,
+              ),
+            ),
           );
           UserType? found;
           for (var i = 0; i < candidates.length; i++) {
@@ -322,11 +324,8 @@ class UnifiedAuthFlowController extends ChangeNotifier {
       return;
     }
 
-    final login =
-        await FirestoreService.instance.ambulance.verifyDriverMobileLogin(
-      mobile: digits,
-      sessionId: sessionId,
-    );
+    final login = await FirestoreService.instance.ambulance
+        .verifyDriverMobileLogin(mobile: digits, sessionId: sessionId);
     RegistrationOtpService.clearVerificationSession();
 
     if (!context.mounted) return;

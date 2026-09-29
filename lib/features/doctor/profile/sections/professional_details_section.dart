@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart';
 
@@ -28,23 +29,29 @@ class _ProfessionalDetailsSectionState
     extends State<ProfessionalDetailsSection> {
   final _formKey = GlobalKey<FormState>();
 
-  late String _specialization =
-      AppConstants.normalizeSpecialization(_p.specialization);
+  late String _specialization = AppConstants.normalizeSpecialization(
+    _p.specialization,
+  );
   late String _qualification = _p.qualification.trim();
   late final List<String> _superSpecs = _p.superSpecialization.trim().isEmpty
       ? []
       : _p.superSpecialization
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
   final _superSpecInput = TextEditingController();
   late final _councilNumber = TextEditingController(text: _p.councilNumber);
   late bool _councilEditable = _p.councilNumber.trim().isEmpty;
-  late String? _stateCouncil =
-      _p.stateCouncil.trim().isEmpty ? null : _p.stateCouncil.trim();
+  late String? _stateCouncil = _p.stateCouncil.trim().isEmpty
+      ? null
+      : _p.stateCouncil.trim();
   late bool _stateCouncilEditable = _p.stateCouncil.trim().isEmpty;
   late final _awards = TextEditingController(text: _p.awards);
+  late final _regCertCtrl = TextEditingController(
+    text: _p.registrationCertificate,
+  );
+  late final _idProofCtrl = TextEditingController(text: _p.idProof);
   late final List<String> _certs = List<String>.from(_p.certifications);
   late final List<String> _pubs = List<String>.from(_p.publications);
   late final bool _consultsAdultsOnly = _p.consultsAdultsOnly;
@@ -93,6 +100,8 @@ class _ProfessionalDetailsSectionState
     final councilWasEditable = _councilEditable;
     _p.councilNumber = _councilNumber.text.trim();
     _p.stateCouncil = _stateCouncil!.trim();
+    _p.registrationCertificate = _regCertCtrl.text.trim();
+    _p.idProof = _idProofCtrl.text.trim();
     _p.awards = _awards.text.trim();
     _p.certifications = List<String>.from(_certs);
     _p.publications = List<String>.from(_pubs);
@@ -103,8 +112,10 @@ class _ProfessionalDetailsSectionState
       await DoctorProfileStore.instance.persist(DoctorSession.loggedInDoctorId);
     } catch (_) {
       if (!mounted) return; // FIXED: mounted check after await
-      AppToast.info(context,
-          'Could not save changes. Please check your connection and try again.');
+      AppToast.info(
+        context,
+        'Could not save changes. Please check your connection and try again.',
+      );
       return;
     }
     if (councilWasEditable && _councilNumber.text.trim().isNotEmpty) {
@@ -124,6 +135,8 @@ class _ProfessionalDetailsSectionState
     _superSpecInput.dispose();
     _councilNumber.dispose();
     _awards.dispose();
+    _regCertCtrl.dispose();
+    _idProofCtrl.dispose();
     _certInput.dispose();
     _pubInput.dispose();
     super.dispose();
@@ -139,14 +152,17 @@ class _ProfessionalDetailsSectionState
             child: Align(
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Form(
@@ -183,31 +199,37 @@ class _ProfessionalDetailsSectionState
                                       if (tv.text.isEmpty)
                                         return AppConstants.specializations;
                                       return AppConstants.specializations.where(
-                                        (s) => s
-                                            .toLowerCase()
-                                            .contains(tv.text.toLowerCase()),
+                                        (s) => s.toLowerCase().contains(
+                                          tv.text.toLowerCase(),
+                                        ),
                                       );
                                     },
                                     onSelected: (String selection) {
                                       _superSpecInput.text = selection;
                                       _markDirty();
                                     },
-                                    fieldViewBuilder: (context, controller,
-                                        focusNode, onFieldSubmitted) {
-                                      controller.addListener(() {
-                                        if (controller.text !=
-                                            _superSpecInput.text) {
-                                          _superSpecInput.text =
-                                              controller.text;
-                                        }
-                                      });
-                                      return TextFormField(
-                                        controller: controller,
-                                        focusNode: focusNode,
-                                        decoration: const InputDecoration(
-                                            labelText: 'Super-specialization'),
-                                      );
-                                    },
+                                    fieldViewBuilder:
+                                        (
+                                          context,
+                                          controller,
+                                          focusNode,
+                                          onFieldSubmitted,
+                                        ) {
+                                          controller.addListener(() {
+                                            if (controller.text !=
+                                                _superSpecInput.text) {
+                                              _superSpecInput.text =
+                                                  controller.text;
+                                            }
+                                          });
+                                          return TextFormField(
+                                            controller: controller,
+                                            focusNode: focusNode,
+                                            decoration: const InputDecoration(
+                                              labelText: 'Super-specialization',
+                                            ),
+                                          );
+                                        },
                                   ),
                                 ),
                                 LabeledAddButton(
@@ -225,19 +247,22 @@ class _ProfessionalDetailsSectionState
                                 ),
                               ],
                             ),
-                            ..._superSpecs.map((s) => ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Text(s),
-                                  trailing: IconButton(
-                                    icon: const Icon(
-                                        Icons.remove_circle_outline,
-                                        color: Color(0xFFDC2626)),
-                                    onPressed: () {
-                                      setState(() => _superSpecs.remove(s));
-                                      _markDirty();
-                                    },
+                            ..._superSpecs.map(
+                              (s) => ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(s),
+                                trailing: IconButton(
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    color: Color(0xFFDC2626),
                                   ),
-                                )),
+                                  onPressed: () {
+                                    setState(() => _superSpecs.remove(s));
+                                    _markDirty();
+                                  },
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _councilNumber,
@@ -250,16 +275,17 @@ class _ProfessionalDetailsSectionState
                                       : AppColors.cardBgOf(context),
                                   suffixIcon: !_councilEditable
                                       ? Tooltip(
-                                          message:
-                                              'Confidential credential — registration number cannot be modified',
-                                          child: Icon(Icons.lock_outline,
-                                              size: 18,
-                                              color: AppColors.textSecondaryOf(
-                                                  context)),
+                                          message: 'Confidential credential — registration number cannot be modified',
+                                          child: Icon(
+                                            Icons.lock_outline,
+                                            size: 18,
+                                            color: AppColors.textSecondaryOf(
+                                              context,
+                                            ),
+                                          ),
                                         )
                                       : null,
-                                  helperText:
-                                      'Confidential detail — set once during registration / setup',
+                                  helperText: 'Confidential detail — set once during registration / setup',
                                 ),
                                 'Medical council reg. number',
                                 isRequired: true,
@@ -278,15 +304,14 @@ class _ProfessionalDetailsSectionState
                                   filled: true,
                                   fillColor: AppColors.cardBgOf(context),
                                   suffixIcon: Tooltip(
-                                    message:
-                                        'Registration year can only be updated by DoctorNect support',
-                                    child: Icon(Icons.lock_outline,
-                                        size: 18,
-                                        color:
-                                            AppColors.textSecondaryOf(context)),
+                                    message: 'Registration year can only be updated by DoctorNect support',
+                                    child: Icon(
+                                      Icons.lock_outline,
+                                      size: 18,
+                                      color: AppColors.textSecondaryOf(context),
+                                    ),
                                   ),
-                                  helperText:
-                                      'Contact support if this needs to be corrected',
+                                  helperText: 'Contact support if this needs to be corrected',
                                 ),
                                 'Registration year',
                                 isRequired: false,
@@ -295,7 +320,8 @@ class _ProfessionalDetailsSectionState
                             SizedBox(height: 12),
                             TextFormField(
                               readOnly: true,
-                              initialValue: _displayRegistrationYear <= 0 &&
+                              initialValue:
+                                  _displayRegistrationYear <= 0 &&
                                       _p.yearsExperience <= 0
                                   ? '—'
                                   : '$_computedExperience year${_computedExperience == 1 ? '' : 's'}',
@@ -305,16 +331,18 @@ class _ProfessionalDetailsSectionState
                                 fillColor: AppColors.cardBgOf(context),
                                 suffixIcon: Tooltip(
                                   message: 'Calculated from registration year',
-                                  child: Icon(Icons.info_outline,
-                                      size: 18,
-                                      color:
-                                          AppColors.textSecondaryOf(context)),
+                                  child: Icon(
+                                    Icons.info_outline,
+                                    size: 18,
+                                    color: AppColors.textSecondaryOf(context),
+                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<String>(
-                              initialValue: _stateCouncil != null &&
+                              initialValue:
+                                  _stateCouncil != null &&
                                       _stateOptions.contains(_stateCouncil)
                                   ? _stateCouncil
                                   : null,
@@ -326,16 +354,17 @@ class _ProfessionalDetailsSectionState
                                       : AppColors.cardBgOf(context),
                                   suffixIcon: !_stateCouncilEditable
                                       ? Tooltip(
-                                          message:
-                                              'Confidential credential — state medical council cannot be modified',
-                                          child: Icon(Icons.lock_outline,
-                                              size: 18,
-                                              color: AppColors.textSecondaryOf(
-                                                  context)),
+                                          message: 'Confidential credential — state medical council cannot be modified',
+                                          child: Icon(
+                                            Icons.lock_outline,
+                                            size: 18,
+                                            color: AppColors.textSecondaryOf(
+                                              context,
+                                            ),
+                                          ),
                                         )
                                       : null,
-                                  helperText:
-                                      'Confidential detail — state medical council is unchanged once set',
+                                  helperText: 'Confidential detail — state medical council is unchanged once set',
                                 ),
                                 'State medical council',
                                 isRequired: true,
@@ -343,11 +372,17 @@ class _ProfessionalDetailsSectionState
                               isExpanded: true,
                               hint: const Text('Select state'),
                               items: _stateOptions
-                                  .map((s) => DropdownMenuItem(
-                                      value: s, child: Text(s)))
+                                  .map(
+                                    (s) => DropdownMenuItem(
+                                      value: s,
+                                      child: Text(s),
+                                    ),
+                                  )
                                   .toList(),
-                              validator: (v) => FormValidators.dropdown(v,
-                                  field: 'state medical council'),
+                              validator: (v) => FormValidators.dropdown(
+                                v,
+                                field: 'state medical council',
+                              ),
                               onChanged: _stateCouncilEditable
                                   ? (v) {
                                       setState(() => _stateCouncil = v);
@@ -355,16 +390,37 @@ class _ProfessionalDetailsSectionState
                                     }
                                   : null,
                             ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _regCertCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Registration Certificate (Document / Ref ID)',
+                                hintText: 'Certificate document name or reference number',
+                              ),
+                              onChanged: (_) => _markDirty(),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _idProofCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Identity Proof (Document / ID)',
+                                hintText: 'Government ID document or reference number',
+                              ),
+                              onChanged: (_) => _markDirty(),
+                            ),
                             const SizedBox(height: 16),
-                            Text('Additional certifications',
-                                style: Theme.of(context).textTheme.titleSmall),
+                            Text(
+                              'Additional certifications',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
                             Row(
                               children: [
                                 Expanded(
                                   child: TextField(
                                     controller: _certInput,
                                     decoration: const InputDecoration(
-                                        hintText: 'Add certification'),
+                                      hintText: 'Add certification',
+                                    ),
                                   ),
                                 ),
                                 LabeledAddButton(
@@ -380,37 +436,44 @@ class _ProfessionalDetailsSectionState
                                 ),
                               ],
                             ),
-                            ..._certs.map((c) => ListTile(
-                                  title: Text(c),
-                                  trailing: IconButton(
-                                    icon: const Icon(
-                                        Icons.remove_circle_outline,
-                                        color: Color(0xFFDC2626)),
-                                    onPressed: () {
-                                      setState(() => _certs.remove(c));
-                                      _markDirty();
-                                    },
+                            ..._certs.map(
+                              (c) => ListTile(
+                                title: Text(c),
+                                trailing: IconButton(
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    color: Color(0xFFDC2626),
                                   ),
-                                )),
+                                  onPressed: () {
+                                    setState(() => _certs.remove(c));
+                                    _markDirty();
+                                  },
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 12),
                             TextFormField(
                               controller: _awards,
                               maxLines: 3,
                               decoration: const InputDecoration(
-                                  labelText: 'Awards & recognitions',
-                                  alignLabelWithHint: true),
+                                labelText: 'Awards & recognitions',
+                                alignLabelWithHint: true,
+                              ),
                               onChanged: (_) => _markDirty(),
                             ),
                             const SizedBox(height: 16),
-                            Text('Publications',
-                                style: Theme.of(context).textTheme.titleSmall),
+                            Text(
+                              'Publications',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
                             Row(
                               children: [
                                 Expanded(
                                   child: TextField(
                                     controller: _pubInput,
                                     decoration: const InputDecoration(
-                                        hintText: 'Add link'),
+                                      hintText: 'Add link',
+                                    ),
                                   ),
                                 ),
                                 LabeledAddButton(
@@ -426,20 +489,26 @@ class _ProfessionalDetailsSectionState
                                 ),
                               ],
                             ),
-                            ..._pubs.map((p) => ListTile(
-                                  title: Text(p,
-                                      style: const TextStyle(
-                                          fontSize: AppTypography.bodySmall)),
-                                  trailing: IconButton(
-                                    icon: const Icon(
-                                        Icons.remove_circle_outline,
-                                        color: Color(0xFFDC2626)),
-                                    onPressed: () {
-                                      setState(() => _pubs.remove(p));
-                                      _markDirty();
-                                    },
+                            ..._pubs.map(
+                              (p) => ListTile(
+                                title: Text(
+                                  p,
+                                  style: const TextStyle(
+                                    fontSize: AppTypography.bodySmall,
                                   ),
-                                )),
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _pubs.remove(p));
+                                    _markDirty();
+                                  },
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),

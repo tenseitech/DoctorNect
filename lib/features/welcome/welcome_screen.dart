@@ -43,34 +43,10 @@ class WelcomeScreen extends StatelessWidget {
   final bool isNewUser;
 
   void _openUnifiedAuth(BuildContext context, UserType role, Color accent) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const UnifiedAuthIntroScreen(),
-      ),
-    );
+    openUnifiedAuthIntro(context, role: role, accentColor: accent);
   }
 
   void _onSelectRoleForNewUser(BuildContext context, UserType role) {
-    if (role == UserType.superAdmin) {
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Admin Access'),
-          content: const Text(
-            'Administrator accounts cannot be self-registered. '
-            'Please contact the platform administrator to provision access.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
     final digits = verifiedMobile;
     if (digits == null || digits.isEmpty) {
       _openUnifiedAuth(context, role, AppColors.doctorBlue);
@@ -85,82 +61,76 @@ class WelcomeScreen extends StatelessWidget {
   }
 
   List<_WelcomeRoleOption> _roleOptions(BuildContext context) => [
-        _WelcomeRoleOption(
-          title: UnifiedAuthCoordinator.roleLabel(UserType.doctor),
-          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.doctor),
-          color: AppColors.doctorBlue,
-          icon: Icons.medical_services_rounded,
-          onTap: () => isNewUser
-              ? _onSelectRoleForNewUser(context, UserType.doctor)
-              : _openUnifiedAuth(
-                  context, UserType.doctor, AppColors.doctorBlue),
-        ),
-        _WelcomeRoleOption(
-          title: UnifiedAuthCoordinator.roleLabel(UserType.patient),
-          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.patient),
-          color: AppColors.patientTeal,
-          icon: Icons.person_rounded,
-          onTap: () => isNewUser
-              ? _onSelectRoleForNewUser(context, UserType.patient)
-              : _openUnifiedAuth(
-                  context, UserType.patient, AppColors.patientTeal),
-        ),
-        _WelcomeRoleOption(
-          title: UnifiedAuthCoordinator.roleLabel(UserType.medicalStore),
-          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.medicalStore),
-          color: AppColors.pharmacyGreen,
-          icon: Icons.local_pharmacy_rounded,
-          onTap: () => isNewUser
-              ? _onSelectRoleForNewUser(context, UserType.medicalStore)
-              : _openUnifiedAuth(
-                  context, UserType.medicalStore, AppColors.pharmacyGreen),
-        ),
-        _WelcomeRoleOption(
-          title: UnifiedAuthCoordinator.roleLabel(UserType.lab),
-          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.lab),
-          color: AppColors.labPurple,
-          icon: Icons.biotech_rounded,
-          onTap: () => isNewUser
-              ? _onSelectRoleForNewUser(context, UserType.lab)
-              : _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
-        ),
-        _WelcomeRoleOption(
-          title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
-          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
-          color: const Color(0xFFDC2626),
-          icon: Icons.emergency_rounded,
-          onTap: () {
-            if (!isNewUser && PendingAmbulanceInviteStore.hasPending) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AmbulanceInviteSetupScreen(
-                    inviteId: PendingAmbulanceInviteStore.inviteId!,
-                    token: PendingAmbulanceInviteStore.token!,
-                  ),
-                ),
-              );
-              return;
-            }
-            if (isNewUser) {
-              _onSelectRoleForNewUser(context, UserType.ambulance);
-            } else {
-              _openUnifiedAuth(
-                  context, UserType.ambulance, const Color(0xFFDC2626));
-            }
-          },
-        ),
-        _WelcomeRoleOption(
-          title: 'Admin / Super Admin',
-          subtitle: 'Platform oversight & verification management',
-          color: const Color(0xFF4F46E5),
-          icon: Icons.admin_panel_settings_rounded,
-          onTap: () => isNewUser
-              ? _onSelectRoleForNewUser(context, UserType.superAdmin)
-              : _openUnifiedAuth(
-                  context, UserType.superAdmin, const Color(0xFF4F46E5)),
-        ),
-      ];
+    _WelcomeRoleOption(
+      title: UnifiedAuthCoordinator.roleLabel(UserType.doctor),
+      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.doctor),
+      color: AppColors.doctorBlue,
+      icon: Icons.medical_services_rounded,
+      onTap: () => isNewUser
+          ? _onSelectRoleForNewUser(context, UserType.doctor)
+          : _openUnifiedAuth(context, UserType.doctor, AppColors.doctorBlue),
+    ),
+    _WelcomeRoleOption(
+      title: UnifiedAuthCoordinator.roleLabel(UserType.patient),
+      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.patient),
+      color: AppColors.patientTeal,
+      icon: Icons.person_rounded,
+      onTap: () => isNewUser
+          ? _onSelectRoleForNewUser(context, UserType.patient)
+          : _openUnifiedAuth(context, UserType.patient, AppColors.patientTeal),
+    ),
+    _WelcomeRoleOption(
+      title: UnifiedAuthCoordinator.roleLabel(UserType.medicalStore),
+      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.medicalStore),
+      color: AppColors.pharmacyGreen,
+      icon: Icons.local_pharmacy_rounded,
+      onTap: () => isNewUser
+          ? _onSelectRoleForNewUser(context, UserType.medicalStore)
+          : _openUnifiedAuth(
+              context,
+              UserType.medicalStore,
+              AppColors.pharmacyGreen,
+            ),
+    ),
+    _WelcomeRoleOption(
+      title: UnifiedAuthCoordinator.roleLabel(UserType.lab),
+      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.lab),
+      color: AppColors.labPurple,
+      icon: Icons.biotech_rounded,
+      onTap: () => isNewUser
+          ? _onSelectRoleForNewUser(context, UserType.lab)
+          : _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
+    ),
+    _WelcomeRoleOption(
+      title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
+      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
+      color: const Color(0xFFDC2626),
+      icon: Icons.emergency_rounded,
+      onTap: () {
+        if (!isNewUser && PendingAmbulanceInviteStore.hasPending) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AmbulanceInviteSetupScreen(
+                inviteId: PendingAmbulanceInviteStore.inviteId!,
+                token: PendingAmbulanceInviteStore.token!,
+              ),
+            ),
+          );
+          return;
+        }
+        if (isNewUser) {
+          _onSelectRoleForNewUser(context, UserType.ambulance);
+        } else {
+          _openUnifiedAuth(
+            context,
+            UserType.ambulance,
+            const Color(0xFFDC2626),
+          );
+        }
+      },
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -216,14 +186,8 @@ class _WebWelcomeScaffold extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: isDark
-                      ? const [
-                          AppColors.darkBackground,
-                          AppColors.darkSurface,
-                        ]
-                      : const [
-                          Color(0xFFF7F9FC),
-                          Color(0xFFEEF3FB),
-                        ],
+                      ? const [AppColors.darkBackground, AppColors.darkSurface]
+                      : const [Color(0xFFF7F9FC), Color(0xFFEEF3FB)],
                 ),
               ),
               child: Padding(
@@ -373,8 +337,9 @@ class _WebBrandPanel extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: _WebWelcomeBrandTheme.meshMint
-                              .withValues(alpha: 0.25),
+                          color: _WebWelcomeBrandTheme.meshMint.withValues(
+                            alpha: 0.25,
+                          ),
                           blurRadius: 18,
                           offset: const Offset(0, 6),
                         ),
@@ -524,9 +489,7 @@ class _WebWelcomeSoftGlow extends StatelessWidget {
         height: diameter,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [color, color.withValues(alpha: 0)],
-          ),
+          gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
         ),
       ),
     );
@@ -563,9 +526,7 @@ class _WebWelcomeNetworkGraphic extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: CustomPaint(
-          painter: const _WebWelcomeNetworkGraphicPainter(),
-        ),
+        child: CustomPaint(painter: const _WebWelcomeNetworkGraphicPainter()),
       ),
     );
   }
@@ -652,8 +613,9 @@ class _WebBrandBulletState extends State<_WebBrandBullet> {
             ),
             boxShadow: [
               BoxShadow(
-                color: _WebWelcomeBrandTheme.meshMint
-                    .withValues(alpha: _hovered ? 0.22 : 0.10),
+                color: _WebWelcomeBrandTheme.meshMint.withValues(
+                  alpha: _hovered ? 0.22 : 0.10,
+                ),
                 blurRadius: _hovered ? 20 : 12,
                 offset: Offset(0, _hovered ? 6 : 3),
               ),
@@ -727,10 +689,8 @@ class _WebWelcomeThemeToggle extends StatelessWidget {
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
-                  transitionBuilder: (child, anim) => ScaleTransition(
-                    scale: anim,
-                    child: child,
-                  ),
+                  transitionBuilder: (child, anim) =>
+                      ScaleTransition(scale: anim, child: child),
                   child: Icon(
                     isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                     key: ValueKey(isDark),
@@ -827,11 +787,7 @@ class _MobileWelcomeScaffold extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0B5D4B),
-              Color(0xFF0F6E56),
-              Color(0xFF12836A),
-            ],
+            colors: [Color(0xFF0B5D4B), Color(0xFF0F6E56), Color(0xFF12836A)],
           ),
         ),
         child: Stack(
@@ -888,10 +844,13 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.16),
                                     borderRadius: BorderRadius.circular(
-                                        compactHeight ? 12 : 15),
+                                      compactHeight ? 12 : 15,
+                                    ),
                                     border: Border.all(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.22)),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.22,
+                                      ),
+                                    ),
                                   ),
                                   child: Icon(
                                     Icons.local_hospital_rounded,
@@ -944,7 +903,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
                             borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(26)),
+                              top: Radius.circular(26),
+                            ),
                             boxShadow: const [
                               BoxShadow(
                                 color: Color(0x26000000),
@@ -969,7 +929,11 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                               ),
                               Padding(
                                 padding: EdgeInsets.fromLTRB(
-                                    20, compactHeight ? 12 : 16, 20, 10),
+                                  20,
+                                  compactHeight ? 12 : 16,
+                                  20,
+                                  10,
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -987,8 +951,9 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                       'Tap a card to sign in',
                                       style: GoogleFonts.inter(
                                         fontSize: AppTypography.bodySmall,
-                                        color:
-                                            AppColors.textSecondaryOf(context),
+                                        color: AppColors.textSecondaryOf(
+                                          context,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -996,8 +961,12 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                               ),
                               Expanded(
                                 child: ListView(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    0,
+                                    16,
+                                    16,
+                                  ),
                                   children: [
                                     for (var i = 0; i < roles.length; i++) ...[
                                       RoleCard(
@@ -1019,9 +988,9 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                         Icon(
                                           Icons.verified_user_outlined,
                                           size: 14,
-                                          color:
-                                              AppColors.textSecondaryOf(context)
-                                                  .withValues(alpha: 0.8),
+                                          color: AppColors.textSecondaryOf(
+                                            context,
+                                          ).withValues(alpha: 0.8),
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
@@ -1029,7 +998,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                           style: GoogleFonts.inter(
                                             fontSize: AppTypography.labelSmall,
                                             color: AppColors.textSecondaryOf(
-                                                context),
+                                              context,
+                                            ),
                                           ),
                                         ),
                                       ],

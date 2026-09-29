@@ -262,10 +262,7 @@ const Map<String, List<String>> specialtyCategories = {
     'Thoracic Oncologist',
     'Thoracic Oncology',
   ],
-  'Dietitian': [
-    'Dietitian',
-    'Nutrition & Dietetics',
-  ],
+  'Dietitian': ['Dietitian', 'Nutrition & Dietetics'],
   'Cancer Specialist': [
     'Medical Oncologist',
     'Medical Oncology',
@@ -339,10 +336,7 @@ const Map<String, List<String>> specialtyCategories = {
     'Siddha Doctor',
     'Siddha Medicine',
   ],
-  'Homeopathy': [
-    'Homeopathic Doctor',
-    'Homeopathy (BHMS)',
-  ],
+  'Homeopathy': ['Homeopathic Doctor', 'Homeopathy (BHMS)'],
   'Veterinary': [
     'Veterinary Doctor',
     'Veterinary Surgeon',

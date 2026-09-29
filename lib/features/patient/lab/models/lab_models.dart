@@ -132,9 +132,11 @@ abstract final class LabSlotTime {
 
   static TimeOfDay? parse(String? label) => parseSlotTimeLabel(label);
 
-  static bool isInPast(DateTime date, String slotLabel,
-          [DateTime? referenceTime]) =>
-      isSlotTimeInPast(date, slotLabel, referenceTime);
+  static bool isInPast(
+    DateTime date,
+    String slotLabel, [
+    DateTime? referenceTime,
+  ]) => isSlotTimeInPast(date, slotLabel, referenceTime);
 
   static DateTime combine(DateTime date, String slotLabel) {
     final time = parse(slotLabel);

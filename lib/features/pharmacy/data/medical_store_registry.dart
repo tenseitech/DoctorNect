@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../core/auth/profile_completion_service.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -28,10 +29,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
   }
 
   static Future<void> refreshFromFirestore({bool preferCache = true}) async {
-    final stores =
-        await FirestoreService.instance.medicalStore.fetchVerifiedStores(
-      preferCache: preferCache,
-    );
+    final stores = await FirestoreService.instance.medicalStore
+        .fetchVerifiedStores(preferCache: preferCache);
     instance._stores
       ..clear()
       ..addAll(stores);
@@ -40,14 +39,18 @@ class MedicalStoreRegistry extends ChangeNotifier {
 
   static Future<void> ensureStoreLoaded(String storeId) async {
     if (storeId.isEmpty || findById(storeId) != null) return;
-    final remote =
-        await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
+    final remote = await FirestoreService.instance.medicalStore.fetchStoreById(
+      storeId,
+    );
     if (remote == null) return;
     instance._stores.add(remote);
     instance.notifyListeners();
   }
 
+  static int _seq = 0;
+
   static String register({
+    String? id,
     required String storeName,
     required String ownerName,
     required String address,
@@ -55,11 +58,14 @@ class MedicalStoreRegistry extends ChangeNotifier {
     required String phone,
     required String email,
     String? gstNumber,
+    bool verified = false,
   }) {
-    final id = 'ms${DateTime.now().millisecondsSinceEpoch}';
+    final storeId =
+        id ?? 'ms${DateTime.now().millisecondsSinceEpoch}_${++_seq}';
+    instance._stores.removeWhere((s) => s.id == storeId);
     instance._stores.add(
       MedicalStoreProfile(
-        id: id,
+        id: storeId,
         storeName: storeName,
         ownerName: ownerName,
         address: address,
@@ -67,15 +73,18 @@ class MedicalStoreRegistry extends ChangeNotifier {
         gstNumber: gstNumber,
         phone: phone,
         email: email,
+        verified: verified,
       ),
     );
     instance.notifyListeners();
-    return id;
+    return storeId;
   }
 
   static Future<String?> updateStoreProfile({
     required String storeId,
     String? storeName,
+    String? ownerName,
+    String? drugLicenseNumber,
     String? phone,
     String? email,
     String? gstNumber,
@@ -86,11 +95,12 @@ class MedicalStoreRegistry extends ChangeNotifier {
     String? state,
     String? city,
     String? pincode,
+    bool? verified,
   }) async {
     var index = instance._stores.indexWhere((s) => s.id == storeId);
     if (index < 0) {
-      final remote =
-          await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
+      final remote = await FirestoreService.instance.medicalStore
+          .fetchStoreById(storeId);
       if (remote == null) return 'Store not found';
       instance._stores.add(remote);
       index = instance._stores.length - 1;
@@ -114,7 +124,7 @@ class MedicalStoreRegistry extends ChangeNotifier {
         addressLine2 ?? '',
         city ?? '',
         state ?? '',
-        pincode ?? ''
+        pincode ?? '',
       ].where((e) => e.isNotEmpty);
       addressStr = parts.join(', ');
     }
@@ -123,6 +133,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
       await FirestoreService.instance.medicalStore.updateStoreFields(
         storeId,
         storeName: storeName,
+        ownerName: ownerName,
+        drugLicenseNumber: drugLicenseNumber,
         address: addressMap,
         phone: phone,
         email: normalizedEmail,
@@ -137,6 +149,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
 
     instance._stores[index] = current.copyWith(
       storeName: storeName,
+      ownerName: ownerName,
+      drugLicenseNumber: drugLicenseNumber,
       address: addressStr,
       addressLine1: addressLine1,
       addressLine2: addressLine2,
@@ -148,18 +162,21 @@ class MedicalStoreRegistry extends ChangeNotifier {
       email: normalizedEmail,
       gstNumber: gstNumber,
       clearGstNumber: clearGstNumber,
+      verified: verified,
     );
     if (storeName != null && storeId == MedicalStoreSession.loggedInStoreId) {
       MedicalStoreSession.setStore(id: storeId, name: storeName);
     }
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    unawaited(
-      ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
-        role: UserType.medicalStore,
-        uid: uid,
-        profileId: storeId,
-      ),
-    );
+    if (FirebaseBootstrap.isReady) {
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      unawaited(
+        ProfileCompletionService.instance.evaluateAndMarkFromRoleDoc(
+          role: UserType.medicalStore,
+          uid: uid,
+          profileId: storeId,
+        ),
+      );
+    }
     instance.notifyListeners();
     return null;
   }

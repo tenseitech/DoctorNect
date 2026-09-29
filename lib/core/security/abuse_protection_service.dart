@@ -45,7 +45,8 @@ abstract final class AbuseProtectionService {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'AbuseProtectionService.assertAccountCreationAllowed: $e\n$st');
+          'AbuseProtectionService.assertAccountCreationAllowed: $e\n$st',
+        );
       }
       // Fail open only when the gate is unreachable (network); server still
       // rate-limits registration OTP and other signup callables.

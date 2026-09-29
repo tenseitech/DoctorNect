@@ -19,8 +19,9 @@ void main() {
   });
 
   group('Patient Profile Collapsing Header Tests', () {
-    testWidgets('Header renders expanded with all details at top of scroll',
-        (tester) async {
+    testWidgets('Header renders expanded with all details at top of scroll', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(AppColors.patientTeal),
@@ -52,42 +53,44 @@ void main() {
     });
 
     testWidgets(
-        'Header smoothly collapses on scroll down and pins slim bar with back button, avatar, and name',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.dark(AppColors.patientTeal),
-          home: const PatientProfileScreen(),
-        ),
-      );
-      await tester.pumpAndSettle();
+      'Header smoothly collapses on scroll down and pins slim bar with back button, avatar, and name',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.dark(AppColors.patientTeal),
+            home: const PatientProfileScreen(),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Scroll down by 300 pixels
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
-      await tester.pumpAndSettle();
+        // Scroll down by 300 pixels
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+        await tester.pumpAndSettle();
 
-      // Pinned bar should still show back arrow
-      expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+        // Pinned bar should still show back arrow
+        expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
 
-      // Name should still be visible in pinned bar
-      expect(find.text('kp1'), findsOneWidget);
+        // Name should still be visible in pinned bar
+        expect(find.text('kp1'), findsOneWidget);
 
-      // Subtitle 'Your account & health' should not be visible when collapsed
-      final subtitleFinder = find.text('Your account & health');
-      expect(subtitleFinder, findsNothing);
+        // Subtitle 'Your account & health' should not be visible when collapsed
+        final subtitleFinder = find.text('Your account & health');
+        expect(subtitleFinder, findsNothing);
 
-      // Scroll back up
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, 300));
-      await tester.pumpAndSettle();
+        // Scroll back up
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, 300));
+        await tester.pumpAndSettle();
 
-      // Header expands back to full state
-      expect(find.text('Your account & health'), findsOneWidget);
-      expect(find.text('26 yrs'), findsOneWidget);
-      expect(find.text('+91 9876543210'), findsOneWidget);
-    });
+        // Header expands back to full state
+        expect(find.text('Your account & health'), findsOneWidget);
+        expect(find.text('26 yrs'), findsOneWidget);
+        expect(find.text('+91 9876543210'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Collapsing header works seamlessly in web resolution',
-        (tester) async {
+    testWidgets('Collapsing header works seamlessly in web resolution', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {

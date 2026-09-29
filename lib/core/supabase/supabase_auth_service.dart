@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'supabase_bootstrap.dart';
 
 enum AuthPath { login, register, blockedWrongRole, unknown }
@@ -58,15 +60,17 @@ class SupabaseAuthService {
   Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
 
   Uri _edgeFunctionUri(String functionName) {
-    final baseUrl =
-        SupabaseBootstrap.resolvedUrl.replaceAll(RegExp(r'/+$'), '');
+    final baseUrl = SupabaseBootstrap.resolvedUrl.replaceAll(
+      RegExp(r'/+$'),
+      '',
+    );
     return Uri.parse('$baseUrl/functions/v1/$functionName');
   }
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'apikey': SupabaseBootstrap.resolvedAnonKey,
-      };
+    'Content-Type': 'application/json',
+    'apikey': SupabaseBootstrap.resolvedAnonKey,
+  };
 
   /// 1. Resolve whether user should login, register, or is blocked due to wrong role
   Future<AuthResolution> resolvePath({

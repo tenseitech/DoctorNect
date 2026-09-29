@@ -86,12 +86,16 @@ class _DoctorInviteActionButtonState extends State<DoctorInviteActionButton> {
     _startInviteSentPhase();
   }
 
-  ButtonStyle _buttonStyle(
-      {Color? foreground, Color? side, bool disabled = false}) {
+  ButtonStyle _buttonStyle({
+    Color? foreground,
+    Color? side,
+    bool disabled = false,
+  }) {
     return OutlinedButton.styleFrom(
       foregroundColor: foreground,
-      disabledForegroundColor:
-          disabled ? AppColors.textSecondaryOf(context) : null,
+      disabledForegroundColor: disabled
+          ? AppColors.textSecondaryOf(context)
+          : null,
       side: side != null ? BorderSide(color: side) : null,
       padding: widget.fullWidth
           ? const EdgeInsets.symmetric(vertical: 12)

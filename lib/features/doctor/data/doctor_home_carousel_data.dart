@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/session/doctor_session.dart';
 import '../../patient/data/featured_doctors_service.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../profile/data/doctor_profile_store.dart';
 
 abstract final class DoctorHomeCarouselData {
@@ -27,8 +29,9 @@ abstract final class DoctorHomeCarouselData {
   static HomeCarouselItem _toCarouselItem(FeaturedDoctorEntry entry) {
     final doctor = entry.doctor;
     final rawName = doctor.name.trim();
-    final displayName =
-        rawName.toLowerCase().startsWith('dr.') ? rawName : 'Dr. $rawName';
+    final displayName = rawName.toLowerCase().startsWith('dr.')
+        ? rawName
+        : 'Dr. $rawName';
 
     final clinic = doctor.clinicName.trim();
     final location = _resolveLocation(doctor);

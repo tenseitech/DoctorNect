@@ -10,8 +10,10 @@ enum PatientBmiCategory {
 }
 
 abstract final class PatientBmiUtils {
-  static double? calculate(
-      {required double heightCm, required double weightKg}) {
+  static double? calculate({
+    required double heightCm,
+    required double weightKg,
+  }) {
     if (heightCm <= 0 || weightKg <= 0) return null;
     final heightM = heightCm / 100;
     return weightKg / (heightM * heightM);

@@ -36,12 +36,14 @@ class DoctorProfileDetailRepository {
     if (data == null && listing == null) return null;
 
     final name = data?['name'] as String? ?? listing?.name ?? 'Doctor';
-    final specialization = data?['specialization'] as String? ??
+    final specialization =
+        data?['specialization'] as String? ??
         listing?.specialization ??
         'General Physician';
     final qualification =
         data?['qualification'] as String? ?? listing?.qualification ?? 'MBBS';
-    final experienceYears = (data?['experienceYears'] as num?)?.toInt() ??
+    final experienceYears =
+        (data?['experienceYears'] as num?)?.toInt() ??
         listing?.experienceYears ??
         1;
     final rating =
@@ -49,11 +51,13 @@ class DoctorProfileDetailRepository {
     final reviewCount =
         (data?['reviewCount'] as num?)?.toInt() ?? listing?.reviewCount ?? 0;
     final verified = data?['verified'] as bool? ?? listing?.verified ?? false;
-    final languages = (data?['languages'] as List<dynamic>? ??
-            listing?.languages ??
-            const ['English'])
-        .cast<String>();
-    final photoUrl = data?['photoUrl'] as String? ??
+    final languages =
+        (data?['languages'] as List<dynamic>? ??
+                listing?.languages ??
+                const ['English'])
+            .cast<String>();
+    final photoUrl =
+        data?['photoUrl'] as String? ??
         data?['photoURL'] as String? ??
         listing?.photoUrl;
     final photoKey = data?['photoKey'] as String? ?? listing?.photoKey;
@@ -99,14 +103,17 @@ class DoctorProfileDetailRepository {
     String finalAbout;
     final isDoctorViewing = DoctorSession.loggedInDoctorId.isNotEmpty;
     if (isDoctorViewing) {
-      final stats =
-          DoctorPatientStatsService.statsForDoctor(doctorId, DateTime(2000));
+      final stats = DoctorPatientStatsService.statsForDoctor(
+        doctorId,
+        DateTime(2000),
+      );
       final defaultAbout = stats.patientsTreated > 0
           ? 'Dr. $name is a highly regarded $specialization who has treated ${stats.patientsTreated} patients on DoctorNect. With $experienceYears+ years of clinical experience, they are dedicated to providing excellent medical care.'
           : 'Dr. $name is a dedicated $specialization with $experienceYears+ years of clinical experience, committed to delivering high-quality healthcare.';
       finalAbout = data?['about'] as String? ?? defaultAbout;
     } else {
-      finalAbout = data?['about'] as String? ??
+      finalAbout =
+          data?['about'] as String? ??
           'Dr. $name is a registered $specialization with $experienceYears+ years of experience.';
     }
 
@@ -119,8 +126,9 @@ class DoctorProfileDetailRepository {
 
     DoctorAvailability? availability;
     try {
-      availability =
-          await DoctorAvailabilityRepository.instance.fetch(doctorId);
+      availability = await DoctorAvailabilityRepository.instance.fetch(
+        doctorId,
+      );
     } catch (_) {}
 
     var reviews = const <PatientDoctorReview>[];
@@ -130,7 +138,7 @@ class DoctorProfileDetailRepository {
     final computedRating = reviews.isEmpty
         ? rating
         : reviews.fold<double>(0, (total, review) => total + review.rating) /
-            reviews.length;
+              reviews.length;
     final computedReviewCount = reviews.isEmpty ? reviewCount : reviews.length;
 
     final superSpecialization = data?['superSpecialization'] as String? ?? '';
@@ -160,8 +168,11 @@ class DoctorProfileDetailRepository {
       services: const ['Consultation', 'Follow-up', 'Prescription'],
       timings: _timingsFromAvailability(availability),
       education: _educationFromData(data, qualification, certifications),
-      pastWorkplaces:
-          _pastWorkplacesFromData(data, clinicName: clinicName, city: city),
+      pastWorkplaces: _pastWorkplacesFromData(
+        data,
+        clinicName: clinicName,
+        city: city,
+      ),
       awards: _stringList(data?['awards']),
       publications: _stringList(data?['publications']),
       memberships: _membershipsFromData(
@@ -172,7 +183,8 @@ class DoctorProfileDetailRepository {
       reviews: reviews,
       address: address,
       landmark: data?['landmark'] as String? ?? '',
-      mapsUrl: data?['mapsLink'] as String? ??
+      mapsUrl:
+          data?['mapsLink'] as String? ??
           'https://maps.google.com/?q=${Uri.encodeComponent('$clinicName $city')}',
       nearbyLandmarks: const [],
       clinicName: clinicName,
@@ -184,10 +196,11 @@ class DoctorProfileDetailRepository {
   }
 
   List<ClinicTiming> _timingsFromAvailability(
-      DoctorAvailability? availability) {
+    DoctorAvailability? availability,
+  ) {
     if (availability == null) {
       return const [
-        ClinicTiming(day: 'Schedule', hours: 'Check availability when booking')
+        ClinicTiming(day: 'Schedule', hours: 'Check availability when booking'),
       ];
     }
 
@@ -226,8 +239,9 @@ class DoctorProfileDetailRepository {
       entries.add(EducationEntry(degree: qualification, college: '', year: 0));
     }
     for (final cert in certifications) {
-      entries
-          .add(EducationEntry(degree: cert, college: 'Certification', year: 0));
+      entries.add(
+        EducationEntry(degree: cert, college: 'Certification', year: 0),
+      );
     }
     return entries;
   }

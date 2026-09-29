@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../core/auth/demo_auth_config.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
 
@@ -20,10 +21,7 @@ import '../core/theme/app_typography.dart';
 /// Card embedded in professional profile screens showing current verification progress,
 /// checklist requirements, rejection/revision reasons, and the "Submit for Verification" action.
 class VerificationSubmissionCard extends StatefulWidget {
-  const VerificationSubmissionCard({
-    super.key,
-    required this.role,
-  });
+  const VerificationSubmissionCard({super.key, required this.role});
 
   final UserType role;
 
@@ -56,18 +54,15 @@ class _VerificationSubmissionCardState
 
     try {
       final batch = FirebaseFirestore.instance.batch();
-      final userRef =
-          FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);
+      final userRef = FirebaseFirestore.instance
+          .collection(FirestorePaths.users)
+          .doc(uid);
 
-      batch.set(
-        userRef,
-        {
-          'verificationStatus': 'submitted_for_verification',
-          'status': 'pending_review',
-          'submittedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      batch.set(userRef, {
+        'verificationStatus': 'submitted_for_verification',
+        'status': 'pending_review',
+        'submittedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       final roleCol = switch (widget.role) {
         UserType.doctor => FirestorePaths.doctors,
@@ -78,26 +73,20 @@ class _VerificationSubmissionCardState
       };
 
       if (roleCol != null && profileId != null && profileId.isNotEmpty) {
-        final roleRef =
-            FirebaseFirestore.instance.collection(roleCol).doc(profileId);
-        batch.set(
-          roleRef,
-          {
-            'verificationStatus': 'submitted_for_verification',
-            'status': 'pending_review',
-            'submittedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+        final roleRef = FirebaseFirestore.instance
+            .collection(roleCol)
+            .doc(profileId);
+        batch.set(roleRef, {
+          'verificationStatus': 'submitted_for_verification',
+          'status': 'pending_review',
+          'submittedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       }
 
       await batch.commit();
 
       if (!context.mounted) return;
-      AppToast.info(
-        context,
-        'Profile submitted for Super Admin verification!',
-      );
+      AppToast.info(context, 'Profile submitted for Super Admin verification!');
     } catch (e) {
       if (!context.mounted) return;
       AppToast.error(
@@ -128,14 +117,19 @@ class _VerificationSubmissionCardState
           return const SizedBox.shrink();
         }
         final data = snapshot.data!.data() ?? {};
-        final isVerified = data['verified'] == true;
-        final statusStr = data['verificationStatus'] as String? ??
+        final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+        final isDemoDoctor =
+            widget.role == UserType.doctor &&
+            DemoAuthConfig.isDemoDoctorPhone(mobile);
+        final isVerified = data['verified'] == true || isDemoDoctor;
+        final statusStr =
+            data['verificationStatus'] as String? ??
             data['status'] as String? ??
             'registered';
         final stage = isVerified
             ? VerificationStage.verified
             : VerificationStage.fromString(statusStr);
-        final reason = data['rejectionReason'] as String?;
+        final reason = isDemoDoctor ? null : data['rejectionReason'] as String?;
 
         return _buildCard(context, uid, profileId, stage, reason);
       },
@@ -157,8 +151,9 @@ class _VerificationSubmissionCardState
       _ => AppColors.doctorBlue,
     };
 
-    final requirements =
-        VerificationRequirementsConfig.requirementsForRole(widget.role);
+    final requirements = VerificationRequirementsConfig.requirementsForRole(
+      widget.role,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -181,8 +176,9 @@ class _VerificationSubmissionCardState
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.08),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
             ),
             child: Row(
               children: [
@@ -190,8 +186,8 @@ class _VerificationSubmissionCardState
                   stage.isVerified
                       ? Icons.verified_rounded
                       : (stage.isPending
-                          ? Icons.hourglass_top_rounded
-                          : Icons.shield_outlined),
+                            ? Icons.hourglass_top_rounded
+                            : Icons.shield_outlined),
                   color: stage.isVerified ? const Color(0xFF16A34A) : accent,
                   size: 22,
                 ),
@@ -207,16 +203,18 @@ class _VerificationSubmissionCardState
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: stage.isVerified
                         ? const Color(0xFFDCFCE7)
                         : (stage.isPending
-                            ? const Color(0xFFDBEAFE)
-                            : (stage.isRevisionRequested
-                                ? const Color(0xFFFEF3C7)
-                                : const Color(0xFFF1F5F9))),
+                              ? const Color(0xFFDBEAFE)
+                              : (stage.isRevisionRequested
+                                    ? const Color(0xFFFEF3C7)
+                                    : const Color(0xFFF1F5F9))),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -227,10 +225,10 @@ class _VerificationSubmissionCardState
                       color: stage.isVerified
                           ? const Color(0xFF15803D)
                           : (stage.isPending
-                              ? const Color(0xFF1D4ED8)
-                              : (stage.isRevisionRequested
-                                  ? const Color(0xFFB45309)
-                                  : AppColors.textSecondaryOf(context))),
+                                ? const Color(0xFF1D4ED8)
+                                : (stage.isRevisionRequested
+                                      ? const Color(0xFFB45309)
+                                      : AppColors.textSecondaryOf(context))),
                     ),
                   ),
                 ),
@@ -245,8 +243,11 @@ class _VerificationSubmissionCardState
                 if (stage.isVerified) ...[
                   Row(
                     children: [
-                      const Icon(Icons.check_circle_rounded,
-                          color: Color(0xFF16A34A), size: 20),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF16A34A),
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -262,8 +263,11 @@ class _VerificationSubmissionCardState
                 ] else if (stage.isPending) ...[
                   Row(
                     children: [
-                      const Icon(Icons.access_time_rounded,
-                          color: Color(0xFF2563EB), size: 20),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        color: Color(0xFF2563EB),
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -364,11 +368,8 @@ class _VerificationSubmissionCardState
                     child: FilledButton.icon(
                       onPressed: _submitting
                           ? null
-                          : () => _submitForVerification(
-                                context,
-                                uid,
-                                profileId,
-                              ),
+                          : () =>
+                                _submitForVerification(context, uid, profileId),
                       icon: _submitting
                           ? const SizedBox(
                               width: 18,

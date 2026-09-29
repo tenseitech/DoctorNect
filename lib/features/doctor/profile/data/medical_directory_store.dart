@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,8 +31,9 @@ class MedicalDirectoryStore extends ChangeNotifier {
   void add(DoctorMedicalDirectoryEntry entry) {
     _entries.removeWhere((e) => e.entryId == entry.entryId);
     _entries.add(entry);
-    _entries
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    _entries.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     notifyListeners();
     unawaited(FirestoreService.instance.medicalDirectory.save(entry));
   }
@@ -39,8 +41,9 @@ class MedicalDirectoryStore extends ChangeNotifier {
   void update(DoctorMedicalDirectoryEntry entry) {
     _entries.removeWhere((e) => e.entryId == entry.entryId);
     _entries.add(entry);
-    _entries
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    _entries.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     notifyListeners();
     unawaited(FirestoreService.instance.medicalDirectory.update(entry));
   }
@@ -56,8 +59,9 @@ class MedicalDirectoryStore extends ChangeNotifier {
       _entries.removeWhere((e) => e.entryId == remoteEntry.entryId);
       _entries.add(remoteEntry);
     }
-    _entries
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    _entries.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     notifyListeners();
   }
 
@@ -76,12 +80,12 @@ class MedicalDirectoryStore extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final page =
-          await FirestoreService.instance.medicalDirectory.fetchForDoctor(
-        DoctorSession.loggedInDoctorId,
-        startAfter: _lastPage,
-        preferCache: preferCache,
-      );
+      final page = await FirestoreService.instance.medicalDirectory
+          .fetchForDoctor(
+            DoctorSession.loggedInDoctorId,
+            startAfter: _lastPage,
+            preferCache: preferCache,
+          );
       mergeFromFirestore(page.items);
       _lastPage = page.lastDocument;
       _hasMore = page.hasMore;

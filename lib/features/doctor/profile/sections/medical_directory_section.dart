@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/session/doctor_session.dart';
@@ -107,8 +108,9 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title:
-                  Text(existing == null ? 'Add Directory Entry' : 'Edit Entry'),
+              title: Text(
+                existing == null ? 'Add Directory Entry' : 'Edit Entry',
+              ),
               content: scrollableDialogContent(
                 context: context,
                 child: Column(
@@ -117,12 +119,14 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
                     TextField(
                       controller: name,
                       decoration: const InputDecoration(
-                          labelText: 'Name (Lab/Specialist)'),
+                        labelText: 'Name (Lab/Specialist)',
+                      ),
                     ),
                     TextField(
                       controller: type,
                       decoration: const InputDecoration(
-                          labelText: 'Type (e.g. Ambulance)'),
+                        labelText: 'Type (e.g. Ambulance)',
+                      ),
                     ),
                     PhoneNumberField(
                       controller: phone,
@@ -135,8 +139,9 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
               ),
               actions: [
                 TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Cancel')),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
                 TextButton(
                   onPressed: () async {
                     await _saveEntry(
@@ -144,7 +149,9 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
                       name: name.text,
                       type: type.text,
                       phone: FormValidators.formatFullPhone(
-                          phoneDialCode, phone.text),
+                        phoneDialCode,
+                        phone.text,
+                      ),
                     );
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
@@ -178,60 +185,62 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : _entries.isEmpty
-              ? const Center(child: Text('No entries added yet.'))
-              : Align(
-                  alignment: Alignment.topCenter,
-                  child: RefreshIndicator(
-                    onRefresh: () =>
-                        _store.refreshForDoctor(preferCache: false),
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 24),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 560),
-                        child: Column(
-                          children: _entries.map((entry) {
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              child: ListTile(
-                                title: Text(entry.name),
-                                subtitle:
-                                    Text('${entry.type} • ${entry.phone}'),
-                                onTap: () => ExternalLauncher.callPhone(
+          ? const Center(child: Text('No entries added yet.'))
+          : Align(
+              alignment: Alignment.topCenter,
+              child: RefreshIndicator(
+                onRefresh: () => _store.refreshForDoctor(preferCache: false),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: Column(
+                      children: _entries.map((entry) {
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            title: Text(entry.name),
+                            subtitle: Text('${entry.type} • ${entry.phone}'),
+                            onTap: () => ExternalLauncher.callPhone(
+                              entry.phone,
+                              context: context,
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.phone, size: 20),
+                                  onPressed: () => ExternalLauncher.callPhone(
                                     entry.phone,
-                                    context: context),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.phone, size: 20),
-                                      onPressed: () =>
-                                          ExternalLauncher.callPhone(
-                                              entry.phone,
-                                              context: context),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () => _editEntry(entry),
-                                    ),
-                                    LabeledRemoveButton(
-                                      label: 'Delete',
-                                      onPressed: () => _deleteEntry(entry),
-                                    ),
-                                  ],
+                                    context: context,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit, size: 20),
+                                  onPressed: () => _editEntry(entry),
+                                ),
+                                LabeledRemoveButton(
+                                  label: 'Delete',
+                                  onPressed: () => _deleteEntry(entry),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ),
+              ),
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addEntry,
         child: const Icon(Icons.add),

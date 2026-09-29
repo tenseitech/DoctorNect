@@ -1,4 +1,5 @@
 import 'package:medibond/core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import '../data/shared_appointments_store.dart';
@@ -12,14 +13,14 @@ abstract final class PatientAppointmentWatcher {
     if (patientId.isEmpty) return;
     _sub?.cancel();
 
-    _sub =
-        FirestoreService.instance.appointment.watchForPatient(patientId).listen(
-      (records) {
-        SharedAppointmentsStore.instance
-            .mergeFromFirestore(records, pruneMissing: false);
-      },
-      onError: (_) {},
-    );
+    _sub = FirestoreService.instance.appointment
+        .watchForPatient(patientId)
+        .listen((records) {
+          SharedAppointmentsStore.instance.mergeFromFirestore(
+            records,
+            pruneMissing: false,
+          );
+        }, onError: (_) {});
   }
 
   static void stop() {

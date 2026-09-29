@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,8 +7,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/external_launcher.dart';
 import '../models/doctor_profile_detail.dart';
+
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
+
 import 'doctor_poster_widget.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -20,7 +23,8 @@ abstract final class DoctorProfileShareSheet {
     lines.add('Doctor: Dr. ${doctor.name}');
     lines.add('Specialization: ${doctor.specialization}');
     lines.add(
-        'Rating: ${doctor.rating.toStringAsFixed(1)}/5.0 (${doctor.reviewCount} reviews)');
+      'Rating: ${doctor.rating.toStringAsFixed(1)}/5.0 (${doctor.reviewCount} reviews)',
+    );
     lines.add('');
 
     if (doctor.clinicName.trim().isNotEmpty) {
@@ -83,36 +87,44 @@ abstract final class DoctorProfileShareSheet {
                   child: Text(
                     'Share doctor profile',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.headlineSmall,
-                        fontWeight: FontWeight.w600),
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 ListTile(
                   leading: const Icon(Icons.image, color: AppColors.doctorBlue),
-                  title: Text('Share as Image Poster',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  title: Text(
+                    'Share as Image Poster',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
                   subtitle: Text(
                     'Generate a beautiful image card',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
 
                     try {
                       final screenshotController = ScreenshotController();
-                      final bytes =
-                          await screenshotController.captureFromWidget(
-                        DoctorPosterWidget(doctor: doctor),
-                        delay: const Duration(milliseconds: 100),
-                        context: context,
-                      );
+                      final bytes = await screenshotController
+                          .captureFromWidget(
+                            DoctorPosterWidget(doctor: doctor),
+                            delay: const Duration(milliseconds: 100),
+                            context: context,
+                          );
 
-                      final xFile = XFile.fromData(bytes,
-                          mimeType: 'image/png', name: 'doctor_poster.png');
-                      await Share.shareXFiles([xFile],
-                          text: 'Check out Dr. ${doctor.name} on DoctorNect!');
+                      final xFile = XFile.fromData(
+                        bytes,
+                        mimeType: 'image/png',
+                        name: 'doctor_poster.png',
+                      );
+                      await Share.shareXFiles([
+                        xFile,
+                      ], text: 'Check out Dr. ${doctor.name} on DoctorNect!');
                     } catch (e) {
                       if (!context.mounted) return;
                       AppToast.info(context, 'Failed to generate poster');
@@ -120,15 +132,20 @@ abstract final class DoctorProfileShareSheet {
                   },
                 ),
                 ListTile(
-                  leading: const FaIcon(FontAwesomeIcons.whatsapp,
-                      color: Color(0xFF25D366)),
-                  title: Text('WhatsApp',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  leading: const FaIcon(
+                    FontAwesomeIcons.whatsapp,
+                    color: Color(0xFF25D366),
+                  ),
+                  title: Text(
+                    'WhatsApp',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
                   subtitle: Text(
                     'Share via WhatsApp',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -141,15 +158,20 @@ abstract final class DoctorProfileShareSheet {
                   },
                 ),
                 ListTile(
-                  leading:
-                      Icon(Icons.sms_outlined, color: AppColors.patientTeal),
-                  title: Text('SMS',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  leading: Icon(
+                    Icons.sms_outlined,
+                    color: AppColors.patientTeal,
+                  ),
+                  title: Text(
+                    'SMS',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
                   subtitle: Text(
                     'Share via text message',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -162,15 +184,20 @@ abstract final class DoctorProfileShareSheet {
                   },
                 ),
                 ListTile(
-                  leading: const FaIcon(FontAwesomeIcons.telegram,
-                      color: Color(0xFF0088CC)),
-                  title: Text('Telegram',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  leading: const FaIcon(
+                    FontAwesomeIcons.telegram,
+                    color: Color(0xFF0088CC),
+                  ),
+                  title: Text(
+                    'Telegram',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
                   subtitle: Text(
                     'Share via Telegram',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -184,15 +211,20 @@ abstract final class DoctorProfileShareSheet {
                   },
                 ),
                 ListTile(
-                  leading: Icon(Icons.more_horiz,
-                      color: AppColors.textPrimaryOf(context)),
-                  title: Text('More options...',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                  leading: Icon(
+                    Icons.more_horiz,
+                    color: AppColors.textPrimaryOf(context),
+                  ),
+                  title: Text(
+                    'More options...',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
                   subtitle: Text(
                     'Share using other apps',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);

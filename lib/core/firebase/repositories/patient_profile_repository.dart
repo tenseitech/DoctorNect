@@ -11,10 +11,14 @@ class PatientProfileRepository {
 
   static final PatientProfileRepository instance = PatientProfileRepository._();
 
-  static final RegExp _registeredPatientId =
-      RegExp(r'^p\d+$', caseSensitive: false);
-  static final RegExp _walkInPatientId =
-      RegExp(r'^wi\d+$', caseSensitive: false);
+  static final RegExp _registeredPatientId = RegExp(
+    r'^p\d+$',
+    caseSensitive: false,
+  );
+  static final RegExp _walkInPatientId = RegExp(
+    r'^wi\d+$',
+    caseSensitive: false,
+  );
 
   static bool isRegisteredPatientId(String? patientId) =>
       patientId != null &&
@@ -57,8 +61,10 @@ class PatientProfileRepository {
     bool preferCache = true,
   }) async {
     if (!isRegisteredPatientId(patientId)) return true;
-    final data =
-        await fetchPatientDocument(patientId, preferCache: preferCache);
+    final data = await fetchPatientDocument(
+      patientId,
+      preferCache: preferCache,
+    );
     if (data == null) return false;
     return sharesRecordsWithDoctors(data);
   }
@@ -67,8 +73,10 @@ class PatientProfileRepository {
     String patientId, {
     bool preferCache = true,
   }) async {
-    if (!await mayDoctorViewSharedPatientRecords(patientId,
-        preferCache: preferCache)) {
+    if (!await mayDoctorViewSharedPatientRecords(
+      patientId,
+      preferCache: preferCache,
+    )) {
       return null;
     }
     return fetchPatientDocument(patientId, preferCache: preferCache);
@@ -78,8 +86,10 @@ class PatientProfileRepository {
     String patientId, {
     bool preferCache = true,
   }) async {
-    if (!await mayDoctorViewSharedPatientRecords(patientId,
-        preferCache: preferCache)) {
+    if (!await mayDoctorViewSharedPatientRecords(
+      patientId,
+      preferCache: preferCache,
+    )) {
       return const [];
     }
     final records = await fetchHealthRecords(patientId);
@@ -151,13 +161,10 @@ class PatientProfileRepository {
       await FirebaseFirestore.instance
           .collection(FirestorePaths.patients)
           .doc(patientId)
-          .set(
-        {
-          'careTeamDoctorIds': FieldValue.arrayUnion([doctorId]),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+          .set({
+            'careTeamDoctorIds': FieldValue.arrayUnion([doctorId]),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
       return true;
     } catch (_) {
       return false;
@@ -165,19 +172,18 @@ class PatientProfileRepository {
   }
 
   Future<void> savePatientDocument(
-      String patientId, Map<String, dynamic> data) async {
+    String patientId,
+    Map<String, dynamic> data,
+  ) async {
     if (!FirebaseBootstrap.isReady) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.patients)
         .doc(patientId)
-        .set(
-      {
-        ...data,
-        'patientId': patientId,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+        .set({
+          ...data,
+          'patientId': patientId,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 
   Future<List<HealthRecord>> fetchHealthRecords(String patientId) async {
@@ -197,11 +203,13 @@ class PatientProfileRepository {
         return HealthRecord(
           id: doc.id,
           title: data['title'] as String? ?? 'Record',
-          type: HealthRecordType.values
-              .byName(data['type'] as String? ?? 'other'),
+          type: HealthRecordType.values.byName(
+            data['type'] as String? ?? 'other',
+          ),
           date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
-          source: RecordSource.values
-              .byName(data['source'] as String? ?? 'selfUploaded'),
+          source: RecordSource.values.byName(
+            data['source'] as String? ?? 'selfUploaded',
+          ),
           fileName: data['fileName'] as String? ?? '',
           doctorName: data['doctorName'] as String?,
           labName: data['labName'] as String?,
@@ -215,8 +223,7 @@ class PatientProfileRepository {
           storageKey: data['storageKey'] as String?,
           storageProvider: data['storageProvider'] as String?,
         );
-      }).toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
+      }).toList()..sort((a, b) => b.date.compareTo(a.date));
       return records;
     } catch (e) {
       rethrow; // FIXED: surface fetch failures to callers instead of returning an empty list
@@ -229,13 +236,10 @@ class PatientProfileRepository {
     await FirebaseFirestore.instance
         .collection(FirestorePaths.patients)
         .doc(patientId)
-        .set(
-      {
-        'fcmToken': token,
-        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+        .set({
+          'fcmToken': token,
+          'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 
   Future<void> clearPatientFcmToken(String patientId) async {
@@ -243,13 +247,10 @@ class PatientProfileRepository {
     await FirebaseFirestore.instance
         .collection(FirestorePaths.patients)
         .doc(patientId)
-        .set(
-      {
-        'fcmToken': FieldValue.delete(),
-        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+        .set({
+          'fcmToken': FieldValue.delete(),
+          'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 
   Future<void> saveHealthRecord(String patientId, HealthRecord record) async {
@@ -258,26 +259,26 @@ class PatientProfileRepository {
         .collection(FirestorePaths.healthRecords)
         .doc(record.id)
         .set({
-      'patientId': patientId,
-      'title': record.title,
-      'type': record.type.name,
-      'date': Timestamp.fromDate(record.date),
-      'source': record.source.name,
-      'fileName': record.fileName,
-      if (record.doctorName != null) 'doctorName': record.doctorName,
-      if (record.labName != null) 'labName': record.labName,
-      'isImage': record.isImage,
-      if (record.notes != null) 'notes': record.notes,
-      'sharedWithDoctors': record.sharedWithDoctors,
-      if (record.fileStorage != HealthRecordFileStorage.none)
-        'fileStorage': record.fileStorage.name,
-      if (record.storageUrl != null) 'storageUrl': record.storageUrl,
-      if (record.storageKey != null) 'storageKey': record.storageKey,
-      if (record.storageProvider != null)
-        'storageProvider': record.storageProvider,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+          'patientId': patientId,
+          'title': record.title,
+          'type': record.type.name,
+          'date': Timestamp.fromDate(record.date),
+          'source': record.source.name,
+          'fileName': record.fileName,
+          if (record.doctorName != null) 'doctorName': record.doctorName,
+          if (record.labName != null) 'labName': record.labName,
+          'isImage': record.isImage,
+          if (record.notes != null) 'notes': record.notes,
+          'sharedWithDoctors': record.sharedWithDoctors,
+          if (record.fileStorage != HealthRecordFileStorage.none)
+            'fileStorage': record.fileStorage.name,
+          if (record.storageUrl != null) 'storageUrl': record.storageUrl,
+          if (record.storageKey != null) 'storageKey': record.storageKey,
+          if (record.storageProvider != null)
+            'storageProvider': record.storageProvider,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
   }
 
   Future<void> deleteHealthRecord(String recordId) async {

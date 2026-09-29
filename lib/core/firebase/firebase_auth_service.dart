@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'firestore_service.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -18,6 +20,7 @@ import '../security/abuse_protection_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
 import '../auth/profile_completion_service.dart';
+import '../auth/verification_lifecycle.dart';
 import '../enums/user_type.dart';
 import '../data/shared_appointments_store.dart';
 import '../notifications/app_notification.dart';
@@ -35,7 +38,9 @@ import '../session/lab_session.dart'; // FIXED: lab session wiring
 import '../session/medical_store_session.dart';
 import '../session/patient_session.dart';
 import '../../features/patient/data/patient_mock_data.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import 'firebase_bootstrap.dart';
 import 'firebase_error_messages.dart';
 import 'firestore_data_prefetch.dart';
@@ -107,14 +112,14 @@ class AuthSignInResult {
   factory AuthSignInResult.pendingReview() =>
       const AuthSignInResult._(success: false, pendingReview: true);
 
-  factory AuthSignInResult.deactivatedCanReactivate(
-          {DateTime? reactivateBefore}) =>
-      AuthSignInResult._(
-        success: false,
-        canReactivateAccount: true,
-        reactivateBefore: reactivateBefore,
-        message: 'Your account is deactivated.',
-      );
+  factory AuthSignInResult.deactivatedCanReactivate({
+    DateTime? reactivateBefore,
+  }) => AuthSignInResult._(
+    success: false,
+    canReactivateAccount: true,
+    reactivateBefore: reactivateBefore,
+    message: 'Your account is deactivated.',
+  );
 
   factory AuthSignInResult.cancelled() =>
       const AuthSignInResult._(success: false, cancelled: true);
@@ -194,12 +199,11 @@ class FirebaseAuthService {
       if (profile.role != expectedRole) {
         await _auth.signOut();
         return AuthSignInResult.fail(
-            'This account is not a ${_roleLabel(expectedRole)} account.');
+          'This account is not a ${_roleLabel(expectedRole)} account.',
+        );
       }
-      final approvalBlock = await _roleApprovalBlock(profile).timeout(
-        const Duration(seconds: 4),
-        onTimeout: () => null,
-      );
+      final approvalBlock = await _roleApprovalBlock(profile)
+          .timeout(const Duration(seconds: 4), onTimeout: () => null);
       if (approvalBlock != null) return approvalBlock;
 
       AuthRateLimiter.clear('email_login', cleanEmail);
@@ -217,8 +221,7 @@ class FirebaseAuthService {
       return AuthSignInResult.fail(
         describeFirebaseError(
           e,
-          fallback:
-              'Could not load account data. Check your connection and try again.',
+          fallback: 'Could not load account data. Check your connection and try again.',
         ),
       );
     } catch (e) {
@@ -240,7 +243,8 @@ class FirebaseAuthService {
       );
     }
 
-    final digits = FormValidators.registrationMobileDigits(mobile) ??
+    final digits =
+        FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile);
     if (digits == null || digits.isEmpty) {
       return AuthSignInResult.fail('Enter a valid 10-digit mobile number.');
@@ -289,20 +293,24 @@ class FirebaseAuthService {
       }
       if (customToken == null || customToken.isEmpty) {
         return AuthSignInResult.fail(
-            'Could not establish a secure session. Please try again.');
+          'Could not establish a secure session. Please try again.',
+        );
       }
 
       final credential = await _auth.signInWithCustomToken(customToken);
       final user = credential.user;
       if (user == null) {
         return AuthSignInResult.fail(
-            'Could not establish a secure session. Please try again.');
+          'Could not establish a secure session. Please try again.',
+        );
       }
 
       RegistrationOtpService.clearVerificationSession();
 
-      var profile = await FirestoreService.instance.user
-          .fetchProfile(user.uid, preferCache: false);
+      var profile = await FirestoreService.instance.user.fetchProfile(
+        user.uid,
+        preferCache: false,
+      );
       profile ??= await FirestoreService.instance.user.findProfileByMobile(
         role: expectedRole,
         mobile: digits,
@@ -310,7 +318,8 @@ class FirebaseAuthService {
       if (profile == null) {
         await _auth.signOut();
         return AuthSignInResult.fail(
-            'Account profile not found for this mobile number.');
+          'Account profile not found for this mobile number.',
+        );
       }
       if (profile.role != expectedRole) {
         await _auth.signOut();
@@ -319,10 +328,8 @@ class FirebaseAuthService {
         );
       }
 
-      final approvalBlock = await _roleApprovalBlock(profile).timeout(
-        const Duration(seconds: 4),
-        onTimeout: () => null,
-      );
+      final approvalBlock = await _roleApprovalBlock(profile)
+          .timeout(const Duration(seconds: 4), onTimeout: () => null);
       if (approvalBlock != null) return approvalBlock;
 
       AuthRateLimiter.clear('otp_login', digits);
@@ -335,9 +342,7 @@ class FirebaseAuthService {
       return AuthSignInResult.ok(profile.role);
     } on FirebaseFunctionsException catch (e) {
       AuthRateLimiter.recordFailure('otp_login', digits);
-      return AuthSignInResult.fail(
-        RegistrationOtpService.mapCallableError(e),
-      );
+      return AuthSignInResult.fail(RegistrationOtpService.mapCallableError(e));
     } on FirebaseAuthException catch (e) {
       AuthRateLimiter.recordFailure('otp_login', digits);
       return AuthSignInResult.fail(describeFirebaseAuthError(e));
@@ -345,8 +350,10 @@ class FirebaseAuthService {
       AuthRateLimiter.recordFailure('otp_login', digits);
       await _auth.signOut();
       return AuthSignInResult.fail(
-        describeUserFacingError(e,
-            fallback: 'OTP login failed. Please try again.'),
+        describeUserFacingError(
+          e,
+          fallback: 'OTP login failed. Please try again.',
+        ),
       );
     }
   }
@@ -363,18 +370,20 @@ class FirebaseAuthService {
     Future<Map<String, dynamic>> Function(
       User user,
       Map<String, dynamic> roleData,
-    )? prepareRoleDataAfterAuth,
+    )?
+    prepareRoleDataAfterAuth,
   }) async {
     if (!FirebaseBootstrap.isReady) {
       return AuthSignInResult.fail(
-          'Firebase is not available on this platform yet.');
+        'Firebase is not available on this platform yet.',
+      );
     }
 
     final abuseBlock =
         await AbuseProtectionService.assertAccountCreationAllowed(
-      email: email,
-      mobile: mobile,
-    );
+          email: email,
+          mobile: mobile,
+        );
     if (abuseBlock != null) {
       return AuthSignInResult.fail(abuseBlock);
     }
@@ -398,14 +407,14 @@ class FirebaseAuthService {
           ? null
           : (Map<String, dynamic>.from(roleData)..['ownerUid'] = user.uid);
 
-      final validationError =
-          await FirestoreService.instance.user.validateNewRegistration(
-        role: role,
-        email: email,
-        mobile: mobile,
-        profileId: profileId,
-        roleData: data,
-      );
+      final validationError = await FirestoreService.instance.user
+          .validateNewRegistration(
+            role: role,
+            email: email,
+            mobile: mobile,
+            profileId: profileId,
+            roleData: data,
+          );
       if (validationError != null) {
         await FirestoreService.instance.user.deletePendingAuthUser(user);
         await _auth.signOut();
@@ -414,8 +423,10 @@ class FirebaseAuthService {
 
       if (prepareRoleDataAfterAuth != null) {
         try {
-          data =
-              await prepareRoleDataAfterAuth(user, data ?? <String, dynamic>{});
+          data = await prepareRoleDataAfterAuth(
+            user,
+            data ?? <String, dynamic>{},
+          );
           data['ownerUid'] = user.uid;
         } catch (e) {
           await FirestoreService.instance.user.deletePendingAuthUser(user);
@@ -436,8 +447,10 @@ class FirebaseAuthService {
           mobileVerified: false,
           roleData: data,
         );
-        final saved = await FirestoreService.instance.user
-            .fetchProfile(user.uid, preferCache: false);
+        final saved = await FirestoreService.instance.user.fetchProfile(
+          user.uid,
+          preferCache: false,
+        );
         if (saved == null) {
           await user.delete();
           return AuthSignInResult.fail(
@@ -445,10 +458,12 @@ class FirebaseAuthService {
           );
         }
 
-        final normalizedMobile =
-            mobile == null ? '' : FormValidators.mobileDigits(mobile) ?? '';
+        final normalizedMobile = mobile == null
+            ? ''
+            : FormValidators.mobileDigits(mobile) ?? '';
         if (normalizedMobile.isNotEmpty) {
-          final sessionId = otpVerificationSessionId ??
+          final sessionId =
+              otpVerificationSessionId ??
               RegistrationOtpService.verificationSessionId;
           if (sessionId == null || sessionId.isEmpty) {
             await user.delete();
@@ -459,7 +474,8 @@ class FirebaseAuthService {
           if (!RegistrationOtpService.isLocalVerificationSession(sessionId)) {
             final finalizeError =
                 await RegistrationOtpService.finalizeRegistrationVerification(
-                    sessionId);
+                  sessionId,
+                );
             if (finalizeError != null) {
               await user.delete();
               return AuthSignInResult.fail(finalizeError);
@@ -498,8 +514,7 @@ class FirebaseAuthService {
       return AuthSignInResult.fail(
         describeFirebaseError(
           e,
-          fallback:
-              'Registration could not validate your account details. Please try again.',
+          fallback: 'Registration could not validate your account details. Please try again.',
         ),
       );
     } catch (e) {
@@ -519,7 +534,8 @@ class FirebaseAuthService {
 
   static GoogleSignIn _getGoogleSignIn() {
     return GoogleSignIn(
-      clientId: (!kIsWeb &&
+      clientId:
+          (!kIsWeb &&
               (defaultTargetPlatform == TargetPlatform.iOS ||
                   defaultTargetPlatform == TargetPlatform.macOS))
           ? _googleIosClientId
@@ -533,8 +549,10 @@ class FirebaseAuthService {
     if (!FirebaseBootstrap.isReady) {
       final ready = await FirebaseBootstrap.initialize();
       if (!ready) {
-        return AuthSignInResult.fail(FirebaseBootstrap.lastInitError ??
-            'Firebase is not available on this platform yet.');
+        return AuthSignInResult.fail(
+          FirebaseBootstrap.lastInitError ??
+              'Firebase is not available on this platform yet.',
+        );
       }
     }
 
@@ -552,7 +570,8 @@ class FirebaseAuthService {
               e.code == 'popup-closed-by-user' ||
               e.code == 'cancelled-popup-request') {
             return AuthSignInResult.fail(
-                'Google sign-in popup was cancelled or blocked by the browser. Please allow popups and try again.');
+              'Google sign-in popup was cancelled or blocked by the browser. Please allow popups and try again.',
+            );
           }
           rethrow;
         }
@@ -567,7 +586,8 @@ class FirebaseAuthService {
             await googleUser.authentication;
         if (googleAuth.idToken == null && googleAuth.accessToken == null) {
           return AuthSignInResult.fail(
-              'Could not obtain Google authentication token. Please verify Google Play Services and try again.');
+            'Could not obtain Google authentication token. Please verify Google Play Services and try again.',
+          );
         }
 
         final OAuthCredential credential = GoogleAuthProvider.credential(
@@ -580,23 +600,19 @@ class FirebaseAuthService {
       final User? user = userCredential.user;
       if (user == null) {
         return AuthSignInResult.fail(
-            'Could not retrieve user credentials from Google.');
+          'Could not retrieve user credentials from Google.',
+        );
       }
 
       DoctorNectUserProfile? profile = await FirestoreService.instance.user
           .fetchProfile(user.uid, preferCache: false);
       if (profile == null) {
-        profile =
-            await FirestoreService.instance.user.relinkOAuthProfileByEmail(
-          user: user,
-          expectedRole: role,
-        );
+        profile = await FirestoreService.instance.user
+            .relinkOAuthProfileByEmail(user: user, expectedRole: role);
         if (profile == null) {
           if (role == UserType.patient) {
-            profile =
-                await FirestoreService.instance.user.createGooglePatientProfile(
-              user: user,
-            );
+            profile = await FirestoreService.instance.user
+                .createGooglePatientProfile(user: user);
           }
           if (profile == null) {
             await _auth.signOut();
@@ -644,7 +660,8 @@ class FirebaseAuthService {
         );
       }
       return AuthSignInResult.fail(
-          'Google Sign-In failed (${e.code}): ${e.message}');
+        'Google Sign-In failed (${e.code}): ${e.message}',
+      );
     } catch (e) {
       return AuthSignInResult.fail('Google Sign-In failed: $e');
     }
@@ -657,7 +674,8 @@ class FirebaseAuthService {
       final ready = await FirebaseBootstrap.initialize();
       if (!ready) {
         throw AuthUpdateException(
-            'Firebase is not available on this platform yet.');
+          'Firebase is not available on this platform yet.',
+        );
       }
     }
 
@@ -714,15 +732,20 @@ class FirebaseAuthService {
     }
     final user = currentUser;
     if (user == null) return null;
-    final profile = await FirestoreService.instance.user
-        .fetchProfile(user.uid, preferCache: true);
+    final profile = await FirestoreService.instance.user.fetchProfile(
+      user.uid,
+      preferCache: true,
+    );
     if (profile == null) {
       await _auth.signOut();
       return null;
     }
     if (profile.role == UserType.superAdmin) {
-      await _applyProfile(profile,
-          awaitPrefetch: false, deferPatientProfile: true);
+      await _applyProfile(
+        profile,
+        awaitPrefetch: false,
+        deferPatientProfile: true,
+      );
       return profile.role;
     }
     if (profile.role == UserType.doctor) {
@@ -734,23 +757,19 @@ class FirebaseAuthService {
         return null;
       }
 
-      await _applyProfile(profile,
-          awaitPrefetch: false, deferPatientProfile: true);
+      await _applyProfile(
+        profile,
+        awaitPrefetch: false,
+        deferPatientProfile: true,
+      );
       return profile.role;
     }
 
-    final approved = await FirestoreService.instance.roleAccount.isVerified(
-      profile.role,
-      profile.profileId,
-      preferCache: true,
+    await _applyProfile(
+      profile,
+      awaitPrefetch: false,
+      deferPatientProfile: true,
     );
-    if (!approved) {
-      await _auth.signOut();
-      return null;
-    }
-
-    await _applyProfile(profile,
-        awaitPrefetch: false, deferPatientProfile: true);
     return profile.role;
   }
 
@@ -766,6 +785,7 @@ class FirebaseAuthService {
     PatientProfileMock.resetNotificationPrefsSession();
     DoctorProfileStore.resetNotificationPrefsSession();
     InAppNotificationService.instance.clearSessionState();
+    RoleVerificationController.instance.reset();
     AppSession.clear();
     await SessionExpiry.clear();
     if (FirebaseBootstrap.isReady) {
@@ -774,7 +794,9 @@ class FirebaseAuthService {
   }
 
   Future<void> updatePassword(
-      String currentPassword, String newPassword) async {
+    String currentPassword,
+    String newPassword,
+  ) async {
     if (!FirebaseBootstrap.isReady) {
       throw AuthUpdateException('Firebase is not available on this platform.');
     }
@@ -782,7 +804,8 @@ class FirebaseAuthService {
     final email = user?.email?.trim();
     if (user == null || email == null || email.isEmpty) {
       throw AuthUpdateException(
-          'No signed-in account with email/password login.');
+        'No signed-in account with email/password login.',
+      );
     }
 
     try {
@@ -801,8 +824,10 @@ class FirebaseAuthService {
           throw const WeakPasswordAuthException();
         default:
           throw AuthUpdateException(
-            describeFirebaseAuthError(e,
-                fallback: 'Could not update password.'),
+            describeFirebaseAuthError(
+              e,
+              fallback: 'Could not update password.',
+            ),
           );
       }
     }
@@ -814,8 +839,10 @@ class FirebaseAuthService {
 
   Future<void> updateMobile(String newMobile) async {
     final parsed = FormValidators.parsePhone(newMobile);
-    final err = FormValidators.phoneLocal(parsed.localNumber,
-        dialCode: parsed.dialCode);
+    final err = FormValidators.phoneLocal(
+      parsed.localNumber,
+      dialCode: parsed.dialCode,
+    );
     if (err != null) {
       throw AuthUpdateException(err);
     }
@@ -833,6 +860,19 @@ class FirebaseAuthService {
     bool deferPatientProfile = false,
   }) async {
     AppSession.clear();
+    if (profile.role != UserType.patient &&
+        profile.role != UserType.superAdmin) {
+      final resolvedStage = profile.verificationStatus != null
+          ? VerificationStage.fromString(profile.verificationStatus)
+          : VerificationStage.profileIncomplete;
+      RoleVerificationController.instance.setRoleState(
+        profile.role,
+        stage: resolvedStage == VerificationStage.registered
+            ? VerificationStage.profileIncomplete
+            : resolvedStage,
+        rejectionReason: profile.rejectionReason,
+      );
+    }
     var skipPrefetch = false;
     switch (profile.role) {
       case UserType.superAdmin:
@@ -845,27 +885,31 @@ class FirebaseAuthService {
         );
       case UserType.doctor:
         DoctorSession.setDoctor(
-            id: profile.profileId, name: profile.displayName);
+          id: profile.profileId,
+          name: profile.displayName,
+        );
         await ProfileCompletionService.instance.refreshForUser(
           role: UserType.doctor,
           uid: profile.uid,
           profileId: profile.profileId,
         );
-        final doctorVerified =
-            await FirestoreService.instance.doctorAccount.isVerified(
-          profile.profileId,
-        );
+        final doctorVerified = await FirestoreService.instance.doctorAccount
+            .isVerified(profile.profileId);
         skipPrefetch =
             !ProfileCompletionService.instance.isComplete || !doctorVerified;
         if (doctorVerified && ProfileCompletionService.instance.isComplete) {
-          await InAppNotificationService.instance
-              .warmUpReadState(NotificationAudience.doctor);
+          await InAppNotificationService.instance.warmUpReadState(
+            NotificationAudience.doctor,
+          );
         }
       case UserType.patient:
         PatientSession.setPatient(
-            id: profile.profileId, name: profile.displayName);
-        await InAppNotificationService.instance
-            .warmUpReadState(NotificationAudience.patient);
+          id: profile.profileId,
+          name: profile.displayName,
+        );
+        await InAppNotificationService.instance.warmUpReadState(
+          NotificationAudience.patient,
+        );
         if (deferPatientProfile) {
           unawaited(_loadPatientContext(profile));
         } else {
@@ -873,7 +917,9 @@ class FirebaseAuthService {
         }
       case UserType.medicalStore:
         MedicalStoreSession.setStore(
-            id: profile.profileId, name: profile.displayName);
+          id: profile.profileId,
+          name: profile.displayName,
+        );
         await ProfileCompletionService.instance.refreshForUser(
           role: UserType.medicalStore,
           uid: profile.uid,
@@ -920,17 +966,17 @@ class FirebaseAuthService {
     }
 
     try {
-      final profile = await FirestoreService.instance.user
-          .fetchProfile(user.uid, preferCache: false);
+      final profile = await FirestoreService.instance.user.fetchProfile(
+        user.uid,
+        preferCache: false,
+      );
       if (profile == null || profile.role != UserType.doctor) {
         await _auth.signOut();
         return AuthSignInResult.fail('Doctor profile not found.');
       }
 
-      final status =
-          await FirestoreService.instance.doctorAccount.fetchDeactivationStatus(
-        profile.profileId,
-      );
+      final status = await FirestoreService.instance.doctorAccount
+          .fetchDeactivationStatus(profile.profileId);
       if (!status.deactivated) {
         await _applyProfile(profile);
         return AuthSignInResult.ok(UserType.doctor);
@@ -1091,16 +1137,17 @@ class FirebaseAuthService {
   }
 
   String _roleValue(UserType role) => switch (role) {
-        UserType.superAdmin => 'super_admin',
-        UserType.doctor => 'doctor',
-        UserType.patient => 'patient',
-        UserType.medicalStore => 'medicalStore',
-        UserType.lab => 'lab',
-        UserType.ambulance => 'ambulance',
-      };
+    UserType.superAdmin => 'super_admin',
+    UserType.doctor => 'doctor',
+    UserType.patient => 'patient',
+    UserType.medicalStore => 'medicalStore',
+    UserType.lab => 'lab',
+    UserType.ambulance => 'ambulance',
+  };
 
   Future<AuthSignInResult?> _roleApprovalBlock(
-      DoctorNectUserProfile profile) async {
+    DoctorNectUserProfile profile,
+  ) async {
     if (profile.role != UserType.doctor) {
       return null; // Super admin, patients, pharmacies, labs, ambulances have instant direct login
     }
@@ -1129,7 +1176,9 @@ class FirebaseAuthService {
   Future<void> _prefetchSafely(DoctorNectUserProfile profile) async {
     try {
       await FirestoreDataPrefetch.prefetch(
-          role: profile.role, profileId: profile.profileId);
+        role: profile.role,
+        profileId: profile.profileId,
+      );
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('Firestore prefetch after login failed: $e\n$st');
@@ -1138,11 +1187,11 @@ class FirebaseAuthService {
   }
 
   String _roleLabel(UserType role) => switch (role) {
-        UserType.superAdmin => 'Super Admin',
-        UserType.doctor => 'Doctor',
-        UserType.patient => 'Patient',
-        UserType.medicalStore => 'Medical Store',
-        UserType.lab => 'Diagnostic Lab',
-        UserType.ambulance => 'Ambulance',
-      };
+    UserType.superAdmin => 'Super Admin',
+    UserType.doctor => 'Doctor',
+    UserType.patient => 'Patient',
+    UserType.medicalStore => 'Medical Store',
+    UserType.lab => 'Diagnostic Lab',
+    UserType.ambulance => 'Ambulance',
+  };
 }

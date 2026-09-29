@@ -42,8 +42,9 @@ class BookingConfirmedView extends StatelessWidget {
           Text(
             'Dr. ${booking.doctorName}',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.headlineSmall,
-                fontWeight: FontWeight.w600),
+              fontSize: AppTypography.headlineSmall,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           Text(
             '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
@@ -59,9 +60,12 @@ class BookingConfirmedView extends StatelessWidget {
                 color: AppColors.patientTeal,
               ),
             ),
-            Text('Token Number',
-                style: GoogleFonts.inter(
-                    color: AppColors.textSecondaryOf(context))),
+            Text(
+              'Token Number',
+              style: GoogleFonts.inter(
+                color: AppColors.textSecondaryOf(context),
+              ),
+            ),
           ],
           if (booking.clinicAddress != null &&
               booking.clinicAddress!.isNotEmpty) ...[

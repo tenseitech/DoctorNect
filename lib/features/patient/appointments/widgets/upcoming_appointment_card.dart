@@ -61,8 +61,9 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
     final statusColor = a.status == PatientBookingStatus.confirmed
         ? const Color(0xFF16A34A)
         : const Color(0xFFF59E0B);
-    final statusLabel =
-        a.status == PatientBookingStatus.confirmed ? 'Confirmed' : 'Pending';
+    final statusLabel = a.status == PatientBookingStatus.confirmed
+        ? 'Confirmed'
+        : 'Pending';
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,20 +88,22 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     a.slotLabel != null && a.slotLabel!.trim().isNotEmpty
                         ? '${DateFormat('EEE, dd MMM yyyy').format(a.dateTime)} · ${a.slotLabel}'
                         : DateFormat('EEE, dd MMM yyyy · hh:mm a')
-                            .format(a.dateTime),
+                              .format(a.dateTime),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodyMedium,
-                        fontWeight: FontWeight.w700),
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
@@ -125,8 +128,11 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
         const SizedBox(height: 10),
         Row(
           children: [
-            const Icon(Icons.local_hospital_outlined,
-                size: 16, color: AppColors.patientTeal),
+            const Icon(
+              Icons.local_hospital_outlined,
+              size: 16,
+              color: AppColors.patientTeal,
+            ),
             const SizedBox(width: 4),
             Text(
               'In-Clinic',
@@ -146,9 +152,10 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               child: Text(
                 statusLabel,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelSmall,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor),
+                  fontSize: AppTypography.labelSmall,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
               ),
             ),
           ],
@@ -160,8 +167,9 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium,
-                fontWeight: FontWeight.w500),
+              fontSize: AppTypography.labelMedium,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           if (a.clinicAddress != null)
             Text(
@@ -169,17 +177,19 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelSmall,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.labelSmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
         ],
         const SizedBox(height: 8),
         Text(
           _countdown,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelMedium,
-              fontWeight: FontWeight.w600,
-              color: AppColors.patientTeal),
+            fontSize: AppTypography.labelMedium,
+            fontWeight: FontWeight.w600,
+            color: AppColors.patientTeal,
+          ),
         ),
         const SizedBox(height: 12),
         Row(
@@ -196,7 +206,9 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               child: Text(
                 'Cancel',
                 style: GoogleFonts.inter(
-                    color: AppColors.error, fontWeight: FontWeight.w600),
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

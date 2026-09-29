@@ -7,6 +7,7 @@ import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import '../core/widgets/s3_aware_network_image.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../core/theme/app_typography.dart';
 
 typedef HomeCarouselCtaHandler = void Function(String? route);
@@ -47,8 +48,9 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
   @override
   void initState() {
     super.initState();
-    final initialPage =
-        widget.items.isNotEmpty ? widget.items.length * 1000 : 0;
+    final initialPage = widget.items.isNotEmpty
+        ? widget.items.length * 1000
+        : 0;
     _controller = PageController(initialPage: initialPage);
     if (widget.items.length > 1) {
       _startAutoScroll();
@@ -120,29 +122,28 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
     final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
     final height = (isWide ? 220.0 : 130.0) * textScale;
     final hasCardInset = widget.cardHorizontalInsetFraction > 0;
-    final borderRadius =
-        hasCardInset || !isWide ? AppConstants.cardRadius.toDouble() : 0.0;
+    final borderRadius = hasCardInset || !isWide
+        ? AppConstants.cardRadius.toDouble()
+        : 0.0;
     final hasMultipleSlides = widget.items.length > 1;
     final showNavButtons =
         widget.showNavButtons && (hasCardInset || isWide) && hasMultipleSlides;
     final sideGutter = showNavButtons
         ? (hasCardInset
-            ? screenWidth * widget.cardHorizontalInsetFraction
-            : (isWide ? _legacyWideNavGutter : 0.0))
+              ? screenWidth * widget.cardHorizontalInsetFraction
+              : (isWide ? _legacyWideNavGutter : 0.0))
         : (hasCardInset
-            ? screenWidth * widget.cardHorizontalInsetFraction
-            : 0.0);
+              ? screenWidth * widget.cardHorizontalInsetFraction
+              : 0.0);
     final navButtonSize = sideGutter >= _navButtonSize
         ? _navButtonSize
         : (sideGutter * 0.82).clamp(26.0, _navButtonSize);
 
-    Widget buildNavButton(
-        {required IconData icon, required VoidCallback onTap}) {
-      return _CarouselNavButton(
-        icon: icon,
-        size: navButtonSize,
-        onTap: onTap,
-      );
+    Widget buildNavButton({
+      required IconData icon,
+      required VoidCallback onTap,
+    }) {
+      return _CarouselNavButton(icon: icon, size: navButtonSize, onTap: onTap);
     }
 
     void handleNavStep(int delta) {
@@ -256,8 +257,11 @@ class _CarouselNavButton extends StatelessWidget {
         child: SizedBox(
           width: size,
           height: size,
-          child: Icon(icon,
-              size: size * 0.58, color: AppColors.textPrimaryOf(context)),
+          child: Icon(
+            icon,
+            size: size * 0.58,
+            color: AppColors.textPrimaryOf(context),
+          ),
         ),
       ),
     );
@@ -294,14 +298,16 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
     final badgeColor = isTip
         ? const Color(0xFF16A34A)
         : (banner.gradientColors.isNotEmpty
-            ? banner.gradientColors.first
-            : const Color(0xFF2563EB));
+              ? banner.gradientColors.first
+              : const Color(0xFF2563EB));
 
     final bannerBody = Stack(
       fit: StackFit.expand,
       children: [
         _gradientBackground(
-            begin: Alignment.topLeft, end: Alignment.bottomRight),
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         if ((banner.imageKey != null && banner.imageKey!.isNotEmpty) ||
             (banner.imageUrl != null && banner.imageUrl!.isNotEmpty))
           LayoutBuilder(
@@ -393,8 +399,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
     final badgeColor = isTip
         ? const Color(0xFF16A34A)
         : (banner.gradientColors.isNotEmpty
-            ? banner.gradientColors.first
-            : const Color(0xFF2563EB));
+              ? banner.gradientColors.first
+              : const Color(0xFF2563EB));
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
@@ -402,7 +408,9 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           _gradientBackground(
-              begin: Alignment.centerLeft, end: Alignment.centerRight),
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
           if ((banner.imageKey != null && banner.imageKey!.isNotEmpty) ||
               (banner.imageUrl != null && banner.imageUrl!.isNotEmpty))
             LayoutBuilder(
@@ -430,7 +438,9 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           _BadgeChip(
-                              label: banner.badgeLabel, color: badgeColor),
+                            label: banner.badgeLabel,
+                            color: badgeColor,
+                          ),
                           const SizedBox(height: 14),
                           Text(
                             banner.title,
@@ -459,13 +469,15 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                             FilledButton(
                               onPressed:
                                   item.ctaRoute != null && onCtaTap != null
-                                      ? () => onCtaTap!(item.ctaRoute)
-                                      : null,
+                                  ? () => onCtaTap!(item.ctaRoute)
+                                  : null,
                               style: FilledButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: banner.gradientColors.first,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 10),
+                                  horizontal: 20,
+                                  vertical: 10,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -473,8 +485,9 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                               child: Text(
                                 item.ctaLabel!,
                                 style: GoogleFonts.inter(
-                                    fontSize: AppTypography.bodySmall,
-                                    fontWeight: FontWeight.w700),
+                                  fontSize: AppTypography.bodySmall,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],

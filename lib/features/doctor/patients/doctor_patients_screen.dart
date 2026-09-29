@@ -8,8 +8,10 @@ import '../../../core/layout/responsive_layout.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
 import 'data/doctor_patients_service.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
 import 'package:medibond/features/shared/screens/patient_profile_screen.dart';
+
 import '../widgets/doctor_screen_title_bar.dart';
 import 'widgets/invite_patient_sheet.dart';
 import 'widgets/patient_filters_bar.dart';
@@ -54,7 +56,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
 
   List<DoctorPatientSummary> get _filtered {
     var list = DoctorPatientsService.summariesForDoctor(
-        DoctorSession.loggedInDoctorId);
+      DoctorSession.loggedInDoctorId,
+    );
 
     final q = _searchController.text.trim().toLowerCase();
     if (q.isNotEmpty) {
@@ -117,8 +120,7 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
   Widget build(BuildContext context) {
     final wide = !ResponsiveLayout.isCompact(context);
     final horizontalPadding = wide ? 24.0 : 16.0;
-    final fabBottom = wide ? 16.0 : 80.0;
-    final fabClearance = _fabMenuOpen ? 200.0 : 72.0;
+    final fabBottom = wide ? 16.0 : 96.0;
 
     return ColoredBox(
       color: wide ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
@@ -162,7 +164,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                           child: _loading
                               ? const Center(
                                   child: CircularProgressIndicator(
-                                      color: AppColors.doctorBlue),
+                                    color: AppColors.doctorBlue,
+                                  ),
                                 )
                               : ListenableBuilder(
                                   listenable: _store,
@@ -174,11 +177,13 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                                     return RefreshIndicator(
                                       onRefresh: _ensureLoaded,
                                       child: ListView.builder(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
                                         padding: EdgeInsets.fromLTRB(
                                           horizontalPadding,
                                           12,
                                           horizontalPadding,
-                                          wide ? 20 : fabClearance + fabBottom,
+                                          wide ? 24.0 : 180.0,
                                         ),
                                         itemCount: patients.length,
                                         itemBuilder: (context, index) {

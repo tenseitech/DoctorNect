@@ -6,13 +6,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../widgets/rotating_search_placeholder.dart';
 
 class HomeSearchBar extends StatefulWidget {
-  const HomeSearchBar({
-    super.key,
-    this.onTap,
-    this.onSubmitted,
-  });
+  const HomeSearchBar({super.key, this.onTap, this.onSubmitted});
 
   final VoidCallback? onTap;
   final ValueChanged<String>? onSubmitted;
@@ -31,6 +28,13 @@ class HomeSearchBar extends StatefulWidget {
     'Search for Speciality',
     'Search for Location',
     'Search for Language',
+  ];
+
+  static const List<String> rotatingPlaceholders = [
+    'Search for doctor',
+    'Search for lab',
+    'Search for language or location',
+    'Search for ambulance',
   ];
 
   static String placeholder({required bool compact}) {
@@ -216,18 +220,17 @@ class _SearchField extends StatelessWidget {
                         contentPadding: EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
-                    if (showOverlay)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: _TypewriterPlaceholder(
-                              words: HomeSearchBar.words,
-                              style: placeholderStyle,
-                            ),
-                          ),
+                    Positioned.fill(
+                      child: Offstage(
+                        offstage: !showOverlay,
+                        child: RotatingSearchPlaceholder(
+                          placeholders: HomeSearchBar.rotatingPlaceholders,
+                          style: placeholderStyle,
+                          paused: !showOverlay,
+                          ignorePointer: true,
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -237,9 +240,7 @@ class _SearchField extends StatelessWidget {
                   onTap: () => onSubmitted(controller.text),
                 )
               else
-                _DesktopSearchAction(
-                  onTap: () => onSubmitted(controller.text),
-                ),
+                _DesktopSearchAction(onTap: () => onSubmitted(controller.text)),
             ],
           ),
         ),
@@ -249,10 +250,7 @@ class _SearchField extends StatelessWidget {
 }
 
 class _MobileSearchAction extends StatelessWidget {
-  const _MobileSearchAction({
-    required this.active,
-    required this.onTap,
-  });
+  const _MobileSearchAction({required this.active, required this.onTap});
 
   final bool active;
   final VoidCallback onTap;
@@ -275,8 +273,9 @@ class _MobileSearchAction extends StatelessWidget {
             child: Icon(
               Icons.arrow_forward_rounded,
               size: 20,
-              color:
-                  active ? AppColors.surfaceOf(context) : AppColors.patientTeal,
+              color: active
+                  ? AppColors.surfaceOf(context)
+                  : AppColors.patientTeal,
             ),
           ),
         ),
@@ -443,12 +442,7 @@ class _TypewriterPlaceholderState extends State<_TypewriterPlaceholder> {
       TextSpan(
         text: widget.prefix,
         style: widget.style,
-        children: [
-          TextSpan(
-            text: typedWord,
-            style: widget.style,
-          ),
-        ],
+        children: [TextSpan(text: typedWord, style: widget.style)],
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,

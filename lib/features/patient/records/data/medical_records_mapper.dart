@@ -14,8 +14,9 @@ abstract final class MedicalRecordsMapper {
   static List<HealthRecord> mergeForPatient(String patientId) {
     if (patientId.isEmpty) return const [];
 
-    final prescriptions =
-        ClinicalPrescriptionStore.instance.forPatient(patientId);
+    final prescriptions = ClinicalPrescriptionStore.instance.forPatient(
+      patientId,
+    );
     final labOrders = LabOrderStore.instance.forPatient(patientId);
     final bloodTests = PatientLabBookingStore.instance.forPatient(patientId);
 
@@ -29,7 +30,9 @@ abstract final class MedicalRecordsMapper {
   }
 
   static List<HealthRecord> filter(
-      List<HealthRecord> records, MedicalRecordFilter filter) {
+    List<HealthRecord> records,
+    MedicalRecordFilter filter,
+  ) {
     return switch (filter) {
       MedicalRecordFilter.all => records,
       MedicalRecordFilter.prescription =>
@@ -38,9 +41,10 @@ abstract final class MedicalRecordsMapper {
         records.where((r) => r.labOrderId != null).toList(),
       MedicalRecordFilter.bloodTest =>
         records.where((r) => r.labBookingId != null).toList(),
-      MedicalRecordFilter.tests => records
-          .where((r) => r.labOrderId != null || r.labBookingId != null)
-          .toList(),
+      MedicalRecordFilter.tests =>
+        records
+            .where((r) => r.labOrderId != null || r.labBookingId != null)
+            .toList(),
     };
   }
 
@@ -69,8 +73,8 @@ abstract final class MedicalRecordsMapper {
     final title = tests.isEmpty
         ? 'Lab test order'
         : tests.length == 1
-            ? tests.first
-            : '${tests.first} + ${tests.length - 1} more';
+        ? tests.first
+        : '${tests.first} + ${tests.length - 1} more';
 
     return HealthRecord(
       id: 'doctor_lab_${order.orderId}',

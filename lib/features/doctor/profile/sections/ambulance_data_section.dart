@@ -19,9 +19,13 @@ class AmbulanceDataSection extends StatelessWidget {
           title: const Text('Ambulance Data'),
           bottom: TabBar(
             labelStyle: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+              fontSize: AppTypography.bodySmall,
+              fontWeight: FontWeight.w600,
+            ),
             unselectedLabelStyle: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w400),
+              fontSize: AppTypography.bodySmall,
+              fontWeight: FontWeight.w400,
+            ),
             indicatorColor: Colors.red[600],
             labelColor: Colors.red[600],
             unselectedLabelColor: Colors.grey[600],
@@ -59,8 +63,9 @@ class _ProvidersTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (ambulances.isEmpty) {
       return _EmptyState(
-          icon: Icons.emergency_outlined,
-          message: 'No ambulance providers registered.');
+        icon: Icons.emergency_outlined,
+        message: 'No ambulance providers registered.',
+      );
     }
     return Align(
       alignment: Alignment.topCenter,
@@ -102,30 +107,38 @@ class _AmbulanceCard extends StatelessWidget {
                   color: Colors.red[50],
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.emergency_outlined,
-                    color: Colors.red[600], size: 22),
+                child: Icon(
+                  Icons.emergency_outlined,
+                  color: Colors.red[600],
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(amb.serviceName,
-                        style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodyMedium,
-                            fontWeight: FontWeight.w600)),
+                    Text(
+                      amb.serviceName,
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodyMedium,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       '${amb.driverName}  •  ${amb.vehicleNumber}',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: Colors.grey[500]),
+                        fontSize: AppTypography.labelSmall,
+                        color: Colors.grey[500],
+                      ),
                     ),
                     Text(
                       amb.phone,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: Colors.grey[500]),
+                        fontSize: AppTypography.labelSmall,
+                        color: Colors.grey[500],
+                      ),
                     ),
                   ],
                 ),
@@ -134,8 +147,10 @@ class _AmbulanceCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: amb.available
                           ? Colors.green.withValues(alpha: 0.1)
@@ -154,10 +169,13 @@ class _AmbulanceCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(amb.city,
-                      style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: Colors.grey[400])),
+                  Text(
+                    amb.city,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelSmall,
+                      color: Colors.grey[400],
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -176,8 +194,9 @@ class _AmbulanceCard extends StatelessWidget {
               if (amb.is24x7) _Chip(label: '24×7', color: Colors.orange[700]!),
               if (amb.ratePerKm != null)
                 _Chip(
-                    label: '₹${amb.ratePerKm!.toStringAsFixed(0)}/km',
-                    color: Colors.green[700]!),
+                  label: '₹${amb.ratePerKm!.toStringAsFixed(0)}/km',
+                  color: Colors.green[700]!,
+                ),
             ],
           ),
         ],
@@ -221,8 +240,9 @@ class _BookingsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (bookings.isEmpty) {
       return _EmptyState(
-          icon: Icons.local_taxi_outlined,
-          message: 'No ambulance dispatch bookings yet.');
+        icon: Icons.local_taxi_outlined,
+        message: 'No ambulance dispatch bookings yet.',
+      );
     }
     return Align(
       alignment: Alignment.topCenter,
@@ -244,18 +264,18 @@ class _BookingRow extends StatelessWidget {
   final AmbulanceBooking booking;
 
   Color get _statusColor => switch (booking.status) {
-        AmbulanceBookingStatus.pending => Colors.orange[600]!,
-        AmbulanceBookingStatus.accepted => AppColors.pharmacyGreen,
-        AmbulanceBookingStatus.cancelled => Colors.grey[500]!,
-        AmbulanceBookingStatus.completed => const Color(0xFF0D9488),
-      };
+    AmbulanceBookingStatus.pending => Colors.orange[600]!,
+    AmbulanceBookingStatus.accepted => AppColors.pharmacyGreen,
+    AmbulanceBookingStatus.cancelled => Colors.grey[500]!,
+    AmbulanceBookingStatus.completed => const Color(0xFF0D9488),
+  };
 
   String get _statusLabel => switch (booking.status) {
-        AmbulanceBookingStatus.pending => 'Pending',
-        AmbulanceBookingStatus.accepted => 'Accepted',
-        AmbulanceBookingStatus.cancelled => 'Cancelled',
-        AmbulanceBookingStatus.completed => 'Completed',
-      };
+    AmbulanceBookingStatus.pending => 'Pending',
+    AmbulanceBookingStatus.accepted => 'Accepted',
+    AmbulanceBookingStatus.cancelled => 'Cancelled',
+    AmbulanceBookingStatus.completed => 'Completed',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -273,38 +293,51 @@ class _BookingRow extends StatelessWidget {
               color: Colors.red[50],
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.emergency_outlined,
-                color: Colors.red[600], size: 18),
+            child: Icon(
+              Icons.emergency_outlined,
+              color: Colors.red[600],
+              size: 18,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(booking.patientName,
-                    style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        fontWeight: FontWeight.w600)),
+                Text(
+                  booking.patientName,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 Text(
                   booking.pickupLocation,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall,
-                      color: Colors.grey[500]),
+                    fontSize: AppTypography.labelSmall,
+                    color: Colors.grey[500],
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Row(children: [
-                  Icon(Icons.calendar_today_outlined,
-                      size: 10, color: Colors.grey[400]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${df.format(booking.createdAt)}  ${tf.format(booking.createdAt)}',
-                    style: GoogleFonts.inter(
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 10,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${df.format(booking.createdAt)}  ${tf.format(booking.createdAt)}',
+                      style: GoogleFonts.inter(
                         fontSize: AppTypography.labelSmall,
-                        color: Colors.grey[500]),
-                  ),
-                ]),
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
                 if (booking.acceptedAmbulanceName != null) ...[
                   const SizedBox(height: 2),
                   Text(
@@ -328,9 +361,10 @@ class _BookingRow extends StatelessWidget {
             child: Text(
               _statusLabel,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelSmall,
-                  fontWeight: FontWeight.w600,
-                  color: _statusColor),
+                fontSize: AppTypography.labelSmall,
+                fontWeight: FontWeight.w600,
+                color: _statusColor,
+              ),
             ),
           ),
         ],
@@ -348,16 +382,19 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 52, color: Colors.grey[300]),
-            const SizedBox(height: 12),
-            Text(message,
-                style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyMedium,
-                    color: Colors.grey[500])),
-          ],
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 52, color: Colors.grey[300]),
+        const SizedBox(height: 12),
+        Text(
+          message,
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.bodyMedium,
+            color: Colors.grey[500],
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }

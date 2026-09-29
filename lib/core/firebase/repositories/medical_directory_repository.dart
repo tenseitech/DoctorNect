@@ -21,10 +21,10 @@ class MedicalDirectoryRepository {
         .collection(FirestorePaths.medicalDirectory)
         .doc(entry.entryId)
         .set({
-      ...MedicalDirectoryFirestoreMapper.toMap(entry),
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+          ...MedicalDirectoryFirestoreMapper.toMap(entry),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 
   Future<void> update(DoctorMedicalDirectoryEntry entry) async {
@@ -34,9 +34,9 @@ class MedicalDirectoryRepository {
         .collection(FirestorePaths.medicalDirectory)
         .doc(entry.entryId)
         .set({
-      ...MedicalDirectoryFirestoreMapper.toMap(entry),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+          ...MedicalDirectoryFirestoreMapper.toMap(entry),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 
   Future<void> delete(String entryId) async {
@@ -66,13 +66,18 @@ class MedicalDirectoryRepository {
         ? baseQuery
         : baseQuery.startAfterDocument(startAfter);
     final snapshot = await FirestoreReadHelper.getQuery(
-        query: query, preferCache: preferCache);
+      query: query,
+      preferCache: preferCache,
+    );
 
-    final items = snapshot.docs
-        .map((doc) => MedicalDirectoryFirestoreMapper.fromMap(doc.data()))
-        .whereType<DoctorMedicalDirectoryEntry>()
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final items =
+        snapshot.docs
+            .map((doc) => MedicalDirectoryFirestoreMapper.fromMap(doc.data()))
+            .whereType<DoctorMedicalDirectoryEntry>()
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     return FirestorePage(
       items: items,

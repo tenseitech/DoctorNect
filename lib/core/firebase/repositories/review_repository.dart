@@ -45,13 +45,16 @@ class ReviewRepository {
       );
       if (snapshot.docs.isNotEmpty) {
         return _reviewFromDoc(
-            snapshot.docs.first.id, snapshot.docs.first.data());
+          snapshot.docs.first.id,
+          snapshot.docs.first.data(),
+        );
       }
       return null;
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            '[ReviewRepository] fetchReviewForPatientAndDoctor error: $e\n$st');
+          '[ReviewRepository] fetchReviewForPatientAndDoctor error: $e\n$st',
+        );
       }
       return null;
     }
@@ -86,7 +89,8 @@ class ReviewRepository {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            '[ReviewRepository] recalculateDoctorRating failed: $e\n$st');
+          '[ReviewRepository] recalculateDoctorRating failed: $e\n$st',
+        );
       }
     }
   }
@@ -112,8 +116,9 @@ class ReviewRepository {
 
     final firestore = FirebaseFirestore.instance;
     final reviewId = existingReview?.id ?? '${patientId}_$doctorId';
-    final reviewRef =
-        firestore.collection(FirestorePaths.reviews).doc(reviewId);
+    final reviewRef = firestore
+        .collection(FirestorePaths.reviews)
+        .doc(reviewId);
 
     final reviewData = <String, dynamic>{
       'patientId': patientId,
@@ -135,7 +140,8 @@ class ReviewRepository {
     } on FirebaseException catch (e) {
       if (kDebugMode) {
         debugPrint(
-            '[ReviewRepository] submit failed (${e.code}): ${e.message}');
+          '[ReviewRepository] submit failed (${e.code}): ${e.message}',
+        );
       }
       return null;
     } catch (e, st) {
@@ -158,8 +164,9 @@ class ReviewRepository {
     if (rating < 1 || rating > 5) return false;
 
     final firestore = FirebaseFirestore.instance;
-    final reviewRef =
-        firestore.collection(FirestorePaths.reviews).doc(reviewId);
+    final reviewRef = firestore
+        .collection(FirestorePaths.reviews)
+        .doc(reviewId);
 
     try {
       final reviewSnap = await reviewRef.get();
@@ -214,7 +221,8 @@ class ReviewRepository {
     } catch (e, st) {
       if (kDebugMode)
         debugPrint(
-            '[ReviewRepository] findReviewIdForAppointment failed: $e\n$st');
+          '[ReviewRepository] findReviewIdForAppointment failed: $e\n$st',
+        );
       return null;
     }
   }
@@ -235,8 +243,10 @@ class ReviewRepository {
     }
   }
 
-  Future<List<PatientDoctorReview>> fetchForDoctor(String doctorId,
-      {int limit = 50}) async {
+  Future<List<PatientDoctorReview>> fetchForDoctor(
+    String doctorId, {
+    int limit = 50,
+  }) async {
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return const [];
 
     try {
@@ -248,10 +258,11 @@ class ReviewRepository {
         preferCache: true,
       );
 
-      final reviews = snapshot.docs
-          .map((doc) => _reviewFromPublicDoc(doc.id, doc.data()))
-          .toList()
-        ..sort((a, b) => b.date.compareTo(a.date));
+      final reviews =
+          snapshot.docs
+              .map((doc) => _reviewFromPublicDoc(doc.id, doc.data()))
+              .toList()
+            ..sort((a, b) => b.date.compareTo(a.date));
       return reviews;
     } catch (_) {
       return const [];
@@ -259,7 +270,8 @@ class ReviewRepository {
   }
 
   PatientDoctorReview? reviewFromSnapshot(
-      DocumentSnapshot<Map<String, dynamic>> doc) {
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     if (!doc.exists) return null;
     final data = doc.data();
     if (data == null) return null;
@@ -281,7 +293,9 @@ class ReviewRepository {
   }
 
   PatientDoctorReview _reviewFromPublicDoc(
-      String id, Map<String, dynamic> data) {
+    String id,
+    Map<String, dynamic> data,
+  ) {
     return PatientDoctorReview(
       id: id,
       maskedName: data['maskedName'] as String? ?? 'Patient',
@@ -310,10 +324,12 @@ class ReviewRepository {
     }
 
     final firestore = FirebaseFirestore.instance;
-    final reviewRef =
-        firestore.collection(FirestorePaths.reviews).doc(reviewId);
-    final publicReviewRef =
-        firestore.collection(FirestorePaths.reviewPublic).doc(reviewId);
+    final reviewRef = firestore
+        .collection(FirestorePaths.reviews)
+        .doc(reviewId);
+    final publicReviewRef = firestore
+        .collection(FirestorePaths.reviewPublic)
+        .doc(reviewId);
     final voteRef = reviewRef.collection('votes').doc(patientId);
 
     try {
@@ -353,19 +369,22 @@ class ReviewRepository {
     final liked = <String>{};
 
     try {
-      await Future.wait(reviewIds.map((reviewId) async {
-        final snap = await firestore
-            .collection(FirestorePaths.reviews)
-            .doc(reviewId)
-            .collection('votes')
-            .doc(patientId)
-            .get();
-        if (snap.exists) liked.add(reviewId);
-      }));
+      await Future.wait(
+        reviewIds.map((reviewId) async {
+          final snap = await firestore
+              .collection(FirestorePaths.reviews)
+              .doc(reviewId)
+              .collection('votes')
+              .doc(patientId)
+              .get();
+          if (snap.exists) liked.add(reviewId);
+        }),
+      );
     } catch (e, st) {
       if (kDebugMode)
         debugPrint(
-            '[ReviewRepository] likedReviewIdsForPatient failed: $e\n$st');
+          '[ReviewRepository] likedReviewIdsForPatient failed: $e\n$st',
+        );
     }
 
     return liked;

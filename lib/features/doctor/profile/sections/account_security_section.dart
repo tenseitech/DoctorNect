@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -40,8 +41,10 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
       await DoctorProfileStore.instance.persist(DoctorSession.loggedInDoctorId);
     } catch (_) {
       if (!mounted) return;
-      AppToast.info(context,
-          'Could not save changes. Please check your connection and try again.');
+      AppToast.info(
+        context,
+        'Could not save changes. Please check your connection and try again.',
+      );
       return;
     }
     if (!mounted) return;
@@ -72,14 +75,17 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
             child: Align(
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Form(
@@ -103,10 +109,10 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
                                   labelText: 'Recovery email (optional)',
                                   hintText: 'e.g. backup@example.com',
                                   prefixIcon: Icon(
-                                      Icons.alternate_email_outlined,
-                                      size: 20),
-                                  helperText:
-                                      'Used for account recovery if you lose access',
+                                    Icons.alternate_email_outlined,
+                                    size: 20,
+                                  ),
+                                  helperText: 'Used for account recovery if you lose access',
                                 ),
                                 validator: FormValidators.optionalEmail,
                                 onChanged: (_) => _markDirty(),
@@ -186,8 +192,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     } on FirebaseAuthException catch (e) {
       final msg = switch (e.code) {
         'wrong-password' ||
-        'invalid-credential' =>
-          'Current password is incorrect.',
+        'invalid-credential' => 'Current password is incorrect.',
         'weak-password' =>
           'New password is too weak. Use at least 6 characters.',
         'too-many-requests' => 'Too many attempts. Please try again later.',
@@ -217,8 +222,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               'Change Password',
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w700,
-                  fontSize: AppTypography.headlineSmall),
+                fontWeight: FontWeight.w700,
+                fontSize: AppTypography.headlineSmall,
+              ),
             ),
           ),
         ],
@@ -238,13 +244,15 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                     color: const Color(0xFFFFEDED),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: const Color(0xFFDC2626).withValues(alpha: 0.4)),
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.4),
+                    ),
                   ),
                   child: Text(
                     _errorMsg!,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        color: const Color(0xFFDC2626)),
+                      fontSize: AppTypography.bodySmall,
+                      color: const Color(0xFFDC2626),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -326,7 +334,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Update'),
         ),

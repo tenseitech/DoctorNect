@@ -80,15 +80,18 @@ class CommunityInvestigationsRepository {
           .collection(FirestorePaths.communityLabTests)
           .orderBy('name')
           .limit(_fetchLimit);
-      final snap =
-          await FirestoreReadHelper.getQuery(query: query, preferCache: true);
+      final snap = await FirestoreReadHelper.getQuery(
+        query: query,
+        preferCache: true,
+      );
       _labCache
         ..clear()
         ..addAll(snap.docs.map(_labFromDoc));
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'CommunityInvestigationsRepository._fetchLabTests failed: $e\n$st');
+          'CommunityInvestigationsRepository._fetchLabTests failed: $e\n$st',
+        );
       }
     }
   }
@@ -99,15 +102,18 @@ class CommunityInvestigationsRepository {
           .collection(FirestorePaths.communityRadiology)
           .orderBy('name')
           .limit(_fetchLimit);
-      final snap =
-          await FirestoreReadHelper.getQuery(query: query, preferCache: true);
+      final snap = await FirestoreReadHelper.getQuery(
+        query: query,
+        preferCache: true,
+      );
       _radiologyCache
         ..clear()
         ..addAll(snap.docs.map(_radiologyFromDoc));
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'CommunityInvestigationsRepository._fetchRadiologyTests failed: $e\n$st');
+          'CommunityInvestigationsRepository._fetchRadiologyTests failed: $e\n$st',
+        );
       }
     }
   }
@@ -118,15 +124,18 @@ class CommunityInvestigationsRepository {
           .collection(FirestorePaths.communityBodyParts)
           .orderBy('name')
           .limit(_fetchLimit);
-      final snap =
-          await FirestoreReadHelper.getQuery(query: query, preferCache: true);
+      final snap = await FirestoreReadHelper.getQuery(
+        query: query,
+        preferCache: true,
+      );
       _bodyPartCache
         ..clear()
         ..addAll(snap.docs.map(_bodyPartFromDoc));
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'CommunityInvestigationsRepository._fetchBodyParts failed: $e\n$st');
+          'CommunityInvestigationsRepository._fetchBodyParts failed: $e\n$st',
+        );
       }
     }
   }
@@ -200,19 +209,22 @@ class CommunityInvestigationsRepository {
     final docRef = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityLabTests)
         .add({
-      'name': trimmed,
-      'nameLower': trimmed.toLowerCase(),
-      'group': group.trim().isEmpty ? 'Custom' : group.trim(),
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
-    });
+          'name': trimmed,
+          'nameLower': trimmed.toLowerCase(),
+          'group': group.trim().isEmpty ? 'Custom' : group.trim(),
+          'addedByDoctorId': doctorId,
+          'addedAt': FieldValue.serverTimestamp(),
+        });
 
     final snapshot = await FirestoreReadHelper.getDocument(
-        reference: docRef, preferCache: true);
+      reference: docRef,
+      preferCache: true,
+    );
     final item = _labFromDoc(snapshot);
     _labCache.add(item);
-    _labCache
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    _labCache.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return item;
   }
 
@@ -229,25 +241,29 @@ class CommunityInvestigationsRepository {
 
     if (!FirebaseBootstrap.isReady) {
       throw StateError(
-          'Internet is required to add a community radiology test.');
+        'Internet is required to add a community radiology test.',
+      );
     }
 
     final docRef = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityRadiology)
         .add({
-      'name': trimmed,
-      'nameLower': trimmed.toLowerCase(),
-      'group': group.trim().isEmpty ? 'Custom' : group.trim(),
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
-    });
+          'name': trimmed,
+          'nameLower': trimmed.toLowerCase(),
+          'group': group.trim().isEmpty ? 'Custom' : group.trim(),
+          'addedByDoctorId': doctorId,
+          'addedAt': FieldValue.serverTimestamp(),
+        });
 
     final snapshot = await FirestoreReadHelper.getDocument(
-        reference: docRef, preferCache: true);
+      reference: docRef,
+      preferCache: true,
+    );
     final item = _radiologyFromDoc(snapshot);
     _radiologyCache.add(item);
-    _radiologyCache
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    _radiologyCache.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return item;
   }
 
@@ -268,11 +284,11 @@ class CommunityInvestigationsRepository {
     final doc = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityBodyParts)
         .add({
-      'name': trimmed,
-      'nameLower': trimmed.toLowerCase(),
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
-    });
+          'name': trimmed,
+          'nameLower': trimmed.toLowerCase(),
+          'addedByDoctorId': doctorId,
+          'addedAt': FieldValue.serverTimestamp(),
+        });
 
     final part = CommunityBodyPart(
       id: doc.id,
@@ -280,8 +296,9 @@ class CommunityInvestigationsRepository {
       addedByDoctorId: doctorId,
     );
     _bodyPartCache.add(part);
-    _bodyPartCache
-        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    _bodyPartCache.sort(
+      (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return part;
   }
 
@@ -328,7 +345,8 @@ class CommunityInvestigationsRepository {
   }
 
   static CommunityLabTest _labFromDoc(
-      DocumentSnapshot<Map<String, dynamic>> doc) {
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data() ?? {};
     return CommunityLabTest(
       id: doc.id,
@@ -351,7 +369,8 @@ class CommunityInvestigationsRepository {
   }
 
   static CommunityBodyPart _bodyPartFromDoc(
-      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data();
     return CommunityBodyPart(
       id: doc.id,

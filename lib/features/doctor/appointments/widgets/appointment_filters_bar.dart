@@ -97,8 +97,10 @@ class AppointmentFiltersBar extends StatelessWidget {
               )
             : null,
         isDense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
       ),
     );
   }
@@ -124,10 +126,10 @@ class AppointmentFiltersBar extends StatelessWidget {
             label: typeFilter == null
                 ? 'Type: All'
                 : typeFilter == AppointmentType.newVisit
-                    ? 'New Patient'
-                    : typeFilter == AppointmentType.followUp
-                        ? 'Follow-up'
-                        : 'Returning',
+                ? 'New Patient'
+                : typeFilter == AppointmentType.followUp
+                ? 'Follow-up'
+                : 'Returning',
             selected: typeFilter != null,
             onTap: () => _showTypeSheet(context),
             onClear: typeFilter != null ? () => onTypeChanged(null) : null,
@@ -209,19 +211,22 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppConstants.inputRadius),
             border: Border.all(
-              color:
-                  selected ? AppColors.doctorBlue : AppColors.borderOf(context),
+              color: selected
+                  ? AppColors.doctorBlue
+                  : AppColors.borderOf(context),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon,
-                    size: 14,
-                    color: selected
-                        ? AppColors.doctorBlue
-                        : AppColors.textSecondaryOf(context)),
+                Icon(
+                  icon,
+                  size: 14,
+                  color: selected
+                      ? AppColors.doctorBlue
+                      : AppColors.textSecondaryOf(context),
+                ),
                 const SizedBox(width: 4),
               ],
               Text(
@@ -238,8 +243,11 @@ class _FilterChip extends StatelessWidget {
                 const SizedBox(width: 4),
                 GestureDetector(
                   onTap: onClear,
-                  child:
-                      Icon(Icons.close, size: 14, color: AppColors.doctorBlue),
+                  child: Icon(
+                    Icons.close,
+                    size: 14,
+                    color: AppColors.doctorBlue,
+                  ),
                 ),
               ],
             ],

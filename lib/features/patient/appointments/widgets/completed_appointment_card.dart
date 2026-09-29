@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -74,8 +75,9 @@ class CompletedAppointmentCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
         ],
         if (a.hasPrescription || a.hasReport) ...[
@@ -95,7 +97,9 @@ class CompletedAppointmentCard extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () {
                     AppToast.info(
-                        context, 'Report download is not available yet.');
+                      context,
+                      'Report download is not available yet.',
+                    );
                   },
                   icon: const Icon(Icons.download_outlined, size: 14),
                   label: const Text('Report'),

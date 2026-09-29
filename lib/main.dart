@@ -21,8 +21,7 @@ import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Native splash is Android/iOS only (`web: false` in pubspec). Web uses the
-  // HTML splash in index.html, which flutter-first-frame already dismisses.
+  // Native splash is Android/iOS only (`web: false` in pubspec).
   if (!kIsWeb) {
     FlutterNativeSplash.preserve(widgetsBinding: WidgetsBinding.instance);
   }
@@ -32,7 +31,7 @@ Future<void> main() async {
 
   PendingInviteStore.captureFromUri(Uri.base);
 
-  // Essential startup only — parallelize to shorten splash dwell time.
+  // Essential startup only — parallelize initialization.
   await Future.wait<void>([
     FirebaseBootstrap.initialize(),
     AppThemeController.instance.init(),
@@ -44,14 +43,21 @@ Future<void> main() async {
   // Non-critical: load after first frame / in background.
   unawaited(SymptomsDatabase.instance.ensureLoaded());
 
+  // On web, resolve the initial destination screen directly so no splash screen is shown.
+  final Widget? webInitialScreen = kIsWeb
+      ? await SplashScreen.resolveInitialScreen(initializeFirebase: false)
+      : null;
+
   if (!kIsWeb) {
     FlutterNativeSplash.remove();
   }
-  runApp(const DoctorNectApp());
+  runApp(DoctorNectApp(initialScreen: webInitialScreen));
 }
 
 class DoctorNectApp extends StatelessWidget {
-  const DoctorNectApp({super.key});
+  const DoctorNectApp({super.key, this.initialScreen});
+
+  final Widget? initialScreen;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +96,7 @@ class DoctorNectApp extends StatelessWidget {
             Locale('ml'),
             Locale('pa'),
           ],
-          home: const SplashScreen(),
+          home: initialScreen ?? const SplashScreen(),
         );
       },
     );

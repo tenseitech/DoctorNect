@@ -174,9 +174,11 @@ class _MetaLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon,
-            size: 14,
-            color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9)),
+        Icon(
+          icon,
+          size: 14,
+          color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9),
+        ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -184,8 +186,9 @@ class _MetaLine extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
         ),
       ],
@@ -223,11 +226,7 @@ class _DoctorPracticeStats extends StatelessWidget {
               value: rating > 0 ? rating.toStringAsFixed(1) : '—',
             ),
           ),
-          Container(
-            width: 1,
-            height: 44,
-            color: AppColors.borderOf(context),
-          ),
+          Container(width: 1, height: 44, color: AppColors.borderOf(context)),
           Expanded(
             child: _StatTile(
               icon: Icons.rate_review_outlined,

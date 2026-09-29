@@ -1,11 +1,15 @@
 import 'package:medibond/core/firebase/firestore_service.dart';
+
 import './app_toast.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/shared_appointments_store.dart';
 import '../session/doctor_session.dart';
 import '../session/patient_session.dart';
+
 import 'package:medibond/features/shared/screens/appointment_detail_screen.dart';
+
 import '../../features/doctor/clinical/referral_consult_service.dart';
 import '../../features/doctor/home/widgets/doctor_referred_patients_screen.dart';
 import '../../features/doctor/clinical/data/clinical_prescription_store.dart';
@@ -64,8 +68,10 @@ abstract final class AppNotificationNavigator {
       if (type == 'pharmacy_delivery_update') {
         final prescriptionId = data['prescriptionId']?.toString().trim();
         if (prescriptionId == null || prescriptionId.isEmpty) return false;
-        return _openPatientPrescription(context,
-            prescriptionId: prescriptionId);
+        return _openPatientPrescription(
+          context,
+          prescriptionId: prescriptionId,
+        );
       }
     }
 
@@ -79,8 +85,11 @@ abstract final class AppNotificationNavigator {
   }) async {
     final targetId = notification.targetId?.trim();
     if (targetId == null || targetId.isEmpty) {
-      return _openWithoutTargetId(context,
-          notification: notification, audience: audience);
+      return _openWithoutTargetId(
+        context,
+        notification: notification,
+        audience: audience,
+      );
     }
 
     final target = notification.target ?? _inferTarget(notification, audience);
@@ -186,15 +195,20 @@ abstract final class AppNotificationNavigator {
   }) async {
     return switch (target) {
       AppNotificationTarget.appointmentDetail ||
-      AppNotificationTarget.appointments =>
-        _openAppointment(context, targetId: targetId, audience: audience),
-      AppNotificationTarget.labBooking =>
-        _openLabBooking(context, bookingId: targetId),
+      AppNotificationTarget.appointments => _openAppointment(
+        context,
+        targetId: targetId,
+        audience: audience,
+      ),
+      AppNotificationTarget.labBooking => _openLabBooking(
+        context,
+        bookingId: targetId,
+      ),
       AppNotificationTarget.labReports => _openLabReports(
-          context,
-          targetId: targetId,
-          notification: notification,
-        ),
+        context,
+        targetId: targetId,
+        notification: notification,
+      ),
       AppNotificationTarget.prescriptions
           when audience == NotificationAudience.patient =>
         _openPatientPrescription(context, prescriptionId: targetId),
@@ -205,11 +219,11 @@ abstract final class AppNotificationNavigator {
           when audience == NotificationAudience.doctor =>
         _openDoctorReferralConsult(context, referralId: targetId),
       _ => _openFromFallback(
-          context,
-          notification: notification,
-          audience: audience,
-          targetId: targetId,
-        ),
+        context,
+        notification: notification,
+        audience: audience,
+        targetId: targetId,
+      ),
     };
   }
 
@@ -306,27 +320,23 @@ abstract final class AppNotificationNavigator {
   }) async {
     if (audience == NotificationAudience.doctor) {
       final doctorId = DoctorSession.loggedInDoctorId;
-      var appointment =
-          SharedAppointmentsStore.instance.doctorAppointmentForTarget(
-        targetId,
-        doctorId,
-      );
+      var appointment = SharedAppointmentsStore.instance
+          .doctorAppointmentForTarget(targetId, doctorId);
       if (appointment == null && doctorId.isNotEmpty) {
         await SharedAppointmentsStore.instance.refreshForDoctor(
           doctorId,
           preferCache: false,
           force: true,
         );
-        appointment =
-            SharedAppointmentsStore.instance.doctorAppointmentForTarget(
-          targetId,
-          doctorId,
-        );
+        appointment = SharedAppointmentsStore.instance
+            .doctorAppointmentForTarget(targetId, doctorId);
       }
       if (appointment == null) {
         if (!context.mounted) return false;
         _showFailure(
-            context, 'Appointment not found. Pull to refresh and try again.');
+          context,
+          'Appointment not found. Pull to refresh and try again.',
+        );
         return false;
       }
       if (!context.mounted) return false;
@@ -340,8 +350,8 @@ abstract final class AppNotificationNavigator {
     }
 
     final patientId = PatientSession.loggedInPatientId;
-    var patientAppointment =
-        SharedAppointmentsStore.instance.patientAppointmentForTarget(targetId);
+    var patientAppointment = SharedAppointmentsStore.instance
+        .patientAppointmentForTarget(targetId);
     if (patientAppointment == null && patientId.isNotEmpty) {
       await SharedAppointmentsStore.instance.refreshForPatient(patientId);
       patientAppointment = SharedAppointmentsStore.instance
@@ -350,16 +360,17 @@ abstract final class AppNotificationNavigator {
     if (patientAppointment == null) {
       if (!context.mounted) return false;
       _showFailure(
-          context, 'Appointment not found. Pull to refresh and try again.');
+        context,
+        'Appointment not found. Pull to refresh and try again.',
+      );
       return false;
     }
     if (!context.mounted) return false;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AppointmentDetailScreen(
-          appointment: patientAppointment!,
-        ),
+        builder: (_) =>
+            AppointmentDetailScreen(appointment: patientAppointment!),
       ),
     );
     return true;
@@ -367,19 +378,25 @@ abstract final class AppNotificationNavigator {
 
   // â”€â”€ Group 2: lab booking / report / order â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  static Future<bool> _openLabBooking(BuildContext context,
-      {required String bookingId}) async {
+  static Future<bool> _openLabBooking(
+    BuildContext context, {
+    required String bookingId,
+  }) async {
     final patientId = PatientSession.loggedInPatientId;
     var booking = PatientLabBookingStore.instance.findById(bookingId);
     if (booking == null && patientId.isNotEmpty) {
-      await PatientLabBookingStore.instance
-          .refreshForPatient(patientId, preferCache: false);
+      await PatientLabBookingStore.instance.refreshForPatient(
+        patientId,
+        preferCache: false,
+      );
       booking = PatientLabBookingStore.instance.findById(bookingId);
     }
     if (booking == null) {
       if (!context.mounted) return false;
       _showFailure(
-          context, 'Lab booking not found. Pull to refresh and try again.');
+        context,
+        'Lab booking not found. Pull to refresh and try again.',
+      );
       return false;
     }
     if (!context.mounted) return false;
@@ -407,19 +424,25 @@ abstract final class AppNotificationNavigator {
     return id.startsWith('lab_');
   }
 
-  static Future<bool> _openLabReport(BuildContext context,
-      {required String bookingId}) async {
+  static Future<bool> _openLabReport(
+    BuildContext context, {
+    required String bookingId,
+  }) async {
     final patientId = PatientSession.loggedInPatientId;
     var booking = PatientLabBookingStore.instance.findById(bookingId);
     if (booking == null && patientId.isNotEmpty) {
-      await PatientLabBookingStore.instance
-          .refreshForPatient(patientId, preferCache: false);
+      await PatientLabBookingStore.instance.refreshForPatient(
+        patientId,
+        preferCache: false,
+      );
       booking = PatientLabBookingStore.instance.findById(bookingId);
     }
     if (booking == null) {
       if (!context.mounted) return false;
       _showFailure(
-          context, 'Lab report not found. Pull to refresh and try again.');
+        context,
+        'Lab report not found. Pull to refresh and try again.',
+      );
       return false;
     }
     if (!context.mounted) return false;
@@ -434,19 +457,25 @@ abstract final class AppNotificationNavigator {
     return true;
   }
 
-  static Future<bool> _openLabOrder(BuildContext context,
-      {required String orderId}) async {
+  static Future<bool> _openLabOrder(
+    BuildContext context, {
+    required String orderId,
+  }) async {
     final patientId = PatientSession.loggedInPatientId;
     var order = LabOrderStore.instance.findById(orderId);
     if (order == null && patientId.isNotEmpty) {
-      await LabOrderStore.instance
-          .refreshForPatient(patientId, preferCache: false);
+      await LabOrderStore.instance.refreshForPatient(
+        patientId,
+        preferCache: false,
+      );
       order = LabOrderStore.instance.findById(orderId);
     }
     if (order == null) {
       if (!context.mounted) return false;
       _showFailure(
-          context, 'Lab test order not found. Pull to refresh and try again.');
+        context,
+        'Lab test order not found. Pull to refresh and try again.',
+      );
       return false;
     }
     if (!context.mounted) return false;
@@ -489,8 +518,10 @@ abstract final class AppNotificationNavigator {
     }
     if (delivery == null) {
       if (!context.mounted) return false;
-      _showFailure(context,
-          'Prescription delivery not found. Pull to refresh and try again.');
+      _showFailure(
+        context,
+        'Prescription delivery not found. Pull to refresh and try again.',
+      );
       return false;
     }
     if (!context.mounted) return false;
@@ -516,7 +547,9 @@ abstract final class AppNotificationNavigator {
     if (draft == null) {
       if (!context.mounted) return false;
       _showFailure(
-          context, 'Prescription not found. Pull to refresh and try again.');
+        context,
+        'Prescription not found. Pull to refresh and try again.',
+      );
       return false;
     }
     if (!context.mounted) return false;

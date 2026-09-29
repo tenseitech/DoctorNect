@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/enums/user_type.dart';
@@ -35,9 +36,9 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
   StreamSubscription<List<DoctorLabOrder>>? _ordersSub;
 
   String? _doctorCity() => pharmacyCityFilter(
-        city: DoctorProfileStore.instance.profile.city,
-        address: DoctorProfileStore.instance.profile.addressLine1,
-      );
+    city: DoctorProfileStore.instance.profile.city,
+    address: DoctorProfileStore.instance.profile.addressLine1,
+  );
 
   @override
   void initState() {
@@ -47,16 +48,18 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
       cityFilter: _doctorCity(),
     );
     _searchResults = labs
-        .map((l) => DoctorPartnerProfileItem(
-              id: l.id,
-              name: l.labName,
-              ownerName: '',
-              address: l.address,
-              phone: l.phone,
-              email: l.email,
-              city: l.city,
-              registrationNumber: l.licenseNumber,
-            ))
+        .map(
+          (l) => DoctorPartnerProfileItem(
+            id: l.id,
+            name: l.labName,
+            ownerName: '',
+            address: l.address,
+            phone: l.phone,
+            email: l.email,
+            city: l.city,
+            registrationNumber: l.licenseNumber,
+          ),
+        )
         .toList();
   }
 
@@ -66,16 +69,18 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
       cityFilter: _doctorCity(),
     );
     final mapped = labs
-        .map((l) => DoctorPartnerProfileItem(
-              id: l.id,
-              name: l.labName,
-              ownerName: '',
-              address: l.address,
-              phone: l.phone,
-              email: l.email,
-              city: l.city,
-              registrationNumber: l.licenseNumber,
-            ))
+        .map(
+          (l) => DoctorPartnerProfileItem(
+            id: l.id,
+            name: l.labName,
+            ownerName: '',
+            address: l.address,
+            phone: l.phone,
+            email: l.email,
+            city: l.city,
+            registrationNumber: l.licenseNumber,
+          ),
+        )
         .toList();
     if (!mounted) {
       _searchResults = mapped;
@@ -101,8 +106,7 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
     return DoctorConnectedPartnersBaseView(
       partnerRole: UserType.lab,
       partnerHeaderTitle: 'Diagnostic Labs',
-      partnerHeaderSubtitle:
-          'Connect with verified diagnostic labs to send electronic lab orders.',
+      partnerHeaderSubtitle: 'Connect with verified diagnostic labs to send electronic lab orders.',
       partnerTypeLabel: 'Lab',
       accentColor: AppColors.labPurple,
       showAppBar: widget.showAppBar,
@@ -110,33 +114,39 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
       listenables: [connStore, orderStore],
       activeConnections: () => connStore
           .activeForDoctor(doctorId)
-          .map((c) => DoctorPartnerConnectionItem(
-                id: c.id,
-                partnerId: c.labId,
-                partnerName: c.labName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => DoctorPartnerConnectionItem(
+              id: c.id,
+              partnerId: c.labId,
+              partnerName: c.labName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       pendingFromPartner: () => connStore
           .pendingForDoctor(doctorId)
-          .map((c) => DoctorPartnerConnectionItem(
-                id: c.id,
-                partnerId: c.labId,
-                partnerName: c.labName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => DoctorPartnerConnectionItem(
+              id: c.id,
+              partnerId: c.labId,
+              partnerName: c.labName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       pendingFromDoctor: () => connStore
           .pendingSentByDoctor(doctorId)
-          .map((c) => DoctorPartnerConnectionItem(
-                id: c.id,
-                partnerId: c.labId,
-                partnerName: c.labName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => DoctorPartnerConnectionItem(
+              id: c.id,
+              partnerId: c.labId,
+              partnerName: c.labName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       searchResults: () => _searchResults,
       searchHintText: 'Lab name, area, license no...',
@@ -163,7 +173,9 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
       onReject: (connectionId, _) => connStore.rejectByDoctor(connectionId),
       onRevoke: (connectionId, _) => connStore.removeConnection(connectionId),
       onSendRequest: (partner) => connStore.sendRequestFromDoctor(
-          doctorId: doctorId, labId: partner.id),
+        doctorId: doctorId,
+        labId: partner.id,
+      ),
       onOpenAddPartner: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(

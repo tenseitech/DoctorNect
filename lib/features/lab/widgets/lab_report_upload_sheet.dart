@@ -1,5 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -75,8 +76,10 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Confirm send report',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+        title: Text(
+          'Confirm send report',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
         content: scrollableDialogContent(
           context: dialogContext,
           child: Column(
@@ -100,16 +103,20 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          size: 20, color: Color(0xFFEA580C)),
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        size: 20,
+                        color: Color(0xFFEA580C),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'This file is larger than typical lab reports — please confirm this is the correct report.',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall,
-                              color: Color(0xFF9A3412),
-                              height: 1.4),
+                            fontSize: AppTypography.bodySmall,
+                            color: Color(0xFF9A3412),
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ],
@@ -257,8 +264,9 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
       } else if (widget.order != null) {
         final o = widget.order!;
         final reportFileName = LabReportFileStore.reportFileNameFor(
-          testName:
-              o.testNames.isNotEmpty ? o.testNames.join(', ') : 'Lab test',
+          testName: o.testNames.isNotEmpty
+              ? o.testNames.join(', ')
+              : 'Lab test',
           originalFileName: file.name,
         );
         final uploadResult =
@@ -310,8 +318,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
         final plugin = e.plugin;
         message = e.code == 'unauthorized' || e.code == 'permission-denied'
             ? plugin == 'firebase_storage'
-                ? 'Upload denied — storage permission error (${e.code}). Contact support.'
-                : 'Could not save report — permission error (${e.code}). Contact support.'
+                  ? 'Upload denied — storage permission error (${e.code}). Contact support.'
+                  : 'Could not save report — permission error (${e.code}). Contact support.'
             : 'Upload failed: ${e.message ?? e.code}';
       } else if (e is TimeoutException) {
         message = 'Upload timed out. Check your connection and try again.';
@@ -351,22 +359,25 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             Text(
               'Upload lab report',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineSmall,
-                  fontWeight: FontWeight.w700),
+                fontSize: AppTypography.headlineSmall,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               '$_patientName · $_testNames',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
               onPressed: _submitting ? null : _pickFile,
               icon: const Icon(Icons.upload_file_outlined),
-              label:
-                  Text(_file == null ? 'Choose PDF or image' : 'Change file'),
+              label: Text(
+                _file == null ? 'Choose PDF or image' : 'Change file',
+              ),
             ),
             if (_file != null) ...[
               const SizedBox(height: 12),
@@ -393,15 +404,17 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                           Text(
                             _file!.name,
                             style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w600,
-                                fontSize: AppTypography.bodySmall),
+                              fontWeight: FontWeight.w600,
+                              fontSize: AppTypography.bodySmall,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             _formatFileSize(_file!.size),
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         ],
                       ),
@@ -422,7 +435,9 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.white),
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
                     )
                   : const Text('Submit report to patient'),
             ),

@@ -37,9 +37,9 @@ class DoctorProfileWebLayout extends StatelessWidget {
   final List<ProfileWebActionData> insightsActions;
 
   List<ProfileWebActionData> get _sidebarQuickLinks => [
-        ...accountActions,
-        ...insightsActions,
-      ];
+    ...accountActions,
+    ...insightsActions,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -81,13 +81,11 @@ class DoctorProfileWebLayout extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      width: 320,
-                      child: identityPanel,
-                    ),
+                    SizedBox(width: 320, child: identityPanel),
                     const SizedBox(width: 24),
                     Expanded(
-                        child: Column(children: _mainPanels(compact: false))),
+                      child: Column(children: _mainPanels(compact: false)),
+                    ),
                   ],
                 ),
             ],
@@ -154,7 +152,8 @@ class _WebPageHeader extends StatelessWidget {
               backgroundColor: AppColors.surfaceOf(context),
               side: BorderSide(color: AppColors.borderOf(context)),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -220,7 +219,9 @@ class _DoctorIdentityPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(child: GestureDetector(onTap: onPickPhoto, child: avatar)),
+            Center(
+              child: GestureDetector(onTap: onPickPhoto, child: avatar),
+            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -291,7 +292,8 @@ class _DoctorIdentityPanel extends StatelessWidget {
                 foregroundColor: AppColors.white,
                 minimumSize: Size(double.infinity, 46),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             if (quickLinks.isNotEmpty) ...[
@@ -327,10 +329,11 @@ class _DoctorIdentityPanel extends StatelessWidget {
                       _SidebarQuickLink(action: quickLinks[i]),
                       if (i < quickLinks.length - 1)
                         Divider(
-                            height: 1,
-                            thickness: 1,
-                            indent: 58,
-                            color: AppColors.borderOf(context)),
+                          height: 1,
+                          thickness: 1,
+                          indent: 58,
+                          color: AppColors.borderOf(context),
+                        ),
                     ],
                   ],
                 ),
@@ -357,7 +360,8 @@ class _SidebarQuickLinkState extends State<_SidebarQuickLink> {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = widget.action.iconGradient ??
+    final gradient =
+        widget.action.iconGradient ??
         const [AppColors.doctorBlue, Color(0xFF0F4A82)];
 
     return MouseRegion(
@@ -382,8 +386,11 @@ class _SidebarQuickLinkState extends State<_SidebarQuickLink> {
                     ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(widget.action.icon,
-                      size: 18, color: AppColors.white),
+                  child: Icon(
+                    widget.action.icon,
+                    size: 18,
+                    color: AppColors.white,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -466,8 +473,9 @@ class _WebSectionPanel extends StatelessWidget {
             Text(
               subtitle,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
             const SizedBox(height: 16),
             child,
@@ -562,7 +570,8 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = widget.action.iconGradient ??
+    final gradient =
+        widget.action.iconGradient ??
         const [AppColors.doctorBlue, Color(0xFF0F4A82)];
 
     return MouseRegion(
@@ -600,8 +609,11 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(widget.action.icon,
-                      size: 21, color: AppColors.white),
+                  child: Icon(
+                    widget.action.icon,
+                    size: 21,
+                    color: AppColors.white,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -637,8 +649,8 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 22,
-                  color:
-                      AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.8),
                 ),
               ],
             ),
@@ -695,8 +707,9 @@ class _ContactRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
         ),
       ],

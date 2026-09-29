@@ -1,5 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -94,13 +95,15 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           .fetch(widget.doctorId)
           .timeout(const Duration(seconds: 12));
       doctor ??= _doctorFromListing(
-          RegisteredDoctorsStore.instance.findById(widget.doctorId));
+        RegisteredDoctorsStore.instance.findById(widget.doctorId),
+      );
       await _applyLoadedDoctor(doctor);
     } catch (_) {
       if (!mounted) return;
       await _applyLoadedDoctor(
         _doctorFromListing(
-            RegisteredDoctorsStore.instance.findById(widget.doctorId)),
+          RegisteredDoctorsStore.instance.findById(widget.doctorId),
+        ),
       );
     }
   }
@@ -122,7 +125,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       specialities: [listing.specialization],
       services: const ['Consultation', 'Follow-up', 'Prescription'],
       timings: const [
-        ClinicTiming(day: 'Schedule', hours: 'Select a date and time below')
+        ClinicTiming(day: 'Schedule', hours: 'Select a date and time below'),
       ],
       education: [
         EducationEntry(degree: listing.qualification, college: '—', year: 0),
@@ -159,7 +162,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     try {
       schedule =
           await _availabilityRepo.fetch(widget.doctorId, preferCache: true) ??
-              DoctorAvailability.defaults();
+          DoctorAvailability.defaults();
     } catch (_) {
       schedule = DoctorAvailability.defaults();
     }
@@ -203,13 +206,13 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   }
 
   String _relationLabel(FamilyRelation relation) => switch (relation) {
-        FamilyRelation.spouse => 'Spouse',
-        FamilyRelation.child => 'Child',
-        FamilyRelation.parent => 'Parent',
-        FamilyRelation.sibling => 'Sibling',
-        FamilyRelation.friend => 'Friend',
-        FamilyRelation.other => 'Other',
-      };
+    FamilyRelation.spouse => 'Spouse',
+    FamilyRelation.child => 'Child',
+    FamilyRelation.parent => 'Parent',
+    FamilyRelation.sibling => 'Sibling',
+    FamilyRelation.friend => 'Friend',
+    FamilyRelation.other => 'Other',
+  };
 
   Future<void> _loadSlotsForDate(DateTime date) async {
     setState(() => _loadingSlots = true);
@@ -224,8 +227,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         _loadingSlots = false;
         final selectedId = _draft.selectedSlotId;
         if (selectedId != null) {
-          final stillValid =
-              slots.any((s) => s.id == selectedId && s.isSelectable);
+          final stillValid = slots.any(
+            (s) => s.id == selectedId && s.isSelectable,
+          );
           if (!stillValid) {
             _draft = BookingDraft(
               doctorId: _draft.doctorId,
@@ -300,9 +304,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   }
 
   void _showBookingMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _next() {
@@ -313,8 +316,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           slot != null && !slot.isSelectable
               ? 'This time has already passed. Please choose a later slot.'
               : _existingSlotBookings() >= 1
-                  ? 'Select Emergency or Other and provide a reason to share this slot'
-                  : 'Please select a time slot',
+              ? 'Select Emergency or Other and provide a reason to share this slot'
+              : 'Please select a time slot',
         );
         return;
       }
@@ -327,7 +330,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       }
       if (!_draft.bookingForSelf && _draft.familyMemberIds.isEmpty) {
         _showBookingMessage(
-            'Please select who you are booking for (Myself or a Family Member).');
+          'Please select who you are booking for (Myself or a Family Member).',
+        );
         return;
       }
       if (_draft.bookingForSelf && _getController('self').text.trim().isEmpty) {
@@ -339,14 +343,16 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           final member = _familyMembers.firstWhere(
             (m) => m.id == id,
             orElse: () => FamilyMember(
-                id: id,
-                name: 'Family Member',
-                age: 0,
-                relation: '',
-                gender: ''),
+              id: id,
+              name: 'Family Member',
+              age: 0,
+              relation: '',
+              gender: '',
+            ),
           );
           _showBookingMessage(
-              'Please enter reason for visit for ${member.name}.');
+            'Please enter reason for visit for ${member.name}.',
+          );
           return;
         }
       }
@@ -388,9 +394,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
 
     return switch (_step) {
       0 => _slotStepValid(),
-      1 => (_draft.bookingForSelf || _draft.familyMemberIds.isNotEmpty) &&
-          _slotHasCapacityForPatients() &&
-          reasonsOk,
+      1 =>
+        (_draft.bookingForSelf || _draft.familyMemberIds.isNotEmpty) &&
+            _slotHasCapacityForPatients() &&
+            reasonsOk,
       2 => _slotHasCapacityForPatients(),
       _ => false,
     };
@@ -399,18 +406,23 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   List<String> _patientNames() {
     final names = <String>[];
     if (_draft.bookingForSelf) {
-      names.add(PatientProfileMock.profile.name.isNotEmpty
-          ? PatientProfileMock.profile.name
-          : 'Patient');
+      names.add(
+        PatientProfileMock.profile.name.isNotEmpty
+            ? PatientProfileMock.profile.name
+            : 'Patient',
+      );
     }
     for (final id in _draft.familyMemberIds) {
-      final f = _familyMembers.firstWhere((m) => m.id == id,
-          orElse: () => FamilyMember(
-              id: id,
-              name: 'Family Member',
-              age: 0,
-              relation: '',
-              gender: 'Female'));
+      final f = _familyMembers.firstWhere(
+        (m) => m.id == id,
+        orElse: () => FamilyMember(
+          id: id,
+          name: 'Family Member',
+          age: 0,
+          relation: '',
+          gender: 'Female',
+        ),
+      );
       names.add(f.name);
     }
     return names;
@@ -455,8 +467,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       );
     } catch (_) {
       if (!mounted) return; // FIXED: mounted check after await
-      AppToast.info(context,
-          'Family member added for this booking, but could not be saved to your profile.');
+      AppToast.info(
+        context,
+        'Family member added for this booking, but could not be saved to your profile.',
+      );
     }
   }
 
@@ -495,7 +509,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         _existingSlotBookings() >= 1 &&
         (slotShareReason == null || slotShareReason.isEmpty)) {
       _showBookingMessage(
-          'Please provide a reason for sharing this time slot.');
+        'Please provide a reason for sharing this time slot.',
+      );
       return;
     }
 
@@ -505,7 +520,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           ? '${DateFormat('dd MMM').format(old.dateTime)} · ${old.slotLabel}'
           : '';
       final newLabel = '${DateFormat('dd MMM').format(date)} · $slotLabel';
-      final sameDay = old != null &&
+      final sameDay =
+          old != null &&
           old.dateTime.year == date.year &&
           old.dateTime.month == date.month &&
           old.dateTime.day == date.day;
@@ -531,19 +547,21 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             context: context,
             appointmentId: old!.appointmentId,
             doctorId: widget.doctorId,
-            patientId: old.patientId ??
+            patientId:
+                old.patientId ??
                 (PatientSession.loggedInPatientId.isNotEmpty
                     ? PatientSession.loggedInPatientId
                     : 'pat-default'),
             doctorName: _draft.doctorName,
-            specialization: listing?.specialization ??
+            specialization:
+                listing?.specialization ??
                 _doctor?.specialization ??
                 'General Physician',
             patientName: combinedName,
             patientAge: profile.age,
             patientGender:
                 BookingFlowHelpers.resolvePatientGender(profile.gender) ??
-                    'Other',
+                'Other',
             dateTime: newSlotDateTime,
             slotLabel: slotLabel,
             visitType: 'followUp',
@@ -564,9 +582,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       } catch (e) {
         if (!mounted) return;
         _showBookingMessage(
-          describeUserFacingError(e,
-              fallback:
-                  "Couldn't reschedule this appointment. Please check your connection and try again."),
+          describeUserFacingError(
+            e,
+            fallback: "Couldn't reschedule this appointment. Please check your connection and try again.",
+          ),
         );
         return;
       }
@@ -611,11 +630,17 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       final f = _familyMembers.firstWhere(
         (m) => m.id == id,
         orElse: () => FamilyMember(
-            id: id, name: 'Family Member', age: 0, relation: '', gender: ''),
+          id: id,
+          name: 'Family Member',
+          age: 0,
+          relation: '',
+          gender: '',
+        ),
       );
       if (BookingFlowHelpers.resolvePatientGender(f.gender) == null) {
         _showBookingMessage(
-            'Please set a valid gender for ${f.name} before booking.');
+          'Please set a valid gender for ${f.name} before booking.',
+        );
         return;
       }
     }
@@ -656,7 +681,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
               ? PatientSession.loggedInPatientId
               : 'pat-default',
           doctorName: _draft.doctorName,
-          specialization: listing?.specialization ??
+          specialization:
+              listing?.specialization ??
               _doctor?.specialization ??
               'General Physician',
           patientName: pName,
@@ -675,7 +701,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       final confirmed = await store.addBooking(
         doctorId: widget.doctorId,
         doctorName: _draft.doctorName,
-        specialization: listing?.specialization ??
+        specialization:
+            listing?.specialization ??
             _doctor?.specialization ??
             'General Physician',
         date: date,
@@ -717,7 +744,12 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         final f = _familyMembers.firstWhere(
           (m) => m.id == id,
           orElse: () => FamilyMember(
-              id: id, name: 'Family Member', age: 0, relation: '', gender: ''),
+            id: id,
+            name: 'Family Member',
+            age: 0,
+            relation: '',
+            gender: '',
+          ),
         );
         await processBooking(
           f.name,
@@ -734,9 +766,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     } catch (e) {
       if (!mounted) return;
       _showBookingMessage(
-        describeUserFacingError(e,
-            fallback:
-                "Couldn't confirm this booking. Please check your connection and try again."),
+        describeUserFacingError(
+          e,
+          fallback: "Couldn't confirm this booking. Please check your connection and try again.",
+        ),
       );
       return;
     }
@@ -790,14 +823,16 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       return Scaffold(
         appBar: AppBar(),
         body: const Center(
-            child: CircularProgressIndicator(color: AppColors.patientTeal)),
+          child: CircularProgressIndicator(color: AppColors.patientTeal),
+        ),
       );
     }
 
     if (_doctor == null) {
       return Scaffold(
-          appBar: AppBar(),
-          body: const Center(child: Text('Doctor not found')));
+        appBar: AppBar(),
+        body: const Center(child: Text('Doctor not found')),
+      );
     }
 
     if (_step == 3 && _confirmed != null) {
@@ -811,10 +846,14 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        leading:
-            IconButton(icon: const Icon(Icons.arrow_back), onPressed: _back),
-        title: Text('Book Appointment',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _back,
+        ),
+        title: Text(
+          'Book Appointment',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: AppColors.cardBgOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
@@ -891,8 +930,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                         onSelfReasonChanged: (_) => setState(() {}),
                         onToggleFamily: (id, v) {
                           setState(() {
-                            final ids =
-                                List<String>.from(_draft.familyMemberIds);
+                            final ids = List<String>.from(
+                              _draft.familyMemberIds,
+                            );
                             if (v == true) {
                               if (!ids.contains(id)) ids.add(id);
                             } else {
@@ -922,7 +962,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final width = PatientProfileFormStyles.resolveContentWidth(
-                      context, constraints);
+                    context,
+                    constraints,
+                  );
                   return Align(
                     alignment: Alignment.topCenter,
                     child: SizedBox(
@@ -934,24 +976,29 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.patientTeal,
                             foregroundColor: AppColors.white,
-                            disabledBackgroundColor:
-                                AppColors.borderOf(context),
-                            disabledForegroundColor:
-                                AppColors.textSecondaryOf(context),
+                            disabledBackgroundColor: AppColors.borderOf(
+                              context,
+                            ),
+                            disabledForegroundColor: AppColors.textSecondaryOf(
+                              context,
+                            ),
                             minimumSize: const Size(double.infinity, 52),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           child: Text(
                             _step == 2
                                 ? (DoctorProfileStore.autoAcceptForDoctor(
-                                        widget.doctorId)
-                                    ? 'Confirm booking'
-                                    : 'Submit request')
+                                        widget.doctorId,
+                                      )
+                                      ? 'Confirm booking'
+                                      : 'Submit request')
                                 : 'Continue',
                             style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w600,
-                                fontSize: AppTypography.bodyLarge),
+                              fontWeight: FontWeight.w600,
+                              fontSize: AppTypography.bodyLarge,
+                            ),
                           ),
                         ),
                       ),
@@ -1003,14 +1050,18 @@ class _SlotStep extends StatelessWidget {
 
   bool _isHoliday(DateTime date) {
     if (!_isDaySelectable(date)) return false;
-    return FirestoreService.instance.doctorAvailability
-        .isUnavailableDay(schedule, date);
+    return FirestoreService.instance.doctorAvailability.isUnavailableDay(
+      schedule,
+      date,
+    );
   }
 
   String? _holidayMessage(DateTime date) {
     if (!_isDaySelectable(date)) return null;
-    return FirestoreService.instance.doctorAvailability
-        .unavailabilityReason(schedule, date);
+    return FirestoreService.instance.doctorAvailability.unavailabilityReason(
+      schedule,
+      date,
+    );
   }
 
   Future<void> _pickDate(BuildContext context) async {
@@ -1021,8 +1072,8 @@ class _SlotStep extends StatelessWidget {
     final clampedInitial = initial.isBefore(today)
         ? today
         : initial.isAfter(lastDay)
-            ? lastDay
-            : initial;
+        ? lastDay
+        : initial;
 
     final picked = await showDatePicker(
       context: context,
@@ -1034,8 +1085,7 @@ class _SlotStep extends StatelessWidget {
           _isDaySelectable(day) && !_isHoliday(day),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context)
-              .colorScheme
+          colorScheme: Theme.of(context).colorScheme
               .copyWith(primary: AppColors.patientTeal),
         ),
         child: child!,
@@ -1052,18 +1102,20 @@ class _SlotStep extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _holidayMessage(selected) ??
-                'No appointment times on this date. Please choose another date.',
+            _holidayMessage(selected) ?? 'No appointment times on this date. Please choose another date.',
           ),
         ),
       );
       return;
     }
 
-    var initial = parseSlotTimeLabel(draft.selectedSlotLabel) ??
-        parseSlotTimeLabel(slots
-            .firstWhere((s) => s.isSelectable, orElse: () => slots.first)
-            .label) ??
+    var initial =
+        parseSlotTimeLabel(draft.selectedSlotLabel) ??
+        parseSlotTimeLabel(
+          slots
+              .firstWhere((s) => s.isSelectable, orElse: () => slots.first)
+              .label,
+        ) ??
         const TimeOfDay(hour: 9, minute: 0);
 
     final picked = await showTimePicker(
@@ -1074,8 +1126,7 @@ class _SlotStep extends StatelessWidget {
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
         child: Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context)
-                .colorScheme
+            colorScheme: Theme.of(context).colorScheme
                 .copyWith(primary: AppColors.patientTeal),
           ),
           child: child!,
@@ -1089,8 +1140,9 @@ class _SlotStep extends StatelessWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('No matching time on this date. Please try another time.'),
+          content: Text(
+            'No matching time on this date. Please try another time.',
+          ),
         ),
       );
       return;
@@ -1100,8 +1152,9 @@ class _SlotStep extends StatelessWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('This time is unavailable. Please choose another time.'),
+          content: Text(
+            'This time is unavailable. Please choose another time.',
+          ),
         ),
       );
       return;
@@ -1158,8 +1211,9 @@ class _SlotStep extends StatelessWidget {
                     Text(
                       label,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -1180,7 +1234,9 @@ class _SlotStep extends StatelessWidget {
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: AppColors.patientTeal),
+                    strokeWidth: 2,
+                    color: AppColors.patientTeal,
+                  ),
                 )
               else
                 Icon(
@@ -1208,7 +1264,8 @@ class _SlotStep extends StatelessWidget {
     final needsShareReason =
         selectedSlot != null && selectedSlot.requiresShareReason;
     final selectableCount = slots.where((s) => s.isSelectable).length;
-    final timeInPast = draft.selectedSlotLabel != null &&
+    final timeInPast =
+        draft.selectedSlotLabel != null &&
         isSlotTimeInPast(selected, draft.selectedSlotLabel!);
 
     return PatientProfileFormStyles.contentSurface(
@@ -1222,29 +1279,36 @@ class _SlotStep extends StatelessWidget {
               color: AppColors.patientTeal.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: AppColors.patientTeal.withValues(alpha: 0.2)),
+                color: AppColors.patientTeal.withValues(alpha: 0.2),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.info_outline,
-                    color: AppColors.patientTeal, size: 20),
+                const Icon(
+                  Icons.info_outline,
+                  color: AppColors.patientTeal,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Choose a date, then pick any available time using the clock dial.',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        height: 1.4,
-                        color: AppColors.textPrimaryOf(context)),
+                      fontSize: AppTypography.bodySmall,
+                      height: 1.4,
+                      color: AppColors.textPrimaryOf(context),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Text('Appointment date',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          Text(
+            'Appointment date',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           _pickerTile(
             context: context,
@@ -1255,8 +1319,10 @@ class _SlotStep extends StatelessWidget {
             onTap: () => _pickDate(context),
           ),
           const SizedBox(height: 20),
-          Text('Appointment time',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+          Text(
+            'Appointment time',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           _pickerTile(
             context: context,
@@ -1273,8 +1339,9 @@ class _SlotStep extends StatelessWidget {
               child: Text(
                 'This time has already passed. Please pick another time.',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.error),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.error,
+                ),
               ),
             ),
           if (!loading && slots.isNotEmpty) ...[
@@ -1282,20 +1349,21 @@ class _SlotStep extends StatelessWidget {
             Text(
               '$selectableCount time${selectableCount == 1 ? '' : 's'} available on this date',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ],
           if (!loading && slots.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                _holidayMessage(selected) ??
-                    'No appointment times on this date. The doctor may be on leave or fully booked.',
+                _holidayMessage(selected) ?? 'No appointment times on this date. The doctor may be on leave or fully booked.',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall,
-                    color: AppColors.textSecondaryOf(context),
-                    height: 1.4),
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context),
+                  height: 1.4,
+                ),
               ),
             ),
           if (selectedSlot != null && draft.selectedSlotLabel != null) ...[
@@ -1307,12 +1375,16 @@ class _SlotStep extends StatelessWidget {
                 color: AppColors.patientTeal.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: AppColors.patientTeal.withValues(alpha: 0.2)),
+                  color: AppColors.patientTeal.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.event_available,
-                      color: AppColors.patientTeal, size: 20),
+                  const Icon(
+                    Icons.event_available,
+                    color: AppColors.patientTeal,
+                    size: 20,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -1345,9 +1417,10 @@ class _SlotStep extends StatelessWidget {
                     'This slot already has ${selectedSlot.bookingCount} patient(s). '
                     'Maximum $kMaxPatientsPerTimeSlot can share the same time. Please tell us why you need this slot:',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context),
-                        height: 1.35),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                      height: 1.35,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   CheckboxListTile(
@@ -1355,7 +1428,8 @@ class _SlotStep extends StatelessWidget {
                     controlAffinity: ListTileControlAffinity.leading,
                     activeColor: AppColors.patientTeal,
                     title: const Text('Emergency'),
-                    value: draft.slotShareReasonType ==
+                    value:
+                        draft.slotShareReasonType ==
                         SlotShareReasonType.emergency,
                     onChanged: (checked) => onShareReasonType(
                       checked == true ? SlotShareReasonType.emergency : null,
@@ -1420,8 +1494,10 @@ class _DetailsStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Booking for',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        Text(
+          'Booking for',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 8),
         CheckboxListTile(
           title: const Text('Myself'),
@@ -1520,27 +1596,33 @@ class _ReviewStep extends StatelessWidget {
           children: [
             CircleAvatar(
               backgroundColor: AppColors.patientTeal.withValues(alpha: 0.12),
-              child: Text(doctor.name[0],
-                  style: const TextStyle(color: AppColors.patientTeal)),
+              child: Text(
+                doctor.name[0],
+                style: const TextStyle(color: AppColors.patientTeal),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Dr. ${doctor.name}',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  Text(
+                    'Dr. ${doctor.name}',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
                   Text(
                     '${DateFormat('dd MMM yyyy').format(draft.selectedDate!)} · ${draft.selectedSlotLabel}',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   Text(
                     'In-clinic visit',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.patientTeal),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.patientTeal,
+                    ),
                   ),
                 ],
               ),
@@ -1550,19 +1632,27 @@ class _ReviewStep extends StatelessWidget {
         SizedBox(height: 16),
         Divider(height: 1, color: AppColors.borderOf(context)),
         SizedBox(height: 16),
-        Text('Patient(s)',
-            style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium,
-                color: AppColors.textSecondaryOf(context))),
+        Text(
+          'Patient(s)',
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.labelMedium,
+            color: AppColors.textSecondaryOf(context),
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(patientNames.join(', '),
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        Text(
+          patientNames.join(', '),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         if (draft.bookingForSelf) ...[
           const SizedBox(height: 12),
-          Text('Your reason',
-              style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context))),
+          Text(
+            'Your reason',
+            style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             getController('self').text.trim().isEmpty
@@ -1574,13 +1664,18 @@ class _ReviewStep extends StatelessWidget {
         for (final id in draft.familyMemberIds)
           if (getController(id).text.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Family reason',
-                style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.textSecondaryOf(context))),
+            Text(
+              'Family reason',
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context),
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(getController(id).text.trim(),
-                style: GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
+            Text(
+              getController(id).text.trim(),
+              style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+            ),
           ],
       ],
     );

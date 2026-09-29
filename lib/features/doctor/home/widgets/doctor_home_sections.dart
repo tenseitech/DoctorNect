@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/enums/user_type.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/notifications/app_notification.dart';
 import '../../../../core/notifications/widgets/notification_bell_button.dart';
@@ -9,7 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../models/doctor_models.dart';
 import '../../profile/data/doctor_profile_store.dart';
 import '../../widgets/doctor_profile_avatar_button.dart';
-import '../../../../widgets/header_overflow_menu.dart';
+import '../../../../widgets/rotating_search_placeholder.dart';
 import '../../../../widgets/theme_toggle_button.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -28,7 +27,8 @@ class DoctorHomeTopBar extends StatelessWidget {
     final compact = ResponsiveLayout.isCompact(context);
     final rawName = displayName.trim();
     final cleanName = rawName.isEmpty ? 'Doctor' : rawName;
-    final greetingText = (cleanName.toLowerCase().startsWith('dr.') ||
+    final greetingText =
+        (cleanName.toLowerCase().startsWith('dr.') ||
             cleanName.toLowerCase().startsWith('dr '))
         ? 'Hi, $cleanName'
         : 'Hi, Dr. $cleanName';
@@ -39,8 +39,12 @@ class DoctorHomeTopBar extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(compact ? 16 : 20, compact ? 6 : 12,
-              compact ? 16 : 20, compact ? 6 : 0),
+          padding: EdgeInsets.fromLTRB(
+            compact ? 16 : 20,
+            compact ? 6 : 12,
+            compact ? 16 : 20,
+            compact ? 6 : 0,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -64,16 +68,18 @@ class DoctorHomeTopBar extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     _DoctorVerificationBadge(
-                        verified: verified, compact: compact),
+                      verified: verified,
+                      compact: compact,
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 12),
               const ThemeToggleButton(),
-              const SizedBox(width: 2),
+              const SizedBox(width: 12),
               const NotificationBellButton(
-                  audience: NotificationAudience.doctor),
-              const HeaderOverflowMenu(userType: UserType.doctor),
+                audience: NotificationAudience.doctor,
+              ),
             ],
           ),
         ),
@@ -191,26 +197,30 @@ class _DoctorVerificationBadge extends StatelessWidget {
             const Divider(height: 1),
             const SizedBox(height: 14),
             _KycInfoRow(
-                label: 'Doctor Name',
-                value: profile.fullName.isEmpty ? 'Not set' : profile.fullName),
+              label: 'Doctor Name',
+              value: profile.fullName.isEmpty ? 'Not set' : profile.fullName,
+            ),
             const SizedBox(height: 10),
             _KycInfoRow(
-                label: 'Council Reg. Number',
-                value: profile.councilNumber.isEmpty
-                    ? 'Pending'
-                    : profile.councilNumber),
+              label: 'Council Reg. Number',
+              value: profile.councilNumber.isEmpty
+                  ? 'Pending'
+                  : profile.councilNumber,
+            ),
             const SizedBox(height: 10),
             _KycInfoRow(
-                label: 'State Medical Council',
-                value: profile.stateCouncil.isEmpty
-                    ? 'Pending'
-                    : profile.stateCouncil),
+              label: 'State Medical Council',
+              value: profile.stateCouncil.isEmpty
+                  ? 'Pending'
+                  : profile.stateCouncil,
+            ),
             const SizedBox(height: 10),
             _KycInfoRow(
-                label: 'Specialization',
-                value: profile.specialization.isEmpty
-                    ? 'General'
-                    : profile.specialization),
+              label: 'Specialization',
+              value: profile.specialization.isEmpty
+                  ? 'General'
+                  : profile.specialization,
+            ),
             const SizedBox(height: 18),
             Container(
               padding: const EdgeInsets.all(12),
@@ -221,8 +231,11 @@ class _DoctorVerificationBadge extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline,
-                      size: 18, color: AppColors.doctorBlue),
+                  const Icon(
+                    Icons.info_outline,
+                    size: 18,
+                    color: AppColors.doctorBlue,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -230,9 +243,10 @@ class _DoctorVerificationBadge extends StatelessWidget {
                           ? 'Your medical registration & credentials are fully verified. All clinical features & prescription signing are active.'
                           : 'Your registration credentials are currently being cross-referenced with State Medical Council records.',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context),
-                          height: 1.35),
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                        height: 1.35,
+                      ),
                     ),
                   ),
                 ],
@@ -245,7 +259,8 @@ class _DoctorVerificationBadge extends StatelessWidget {
                 backgroundColor: AppColors.doctorBlue,
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text('Close'),
             ),
@@ -270,9 +285,10 @@ class _KycInfoRow extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.bodySmall,
-              color: AppColors.textSecondaryOf(context),
-              fontWeight: FontWeight.w500),
+            fontSize: AppTypography.bodySmall,
+            color: AppColors.textSecondaryOf(context),
+            fontWeight: FontWeight.w500,
+          ),
         ),
         Flexible(
           child: Text(
@@ -281,9 +297,10 @@ class _KycInfoRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                color: AppColors.textPrimaryOf(context),
-                fontWeight: FontWeight.w600),
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textPrimaryOf(context),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -323,6 +340,14 @@ class DoctorHomeStatsStrip extends StatelessWidget {
   final VoidCallback onCalendarTap;
   final VoidCallback? onSearchTap;
 
+  static const List<String> rotatingPlaceholders = [
+    'Search for patient, medical, lab and ambulance',
+    'Search for patient',
+    'Search for medical',
+    'Search for lab',
+    'Search for ambulance',
+  ];
+
   static const _statsHeightRegular = 124.0;
 
   static BoxDecoration _elevatedCard(BuildContext context) {
@@ -330,7 +355,8 @@ class DoctorHomeStatsStrip extends StatelessWidget {
       color: AppColors.surfaceOf(context),
       borderRadius: BorderRadius.circular(18),
       border: Border.all(
-          color: AppColors.borderOf(context).withValues(alpha: 0.55)),
+        color: AppColors.borderOf(context).withValues(alpha: 0.55),
+      ),
       boxShadow: [
         BoxShadow(
           color: AppColors.isDark(context)
@@ -357,8 +383,12 @@ class DoctorHomeStatsStrip extends StatelessWidget {
     return ColoredBox(
       color: AppColors.cardBgOf(context),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(compact ? 16 : 20, compact ? 4 : 10,
-            compact ? 16 : 20, compact ? 6 : 16),
+        padding: EdgeInsets.fromLTRB(
+          compact ? 16 : 20,
+          compact ? 4 : 10,
+          compact ? 16 : 20,
+          compact ? 6 : 16,
+        ),
         child: compact
             ? _buildMobileLayout(context)
             : _buildDesktopLayout(context),
@@ -373,9 +403,10 @@ class DoctorHomeStatsStrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 68),
+              constraints: const BoxConstraints(minHeight: 70),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -391,19 +422,15 @@ class DoctorHomeStatsStrip extends StatelessWidget {
                       Container(
                         width: 1,
                         height: 40,
-                        color:
-                            AppColors.borderOf(context).withValues(alpha: 0.85),
+                        color: AppColors.borderOf(context)
+                            .withValues(alpha: 0.85),
                       ),
                   ],
                 ],
               ),
             ),
-            if (onSearchTap != null) ...[
-              Container(
-                  height: 1,
-                  color: AppColors.borderOf(context).withValues(alpha: 0.85)),
-              _DoctorMobileInlineSearch(onTap: onSearchTap!),
-            ],
+            if (onSearchTap != null)
+              _DoctorMobileInlineSearch(onTap: onSearchTap!, compact: true),
           ],
         ),
       ),
@@ -413,40 +440,38 @@ class DoctorHomeStatsStrip extends StatelessWidget {
   Widget _buildDesktopLayout(BuildContext context) {
     const statsHeight = _statsHeightRegular;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: SizedBox(
-            height: statsHeight,
-            child: Container(
-              decoration: _elevatedCard(context),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: Row(
-                  children: [
-                    for (var i = 0; i < items.length; i++) ...[
-                      Expanded(
-                        child: _DoctorStatTile(
-                          item: items[i],
-                          compact: false,
-                        ),
+    return Container(
+      decoration: _elevatedCard(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: statsHeight,
+              child: Row(
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    Expanded(
+                      child: _DoctorStatTile(item: items[i], compact: false),
+                    ),
+                    if (i < items.length - 1)
+                      Container(
+                        width: 1,
+                        height: statsHeight - 28,
+                        color: AppColors.borderOf(context)
+                            .withValues(alpha: 0.85),
                       ),
-                      if (i < items.length - 1)
-                        Container(
-                          width: 1,
-                          height: statsHeight,
-                          color: AppColors.borderOf(context)
-                              .withValues(alpha: 0.85),
-                        ),
-                    ],
                   ],
-                ),
+                ],
               ),
             ),
-          ),
+            if (onSearchTap != null)
+              _DoctorMobileInlineSearch(onTap: onSearchTap!, compact: false),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -485,7 +510,7 @@ class _DoctorStatTile extends StatelessWidget {
         child: InkWell(
           onTap: item.onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -528,28 +553,34 @@ class _DoctorStatTile extends StatelessWidget {
                     ),
                     child: Icon(item.icon, size: 13, color: Colors.white),
                   ),
-                const SizedBox(height: 3),
-                Text(
-                  item.value,
-                  style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyLarge,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimaryOf(context),
-                    height: 1,
-                    letterSpacing: -0.4,
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    item.value,
+                    maxLines: 1,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyLarge,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimaryOf(context),
+                      height: 1.15,
+                      letterSpacing: -0.4,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 1),
-                Text(
-                  _label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondaryOf(context),
-                    height: 1,
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _label,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondaryOf(context),
+                      height: 1.2,
+                    ),
                   ),
                 ),
               ],
@@ -568,7 +599,7 @@ class _DoctorStatTile extends StatelessWidget {
         onTap: item.onTap,
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 2 : 4,
+            horizontal: compact ? 4 : 6,
             vertical: compact ? 8 : 12,
           ),
           child: Column(
@@ -602,8 +633,11 @@ class _DoctorStatTile extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child:
-                          Icon(item.icon, size: iconGlyph, color: Colors.white),
+                      child: Icon(
+                        item.icon,
+                        size: iconGlyph,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 )
@@ -629,28 +663,34 @@ class _DoctorStatTile extends StatelessWidget {
                   child: Icon(item.icon, size: iconGlyph, color: Colors.white),
                 ),
               SizedBox(height: compact ? 6 : 9),
-              Text(
-                item.value,
-                style: GoogleFonts.inter(
-                  fontSize: compact ? 20 : 26,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimaryOf(context),
-                  height: 1,
-                  letterSpacing: -0.8,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  item.value,
+                  maxLines: 1,
+                  style: GoogleFonts.inter(
+                    fontSize: compact ? 20 : 26,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimaryOf(context),
+                    height: 1.15,
+                    letterSpacing: -0.8,
+                  ),
                 ),
               ),
               SizedBox(height: compact ? 2 : 4),
-              Text(
-                _label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: compact ? 10 : 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondaryOf(context),
-                  height: 1,
-                  letterSpacing: 0.05,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _label,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: compact ? 10.5 : 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondaryOf(context),
+                    height: 1.2,
+                    letterSpacing: 0.05,
+                  ),
                 ),
               ),
             ],
@@ -661,53 +701,121 @@ class _DoctorStatTile extends StatelessWidget {
   }
 }
 
-class _DoctorMobileInlineSearch extends StatelessWidget {
-  const _DoctorMobileInlineSearch({required this.onTap});
+class _DoctorMobileInlineSearch extends StatefulWidget {
+  const _DoctorMobileInlineSearch({required this.onTap, this.compact = true});
 
   final VoidCallback onTap;
+  final bool compact;
+
+  @override
+  State<_DoctorMobileInlineSearch> createState() =>
+      _DoctorMobileInlineSearchState();
+}
+
+class _DoctorMobileInlineSearchState extends State<_DoctorMobileInlineSearch> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  bool get _active => _hovered || _pressed;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-          child: Container(
-            height: 42,
-            padding: EdgeInsets.only(left: 12, right: 4),
-            decoration: BoxDecoration(
-              color: AppColors.cardBgOf(context),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderOf(context)),
+    final compact = widget.compact;
+    final active = _active;
+    final placeholderStyle = GoogleFonts.inter(
+      fontSize: compact ? AppTypography.bodySmall : 15,
+      fontWeight: FontWeight.w400,
+      color: AppColors.textSecondaryOf(context),
+      height: 1.2,
+    );
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          onHighlightChanged: (value) => setState(() => _pressed = value),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              compact ? 10 : 14,
+              compact ? 2 : 4,
+              compact ? 10 : 14,
+              compact ? 10 : 14,
             ),
-            child: Row(
-              children: [
-                Icon(Icons.search_rounded,
-                    color: AppColors.textSecondaryOf(context), size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Search for patient, medical, lab and ambulance',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        color: AppColors.textSecondaryOf(context)),
-                  ),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              height: compact ? 42 : 48,
+              padding: EdgeInsets.only(
+                left: compact ? 12 : 16,
+                right: compact ? 4 : 6,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.cardBgOf(context),
+                borderRadius: BorderRadius.circular(compact ? 12 : 14),
+                border: Border.all(
+                  color: active
+                      ? AppColors.doctorBlue.withValues(alpha: 0.55)
+                      : AppColors.borderOf(context),
+                  width: active ? 1.5 : 1,
                 ),
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: AppColors.doctorBlue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(9),
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: AppColors.doctorBlue.withValues(alpha: 0.12),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: AppColors.textPrimaryOf(context)
+                              .withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.search_rounded,
+                    color: active
+                        ? AppColors.doctorBlue
+                        : AppColors.textSecondaryOf(context),
+                    size: compact ? 20 : 22,
                   ),
-                  child: const Icon(Icons.arrow_forward_rounded,
-                      color: AppColors.doctorBlue, size: 18),
-                ),
-              ],
+                  SizedBox(width: compact ? 8 : 12),
+                  Expanded(
+                    child: RotatingSearchPlaceholder(
+                      placeholders: DoctorHomeStatsStrip.rotatingPlaceholders,
+                      style: placeholderStyle,
+                    ),
+                  ),
+                  SizedBox(width: compact ? 8 : 10),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    width: compact ? 34 : 38,
+                    height: compact ? 34 : 38,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? AppColors.doctorBlue
+                          : AppColors.doctorBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(compact ? 9 : 10),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      color: active
+                          ? AppColors.surfaceOf(context)
+                          : AppColors.doctorBlue,
+                      size: compact ? 18 : 20,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -717,10 +825,7 @@ class _DoctorMobileInlineSearch extends StatelessWidget {
 }
 
 class DoctorHomePatientSearchBar extends StatelessWidget {
-  const DoctorHomePatientSearchBar({
-    super.key,
-    required this.onTap,
-  });
+  const DoctorHomePatientSearchBar({super.key, required this.onTap});
 
   final VoidCallback onTap;
 
@@ -732,69 +837,12 @@ class DoctorHomePatientSearchBar extends StatelessWidget {
       color: AppColors.surfaceOf(context),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-            compact ? 16 : 20, 0, compact ? 16 : 20, compact ? 12 : 14),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(14),
-            child: Ink(
-              height: compact ? 50 : 54,
-              padding: EdgeInsets.only(
-                  left: compact ? 14 : 16, right: compact ? 6 : 8),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceOf(context),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.borderOf(context)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.textPrimaryOf(context)
-                        .withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search_rounded,
-                    color: AppColors.textSecondaryOf(context),
-                    size: 22,
-                  ),
-                  SizedBox(width: compact ? 10 : 12),
-                  Expanded(
-                    child: Text(
-                      compact
-                          ? 'Search for patient, medical, lab and ambulance'
-                          : 'Search for patient, medical, lab and ambulance',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: compact ? 14 : 15,
-                        color: AppColors.textSecondaryOf(context),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: compact ? 38 : 42,
-                    height: compact ? 38 : 42,
-                    margin: const EdgeInsets.only(right: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.doctorBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: AppColors.doctorBlue,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          compact ? 6 : 6,
+          0,
+          compact ? 6 : 6,
+          compact ? 2 : 0,
         ),
+        child: _DoctorMobileInlineSearch(onTap: onTap, compact: compact),
       ),
     );
   }
@@ -847,8 +895,6 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
   @override
   Widget build(BuildContext context) {
     final isWide = !ResponsiveLayout.isCompact(context);
-    final maxInline = isWide ? 4 : 3;
-    final hasOverflow = widget.services.length > maxInline;
 
     return ColoredBox(
       color: AppColors.cardBgOf(context),
@@ -865,26 +911,32 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  widget.title,
-                  style: GoogleFonts.inter(
-                    fontSize: isWide ? 17 : 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimaryOf(context),
+                Flexible(
+                  child: Text(
+                    widget.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: isWide ? 17 : 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryOf(context),
+                    ),
                   ),
                 ),
-                if (hasOverflow)
+                if (widget.services.isNotEmpty)
                   InkWell(
                     onTap: _openDrawer,
                     borderRadius: BorderRadius.circular(6),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Show all (${widget.services.length})',
+                            'View all (${widget.services.length})',
                             style: GoogleFonts.inter(
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
@@ -892,7 +944,7 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
                             ),
                           ),
                           const SizedBox(width: 2),
-                          Icon(
+                          const Icon(
                             Icons.keyboard_arrow_right_rounded,
                             size: 16,
                             color: AppColors.doctorBlue,
@@ -912,47 +964,37 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
   }
 
   Widget _buildWideCollapsed() {
-    final maxVisible = widget.services.length > 4 ? 4 : widget.services.length;
-    final hasOverflow = widget.services.length > 4;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final limit = constraints.maxWidth >= 800 ? 6 : 4;
+        final maxVisible = widget.services.length > limit
+            ? limit
+            : widget.services.length;
 
-    return Row(
-      children: [
-        for (var i = 0; i < maxVisible; i++) ...[
-          if (i > 0) const SizedBox(width: 10),
-          Expanded(
-            child: _DoctorServiceTile(
-              service: widget.services[i],
-              onTap: widget.services[i].onTap,
-            ),
-          ),
-        ],
-        if (hasOverflow) ...[
-          const SizedBox(width: 10),
-          Expanded(
-            child: _ShowMoreTile(
-              label: 'Show more',
-              subtitle: '+${widget.services.length - 4} tools',
-              icon: Icons.grid_view_rounded,
-              onTap: _openDrawer,
-            ),
-          ),
-        ],
-        for (var k = 0; k < (4 - maxVisible); k++) ...[
-          const SizedBox(width: 10),
-          const Expanded(child: SizedBox.shrink()),
-        ],
-      ],
+        return Row(
+          children: [
+            for (var i = 0; i < maxVisible; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: _DoctorServiceTile(
+                  service: widget.services[i],
+                  onTap: widget.services[i].onTap,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
   Widget _buildMobileCollapsed() {
-    final showCount = widget.services.length > 3 ? 3 : widget.services.length;
-    final hasOverflow = widget.services.length > 3;
+    final showCount = widget.services.length > 4 ? 4 : widget.services.length;
 
     return Row(
       children: [
         for (var i = 0; i < showCount; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
+          if (i > 0) const SizedBox(width: 6),
           Expanded(
             child: _DoctorServiceTile(
               service: widget.services[i],
@@ -961,200 +1003,12 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
             ),
           ),
         ],
-        if (hasOverflow) ...[
-          const SizedBox(width: 8),
-          Expanded(
-            child: _ShowMoreTile(
-              label: 'See more',
-              subtitle: '+${widget.services.length - 3}',
-              icon: Icons.grid_view_rounded,
-              mobileColumn: true,
-              onTap: _openDrawer,
-            ),
-          ),
-        ],
-        for (var k = 0; k < (3 - showCount); k++) ...[
-          const SizedBox(width: 8),
-          const Expanded(child: SizedBox.shrink()),
-        ],
       ],
     );
   }
 }
 
-class _ShowMoreTile extends StatefulWidget {
-  const _ShowMoreTile({
-    required this.label,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-    this.mobileColumn = false,
-  });
-
-  final String label;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool mobileColumn;
-
-  @override
-  State<_ShowMoreTile> createState() => _ShowMoreTileState();
-}
-
-class _ShowMoreTileState extends State<_ShowMoreTile> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final gradient = [AppColors.doctorBlue, const Color(0xFF2563EB)];
-
-    if (widget.mobileColumn) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          onHighlightChanged: (val) => setState(() => _pressed = val),
-          borderRadius: BorderRadius.circular(14),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              color: _pressed
-                  ? AppColors.doctorBlue.withValues(alpha: 0.12)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: gradient,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.doctorBlue.withValues(alpha: 0.25),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(widget.icon, size: 20, color: Colors.white),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  widget.label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    height: 1.15,
-                    color: AppColors.doctorBlue,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onTap,
-        onHighlightChanged: (val) => setState(() => _pressed = val),
-        borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: _pressed
-                ? AppColors.doctorBlue.withValues(alpha: 0.12)
-                : AppColors.surfaceOf(context),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: _pressed
-                  ? AppColors.doctorBlue.withValues(alpha: 0.5)
-                  : AppColors.doctorBlue.withValues(alpha: 0.35),
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: gradient,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.doctorBlue.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Icon(widget.icon, size: 22, color: Colors.white),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.doctorBlue,
-                      ),
-                    ),
-                    if (widget.subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: AppColors.textSecondaryOf(context),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Icon(
-                widget.icon == Icons.unfold_less_rounded
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
-                size: 18,
-                color: AppColors.doctorBlue,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DoctorServiceTile extends StatefulWidget {
+class _DoctorServiceTile extends StatelessWidget {
   const _DoctorServiceTile({
     required this.service,
     required this.onTap,
@@ -1165,44 +1019,22 @@ class _DoctorServiceTile extends StatefulWidget {
   final VoidCallback onTap;
   final bool mobileColumn;
 
-  @override
-  State<_DoctorServiceTile> createState() => _DoctorServiceTileState();
-}
-
-class _DoctorServiceTileState extends State<_DoctorServiceTile> {
-  bool _pressed = false;
-
-  String get _label {
-    if (widget.mobileColumn) {
-      return widget.service.shortLabel ?? widget.service.label;
-    }
-    if (ResponsiveLayout.isExpanded(context)) return widget.service.label;
-    return widget.service.shortLabel ?? widget.service.label;
-  }
+  String get _label => service.shortLabel ?? service.label;
 
   @override
   Widget build(BuildContext context) {
-    if (widget.mobileColumn) {
+    if (mobileColumn) {
       return Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: widget.onTap,
-          onHighlightChanged: (value) => setState(() => _pressed = value),
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
+          child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            decoration: BoxDecoration(
-              color: _pressed
-                  ? widget.service.gradient.first.withValues(alpha: 0.06)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(14),
-            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _ServiceIconBox(
-                    service: widget.service, size: 44, iconSize: 20),
+                _ServiceIconBox(service: service, size: 44, iconSize: 20),
                 const SizedBox(height: 6),
                 Text(
                   _label,
@@ -1226,30 +1058,23 @@ class _DoctorServiceTileState extends State<_DoctorServiceTile> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: widget.onTap,
-        onHighlightChanged: (value) => setState(() => _pressed = value),
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
-            color: _pressed
-                ? widget.service.gradient.first.withValues(alpha: 0.06)
-                : AppColors.surfaceOf(context),
+            color: AppColors.surfaceOf(context),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: _pressed
-                  ? widget.service.gradient.first.withValues(alpha: 0.35)
-                  : AppColors.borderOf(context),
-            ),
+            border: Border.all(color: AppColors.borderOf(context)),
           ),
           child: Row(
             children: [
-              _ServiceIconBox(service: widget.service, size: 46, iconSize: 22),
-              const SizedBox(width: 10),
+              _ServiceIconBox(service: service, size: 40, iconSize: 20),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       _label,
@@ -1263,7 +1088,7 @@ class _DoctorServiceTileState extends State<_DoctorServiceTile> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      widget.service.subtitle,
+                      service.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
@@ -1274,11 +1099,12 @@ class _DoctorServiceTileState extends State<_DoctorServiceTile> {
                   ],
                 ),
               ),
+              const SizedBox(width: 2),
               Icon(
                 Icons.chevron_right,
-                size: 18,
-                color:
-                    AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
+                size: 16,
+                color: AppColors.textSecondaryOf(context)
+                    .withValues(alpha: 0.8),
               ),
             ],
           ),
@@ -1386,159 +1212,211 @@ class DoctorHomeSectionHeader extends StatelessWidget {
         secondaryActionLabel != null && onSecondaryAction != null;
     final hasPrimary = actionLabel != null && onAction != null;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-          compact ? 16 : 20, compact ? 14 : 18, compact ? 16 : 20, 0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 600;
+        final stackActions = isNarrow && hasSecondary;
+
+        Widget buildTitleSubtitle() {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: compact ? 16 : 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryOf(context),
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 3),
                 Text(
-                  title,
+                  subtitle!,
                   style: GoogleFonts.inter(
-                    fontSize: compact ? 15 : 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimaryOf(context),
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
                   ),
                 ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle!,
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      color: AppColors.textSecondaryOf(context),
-                    ),
-                  ),
-                ],
               ],
-            ),
-          ),
-          if (hasSecondary || hasPrimary) ...[
-            const SizedBox(width: 12),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (hasSecondary)
-                  Material(
-                    color: AppColors.doctorBlue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      onTap: onSecondaryAction,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 34,
-                              height: 34,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    AppColors.doctorBlue,
-                                    Color(0xFF0F4A82)
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(9),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.doctorBlue
-                                        .withValues(alpha: 0.28),
-                                    blurRadius: 6,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.calendar_month_rounded,
-                                size: 18,
-                                color: AppColors.surfaceOf(context),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  secondaryActionLabel!,
-                                  style: GoogleFonts.inter(
-                                    fontSize: AppTypography.labelMedium,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.doctorBlue,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                if (secondaryActionSubtitle != null) ...[
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    secondaryActionSubtitle!,
-                                    style: GoogleFonts.inter(
-                                      fontSize: AppTypography.labelSmall,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textSecondaryOf(context),
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
+            ],
+          );
+        }
+
+        Widget buildSecondaryButton() {
+          return Material(
+            color: AppColors.doctorBlue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: onSecondaryAction,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                child: Row(
+                  mainAxisSize: stackActions
+                      ? MainAxisSize.max
+                      : MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppColors.doctorBlue, Color(0xFF0F4A82)],
                         ),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.doctorBlue.withValues(alpha: 0.28),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.calendar_month_rounded,
+                        size: 17,
+                        color: AppColors.surfaceOf(context),
                       ),
                     ),
-                  ),
-                if (hasSecondary && hasPrimary) const SizedBox(width: 6),
-                if (hasPrimary)
-                  actionFilled
-                      ? FilledButton(
-                          onPressed: onAction,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.doctorBlue,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            minimumSize: const Size(0, 36),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            textStyle: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          child: Text(actionLabel!),
-                        )
-                      : TextButton(
-                          onPressed: onAction,
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.doctorBlue,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 8),
-                            minimumSize: const Size(0, 36),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            actionLabel!,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            secondaryActionLabel!,
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.bodySmall,
-                                fontWeight: FontWeight.w600),
+                              fontSize: AppTypography.labelMedium,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.doctorBlue,
+                              height: 1.1,
+                            ),
                           ),
-                        ),
+                          if (secondaryActionSubtitle != null) ...[
+                            const SizedBox(height: 1),
+                            Text(
+                              secondaryActionSubtitle!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                fontSize: AppTypography.labelSmall,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondaryOf(context),
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        Widget buildPrimaryButton() {
+          return actionFilled
+              ? FilledButton(
+                  onPressed: onAction,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.doctorBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    textStyle: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  child: Text(actionLabel!),
+                )
+              : TextButton(
+                  onPressed: onAction,
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.doctorBlue,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    minimumSize: const Size(0, 36),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    actionLabel!,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+        }
+
+        if (stackActions) {
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 20,
+              compact ? 14 : 18,
+              compact ? 16 : 20,
+              0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                buildTitleSubtitle(),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    if (hasSecondary) Expanded(child: buildSecondaryButton()),
+                    if (hasSecondary && hasPrimary) const SizedBox(width: 8),
+                    if (hasPrimary) buildPrimaryButton(),
+                  ],
+                ),
               ],
             ),
-          ],
-        ],
-      ),
+          );
+        }
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 16 : 20,
+            compact ? 14 : 18,
+            compact ? 16 : 20,
+            0,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: buildTitleSubtitle()),
+              if (hasSecondary || hasPrimary) ...[
+                const SizedBox(width: 12),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (hasSecondary) buildSecondaryButton(),
+                    if (hasSecondary && hasPrimary) const SizedBox(width: 6),
+                    if (hasPrimary) buildPrimaryButton(),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -1584,11 +1462,10 @@ class ClinicalToolsDrawer extends StatelessWidget {
         ),
         transitionBuilder: (ctx, anim, secondaryAnim, child) {
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(
-                CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+                ),
             child: child,
           );
         },
@@ -1603,10 +1480,7 @@ class ClinicalToolsDrawer extends StatelessWidget {
 }
 
 class _ClinicalToolsSideDrawer extends StatelessWidget {
-  const _ClinicalToolsSideDrawer({
-    required this.title,
-    required this.services,
-  });
+  const _ClinicalToolsSideDrawer({required this.title, required this.services});
 
   final String title;
   final List<DoctorHomeServiceItem> services;
@@ -1625,9 +1499,7 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
             offset: const Offset(-4, 0),
           ),
         ],
-        border: Border(
-          left: BorderSide(color: AppColors.borderOf(context)),
-        ),
+        border: Border(left: BorderSide(color: AppColors.borderOf(context))),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1652,8 +1524,11 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.grid_view_rounded,
-                        color: Colors.white, size: 22),
+                    child: const Icon(
+                      Icons.grid_view_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -1673,10 +1548,13 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: AppColors.doctorBlue
-                                    .withValues(alpha: 0.12),
+                                color: AppColors.doctorBlue.withValues(
+                                  alpha: 0.12,
+                                ),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -1782,8 +1660,11 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.grid_view_rounded,
-                      color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.grid_view_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1807,10 +1688,13 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color:
-                                  AppColors.doctorBlue.withValues(alpha: 0.12),
+                              color: AppColors.doctorBlue.withValues(
+                                alpha: 0.12,
+                              ),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -1867,10 +1751,7 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
 }
 
 class _DrawerToolTile extends StatefulWidget {
-  const _DrawerToolTile({
-    required this.service,
-    required this.onTap,
-  });
+  const _DrawerToolTile({required this.service, required this.onTap});
 
   final DoctorHomeServiceItem service;
   final VoidCallback onTap;
@@ -1907,11 +1788,12 @@ class _DrawerToolTileState extends State<_DrawerToolTile> {
             boxShadow: _hovered
                 ? [
                     BoxShadow(
-                      color:
-                          widget.service.gradient.first.withValues(alpha: 0.12),
+                      color: widget.service.gradient.first.withValues(
+                        alpha: 0.12,
+                      ),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
-                    )
+                    ),
                   ]
                 : [],
           ),

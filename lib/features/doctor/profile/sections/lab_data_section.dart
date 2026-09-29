@@ -49,11 +49,13 @@ class _LabDataSectionState extends State<LabDataSection> {
     if (_search.trim().isEmpty) return _orders;
     final q = _search.trim().toLowerCase();
     return _orders
-        .where((o) =>
-            o.patientName.toLowerCase().contains(q) ||
-            o.testNames.any((t) => t.toLowerCase().contains(q)) ||
-            (o.labName ?? '').toLowerCase().contains(q) ||
-            (o.indication ?? '').toLowerCase().contains(q))
+        .where(
+          (o) =>
+              o.patientName.toLowerCase().contains(q) ||
+              o.testNames.any((t) => t.toLowerCase().contains(q)) ||
+              (o.labName ?? '').toLowerCase().contains(q) ||
+              (o.indication ?? '').toLowerCase().contains(q),
+        )
         .toList();
   }
 
@@ -64,7 +66,8 @@ class _LabDataSectionState extends State<LabDataSection> {
 
     for (final order in candidates) {
       if (await DoctorPatientsService.canViewClinicalHistoryForKey(
-          order.patientId)) {
+        order.patientId,
+      )) {
         visible.add(order);
       }
     }
@@ -82,20 +85,27 @@ class _LabDataSectionState extends State<LabDataSection> {
         builder: (context, _) {
           final orders = _visibleOrders;
           final total = _orders.length;
-          final totalTests =
-              _orders.fold<int>(0, (sum, o) => sum + o.testNames.length);
+          final totalTests = _orders.fold<int>(
+            0,
+            (sum, o) => sum + o.testNames.length,
+          );
           final hiddenCount = total - orders.length;
 
           return Column(
             children: [
               Container(
                 color: AppColors.labPurple.withValues(alpha: 0.07),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 child: Row(
                   children: [
-                    Icon(Icons.biotech_outlined,
-                        color: AppColors.labPurple, size: 20),
+                    Icon(
+                      Icons.biotech_outlined,
+                      color: AppColors.labPurple,
+                      size: 20,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -114,20 +124,30 @@ class _LabDataSectionState extends State<LabDataSection> {
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: PatientSharingBlockedNotice(
-                      compact: true, showSubtitle: false),
+                    compact: true,
+                    showSubtitle: false,
+                  ),
                 ),
               ],
               Padding(
-                padding:
-                    EdgeInsets.fromLTRB(16, hiddenCount > 0 ? 8 : 12, 16, 4),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  hiddenCount > 0 ? 8 : 12,
+                  16,
+                  4,
+                ),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search by patient, test, or lab',
                     hintStyle: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        color: Colors.grey[400]),
-                    prefixIcon:
-                        Icon(Icons.search, color: Colors.grey[400], size: 20),
+                      fontSize: AppTypography.bodySmall,
+                      color: Colors.grey[400],
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Colors.grey[400],
+                      size: 20,
+                    ),
                     filled: true,
                     fillColor: AppColors.cardBgOf(context),
                     contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -149,18 +169,22 @@ class _LabDataSectionState extends State<LabDataSection> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.biotech_outlined,
-                                size: 52, color: Colors.grey[300]),
+                            Icon(
+                              Icons.biotech_outlined,
+                              size: 52,
+                              color: Colors.grey[300],
+                            ),
                             const SizedBox(height: 12),
                             Text(
                               _search.isEmpty
                                   ? (total == 0
-                                      ? 'No lab orders yet'
-                                      : 'No visible lab orders')
+                                        ? 'No lab orders yet'
+                                        : 'No visible lab orders')
                                   : 'No results for "$_search"',
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.bodyMedium,
-                                  color: Colors.grey[500]),
+                                fontSize: AppTypography.bodyMedium,
+                                color: Colors.grey[500],
+                              ),
                             ),
                             if (_search.isEmpty &&
                                 total > 0 &&
@@ -169,8 +193,9 @@ class _LabDataSectionState extends State<LabDataSection> {
                               Text(
                                 'Some orders are hidden because those patients turned off sharing.',
                                 style: GoogleFonts.inter(
-                                    fontSize: AppTypography.labelMedium,
-                                    color: Colors.grey[400]),
+                                  fontSize: AppTypography.labelMedium,
+                                  color: Colors.grey[400],
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                             ] else if (_search.isEmpty && total == 0) ...[
@@ -178,8 +203,9 @@ class _LabDataSectionState extends State<LabDataSection> {
                               Text(
                                 'Orders from prescriptions or connected labs appear here',
                                 style: GoogleFonts.inter(
-                                    fontSize: AppTypography.labelMedium,
-                                    color: Colors.grey[400]),
+                                  fontSize: AppTypography.labelMedium,
+                                  color: Colors.grey[400],
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -192,7 +218,8 @@ class _LabDataSectionState extends State<LabDataSection> {
                           constraints: const BoxConstraints(maxWidth: 680),
                           child: ListView.separated(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                            itemCount: orders.length +
+                            itemCount:
+                                orders.length +
                                 (LabOrderStore.instance.hasMore ? 1 : 0),
                             separatorBuilder: (_, __) =>
                                 const Divider(height: 1),
@@ -239,7 +266,9 @@ class _LabOrderRow extends StatelessWidget {
             child: Text(
               '${index + 1}.',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium, color: Colors.grey[400]),
+                fontSize: AppTypography.labelMedium,
+                color: Colors.grey[400],
+              ),
             ),
           ),
           Container(
@@ -249,8 +278,11 @@ class _LabOrderRow extends StatelessWidget {
               color: AppColors.labPurple.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.science_outlined,
-                color: AppColors.labPurple, size: 18),
+            child: Icon(
+              Icons.science_outlined,
+              color: AppColors.labPurple,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -260,26 +292,32 @@ class _LabOrderRow extends StatelessWidget {
                 Text(
                   order.patientName,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      fontWeight: FontWeight.w600),
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   '${order.patientAge} yrs · ${order.testNames.length} test(s)',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall,
-                      color: Colors.grey[500]),
+                    fontSize: AppTypography.labelSmall,
+                    color: Colors.grey[500],
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_outlined,
-                        size: 10, color: Colors.grey[400]),
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 10,
+                      color: Colors.grey[400],
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${df.format(order.createdAt)}  ${tf.format(order.createdAt)}',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: Colors.grey[500]),
+                        fontSize: AppTypography.labelSmall,
+                        color: Colors.grey[500],
+                      ),
                     ),
                   ],
                 ),
@@ -287,14 +325,18 @@ class _LabOrderRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(Icons.local_hospital_outlined,
-                          size: 10, color: Colors.grey[400]),
+                      Icon(
+                        Icons.local_hospital_outlined,
+                        size: 10,
+                        color: Colors.grey[400],
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         order.labName!,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelSmall,
-                            color: Colors.grey[500]),
+                          fontSize: AppTypography.labelSmall,
+                          color: Colors.grey[500],
+                        ),
                       ),
                     ],
                   ),
@@ -305,8 +347,9 @@ class _LabOrderRow extends StatelessWidget {
                   Text(
                     order.indication!,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelSmall,
-                        color: Colors.grey[500]),
+                      fontSize: AppTypography.labelSmall,
+                      color: Colors.grey[500],
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -318,15 +361,19 @@ class _LabOrderRow extends StatelessWidget {
                   children: order.testNames
                       .map(
                         (name) => Chip(
-                          label: Text(name,
-                              style: GoogleFonts.inter(fontSize: 10)),
+                          label: Text(
+                            name,
+                            style: GoogleFonts.inter(fontSize: 10),
+                          ),
                           visualDensity: VisualDensity.compact,
-                          backgroundColor:
-                              AppColors.labPurple.withValues(alpha: 0.08),
+                          backgroundColor: AppColors.labPurple.withValues(
+                            alpha: 0.08,
+                          ),
                           side: BorderSide.none,
                           padding: EdgeInsets.zero,
-                          labelPadding:
-                              const EdgeInsets.symmetric(horizontal: 6),
+                          labelPadding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                          ),
                         ),
                       )
                       .toList(),

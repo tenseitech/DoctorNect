@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -53,10 +54,14 @@ class _DoctorReferredPatientsScreenState
     try {
       final doctorId = DoctorSession.loggedInDoctorId;
       final results = await Future.wait([
-        FirestoreService.instance.referral
-            .fetchSentByDoctor(doctorId, preferCache: false),
-        FirestoreService.instance.referral
-            .fetchReceivedByDoctor(doctorId, preferCache: false),
+        FirestoreService.instance.referral.fetchSentByDoctor(
+          doctorId,
+          preferCache: false,
+        ),
+        FirestoreService.instance.referral.fetchReceivedByDoctor(
+          doctorId,
+          preferCache: false,
+        ),
       ]);
       if (!mounted) return;
       setState(() {
@@ -99,8 +104,9 @@ class _DoctorReferredPatientsScreenState
             emptyMessage,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodyLarge,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.bodyLarge,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
         ),
       );
@@ -120,7 +126,9 @@ class _DoctorReferredPatientsScreenState
               incoming: incoming,
               onOpenConsult: incoming
                   ? () => ReferralConsultService.openIncomingConsult(
-                      context, referral)
+                      context,
+                      referral,
+                    )
                   : null,
             );
           },
@@ -140,8 +148,9 @@ class _DoctorReferredPatientsScreenState
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor:
-            wide ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
+        backgroundColor: wide
+            ? AppColors.cardBgOf(context)
+            : AppColors.surfaceOf(context),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -159,10 +168,12 @@ class _DoctorReferredPatientsScreenState
                 unselectedLabelColor: AppColors.textSecondaryOf(context),
                 indicatorColor: AppColors.doctorBlue,
                 labelStyle: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall,
-                    fontWeight: FontWeight.w600),
-                unselectedLabelStyle:
-                    GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+                  fontSize: AppTypography.bodySmall,
+                  fontWeight: FontWeight.w600,
+                ),
+                unselectedLabelStyle: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                ),
                 tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
               ),
             ),

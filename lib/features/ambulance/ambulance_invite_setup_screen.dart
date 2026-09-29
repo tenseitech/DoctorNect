@@ -1,4 +1,5 @@
 import '../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -72,8 +73,7 @@ class _AmbulanceInviteSetupScreenState
     if (!signedIn) {
       setState(() {
         _loading = false;
-        _error =
-            'Could not start a secure session. Sign out of other accounts and try again.';
+        _error = 'Could not start a secure session. Sign out of other accounts and try again.';
       });
       return;
     }
@@ -128,8 +128,9 @@ class _AmbulanceInviteSetupScreenState
   String _suggestedUsername(AmbulanceInvite invite) {
     final phone = invite.phone.replaceAll(RegExp(r'[^0-9]'), '');
     if (phone.length >= 4) return 'driver$phone';
-    final name =
-        invite.driverName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
+    final name = invite.driverName
+        .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')
+        .toLowerCase();
     if (name.length >= 3) return name;
     return '';
   }
@@ -150,9 +151,8 @@ class _AmbulanceInviteSetupScreenState
 
     if (error != null) {
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
       return;
     }
 
@@ -166,16 +166,16 @@ class _AmbulanceInviteSetupScreenState
     );
     await FirestoreService.instance.ambulance.fetchAmbulanceById(ambulanceId);
 
-    final fresh = AmbulanceStore.instance.findAmbulance(ambulanceId) ??
-        _invite!.toRegisteredAmbulance(
-          username: username,
-          pinHash: '',
-        );
+    final fresh =
+        AmbulanceStore.instance.findAmbulance(ambulanceId) ??
+        _invite!.toRegisteredAmbulance(username: username, pinHash: '');
 
     await AmbulanceLoginCache.save(fresh);
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setString('last_login_ambulance_username', username);
-    }).catchError((_) {});
+    SharedPreferences.getInstance()
+        .then((prefs) {
+          prefs.setString('last_login_ambulance_username', username);
+        })
+        .catchError((_) {});
 
     PendingAmbulanceInviteStore.clear();
 
@@ -200,8 +200,9 @@ class _AmbulanceInviteSetupScreenState
             child: Text(
               _error!,
               textAlign: TextAlign.center,
-              style:
-                  GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+              style: GoogleFonts.inter(
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ),
         ),
@@ -239,23 +240,26 @@ class _AmbulanceInviteSetupScreenState
                         Text(
                           invite.serviceName,
                           style: GoogleFonts.inter(
-                              fontWeight: FontWeight.w700,
-                              fontSize: AppTypography.bodyLarge),
+                            fontWeight: FontWeight.w700,
+                            fontSize: AppTypography.bodyLarge,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Driver: ${invite.driverName} · ${invite.city}',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                         if (invite.doctorName.isNotEmpty) ...[
                           const SizedBox(height: 4),
                           Text(
                             'Invited by Dr. ${invite.doctorName}',
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         ],
                       ],
@@ -265,15 +269,18 @@ class _AmbulanceInviteSetupScreenState
                   TextFormField(
                     controller: _usernameCtrl,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodyMedium,
-                        fontWeight: FontWeight.w600),
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w600,
+                    ),
                     decoration: authLoginInputDecoration(
                       context: context,
                       accentColor: _accentColor,
                       labelText: 'Username',
                       hintText: 'Choose a username',
-                      prefixIcon:
-                          const Icon(Icons.person_pin_outlined, size: 20),
+                      prefixIcon: const Icon(
+                        Icons.person_pin_outlined,
+                        size: 20,
+                      ),
                     ),
                     validator: FormValidators.username,
                   ),
@@ -336,7 +343,9 @@ class _AmbulanceInviteSetupScreenState
                       ),
                     ),
                     validator: (v) => FormValidators.confirmSecurityPin(
-                        v, _pinCtrl.text.trim()),
+                      v,
+                      _pinCtrl.text.trim(),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   AuthLoginPrimaryButton(

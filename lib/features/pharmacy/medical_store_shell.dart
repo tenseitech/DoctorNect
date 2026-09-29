@@ -76,18 +76,19 @@ class _MedicalStoreShellState extends State<MedicalStoreShell> {
         .forStore(storeId)
         .where((d) => d.status == PharmacyDeliveryStatus.sent)
         .length;
-    final connectPending = PharmacyConnectionStore.instance
+    final connectPending =
+        PharmacyConnectionStore.instance
             .pendingForStoreFromDoctor(storeId)
             .length +
         PharmacyConnectionStore.instance.pendingSentByStore(storeId).length;
-    final unreadNotifications =
-        PharmacyNotificationStore.instance.unreadCountForStore(storeId);
+    final unreadNotifications = PharmacyNotificationStore.instance
+        .unreadCountForStore(storeId);
 
     return [
       newRx > 0 ? newRx : null,
       connectPending > 0 ? connectPending : null,
       unreadNotifications > 0 ? unreadNotifications : null,
-      null
+      null,
     ];
   }
 

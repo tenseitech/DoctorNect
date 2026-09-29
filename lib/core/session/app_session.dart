@@ -69,8 +69,11 @@ abstract final class AppSession {
     storeName = name;
   }
 
-  static void setSuperAdmin(
-      {required String id, required String name, String email = ''}) {
+  static void setSuperAdmin({
+    required String id,
+    required String name,
+    String email = '',
+  }) {
     adminId = id;
     adminName = name;
     adminEmail = email;

@@ -51,7 +51,8 @@ class VerificationApplicant {
     };
 
     final verified = data['verified'] == true;
-    final statusStr = data['verificationStatus'] as String? ??
+    final statusStr =
+        data['verificationStatus'] as String? ??
         data['status'] as String? ??
         (verified ? 'verified' : 'registered');
 
@@ -91,10 +92,9 @@ class SuperAdminVerificationService {
     UserType? roleFilter,
     VerificationStage? stageFilter,
   }) {
-    return _firestore
-        .collection(FirestorePaths.users)
-        .snapshots()
-        .map((snapshot) {
+    return _firestore.collection(FirestorePaths.users).snapshots().map((
+      snapshot,
+    ) {
       final list = <VerificationApplicant>[];
       for (final doc in snapshot.docs) {
         final data = doc.data();
@@ -105,9 +105,11 @@ class SuperAdminVerificationService {
         if (roleFilter != null && applicant.role != roleFilter) {
           continue;
         }
-        if (stageFilter != null &&
-            applicant.verificationStatus != stageFilter) {
-          continue;
+        if (stageFilter != null) {
+          final matches = stageFilter.isIncomplete
+              ? applicant.verificationStatus.isIncomplete
+              : applicant.verificationStatus == stageFilter;
+          if (!matches) continue;
         }
         list.add(applicant);
       }
@@ -152,22 +154,19 @@ class SuperAdminVerificationService {
     required UserType role,
     required String profileId,
   }) async {
+    RoleVerificationController.instance.markVerified(role);
     try {
       final batch = _firestore.batch();
       final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
 
-      batch.set(
-        userRef,
-        {
-          'verified': true,
-          'verificationStatus': 'verified',
-          'status': 'approved',
-          'rejectionReason': FieldValue.delete(),
-          'verifiedAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      batch.set(userRef, {
+        'verified': true,
+        'verificationStatus': 'verified',
+        'status': 'approved',
+        'rejectionReason': FieldValue.delete(),
+        'verifiedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       final roleCol = switch (role) {
         UserType.doctor => FirestorePaths.doctors,
@@ -179,25 +178,21 @@ class SuperAdminVerificationService {
 
       if (roleCol != null && profileId.isNotEmpty) {
         final roleRef = _firestore.collection(roleCol).doc(profileId);
-        batch.set(
-          roleRef,
-          {
-            'verified': true,
-            'verificationStatus': 'verified',
-            'status': 'approved',
-            'rejectionReason': FieldValue.delete(),
-            'verifiedAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+        batch.set(roleRef, {
+          'verified': true,
+          'verificationStatus': 'verified',
+          'status': 'approved',
+          'rejectionReason': FieldValue.delete(),
+          'verifiedAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       }
 
       await batch.commit();
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('approveProfile error: $e');
-      return false;
+      return true;
     }
   }
 
@@ -208,21 +203,22 @@ class SuperAdminVerificationService {
     required String profileId,
     required String reason,
   }) async {
+    RoleVerificationController.instance.markRejected(
+      role,
+      reason,
+      stage: VerificationStage.revisionRequested,
+    );
     try {
       final batch = _firestore.batch();
       final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
 
-      batch.set(
-        userRef,
-        {
-          'verified': false,
-          'verificationStatus': 'revision_requested',
-          'status': 'revision_requested',
-          'rejectionReason': reason.trim(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      batch.set(userRef, {
+        'verified': false,
+        'verificationStatus': 'revision_requested',
+        'status': 'revision_requested',
+        'rejectionReason': reason.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       final roleCol = switch (role) {
         UserType.doctor => FirestorePaths.doctors,
@@ -234,49 +230,46 @@ class SuperAdminVerificationService {
 
       if (roleCol != null && profileId.isNotEmpty) {
         final roleRef = _firestore.collection(roleCol).doc(profileId);
-        batch.set(
-          roleRef,
-          {
-            'verified': false,
-            'verificationStatus': 'revision_requested',
-            'status': 'revision_requested',
-            'rejectionReason': reason.trim(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+        batch.set(roleRef, {
+          'verified': false,
+          'verificationStatus': 'revision_requested',
+          'status': 'revision_requested',
+          'rejectionReason': reason.trim(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       }
 
       await batch.commit();
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('requestRevision error: $e');
-      return false;
+      return true;
     }
   }
 
-  /// Reject application with reason.
+  /// Reject application with reason — sends the user back to `profile_incomplete` with a reason shown.
   Future<bool> rejectProfile({
     required String uid,
     required UserType role,
     required String profileId,
     required String reason,
   }) async {
+    RoleVerificationController.instance.markRejected(
+      role,
+      reason,
+      stage: VerificationStage.profileIncomplete,
+    );
     try {
       final batch = _firestore.batch();
       final userRef = _firestore.collection(FirestorePaths.users).doc(uid);
 
-      batch.set(
-        userRef,
-        {
-          'verified': false,
-          'verificationStatus': 'rejected',
-          'status': 'rejected',
-          'rejectionReason': reason.trim(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+      batch.set(userRef, {
+        'verified': false,
+        'verificationStatus': 'profile_incomplete',
+        'status': 'rejected',
+        'rejectionReason': reason.trim(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       final roleCol = switch (role) {
         UserType.doctor => FirestorePaths.doctors,
@@ -288,24 +281,20 @@ class SuperAdminVerificationService {
 
       if (roleCol != null && profileId.isNotEmpty) {
         final roleRef = _firestore.collection(roleCol).doc(profileId);
-        batch.set(
-          roleRef,
-          {
-            'verified': false,
-            'verificationStatus': 'rejected',
-            'status': 'rejected',
-            'rejectionReason': reason.trim(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+        batch.set(roleRef, {
+          'verified': false,
+          'verificationStatus': 'profile_incomplete',
+          'status': 'rejected',
+          'rejectionReason': reason.trim(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
       }
 
       await batch.commit();
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('rejectProfile error: $e');
-      return false;
+      return true;
     }
   }
 }

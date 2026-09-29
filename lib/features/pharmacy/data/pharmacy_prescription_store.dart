@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/foundation.dart';
 
 import '../../doctor/clinical/models/clinical_models.dart';
@@ -46,43 +47,43 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
         return false;
       }
       return true;
-    }).toList()
-      ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
+    }).toList()..sort((a, b) => b.sentAt.compareTo(a.sentAt));
   }
 
-  Future<void> refreshForPatient(String patientId,
-      {bool preferCache = true}) async {
+  Future<void> refreshForPatient(
+    String patientId, {
+    bool preferCache = true,
+  }) async {
     if (patientId.isEmpty) return;
     final remote = await FirestoreService.instance.pharmacyFirestore
-        .fetchDeliveriesForPatient(
-      patientId,
-      preferCache: preferCache,
-    );
+        .fetchDeliveriesForPatient(patientId, preferCache: preferCache);
     mergeFromFirestore(remote);
   }
 
-  Future<void> refreshForDoctor(String doctorId,
-      {bool preferCache = true}) async {
+  Future<void> refreshForDoctor(
+    String doctorId, {
+    bool preferCache = true,
+  }) async {
     if (doctorId.isEmpty) return;
     if (preferCache && forDoctor(doctorId).isNotEmpty) return;
 
     final remote = await FirestoreService.instance.pharmacyFirestore
-        .fetchDeliveriesForDoctor(
-      doctorId,
-      preferCache: preferCache,
-    );
+        .fetchDeliveriesForDoctor(doctorId, preferCache: preferCache);
     mergeFromFirestore(remote);
   }
 
   List<PharmacyPrescriptionDelivery> forStoreAndDoctor(
-          String storeId, String doctorId) =>
+    String storeId,
+    String doctorId,
+  ) =>
       _deliveries
           .where((d) => d.storeId == storeId && d.doctorId == doctorId)
           .toList()
         ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
 
   Map<String, List<PharmacyPrescriptionDelivery>> groupedByDoctorForStore(
-      String storeId) {
+    String storeId,
+  ) {
     final map = <String, List<PharmacyPrescriptionDelivery>>{};
     for (final d in forStore(storeId)) {
       map.putIfAbsent(d.doctorId, () => []).add(d);
@@ -91,9 +92,10 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
   }
 
   int unreadCountForStoreDoctor(String storeId, String doctorId) =>
-      forStoreAndDoctor(storeId, doctorId)
-          .where((d) => d.status == PharmacyDeliveryStatus.sent)
-          .length;
+      forStoreAndDoctor(
+        storeId,
+        doctorId,
+      ).where((d) => d.status == PharmacyDeliveryStatus.sent).length;
 
   PharmacyPrescriptionDelivery? findById(String id) {
     for (final d in _deliveries) {
@@ -111,7 +113,8 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
   }) async {
     final connectedIds = storeIds
         .where(
-            (id) => PharmacyConnectionStore.instance.isConnected(doctorId, id))
+          (id) => PharmacyConnectionStore.instance.isConnected(doctorId, id),
+        )
         .toList();
 
     final created = <PharmacyPrescriptionDelivery>[];
@@ -136,8 +139,9 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
         sentAt: DateTime.now(),
         medicineLines: PharmacyPrescriptionDelivery.linesFromDraft(draft),
       );
-      await FirestoreService.instance.pharmacyFirestore
-          .saveDelivery(delivery); // FIXED: await; rethrows on failure
+      await FirestoreService.instance.pharmacyFirestore.saveDelivery(
+        delivery,
+      ); // FIXED: await; rethrows on failure
       _deliveries.insert(0, delivery);
       created.add(delivery);
 
@@ -152,7 +156,8 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
 
     if (connectedIds.isNotEmpty && created.isEmpty) {
       throw StateError(
-          'Could not send to the selected medical store(s). Please try again.');
+        'Could not send to the selected medical store(s). Please try again.',
+      );
     }
 
     if (created.isNotEmpty) notifyListeners();
@@ -166,8 +171,9 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
     d.status = PharmacyDeliveryStatus.viewed;
     d.viewedAt = DateTime.now();
 
-    await FirestoreService.instance.pharmacyFirestore
-        .updateDelivery(d); // FIXED: await; rethrows on failure
+    await FirestoreService.instance.pharmacyFirestore.updateDelivery(
+      d,
+    ); // FIXED: await; rethrows on failure
     notifyListeners();
   }
 
@@ -188,7 +194,8 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
       }
     }
     await FirestoreService.instance.pharmacyFirestore.updateDelivery(
-        d); // FIXED: persist medicineLines availability/substitute to Firestore
+      d,
+    ); // FIXED: persist medicineLines availability/substitute to Firestore
     notifyListeners();
   }
 
@@ -208,8 +215,9 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
     d.dispensedAt = DateTime.now();
     d.dispensingNotes = notes;
 
-    await FirestoreService.instance.pharmacyFirestore
-        .updateDelivery(d); // FIXED: await; rethrows on failure
+    await FirestoreService.instance.pharmacyFirestore.updateDelivery(
+      d,
+    ); // FIXED: await; rethrows on failure
 
     notifyListeners();
   }

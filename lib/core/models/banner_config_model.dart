@@ -3,12 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class BannerConfigModel {
   const BannerConfigModel({
     this.enabled = true,
-    this.pricingTiers = const {
-      24: 300,
-      72: 750,
-      168: 1500,
-      720: 5000,
-    },
+    this.pricingTiers = const {24: 300, 72: 750, 168: 1500, 720: 5000},
     this.maxActiveBanners = 10,
     this.bannerNotice = '',
     this.updatedAt,
@@ -48,12 +43,7 @@ class BannerConfigModel {
       enabled: data['enabled'] ?? true,
       pricingTiers: tiers.isNotEmpty
           ? tiers
-          : const {
-              24: 300,
-              72: 750,
-              168: 1500,
-              720: 5000,
-            },
+          : const {24: 300, 72: 750, 168: 1500, 720: 5000},
       maxActiveBanners: (data['maxActiveBanners'] as num?)?.toInt() ?? 10,
       bannerNotice: data['bannerNotice'] as String? ?? '',
       updatedAt: parseDate(data['updatedAt']),

@@ -58,13 +58,15 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
       ]);
     } on TimeoutException {
       if (mounted) {
-        setState(() =>
-            _loadError = 'Could not load prescriptions. Please try again.');
+        setState(
+          () => _loadError = 'Could not load prescriptions. Please try again.',
+        );
       }
     } catch (_) {
       if (mounted) {
-        setState(() =>
-            _loadError = 'Could not load prescriptions. Please try again.');
+        setState(
+          () => _loadError = 'Could not load prescriptions. Please try again.',
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -72,8 +74,9 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
   }
 
   List<PrescriptionDraft> _patientPrescriptions() {
-    return ClinicalPrescriptionStore.instance
-        .forPatient(PatientSession.loggedInPatientId);
+    return ClinicalPrescriptionStore.instance.forPatient(
+      PatientSession.loggedInPatientId,
+    );
   }
 
   PatientPharmacyStatus? _pharmacyStatusFor(String prescriptionId) {
@@ -104,8 +107,10 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
 
         return Scaffold(
           backgroundColor: AppColors.cardBgOf(context),
-          appBar: PatientProfileFormStyles.profileAppBar('My Prescriptions',
-              context: context),
+          appBar: PatientProfileFormStyles.profileAppBar(
+            'My Prescriptions',
+            context: context,
+          ),
           body: _buildBody(list),
         );
       },
@@ -154,8 +159,11 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(AppIcons.prescription,
-                        color: AppColors.patientTeal, size: 22),
+                    const Icon(
+                      AppIcons.prescription,
+                      color: AppColors.patientTeal,
+                      size: 22,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -165,8 +173,9 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                             draft.primaryDiagnosis.isEmpty
                                 ? 'Prescription'
                                 : draft.primaryDiagnosis,
-                            style:
-                                GoogleFonts.inter(fontWeight: FontWeight.w600),
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           if (draft.doctorName.isNotEmpty)
                             Text(
@@ -181,15 +190,17 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                             Text(
                               draft.clinicName,
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelSmall,
-                                  color: AppColors.textSecondaryOf(context)),
+                                fontSize: AppTypography.labelSmall,
+                                color: AppColors.textSecondaryOf(context),
+                              ),
                             ),
                           Text(
                             DateFormat('dd MMM yyyy')
                                 .format(draft.prescriptionDate),
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         ],
                       ),
@@ -237,8 +248,10 @@ class _PrescriptionsMessageState extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final contentWidth =
-            PatientProfileFormStyles.resolveContentWidth(context, constraints);
+        final contentWidth = PatientProfileFormStyles.resolveContentWidth(
+          context,
+          constraints,
+        );
 
         return Center(
           child: SizedBox(
@@ -248,9 +261,11 @@ class _PrescriptionsMessageState extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon,
-                      size: 64,
-                      color: AppColors.patientTeal.withValues(alpha: 0.35)),
+                  Icon(
+                    icon,
+                    size: 64,
+                    color: AppColors.patientTeal.withValues(alpha: 0.35),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     title,
@@ -267,8 +282,9 @@ class _PrescriptionsMessageState extends StatelessWidget {
                       subtitle!,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodySmall,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   ],
                   if (actionLabel != null && onAction != null) ...[
@@ -276,7 +292,8 @@ class _PrescriptionsMessageState extends StatelessWidget {
                     OutlinedButton(
                       onPressed: onAction,
                       style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.patientTeal),
+                        foregroundColor: AppColors.patientTeal,
+                      ),
                       child: Text(actionLabel!),
                     ),
                   ],

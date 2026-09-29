@@ -5,7 +5,9 @@ import '../../../core/session/patient_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../profile/widgets/patient_profile_form_styles.dart';
 import '../search/doctor_search_screen.dart';
+
 import 'package:medibond/features/shared/screens/appointment_detail_screen.dart';
+
 import 'data/patient_appointment_filters.dart';
 import 'models/patient_appointment_models.dart';
 import '../widgets/patient_shell_tab.dart';
@@ -58,7 +60,8 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (_) => AppointmentDetailScreen(appointment: a)),
+        builder: (_) => AppointmentDetailScreen(appointment: a),
+      ),
     );
   }
 
@@ -121,8 +124,10 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
     if (widget.openedFromProfile) {
       return Scaffold(
         backgroundColor: AppColors.cardBgOf(context),
-        appBar: PatientProfileFormStyles.profileAppBar('My Appointments',
-            context: context),
+        appBar: PatientProfileFormStyles.profileAppBar(
+          'My Appointments',
+          context: context,
+        ),
         body: Column(
           children: [
             PatientSegmentedTabBar(
@@ -135,7 +140,10 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen>
               accentColor: Color(0xFF117554),
             ),
             Divider(
-                height: 1, thickness: 1, color: AppColors.borderOf(context)),
+              height: 1,
+              thickness: 1,
+              color: AppColors.borderOf(context),
+            ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,

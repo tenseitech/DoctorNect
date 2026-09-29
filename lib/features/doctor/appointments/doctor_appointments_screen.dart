@@ -1,4 +1,5 @@
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -14,7 +15,9 @@ import '../clinical/clinical_tools_shell.dart';
 import '../clinical/models/clinical_models.dart';
 import '../models/doctor_models.dart';
 import '../widgets/doctor_screen_title_bar.dart';
+
 import 'package:medibond/features/shared/screens/appointment_detail_screen.dart';
+
 import 'appointment_utils.dart';
 import 'widgets/appointment_filters_bar.dart';
 import 'widgets/appointment_tab_card.dart';
@@ -46,7 +49,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     'Upcoming',
     'Pending',
     'Completed',
-    'Cancelled'
+    'Cancelled',
   ];
   static const _tabs = [
     AppointmentListTab.today,
@@ -80,11 +83,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
   Future<void> _refreshAppointments() async {
     final doctorId = DoctorSession.loggedInDoctorId;
     if (doctorId.isEmpty) return;
-    await _store.refreshForDoctor(
-      doctorId,
-      force: true,
-      preferCache: false,
-    );
+    await _store.refreshForDoctor(doctorId, force: true, preferCache: false);
   }
 
   void _onTabChanged() {
@@ -146,9 +145,10 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e,
-                fallback:
-                    "Couldn't accept this appointment. Please check your connection and try again."),
+            describeUserFacingError(
+              e,
+              fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+            ),
           ),
         ),
       );
@@ -166,9 +166,10 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e,
-                fallback:
-                    "Couldn't decline this appointment. Please check your connection and try again."),
+            describeUserFacingError(
+              e,
+              fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+            ),
           ),
         ),
       );
@@ -182,8 +183,10 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     final record = _store.findRecordById(appointment.id);
     final resolvedPatientId = record?.patientId;
     if (resolvedPatientId == null || resolvedPatientId.isEmpty) {
-      AppToast.info(context,
-          'This patient is not registered yet — clinical tools cannot be linked to them.');
+      AppToast.info(
+        context,
+        'This patient is not registered yet — clinical tools cannot be linked to them.',
+      );
       return;
     }
     _updateStatus(appointment.id, AppointmentStatus.inProgress);
@@ -236,14 +239,17 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                         isScrollable: true,
                         tabAlignment: TabAlignment.start,
                         labelColor: AppColors.doctorBlue,
-                        unselectedLabelColor:
-                            AppColors.textSecondaryOf(context),
+                        unselectedLabelColor: AppColors.textSecondaryOf(
+                          context,
+                        ),
                         indicatorColor: AppColors.doctorBlue,
                         labelStyle: GoogleFonts.inter(
-                            fontSize: AppTypography.bodyMedium,
-                            fontWeight: FontWeight.w600),
+                          fontSize: AppTypography.bodyMedium,
+                          fontWeight: FontWeight.w600,
+                        ),
                         unselectedLabelStyle: GoogleFonts.inter(
-                            fontSize: AppTypography.bodyMedium),
+                          fontSize: AppTypography.bodyMedium,
+                        ),
                         tabs: _tabLabels.map((l) => Tab(text: l)).toList(),
                         onTap: (_) => setState(() {}),
                       ),
@@ -268,14 +274,15 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                               final list = _filteredForTab(tab);
                               if (list.isEmpty) {
                                 return AppointmentsEmptyState(
-                                    tabLabel: _tabLabels[_tabs.indexOf(tab)]);
+                                  tabLabel: _tabLabels[_tabs.indexOf(tab)],
+                                );
                               }
                               return ListView.builder(
                                 padding: EdgeInsets.fromLTRB(
                                   horizontalPadding,
                                   12,
                                   horizontalPadding,
-                                  20,
+                                  wide ? 20 : 96,
                                 ),
                                 itemCount: list.length,
                                 itemBuilder: (context, index) {
@@ -290,10 +297,10 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                                     onCancel: () => _cancelAppointment(appt),
                                     onReschedule: () =>
                                         DoctorAppointmentActions.reschedule(
-                                      context,
-                                      appointment: appt,
-                                      onComplete: () => setState(() {}),
-                                    ),
+                                          context,
+                                          appointment: appt,
+                                          onComplete: () => setState(() {}),
+                                        ),
                                   );
                                 },
                               );

@@ -20,18 +20,18 @@ class DoctorLabPatientsScreen extends StatelessWidget {
   static bool _isCompleted(DoctorLabOrder o) => o.status == 'completed';
 
   static String _statusLabel(DoctorLabOrder o) => switch (o.status) {
-        'completed' => 'Ready',
-        'in_progress' => 'Processing',
-        'cancelled' => 'Cancelled',
-        _ => 'Pending',
-      };
+    'completed' => 'Ready',
+    'in_progress' => 'Processing',
+    'cancelled' => 'Cancelled',
+    _ => 'Pending',
+  };
 
   static Color? _statusColor(DoctorLabOrder o) => switch (o.status) {
-        'completed' => AppColors.pharmacyGreen,
-        'in_progress' => const Color(0xFFEA580C),
-        'cancelled' => AppColors.error,
-        _ => AppColors.textSecondary,
-      };
+    'completed' => AppColors.pharmacyGreen,
+    'in_progress' => const Color(0xFFEA580C),
+    'cancelled' => AppColors.error,
+    _ => AppColors.textSecondary,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +57,7 @@ class DoctorLabPatientsScreen extends StatelessWidget {
         'Patient',
         'Tests ordered',
         'Status',
-        'Indication / Note'
+        'Indication / Note',
       ],
       columnWidths: const {
         0: FixedColumnWidth(108),
@@ -70,10 +70,14 @@ class DoctorLabPatientsScreen extends StatelessWidget {
         DocPartnerTableBodyCell(dateFormat.format(o.createdAt)),
         DocPartnerTableBodyCell(o.patientName, bold: true),
         DocPartnerTableBodyCell(o.testNames.join(', ')),
-        DocPartnerTableBodyCell(_statusLabel(o),
-            color: _statusColor(o), bold: true),
         DocPartnerTableBodyCell(
-            o.indication?.trim().isNotEmpty == true ? o.indication! : '—'),
+          _statusLabel(o),
+          color: _statusColor(o),
+          bold: true,
+        ),
+        DocPartnerTableBodyCell(
+          o.indication?.trim().isNotEmpty == true ? o.indication! : '—',
+        ),
       ],
     );
   }

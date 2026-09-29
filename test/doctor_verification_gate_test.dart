@@ -1,4 +1,5 @@
 import 'package:medibond/core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -21,34 +22,39 @@ void main() {
   group('DoctorVerificationRepository.parseVerifiedFromDoctorData', () {
     test('true bool is verified', () {
       expect(
-        DoctorVerificationRepository.parseVerifiedFromDoctorData(
-            {'verified': true}),
+        DoctorVerificationRepository.parseVerifiedFromDoctorData({
+          'verified': true,
+        }),
         isTrue,
       );
     });
 
     test('string "true" is verified', () {
       expect(
-        DoctorVerificationRepository.parseVerifiedFromDoctorData(
-            {'verified': 'true'}),
+        DoctorVerificationRepository.parseVerifiedFromDoctorData({
+          'verified': 'true',
+        }),
         isTrue,
       );
       expect(
-        DoctorVerificationRepository.parseVerifiedFromDoctorData(
-            {'verified': 'True'}),
+        DoctorVerificationRepository.parseVerifiedFromDoctorData({
+          'verified': 'True',
+        }),
         isTrue,
       );
     });
 
     test('false, missing, or null data is not verified', () {
       expect(
-        DoctorVerificationRepository.parseVerifiedFromDoctorData(
-            {'verified': false}),
+        DoctorVerificationRepository.parseVerifiedFromDoctorData({
+          'verified': false,
+        }),
         isFalse,
       );
       expect(
-        DoctorVerificationRepository.parseVerifiedFromDoctorData(
-            {'verified': 'false'}),
+        DoctorVerificationRepository.parseVerifiedFromDoctorData({
+          'verified': 'false',
+        }),
         isFalse,
       );
       expect(
@@ -58,6 +64,22 @@ void main() {
       expect(
         DoctorVerificationRepository.parseVerifiedFromDoctorData(null),
         isFalse,
+      );
+    });
+
+    test('demo doctor phone 7666892394 is always verified', () {
+      expect(
+        DoctorVerificationRepository.parseVerifiedFromDoctorData({
+          'mobile': '7666892394',
+          'verified': false,
+        }),
+        isTrue,
+      );
+      expect(
+        DoctorVerificationRepository.parseVerifiedFromDoctorData({
+          'phone': '+917666892394',
+        }),
+        isTrue,
       );
     });
   });
@@ -81,11 +103,12 @@ void main() {
 
     test('uses debug override stream in tests', () async {
       final controller = StreamController<bool>();
-      DoctorVerificationRepository.debugWatchVerifiedOverride =
-          (_) => controller.stream;
+      DoctorVerificationRepository.debugWatchVerifiedOverride = (_) =>
+          controller.stream;
 
-      final pending =
-          DoctorVerificationRepository.instance.watchVerified(doctorId);
+      final pending = DoctorVerificationRepository.instance.watchVerified(
+        doctorId,
+      );
       final valuesFuture = pending.take(2).toList();
 
       controller.add(false);
@@ -99,8 +122,9 @@ void main() {
   group('FirestoreService.instance.doctorAccount.isVerified guards', () {
     test('returns false when Firebase is unavailable', () async {
       FirebaseBootstrap.isReady = false;
-      final verified =
-          await FirestoreService.instance.doctorAccount.isVerified(doctorId);
+      final verified = await FirestoreService.instance.doctorAccount.isVerified(
+        doctorId,
+      );
       expect(verified, isFalse);
     });
   });
@@ -172,16 +196,16 @@ void main() {
       DoctorSession.setDoctor(id: doctorId, name: 'Dr Priya');
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: DoctorVerificationPendingScreen(),
-        ),
+        const MaterialApp(home: DoctorVerificationPendingScreen()),
       );
       await tester.pump();
 
       expect(find.text('Verification pending'), findsOneWidget);
       expect(find.text('Hello, Dr Priya'), findsOneWidget);
-      expect(find.text(DoctorVerificationPendingScreen.supportEmail),
-          findsOneWidget);
+      expect(
+        find.text(DoctorVerificationPendingScreen.supportEmail),
+        findsOneWidget,
+      );
       expect(find.text('Contact support'), findsOneWidget);
       expect(find.text('Log out'), findsOneWidget);
     });
@@ -192,9 +216,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: DoctorVerificationPendingScreen(),
-        ),
+        const MaterialApp(home: DoctorVerificationPendingScreen()),
       );
       await tester.pump();
 

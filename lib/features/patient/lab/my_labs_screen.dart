@@ -34,7 +34,8 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isNotEmpty) {
       unawaited(
-          _labBookingStore.refreshForPatient(patientId, preferCache: true));
+        _labBookingStore.refreshForPatient(patientId, preferCache: true),
+      );
     }
   }
 
@@ -62,8 +63,10 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
       appBar: AppBar(
         centerTitle: true,
         automaticallyImplyLeading: !widget.embeddedInShell,
-        title: Text('My Lab',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text(
+          'My Lab',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: AppColors.cardBgOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
@@ -96,13 +99,18 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
                     'No labs in your list yet. Tap Add to search registered labs or book a lab test.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                        color: AppColors.textSecondaryOf(context),
-                        fontSize: AppTypography.bodyMedium),
+                      color: AppColors.textSecondaryOf(context),
+                      fontSize: AppTypography.bodyMedium,
+                    ),
                   ),
                 )
               : ListView.separated(
                   padding: EdgeInsets.fromLTRB(
-                      20, 8, 20, widget.embeddedInShell ? 110 : 24),
+                    20,
+                    8,
+                    20,
+                    widget.embeddedInShell ? 110 : 24,
+                  ),
                   itemCount: labs.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {

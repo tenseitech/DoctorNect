@@ -65,8 +65,10 @@ class HealthRecordsMock extends ChangeNotifier {
     instance.notifyListeners();
   }
 
-  static void applyVitalsFromFirestore(List<VitalsLog> vitals,
-      {double? heightCm}) {
+  static void applyVitalsFromFirestore(
+    List<VitalsLog> vitals, {
+    double? heightCm,
+  }) {
     instance._vitals = List.from(vitals);
     instance._heightCm = heightCm;
     instance.notifyListeners();

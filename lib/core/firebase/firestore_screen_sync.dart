@@ -1,4 +1,5 @@
 import 'firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -19,7 +20,7 @@ abstract final class FirestoreScreenSync {
   static StreamSubscription? _labOrdersSub;
   static StreamSubscription? _labBookingsSub;
   static StreamSubscription<List<DoctorNectAppointmentRecord>>?
-      _doctorAppointmentsSub;
+  _doctorAppointmentsSub;
   static String? _doctorAppointmentsDoctorId;
 
   static void attachPendingConnections({
@@ -30,10 +31,12 @@ abstract final class FirestoreScreenSync {
     if (!FirebaseBootstrap.isReady) return;
 
     final Stream<List<PharmacyConnection>> stream = switch (role) {
-      UserType.doctor => FirestoreService.instance.pharmacyFirestore
-          .watchPendingConnectionsForDoctor(profileId),
-      UserType.medicalStore => FirestoreService.instance.pharmacyFirestore
-          .watchPendingConnectionsForStore(profileId),
+      UserType.doctor =>
+        FirestoreService.instance.pharmacyFirestore
+            .watchPendingConnectionsForDoctor(profileId),
+      UserType.medicalStore =>
+        FirestoreService.instance.pharmacyFirestore
+            .watchPendingConnectionsForStore(profileId),
       UserType.patient => const Stream.empty(),
       UserType.lab => const Stream.empty(),
       UserType.ambulance => const Stream.empty(),
@@ -57,10 +60,13 @@ abstract final class FirestoreScreenSync {
     if (!FirebaseBootstrap.isReady) return;
 
     final Stream<List<LabConnection>> stream = switch (role) {
-      UserType.doctor => FirestoreService.instance.labConnection
-          .watchPendingConnectionsForDoctor(profileId),
-      UserType.lab => FirestoreService.instance.labConnection
-          .watchPendingConnectionsForLab(profileId),
+      UserType.doctor =>
+        FirestoreService.instance.labConnection
+            .watchPendingConnectionsForDoctor(profileId),
+      UserType.lab =>
+        FirestoreService.instance.labConnection.watchPendingConnectionsForLab(
+          profileId,
+        ),
       UserType.medicalStore => const Stream.empty(),
       UserType.patient => const Stream.empty(),
       UserType.ambulance => const Stream.empty(),
@@ -88,20 +94,21 @@ abstract final class FirestoreScreenSync {
     detachDoctorAppointments();
 
     _doctorAppointmentsDoctorId = doctorId;
-    _doctorAppointmentsSub =
-        FirestoreService.instance.appointment.watchForDoctor(doctorId).listen(
-      (records) {
-        SharedAppointmentsStore.instance.mergeFromFirestore(
-          records,
-          pruneMissing: false,
+    _doctorAppointmentsSub = FirestoreService.instance.appointment
+        .watchForDoctor(doctorId)
+        .listen(
+          (records) {
+            SharedAppointmentsStore.instance.mergeFromFirestore(
+              records,
+              pruneMissing: false,
+            );
+          },
+          onError: (Object e, StackTrace st) {
+            if (kDebugMode) {
+              debugPrint('Doctor appointments sync error: $e\n$st');
+            }
+          },
         );
-      },
-      onError: (Object e, StackTrace st) {
-        if (kDebugMode) {
-          debugPrint('Doctor appointments sync error: $e\n$st');
-        }
-      },
-    );
   }
 
   static void detachDoctorAppointments() {
@@ -115,21 +122,23 @@ abstract final class FirestoreScreenSync {
     if (!FirebaseBootstrap.isReady || labId.isEmpty) return;
 
     // Realtime stream for doctor lab orders addressed to this lab.
-    _labOrdersSub =
-        FirestoreService.instance.labOrder.watchForLab(labId).listen(
-      LabWorklistStore.instance.mergeOrders,
-      onError: (Object e, StackTrace st) {
-        if (kDebugMode) debugPrint('Lab orders sync error: $e\n$st');
-      },
-    );
+    _labOrdersSub = FirestoreService.instance.labOrder
+        .watchForLab(labId)
+        .listen(
+          LabWorklistStore.instance.mergeOrders,
+          onError: (Object e, StackTrace st) {
+            if (kDebugMode) debugPrint('Lab orders sync error: $e\n$st');
+          },
+        );
     // Realtime stream for patient lab bookings addressed to this lab.
-    _labBookingsSub =
-        FirestoreService.instance.labBooking.watchForLab(labId).listen(
-      LabWorklistStore.instance.mergeBookings,
-      onError: (Object e, StackTrace st) {
-        if (kDebugMode) debugPrint('Lab bookings sync error: $e\n$st');
-      },
-    );
+    _labBookingsSub = FirestoreService.instance.labBooking
+        .watchForLab(labId)
+        .listen(
+          LabWorklistStore.instance.mergeBookings,
+          onError: (Object e, StackTrace st) {
+            if (kDebugMode) debugPrint('Lab bookings sync error: $e\n$st');
+          },
+        );
   }
 
   static void detachPendingConnections() {

@@ -73,7 +73,10 @@ class _LoginBackgroundPainter extends CustomPainter {
       final x = rng.nextDouble() * size.width;
       final y = rng.nextDouble() * size.height;
       canvas.drawCircle(
-          Offset(x, y), r, stroke(0.10 + rng.nextDouble() * 0.06, 2.2));
+        Offset(x, y),
+        r,
+        stroke(0.10 + rng.nextDouble() * 0.06, 2.2),
+      );
     }
 
     // ── pill / rounded-rects ──
@@ -88,8 +91,9 @@ class _LoginBackgroundPainter extends CustomPainter {
       canvas.rotate(angle);
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-            Rect.fromCenter(center: Offset.zero, width: w, height: h),
-            Radius.circular(h / 2)),
+          Rect.fromCenter(center: Offset.zero, width: w, height: h),
+          Radius.circular(h / 2),
+        ),
         fill(0.08 + rng.nextDouble() * 0.06),
       );
       canvas.restore();
@@ -104,16 +108,16 @@ class _LoginBackgroundPainter extends CustomPainter {
       final p = fill(0.10 + rng.nextDouble() * 0.06);
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-            Rect.fromCenter(
-                center: Offset(x, y), width: arm * 2, height: thick),
-            Radius.circular(thick / 2)),
+          Rect.fromCenter(center: Offset(x, y), width: arm * 2, height: thick),
+          Radius.circular(thick / 2),
+        ),
         p,
       );
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-            Rect.fromCenter(
-                center: Offset(x, y), width: thick, height: arm * 2),
-            Radius.circular(thick / 2)),
+          Rect.fromCenter(center: Offset(x, y), width: thick, height: arm * 2),
+          Radius.circular(thick / 2),
+        ),
         p,
       );
     }
@@ -251,8 +255,10 @@ class _SplitLoginScaffold extends StatelessWidget {
                 ),
                 SafeArea(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -260,7 +266,8 @@ class _SplitLoginScaffold extends StatelessWidget {
                           icon: const Icon(Icons.arrow_back_rounded),
                           onPressed: () => Navigator.maybePop(context),
                           style: IconButton.styleFrom(
-                              foregroundColor: Colors.white),
+                            foregroundColor: Colors.white,
+                          ),
                         ),
                         const ThemeToggleButton(),
                       ],
@@ -295,10 +302,7 @@ class _LoginBrandingPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            accentColor,
-            branding.gradientEnd(accentColor),
-          ],
+          colors: [accentColor, branding.gradientEnd(accentColor)],
         ),
       ),
       child: Stack(
@@ -306,7 +310,8 @@ class _LoginBrandingPanel extends StatelessWidget {
           Positioned.fill(
             child: CustomPaint(
               painter: _LoginBackgroundPainter(
-                  color: AppColors.surfaceOf(context).withValues(alpha: 0.15)),
+                color: AppColors.surfaceOf(context).withValues(alpha: 0.15),
+              ),
             ),
           ),
           SafeArea(
@@ -315,8 +320,9 @@ class _LoginBrandingPanel extends StatelessWidget {
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(48, 40, 48, 40),
                   child: ConstrainedBox(
-                    constraints:
-                        BoxConstraints(minHeight: constraints.maxHeight),
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -329,8 +335,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                                 color: Colors.white.withValues(alpha: 0.16),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                    color:
-                                        Colors.white.withValues(alpha: 0.25)),
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                ),
                               ),
                               child: Icon(icon, color: Colors.white, size: 24),
                             ),
@@ -373,60 +379,67 @@ class _LoginBrandingPanel extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        ...branding.features.map((f) => Padding(
-                              padding: const EdgeInsets.only(bottom: 18),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.16),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(f.icon,
-                                        color: Colors.white, size: 20),
+                        ...branding.features.map(
+                          (f) => Padding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.16),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          f.title,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(
-                                            fontSize: AppTypography.bodyLarge,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white,
+                                  child: Icon(
+                                    f.icon,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        f.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: AppTypography.bodyLarge,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Text(
+                                        f.subtitle,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: AppTypography.bodySmall,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.85,
                                           ),
                                         ),
-                                        Text(
-                                          f.subtitle,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(
-                                            fontSize: AppTypography.bodySmall,
-                                            color: Colors.white
-                                                .withValues(alpha: 0.85),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            )),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 32),
                         Row(
                           children: [
-                            Icon(Icons.verified_user_outlined,
-                                size: 16,
-                                color: Colors.white.withValues(alpha: 0.8)),
+                            Icon(
+                              Icons.verified_user_outlined,
+                              size: 16,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -594,8 +607,9 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.arrow_back_rounded),
                       onPressed: () => Navigator.maybePop(context),
-                      style:
-                          IconButton.styleFrom(foregroundColor: Colors.white),
+                      style: IconButton.styleFrom(
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                     const ThemeToggleButton(),
                   ],
@@ -613,7 +627,8 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25)),
+                          color: Colors.white.withValues(alpha: 0.25),
+                        ),
                       ),
                       child: Icon(icon, color: Colors.white, size: 26),
                     ),
@@ -698,8 +713,9 @@ class _StackedLoginScaffold extends StatelessWidget {
     );
 
     final horizontalPadding = compact ? 16.0 : 24.0;
-    final formMaxWidth =
-        isMedium ? 480.0 : (compact ? double.infinity : maxWidth);
+    final formMaxWidth = isMedium
+        ? 480.0
+        : (compact ? double.infinity : maxWidth);
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
@@ -713,10 +729,7 @@ class _StackedLoginScaffold extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        actions: const [
-          ThemeToggleButton(),
-          SizedBox(width: 8),
-        ],
+        actions: const [ThemeToggleButton(), SizedBox(width: 8)],
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
@@ -756,8 +769,8 @@ class _StackedLoginScaffold extends StatelessWidget {
                                   color: AppColors.surfaceOf(context),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                      color:
-                                          accentColor.withValues(alpha: 0.12)),
+                                    color: accentColor.withValues(alpha: 0.12),
+                                  ),
                                 ),
                                 child: Icon(icon, color: accentColor, size: 28),
                               ),
@@ -766,8 +779,9 @@ class _StackedLoginScaffold extends StatelessWidget {
                           ],
                           Text(
                             welcomeTitle,
-                            textAlign:
-                                compact ? TextAlign.center : TextAlign.left,
+                            textAlign: compact
+                                ? TextAlign.center
+                                : TextAlign.left,
                             style: GoogleFonts.inter(
                               fontSize: compact ? 22 : 24,
                               fontWeight: FontWeight.w800,
@@ -778,8 +792,9 @@ class _StackedLoginScaffold extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             subtitle,
-                            textAlign:
-                                compact ? TextAlign.center : TextAlign.left,
+                            textAlign: compact
+                                ? TextAlign.center
+                                : TextAlign.left,
                             style: GoogleFonts.inter(
                               fontSize: AppTypography.bodyMedium,
                               color: AppColors.textSecondaryOf(context),
@@ -843,10 +858,7 @@ class _AuthLoginFormCard extends StatelessWidget {
             height: 3,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  accentColor,
-                  accentColor.withValues(alpha: 0.45),
-                ],
+                colors: [accentColor, accentColor.withValues(alpha: 0.45)],
               ),
             ),
           ),
@@ -934,8 +946,9 @@ class AuthLoginPrimaryButton extends StatelessWidget {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 52),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 0,
         ),
         child: loading
@@ -947,7 +960,9 @@ class AuthLoginPrimaryButton extends StatelessWidget {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2.4, color: Colors.white),
+                      strokeWidth: 2.4,
+                      color: Colors.white,
+                    ),
                   ),
                   if (loadingText != null && loadingText!.isNotEmpty) ...[
                     const SizedBox(width: 10),
@@ -985,8 +1000,11 @@ class AuthLoginPrimaryButton extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_rounded,
-                      size: 18, color: Colors.white),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
                 ],
               ),
       ),
@@ -1021,8 +1039,9 @@ class AuthLoginRegisterButton extends StatelessWidget {
           backgroundColor: Colors.transparent,
           minimumSize: const Size(double.infinity, 50),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -23,27 +23,33 @@ class DoctorProfileDetailMock {
       specialities: [
         listing.specialization,
         'General Checkup',
-        'Chronic Disease Management'
+        'Chronic Disease Management',
       ],
       services: [
         'Consultation',
         'Follow-up',
         'Health Screening',
-        'Prescription'
+        'Prescription',
       ],
       timings: const [
         ClinicTiming(
-            day: 'Mon – Fri', hours: '9:00 AM – 1:00 PM, 4:00 – 8:00 PM'),
+          day: 'Mon – Fri',
+          hours: '9:00 AM – 1:00 PM, 4:00 – 8:00 PM',
+        ),
         ClinicTiming(day: 'Saturday', hours: '10:00 AM – 2:00 PM'),
         ClinicTiming(day: 'Sunday', hours: 'Closed'),
       ],
       education: [
         EducationEntry(
-            degree: 'MBBS', college: 'Seth GS Medical College', year: 2008),
+          degree: 'MBBS',
+          college: 'Seth GS Medical College',
+          year: 2008,
+        ),
         EducationEntry(
-            degree: listing.qualification.contains('MD') ? 'MD' : 'DNB',
-            college: 'KEM Hospital',
-            year: 2012),
+          degree: listing.qualification.contains('MD') ? 'MD' : 'DNB',
+          college: 'KEM Hospital',
+          year: 2012,
+        ),
       ],
       pastWorkplaces: [
         'Lilavati Hospital, Mumbai (2012–2018)',
@@ -53,7 +59,7 @@ class DoctorProfileDetailMock {
       publications: ['Published research on preventive healthcare (2022)'],
       memberships: [
         'Indian Medical Association',
-        'Maharashtra Medical Council'
+        'Maharashtra Medical Council',
       ],
       reviews: [
         PatientDoctorReview(

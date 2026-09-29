@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -13,7 +14,9 @@ import 'lab_report_download_stub.dart'
 import 'lab_report_pdf_view_stub.dart'
     if (dart.library.html) 'lab_report_pdf_view_web.dart'
     as lab_report_pdf_view;
+
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+
 import '../../../core/theme/app_typography.dart';
 
 class LabReportScreen extends StatefulWidget {
@@ -95,10 +98,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
         storageKey: storageKey,
         storageProvider: storageProvider,
         alternateBookingIds: alternateBookingIds,
-      ).timeout(
-        LabReportFileStore.downloadTimeout,
-        onTimeout: () => null,
-      );
+      ).timeout(LabReportFileStore.downloadTimeout, onTimeout: () => null);
 
       if (!mounted) return;
 
@@ -107,8 +107,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
         error =
             'Could not load the report. Check your connection and try again.';
       } else if (!LabReportFileStore.matchesDeclaredType(bytes, fileName)) {
-        error =
-            'The linked report file looks invalid or mismatched. Ask your lab to re-upload the correct report.';
+        error = 'The linked report file looks invalid or mismatched. Ask your lab to re-upload the correct report.';
       }
 
       setState(() {
@@ -135,17 +134,13 @@ class _LabReportScreenState extends State<LabReportScreen> {
     final fileName = _reportFileName;
     if (bytes == null) return;
 
-    await Share.shareXFiles(
-      [
-        XFile.fromData(
-          bytes,
-          name: fileName,
-          mimeType:
-              LabReportFileStore.mimeTypeFor(fileName) ?? 'application/pdf',
-        ),
-      ],
-      text: widget.displayTestName,
-    );
+    await Share.shareXFiles([
+      XFile.fromData(
+        bytes,
+        name: fileName,
+        mimeType: LabReportFileStore.mimeTypeFor(fileName) ?? 'application/pdf',
+      ),
+    ], text: widget.displayTestName);
   }
 
   Future<void> _downloadReport() async {
@@ -156,7 +151,8 @@ class _LabReportScreenState extends State<LabReportScreen> {
     await lab_report_download.downloadLabReportBytes(
       bytes: bytes,
       fileName: fileName,
-      mimeType: LabReportFileStore.mimeTypeFor(fileName) ??
+      mimeType:
+          LabReportFileStore.mimeTypeFor(fileName) ??
           'application/octet-stream',
     );
   }
@@ -202,14 +198,16 @@ class _LabReportScreenState extends State<LabReportScreen> {
               padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
               decoration: BoxDecoration(
                 color: AppColors.surfaceOf(context),
-                border:
-                    Border(top: BorderSide(color: AppColors.borderOf(context))),
+                border: Border(
+                  top: BorderSide(color: AppColors.borderOf(context)),
+                ),
               ),
               child: Text(
                 fileName,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
             ),
         ],
@@ -220,7 +218,8 @@ class _LabReportScreenState extends State<LabReportScreen> {
   Widget _buildBody(String? fileName) {
     if (_loading) {
       return const Center(
-          child: CircularProgressIndicator(color: AppColors.labPurple));
+        child: CircularProgressIndicator(color: AppColors.labPurple),
+      );
     }
 
     if (_error != null) {
@@ -230,14 +229,18 @@ class _LabReportScreenState extends State<LabReportScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.picture_as_pdf_outlined,
-                  size: 64, color: AppColors.labPurple),
+              const Icon(
+                Icons.picture_as_pdf_outlined,
+                size: 64,
+                color: AppColors.labPurple,
+              ),
               const SizedBox(height: 12),
               Text(
                 _error!,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                    color: AppColors.textSecondaryOf(context)),
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
               const SizedBox(height: 16),
               OutlinedButton(

@@ -1,4 +1,5 @@
 import 'package:medibond/core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -95,7 +96,8 @@ class InAppNotificationService extends ChangeNotifier {
   void onPatientNotificationPrefsChanged() {
     if (_lastPatientFirestoreSnapshot != null) {
       mergePatientFirestoreNotifications(
-          List<AppNotification>.from(_lastPatientFirestoreSnapshot!));
+        List<AppNotification>.from(_lastPatientFirestoreSnapshot!),
+      );
     }
     refilterPatientLocalInbox();
   }
@@ -132,8 +134,9 @@ class InAppNotificationService extends ChangeNotifier {
       if (userId.isEmpty) return;
       _doctorReadKeys
         ..clear()
-        ..addAll(await NotificationReadStore.load(
-            audience: audience, userId: userId));
+        ..addAll(
+          await NotificationReadStore.load(audience: audience, userId: userId),
+        );
       _applyPersistedReadToInbox(NotificationAudience.doctor);
       return;
     }
@@ -143,7 +146,8 @@ class InAppNotificationService extends ChangeNotifier {
     _patientReadKeys
       ..clear()
       ..addAll(
-          await NotificationReadStore.load(audience: audience, userId: userId));
+        await NotificationReadStore.load(audience: audience, userId: userId),
+      );
     _applyPersistedReadToInbox(NotificationAudience.patient);
   }
 
@@ -160,7 +164,9 @@ class InAppNotificationService extends ChangeNotifier {
   }
 
   bool _isPersistedRead(
-      NotificationAudience audience, AppNotification notification) {
+    NotificationAudience audience,
+    AppNotification notification,
+  ) {
     final keys = audience == NotificationAudience.doctor
         ? _doctorReadKeys
         : _patientReadKeys;
@@ -205,7 +211,8 @@ class InAppNotificationService extends ChangeNotifier {
   List<AppNotification> get doctorInbox => List.unmodifiable(_doctor);
 
   List<AppNotification> get patientInbox => List.unmodifiable(
-      _patient.where((n) => !_isPrescriptionExpiringAlert(n)));
+    _patient.where((n) => !_isPrescriptionExpiringAlert(n)),
+  );
 
   int get unreadDoctorCount => _doctor.where((n) => !n.isRead).length;
 
@@ -229,8 +236,7 @@ class InAppNotificationService extends ChangeNotifier {
       DoctorNotificationTrigger.appointmentCancelledByPatient => true,
       DoctorNotificationTrigger.appointmentReminderTomorrow ||
       DoctorNotificationTrigger.appointmentReminderToday ||
-      DoctorNotificationTrigger.nextPatientReminder =>
-        p.appointmentReminders,
+      DoctorNotificationTrigger.nextPatientReminder => p.appointmentReminders,
       _ => true,
     };
   }
@@ -248,11 +254,9 @@ class InAppNotificationService extends ChangeNotifier {
       PatientNotificationTrigger.labReportReady ||
       PatientNotificationTrigger.labBookingAccepted ||
       PatientNotificationTrigger.labBookingDeclined ||
-      PatientNotificationTrigger.labOrderSent =>
-        p.labReportAlert,
+      PatientNotificationTrigger.labOrderSent => p.labReportAlert,
       PatientNotificationTrigger.labBookingUpdate ||
-      PatientNotificationTrigger.pharmacyDeliveryUpdate =>
-        true,
+      PatientNotificationTrigger.pharmacyDeliveryUpdate => true,
       PatientNotificationTrigger.medicineReminder => p.medicationReminders,
       PatientNotificationTrigger.healthTipOfDay => p.healthTips,
       _ => true,
@@ -269,8 +273,10 @@ class InAppNotificationService extends ChangeNotifier {
     if (_doctorDedupeKeys.contains(storageKey)) return;
     _doctorDedupeKeys.add(storageKey);
 
-    final resolved =
-        _withPersistedReadState(NotificationAudience.doctor, notification);
+    final resolved = _withPersistedReadState(
+      NotificationAudience.doctor,
+      notification,
+    );
 
     _doctor.insert(0, resolved);
 
@@ -346,8 +352,10 @@ class InAppNotificationService extends ChangeNotifier {
     if (_patientDedupeKeys.contains(storageKey)) return;
     _patientDedupeKeys.add(storageKey);
 
-    final resolved =
-        _withPersistedReadState(NotificationAudience.patient, notification);
+    final resolved = _withPersistedReadState(
+      NotificationAudience.patient,
+      notification,
+    );
 
     _patient.insert(0, resolved);
 
@@ -363,8 +371,9 @@ class InAppNotificationService extends ChangeNotifier {
     if (index < 0 || _doctor[index].isRead) return;
 
     final readKey = _storageKey(_doctor[index]);
-    final matching =
-        _doctor.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
+    final matching = _doctor
+        .where((n) => !n.isRead && _storageKey(n) == readKey)
+        .toList();
     if (matching.isEmpty) return;
 
     final firestoreUnreadIds = <String>[];
@@ -382,11 +391,13 @@ class InAppNotificationService extends ChangeNotifier {
     }
 
     if (firestoreUnreadIds.length == 1) {
-      await FirestoreService.instance.inAppNotification
-          .markRead(firestoreUnreadIds.first);
+      await FirestoreService.instance.inAppNotification.markRead(
+        firestoreUnreadIds.first,
+      );
     } else if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification
-          .markAllRead(firestoreUnreadIds);
+      await FirestoreService.instance.inAppNotification.markAllRead(
+        firestoreUnreadIds,
+      );
     }
     if (updatedMatching.isNotEmpty) {
       await _persistAllRead(NotificationAudience.doctor, updatedMatching);
@@ -414,8 +425,9 @@ class InAppNotificationService extends ChangeNotifier {
     if (!changed) return;
 
     if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification
-          .markAllRead(firestoreUnreadIds);
+      await FirestoreService.instance.inAppNotification.markAllRead(
+        firestoreUnreadIds,
+      );
     }
     if (updatedUnread.isNotEmpty) {
       await _persistAllRead(NotificationAudience.doctor, updatedUnread);
@@ -428,8 +440,9 @@ class InAppNotificationService extends ChangeNotifier {
     if (index < 0 || _patient[index].isRead) return;
 
     final readKey = _storageKey(_patient[index]);
-    final matching =
-        _patient.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
+    final matching = _patient
+        .where((n) => !n.isRead && _storageKey(n) == readKey)
+        .toList();
     if (matching.isEmpty) return;
 
     final firestoreUnreadIds = <String>[];
@@ -447,11 +460,13 @@ class InAppNotificationService extends ChangeNotifier {
     }
 
     if (firestoreUnreadIds.length == 1) {
-      await FirestoreService.instance.inAppNotification
-          .markRead(firestoreUnreadIds.first);
+      await FirestoreService.instance.inAppNotification.markRead(
+        firestoreUnreadIds.first,
+      );
     } else if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification
-          .markAllRead(firestoreUnreadIds);
+      await FirestoreService.instance.inAppNotification.markAllRead(
+        firestoreUnreadIds,
+      );
     }
     if (updatedMatching.isNotEmpty) {
       await _persistAllRead(NotificationAudience.patient, updatedMatching);
@@ -479,8 +494,9 @@ class InAppNotificationService extends ChangeNotifier {
     if (!changed) return;
 
     if (firestoreUnreadIds.isNotEmpty) {
-      await FirestoreService.instance.inAppNotification
-          .markAllRead(firestoreUnreadIds);
+      await FirestoreService.instance.inAppNotification.markAllRead(
+        firestoreUnreadIds,
+      );
     }
     if (updatedUnread.isNotEmpty) {
       await _persistAllRead(NotificationAudience.patient, updatedUnread);

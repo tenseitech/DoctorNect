@@ -41,8 +41,9 @@ abstract final class FirestoreReadHelper {
   }) async {
     if (preferCache && FirebaseBootstrap.isReady) {
       try {
-        final cached =
-            await reference.get(const GetOptions(source: Source.cache));
+        final cached = await reference.get(
+          const GetOptions(source: Source.cache),
+        );
         if (cached.exists) {
           return cached;
         }

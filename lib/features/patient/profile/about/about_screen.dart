@@ -51,18 +51,25 @@ class AboutScreen extends StatelessWidget {
                       color: accentColor.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.local_hospital,
-                        size: 40, color: accentColor),
+                    child: Icon(
+                      Icons.local_hospital,
+                      size: 40,
+                      color: accentColor,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  Text('DoctorNect',
-                      style: GoogleFonts.inter(
-                          fontSize: AppTypography.headlineLarge,
-                          fontWeight: FontWeight.w700)),
+                  Text(
+                    'DoctorNect',
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.headlineLarge,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   Text(
                     'Version ${PatientProfileMock.appVersion}',
                     style: GoogleFonts.inter(
-                        color: AppColors.textSecondaryOf(context)),
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                 ],
               ),
@@ -76,11 +83,15 @@ class AboutScreen extends StatelessWidget {
                     context: context,
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading:
-                          Icon(Icons.description_outlined, color: accentColor),
+                      leading: Icon(
+                        Icons.description_outlined,
+                        color: accentColor,
+                      ),
                       title: Text('Terms of service'),
-                      trailing: Icon(Icons.chevron_right,
-                          color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       onTap: () =>
                           _openLegal(context, LegalDocumentType.termsOfService),
                     ),
@@ -89,11 +100,15 @@ class AboutScreen extends StatelessWidget {
                     context: context,
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading:
-                          Icon(Icons.privacy_tip_outlined, color: accentColor),
+                      leading: Icon(
+                        Icons.privacy_tip_outlined,
+                        color: accentColor,
+                      ),
                       title: Text('Privacy policy'),
-                      trailing: Icon(Icons.chevron_right,
-                          color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       onTap: () =>
                           _openLegal(context, LegalDocumentType.privacyPolicy),
                     ),
@@ -104,11 +119,14 @@ class AboutScreen extends StatelessWidget {
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.star_outline, color: accentColor),
                       title: Text('Rate the app'),
-                      trailing: Icon(Icons.chevron_right,
-                          color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       onTap: () async {
                         await ExternalLauncher.openUrl(
-                            PatientProfileMock.appDownloadUrl);
+                          PatientProfileMock.appDownloadUrl,
+                        );
                         if (!context.mounted) return;
                       },
                     ),
@@ -119,8 +137,10 @@ class AboutScreen extends StatelessWidget {
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.share_outlined, color: accentColor),
                       title: Text('Share app link'),
-                      trailing: Icon(Icons.chevron_right,
-                          color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       onTap: () => ExternalLauncher.shareText(
                         'Download DoctorNect — your healthcare companion: ${PatientProfileMock.appDownloadUrl}',
                         context: context,
@@ -144,25 +164,31 @@ class AboutScreen extends StatelessWidget {
                       leading: Icon(Icons.email_outlined, color: accentColor),
                       title: Text('Email Support'),
                       subtitle: Text(PatientProfileMock.supportEmail),
-                      trailing: Icon(Icons.chevron_right,
-                          color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       onTap: () => ExternalLauncher.openUrl(
-                          'mailto:${PatientProfileMock.supportEmail}'),
+                        'mailto:${PatientProfileMock.supportEmail}',
+                      ),
                     ),
                   ),
                   PatientProfileFormStyles.settingsRowCard(
                     context: context,
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.chat_outlined,
-                          color: Color(0xFF25D366)),
+                      leading: const Icon(
+                        Icons.chat_outlined,
+                        color: Color(0xFF25D366),
+                      ),
                       title: Text('WhatsApp Support'),
                       subtitle: Text(PatientProfileMock.supportWhatsApp),
-                      trailing: Icon(Icons.chevron_right,
-                          color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       onTap: () => ExternalLauncher.shareViaWhatsApp(
-                        text:
-                            'Hello DoctorNect Support, I have a query about the app.',
+                        text: 'Hello DoctorNect Support, I have a query about the app.',
                         phone: PatientProfileMock.supportWhatsApp,
                         context: context,
                       ),
@@ -175,8 +201,10 @@ class AboutScreen extends StatelessWidget {
                       leading: Icon(Icons.phone_outlined, color: accentColor),
                       title: Text('Call Helpline'),
                       subtitle: Text(PatientProfileMock.supportPhone),
-                      trailing: Icon(Icons.chevron_right,
-                          color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       onTap: () => ExternalLauncher.callPhone(
                         PatientProfileMock.supportPhone,
                         context: context,
@@ -187,14 +215,19 @@ class AboutScreen extends StatelessWidget {
                     context: context,
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading:
-                          Icon(Icons.language_outlined, color: accentColor),
+                      leading: Icon(
+                        Icons.language_outlined,
+                        color: accentColor,
+                      ),
                       title: Text('Official Website'),
                       subtitle: Text(PatientProfileMock.websiteUrl),
-                      trailing: Icon(Icons.chevron_right,
-                          color: AppColors.textSecondaryOf(context)),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       onTap: () => ExternalLauncher.openUrl(
-                          PatientProfileMock.websiteUrl),
+                        PatientProfileMock.websiteUrl,
+                      ),
                     ),
                   ),
                 ],
