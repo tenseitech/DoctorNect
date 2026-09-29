@@ -72,6 +72,8 @@ service-account*.json
 functions/secrets/
 *.jks
 *.pem
+!functions/redis_ca.pem
+!functions/redis-ca.pem
 *.p12
 key.properties
 .qpanda/

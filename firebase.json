@@ -23,6 +23,8 @@
         ".secret.local",
         "secrets/**",
         "*.pem",
+        "!redis_ca.pem",
+        "!redis-ca.pem",
         "*.p12",
         "service-account*.json"
       ]
