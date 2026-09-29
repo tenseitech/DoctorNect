@@ -1383,7 +1383,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => BookingFlowScreen(doctorId: a.doctorId),
+                          builder: (_) =>
+                              BookingFlowScreen(doctorId: a.doctorId),
                         ),
                       );
                     });

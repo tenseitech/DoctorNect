@@ -382,7 +382,8 @@ class _PersonalInfoTab extends StatelessWidget {
             _Row(
               'Gender',
               s.gender.trim().isNotEmpty
-                  ? AppConstants.patientGenderLabel(s.gender, fallback: 'Not provided')
+                  ? AppConstants.patientGenderLabel(s.gender,
+                      fallback: 'Not provided')
                   : 'Not provided',
             ),
             _Row(

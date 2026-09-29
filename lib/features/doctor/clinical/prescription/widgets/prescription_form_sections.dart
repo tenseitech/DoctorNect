@@ -218,8 +218,7 @@ class PrescriptionPatientSection extends StatelessWidget {
       title: 'Patient',
       collapsible: collapsible,
       initiallyExpanded: initiallyExpanded,
-      collapsedSummary:
-          collapsedSummary ??
+      collapsedSummary: collapsedSummary ??
           '${patient.patientName} · ${patient.age > 0 ? '${patient.age} yrs' : 'Not provided'}',
       dense: dense,
       child: Column(

@@ -197,7 +197,8 @@ void main() {
   });
 
   group('Safe Null/Unset Age and Gender Display Fallbacks', () {
-    test('AppConstants.patientGenderLabel returns fallback when empty or null', () {
+    test('AppConstants.patientGenderLabel returns fallback when empty or null',
+        () {
       expect(
         AppConstants.patientGenderLabel(null, fallback: 'Not provided'),
         equals('Not provided'),

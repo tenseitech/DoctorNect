@@ -16,7 +16,8 @@ void main() {
 
       for (final role in roles) {
         final items = VerificationRequirementsConfig.requirementsForRole(role);
-        expect(items, isNotEmpty, reason: 'Role $role should have requirements');
+        expect(items, isNotEmpty,
+            reason: 'Role $role should have requirements');
         for (final item in items) {
           expect(item.key.trim(), isNotEmpty);
           expect(item.label.trim(), isNotEmpty);
@@ -101,7 +102,9 @@ void main() {
       );
     });
 
-    test('fully filled data with nested address map -> 100% and isComplete true', () {
+    test(
+        'fully filled data with nested address map -> 100% and isComplete true',
+        () {
       final nestedData = <String, dynamic>{
         'name': 'Dr. Aditi Verma',
         'mobile': '9876543210',
@@ -148,7 +151,8 @@ void main() {
     });
 
     test('one field missing -> correct missingFields and isComplete false', () {
-      final copy = Map<String, dynamic>.from(fullDoctorData)..remove('specialization');
+      final copy = Map<String, dynamic>.from(fullDoctorData)
+        ..remove('specialization');
       final missing = VerificationRequirementsConfig.missingFields(
         UserType.doctor,
         copy,
@@ -187,7 +191,9 @@ void main() {
       );
     });
 
-    test('non-required fields (dateOfBirth, gender, languages, email) do not block completion', () {
+    test(
+        'non-required fields (dateOfBirth, gender, languages, email) do not block completion',
+        () {
       // fullDoctorData does not contain dateOfBirth, gender, languages, or email
       expect(fullDoctorData.containsKey('dateOfBirth'), isFalse);
       expect(fullDoctorData.containsKey('gender'), isFalse);
@@ -438,7 +444,8 @@ void main() {
     });
 
     test('one field missing -> correct missingFields and isComplete false', () {
-      final copy = Map<String, dynamic>.from(fullLabData)..remove('licenseNumber');
+      final copy = Map<String, dynamic>.from(fullLabData)
+        ..remove('licenseNumber');
       final missing = VerificationRequirementsConfig.missingFields(
         UserType.lab,
         copy,
@@ -599,7 +606,8 @@ void main() {
         isTrue,
       );
       expect(
-        VerificationRequirementsConfig.completionPercentage(UserType.patient, {}),
+        VerificationRequirementsConfig.completionPercentage(
+            UserType.patient, {}),
         100,
       );
       expect(
@@ -608,7 +616,8 @@ void main() {
       );
     });
 
-    test('SuperAdmin has empty requirements list and returns isComplete true', () {
+    test('SuperAdmin has empty requirements list and returns isComplete true',
+        () {
       final reqs = VerificationRequirementsConfig.requirementsForRole(
         UserType.superAdmin,
       );

@@ -349,20 +349,17 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                         _genderError = null;
                       });
                     },
-                    selectedColor: AppColors.patientTeal.withValues(alpha: 0.18),
+                    selectedColor:
+                        AppColors.patientTeal.withValues(alpha: 0.18),
                     backgroundColor: AppColors.cardBgOf(context),
                     labelStyle: GoogleFonts.inter(
                       fontSize: AppTypography.bodySmall,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: isSelected
-                          ? AppColors.patientTeal
-                          : textSecondary,
+                      color: isSelected ? AppColors.patientTeal : textSecondary,
                     ),
                     side: BorderSide(
-                      color: isSelected
-                          ? AppColors.patientTeal
-                          : borderColor,
+                      color: isSelected ? AppColors.patientTeal : borderColor,
                       width: isSelected ? 1.5 : 1.0,
                     ),
                     shape: RoundedRectangleBorder(
@@ -421,9 +418,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
               ),
               const SizedBox(height: 10),
               TextButton(
-                onPressed: _saving
-                    ? null
-                    : () => Navigator.of(context).pop(false),
+                onPressed:
+                    _saving ? null : () => Navigator.of(context).pop(false),
                 style: TextButton.styleFrom(
                   foregroundColor: textSecondary,
                   padding: const EdgeInsets.symmetric(vertical: 8),

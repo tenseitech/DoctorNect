@@ -158,7 +158,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                     ),
                   ),
                   if (!RegistrationCredentials.isSyntheticEmail(store.email))
-                    _ProfileField(label: 'Email (immutable)', value: store.email),
+                    _ProfileField(
+                        label: 'Email (immutable)', value: store.email),
                 ],
               ),
               StreamBuilder<BannerConfigModel>(

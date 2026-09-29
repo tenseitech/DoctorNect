@@ -23,4 +23,3 @@ abstract final class ProfileCompletionChecker {
     return VerificationRequirementsConfig.isComplete(UserType.ambulance, data);
   }
 }
-

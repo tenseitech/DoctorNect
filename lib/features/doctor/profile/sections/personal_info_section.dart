@@ -355,7 +355,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                               helperText:
                                   'Doctor mobile number is locked for verification. Contact admin to request a change.',
                             ),
-                            if (!RegistrationCredentials.isSyntheticEmail(_p.email)) ...[
+                            if (!RegistrationCredentials.isSyntheticEmail(
+                                _p.email)) ...[
                               const SizedBox(height: 12),
                               TextFormField(
                                 controller: _email,
