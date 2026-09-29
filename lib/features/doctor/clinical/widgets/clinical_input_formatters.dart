@@ -8,10 +8,13 @@ class DigitsMaxInputFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final trimmed =
-        digits.length > maxDigits ? digits.substring(0, maxDigits) : digits;
+    final trimmed = digits.length > maxDigits
+        ? digits.substring(0, maxDigits)
+        : digits;
     return TextEditingValue(
       text: trimmed,
       selection: TextSelection.collapsed(offset: trimmed.length),
@@ -31,7 +34,9 @@ class DecimalInputFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     var text = newValue.text.replaceAll(RegExp(r'[^0-9.]'), '');
     final dotIndex = text.indexOf('.');
     if (dotIndex >= 0) {
@@ -63,7 +68,9 @@ class BpInputFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     String text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (text.length > 6) text = text.substring(0, 6);
     if (text.length > 3) {
@@ -77,8 +84,9 @@ class BpInputFormatter extends TextInputFormatter {
     if (newValue.text.contains('/') && !text.contains('/')) {
       final parts = newValue.text.split('/');
       final sys = parts[0].replaceAll(RegExp(r'[^0-9]'), '');
-      final dia =
-          parts.length > 1 ? parts[1].replaceAll(RegExp(r'[^0-9]'), '') : '';
+      final dia = parts.length > 1
+          ? parts[1].replaceAll(RegExp(r'[^0-9]'), '')
+          : '';
       text = '$sys/$dia';
       if (sys.length > 3)
         text = '${sys.substring(0, 3)}/${sys.substring(3)}$dia';

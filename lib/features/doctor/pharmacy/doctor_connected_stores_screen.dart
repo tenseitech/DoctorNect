@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/enums/user_type.dart';
@@ -38,9 +39,9 @@ class _DoctorConnectedStoresScreenState
   StreamSubscription<List<PharmacyPrescriptionDelivery>>? _deliverySub;
 
   String? _doctorCity() => pharmacyCityFilter(
-        city: DoctorProfileStore.instance.profile.city,
-        address: DoctorProfileStore.instance.profile.addressLine1,
-      );
+    city: DoctorProfileStore.instance.profile.city,
+    address: DoctorProfileStore.instance.profile.addressLine1,
+  );
 
   List<DoctorPartnerProfileItem> _cityStores() {
     final stores = PharmacyConnectionStore.instance.searchStores(
@@ -48,16 +49,18 @@ class _DoctorConnectedStoresScreenState
       cityFilter: _doctorCity(),
     );
     return stores
-        .map((s) => DoctorPartnerProfileItem(
-              id: s.id,
-              name: s.storeName,
-              ownerName: s.ownerName,
-              address: s.address,
-              phone: s.phone,
-              email: s.email,
-              city: s.city,
-              registrationNumber: s.drugLicenseNumber,
-            ))
+        .map(
+          (s) => DoctorPartnerProfileItem(
+            id: s.id,
+            name: s.storeName,
+            ownerName: s.ownerName,
+            address: s.address,
+            phone: s.phone,
+            email: s.email,
+            city: s.city,
+            registrationNumber: s.drugLicenseNumber,
+          ),
+        )
         .toList();
   }
 
@@ -101,33 +104,39 @@ class _DoctorConnectedStoresScreenState
       ],
       activeConnections: () => connStore
           .activeForDoctor(doctorId)
-          .map((c) => DoctorPartnerConnectionItem(
-                id: c.id,
-                partnerId: c.medicalStoreId,
-                partnerName: c.storeName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => DoctorPartnerConnectionItem(
+              id: c.id,
+              partnerId: c.medicalStoreId,
+              partnerName: c.storeName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       pendingFromPartner: () => connStore
           .pendingForDoctor(doctorId)
-          .map((c) => DoctorPartnerConnectionItem(
-                id: c.id,
-                partnerId: c.medicalStoreId,
-                partnerName: c.storeName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => DoctorPartnerConnectionItem(
+              id: c.id,
+              partnerId: c.medicalStoreId,
+              partnerName: c.storeName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       pendingFromDoctor: () => connStore
           .pendingSentByDoctor(doctorId)
-          .map((c) => DoctorPartnerConnectionItem(
-                id: c.id,
-                partnerId: c.medicalStoreId,
-                partnerName: c.storeName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => DoctorPartnerConnectionItem(
+              id: c.id,
+              partnerId: c.medicalStoreId,
+              partnerName: c.storeName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       searchResults: _cityStores,
       searchHintText: 'Store name, area, license no...',
@@ -154,7 +163,9 @@ class _DoctorConnectedStoresScreenState
       onReject: (connectionId, _) => connStore.rejectByDoctor(connectionId),
       onRevoke: (connectionId, _) => connStore.removeConnection(connectionId),
       onSendRequest: (partner) => connStore.sendRequestFromDoctor(
-          doctorId: doctorId, storeId: partner.id),
+        doctorId: doctorId,
+        storeId: partner.id,
+      ),
       onOpenInviteSheet: () => InviteDoctorSheet.show(context),
       attachFirestoreSync: () {
         FirestoreScreenSync.attachPendingConnections(
@@ -170,7 +181,8 @@ class _DoctorConnectedStoresScreenState
         );
         if (FirebaseBootstrap.isReady) {
           unawaited(
-              MedicalStoreRegistry.refreshFromFirestore(preferCache: true));
+            MedicalStoreRegistry.refreshFromFirestore(preferCache: true),
+          );
         }
         _deliverySub?.cancel();
         _deliverySub = FirestoreService.instance.pharmacyFirestore
@@ -180,7 +192,9 @@ class _DoctorConnectedStoresScreenState
       detachFirestoreSync: () => FirestoreScreenSync.detachPendingConnections(),
       isConnected: (partnerId) => connStore.isConnected(doctorId, partnerId),
       isPendingSent: (partnerId) => connStore.isPendingSentByDoctor(
-          doctorId: doctorId, storeId: partnerId),
+        doctorId: doctorId,
+        storeId: partnerId,
+      ),
       isPendingFromPartner: (partnerId) =>
           connStore.isPendingFromStore(doctorId: doctorId, storeId: partnerId),
     );

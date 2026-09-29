@@ -47,7 +47,10 @@ int _familyMemberSortOrder(Appointment appointment) {
 }
 
 bool _belongsToFamilyGroup(
-    Appointment candidate, String booker, Appointment anchor) {
+  Appointment candidate,
+  String booker,
+  Appointment anchor,
+) {
   if (candidate.timeSlot != anchor.timeSlot ||
       !_sameDay(candidate.appointmentDate, anchor.appointmentDate)) {
     return false;
@@ -83,16 +86,16 @@ List<_QueueEntry> _groupAppointments(List<Appointment> appointments) {
       continue;
     }
 
-    final group = appointments.where((a) {
-      if (used.contains(a.id)) return false;
-      return _belongsToFamilyGroup(a, booker, appt);
-    }).toList()
-      ..sort((a, b) {
-        final order =
-            _familyMemberSortOrder(a).compareTo(_familyMemberSortOrder(b));
-        if (order != 0) return order;
-        return a.tokenNumber.compareTo(b.tokenNumber);
-      });
+    final group =
+        appointments.where((a) {
+          if (used.contains(a.id)) return false;
+          return _belongsToFamilyGroup(a, booker, appt);
+        }).toList()..sort((a, b) {
+          final order = _familyMemberSortOrder(a)
+              .compareTo(_familyMemberSortOrder(b));
+          if (order != 0) return order;
+          return a.tokenNumber.compareTo(b.tokenNumber);
+        });
 
     if (group.length > 1) {
       for (final member in group) {
@@ -408,10 +411,7 @@ class DoctorUpcomingAppointmentsList extends StatelessWidget {
 
 /// Each booking gets equal horizontal space in a responsive side-by-side grid.
 class _UpcomingEqualWidthRow extends StatelessWidget {
-  const _UpcomingEqualWidthRow({
-    required this.entries,
-    this.onViewAppointment,
-  });
+  const _UpcomingEqualWidthRow({required this.entries, this.onViewAppointment});
 
   final List<_QueueEntry> entries;
   final void Function(Appointment appointment)? onViewAppointment;
@@ -470,10 +470,7 @@ class _UpcomingEqualWidthRow extends StatelessWidget {
 }
 
 class _UpcomingAppointmentTile extends StatefulWidget {
-  const _UpcomingAppointmentTile({
-    required this.entry,
-    this.onViewAppointment,
-  });
+  const _UpcomingAppointmentTile({required this.entry, this.onViewAppointment});
 
   final _QueueEntry entry;
   final void Function(Appointment appointment)? onViewAppointment;
@@ -492,8 +489,9 @@ class _UpcomingAppointmentTileState extends State<_UpcomingAppointmentTile> {
 
   Color get _accent {
     if (widget.entry.isFamily) {
-      final pending = widget.entry.members!
-          .any((m) => m.status == AppointmentStatus.pendingRequest);
+      final pending = widget.entry.members!.any(
+        (m) => m.status == AppointmentStatus.pendingRequest,
+      );
       if (pending) return const Color(0xFFEA580C);
     }
     return AppointmentStatusStyle.color(_primary.status);
@@ -563,11 +561,14 @@ class _UpcomingAppointmentTileState extends State<_UpcomingAppointmentTile> {
                                     onView: widget.onViewAppointment,
                                   )
                                 : _UpcomingSingleBody(
-                                    appointment: widget.entry.appointment!),
+                                    appointment: widget.entry.appointment!,
+                                  ),
                           ),
                           if (!widget.entry.isFamily && canOpen)
                             _UpcomingTileFooter(
-                                hovered: _hovered, onTap: _openPrimary),
+                              hovered: _hovered,
+                              onTap: _openPrimary,
+                            ),
                         ],
                       ),
                     ),
@@ -608,10 +609,7 @@ class _UpcomingTypePill extends StatelessWidget {
 }
 
 class _UpcomingTileTopBar extends StatelessWidget {
-  const _UpcomingTileTopBar({
-    required this.entry,
-    required this.primary,
-  });
+  const _UpcomingTileTopBar({required this.entry, required this.primary});
 
   final _QueueEntry entry;
   final Appointment primary;
@@ -744,8 +742,9 @@ class _UpcomingSingleBody extends StatelessWidget {
                   Text(
                     '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)}',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                 ],
               ),
@@ -771,10 +770,7 @@ class _UpcomingSingleBody extends StatelessWidget {
 }
 
 class _UpcomingFamilyBody extends StatelessWidget {
-  const _UpcomingFamilyBody({
-    required this.members,
-    this.onView,
-  });
+  const _UpcomingFamilyBody({required this.members, this.onView});
 
   final List<Appointment> members;
   final void Function(Appointment appointment)? onView;
@@ -814,10 +810,7 @@ class _UpcomingFamilyBody extends StatelessWidget {
 }
 
 class _UpcomingFamilyMemberCard extends StatefulWidget {
-  const _UpcomingFamilyMemberCard({
-    required this.member,
-    this.onTap,
-  });
+  const _UpcomingFamilyMemberCard({required this.member, this.onTap});
 
   final Appointment member;
   final VoidCallback? onTap;
@@ -872,7 +865,8 @@ class _UpcomingFamilyMemberCardState extends State<_UpcomingFamilyMemberCard> {
                           const SizedBox(width: 8),
                           StatusBadge(
                             label: AppointmentStatusStyle.label(
-                                widget.member.status),
+                              widget.member.status,
+                            ),
                             color: statusColor,
                           ),
                         ],
@@ -883,8 +877,9 @@ class _UpcomingFamilyMemberCardState extends State<_UpcomingFamilyMemberCard> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelSmall,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelSmall,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                       if (reason != null && reason.isNotEmpty) ...[
                         const SizedBox(height: 6),
@@ -910,7 +905,7 @@ class _UpcomingFamilyMemberCardState extends State<_UpcomingFamilyMemberCard> {
                       color: _hovered
                           ? AppColors.doctorBlue
                           : AppColors.textSecondaryOf(context)
-                              .withValues(alpha: 0.45),
+                                .withValues(alpha: 0.45),
                     ),
                   ),
               ],
@@ -923,10 +918,7 @@ class _UpcomingFamilyMemberCardState extends State<_UpcomingFamilyMemberCard> {
 }
 
 class _UpcomingAvatar extends StatelessWidget {
-  const _UpcomingAvatar({
-    required this.name,
-    required this.radius,
-  });
+  const _UpcomingAvatar({required this.name, required this.radius});
 
   final String name;
   final double radius;
@@ -949,10 +941,7 @@ class _UpcomingAvatar extends StatelessWidget {
 }
 
 class _UpcomingTileFooter extends StatelessWidget {
-  const _UpcomingTileFooter({
-    required this.hovered,
-    required this.onTap,
-  });
+  const _UpcomingTileFooter({required this.hovered, required this.onTap});
 
   final bool hovered;
   final VoidCallback onTap;
@@ -979,8 +968,9 @@ class _UpcomingTileFooter extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
-                  color:
-                      hovered ? const Color(0xFF1D4ED8) : AppColors.doctorBlue,
+                  color: hovered
+                      ? const Color(0xFF1D4ED8)
+                      : AppColors.doctorBlue,
                 ),
               ),
               const SizedBox(width: 2),
@@ -1091,10 +1081,7 @@ class _DateGroupHeader extends StatelessWidget {
 
 /// Age and gender on separate [Text] nodes so labels like Male/Female never break mid-word.
 class _AgeGenderLabel extends StatelessWidget {
-  const _AgeGenderLabel({
-    required this.age,
-    required this.gender,
-  });
+  const _AgeGenderLabel({required this.age, required this.gender});
 
   final int age;
   final String gender;
@@ -1262,8 +1249,9 @@ class _PatientAppointmentCard extends StatelessWidget {
                 SizedBox(
                   width: compact ? double.infinity : null,
                   child: Align(
-                    alignment:
-                        compact ? Alignment.center : Alignment.centerRight,
+                    alignment: compact
+                        ? Alignment.center
+                        : Alignment.centerRight,
                     child: FilledButton(
                       onPressed: _primaryAction,
                       style: FilledButton.styleFrom(
@@ -1390,8 +1378,11 @@ class _FamilyAppointmentCard extends StatelessWidget {
                   color: AppColors.doctorBlue.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.groups_outlined,
-                    size: 18, color: AppColors.doctorBlue),
+                child: const Icon(
+                  Icons.groups_outlined,
+                  size: 18,
+                  color: AppColors.doctorBlue,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1412,8 +1403,9 @@ class _FamilyAppointmentCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   ],
                 ),
@@ -1441,8 +1433,9 @@ class _FamilyAppointmentCard extends StatelessWidget {
                     minimumSize: Size(compact ? double.infinity : 140, 36),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     textStyle: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        fontWeight: FontWeight.w600),
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   child: Text('Accept all ($_pendingCount)'),
                 ),
@@ -1456,10 +1449,7 @@ class _FamilyAppointmentCard extends StatelessWidget {
 }
 
 class _FamilyMemberRow extends StatelessWidget {
-  const _FamilyMemberRow({
-    required this.member,
-    this.onTap,
-  });
+  const _FamilyMemberRow({required this.member, this.onTap});
 
   final Appointment member;
   final VoidCallback? onTap;
@@ -1480,7 +1470,10 @@ class _FamilyMemberRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _CompactAvatar(
-                  name: member.patientName, gender: member.gender, radius: 14),
+                name: member.patientName,
+                gender: member.gender,
+                radius: 14,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -1502,8 +1495,9 @@ class _FamilyMemberRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelSmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -1520,8 +1514,9 @@ class _FamilyMemberRow extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelSmall,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelSmall,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                       ],
                     ),
@@ -1532,8 +1527,8 @@ class _FamilyMemberRow extends StatelessWidget {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
-                  color:
-                      AppColors.textSecondaryOf(context).withValues(alpha: 0.6),
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.6),
                 ),
             ],
           ),

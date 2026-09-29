@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Stomach silhouette for Stomach & Digestion specialty tiles.
 class StomachIcon extends StatelessWidget {
-  const StomachIcon({
-    super.key,
-    required this.size,
-    this.color = Colors.white,
-  });
+  const StomachIcon({super.key, required this.size, this.color = Colors.white});
 
   final double size;
   final Color color;

@@ -106,7 +106,8 @@ abstract final class AmbulanceSession {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'AmbulanceSession: failed to clear persisted session: $e\n$st');
+          'AmbulanceSession: failed to clear persisted session: $e\n$st',
+        );
       }
       return false;
     }
@@ -131,7 +132,8 @@ abstract final class AmbulanceSession {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'AmbulanceSession: hasPersistedSession read failed: $e\n$st');
+          'AmbulanceSession: hasPersistedSession read failed: $e\n$st',
+        );
       }
       return false;
     }

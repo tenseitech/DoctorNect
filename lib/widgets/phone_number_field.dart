@@ -134,7 +134,7 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
                   color: widget.enabled
                       ? AppColors.textSecondaryOf(context)
                       : AppColors.textSecondaryOf(context)
-                          .withValues(alpha: 0.5),
+                            .withValues(alpha: 0.5),
                 ),
               ],
             ),
@@ -161,13 +161,11 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
       enabled: widget.enabled,
       keyboardType: TextInputType.phone,
       inputFormatters: [
-        _PhoneNumberInputFormatter(
-          dialCode: _dialCode,
-          maxLength: _maxLength,
-        ),
+        _PhoneNumberInputFormatter(dialCode: _dialCode, maxLength: _maxLength),
       ],
       decoration: mergedDecoration,
-      validator: widget.validator ??
+      validator:
+          widget.validator ??
           (value) => FormValidators.phoneLocal(value, dialCode: _dialCode),
       onChanged: (_) => widget.onChanged?.call(),
     );
@@ -177,10 +175,7 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
 /// Formatter that strips redundant dial codes and leading zeroes when pasted,
 /// ensuring the full subscriber number fits within [maxLength].
 class _PhoneNumberInputFormatter extends TextInputFormatter {
-  _PhoneNumberInputFormatter({
-    required this.dialCode,
-    required this.maxLength,
-  });
+  _PhoneNumberInputFormatter({required this.dialCode, required this.maxLength});
 
   final String dialCode;
   final int maxLength;

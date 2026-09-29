@@ -124,8 +124,11 @@ class EmergencySosSheet extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.25),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.phone_in_talk_rounded,
-                            color: Colors.white, size: 28),
+                        child: const Icon(
+                          Icons.phone_in_talk_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -151,8 +154,11 @@ class EmergencySosSheet extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded,
-                          color: Colors.white, size: 16),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ],
                   ),
                 ),
@@ -184,8 +190,9 @@ class EmergencySosSheet extends StatelessWidget {
               label: Text(
                 'Book Nearby ICU Ambulance Dispatcher',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyMedium,
-                    fontWeight: FontWeight.w700),
+                  fontSize: AppTypography.bodyMedium,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -271,8 +278,11 @@ class _SosOptionTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.call_rounded,
-                  color: AppColors.textSecondaryOf(context), size: 18),
+              Icon(
+                Icons.call_rounded,
+                color: AppColors.textSecondaryOf(context),
+                size: 18,
+              ),
             ],
           ),
         ),

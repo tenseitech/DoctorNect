@@ -56,7 +56,8 @@ class RazorpayPaymentHelper {
       _completer!.complete(
         RazorpayPaymentResult(
           success: false,
-          errorMessage: response.message ??
+          errorMessage:
+              response.message ??
               'Payment failed or cancelled (code: ${response.code})',
         ),
       );
@@ -66,7 +67,8 @@ class RazorpayPaymentHelper {
   void _handleExternalWallet(ExternalWalletResponse response) {
     if (kDebugMode)
       debugPrint(
-          '[RazorpayPaymentHelper] External wallet selected: ${response.walletName}');
+        '[RazorpayPaymentHelper] External wallet selected: ${response.walletName}',
+      );
   }
 
   /// Opens Razorpay Checkout modal with order parameters and returns result.
@@ -87,13 +89,8 @@ class RazorpayPaymentHelper {
       'name': title,
       'description': description,
       'order_id': orderId,
-      'prefill': {
-        'contact': prefillContact,
-        'email': prefillEmail,
-      },
-      'theme': {
-        'color': '#0F766E',
-      },
+      'prefill': {'contact': prefillContact, 'email': prefillEmail},
+      'theme': {'color': '#0F766E'},
     };
 
     try {

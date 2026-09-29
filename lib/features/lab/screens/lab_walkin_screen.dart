@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,9 +19,10 @@ import '../../../widgets/phone_number_field.dart';
 import '../../../widgets/required_field_label.dart';
 import '../data/lab_registry.dart';
 import '../data/lab_worklist_store.dart';
-import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+import '../../shared/widgets/lab_page_layout.dart';
 import '../widgets/lab_report_upload_sheet.dart';
 import 'lab_all_patients_screen.dart';
+import '../../../widgets/shell/role_empty_state.dart';
 import '../../../core/theme/app_typography.dart';
 
 class LabWalkInScreen extends StatefulWidget {
@@ -37,7 +39,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
   final _phoneController = TextEditingController();
   final List<String> _tests = [];
 
-  String _gender = AppConstants.genders.first;
+  String? _gender;
   bool _submitting = false;
   String _phoneDialCode = CountryPhoneCodes.defaultDialCode;
 
@@ -60,8 +62,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
       return booking.dateTime.year == today.year &&
           booking.dateTime.month == today.month &&
           booking.dateTime.day == today.day;
-    }).toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    }).toList()..sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
 
   Future<void> _submit() async {
@@ -86,19 +87,19 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
     setState(() => _submitting = true);
 
     try {
-      final booking =
-          await FirestoreService.instance.labBooking.saveWalkInBooking(
-        labId: labId,
-        labName: labName.isNotEmpty ? labName : 'Lab',
-        patientName: _nameController.text.trim(),
-        patientAge: age,
-        patientGender: _gender,
-        testNames: _tests,
-        contactNumber: FormValidators.formatFullPhone(
-          _phoneDialCode,
-          _phoneController.text.trim(),
-        ),
-      );
+      final booking = await FirestoreService.instance.labBooking
+          .saveWalkInBooking(
+            labId: labId,
+            labName: labName.isNotEmpty ? labName : 'Lab',
+            patientName: _nameController.text.trim(),
+            patientAge: age,
+            patientGender: _gender!,
+            testNames: _tests,
+            contactNumber: FormValidators.formatFullPhone(
+              _phoneDialCode,
+              _phoneController.text.trim(),
+            ),
+          );
       LabWorklistStore.instance.mergeBookings([booking]);
 
       if (!mounted) return;
@@ -107,16 +108,20 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
       _phoneController.clear();
       setState(() {
         _tests.clear();
-        _gender = AppConstants.genders.first;
+        _gender = null;
         _submitting = false;
       });
+      AppToast.success(context, 'Walk-in patient registered successfully');
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
       AppToast.info(
-          context,
-          describeUserFacingError(e,
-              fallback: 'Could not add walk-in patient. Please try again.'));
+        context,
+        describeUserFacingError(
+          e,
+          fallback: 'Could not add walk-in patient. Please try again.',
+        ),
+      );
     }
   }
 
@@ -147,8 +152,9 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                         child: Text(
                           'Walk-in Patient',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.headlineLarge,
-                              fontWeight: FontWeight.w700),
+                            fontSize: AppTypography.headlineLarge,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -157,16 +163,19 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const LabAllPatientsScreen()),
+                              builder: (_) => const LabAllPatientsScreen(),
+                            ),
                           );
                         },
-                        style:
-                            FilledButton.styleFrom(backgroundColor: _labPurple),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _labPurple,
+                        ),
                         child: Text(
                           'View all patients',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall,
-                              fontWeight: FontWeight.w600),
+                            fontSize: AppTypography.bodySmall,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -175,8 +184,9 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                   Text(
                     'Register a patient at the lab counter without an app booking.',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodyMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.bodyMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   const SizedBox(height: 20),
                   Form(
@@ -189,7 +199,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                           textCapitalization: TextCapitalization.words,
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(
-                                RegExp(r"[a-zA-Z\s\.\-']")),
+                              RegExp(r"[a-zA-Z\s\.\-']"),
+                            ),
                           ],
                           decoration: RequiredFieldLabels.decorate(
                             InputDecoration(
@@ -228,6 +239,12 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                             Expanded(
                               child: DropdownButtonFormField<String>(
                                 initialValue: _gender,
+                                hint: Text(
+                                  'Select gender',
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.textSecondaryOf(context),
+                                  ),
+                                ),
                                 decoration: RequiredFieldLabels.decorate(
                                   InputDecoration(
                                     filled: true,
@@ -247,6 +264,9 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                 onChanged: (v) {
                                   if (v != null) setState(() => _gender = v);
                                 },
+                                validator: (v) => (v == null || v.isEmpty)
+                                    ? 'Please select gender'
+                                    : null,
                               ),
                             ),
                           ],
@@ -258,6 +278,14 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                           onDialCodeChanged: (code) => _phoneDialCode = code,
                           labelText: 'Phone Number',
                           isRequired: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppColors.surfaceOf(context),
+                          ),
+                          validator: (v) => FormValidators.phoneLocal(
+                            v,
+                            dialCode: _phoneDialCode,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         MultiTagInputField(
@@ -265,16 +293,19 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                           hintText: 'e.g. CBC, Lipid profile',
                           addButtonLabel: '+ Add test',
                           tags: _tests,
+                          accentColor: _labPurple,
                           suggestionFetcher: LabWalkInTestSuggestions.matching,
                           onAdd: (value) => setState(() {
-                            if (!_tests.any((t) =>
-                                t.toLowerCase() == value.toLowerCase())) {
+                            if (!_tests.any(
+                              (t) => t.toLowerCase() == value.toLowerCase(),
+                            )) {
                               _tests.add(value);
                             }
                           }),
                           onRemove: (value) => setState(
                             () => _tests.removeWhere(
-                                (t) => t.toLowerCase() == value.toLowerCase()),
+                              (t) => t.toLowerCase() == value.toLowerCase(),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -283,13 +314,18 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                           style: FilledButton.styleFrom(
                             backgroundColor: _labPurple,
                             minimumSize: const Size(double.infinity, 48),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                           child: _submitting
                               ? const SizedBox(
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
                               : const Text('Add Walk-in'),
                         ),
@@ -304,28 +340,30 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       Text(
                         "Today's walk-ins",
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodyMedium,
-                            fontWeight: FontWeight.w700),
+                          fontSize: AppTypography.bodyMedium,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '(${walkIns.length})',
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   if (walkIns.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Text(
-                          'No walk-in patients registered today',
-                          style: GoogleFonts.inter(
-                              color: AppColors.textSecondaryOf(context)),
-                        ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: RoleEmptyState(
+                        icon: Icons.person_add_disabled_outlined,
+                        title: "No walk-in patients today",
+                        subtitle: "Patients registered at the counter today will appear here.",
+                        accentColor: _labPurple,
+                        compact: true,
                       ),
                     )
                   else
@@ -336,8 +374,9 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.surfaceOf(context),
                           borderRadius: BorderRadius.circular(12),
-                          border:
-                              Border.all(color: AppColors.borderOf(context)),
+                          border: Border.all(
+                            color: AppColors.borderOf(context),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,29 +384,35 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                             Text(
                               booking.patientName,
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.bodyLarge,
-                                  fontWeight: FontWeight.w600),
+                                fontSize: AppTypography.bodyLarge,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               booking.displayTestName,
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.bodySmall,
-                                  color: AppColors.textPrimaryOf(context)),
+                                fontSize: AppTypography.bodySmall,
+                                color: AppColors.textPrimaryOf(context),
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               '${DateFormat('hh:mm a').format(booking.dateTime)} · ${booking.status}',
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelMedium,
-                                  color: AppColors.textSecondaryOf(context)),
+                                fontSize: AppTypography.labelMedium,
+                                color: AppColors.textSecondaryOf(context),
+                              ),
                             ),
                             if (booking.hasReport) ...[
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  const Icon(Icons.check_circle_outline,
-                                      size: 15, color: AppColors.pharmacyGreen),
+                                  const Icon(
+                                    Icons.check_circle_outline,
+                                    size: 15,
+                                    color: AppColors.pharmacyGreen,
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Report sent',
@@ -383,8 +428,10 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                               const SizedBox(height: 10),
                               FilledButton.icon(
                                 onPressed: () => _shareReport(booking),
-                                icon: const Icon(Icons.upload_file_outlined,
-                                    size: 18),
+                                icon: const Icon(
+                                  Icons.upload_file_outlined,
+                                  size: 18,
+                                ),
                                 label: const Text('Share report'),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: _labPurple,

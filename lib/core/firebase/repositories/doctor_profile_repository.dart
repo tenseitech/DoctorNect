@@ -13,13 +13,10 @@ class DoctorProfileRepository {
     await FirebaseFirestore.instance
         .collection(FirestorePaths.doctors)
         .doc(doctorId)
-        .set(
-      {
-        'fcmToken': token,
-        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+        .set({
+          'fcmToken': token,
+          'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 
   Future<void> clearDoctorFcmToken(String doctorId) async {
@@ -27,12 +24,9 @@ class DoctorProfileRepository {
     await FirebaseFirestore.instance
         .collection(FirestorePaths.doctors)
         .doc(doctorId)
-        .set(
-      {
-        'fcmToken': FieldValue.delete(),
-        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+        .set({
+          'fcmToken': FieldValue.delete(),
+          'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 }

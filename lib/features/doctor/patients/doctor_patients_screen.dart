@@ -8,8 +8,10 @@ import '../../../core/layout/responsive_layout.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
 import 'data/doctor_patients_service.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
 import 'package:medibond/features/shared/screens/patient_profile_screen.dart';
+
 import '../widgets/doctor_screen_title_bar.dart';
 import 'widgets/invite_patient_sheet.dart';
 import 'widgets/patient_filters_bar.dart';
@@ -54,7 +56,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
 
   List<DoctorPatientSummary> get _filtered {
     var list = DoctorPatientsService.summariesForDoctor(
-        DoctorSession.loggedInDoctorId);
+      DoctorSession.loggedInDoctorId,
+    );
 
     final q = _searchController.text.trim().toLowerCase();
     if (q.isNotEmpty) {
@@ -161,7 +164,8 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
                           child: _loading
                               ? const Center(
                                   child: CircularProgressIndicator(
-                                      color: AppColors.doctorBlue),
+                                    color: AppColors.doctorBlue,
+                                  ),
                                 )
                               : ListenableBuilder(
                                   listenable: _store,

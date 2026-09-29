@@ -23,10 +23,7 @@ enum PatientNotificationTrigger {
 }
 
 class PatientTriggerSpec {
-  const PatientTriggerSpec({
-    required this.priority,
-    required this.channels,
-  });
+  const PatientTriggerSpec({required this.priority, required this.channels});
 
   final NotificationPriority priority;
   final List<NotificationChannelTag> channels;
@@ -119,6 +116,7 @@ abstract final class PatientTriggerCatalog {
   static PatientTriggerSpec specFor(PatientNotificationTrigger t) =>
       specs[t] ??
       const PatientTriggerSpec(
-          priority: NotificationPriority.medium,
-          channels: [NotificationChannelTag.app]);
+        priority: NotificationPriority.medium,
+        channels: [NotificationChannelTag.app],
+      );
 }

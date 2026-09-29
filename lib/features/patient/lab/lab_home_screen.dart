@@ -1,5 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -25,7 +26,9 @@ import 'patient_lab_bookings_screen.dart';
 import 'utils/patient_lab_age_guard.dart';
 import 'utils/patient_selected_investigations_mapper.dart';
 import 'widgets/lab_category_accordion.dart';
+
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+
 import '../../../core/theme/app_typography.dart';
 
 class LabHomeScreen extends StatefulWidget {
@@ -64,8 +67,10 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isNotEmpty) {
       unawaited(
-        PatientLabBookingStore.instance
-            .refreshForPatient(patientId, preferCache: true),
+        PatientLabBookingStore.instance.refreshForPatient(
+          patientId,
+          preferCache: true,
+        ),
       );
     }
   }
@@ -91,16 +96,19 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
                 color: AppColors.labPurple.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.local_offer_outlined,
-                  color: AppColors.labPurple),
+              child: const Icon(
+                Icons.local_offer_outlined,
+                color: AppColors.labPurple,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Packages',
                 style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppTypography.headlineSmall),
+                  fontWeight: FontWeight.w700,
+                  fontSize: AppTypography.headlineSmall,
+                ),
               ),
             ),
           ],
@@ -108,9 +116,10 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
         content: Text(
           'Health packages are coming soon. You will be able to book bundled checkups at better value.',
           style: GoogleFonts.inter(
-              fontSize: AppTypography.bodyMedium,
-              color: AppColors.textSecondaryOf(context),
-              height: 1.45),
+            fontSize: AppTypography.bodyMedium,
+            color: AppColors.textSecondaryOf(context),
+            height: 1.45,
+          ),
         ),
         actions: [
           FilledButton(
@@ -118,10 +127,13 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.labPurple,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: Text('Got it',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            child: Text(
+              'Got it',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -141,21 +153,24 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
   }
 
   void _openTestDetail(
-      BuildContext context, LabCatalog catalog, LabTestItem test) {
+    BuildContext context,
+    LabCatalog catalog,
+    LabTestItem test,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => LabTestDetailScreen(
-          test: test,
-          partnerLabs: catalog.partnerLabs,
-        ),
+        builder: (_) =>
+            LabTestDetailScreen(test: test, partnerLabs: catalog.partnerLabs),
       ),
     );
   }
 
   void _openMyLabs() {
     Navigator.push(
-        context, MaterialPageRoute(builder: (_) => const MyLabsScreen()));
+      context,
+      MaterialPageRoute(builder: (_) => const MyLabsScreen()),
+    );
   }
 
   void _openBookings() {
@@ -170,8 +185,9 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
       listenable: PatientLabBookingStore.instance,
       builder: (context, _) {
         final upcomingCount = PatientLabBookingFilters.upcoming(
-          PatientLabBookingStore.instance
-              .forPatient(PatientSession.loggedInPatientId),
+          PatientLabBookingStore.instance.forPatient(
+            PatientSession.loggedInPatientId,
+          ),
         ).length;
 
         return Material(
@@ -199,8 +215,11 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.event_note_rounded,
-                      size: 18, color: AppColors.white),
+                  const Icon(
+                    Icons.event_note_rounded,
+                    size: 18,
+                    color: AppColors.white,
+                  ),
                   const SizedBox(width: 7),
                   Text(
                     'Bookings',
@@ -214,8 +233,10 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
                   if (upcomingCount > 0) ...[
                     const SizedBox(width: 8),
                     Container(
-                      constraints:
-                          const BoxConstraints(minWidth: 22, minHeight: 22),
+                      constraints: const BoxConstraints(
+                        minWidth: 22,
+                        minHeight: 22,
+                      ),
                       padding: const EdgeInsets.symmetric(horizontal: 7),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
@@ -223,8 +244,9 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
                             .withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(11),
                         border: Border.all(
-                            color: AppColors.surfaceOf(context)
-                                .withValues(alpha: 0.35)),
+                          color: AppColors.surfaceOf(context)
+                              .withValues(alpha: 0.35),
+                        ),
                       ),
                       child: Text(
                         '$upcomingCount',
@@ -267,8 +289,9 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
       return;
     }
 
-    final tests =
-        PatientSelectedInvestigationsMapper.toLabTests(_investigationsDraft);
+    final tests = PatientSelectedInvestigationsMapper.toLabTests(
+      _investigationsDraft,
+    );
     if (tests.isEmpty) {
       AppToast.info(context, 'Select at least one test to continue.');
       return;
@@ -366,17 +389,22 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
         });
       },
       style: GoogleFonts.inter(
-          fontSize: isWide ? 15 : 14, color: AppColors.textPrimaryOf(context)),
+        fontSize: isWide ? 15 : 14,
+        color: AppColors.textPrimaryOf(context),
+      ),
       decoration: InputDecoration(
         hintText: 'Search tests, health packages…',
         hintStyle: GoogleFonts.inter(
-            fontSize: isWide ? 15 : 14,
-            color: AppColors.textSecondaryOf(context)),
+          fontSize: isWide ? 15 : 14,
+          color: AppColors.textSecondaryOf(context),
+        ),
         prefixIcon: Icon(Icons.search_rounded, color: AppColors.labPurple),
         filled: true,
         fillColor: AppColors.cardBgOf(context),
-        contentPadding:
-            EdgeInsets.symmetric(horizontal: 16, vertical: isWide ? 14 : 12),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: isWide ? 14 : 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.borderOf(context)),
@@ -388,7 +416,9 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(
-              color: AppColors.labPurple.withValues(alpha: 0.55), width: 1.5),
+            color: AppColors.labPurple.withValues(alpha: 0.55),
+            width: 1.5,
+          ),
         ),
       ),
     );
@@ -415,16 +445,18 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
               Text(
                 'Booking for ${PatientLabAgeGuard.selfAgeLabel()}',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 PatientLabAgeGuard.missingAgeHint,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.error,
-                    height: 1.4),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.error,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 12),
             ],
@@ -501,7 +533,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
               ? Text(
                   'No tests found',
                   style: GoogleFonts.inter(
-                      color: AppColors.textSecondaryOf(context)),
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 )
               : LabCategoryAccordionSection(
                   groupedTests: groupedTests,
@@ -551,8 +584,10 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        title: Text('My Lab',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+        title: Text(
+          'My Lab',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
@@ -604,8 +639,10 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
           return Scaffold(
             backgroundColor: AppColors.cardBgOf(context),
             appBar: AppBar(
-              title: Text('My Lab',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+              title: Text(
+                'My Lab',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              ),
               backgroundColor: AppColors.surfaceOf(context),
               foregroundColor: AppColors.textPrimaryOf(context),
               elevation: 0,
@@ -649,8 +686,9 @@ class _LabQuickAction extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border:
-                Border.all(color: AppColors.labPurple.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: AppColors.labPurple.withValues(alpha: 0.2),
+            ),
           ),
           child: Row(
             children: [
@@ -669,8 +707,8 @@ class _LabQuickAction extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 18,
-                color:
-                    AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
+                color: AppColors.textSecondaryOf(context)
+                    .withValues(alpha: 0.8),
               ),
             ],
           ),

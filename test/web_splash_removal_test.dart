@@ -27,9 +27,7 @@ void main() {
       expect(html, contains('scripts/splash-bootstrap.js'));
     });
 
-    test(
-        'web/scripts/splash-bootstrap.js initializes Flutter without splash DOM logic',
-        () {
+    test('web/scripts/splash-bootstrap.js initializes Flutter without splash DOM logic', () {
       final js = File('web/scripts/splash-bootstrap.js').readAsStringSync();
       expect(js, isNot(contains('app-loading-splash')));
       expect(js, contains('flutter_bootstrap.js'));
@@ -37,31 +35,35 @@ void main() {
     });
 
     testWidgets(
-        'Web initialScreen path resolves and loads directly into initial screen with no splash screen',
-        (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+      'Web initialScreen path resolves and loads directly into initial screen with no splash screen',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      final resolvedScreen =
-          await SplashScreen.resolveInitialScreen(initializeFirebase: false);
-      expect(resolvedScreen, isA<UnifiedAuthIntroScreen>());
+        final resolvedScreen = await SplashScreen.resolveInitialScreen(
+          initializeFirebase: false,
+        );
+        expect(resolvedScreen, isA<UnifiedAuthIntroScreen>());
 
-      await tester.pumpWidget(DoctorNectApp(initialScreen: resolvedScreen));
-      await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpWidget(DoctorNectApp(initialScreen: resolvedScreen));
+        await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byType(SplashScreen), findsNothing);
-      expect(find.text('Your Health, Our Priority'), findsNothing);
-      expect(find.byType(UnifiedAuthIntroScreen), findsOneWidget);
-    });
+        expect(find.byType(SplashScreen), findsNothing);
+        expect(find.text('Your Health, Our Priority'), findsNothing);
+        expect(find.byType(UnifiedAuthIntroScreen), findsOneWidget);
+      },
+    );
 
-    testWidgets('Mobile (non-web) default path preserves SplashScreen behavior',
-        (tester) async {
-      await tester.pumpWidget(const DoctorNectApp());
-      await tester.pump();
+    testWidgets(
+      'Mobile (non-web) default path preserves SplashScreen behavior',
+      (tester) async {
+        await tester.pumpWidget(const DoctorNectApp());
+        await tester.pump();
 
-      expect(find.byType(SplashScreen), findsOneWidget);
-      expect(find.text('Your Health, Our Priority'), findsOneWidget);
-    });
+        expect(find.byType(SplashScreen), findsOneWidget);
+        expect(find.text('Your Health, Our Priority'), findsOneWidget);
+      },
+    );
   });
 }

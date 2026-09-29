@@ -98,12 +98,14 @@ abstract final class ServerValidationService {
     }
     if (cachedThresholds != null) {
       try {
-        _vitalThresholds =
-            Map<String, dynamic>.from(jsonDecode(cachedThresholds) as Map);
+        _vitalThresholds = Map<String, dynamic>.from(
+          jsonDecode(cachedThresholds) as Map,
+        );
       } catch (e, st) {
         if (kDebugMode) {
           debugPrint(
-              'ServerValidationService: invalid thresholds cache: $e\n$st');
+            'ServerValidationService: invalid thresholds cache: $e\n$st',
+          );
         }
         _vitalThresholds = null;
       }
@@ -113,8 +115,9 @@ abstract final class ServerValidationService {
   static Future<Map<String, dynamic>> _fetchRulesPayload() async {
     if (kIsWeb) {
       try {
-        final response =
-            await http.get(Uri.base.resolve('/api/validation-rules'));
+        final response = await http.get(
+          Uri.base.resolve('/api/validation-rules'),
+        );
         final body = response.body.trimLeft();
         if (response.statusCode == 200 && body.startsWith('{')) {
           return Map<String, dynamic>.from(jsonDecode(response.body) as Map);
@@ -122,7 +125,8 @@ abstract final class ServerValidationService {
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
-              'ServerValidationService: hosting rewrite unavailable, using callable: $e');
+            'ServerValidationService: hosting rewrite unavailable, using callable: $e',
+          );
         }
       }
     }
@@ -144,7 +148,9 @@ abstract final class ServerValidationService {
       if (thresholds is Map) {
         _vitalThresholds = Map<String, dynamic>.from(thresholds);
         await prefs.setString(
-            _thresholdsCacheKey, jsonEncode(_vitalThresholds));
+          _thresholdsCacheKey,
+          jsonEncode(_vitalThresholds),
+        );
       }
       return _rules != null;
     } catch (e, st) {
@@ -184,8 +190,9 @@ abstract final class ServerValidationService {
     if (!FirebaseBootstrap.isReady) return {};
     try {
       final callable = _functions.httpsCallable('validateFormFields');
-      final result =
-          await callable.call<Map<String, dynamic>>({'checks': checks});
+      final result = await callable.call<Map<String, dynamic>>({
+        'checks': checks,
+      });
       final errorsRaw = result.data['errors'];
       if (errorsRaw is! Map) return {};
       return errorsRaw.map(

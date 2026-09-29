@@ -82,11 +82,7 @@ class UnifiedAuthMobileField extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            width: 1,
-            height: 28,
-            color: resolvedBorderColor,
-          ),
+          Container(width: 1, height: 28, color: resolvedBorderColor),
           Expanded(
             child: TextFormField(
               controller: controller,
@@ -121,8 +117,10 @@ class UnifiedAuthMobileField extends StatelessWidget {
                 focusedBorder: InputBorder.none,
                 errorBorder: InputBorder.none,
                 focusedErrorBorder: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 16,
+                ),
                 isDense: true,
               ),
             ),
@@ -149,9 +147,7 @@ class _IndiaFlagIcon extends StatelessWidget {
         height: _height,
         child: Column(
           children: [
-            Expanded(
-              child: Container(color: const Color(0xFFFF9933)),
-            ),
+            Expanded(child: Container(color: const Color(0xFFFF9933))),
             Expanded(
               child: ColoredBox(
                 color: Colors.white,
@@ -170,9 +166,7 @@ class _IndiaFlagIcon extends StatelessWidget {
                 ),
               ),
             ),
-            Expanded(
-              child: Container(color: const Color(0xFF138808)),
-            ),
+            Expanded(child: Container(color: const Color(0xFF138808))),
           ],
         ),
       ),

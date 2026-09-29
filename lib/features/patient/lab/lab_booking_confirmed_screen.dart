@@ -7,7 +7,9 @@ import '../booking/widgets/patient_booking_confirmed_base.dart';
 import '../widgets/patient_app_shell.dart';
 import 'models/lab_models.dart';
 import 'patient_lab_bookings_screen.dart';
+
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+
 import '../../../core/theme/app_typography.dart';
 
 class LabBookingConfirmedScreen extends StatelessWidget {
@@ -17,9 +19,9 @@ class LabBookingConfirmedScreen extends StatelessWidget {
 
   void _viewBooking(BuildContext context) {
     Navigator.of(context).popUntil((route) => route.isFirst);
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PatientLabBookingsScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const PatientLabBookingsScreen()));
   }
 
   void _goToHome(BuildContext context) {
@@ -45,8 +47,8 @@ class LabBookingConfirmedScreen extends StatelessWidget {
           headerIcon: pending ? Icons.hourglass_top : Icons.check_circle,
           subMessage: pending
               ? (booking.labName != null
-                  ? 'Waiting for ${booking.labName} to accept your request. You will be notified when the lab responds.'
-                  : 'Waiting for the lab to accept your request. You will be notified when the lab responds.')
+                    ? 'Waiting for ${booking.labName} to accept your request. You will be notified when the lab responds.'
+                    : 'Waiting for the lab to accept your request. You will be notified when the lab responds.')
               : null,
           primaryAccent: accent,
           primaryActionLabel: 'View Bookings',
@@ -58,8 +60,9 @@ class LabBookingConfirmedScreen extends StatelessWidget {
               Text(
                 booking.testName,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.headlineSmall,
-                    fontWeight: FontWeight.w600),
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w600,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -67,13 +70,16 @@ class LabBookingConfirmedScreen extends StatelessWidget {
                 Text(
                   'Phlebotomist will arrive:',
                   style: GoogleFonts.inter(
-                      color: AppColors.textSecondaryOf(context)),
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
                   style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700, color: AppColors.labPurple),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.labPurple,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -86,13 +92,16 @@ class LabBookingConfirmedScreen extends StatelessWidget {
                 Text(
                   'Visit lab for sample collection:',
                   style: GoogleFonts.inter(
-                      color: AppColors.textSecondaryOf(context)),
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
                   style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700, color: AppColors.labPurple),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.labPurple,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),

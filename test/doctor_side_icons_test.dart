@@ -23,9 +23,7 @@ void main() {
       'assets/icons/doctor/today_queue.png',
     ];
 
-    const commonIcons = [
-      'assets/icons/common/digital_pass.png',
-    ];
+    const commonIcons = ['assets/icons/common/digital_pass.png'];
 
     test('All doctor icons exist on disk and have non-zero size', () {
       for (final iconPath in doctorIcons) {

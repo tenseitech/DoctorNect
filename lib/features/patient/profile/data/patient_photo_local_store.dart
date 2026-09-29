@@ -1,5 +1,6 @@
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'package:flutter/foundation.dart';
+
 import '../../../../core/data/local_avatar_store.dart';
 
 /// On-device patient profile photo until Firebase Storage is enabled.
@@ -23,12 +24,13 @@ abstract final class PatientPhotoLocalStore {
       LocalAvatarStore.clear('patient', patientId);
 
   /// Uploads in-memory bytes to Firebase Storage and returns the download URL.
-  static Future<String?> uploadToFirebaseStorage(String patientId,
-          [Uint8List? bytes]) =>
-      LocalAvatarStore.uploadToFirebaseStorage(
-        storagePath: 'patients/$patientId/profile_photo.jpg',
-        role: 'patient',
-        id: patientId,
-        bytes: bytes,
-      );
+  static Future<String?> uploadToFirebaseStorage(
+    String patientId, [
+    Uint8List? bytes,
+  ]) => LocalAvatarStore.uploadToFirebaseStorage(
+    storagePath: 'patients/$patientId/profile_photo.jpg',
+    role: 'patient',
+    id: patientId,
+    bytes: bytes,
+  );
 }

@@ -43,7 +43,9 @@ class ProfileHeroSection extends StatelessWidget {
               children: [
                 GestureDetector(onTap: onPickPhoto, child: avatar),
                 SizedBox(width: isWide ? 20 : 16),
-                Expanded(child: _ProfileMeta(profile: profile, isWide: isWide)),
+                Expanded(
+                  child: _ProfileMeta(profile: profile, isWide: isWide),
+                ),
                 if (isWide) ...[
                   const SizedBox(width: 16),
                   _EditProfileButton(onEdit: onEdit, compact: false),
@@ -153,9 +155,11 @@ class MetaLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon,
-            size: 14,
-            color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9)),
+        Icon(
+          icon,
+          size: 14,
+          color: AppColors.textSecondaryOf(context).withValues(alpha: 0.9),
+        ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -163,8 +167,9 @@ class MetaLine extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
         ),
       ],
@@ -175,8 +180,11 @@ class MetaLine extends StatelessWidget {
 typedef _MetaLine = MetaLine;
 
 class EditProfileButton extends StatelessWidget {
-  const EditProfileButton(
-      {super.key, required this.onEdit, required this.compact});
+  const EditProfileButton({
+    super.key,
+    required this.onEdit,
+    required this.compact,
+  });
 
   final VoidCallback onEdit;
   final bool compact;
@@ -224,8 +232,10 @@ class PatientBmiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bmi =
-        PatientBmiUtils.calculate(heightCm: heightCm, weightKg: weightKg);
+    final bmi = PatientBmiUtils.calculate(
+      heightCm: heightCm,
+      weightKg: weightKg,
+    );
     final category = PatientBmiUtils.categoryFor(bmi);
     if (bmi == null || category == null) return const SizedBox.shrink();
 
@@ -295,9 +305,13 @@ class PatientBmiCard extends StatelessWidget {
           runSpacing: 6,
           children: [
             _StatPill(
-                label: 'Height', value: '${heightCm.toStringAsFixed(0)} cm'),
+              label: 'Height',
+              value: '${heightCm.toStringAsFixed(0)} cm',
+            ),
             _StatPill(
-                label: 'Weight', value: '${weightKg.toStringAsFixed(0)} kg'),
+              label: 'Weight',
+              value: '${weightKg.toStringAsFixed(0)} kg',
+            ),
           ],
         ),
       ],

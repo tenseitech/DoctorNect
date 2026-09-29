@@ -41,10 +41,7 @@ Future<void> main() async {
     fontWeight: pw.FontWeight.bold,
     color: PdfColors.indigo900,
   );
-  final subtitleStyle = pw.TextStyle(
-    fontSize: 11,
-    color: PdfColors.grey700,
-  );
+  final subtitleStyle = pw.TextStyle(fontSize: 11, color: PdfColors.grey700);
 
   doc.addPage(
     pw.Page(
@@ -55,10 +52,7 @@ Future<void> main() async {
         children: [
           pw.Text('Medibond', style: docTitleStyle.copyWith(fontSize: 26)),
           pw.SizedBox(height: 8),
-          pw.Text(
-            'Terms of Service & Privacy Policy',
-            style: docTitleStyle,
-          ),
+          pw.Text('Terms of Service & Privacy Policy', style: docTitleStyle),
           pw.SizedBox(height: 12),
           pw.Text(
             'Complete legal documentation for all platform user roles',
@@ -91,10 +85,7 @@ Future<void> main() async {
           pw.Spacer(),
           pw.Divider(color: PdfColors.grey400),
           pw.SizedBox(height: 8),
-          pw.Text(
-            'Contact: support@medibond.com',
-            style: subtitleStyle,
-          ),
+          pw.Text('Contact: support@medibond.com', style: subtitleStyle),
           pw.Text(
             'Confidential — for legal review purposes',
             style: subtitleStyle.copyWith(fontStyle: pw.FontStyle.italic),
@@ -116,13 +107,13 @@ Future<void> main() async {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Medibond',
-                      style: subtitleStyle.copyWith(
-                          fontWeight: pw.FontWeight.bold)),
                   pw.Text(
-                    'Page ${context.pageNumber}',
-                    style: subtitleStyle,
+                    'Medibond',
+                    style: subtitleStyle.copyWith(
+                      fontWeight: pw.FontWeight.bold,
+                    ),
                   ),
+                  pw.Text('Page ${context.pageNumber}', style: subtitleStyle),
                 ],
               ),
               pw.SizedBox(height: 4),
@@ -133,8 +124,10 @@ Future<void> main() async {
           footer: (context) => pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text(DoctorNectLegalContent.lastUpdated,
-                  style: subtitleStyle.copyWith(fontSize: 9)),
+              pw.Text(
+                DoctorNectLegalContent.lastUpdated,
+                style: subtitleStyle.copyWith(fontSize: 9),
+              ),
               pw.Text(entry.$2, style: subtitleStyle.copyWith(fontSize: 9)),
             ],
           ),
@@ -179,5 +172,6 @@ Future<void> main() async {
 
   // ignore: avoid_print
   print(
-      'Generated: ${outFile.absolute.path} (${(bytes.length / 1024).toStringAsFixed(1)} KB)');
+    'Generated: ${outFile.absolute.path} (${(bytes.length / 1024).toStringAsFixed(1)} KB)',
+  );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../data/shared_appointments_store.dart';
 import 'mappers/appointment_supabase_mapper.dart';
 import 'supabase_bootstrap.dart';
@@ -80,7 +81,8 @@ class SupabasePatientRepository {
           // Fallback to direct upsert only if RPC is missing in an older environment
           if (e.code == '42883' ||
               e.message.contains(
-                  'function book_appointment_atomic does not exist')) {
+                'function book_appointment_atomic does not exist',
+              )) {
             final payload = {
               'appointment_id': appointmentId,
               'doctor_id': doctorId,
@@ -139,12 +141,15 @@ class SupabasePatientRepository {
     await PatientWriteGuard.run(
       context: context,
       action: () async {
-        await _client.from('appointments').update({
-          'patient_status': 'cancelled',
-          'cancellation_reason': reason,
-          'sync_origin': 'patient_supabase',
-          'updated_at': DateTime.now().toIso8601String(),
-        }).eq('appointment_id', appointmentId);
+        await _client
+            .from('appointments')
+            .update({
+              'patient_status': 'cancelled',
+              'cancellation_reason': reason,
+              'sync_origin': 'patient_supabase',
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('appointment_id', appointmentId);
       },
     );
   }
@@ -155,7 +160,8 @@ class SupabasePatientRepository {
 
   /// Fetches all prescriptions for a patient including medicine line items, investigations, and referrals
   Future<List<Map<String, dynamic>>> fetchPrescriptions(
-      String patientId) async {
+    String patientId,
+  ) async {
     final res = await _client
         .from('prescriptions')
         .select('''
@@ -245,7 +251,8 @@ class SupabasePatientRepository {
 
   /// Fetches all health records for a patient
   Future<List<Map<String, dynamic>>> fetchHealthRecords(
-      String patientId) async {
+    String patientId,
+  ) async {
     final res = await _client
         .from('health_records')
         .select()
@@ -275,8 +282,8 @@ class SupabasePatientRepository {
   }) async {
     final validFileStorage =
         (fileStorage == 'cloudUploaded' || fileStorage == 'firebase')
-            ? 'cloudUploaded'
-            : (fileStorage == 'none' ? 'none' : 'localOnly');
+        ? 'cloudUploaded'
+        : (fileStorage == 'none' ? 'none' : 'localOnly');
 
     return PatientWriteGuard.run(
       context: context,

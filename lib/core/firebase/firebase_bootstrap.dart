@@ -123,9 +123,7 @@ Future<void> _activateAppCheck() async {
     final ready = await AppCheckService.warmUp();
     if (kDebugMode) {
       debugPrint(
-        ready
-            ? 'App Check activated on mobile.'
-            : 'App Check activated on mobile but token fetch failed — see logs above.',
+        ready ? 'App Check activated on mobile.' : 'App Check activated on mobile but token fetch failed — see logs above.',
       );
     }
   } catch (e, st) {

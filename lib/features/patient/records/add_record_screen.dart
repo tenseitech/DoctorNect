@@ -1,4 +1,5 @@
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -99,12 +100,14 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
           AppToast.info(context, '${image.name} exceeds 10 MB limit');
           continue;
         }
-        added.add(PlatformFile(
-          name: image.name,
-          size: image.bytes.length,
-          bytes: image.bytes,
-          path: image.path,
-        ));
+        added.add(
+          PlatformFile(
+            name: image.name,
+            size: image.bytes.length,
+            bytes: image.bytes,
+            path: image.path,
+          ),
+        );
       }
       if (added.isNotEmpty) setState(() => _files.addAll(added));
       return;
@@ -263,8 +266,10 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceOf(context),
       appBar: AppBar(
-        title: Text('Add Record',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text(
+          'Add Record',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
       ),
@@ -292,14 +297,16 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _doctorController,
-              decoration:
-                  const InputDecoration(labelText: 'Doctor name (optional)'),
+              decoration: const InputDecoration(
+                labelText: 'Doctor name (optional)',
+              ),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _facilityController,
-              decoration:
-                  const InputDecoration(labelText: 'Hospital / Lab name'),
+              decoration: const InputDecoration(
+                labelText: 'Hospital / Lab name',
+              ),
             ),
             const SizedBox(height: 12),
             ListTile(
@@ -313,10 +320,12 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
             OutlinedButton.icon(
               onPressed: _saving ? null : _pickFiles,
               icon: const Icon(Icons.upload_file),
-              label:
-                  Text('Upload file (PDF/image, max 10MB) — ${_files.length}'),
+              label: Text(
+                'Upload file (PDF/image, max 10MB) — ${_files.length}',
+              ),
               style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.patientTeal),
+                foregroundColor: AppColors.patientTeal,
+              ),
             ),
             ..._files.map(
               (f) => ListTile(
@@ -330,7 +339,9 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
               controller: _notesController,
               maxLines: 3,
               decoration: const InputDecoration(
-                  labelText: 'Notes', alignLabelWithHint: true),
+                labelText: 'Notes',
+                alignLabelWithHint: true,
+              ),
             ),
             const SizedBox(height: 12),
             SwitchListTile(
@@ -353,7 +364,9 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                       height: 22,
                       width: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.white),
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
                     )
                   : const Text('Save'),
             ),

@@ -49,19 +49,27 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
           ),
           if (hasExisting && onView != null)
             ListTile(
-              leading:
-                  const Icon(Icons.fullscreen, color: AppColors.doctorBlue),
-              title: Text('View photo',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+              leading: const Icon(
+                Icons.fullscreen,
+                color: AppColors.doctorBlue,
+              ),
+              title: Text(
+                'View photo',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+              ),
               onTap: () {
                 Navigator.pop(ctx, 'view');
               },
             ),
           ListTile(
-            leading: const Icon(Icons.photo_library_outlined,
-                color: AppColors.doctorBlue),
-            title: Text('Choose from gallery',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+            leading: const Icon(
+              Icons.photo_library_outlined,
+              color: AppColors.doctorBlue,
+            ),
+            title: Text(
+              'Choose from gallery',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+            ),
             onTap: () async {
               try {
                 final picked = await GalleryImagePicker.pickSingle();
@@ -73,12 +81,16 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
           ),
           if (hasExisting && onRemove != null)
             ListTile(
-              leading:
-                  const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              leading: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.red,
+              ),
               title: Text(
                 'Remove photo',
                 style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w500, color: Colors.red),
+                  fontWeight: FontWeight.w500,
+                  color: Colors.red,
+                ),
               ),
               onTap: () {
                 Navigator.pop(ctx, 'remove');
@@ -104,7 +116,9 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
 
   if (result is PickedGalleryImage) {
     return PickedProfilePhoto(
-        path: result.path ?? result.name, bytes: result.bytes);
+      path: result.path ?? result.name,
+      bytes: result.bytes,
+    );
   }
 
   return null;
@@ -132,13 +146,9 @@ class ProfilePhotoAvatar extends StatelessWidget {
   final Color? fallbackColor;
 
   ImageProvider? _networkImageProvider(String url, BuildContext context) {
-    final cachePx =
-        (radius * 2 * MediaQuery.devicePixelRatioOf(context)).round();
-    return ResizeImage(
-      NetworkImage(url),
-      width: cachePx,
-      height: cachePx,
-    );
+    final cachePx = (radius * 2 * MediaQuery.devicePixelRatioOf(context))
+        .round();
+    return ResizeImage(NetworkImage(url), width: cachePx, height: cachePx);
   }
 
   ImageProvider? _imageProvider(BuildContext context) {

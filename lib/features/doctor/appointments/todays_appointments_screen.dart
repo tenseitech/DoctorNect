@@ -1,4 +1,5 @@
 import '../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -11,7 +12,9 @@ import '../../../core/theme/app_colors.dart';
 import '../clinical/clinical_tools_shell.dart';
 import '../clinical/models/clinical_models.dart';
 import '../models/doctor_models.dart';
+
 import 'package:medibond/features/shared/screens/appointment_detail_screen.dart';
+
 import 'appointment_utils.dart';
 import 'widgets/appointment_tab_card.dart';
 import 'widgets/appointments_empty_state.dart';
@@ -88,9 +91,10 @@ class _DoctorTodaysAppointmentsScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e,
-                fallback:
-                    "Couldn't accept this appointment. Please check your connection and try again."),
+            describeUserFacingError(
+              e,
+              fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+            ),
           ),
         ),
       );
@@ -108,9 +112,10 @@ class _DoctorTodaysAppointmentsScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            describeUserFacingError(e,
-                fallback:
-                    "Couldn't decline this appointment. Please check your connection and try again."),
+            describeUserFacingError(
+              e,
+              fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+            ),
           ),
         ),
       );
@@ -124,8 +129,10 @@ class _DoctorTodaysAppointmentsScreenState
     final record = _store.findRecordById(appointment.id);
     final resolvedPatientId = record?.patientId;
     if (resolvedPatientId == null || resolvedPatientId.isEmpty) {
-      AppToast.info(context,
-          'This patient is not registered yet — clinical tools cannot be linked to them.');
+      AppToast.info(
+        context,
+        'This patient is not registered yet — clinical tools cannot be linked to them.',
+      );
       return;
     }
     _updateStatus(appointment.id, AppointmentStatus.inProgress);
@@ -170,7 +177,11 @@ class _DoctorTodaysAppointmentsScreenState
           ? const AppointmentsEmptyState(tabLabel: 'Today')
           : ListView.builder(
               padding: EdgeInsets.fromLTRB(
-                  horizontalPadding, 12, horizontalPadding, 20),
+                horizontalPadding,
+                12,
+                horizontalPadding,
+                20,
+              ),
               itemCount: list.length,
               itemBuilder: (context, index) {
                 final appt = list[index];

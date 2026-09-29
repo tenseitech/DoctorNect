@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/patient_mock_data.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../../../../core/theme/app_typography.dart';
 
 class HealthTipsSection extends StatelessWidget {
@@ -35,8 +37,9 @@ class HealthTipsSection extends StatelessWidget {
               Text(
                 'Quick reads for daily wellness',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
             ],
           ),
@@ -202,21 +205,21 @@ class _HealthTipPalette {
   static _HealthTipPalette forCategory(String category) {
     return switch (category) {
       'Cardiology' => const _HealthTipPalette(
-          gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
-          icon: FontAwesomeIcons.heartPulse,
-        ),
+        gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+        icon: FontAwesomeIcons.heartPulse,
+      ),
       'Wellness' => const _HealthTipPalette(
-          gradient: [Color(0xFF16A34A), Color(0xFF15803D)],
-          icon: FontAwesomeIcons.leaf,
-        ),
+        gradient: [Color(0xFF16A34A), Color(0xFF15803D)],
+        icon: FontAwesomeIcons.leaf,
+      ),
       'Skin Care' => const _HealthTipPalette(
-          gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
-          icon: FontAwesomeIcons.handDots,
-        ),
+        gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
+        icon: FontAwesomeIcons.handDots,
+      ),
       _ => const _HealthTipPalette(
-          gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
-          icon: FontAwesomeIcons.stethoscope,
-        ),
+        gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
+        icon: FontAwesomeIcons.stethoscope,
+      ),
     };
   }
 }

@@ -23,15 +23,18 @@ class MedicalStoreRepository {
     return snap.data()!['verified'] as bool? ?? false;
   }
 
-  Future<List<MedicalStoreProfile>> fetchVerifiedStores(
-      {bool preferCache = true}) async {
+  Future<List<MedicalStoreProfile>> fetchVerifiedStores({
+    bool preferCache = true,
+  }) async {
     if (!FirebaseBootstrap.isReady) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
       query: FirebaseFirestore.instance
           .collection(FirestorePaths.medicalStores)
-          .where('verified',
-              isEqualTo: true) // FIXED: only surface admin-verified stores
+          .where(
+            'verified',
+            isEqualTo: true,
+          ) // FIXED: only surface admin-verified stores
           .limit(FirestoreQueryLimits.verifiedDirectoryListingCap),
       preferCache: preferCache,
     );
@@ -61,8 +64,13 @@ class MedicalStoreRepository {
         aLine2 = addressData['addressLine2'] as String? ?? '';
         aPinCode = addressData['pinCode'] as String? ?? '';
 
-        final parts = [aLine1, aLine2, aCity, aState, aPinCode]
-            .where((e) => e.isNotEmpty);
+        final parts = [
+          aLine1,
+          aLine2,
+          aCity,
+          aState,
+          aPinCode,
+        ].where((e) => e.isNotEmpty);
         addressStr = parts.join(', ');
       } else if (addressData is String) {
         addressStr = addressData;
@@ -79,7 +87,8 @@ class MedicalStoreRepository {
         country: aCountry,
         state: aState,
         pincode: aPinCode,
-        drugLicenseNumber: (data['drugLicenseNumber'] as String?) ??
+        drugLicenseNumber:
+            (data['drugLicenseNumber'] as String?) ??
             (data['licenseNumber'] as String?) ??
             '',
         phone: data['phone'] as String? ?? '',

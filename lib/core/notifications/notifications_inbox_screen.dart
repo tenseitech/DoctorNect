@@ -197,10 +197,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
               const SizedBox(height: 12),
               Expanded(
                 child: items.isEmpty
-                    ? _EmptyInbox(
-                        accent: _accent,
-                        filter: _filter,
-                      )
+                    ? _EmptyInbox(accent: _accent, filter: _filter)
                     : Center(
                         child: ConstrainedBox(
                           constraints: BoxConstraints(
@@ -337,7 +334,8 @@ class _NotificationTile extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: accent,
                       borderRadius: const BorderRadius.horizontal(
-                          right: Radius.circular(4)),
+                        right: Radius.circular(4),
+                      ),
                     ),
                   ),
                 ),
@@ -358,15 +356,19 @@ class _NotificationTile extends StatelessWidget {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                palette.gradient.last.withValues(alpha: 0.22),
+                            color: palette.gradient.last.withValues(
+                              alpha: 0.22,
+                            ),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
                         ],
                       ),
-                      child:
-                          Icon(palette.icon, size: 22, color: AppColors.white),
+                      child: Icon(
+                        palette.icon,
+                        size: 22,
+                        color: AppColors.white,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -393,12 +395,15 @@ class _NotificationTile extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2),
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: accent.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                        color: accent.withValues(alpha: 0.25)),
+                                      color: accent.withValues(alpha: 0.25),
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -407,8 +412,9 @@ class _NotificationTile extends StatelessWidget {
                                         width: 5,
                                         height: 5,
                                         decoration: BoxDecoration(
-                                            color: accent,
-                                            shape: BoxShape.circle),
+                                          color: accent,
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
@@ -439,8 +445,9 @@ class _NotificationTile extends StatelessWidget {
                           Text(
                             time,
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelSmall,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelSmall,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         ],
                       ),
@@ -457,10 +464,7 @@ class _NotificationTile extends StatelessWidget {
 }
 
 class _NotificationPalette {
-  const _NotificationPalette({
-    required this.gradient,
-    required this.icon,
-  });
+  const _NotificationPalette({required this.gradient, required this.icon});
 
   final List<Color> gradient;
   final IconData icon;
@@ -468,62 +472,59 @@ class _NotificationPalette {
   static _NotificationPalette forType(AppNotificationType type, Color accent) {
     return switch (type) {
       AppNotificationType.appointment => _NotificationPalette(
-          gradient: [accent, accent.withValues(alpha: 0.75)],
-          icon: Icons.event_available_outlined,
-        ),
+        gradient: [accent, accent.withValues(alpha: 0.75)],
+        icon: Icons.event_available_outlined,
+      ),
       AppNotificationType.booking => _NotificationPalette(
-          gradient: [accent, accent.withValues(alpha: 0.75)],
-          icon: Icons.calendar_month_outlined,
-        ),
+        gradient: [accent, accent.withValues(alpha: 0.75)],
+        icon: Icons.calendar_month_outlined,
+      ),
       AppNotificationType.cancellation => const _NotificationPalette(
-          gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
-          icon: Icons.event_busy_outlined,
-        ),
+        gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+        icon: Icons.event_busy_outlined,
+      ),
       AppNotificationType.labReport => const _NotificationPalette(
-          gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-          icon: Icons.biotech_outlined,
-        ),
+        gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+        icon: Icons.biotech_outlined,
+      ),
       AppNotificationType.prescription => const _NotificationPalette(
-          gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-          icon: AppIcons.prescription,
-        ),
+        gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+        icon: AppIcons.prescription,
+      ),
       AppNotificationType.reminder => const _NotificationPalette(
-          gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
-          icon: Icons.alarm_outlined,
-        ),
+        gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
+        icon: Icons.alarm_outlined,
+      ),
       AppNotificationType.review => const _NotificationPalette(
-          gradient: [Color(0xFFCA8A04), Color(0xFFA16207)],
-          icon: Icons.star_outline,
-        ),
+        gradient: [Color(0xFFCA8A04), Color(0xFFA16207)],
+        icon: Icons.star_outline,
+      ),
       AppNotificationType.payout => const _NotificationPalette(
-          gradient: [Color(0xFF059669), Color(0xFF047857)],
-          icon: Icons.payments_outlined,
-        ),
+        gradient: [Color(0xFF059669), Color(0xFF047857)],
+        icon: Icons.payments_outlined,
+      ),
       AppNotificationType.chat => _NotificationPalette(
-          gradient: [accent, accent.withValues(alpha: 0.75)],
-          icon: Icons.chat_bubble_outline,
-        ),
+        gradient: [accent, accent.withValues(alpha: 0.75)],
+        icon: Icons.chat_bubble_outline,
+      ),
       AppNotificationType.kyc => const _NotificationPalette(
-          gradient: [Color(0xFF0891B2), Color(0xFF0E7490)],
-          icon: Icons.verified_user_outlined,
-        ),
+        gradient: [Color(0xFF0891B2), Color(0xFF0E7490)],
+        icon: Icons.verified_user_outlined,
+      ),
       AppNotificationType.wellness => const _NotificationPalette(
-          gradient: [Color(0xFF16A34A), Color(0xFF15803D)],
-          icon: Icons.favorite_outline,
-        ),
+        gradient: [Color(0xFF16A34A), Color(0xFF15803D)],
+        icon: Icons.favorite_outline,
+      ),
       AppNotificationType.system => const _NotificationPalette(
-          gradient: [Color(0xFF64748B), Color(0xFF475569)],
-          icon: Icons.info_outline,
-        ),
+        gradient: [Color(0xFF64748B), Color(0xFF475569)],
+        icon: Icons.info_outline,
+      ),
     };
   }
 }
 
 class _EmptyInbox extends StatelessWidget {
-  const _EmptyInbox({
-    required this.accent,
-    required this.filter,
-  });
+  const _EmptyInbox({required this.accent, required this.filter});
 
   final Color accent;
   final _InboxFilter filter;
@@ -569,17 +570,19 @@ class _EmptyInbox extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineSmall,
-                      fontWeight: FontWeight.w700),
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      color: AppColors.textSecondaryOf(context),
-                      height: 1.45),
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
+                    height: 1.45,
+                  ),
                 ),
               ],
             ),

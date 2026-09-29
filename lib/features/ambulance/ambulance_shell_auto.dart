@@ -1,4 +1,5 @@
 import '../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -153,9 +154,8 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _useDifferentAccount() async {
@@ -176,9 +176,7 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
     if (_loading) {
       return Scaffold(
         backgroundColor: AppColors.cardBgOf(context),
-        body: Center(
-          child: CircularProgressIndicator(color: _accent),
-        ),
+        body: Center(child: CircularProgressIndicator(color: _accent)),
       );
     }
 
@@ -255,8 +253,11 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: _accent, width: 1.5),
               ),
-              prefixIcon: Icon(Icons.lock_outline_rounded,
-                  size: 20, color: AppColors.textSecondaryOf(context)),
+              prefixIcon: Icon(
+                Icons.lock_outline_rounded,
+                size: 20,
+                color: AppColors.textSecondaryOf(context),
+              ),
               suffixIcon: IconButton(
                 tooltip: _obscurePin ? 'Show PIN' : 'Hide PIN',
                 icon: Icon(
@@ -277,14 +278,17 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
               backgroundColor: _accent,
               minimumSize: const Size.fromHeight(48),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: _submitting
                 ? const SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : Text(
                     'Continue',

@@ -97,8 +97,10 @@ class FileUploadTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Icon(Icons.chevron_right,
-                    color: AppColors.textSecondaryOf(context)),
+                Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ],
             ),
           ),
@@ -108,7 +110,9 @@ class FileUploadTile extends StatelessWidget {
           Text(
             errorText!,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium, color: AppColors.error),
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.error,
+            ),
           ),
         ],
       ],
@@ -117,10 +121,7 @@ class FileUploadTile extends StatelessWidget {
 }
 
 class PickedDocument {
-  const PickedDocument({
-    required this.name,
-    required this.bytes,
-  });
+  const PickedDocument({required this.name, required this.bytes});
 
   final String name;
   final Uint8List bytes;

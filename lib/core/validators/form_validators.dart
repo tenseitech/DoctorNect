@@ -3,10 +3,7 @@ import '../security/input_sanitize.dart';
 import '../validation/validation_engine.dart';
 
 class ParsedPhone {
-  const ParsedPhone({
-    required this.dialCode,
-    required this.localNumber,
-  });
+  const ParsedPhone({required this.dialCode, required this.localNumber});
 
   final String dialCode;
   final String localNumber;
@@ -50,10 +47,7 @@ class FormValidators {
   static String? mobile(String? value) =>
       phoneLocal(value, dialCode: CountryPhoneCodes.defaultDialCode);
 
-  static ParsedPhone parsePhone(
-    String? value, {
-    String? fallbackDialCode,
-  }) {
+  static ParsedPhone parsePhone(String? value, {String? fallbackDialCode}) {
     final fallback = fallbackDialCode ?? CountryPhoneCodes.defaultDialCode;
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) {
@@ -73,10 +67,7 @@ class FormValidators {
 
     var digits = trimmed.replaceAll(RegExp(r'\D'), '');
     if (digits.length == 12 && digits.startsWith('91')) {
-      return ParsedPhone(
-        dialCode: '+91',
-        localNumber: digits.substring(2),
-      );
+      return ParsedPhone(dialCode: '+91', localNumber: digits.substring(2));
     }
     if (digits.length == 11 && digits.startsWith('0')) {
       digits = digits.substring(1);
@@ -136,9 +127,10 @@ class FormValidators {
     return digits;
   }
 
-  static String? registrationMobile(String? value,
-          {String dialCode = CountryPhoneCodes.defaultDialCode}) =>
-      phoneLocal(value, dialCode: dialCode);
+  static String? registrationMobile(
+    String? value, {
+    String dialCode = CountryPhoneCodes.defaultDialCode,
+  }) => phoneLocal(value, dialCode: dialCode);
 
   static String? password(String? value) {
     final str = value ?? '';
@@ -195,11 +187,7 @@ class FormValidators {
   }
 
   static String? age(String? value, {int min = 1, int max = 120}) =>
-      ValidationEngine.validate(
-        'age',
-        value,
-        params: {'min': min, 'max': max},
-      );
+      ValidationEngine.validate('age', value, params: {'min': min, 'max': max});
 
   static String? experience(String? value) =>
       ValidationEngine.validate('experience', value);
@@ -213,8 +201,10 @@ class FormValidators {
   static String? councilNumber(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'Council registration number is required';
-    if (!RegExp(r'^[A-Z0-9-\/]{4,20}$', caseSensitive: false)
-        .hasMatch(trimmed)) {
+    if (!RegExp(
+      r'^[A-Z0-9-\/]{4,20}$',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return 'Enter a valid council registration number, e.g. MCI-12345 or MH2020123456';
     }
     return null;
@@ -224,9 +214,9 @@ class FormValidators {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'Drug license number is required';
     if (!RegExp(
-            r'^(?:DL|DLIC|LIC|FORM20|FORM21)?[-\/]?[A-Z]{0,3}[-\/]?\d{4,8}(?:[-\/]\d{2,4})?$',
-            caseSensitive: false)
-        .hasMatch(trimmed)) {
+      r'^(?:DL|DLIC|LIC|FORM20|FORM21)?[-\/]?[A-Z]{0,3}[-\/]?\d{4,8}(?:[-\/]\d{2,4})?$',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return 'Enter a valid drug license number, e.g. DL-12345/2026';
     }
     return null;
@@ -236,9 +226,9 @@ class FormValidators {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'Lab license number is required';
     if (!RegExp(
-            r'^(?:LAB|NABL|REG|LIC)?[-\/]?[A-Z]{0,3}[-\/]?\d{4,8}(?:[-\/]\d{2,4})?$',
-            caseSensitive: false)
-        .hasMatch(trimmed)) {
+      r'^(?:LAB|NABL|REG|LIC)?[-\/]?[A-Z]{0,3}[-\/]?\d{4,8}(?:[-\/]\d{2,4})?$',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return 'Enter a valid lab license number, e.g. LAB-12345 or NABL/123456';
     }
     return null;
@@ -247,8 +237,9 @@ class FormValidators {
   static String? drivingLicense(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'License / permit number is required';
-    final normalized =
-        trimmed.replaceAll(RegExp(r'[\s\-\/]'), '').toUpperCase();
+    final normalized = trimmed
+        .replaceAll(RegExp(r'[\s\-\/]'), '')
+        .toUpperCase();
     if (!RegExp(r'^[A-Z]{2}\d{2}\d{4}\d{7}$').hasMatch(normalized) &&
         !RegExp(r'^(?:PERMIT|AMB|TAXI)[A-Z0-9]{5,16}$').hasMatch(normalized)) {
       return 'Enter a valid driving license or permit number, e.g. MH1220261234567';
@@ -260,8 +251,9 @@ class FormValidators {
   static String? ambulanceDrivingLicense(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'Driving license number is required';
-    final normalized =
-        trimmed.replaceAll(RegExp(r'[\s\-\/]'), '').toUpperCase();
+    final normalized = trimmed
+        .replaceAll(RegExp(r'[\s\-\/]'), '')
+        .toUpperCase();
     if (!RegExp(r'^[A-Z]{2}\d{2}\d{4}\d{7}$').hasMatch(normalized)) {
       return 'Enter a valid driving license number, e.g. MH1220261234567';
     }
@@ -274,9 +266,10 @@ class FormValidators {
     if (trimmed.isEmpty) {
       return 'Ambulance permit / fitness certificate number is required';
     }
-    if (!RegExp(r'^(?:PERMIT|AMB|FIT|FC|CERT)[A-Z0-9\-\/]{3,20}$',
-            caseSensitive: false)
-        .hasMatch(trimmed)) {
+    if (!RegExp(
+      r'^(?:PERMIT|AMB|FIT|FC|CERT)[A-Z0-9\-\/]{3,20}$',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return 'Enter a valid permit/fitness certificate number, e.g. AMB-12345/2026';
     }
     return null;
@@ -286,9 +279,9 @@ class FormValidators {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'Vehicle insurance number is required';
     if (!RegExp(
-            r'^(?:POL|INS|GIC)?[-\/]?[A-Z]{0,4}[-\/]?\d{6,12}(?:[-\/]\d{2,4})?$',
-            caseSensitive: false)
-        .hasMatch(trimmed)) {
+      r'^(?:POL|INS|GIC)?[-\/]?[A-Z]{0,4}[-\/]?\d{6,12}(?:[-\/]\d{2,4})?$',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return 'Enter a valid insurance policy number, e.g. POL-12345678';
     }
     return null;
@@ -298,9 +291,9 @@ class FormValidators {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return null;
     if (!RegExp(
-            r'^(?:POL|INS|GIC)?[-\/]?[A-Z]{0,4}[-\/]?\d{6,12}(?:[-\/]\d{2,4})?$',
-            caseSensitive: false)
-        .hasMatch(trimmed)) {
+      r'^(?:POL|INS|GIC)?[-\/]?[A-Z]{0,4}[-\/]?\d{6,12}(?:[-\/]\d{2,4})?$',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return 'Enter a valid insurance policy number, e.g. POL-12345678';
     }
     return null;
@@ -348,13 +341,12 @@ class FormValidators {
     String field = 'This field',
     int minLength = 1,
     int maxLength = InputSanitize.maxMessageLength,
-  }) =>
-      InputSanitize.validatePlainText(
-        value,
-        field: field,
-        minLength: minLength,
-        maxLength: maxLength,
-      );
+  }) => InputSanitize.validatePlainText(
+    value,
+    field: field,
+    minLength: minLength,
+    maxLength: maxLength,
+  );
 
   static String? reviewText(String? value) {
     final trimmed = value?.trim() ?? '';
@@ -368,18 +360,18 @@ class FormValidators {
   }
 
   static String? adTitle(String? value) => safeText(
-        value,
-        field: 'Title',
-        minLength: 3,
-        maxLength: InputSanitize.maxAdTitleLength,
-      );
+    value,
+    field: 'Title',
+    minLength: 3,
+    maxLength: InputSanitize.maxAdTitleLength,
+  );
 
   static String? adDescription(String? value) => safeText(
-        value,
-        field: 'Description',
-        minLength: 10,
-        maxLength: InputSanitize.maxAdDescriptionLength,
-      );
+    value,
+    field: 'Description',
+    minLength: 10,
+    maxLength: InputSanitize.maxAdDescriptionLength,
+  );
 
   static String? locationText(String? value, {String field = 'Location'}) =>
       safeText(
@@ -461,11 +453,12 @@ class FormValidators {
   static String? file(String? path, {String field = 'File'}) =>
       ValidationEngine.validate('file', path, params: {'field': field});
 
-  static String? multiSelect(Set<String> selected,
-          {String field = 'Options'}) =>
-      ValidationEngine.validate(
-        'multiSelect',
-        null,
-        params: {'field': field, 'selected': selected},
-      );
+  static String? multiSelect(
+    Set<String> selected, {
+    String field = 'Options',
+  }) => ValidationEngine.validate(
+    'multiSelect',
+    null,
+    params: {'field': field, 'selected': selected},
+  );
 }

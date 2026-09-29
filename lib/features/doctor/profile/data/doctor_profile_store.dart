@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -49,15 +50,15 @@ class DoctorProfileStore extends ChangeNotifier {
         .doc(doctorId)
         .snapshots()
         .listen((snap) {
-      if (!snap.exists || snap.data() == null) return;
-      final data = snap.data()!;
-      final url =
-          (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
-      if (url != null && url.isNotEmpty && url != profile.photoUrl) {
-        profile.photoUrl = url;
-        notifyListeners();
-      }
-    });
+          if (!snap.exists || snap.data() == null) return;
+          final data = snap.data()!;
+          final url =
+              (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
+          if (url != null && url.isNotEmpty && url != profile.photoUrl) {
+            profile.photoUrl = url;
+            notifyListeners();
+          }
+        });
   }
 
   static void resetNotificationPrefsSession() {
@@ -93,7 +94,8 @@ class DoctorProfileStore extends ChangeNotifier {
   void _applyNotificationPrefsFromMap(Map<String, dynamic> data) {
     profile.appointmentReminders =
         data['appointmentReminders'] as bool? ?? profile.appointmentReminders;
-    profile.remindHoursBefore = (data['remindHoursBefore'] as num?)?.toInt() ??
+    profile.remindHoursBefore =
+        (data['remindHoursBefore'] as num?)?.toInt() ??
         profile.remindHoursBefore;
     final channels = data['notificationChannels'] as List<dynamic>?;
     if (channels != null)
@@ -110,12 +112,15 @@ class DoctorProfileStore extends ChangeNotifier {
     return false;
   }
 
-  static VerificationStatus _verificationStatusFromFirestore(dynamic verified,
-      [String? mobile]) {
+  static VerificationStatus _verificationStatusFromFirestore(
+    dynamic verified, [
+    String? mobile,
+  ]) {
     if (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
-        DoctorSession.loggedInDoctorId
-            .contains(DemoAuthConfig.demoDoctorPhone)) {
+        DoctorSession.loggedInDoctorId.contains(
+          DemoAuthConfig.demoDoctorPhone,
+        )) {
       return VerificationStatus.verified;
     }
     if (_isVerifiedValue(verified)) return VerificationStatus.verified;
@@ -131,8 +136,8 @@ class DoctorProfileStore extends ChangeNotifier {
     final masked = parts.isEmpty
         ? 'Patient'
         : parts.length == 1
-            ? '${parts.first[0]}.'
-            : '${parts.first[0]}. ${parts.last[0]}.';
+        ? '${parts.first[0]}.'
+        : '${parts.first[0]}. ${parts.last[0]}.';
     profile.reviews.insert(
       0,
       PatientReview(
@@ -244,8 +249,9 @@ class DoctorProfileStore extends ChangeNotifier {
 
     if (FirebaseBootstrap.isReady) {
       try {
-        final ref = FirebaseStorage.instance
-            .ref('doctor_profiles/$doctorId/profile.jpg');
+        final ref = FirebaseStorage.instance.ref(
+          'doctor_profiles/$doctorId/profile.jpg',
+        );
         await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
         storageUrl = await ref.getDownloadURL();
       } catch (e) {
@@ -263,7 +269,8 @@ class DoctorProfileStore extends ChangeNotifier {
       } catch (e) {
         if (kDebugMode)
           debugPrint(
-              '[DoctorProfileStore] firestore doc photo update failed: $e');
+            '[DoctorProfileStore] firestore doc photo update failed: $e',
+          );
       }
       notifyListeners();
       return finalUrl;
@@ -290,9 +297,9 @@ class DoctorProfileStore extends ChangeNotifier {
             .collection(FirestorePaths.doctors)
             .doc(doctorId)
             .update({
-          'photoUrl': FieldValue.delete(),
-          'photoURL': FieldValue.delete(),
-        });
+              'photoUrl': FieldValue.delete(),
+              'photoURL': FieldValue.delete(),
+            });
       } catch (e) {
         if (kDebugMode)
           debugPrint('[DoctorProfileStore] remove photo failed: $e');
@@ -307,8 +314,8 @@ class DoctorProfileStore extends ChangeNotifier {
     final doctorId = (doctorIdInput != null && doctorIdInput.isNotEmpty)
         ? doctorIdInput
         : (DoctorSession.loggedInDoctorId.isNotEmpty
-            ? DoctorSession.loggedInDoctorId
-            : (FirebaseAuth.instance.currentUser?.uid ?? ''));
+              ? DoctorSession.loggedInDoctorId
+              : (FirebaseAuth.instance.currentUser?.uid ?? ''));
     if (doctorId.isEmpty) {
       throw StateError('Missing doctor id — profile cannot be saved.');
     }
@@ -377,18 +384,21 @@ class DoctorProfileStore extends ChangeNotifier {
   // FIXED: reviews were never fetched, so the Reviews screen was always empty.
   Future<void> loadReviews(String doctorId) async {
     if (doctorId.isEmpty) return;
-    final fetched =
-        await FirestoreService.instance.review.fetchForDoctor(doctorId);
+    final fetched = await FirestoreService.instance.review.fetchForDoctor(
+      doctorId,
+    );
     profile.reviews = fetched
-        .map((r) => PatientReview(
-              id: r.id,
-              maskedName: r.maskedName,
-              rating: r.rating,
-              text: r.text,
-              date: r.date,
-              doctorReply: r.doctorReply,
-              helpfulCount: r.helpfulCount,
-            ))
+        .map(
+          (r) => PatientReview(
+            id: r.id,
+            maskedName: r.maskedName,
+            rating: r.rating,
+            text: r.text,
+            date: r.date,
+            doctorReply: r.doctorReply,
+            helpfulCount: r.helpfulCount,
+          ),
+        )
         .toList();
 
     try {
@@ -396,7 +406,9 @@ class DoctorProfileStore extends ChangeNotifier {
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(
-          reference: ref, preferCache: true);
+        reference: ref,
+        preferCache: true,
+      );
       final data = snap.data();
       if (data != null) {
         profile.rating = (data['rating'] as num?)?.toDouble() ?? profile.rating;
@@ -404,13 +416,15 @@ class DoctorProfileStore extends ChangeNotifier {
             (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
       } else if (fetched.isNotEmpty) {
         profile.reviewCount = fetched.length;
-        profile.rating = fetched.fold<double>(0, (acc, r) => acc + r.rating) /
+        profile.rating =
+            fetched.fold<double>(0, (acc, r) => acc + r.rating) /
             fetched.length;
       }
     } catch (_) {
       if (fetched.isNotEmpty) {
         profile.reviewCount = fetched.length;
-        profile.rating = fetched.fold<double>(0, (acc, r) => acc + r.rating) /
+        profile.rating =
+            fetched.fold<double>(0, (acc, r) => acc + r.rating) /
             fetched.length;
       }
     }
@@ -418,8 +432,10 @@ class DoctorProfileStore extends ChangeNotifier {
 
   /// Persists a doctor's reply to a review document.
   // FIXED: replies were only kept in memory; now they are written to the review doc.
-  Future<void> saveReply(
-      {required String reviewId, required String reply}) async {
+  Future<void> saveReply({
+    required String reviewId,
+    required String reply,
+  }) async {
     if (reviewId.isEmpty) {
       throw StateError('Missing review id — reply cannot be saved.');
     }
@@ -430,7 +446,8 @@ class DoctorProfileStore extends ChangeNotifier {
   }
 
   Future<void> loadFromFirestore(String doctorId) async {
-    final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+    final isDemoDoc =
+        DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
         doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
         DemoAuthConfig.isDemoDoctorPhone(profile.mobile) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
@@ -453,7 +470,9 @@ class DoctorProfileStore extends ChangeNotifier {
           .collection(FirestorePaths.doctors)
           .doc(doctorId);
       final snap = await FirestoreReadHelper.getDocument(
-          reference: ref, preferCache: true);
+        reference: ref,
+        preferCache: true,
+      );
       final data = snap.data();
       if (data == null) return;
 
@@ -465,7 +484,8 @@ class DoctorProfileStore extends ChangeNotifier {
       if (url != null && url.isNotEmpty) profile.photoUrl = url;
       profile.yearsExperience =
           (data['experienceYears'] as num?)?.toInt() ?? profile.yearsExperience;
-      profile.registrationYear = (data['registrationYear'] as num?)?.toInt() ??
+      profile.registrationYear =
+          (data['registrationYear'] as num?)?.toInt() ??
           profile.registrationYear;
       profile.mobile = data['mobile'] as String? ?? profile.mobile;
       profile.email = data['email'] as String? ?? profile.email;
@@ -483,8 +503,8 @@ class DoctorProfileStore extends ChangeNotifier {
       profile.rating = (data['rating'] as num?)?.toDouble() ?? profile.rating;
       profile.reviewCount =
           (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
-      profile.verificationStatus = isDemoDoc ||
-              DemoAuthConfig.isDemoDoctorPhone(profile.mobile)
+      profile.verificationStatus =
+          isDemoDoc || DemoAuthConfig.isDemoDoctorPhone(profile.mobile)
           ? VerificationStatus.verified
           : _verificationStatusFromFirestore(data['verified'], profile.mobile);
       final langs = data['languages'] as List<dynamic>?;
@@ -534,13 +554,13 @@ class DoctorProfileStore extends ChangeNotifier {
           (data['avgDurationMins'] as num?)?.toInt() ?? profile.avgDurationMins;
       profile.maxPatientsPerDay =
           (data['maxPatientsPerDay'] as num?)?.toInt() ??
-              profile.maxPatientsPerDay;
+          profile.maxPatientsPerDay;
       profile.advanceBookingDays =
           (data['advanceBookingDays'] as num?)?.toInt() ??
-              profile.advanceBookingDays;
+          profile.advanceBookingDays;
       profile.autoAcceptAppointments =
           data['autoAcceptAppointments'] as bool? ??
-              profile.autoAcceptAppointments;
+          profile.autoAcceptAppointments;
       _applyNotificationPrefsFromMap(data);
       profile.newBookingAlert = true;
       profile.cancellationAlert = true;
@@ -550,7 +570,7 @@ class DoctorProfileStore extends ChangeNotifier {
           data['recoveryEmail'] as String? ?? profile.recoveryEmail;
       profile.registrationCertificate =
           data['registrationCertificate'] as String? ??
-              profile.registrationCertificate;
+          profile.registrationCertificate;
       profile.idProof = data['idProof'] as String? ?? profile.idProof;
     } finally {
       notifyListeners();

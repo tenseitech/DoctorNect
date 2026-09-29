@@ -1,5 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +14,7 @@ import '../../../core/data/shared_appointments_store.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/external_launcher.dart';
+
 import 'dart:async';
 
 import '../../../core/session/patient_session.dart';
@@ -49,8 +51,9 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _doctorFuture =
-        FirestoreService.instance.doctorProfileDetail.fetch(widget.doctorId);
+    _doctorFuture = FirestoreService.instance.doctorProfileDetail.fetch(
+      widget.doctorId,
+    );
   }
 
   @override
@@ -73,8 +76,9 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
       if (a.doctorId != widget.doctorId) continue;
       if (a.cancellationReason != null) continue;
       if (a.hasReview) continue;
-      if (a.dateTime
-          .isBefore(DateTime.now().subtract(const Duration(hours: 1)))) {
+      if (a.dateTime.isBefore(
+        DateTime.now().subtract(const Duration(hours: 1)),
+      )) {
         return a;
       }
     }
@@ -85,16 +89,18 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) {
       AppToast.info(
-          context, 'Please sign in as a patient to rate & review doctors.');
+        context,
+        'Please sign in as a patient to rate & review doctors.',
+      );
       return;
     }
     PatientDoctorReview? existingReview;
     if (patientId.isNotEmpty) {
-      existingReview =
-          await FirestoreService.instance.review.fetchReviewForPatientAndDoctor(
-        patientId: patientId,
-        doctorId: widget.doctorId,
-      );
+      existingReview = await FirestoreService.instance.review
+          .fetchReviewForPatientAndDoctor(
+            patientId: patientId,
+            doctorId: widget.doctorId,
+          );
     }
     if (!mounted) return;
 
@@ -119,13 +125,16 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
     );
     if (!mounted || submitted != true) return;
     setState(() {
-      _doctorFuture =
-          FirestoreService.instance.doctorProfileDetail.fetch(widget.doctorId);
+      _doctorFuture = FirestoreService.instance.doctorProfileDetail.fetch(
+        widget.doctorId,
+      );
     });
   }
 
   Future<void> _editReview(
-      PatientDoctorReview review, String doctorName) async {
+    PatientDoctorReview review,
+    String doctorName,
+  ) async {
     final submitted = await SubmitDoctorReviewSheet.show(
       context,
       doctorName: doctorName,
@@ -134,15 +143,16 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
       initialComment: review.text,
       onSubmit: (rating, comment) =>
           SharedAppointmentsStore.instance.updateReviewByReviewId(
-        reviewId: review.id,
-        rating: rating,
-        comment: comment,
-      ),
+            reviewId: review.id,
+            rating: rating,
+            comment: comment,
+          ),
     );
     if (!mounted || submitted != true) return;
     setState(() {
-      _doctorFuture =
-          FirestoreService.instance.doctorProfileDetail.fetch(widget.doctorId);
+      _doctorFuture = FirestoreService.instance.doctorProfileDetail.fetch(
+        widget.doctorId,
+      );
     });
   }
 
@@ -154,7 +164,8 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
-                child: CircularProgressIndicator(color: AppColors.patientTeal)),
+              child: CircularProgressIndicator(color: AppColors.patientTeal),
+            ),
           );
         }
 
@@ -206,7 +217,7 @@ class _DoctorProfileBody extends StatelessWidget {
   final PatientAppointment? reviewableVisit;
   final VoidCallback onRateDoctor;
   final void Function(PatientDoctorReview review, String doctorName)
-      onEditReview;
+  onEditReview;
 
   @override
   Widget build(BuildContext context) {
@@ -223,8 +234,9 @@ class _DoctorProfileBody extends StatelessWidget {
         title: Text(
           'Doctor Profile',
           style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-              fontSize: AppTypography.headlineSmall),
+            fontWeight: FontWeight.w600,
+            fontSize: AppTypography.headlineSmall,
+          ),
         ),
         centerTitle: true,
       ),
@@ -311,8 +323,10 @@ class _DoctorProfileScrollBodyState extends State<_DoctorProfileScrollBody> {
     // On tablet/desktop center the content with a max-width constraint.
     // On mobile let it fill the screen (horizontalPad = 0).
     final double contentMax = isCompact ? screenWidth : 680.0;
-    final double hPad =
-        ((screenWidth - contentMax) / 2).clamp(0.0, double.infinity);
+    final double hPad = ((screenWidth - contentMax) / 2).clamp(
+      0.0,
+      double.infinity,
+    );
 
     return ListView(
       padding: EdgeInsets.fromLTRB(hPad, 0, hPad, 24),
@@ -329,7 +343,9 @@ class _DoctorProfileScrollBodyState extends State<_DoctorProfileScrollBody> {
         const SizedBox(height: 8),
         Padding(
           padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? 16 : 20, vertical: 8),
+            horizontal: isCompact ? 16 : 20,
+            vertical: 8,
+          ),
           child: Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
@@ -358,10 +374,13 @@ class _DoctorProfileScrollBodyState extends State<_DoctorProfileScrollBody> {
               tabAlignment: isCompact ? TabAlignment.start : TabAlignment.fill,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
-              indicatorPadding:
-                  const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-              labelPadding:
-                  EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20),
+              indicatorPadding: const EdgeInsets.symmetric(
+                horizontal: 2,
+                vertical: 2,
+              ),
+              labelPadding: EdgeInsets.symmetric(
+                horizontal: isCompact ? 12 : 20,
+              ),
               labelStyle: GoogleFonts.inter(
                 fontSize: isCompact ? 13 : 14,
                 fontWeight: FontWeight.w600,
@@ -415,12 +434,12 @@ class _ProfileTabPanel extends StatelessWidget {
       0 => _OverviewTab(doctor: doctor),
       1 => _ExperienceTab(doctor: doctor),
       2 => _ReviewsTab(
-          doctor: doctor,
-          sort: reviewSort,
-          onSort: onReviewSortChanged,
-          onEditReview: onEditReview,
-          onRateDoctor: onRateDoctor,
-        ),
+        doctor: doctor,
+        sort: reviewSort,
+        onSort: onReviewSortChanged,
+        onEditReview: onEditReview,
+        onRateDoctor: onRateDoctor,
+      ),
       _ => _LocationTab(doctor: doctor),
     };
   }
@@ -527,9 +546,10 @@ class _OverviewTab extends StatelessWidget {
                     ? 'Bio not added yet.'
                     : doctor.about,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyMedium,
-                    height: 1.6,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.bodyMedium,
+                  height: 1.6,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
             ],
           ),
@@ -591,8 +611,10 @@ class _DoctorPerformanceStatsState extends State<_DoctorPerformanceStats> {
   Widget build(BuildContext context) {
     final period = _periods[_selectedIndex];
     final since = FeaturedDoctorsService.periodStartFor(period.$2);
-    final stats =
-        DoctorPatientStatsService.statsForDoctor(widget.doctorId, since);
+    final stats = DoctorPatientStatsService.statsForDoctor(
+      widget.doctorId,
+      since,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -665,8 +687,10 @@ class _DoctorPerformanceStatsState extends State<_DoctorPerformanceStats> {
             runSpacing: 8,
             children: stats.services.map((service) {
               return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.patientTeal.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
@@ -799,9 +823,10 @@ class _ExperienceTab extends StatelessWidget {
         Text(
           '${doctor.experienceYears} years of experience in ${doctor.specialization}',
           style: GoogleFonts.inter(
-              fontSize: AppTypography.bodyMedium,
-              color: AppColors.textSecondaryOf(context),
-              height: 1.5),
+            fontSize: AppTypography.bodyMedium,
+            color: AppColors.textSecondaryOf(context),
+            height: 1.5,
+          ),
         ),
         const SizedBox(height: 24),
         _ExperienceSection(
@@ -878,8 +903,9 @@ class _ExperienceSection extends StatelessWidget {
           Text(
             emptyMessage,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodyMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.bodyMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           )
         else
           ...children,
@@ -1073,17 +1099,19 @@ class _ReviewsTabState extends State<_ReviewsTab> {
               Text(
                 'No reviews yet',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.headlineSmall,
-                    fontWeight: FontWeight.w700),
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 'Be the first to share your experience after a visit.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyMedium,
-                    color: AppColors.textSecondaryOf(context),
-                    height: 1.4),
+                  fontSize: AppTypography.bodyMedium,
+                  color: AppColors.textSecondaryOf(context),
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 20),
               if (widget.onRateDoctor != null)
@@ -1095,9 +1123,12 @@ class _ReviewsTabState extends State<_ReviewsTab> {
                     backgroundColor: AppColors.patientTeal,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
             ],
@@ -1147,8 +1178,9 @@ class _ReviewsTabState extends State<_ReviewsTab> {
                   Text(
                     '$total reviews',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                 ],
               ),
@@ -1162,13 +1194,19 @@ class _ReviewsTabState extends State<_ReviewsTab> {
                       padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Row(
                         children: [
-                          Text('$star',
-                              style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelSmall,
-                                  fontWeight: FontWeight.w600)),
+                          Text(
+                            '$star',
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.labelSmall,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           const SizedBox(width: 4),
-                          const Icon(Icons.star_rounded,
-                              size: 12, color: Color(0xFFF59E0B)),
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 12,
+                            color: Color(0xFFF59E0B),
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: ClipRRect(
@@ -1185,8 +1223,9 @@ class _ReviewsTabState extends State<_ReviewsTab> {
                           Text(
                             '$count',
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelSmall,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelSmall,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         ],
                       ),
@@ -1208,7 +1247,8 @@ class _ReviewsTabState extends State<_ReviewsTab> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -1236,15 +1276,17 @@ class _ReviewsTabState extends State<_ReviewsTab> {
           ),
         ),
         const SizedBox(height: 16),
-        ..._sorted.map((r) => _ReviewCard(
-              review: r,
-              liked: _likedReviewIds.contains(r.id),
-              helpfulCount: _displayHelpfulCount(r),
-              toggling: _loadingVotes || _togglingReviewIds.contains(r.id),
-              onToggleLike: () => unawaited(_toggleLike(r)),
-              canEdit: r.canBeEditedBy(PatientSession.loggedInPatientId),
-              onEdit: () => widget.onEditReview(r),
-            )),
+        ..._sorted.map(
+          (r) => _ReviewCard(
+            review: r,
+            liked: _likedReviewIds.contains(r.id),
+            helpfulCount: _displayHelpfulCount(r),
+            toggling: _loadingVotes || _togglingReviewIds.contains(r.id),
+            onToggleLike: () => unawaited(_toggleLike(r)),
+            canEdit: r.canBeEditedBy(PatientSession.loggedInPatientId),
+            onEdit: () => widget.onEditReview(r),
+          ),
+        ),
       ],
     );
   }
@@ -1284,14 +1326,17 @@ class _ReviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(review.maskedName,
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              Text(
+                review.maskedName,
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              ),
               const Spacer(),
               Text(
                 DateFormat('dd MMM yyyy').format(review.date),
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
             ],
           ),
@@ -1306,9 +1351,13 @@ class _ReviewCard extends StatelessWidget {
             }),
           ),
           const SizedBox(height: 8),
-          Text(review.text,
-              style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodyMedium, height: 1.4)),
+          Text(
+            review.text,
+            style: GoogleFonts.inter(
+              fontSize: AppTypography.bodyMedium,
+              height: 1.4,
+            ),
+          ),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -1316,8 +1365,10 @@ class _ReviewCard extends StatelessWidget {
                 onTap: toggling ? null : onToggleLike,
                 borderRadius: BorderRadius.circular(20),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -1370,15 +1421,19 @@ class _ReviewCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Doctor reply',
-                      style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.patientTeal)),
+                  Text(
+                    'Doctor reply',
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.patientTeal,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(review.doctorReply!,
-                      style:
-                          GoogleFonts.inter(fontSize: AppTypography.bodySmall)),
+                  Text(
+                    review.doctorReply!,
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+                  ),
                 ],
               ),
             ),
@@ -1410,16 +1465,19 @@ class _LocationTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.map_outlined,
-                    size: 40,
-                    color: AppColors.textSecondaryOf(context)
-                        .withValues(alpha: 0.5)),
+                Icon(
+                  Icons.map_outlined,
+                  size: 40,
+                  color: AppColors.textSecondaryOf(context)
+                      .withValues(alpha: 0.5),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   doctor.area.trim().isEmpty ? 'Location' : doctor.area,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodyMedium,
-                      fontWeight: FontWeight.w500),
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
@@ -1438,25 +1496,31 @@ class _LocationTab extends StatelessWidget {
                 side: const BorderSide(color: AppColors.patientTeal),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
         ],
         const SizedBox(height: 18),
         PatientDoctorSectionTitle(
-            doctor.clinicName.isNotEmpty ? doctor.clinicName : 'Clinic'),
+          doctor.clinicName.isNotEmpty ? doctor.clinicName : 'Clinic',
+        ),
         Text(
           doctor.address.trim().isEmpty
               ? 'Address not added yet.'
               : doctor.address,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.bodyMedium, height: 1.45),
+            fontSize: AppTypography.bodyMedium,
+            height: 1.45,
+          ),
         ),
         if (doctor.landmark.trim().isNotEmpty) ...[
           const SizedBox(height: 10),
           PatientDoctorMetaRow(
-              icon: Icons.place_outlined, text: 'Landmark: ${doctor.landmark}'),
+            icon: Icons.place_outlined,
+            text: 'Landmark: ${doctor.landmark}',
+          ),
         ],
         if (cleanProfileLabels(doctor.nearbyLandmarks).isNotEmpty) ...[
           const SizedBox(height: 20),
@@ -1485,8 +1549,9 @@ class _ClinicTimingsTable extends StatelessWidget {
       return Text(
         'Timings not added yet.',
         style: GoogleFonts.inter(
-            fontSize: AppTypography.bodyMedium,
-            color: AppColors.textSecondaryOf(context)),
+          fontSize: AppTypography.bodyMedium,
+          color: AppColors.textSecondaryOf(context),
+        ),
       );
     }
 
@@ -1502,12 +1567,14 @@ class _ClinicTimingsTable extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color:
-                  today ? AppColors.patientTeal.withValues(alpha: 0.06) : null,
+              color: today
+                  ? AppColors.patientTeal.withValues(alpha: 0.06)
+                  : null,
               border: Border(
-                  bottom: BorderSide(
-                      color:
-                          AppColors.borderOf(context).withValues(alpha: 0.6))),
+                bottom: BorderSide(
+                  color: AppColors.borderOf(context).withValues(alpha: 0.6),
+                ),
+              ),
             ),
             child: Row(
               children: [
@@ -1531,7 +1598,9 @@ class _ClinicTimingsTable extends StatelessWidget {
                       if (today)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.patientTeal,
                             borderRadius: BorderRadius.circular(8),

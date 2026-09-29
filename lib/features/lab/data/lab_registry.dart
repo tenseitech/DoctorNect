@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../core/auth/profile_completion_service.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -117,7 +118,7 @@ class LabRegistry extends ChangeNotifier {
         addressLine2 ?? '',
         city ?? '',
         state ?? '',
-        pincode ?? ''
+        pincode ?? '',
       ].where((e) => e.isNotEmpty);
       addressStr = parts.join(', ');
     }

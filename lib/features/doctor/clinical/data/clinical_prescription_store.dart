@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flutter/foundation.dart';
@@ -67,15 +68,17 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     if (hadRecords) notifyListeners();
   }
 
-  Future<bool> _isPatientVisibleToDoctor(String patientId,
-      {bool preferCache = true}) async {
+  Future<bool> _isPatientVisibleToDoctor(
+    String patientId, {
+    bool preferCache = true,
+  }) async {
     if (!_isDoctorContext) return true;
     if (patientId.isEmpty) return true;
     return FirestoreService.instance.patientProfile
         .isPatientSharingClinicalDataWithDoctors(
-      patientId,
-      preferCache: preferCache,
-    );
+          patientId,
+          preferCache: preferCache,
+        );
   }
 
   Future<List<PrescriptionDraft>> _filterPrescriptionsForDoctor(
@@ -101,8 +104,10 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
         continue;
       }
 
-      final allowed =
-          await _isPatientVisibleToDoctor(patientId, preferCache: preferCache);
+      final allowed = await _isPatientVisibleToDoctor(
+        patientId,
+        preferCache: preferCache,
+      );
       decided[patientId] = allowed;
       if (allowed) {
         visible.add(draft);
@@ -128,16 +133,20 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     copy.doctorQualifications = p.qualification.trim().isNotEmpty
         ? p.qualification.trim()
         : (p.certifications.isNotEmpty
-            ? p.certifications.join(', ')
-            : [p.specialization, p.superSpecialization]
-                .where((s) => s.trim().isNotEmpty)
-                .join(' · '));
+              ? p.certifications.join(', ')
+              : [
+                  p.specialization,
+                  p.superSpecialization,
+                ].where((s) => s.trim().isNotEmpty).join(' · '));
     copy.doctorRegNumber = p.councilNumber;
     copy.clinicName = p.clinicName;
     copy.doctorPhone = p.mobile;
-    copy.clinicAddress = [p.addressLine1, p.addressLine2, p.city, p.pincode]
-        .where((s) => s.trim().isNotEmpty)
-        .join(', ');
+    copy.clinicAddress = [
+      p.addressLine1,
+      p.addressLine2,
+      p.city,
+      p.pincode,
+    ].where((s) => s.trim().isNotEmpty).join(', ');
 
     final isNewRecord = findById(copy.prescriptionId) == null;
 
@@ -201,8 +210,10 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
       preferCache: preferCache,
     );
 
-    final visible = await _filterPrescriptionsForDoctor(page.items,
-        preferCache: preferCache);
+    final visible = await _filterPrescriptionsForDoctor(
+      page.items,
+      preferCache: preferCache,
+    );
 
     mergeFirestoreRecords(visible);
 
@@ -211,8 +222,10 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     _hasMoreDoctor = page.hasMore;
   }
 
-  Future<void> refreshForPatient(String patientId,
-      {bool preferCache = true}) async {
+  Future<void> refreshForPatient(
+    String patientId, {
+    bool preferCache = true,
+  }) async {
     if (_isDoctorContext &&
         !await _isPatientVisibleToDoctor(patientId, preferCache: preferCache)) {
       _purgePatientPrescriptions(patientId);
@@ -230,8 +243,10 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     await loadMoreForPatient(patientId, preferCache: preferCache);
   }
 
-  Future<void> loadMoreForPatient(String patientId,
-      {bool preferCache = true}) async {
+  Future<void> loadMoreForPatient(
+    String patientId, {
+    bool preferCache = true,
+  }) async {
     if (!_hasMorePatient) return;
 
     if (_isDoctorContext &&
@@ -258,7 +273,8 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
-              'ClinicalPrescriptionStore: Supabase fetch failed, falling back to Firestore: $e');
+            'ClinicalPrescriptionStore: Supabase fetch failed, falling back to Firestore: $e',
+          );
         }
       }
     }
@@ -266,11 +282,11 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     try {
       final page = _isDoctorContext
           ? await FirestoreService.instance.prescription
-              .fetchForPatientForDoctor(
-              patientId,
-              startAfter: _lastPatientPage,
-              preferCache: preferCache,
-            )
+                .fetchForPatientForDoctor(
+                  patientId,
+                  startAfter: _lastPatientPage,
+                  preferCache: preferCache,
+                )
           : await FirestoreService.instance.prescription.fetchForPatient(
               patientId,
               startAfter: _lastPatientPage,
@@ -285,7 +301,8 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'ClinicalPrescriptionStore.loadMoreForPatient failed: $e\n$st');
+          'ClinicalPrescriptionStore.loadMoreForPatient failed: $e\n$st',
+        );
       }
       _hasMorePatient = false;
     }

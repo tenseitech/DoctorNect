@@ -86,9 +86,7 @@ class AmbulanceRepository {
       await FirebaseFirestore.instance
           .collection(FirestorePaths.ambulances)
           .doc(ambulanceId)
-          .set({
-        'authUid': uid,
-      }, SetOptions(merge: true));
+          .set({'authUid': uid}, SetOptions(merge: true));
       return true;
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied' &&
@@ -119,11 +117,10 @@ class AmbulanceRepository {
     if (!FirebaseBootstrap.isReady) return false;
 
     try {
-      final data =
-          await AmbulanceCallableClient.call('resyncAmbulanceAuthUid', {
-        'username': username.trim().toLowerCase(),
-        'pin': pin.trim(),
-      });
+      final data = await AmbulanceCallableClient.call(
+        'resyncAmbulanceAuthUid',
+        {'username': username.trim().toLowerCase(), 'pin': pin.trim()},
+      );
       if (data['ok'] != true) return false;
 
       final driverId = data['driverId'] as String? ?? '';
@@ -152,9 +149,9 @@ class AmbulanceRepository {
           .collection('private')
           .doc('settings')
           .set({
-        'fcmToken': token,
-        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+            'fcmToken': token,
+            'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) debugPrint('saveDriverFcmToken failed: $e');
     }
@@ -171,9 +168,9 @@ class AmbulanceRepository {
           .collection('private')
           .doc('settings')
           .set({
-        'fcmToken': FieldValue.delete(),
-        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+            'fcmToken': FieldValue.delete(),
+            'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) debugPrint('clearDriverFcmToken failed: $e');
     }
@@ -224,8 +221,7 @@ class AmbulanceRepository {
           return AmbulanceRegisterResult(
             error: _registerAmbulanceErrorMessage(
               e,
-              fallback:
-                  'Could not save login credentials. Check permissions and try again.',
+              fallback: 'Could not save login credentials. Check permissions and try again.',
             ),
           );
         }
@@ -238,8 +234,7 @@ class AmbulanceRepository {
       return AmbulanceRegisterResult(
         error: _registerAmbulanceErrorMessage(
           e,
-          fallback:
-              'Could not save ambulance registration. Check connection and try again.',
+          fallback: 'Could not save ambulance registration. Check connection and try again.',
         ),
       );
     }
@@ -265,7 +260,9 @@ class AmbulanceRepository {
           .collection(FirestorePaths.ambulances)
           .doc(id);
       final doc = await FirestoreReadHelper.getDocument(
-          reference: ref, preferCache: true);
+        reference: ref,
+        preferCache: true,
+      );
       if (!doc.exists || doc.data() == null) return null;
       final ambulance = RegisteredAmbulance.fromMap(doc.id, doc.data()!);
       if (!_isRegistered(ambulance)) return null;
@@ -285,8 +282,9 @@ class AmbulanceRepository {
     final normalized = username.trim().toLowerCase();
     if (normalized.isEmpty) return null;
 
-    RegisteredAmbulance? local =
-        await AmbulanceLoginCache.loadForUsername(normalized);
+    RegisteredAmbulance? local = await AmbulanceLoginCache.loadForUsername(
+      normalized,
+    );
     if (local != null) {
       AmbulanceStore.instance.registerAmbulance(local);
     }
@@ -330,8 +328,9 @@ class AmbulanceRepository {
 
     if (!FirebaseBootstrap.isReady) {
       try {
-        return AmbulanceStore.instance.registeredAmbulances
-            .firstWhere((a) => a.phone.trim() == trimmed);
+        return AmbulanceStore.instance.registeredAmbulances.firstWhere(
+          (a) => a.phone.trim() == trimmed,
+        );
       } catch (_) {
         return null;
       }
@@ -377,8 +376,10 @@ class AmbulanceRepository {
   /// For username uniqueness checks, prefer [fetchAmbulanceByUsername] (indexed,
   /// single doc). Full collection load is still used by [fetchAllOnlineDrivers];
   /// see scale thresholds in [FirestoreQueryLimits].
-  Future<List<RegisteredAmbulance>> fetchRegisteredAmbulances(
-      {bool preferCache = true, bool onlyCache = false}) async {
+  Future<List<RegisteredAmbulance>> fetchRegisteredAmbulances({
+    bool preferCache = true,
+    bool onlyCache = false,
+  }) async {
     if (!FirebaseBootstrap.isReady) {
       return AmbulanceStore.instance.registeredAmbulances
           .where(_isRegistered)
@@ -412,8 +413,11 @@ class AmbulanceRepository {
 
   /// All registered drivers who are currently online.
   // FIXED: optional service-area filter so only drivers serving the pickup area are returned.
-  Future<List<RegisteredAmbulance>> fetchAllOnlineDrivers(
-      {String? area, String? userCity, AmbulanceType? type}) async {
+  Future<List<RegisteredAmbulance>> fetchAllOnlineDrivers({
+    String? area,
+    String? userCity,
+    AmbulanceType? type,
+  }) async {
     final all = await fetchRegisteredAmbulances();
     final normalizedArea = area == null ? '' : normalizeArea(area);
     final requestCity = userCity?.trim() ?? '';
@@ -421,22 +425,24 @@ class AmbulanceRepository {
         .where((a) => _isRegistered(a) && a.available)
         .where((a) => type == null || a.ambulanceType == type)
         .where((a) {
-      if (requestCity.isEmpty) return false;
-      return ambulanceMatchesRequestCity(
-        requestCity: requestCity,
-        ambulanceCity: a.city,
-        serviceAreas: a.serviceAreas,
-        baseAddress: a.baseAddress,
-      );
-    }).where((a) {
-      if (normalizedArea.isEmpty) return true;
-      if (a.serviceAreas.isEmpty) return true;
-      return a.serviceAreas.any((s) {
-        final serviceArea = normalizeArea(s);
-        return serviceArea.contains(normalizedArea) ||
-            normalizedArea.contains(serviceArea);
-      });
-    }).toList()
+          if (requestCity.isEmpty) return false;
+          return ambulanceMatchesRequestCity(
+            requestCity: requestCity,
+            ambulanceCity: a.city,
+            serviceAreas: a.serviceAreas,
+            baseAddress: a.baseAddress,
+          );
+        })
+        .where((a) {
+          if (normalizedArea.isEmpty) return true;
+          if (a.serviceAreas.isEmpty) return true;
+          return a.serviceAreas.any((s) {
+            final serviceArea = normalizeArea(s);
+            return serviceArea.contains(normalizedArea) ||
+                normalizedArea.contains(serviceArea);
+          });
+        })
+        .toList()
       ..sort((a, b) => a.serviceName.compareTo(b.serviceName));
   }
 
@@ -499,8 +505,9 @@ class AmbulanceRepository {
         'contactPhone': contactPhone.trim(),
       if (bookedByRole != null) 'bookedByRole': bookedByRole,
       'createdAt': FieldValue.serverTimestamp(),
-      'expiresAt':
-          Timestamp.fromDate(DateTime.now().add(const Duration(minutes: 5))),
+      'expiresAt': Timestamp.fromDate(
+        DateTime.now().add(const Duration(minutes: 5)),
+      ),
     });
 
     final collection = firestore.collection(FirestorePaths.ambulanceRequests);
@@ -595,9 +602,7 @@ class AmbulanceRepository {
   }) async {
     lastAcceptFailureDetail = null;
     lastAcceptFailureUserMessage = null;
-    _acceptLog(
-      'start broadcastId=$broadcastId driverId=$driverId',
-    );
+    _acceptLog('start broadcastId=$broadcastId driverId=$driverId');
 
     if (broadcastId.isEmpty || driverId.isEmpty) {
       _setAcceptFailure(
@@ -671,9 +676,7 @@ class AmbulanceRepository {
 
     final authUid = FirebaseAuth.instance.currentUser?.uid;
     final isAnon = FirebaseAuth.instance.currentUser?.isAnonymous ?? false;
-    _acceptLog(
-      'auth currentUid=${authUid ?? '(null)'} isAnonymous=$isAnon',
-    );
+    _acceptLog('auth currentUid=${authUid ?? '(null)'} isAnonymous=$isAnon');
 
     var storedAuthUid = '(read failed)';
     try {
@@ -785,7 +788,9 @@ class AmbulanceRepository {
 
       try {
         if (!store.acceptBooking(
-            bookingId: broadcastId, ambulanceId: driverId)) {
+          bookingId: broadcastId,
+          ambulanceId: driverId,
+        )) {
           final updated = store.findBooking(broadcastId);
           if (updated != null &&
               !(updated.isAccepted &&
@@ -1041,10 +1046,11 @@ class AmbulanceRepository {
           .collection(FirestorePaths.ambulanceBroadcasts)
           .doc(broadcastId)
           .update({
-        'rating': stars,
-        if (review != null && review.trim().isNotEmpty) 'review': review.trim(),
-        'ratedAt': FieldValue.serverTimestamp(),
-      });
+            'rating': stars,
+            if (review != null && review.trim().isNotEmpty)
+              'review': review.trim(),
+            'ratedAt': FieldValue.serverTimestamp(),
+          });
 
       final reqSnap = await firestore
           .collection(FirestorePaths.ambulanceRequests)
@@ -1130,10 +1136,13 @@ class AmbulanceRepository {
       await FirebaseFirestore.instance
           .collection(FirestorePaths.ambulances)
           .doc(id)
-          .set({'isAvailable': available},
-              SetOptions(merge: true)); // FIXED: await before local update
+          .set({
+            'isAvailable': available,
+          }, SetOptions(merge: true)); // FIXED: await before local update
       AmbulanceStore.instance.updateAvailability(
-          id, available); // FIXED: only update local after confirmed write
+        id,
+        available,
+      ); // FIXED: only update local after confirmed write
       return true;
     } catch (e) {
       if (kDebugMode) debugPrint('updateAvailability error: $e');
@@ -1156,14 +1165,14 @@ class AmbulanceRepository {
       return (
         ok: false,
         error: 'Enter a valid 10-digit mobile number.',
-        driverId: null
+        driverId: null,
       );
     }
     if (otpSessionId.trim().isEmpty) {
       return (
         ok: false,
         error: 'OTP verification session expired. Verify again.',
-        driverId: null
+        driverId: null,
       );
     }
     final pin = newPin.trim();
@@ -1171,7 +1180,7 @@ class AmbulanceRepository {
       return (
         ok: false,
         error: 'Password must be at least 6 characters.',
-        driverId: null
+        driverId: null,
       );
     }
 
@@ -1179,7 +1188,7 @@ class AmbulanceRepository {
       return (
         ok: false,
         error: 'Secure session required. Please try again.',
-        driverId: null
+        driverId: null,
       );
     }
 
@@ -1201,7 +1210,7 @@ class AmbulanceRepository {
         return (
           ok: false,
           error: 'Could not reset PIN. Please try again.',
-          driverId: null
+          driverId: null,
         );
       }
 
@@ -1209,7 +1218,7 @@ class AmbulanceRepository {
       return (
         ok: true,
         error: null,
-        driverId: driverId.isEmpty ? null : driverId
+        driverId: driverId.isEmpty ? null : driverId,
       );
     } on FirebaseFunctionsException catch (e) {
       return (ok: false, error: _mapResetPinError(e), driverId: null);
@@ -1217,8 +1226,10 @@ class AmbulanceRepository {
       if (kDebugMode) debugPrint('resetDriverPinAfterOtp error: $e\n$st');
       return (
         ok: false,
-        error: describeUserFacingError(e,
-            fallback: 'Could not reset PIN. Please try again.'),
+        error: describeUserFacingError(
+          e,
+          fallback: 'Could not reset PIN. Please try again.',
+        ),
         driverId: null,
       );
     }
@@ -1272,12 +1283,10 @@ class AmbulanceRepository {
     final normalizedPin = pin.trim();
 
     try {
-      final data = await AmbulanceCallableClient.verifyDriverLogin(
-        {
-          'username': normalizedUsername,
-          'pin': normalizedPin,
-        },
-      );
+      final data = await AmbulanceCallableClient.verifyDriverLogin({
+        'username': normalizedUsername,
+        'pin': normalizedPin,
+      });
       if (data['ok'] != true) {
         return AmbulanceDriverLoginResult(
           pinUpgradeRequired: data['pinUpgradeRequired'] == true,
@@ -1338,8 +1347,7 @@ class AmbulanceRepository {
       if (text.contains('ClientException') ||
           text.contains('Failed to fetch')) {
         return const AmbulanceDriverLoginResult(
-          errorMessage:
-              'Could not reach login service. Check your connection and try again.',
+          errorMessage: 'Could not reach login service. Check your connection and try again.',
         );
       }
       return AmbulanceDriverLoginResult(
@@ -1359,14 +1367,15 @@ class AmbulanceRepository {
         'Too many login attempts. Please try again later.',
       'permission-denied' =>
         'Incorrect username or password. Please try again.',
-      'invalid-argument' => (e.message != null && e.message!.trim().isNotEmpty)
-          ? e.message!.trim()
-          : 'Invalid username or password. Please try again.',
+      'invalid-argument' =>
+        (e.message != null && e.message!.trim().isNotEmpty)
+            ? e.message!.trim()
+            : 'Invalid username or password. Please try again.',
       'internal' => 'Could not verify login right now. Please try again.',
       _ => describeFirebaseError(
-          e,
-          fallback: 'Incorrect username or password. Please try again.',
-        ),
+        e,
+        fallback: 'Incorrect username or password. Please try again.',
+      ),
     };
   }
 
@@ -1393,10 +1402,9 @@ class AmbulanceRepository {
 
     try {
       final data = await AmbulanceCallableClient.call(
-          'completeAmbulanceMobileOtpLogin', {
-        'mobile': digits,
-        'sessionId': sessionId.trim(),
-      });
+        'completeAmbulanceMobileOtpLogin',
+        {'mobile': digits, 'sessionId': sessionId.trim()},
+      );
       if (data['ok'] != true) {
         return const AmbulanceDriverLoginResult();
       }

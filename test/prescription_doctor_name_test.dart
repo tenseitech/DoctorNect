@@ -49,8 +49,7 @@ PrescriptionDraft _draft({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('PrescriptionHeaderHelper.doctorNameForDraft (name printed on PDF)',
-      () {
+  group('PrescriptionHeaderHelper.doctorNameForDraft (name printed on PDF)', () {
     setUp(() {
       // Seed two bookings with two different doctors to prove each prescription
       // resolves to *its own* booking's doctor (multi-doctor edge case).
@@ -70,27 +69,30 @@ void main() {
       ]);
     });
 
-    test('uses the doctor from the linked booking (not the signed-in doctor)',
-        () {
-      final name = PrescriptionHeaderHelper.doctorNameForDraft(
-        _draft(appointmentId: 'APT001', doctorName: 'Dr. Someone Else'),
-        fallback: 'Dr. Fallback',
-      );
-      expect(name, 'Dr. Asha Verma');
-    });
-
-    test('resolves the correct doctor when multiple bookings/doctors exist',
-        () {
-      final name = PrescriptionHeaderHelper.doctorNameForDraft(
-        _draft(appointmentId: 'APT002'),
-        fallback: 'Dr. Fallback',
-      );
-      // Booking name lacked the prefix; helper normalizes it.
-      expect(name, 'Dr. Ravi Kumar');
-    });
+    test(
+      'uses the doctor from the linked booking (not the signed-in doctor)',
+      () {
+        final name = PrescriptionHeaderHelper.doctorNameForDraft(
+          _draft(appointmentId: 'APT001', doctorName: 'Dr. Someone Else'),
+          fallback: 'Dr. Fallback',
+        );
+        expect(name, 'Dr. Asha Verma');
+      },
+    );
 
     test(
-        'resolves by doctorId when snapshot is empty and appointment is unlinked '
+      'resolves the correct doctor when multiple bookings/doctors exist',
+      () {
+        final name = PrescriptionHeaderHelper.doctorNameForDraft(
+          _draft(appointmentId: 'APT002'),
+          fallback: 'Dr. Fallback',
+        );
+        // Booking name lacked the prefix; helper normalizes it.
+        expect(name, 'Dr. Ravi Kumar');
+      },
+    );
+
+    test('resolves by doctorId when snapshot is empty and appointment is unlinked '
         '(the real-world "Dr. Doctor" bug)', () {
       final name = PrescriptionHeaderHelper.doctorNameForDraft(
         // No snapshot, no matching appointmentId — only the doctorId is known.
@@ -108,14 +110,16 @@ void main() {
       expect(name, 'Dr. Snapshot Doc');
     });
 
-    test('is never empty — falls back when there is no booking and no snapshot',
-        () {
-      final name = PrescriptionHeaderHelper.doctorNameForDraft(
-        _draft(appointmentId: null, doctorName: ''),
-        fallback: 'Dr. Fallback',
-      );
-      expect(name, 'Dr. Fallback');
-      expect(name.isNotEmpty, isTrue);
-    });
+    test(
+      'is never empty — falls back when there is no booking and no snapshot',
+      () {
+        final name = PrescriptionHeaderHelper.doctorNameForDraft(
+          _draft(appointmentId: null, doctorName: ''),
+          fallback: 'Dr. Fallback',
+        );
+        expect(name, 'Dr. Fallback');
+        expect(name.isNotEmpty, isTrue);
+      },
+    );
   });
 }

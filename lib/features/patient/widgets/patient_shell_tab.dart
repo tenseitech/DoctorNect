@@ -46,9 +46,10 @@ class PatientShellTabPage extends StatelessWidget {
                   accentColor: accentColor,
                 ),
                 Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: AppColors.borderOf(context)),
+                  height: 1,
+                  thickness: 1,
+                  color: AppColors.borderOf(context),
+                ),
               ],
             ),
           ),
@@ -152,15 +153,15 @@ class _SegmentTabState extends State<_SegmentTab> {
               color: selected
                   ? accent
                   : (_hovered
-                      ? accent.withValues(alpha: 0.08)
-                      : AppColors.cardBgOf(context)),
+                        ? accent.withValues(alpha: 0.08)
+                        : AppColors.cardBgOf(context)),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: selected
                     ? accent
                     : (_hovered
-                        ? accent.withValues(alpha: 0.35)
-                        : AppColors.borderOf(context)),
+                          ? accent.withValues(alpha: 0.35)
+                          : AppColors.borderOf(context)),
               ),
             ),
             child: Text(
@@ -257,16 +258,20 @@ class PatientTabEmptyState extends StatelessWidget {
                 color: accentColor.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon,
-                  size: 30, color: accentColor.withValues(alpha: 0.85)),
+              child: Icon(
+                icon,
+                size: 30,
+                color: accentColor.withValues(alpha: 0.85),
+              ),
             ),
             const SizedBox(height: 16),
             Text(
               title,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineSmall,
-                  fontWeight: FontWeight.w700),
+                fontSize: AppTypography.headlineSmall,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -285,10 +290,13 @@ class PatientTabEmptyState extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: accentColor,
                   foregroundColor: AppColors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: Text(
                   actionLabel!,

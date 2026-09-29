@@ -75,7 +75,7 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
       'mother-in-law',
       'daughter-in-law',
       'sister-in-law',
-      'granddaughter'
+      'granddaughter',
     ].contains(relationLower);
     final gender = isFemale ? 'Female' : 'Male';
 
@@ -117,8 +117,9 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                 Text(
                   'Add family member',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineSmall,
-                      fontWeight: FontWeight.w700),
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -159,7 +160,9 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                         clipBehavior: Clip.antiAlias,
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(
-                              maxHeight: 180, maxWidth: 280),
+                            maxHeight: 180,
+                            maxWidth: 280,
+                          ),
                           child: ListView.separated(
                             padding: EdgeInsets.zero,
                             shrinkWrap: true,
@@ -170,9 +173,12 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                               final option = options.elementAt(index);
                               return ListTile(
                                 dense: true,
-                                title: Text(option,
-                                    style: GoogleFonts.inter(
-                                        fontSize: AppTypography.bodyMedium)),
+                                title: Text(
+                                  option,
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.bodyMedium,
+                                  ),
+                                ),
                                 onTap: () => onSelected(option),
                               );
                             },
@@ -183,23 +189,23 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                   },
                   fieldViewBuilder:
                       (context, controller, focusNode, onFieldSubmitted) {
-                    return TextFormField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: RequiredFieldLabels.decorate(
-                        const InputDecoration(
-                          hintText: 'Select or type',
-                          suffixIcon: Icon(Icons.arrow_drop_down),
-                        ),
-                        'Relation',
-                        isRequired: true,
-                      ),
-                      validator: (v) =>
-                          FormValidators.tagText(v, field: 'Relation'),
-                      onChanged: (v) => _relationController.text = v,
-                      onFieldSubmitted: (_) => onFieldSubmitted(),
-                    );
-                  },
+                        return TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: RequiredFieldLabels.decorate(
+                            const InputDecoration(
+                              hintText: 'Select or type',
+                              suffixIcon: Icon(Icons.arrow_drop_down),
+                            ),
+                            'Relation',
+                            isRequired: true,
+                          ),
+                          validator: (v) =>
+                              FormValidators.tagText(v, field: 'Relation'),
+                          onChanged: (v) => _relationController.text = v,
+                          onFieldSubmitted: (_) => onFieldSubmitted(),
+                        );
+                      },
                 ),
               ],
             ),

@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -7,7 +8,9 @@ import '../../../core/session/lab_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../patient/lab/models/lab_models.dart';
 import '../data/lab_worklist_store.dart';
+
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+
 import '../widgets/lab_report_upload_sheet.dart';
 import 'lab_dashboard_tabs.dart';
 import '../../../core/theme/app_typography.dart';
@@ -59,12 +62,14 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
 
     list = switch (_typeFilter) {
       _PatientTypeFilter.all => list,
-      _PatientTypeFilter.walkIn => list
-          .where((b) => b.collectionType == LabCollectionType.walkIn.name)
-          .toList(),
-      _PatientTypeFilter.home => list
-          .where((b) => b.collectionType == LabCollectionType.home.name)
-          .toList(),
+      _PatientTypeFilter.walkIn =>
+        list
+            .where((b) => b.collectionType == LabCollectionType.walkIn.name)
+            .toList(),
+      _PatientTypeFilter.home =>
+        list
+            .where((b) => b.collectionType == LabCollectionType.home.name)
+            .toList(),
       _PatientTypeFilter.reportPending => list.where(_needsReport).toList(),
     };
 
@@ -93,8 +98,9 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
 
     setState(() => _refreshing = true);
     try {
-      final bookings =
-          await FirestoreService.instance.labBooking.fetchForLab(labId);
+      final bookings = await FirestoreService.instance.labBooking.fetchForLab(
+        labId,
+      );
       LabWorklistStore.instance.mergeBookings(bookings);
     } finally {
       if (mounted) setState(() => _refreshing = false);
@@ -109,15 +115,16 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme:
-              Theme.of(context).colorScheme.copyWith(primary: _labPurple),
+          colorScheme: Theme.of(context).colorScheme
+              .copyWith(primary: _labPurple),
         ),
         child: child!,
       ),
     );
     if (picked != null)
-      setState(() =>
-          _selectedDate = DateTime(picked.year, picked.month, picked.day));
+      setState(
+        () => _selectedDate = DateTime(picked.year, picked.month, picked.day),
+      );
   }
 
   Future<void> _uploadReport(LabBookingRecord booking) async {
@@ -129,10 +136,13 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        title: Text('All Patients',
-            style: GoogleFonts.inter(
-                fontSize: AppTypography.headlineSmall,
-                fontWeight: FontWeight.w600)),
+        title: Text(
+          'All Patients',
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.headlineSmall,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         backgroundColor: AppColors.surfaceOf(context),
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -160,15 +170,17 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                   Text(
                     'Patient bookings',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodyMedium,
-                        fontWeight: FontWeight.w700),
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${all.length} total · ${patients.length} shown${pendingReports > 0 ? ' · $pendingReports need report' : ''}',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   TextField(
@@ -177,13 +189,16 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search patient or test...',
                       hintStyle: GoogleFonts.inter(
-                          fontSize: AppTypography.bodySmall,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.bodySmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       prefixIcon: const Icon(Icons.search, size: 20),
                       filled: true,
                       fillColor: AppColors.surfaceOf(context),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: const BorderSide(color: _lineColor),
@@ -194,8 +209,10 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide:
-                            const BorderSide(color: _labPurple, width: 1.4),
+                        borderSide: const BorderSide(
+                          color: _labPurple,
+                          width: 1.4,
+                        ),
                       ),
                     ),
                   ),
@@ -244,7 +261,8 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 48),
                       child: Center(
-                          child: CircularProgressIndicator(color: _labPurple)),
+                        child: CircularProgressIndicator(color: _labPurple),
+                      ),
                     )
                   else if (patients.isEmpty)
                     Padding(
@@ -256,21 +274,24 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                               : 'No patients match your filters.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall,
-                              color: AppColors.textSecondaryOf(context),
-                              height: 1.4),
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textSecondaryOf(context),
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     )
                   else
-                    ...patients.map((booking) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _PatientBookingCard(
-                            booking: booking,
-                            needsReport: _needsReport(booking),
-                            onUploadReport: () => _uploadReport(booking),
-                          ),
-                        )),
+                    ...patients.map(
+                      (booking) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _PatientBookingCard(
+                          booking: booking,
+                          needsReport: _needsReport(booking),
+                          onUploadReport: () => _uploadReport(booking),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -296,8 +317,9 @@ class _DateFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label =
-        selectedDate == null ? 'All dates' : dateFormat.format(selectedDate!);
+    final label = selectedDate == null
+        ? 'All dates'
+        : dateFormat.format(selectedDate!);
 
     return Row(
       children: [
@@ -314,19 +336,25 @@ class _DateFilterRow extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today_outlined,
-                      size: 18, color: AppColors.textSecondaryOf(context)),
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 18,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       label,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodySmall,
-                          fontWeight: FontWeight.w600),
+                        fontSize: AppTypography.bodySmall,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                  Icon(Icons.arrow_drop_down,
-                      color: AppColors.textSecondaryOf(context)),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ],
               ),
             ),
@@ -337,10 +365,13 @@ class _DateFilterRow extends StatelessWidget {
           TextButton(
             onPressed: onClearDate,
             style: TextButton.styleFrom(foregroundColor: AppColors.labPurple),
-            child: Text('Clear',
-                style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: AppTypography.bodySmall)),
+            child: Text(
+              'Clear',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: AppTypography.bodySmall,
+              ),
+            ),
           ),
         ],
       ],
@@ -385,7 +416,9 @@ class _PatientBookingCard extends StatelessWidget {
                       ? booking.patientName.trim()[0].toUpperCase()
                       : 'P',
                   style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w700, color: AppColors.labPurple),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.labPurple,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -396,15 +429,17 @@ class _PatientBookingCard extends StatelessWidget {
                     Text(
                       booking.patientName,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodyLarge,
-                          fontWeight: FontWeight.w700),
+                        fontSize: AppTypography.bodyLarge,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       isWalkIn ? 'Walk-in' : 'Home collection',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   ],
                 ),
@@ -415,17 +450,23 @@ class _PatientBookingCard extends StatelessWidget {
                   if (newStatus != booking.status) {
                     // Update all linked booking docs for grouped bookings
                     for (final id in booking.linkedBookingIds) {
-                      FirestoreService.instance.labBooking
-                          .updateBookingStatus(id, newStatus);
+                      FirestoreService.instance.labBooking.updateBookingStatus(
+                        id,
+                        newStatus,
+                      );
                     }
-                    LabWorklistStore.instance
-                        .updateBookingStatusLocal(booking.bookingId, newStatus);
+                    LabWorklistStore.instance.updateBookingStatusLocal(
+                      booking.bookingId,
+                      newStatus,
+                    );
                   }
                 },
                 tooltip: 'Update Status',
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -436,27 +477,31 @@ class _PatientBookingCard extends StatelessWidget {
                       Text(
                         labOrderStatusLabel(booking.status),
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelSmall,
-                            fontWeight: FontWeight.w700,
-                            color: statusColor),
+                          fontSize: AppTypography.labelSmall,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       Icon(Icons.arrow_drop_down, size: 14, color: statusColor),
                     ],
                   ),
                 ),
-                itemBuilder: (context) => [
-                  'requested',
-                  'confirmed',
-                  'processing',
-                  'completed',
-                  'declined',
-                ]
-                    .map((status) => PopupMenuItem<String>(
-                          value: status,
-                          child: Text(labOrderStatusLabel(status)),
-                        ))
-                    .toList(),
+                itemBuilder: (context) =>
+                    [
+                          'requested',
+                          'confirmed',
+                          'processing',
+                          'completed',
+                          'declined',
+                        ]
+                        .map(
+                          (status) => PopupMenuItem<String>(
+                            value: status,
+                            child: Text(labOrderStatusLabel(status)),
+                          ),
+                        )
+                        .toList(),
               ),
             ],
           ),
@@ -464,60 +509,71 @@ class _PatientBookingCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: booking.allTestNames
-                .map((testName) => Padding(
-                      padding: EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 5, right: 6),
-                            child: Icon(Icons.circle,
-                                size: 4,
-                                color: AppColors.textSecondaryOf(context)),
+                .map(
+                  (testName) => Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(top: 5, right: 6),
+                          child: Icon(
+                            Icons.circle,
+                            size: 4,
+                            color: AppColors.textSecondaryOf(context),
                           ),
-                          Expanded(
-                            child: Text(
-                              testName,
-                              style: GoogleFonts.inter(
-                                  fontSize: AppTypography.bodySmall,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.35),
+                        ),
+                        Expanded(
+                          child: Text(
+                            testName,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.bodySmall,
+                              fontWeight: FontWeight.w600,
+                              height: 1.35,
                             ),
                           ),
-                        ],
-                      ),
-                    ))
+                        ),
+                      ],
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 6),
           Text(
             '${DateFormat('dd MMM yyyy').format(booking.dateTime)} · ${booking.slotLabel}',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
           if (!isWalkIn && booking.address.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               booking.address,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ],
           if (booking.hasReport) ...[
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.check_circle_outline,
-                    size: 15, color: AppColors.pharmacyGreen),
+                const Icon(
+                  Icons.check_circle_outline,
+                  size: 15,
+                  color: AppColors.pharmacyGreen,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Report sent',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium,
-                      color: AppColors.pharmacyGreen,
-                      fontWeight: FontWeight.w600),
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.pharmacyGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),

@@ -66,7 +66,8 @@ abstract final class UnifiedAuthNavigation {
     required String mobileDigits,
     required String mobile,
   }) {
-    final isDemoDoctor = role == UserType.doctor &&
+    final isDemoDoctor =
+        role == UserType.doctor &&
         DemoAuthConfig.isDemoDoctorPhone(mobileDigits);
     final initialStage = isDemoDoctor
         ? VerificationStage.verified

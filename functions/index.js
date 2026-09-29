@@ -1897,126 +1897,126 @@ const SYNC_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 
 exports.syncAppointmentToSupabase = onDocumentWritten({
   document: 'appointments/{appointmentId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAppointmentToSupabase);
 
 exports.syncPrescriptionToSupabase = onDocumentWritten({
   document: 'prescriptions/{prescriptionId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestorePrescriptionToSupabase);
 
 exports.syncDoctorToSupabase = onDocumentWritten({
   document: 'doctors/{doctorId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreDoctorToSupabase);
 
 exports.syncDoctorAvailabilityToSupabase = onDocumentWritten({
   document: 'doctor_availability/{doctorId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreDoctorAvailabilityToSupabase);
 
 exports.syncDoctorBlockedDatesToSupabase = onDocumentWritten({
   document: 'doctor_blocked_dates/{docId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreDoctorBlockedDatesToSupabase);
 
 exports.syncMedicalStoreToSupabase = onDocumentWritten({
   document: 'medical_stores/{storeId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreMedicalStoreToSupabase);
 
 exports.syncPharmacyConnectionToSupabase = onDocumentWritten({
   document: 'pharmacy_connections/{connectionId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestorePharmacyConnectionToSupabase);
 
 exports.syncPharmacyDeliveryToSupabase = onDocumentWritten({
   document: 'pharmacy_deliveries/{deliveryId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestorePharmacyDeliveryToSupabase);
 
 exports.syncLabToSupabase = onDocumentWritten({
   document: 'labs/{labId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabToSupabase);
 
 exports.syncLabCatalogTestToSupabase = onDocumentWritten({
   document: 'lab_catalog/{testId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabCatalogTestToSupabase);
 
 exports.syncLabBookingToSupabase = onDocumentWritten({
   document: 'lab_bookings/{bookingId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabBookingToSupabase);
 
 exports.syncLabOrderToSupabase = onDocumentWritten({
   document: 'lab_orders/{orderId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabOrderToSupabase);
 
 exports.syncLabConnectionToSupabase = onDocumentWritten({
   document: 'lab_connections/{connectionId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabConnectionToSupabase);
 
 exports.syncAmbulanceToSupabase = onDocumentWritten({
   document: 'ambulances/{ambulanceId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceToSupabase);
 
 exports.syncAmbulancePrivateSettingsToSupabase = onDocumentWritten({
   document: 'ambulance_private_settings/{ambulanceId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulancePrivateSettingsToSupabase);
 
 exports.syncAmbulanceBroadcastToSupabase = onDocumentWritten({
   document: 'ambulance_broadcasts/{broadcastId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceBroadcastToSupabase);
 
 exports.syncAmbulanceRequestToSupabase = onDocumentWritten({
   document: 'ambulance_requests/{requestId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceRequestToSupabase);
 
 exports.syncAmbulanceInviteToSupabase = onDocumentWritten({
   document: 'ambulance_invites/{inviteId}',
-  region: 'asia-south1',
+  region: 'asia-south2',
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceInviteToSupabase);

@@ -91,10 +91,13 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
-        title: Text(record.title,
-            style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: AppTypography.headlineSmall)),
+        title: Text(
+          record.title,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: AppTypography.headlineSmall,
+          ),
+        ),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         actions: [
@@ -115,8 +118,9 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
             child: Text(
               '${DateFormat('dd MMM yyyy').format(record.date)} · ${record.fileName}',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ),
         ],
@@ -138,14 +142,18 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.insert_drive_file_outlined,
-                  size: 64, color: style.color),
+              Icon(
+                Icons.insert_drive_file_outlined,
+                size: 64,
+                color: style.color,
+              ),
               const SizedBox(height: 12),
               Text(
                 _error!,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
-                    color: AppColors.textSecondaryOf(context)),
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
               if (record.fileStorage == HealthRecordFileStorage.local) ...[
                 const SizedBox(height: 8),
@@ -153,8 +161,9 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
                   'Files may be stored on the device where they were uploaded, or in cloud storage when sync is enabled.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
               ],
             ],
@@ -168,9 +177,7 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
       return InteractiveViewer(
         minScale: 0.5,
         maxScale: 4,
-        child: Center(
-          child: Image.memory(bytes, fit: BoxFit.contain),
-        ),
+        child: Center(child: Image.memory(bytes, fit: BoxFit.contain)),
       );
     }
 

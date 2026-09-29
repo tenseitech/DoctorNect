@@ -91,9 +91,8 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _goNext() async {
     final target = await SplashScreen.resolveInitialScreen();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => target),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (_) => target));
   }
 
   @override
@@ -113,10 +112,10 @@ class _SplashScreenState extends State<SplashScreen> {
           Text(
             'Your Health, Our Priority',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondaryOf(context),
-                  letterSpacing: 0.2,
-                ),
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondaryOf(context),
+              letterSpacing: 0.2,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

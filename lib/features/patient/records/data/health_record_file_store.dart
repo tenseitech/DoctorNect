@@ -23,8 +23,10 @@ abstract final class HealthRecordFileStore {
       name.replaceAll(RegExp(r'[^\w.\-]'), '_');
 
   static String storagePath(
-          String patientId, String recordId, String fileName) =>
-      'health_records/$patientId/$recordId/${_sanitizeFileName(fileName)}';
+    String patientId,
+    String recordId,
+    String fileName,
+  ) => 'health_records/$patientId/$recordId/${_sanitizeFileName(fileName)}';
 
   static String? mimeTypeFor(String fileName) {
     final lower = fileName.toLowerCase();
@@ -128,8 +130,9 @@ abstract final class HealthRecordFileStore {
         }
       }
 
-      final fromPath =
-          await downloadFromPath(storagePath(patientId, recordId, fileName));
+      final fromPath = await downloadFromPath(
+        storagePath(patientId, recordId, fileName),
+      );
       if (fromPath != null && fromPath.isNotEmpty) {
         _webBytes[_cacheKey(patientId, recordId, fileName)] =
             await FileEncryptionService.encryptForMemoryCache(fromPath);
@@ -157,8 +160,9 @@ abstract final class HealthRecordFileStore {
       }
     }
 
-    final fromPath =
-        await downloadFromPath(storagePath(patientId, recordId, fileName));
+    final fromPath = await downloadFromPath(
+      storagePath(patientId, recordId, fileName),
+    );
     if (fromPath != null && fromPath.isNotEmpty) {
       await saveFile(
         patientId: patientId,
@@ -211,16 +215,14 @@ abstract final class HealthRecordFileStore {
         storagePath(patientId, recordId, fileName),
       );
       await ref
-          .putData(
-            bytes,
-            SettableMetadata(contentType: mimeTypeFor(fileName)),
-          )
+          .putData(bytes, SettableMetadata(contentType: mimeTypeFor(fileName)))
           .timeout(uploadTimeout);
       return await ref.getDownloadURL().timeout(const Duration(seconds: 15));
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'HealthRecordFileStore.uploadToFirebaseStorage failed: $e\n$st');
+          'HealthRecordFileStore.uploadToFirebaseStorage failed: $e\n$st',
+        );
       }
       return null;
     }

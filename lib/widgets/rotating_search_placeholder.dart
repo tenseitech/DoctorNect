@@ -102,22 +102,19 @@ class _RotatingSearchPlaceholderState extends State<RotatingSearchPlaceholder> {
                     curve: Curves.easeInOutCubic,
                   ),
                 ),
-                child: FadeTransition(
-                  opacity: animation,
-                  child: child,
-                ),
+                child: FadeTransition(opacity: animation, child: child),
               );
             },
             layoutBuilder:
                 (Widget? currentChild, List<Widget> previousChildren) {
-              return Stack(
-                alignment: Alignment.centerLeft,
-                children: <Widget>[
-                  ...previousChildren,
-                  if (currentChild != null) currentChild,
-                ],
-              );
-            },
+                  return Stack(
+                    alignment: Alignment.centerLeft,
+                    children: <Widget>[
+                      ...previousChildren,
+                      if (currentChild != null) currentChild,
+                    ],
+                  );
+                },
             child: Text(
               widget.placeholders[_currentIndex],
               key: ValueKey<int>(_currentIndex),

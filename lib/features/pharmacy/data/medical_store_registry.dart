@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../core/auth/profile_completion_service.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -28,10 +29,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
   }
 
   static Future<void> refreshFromFirestore({bool preferCache = true}) async {
-    final stores =
-        await FirestoreService.instance.medicalStore.fetchVerifiedStores(
-      preferCache: preferCache,
-    );
+    final stores = await FirestoreService.instance.medicalStore
+        .fetchVerifiedStores(preferCache: preferCache);
     instance._stores
       ..clear()
       ..addAll(stores);
@@ -40,8 +39,9 @@ class MedicalStoreRegistry extends ChangeNotifier {
 
   static Future<void> ensureStoreLoaded(String storeId) async {
     if (storeId.isEmpty || findById(storeId) != null) return;
-    final remote =
-        await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
+    final remote = await FirestoreService.instance.medicalStore.fetchStoreById(
+      storeId,
+    );
     if (remote == null) return;
     instance._stores.add(remote);
     instance.notifyListeners();
@@ -99,8 +99,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
   }) async {
     var index = instance._stores.indexWhere((s) => s.id == storeId);
     if (index < 0) {
-      final remote =
-          await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
+      final remote = await FirestoreService.instance.medicalStore
+          .fetchStoreById(storeId);
       if (remote == null) return 'Store not found';
       instance._stores.add(remote);
       index = instance._stores.length - 1;
@@ -124,7 +124,7 @@ class MedicalStoreRegistry extends ChangeNotifier {
         addressLine2 ?? '',
         city ?? '',
         state ?? '',
-        pincode ?? ''
+        pincode ?? '',
       ].where((e) => e.isNotEmpty);
       addressStr = parts.join(', ');
     }

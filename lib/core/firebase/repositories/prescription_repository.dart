@@ -101,9 +101,9 @@ class PrescriptionRepository {
   }) async {
     if (!await PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
-      patientId,
-      preferCache: preferCache,
-    )) {
+          patientId,
+          preferCache: preferCache,
+        )) {
       return const FirestorePage(items: [], hasMore: false);
     }
     return fetchForPatient(
@@ -142,9 +142,9 @@ class PrescriptionRepository {
   }) async {
     if (!await PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
-      patientId,
-      preferCache: preferCache,
-    )) {
+          patientId,
+          preferCache: preferCache,
+        )) {
       return const FirestorePage(items: [], hasMore: false);
     }
     return fetchForDoctorAndPatient(
@@ -171,7 +171,9 @@ class PrescriptionRepository {
         : baseQuery.startAfterDocument(startAfter);
 
     final snapshot = await FirestoreReadHelper.getQuery(
-        query: query, preferCache: preferCache);
+      query: query,
+      preferCache: preferCache,
+    );
 
     var items = _mapPrescriptionDocs(snapshot.docs);
 

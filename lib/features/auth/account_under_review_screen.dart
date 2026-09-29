@@ -10,8 +10,7 @@ import '../../core/theme/app_typography.dart';
 class AccountUnderReviewScreen extends StatelessWidget {
   const AccountUnderReviewScreen({
     super.key,
-    this.reviewMessage =
-        'Thank you for registering. Our team is verifying your credentials. You will be notified within 2–3 business days.',
+    this.reviewMessage = 'Thank you for registering. Our team is verifying your credentials. You will be notified within 2–3 business days.',
   });
 
   final String reviewMessage;

@@ -1,11 +1,14 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../core/data/shared_appointments_store.dart';
 import '../../../core/session/patient_session.dart';
 import '../appointments/models/patient_appointment_models.dart';
 import '../lab/models/lab_models.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../records/data/patient_lab_booking_store.dart';
 import 'registered_doctors_store.dart';
 
@@ -29,11 +32,11 @@ class SavedLabEntry {
       PartnerLab(id: id, name: name, rating: rating, area: area);
 
   Map<String, dynamic> toMap() => {
-        if (id != null && id!.trim().isNotEmpty) 'id': id,
-        'name': name,
-        'rating': rating,
-        'area': area,
-      };
+    if (id != null && id!.trim().isNotEmpty) 'id': id,
+    'name': name,
+    'rating': rating,
+    'area': area,
+  };
 
   factory SavedLabEntry.fromMap(Map<String, dynamic> data) {
     return SavedLabEntry(
@@ -85,28 +88,27 @@ class SavedDoctorEntry {
   final String? photoPath;
 
   MyDoc toMyDoc() => MyDoc(
-        id: id,
-        name: name,
-        specialization: specialization,
-        rating: rating,
-        reviewCount: reviewCount,
-        city: city,
-        photoUrl: photoUrl,
-        photoPath: photoPath,
-      );
+    id: id,
+    name: name,
+    specialization: specialization,
+    rating: rating,
+    reviewCount: reviewCount,
+    city: city,
+    photoUrl: photoUrl,
+    photoPath: photoPath,
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'specialization': specialization,
-        'rating': rating,
-        'reviewCount': reviewCount,
-        'city': city,
-        if (photoUrl != null && photoUrl!.trim().isNotEmpty)
-          'photoUrl': photoUrl,
-        if (photoPath != null && photoPath!.trim().isNotEmpty)
-          'photoPath': photoPath,
-      };
+    'id': id,
+    'name': name,
+    'specialization': specialization,
+    'rating': rating,
+    'reviewCount': reviewCount,
+    'city': city,
+    if (photoUrl != null && photoUrl!.trim().isNotEmpty) 'photoUrl': photoUrl,
+    if (photoPath != null && photoPath!.trim().isNotEmpty)
+      'photoPath': photoPath,
+  };
 
   factory SavedDoctorEntry.fromMap(Map<String, dynamic> data) {
     return SavedDoctorEntry(
@@ -183,8 +185,9 @@ class PatientFavoritesStore extends ChangeNotifier {
       );
 
     final localAddedDoctorIds = List<String>.from(_addedDoctorIds);
-    final localDoctorSnapshots =
-        Map<String, SavedDoctorEntry>.from(_addedDoctorSnapshots);
+    final localDoctorSnapshots = Map<String, SavedDoctorEntry>.from(
+      _addedDoctorSnapshots,
+    );
     final remoteAddedDoctorIds =
         (data?['addedDoctorIds'] as List<dynamic>? ?? const [])
             .map((item) => item.toString())
@@ -201,8 +204,10 @@ class PatientFavoritesStore extends ChangeNotifier {
         Map<String, SavedDoctorEntry>.fromEntries(
           (data?['addedDoctors'] as List<dynamic>? ?? const [])
               .whereType<Map>()
-              .map((item) =>
-                  SavedDoctorEntry.fromMap(Map<String, dynamic>.from(item)))
+              .map(
+                (item) =>
+                    SavedDoctorEntry.fromMap(Map<String, dynamic>.from(item)),
+              )
               .where((entry) => entry.id.trim().isNotEmpty)
               .map((entry) => MapEntry(entry.id, entry)),
         ),
@@ -216,7 +221,8 @@ class PatientFavoritesStore extends ChangeNotifier {
       ..clear()
       ..addAll(
         (data?['addedLabs'] as List<dynamic>? ?? const []).whereType<Map>().map(
-            (item) => SavedLabEntry.fromMap(Map<String, dynamic>.from(item))),
+          (item) => SavedLabEntry.fromMap(Map<String, dynamic>.from(item)),
+        ),
       );
     notifyListeners();
   }
@@ -251,8 +257,9 @@ class PatientFavoritesStore extends ChangeNotifier {
 
     final labs = <SavedLabEntry>[];
     final seen = <String>{};
-    for (final booking
-        in PatientLabBookingStore.instance.forPatient(patientId)) {
+    for (final booking in PatientLabBookingStore.instance.forPatient(
+      patientId,
+    )) {
       final name = booking.labName?.trim() ?? '';
       if (name.isEmpty) continue;
       final entry = SavedLabEntry(
@@ -457,17 +464,19 @@ class PatientFavoritesStore extends ChangeNotifier {
   Future<void> _persist() async {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return;
-    await FirestoreService.instance.patientProfile
-        .savePatientDocument(patientId, {
-      'hiddenDoctorIds': _hiddenDoctorIds.toList(),
-      'hiddenLabKeys': _hiddenLabKeys.toList(),
-      'addedDoctorIds': _addedDoctorIds,
-      'addedDoctors': _addedDoctorIds
-          .map((id) => _addedDoctorSnapshots[id]?.toMap())
-          .whereType<Map<String, dynamic>>()
-          .toList(),
-      'addedLabs': _addedLabs.map((lab) => lab.toMap()).toList(),
-    });
+    await FirestoreService.instance.patientProfile.savePatientDocument(
+      patientId,
+      {
+        'hiddenDoctorIds': _hiddenDoctorIds.toList(),
+        'hiddenLabKeys': _hiddenLabKeys.toList(),
+        'addedDoctorIds': _addedDoctorIds,
+        'addedDoctors': _addedDoctorIds
+            .map((id) => _addedDoctorSnapshots[id]?.toMap())
+            .whereType<Map<String, dynamic>>()
+            .toList(),
+        'addedLabs': _addedLabs.map((lab) => lab.toMap()).toList(),
+      },
+    );
   }
 
   void _rememberDoctorSnapshot(SavedDoctorEntry entry) {

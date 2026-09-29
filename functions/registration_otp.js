@@ -1519,6 +1519,13 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
       });
       throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
     }
+    if (isDemo && search.uid) {
+      if (role === 'doctor') {
+        await ensureDoctorFullVerified(db, search.uid, search.data?.profileId, { mobile: digits });
+      } else {
+        await ensureRoleFullVerified(db, search.uid, role, search.data?.profileId, { mobile: digits });
+      }
+    }
     const customToken = await getAuth().createCustomToken(search.uid, { role });
     return {
       ok: true,
@@ -1919,6 +1926,63 @@ async function ensureDoctorFullVerified(db, uid, profileId, overrides = {}) {
   await batch.commit();
 }
 
+async function ensureRoleFullVerified(db, uid, role, profileId, overrides = {}) {
+  const r = String(role || 'patient').trim();
+  if (r === 'doctor') {
+    return ensureDoctorFullVerified(db, uid, profileId, overrides);
+  }
+  const mobile = overrides.mobile || '';
+  const knownProfileIds = {
+    '9359503874': 'ms1784184914244',
+    '9409858233': 'l1784185011933',
+    '9307583929': 'amb-reg-1787919627226',
+  };
+  const knownDisplayNames = {
+    '9359503874': 'KD Rx Pharma',
+    '9409858233': 'KD Labs',
+    '9307583929': 'Demo Ambulance',
+  };
+  const roleMeta = {
+    medicalStore: { collection: 'medical_stores', idField: 'storeId', defaultName: 'Demo Medical Store' },
+    lab: { collection: 'labs', idField: 'labId', defaultName: 'Demo Diagnostic Lab' },
+    ambulance: { collection: 'ambulances', idField: 'ambulanceId', defaultName: 'Demo Ambulance Service' },
+  };
+  const meta = roleMeta[r];
+  if (!meta) return;
+
+  const effProfileId = profileId || knownProfileIds[mobile] || `${r}_${mobile}`;
+  const displayName = overrides.displayName || knownDisplayNames[mobile] || meta.defaultName;
+
+  const batch = db.batch();
+  const userRef = db.collection('users').doc(uid);
+  batch.set(userRef, {
+    role: r,
+    profileId: effProfileId,
+    displayName,
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    profileCompleted: true,
+    mobileVerified: true,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  const roleDocRef = db.collection(meta.collection).doc(effProfileId);
+  batch.set(roleDocRef, {
+    [meta.idField]: effProfileId,
+    ownerUid: uid,
+    authUid: uid,
+    name: displayName,
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    profileCompleted: true,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  await batch.commit();
+}
+
 async function ensureDemoDoctorAccount(db, mobileDigits) {
   const doctorId = `demo_doctor_${mobileDigits}`;
   const email = `doctor.${mobileDigits}@doctornect.com`;
@@ -2001,10 +2065,23 @@ async function ensureDemoAccount(db, mobileDigits, role) {
     },
   };
 
+  const knownProfileIds = {
+    '9359503874': 'ms1784184914244',
+    '9409858233': 'l1784185011933',
+    '9307583929': 'amb-reg-1787919627226',
+    '7666892394': 'demo_doctor_7666892394',
+  };
+  const knownDisplayNames = {
+    '9359503874': 'KD Rx Pharma',
+    '9409858233': 'KD Labs',
+    '9307583929': 'Demo Ambulance',
+    '7666892394': 'Dr. Demo Doctor',
+  };
+
   const meta = roleMeta[r] || roleMeta.patient;
-  const profileId = `${meta.idPrefix}${mobileDigits}`;
+  const profileId = knownProfileIds[mobileDigits] || `${meta.idPrefix}${mobileDigits}`;
+  const displayName = knownDisplayNames[mobileDigits] || meta.displayName;
   const email = `${meta.emailPrefix}.${mobileDigits}@doctornect.com`;
-  const displayName = meta.displayName;
 
   let authUser;
   try {
@@ -2142,6 +2219,8 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
   let authUid = search.uid;
   if (role === 'doctor') {
     await ensureDoctorFullVerified(db, authUid, search.data?.profileId, { mobile: mobileDigits });
+  } else if (isDemo) {
+    await ensureRoleFullVerified(db, authUid, role, search.data?.profileId, { mobile: mobileDigits });
   }
 
   try {

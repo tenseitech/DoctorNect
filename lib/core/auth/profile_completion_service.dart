@@ -110,16 +110,13 @@ class ProfileCompletionService extends ChangeNotifier {
     if (!FirebaseBootstrap.isReady) return;
 
     final batch = FirebaseFirestore.instance.batch();
-    final userRef =
-        FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);
-    batch.set(
-      userRef,
-      {
-        'profileCompleted': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    final userRef = FirebaseFirestore.instance
+        .collection(FirestorePaths.users)
+        .doc(uid);
+    batch.set(userRef, {
+      'profileCompleted': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     final roleCollection = switch (role) {
       UserType.doctor => FirestorePaths.doctors,
@@ -132,10 +129,7 @@ class ProfileCompletionService extends ChangeNotifier {
     if (roleCollection != null && profileId.isNotEmpty) {
       batch.set(
         FirebaseFirestore.instance.collection(roleCollection).doc(profileId),
-        {
-          'profileCompleted': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
+        {'profileCompleted': true, 'updatedAt': FieldValue.serverTimestamp()},
         SetOptions(merge: true),
       );
     }
@@ -150,13 +144,10 @@ class ProfileCompletionService extends ChangeNotifier {
     await FirebaseFirestore.instance
         .collection(FirestorePaths.ambulances)
         .doc(ambulanceId)
-        .set(
-      {
-        'profileCompleted': true,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+        .set({
+          'profileCompleted': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
     _isComplete = true;
     notifyListeners();
   }
@@ -184,18 +175,21 @@ class ProfileCompletionService extends ChangeNotifier {
 
     try {
       final snap = await FirestoreReadHelper.getDocument(
-        reference:
-            FirebaseFirestore.instance.collection(collection).doc(profileId),
+        reference: FirebaseFirestore.instance
+            .collection(collection)
+            .doc(profileId),
         preferCache: false,
       );
       final data = snap.data();
       final complete = switch (role) {
         UserType.doctor => ProfileCompletionChecker.isDoctorDocComplete(data),
-        UserType.medicalStore =>
-          ProfileCompletionChecker.isPharmacyDocComplete(data),
+        UserType.medicalStore => ProfileCompletionChecker.isPharmacyDocComplete(
+          data,
+        ),
         UserType.lab => ProfileCompletionChecker.isLabDocComplete(data),
-        UserType.ambulance =>
-          ProfileCompletionChecker.isAmbulanceDocComplete(data),
+        UserType.ambulance => ProfileCompletionChecker.isAmbulanceDocComplete(
+          data,
+        ),
         _ => false,
       };
       if (!complete) return;

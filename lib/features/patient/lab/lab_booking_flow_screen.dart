@@ -1,5 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -19,7 +20,9 @@ import 'lab_booking_confirmed_screen.dart';
 import 'lab_city_filter.dart';
 import 'models/lab_models.dart';
 import 'utils/patient_selected_investigations_mapper.dart';
+
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+
 import 'widgets/lab_step_header.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -50,14 +53,13 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
     'Select patient',
     'Collection type',
     'Schedule',
-    'Review'
+    'Review',
   ];
 
   int _step = 0;
   late LabBookingDraft _draft;
   bool _loading = true;
-  String?
-      _loadError; // FIXED: surface catalog-load failures instead of an infinite spinner
+  String? _loadError; // FIXED: surface catalog-load failures instead of an infinite spinner
   final _addressController = TextEditingController();
 
   List<PartnerLab> _myLabsPartnerList() {
@@ -79,8 +81,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
     super.initState();
     _addressController.text =
         PatientProfileMock.profileAddress.fullLabel.isNotEmpty
-            ? PatientProfileMock.profileAddress.fullLabel
-            : PatientProfileMock.profileCity;
+        ? PatientProfileMock.profileAddress.fullLabel
+        : PatientProfileMock.profileCity;
     unawaited(_initDraft());
   }
 
@@ -91,8 +93,7 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
       if (!mounted) return; // FIXED: mounted check after await
       setState(() {
         _loading = false; // FIXED: stop the spinner on failure
-        _loadError =
-            'Could not load lab booking options. Please check your connection and try again.';
+        _loadError = 'Could not load lab booking options. Please check your connection and try again.';
       });
       return;
     }
@@ -184,35 +185,40 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
   }
 
   bool _canContinue() => switch (_step) {
-        0 => (_draft.bookingForSelf || _draft.familyMemberIds.isNotEmpty) &&
-            _selectedPatientsHaveValidAges(),
-        1 => switch (_draft.collectionType) {
-            LabCollectionType.walkIn => _requiresLabSelection
-                ? _hasSelectedWalkInLab()
-                : _draft.selectedLab != null,
-            LabCollectionType.home =>
-              _addressController.text.trim().isNotEmpty &&
-                  (!_requiresLabSelection || _hasSelectedWalkInLab()),
-          },
-        2 => _draft.selectedDate != null &&
-            _draft.selectedSlotLabel != null &&
-            !LabSlotTime.isInPast(
-                _draft.selectedDate!, _draft.selectedSlotLabel!),
-        3 => true,
-        _ => false,
-      };
+    0 =>
+      (_draft.bookingForSelf || _draft.familyMemberIds.isNotEmpty) &&
+          _selectedPatientsHaveValidAges(),
+    1 => switch (_draft.collectionType) {
+      LabCollectionType.walkIn =>
+        _requiresLabSelection
+            ? _hasSelectedWalkInLab()
+            : _draft.selectedLab != null,
+      LabCollectionType.home =>
+        _addressController.text.trim().isNotEmpty &&
+            (!_requiresLabSelection || _hasSelectedWalkInLab()),
+    },
+    2 =>
+      _draft.selectedDate != null &&
+          _draft.selectedSlotLabel != null &&
+          !LabSlotTime.isInPast(
+            _draft.selectedDate!,
+            _draft.selectedSlotLabel!,
+          ),
+    3 => true,
+    _ => false,
+  };
 
   String _relationLabel(FamilyRelation relation) => switch (relation) {
-        FamilyRelation.spouse => 'Spouse',
-        FamilyRelation.child => 'Child',
-        FamilyRelation.parent => 'Parent',
-        FamilyRelation.sibling => 'Sibling',
-        FamilyRelation.friend => 'Friend',
-        FamilyRelation.other => 'Other',
-      };
+    FamilyRelation.spouse => 'Spouse',
+    FamilyRelation.child => 'Child',
+    FamilyRelation.parent => 'Parent',
+    FamilyRelation.sibling => 'Sibling',
+    FamilyRelation.friend => 'Friend',
+    FamilyRelation.other => 'Other',
+  };
 
   List<({String name, int age, bool isSelf, String? familyMemberId})>
-      _selectedPatients() {
+  _selectedPatients() {
     final patients =
         <({String name, int age, bool isSelf, String? familyMemberId})>[];
     final profile = PatientProfileMock.profile;
@@ -272,7 +278,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-              'Please set a valid age in Profile (or for family members) before booking.'),
+            'Please set a valid age in Profile (or for family members) before booking.',
+          ),
         ),
       );
       return;
@@ -286,8 +293,9 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
 
     try {
       for (final patient in patients) {
-        final bookingId =
-            LabBookingRepository.newBookingId(suffix: patientIndex);
+        final bookingId = LabBookingRepository.newBookingId(
+          suffix: patientIndex,
+        );
         if (patientIndex == 0) firstBookingId = bookingId;
         patientIndex++;
 
@@ -314,18 +322,23 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
     } catch (_) {
       if (!mounted) return;
       AppToast.info(
-          context, 'Could not confirm your lab booking. Please try again.');
+        context,
+        'Could not confirm your lab booking. Please try again.',
+      );
       return;
     }
 
     for (final saved in savedBookings) {
       PatientLabBookingStore.instance.upsertBooking(saved);
     }
-    await PatientLabBookingStore.instance
-        .refreshForPatient(patientId, preferCache: false);
+    await PatientLabBookingStore.instance.refreshForPatient(
+      patientId,
+      preferCache: false,
+    );
 
-    final bookingSummary =
-        PatientSelectedInvestigationsMapper.summaryLabel(widget.tests);
+    final bookingSummary = PatientSelectedInvestigationsMapper.summaryLabel(
+      widget.tests,
+    );
     final booking = ConfirmedLabBooking(
       bookingId: firstBookingId,
       testName: bookingSummary,
@@ -355,7 +368,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-          builder: (_) => LabBookingConfirmedScreen(booking: booking)),
+        builder: (_) => LabBookingConfirmedScreen(booking: booking),
+      ),
     );
   }
 
@@ -365,7 +379,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
       return Scaffold(
         backgroundColor: AppColors.cardBgOf(context),
         body: const Center(
-            child: CircularProgressIndicator(color: AppColors.labPurple)),
+          child: CircularProgressIndicator(color: AppColors.labPurple),
+        ),
       );
     }
 
@@ -383,8 +398,11 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(_loadError!,
-                    textAlign: TextAlign.center, style: GoogleFonts.inter()),
+                Text(
+                  _loadError!,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(),
+                ),
                 const SizedBox(height: 16),
                 LabPrimaryButton(
                   label: 'Retry',
@@ -412,12 +430,17 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
       ),
       body: Padding(
         padding: EdgeInsets.fromLTRB(
-            16, 8, 16, 16 + MediaQuery.paddingOf(context).bottom),
+          16,
+          8,
+          16,
+          16 + MediaQuery.paddingOf(context).bottom,
+        ),
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints:
-                BoxConstraints(maxWidth: LabPageLayout.contentWidth(context)),
+            constraints: BoxConstraints(
+              maxWidth: LabPageLayout.contentWidth(context),
+            ),
             child: Column(
               children: [
                 Expanded(
@@ -427,9 +450,10 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           LabStepHeader(
-                              currentStep: _step,
-                              totalSteps: 4,
-                              title: _titles[_step]),
+                            currentStep: _step,
+                            totalSteps: 4,
+                            title: _titles[_step],
+                          ),
                           const SizedBox(height: 20),
                           if (_step == 0)
                             _PatientStep(
@@ -445,7 +469,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
                               draft: _draft,
                               partnerLabs: _walkInLabOptions(),
                               addressController: _addressController,
-                              labPreselected: widget.preselectedLab != null ||
+                              labPreselected:
+                                  widget.preselectedLab != null ||
                                   widget.lockSelectedLab,
                               requiresLabSelection: _requiresLabSelection,
                               onUpdate: (d) => setState(() => _draft = d),
@@ -470,8 +495,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
                 LabPrimaryButton(
                   label: _step == 3
                       ? (widget.submitAsRequest
-                          ? 'Send request'
-                          : 'Confirm Booking')
+                            ? 'Send request'
+                            : 'Confirm Booking')
                       : 'Continue',
                   enabled: _canContinue(),
                   onPressed: _canContinue() ? _next : null,
@@ -500,10 +525,7 @@ class _PatientStep extends StatelessWidget {
   final bool showMissingAgeHint;
   final ValueChanged<LabBookingDraft> onUpdate;
 
-  LabBookingDraft _copy({
-    bool? bookingForSelf,
-    List<String>? familyMemberIds,
-  }) {
+  LabBookingDraft _copy({bool? bookingForSelf, List<String>? familyMemberIds}) {
     return LabBookingDraft(
       test: draft.test,
       patientName: draft.patientName,
@@ -538,7 +560,8 @@ class _PatientStep extends StatelessWidget {
           final ageLabel = member.age > 0 ? '${member.age}y' : 'age not set';
           return CheckboxListTile(
             title: Text(
-                '${relationLabel(member.relation)} — ${member.name} ($ageLabel)'),
+              '${relationLabel(member.relation)} — ${member.name} ($ageLabel)',
+            ),
             value: isSelected,
             onChanged: (value) {
               final ids = List<String>.from(draft.familyMemberIds);
@@ -560,9 +583,10 @@ class _PatientStep extends StatelessWidget {
             child: Text(
               'Age is required for lab bookings. Update your Profile or family member details before continuing.',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.error,
-                  height: 1.4),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.error,
+                height: 1.4,
+              ),
             ),
           ),
       ],
@@ -615,8 +639,9 @@ class _CollectionStep extends StatelessWidget {
                   Text(
                     lab.area,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondary),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
               ],
             ),
@@ -635,17 +660,19 @@ class _CollectionStep extends StatelessWidget {
           subtitle: 'Phlebotomist visits your address',
           icon: Icons.home_outlined,
           selected: draft.collectionType == LabCollectionType.home,
-          onTap: () => onUpdate(LabBookingDraft(
-            test: draft.test,
-            patientName: draft.patientName,
-            patientAge: draft.patientAge,
-            bookingForSelf: draft.bookingForSelf,
-            familyMemberIds: draft.familyMemberIds,
-            collectionType: LabCollectionType.home,
-            selectedLab: draft.selectedLab,
-            selectedDate: draft.selectedDate,
-            selectedSlotLabel: draft.selectedSlotLabel,
-          )),
+          onTap: () => onUpdate(
+            LabBookingDraft(
+              test: draft.test,
+              patientName: draft.patientName,
+              patientAge: draft.patientAge,
+              bookingForSelf: draft.bookingForSelf,
+              familyMemberIds: draft.familyMemberIds,
+              collectionType: LabCollectionType.home,
+              selectedLab: draft.selectedLab,
+              selectedDate: draft.selectedDate,
+              selectedSlotLabel: draft.selectedSlotLabel,
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         _TypeCard(
@@ -655,17 +682,19 @@ class _CollectionStep extends StatelessWidget {
               : 'Visit my lab',
           icon: Icons.local_hospital_outlined,
           selected: draft.collectionType == LabCollectionType.walkIn,
-          onTap: () => onUpdate(LabBookingDraft(
-            test: draft.test,
-            patientName: draft.patientName,
-            patientAge: draft.patientAge,
-            bookingForSelf: draft.bookingForSelf,
-            familyMemberIds: draft.familyMemberIds,
-            collectionType: LabCollectionType.walkIn,
-            selectedLab: labPreselected ? draft.selectedLab : null,
-            selectedDate: draft.selectedDate,
-            selectedSlotLabel: draft.selectedSlotLabel,
-          )),
+          onTap: () => onUpdate(
+            LabBookingDraft(
+              test: draft.test,
+              patientName: draft.patientName,
+              patientAge: draft.patientAge,
+              bookingForSelf: draft.bookingForSelf,
+              familyMemberIds: draft.familyMemberIds,
+              collectionType: LabCollectionType.walkIn,
+              selectedLab: labPreselected ? draft.selectedLab : null,
+              selectedDate: draft.selectedDate,
+              selectedSlotLabel: draft.selectedSlotLabel,
+            ),
+          ),
         ),
         if (draft.collectionType == LabCollectionType.home) ...[
           const SizedBox(height: 16),
@@ -679,8 +708,9 @@ class _CollectionStep extends StatelessWidget {
             Text(
               'Select lab',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodyMedium,
-                  fontWeight: FontWeight.w600),
+                fontSize: AppTypography.bodyMedium,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             _labPicker(context),
@@ -693,8 +723,9 @@ class _CollectionStep extends StatelessWidget {
           Text(
             'Select lab',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodyMedium,
-                fontWeight: FontWeight.w600),
+              fontSize: AppTypography.bodyMedium,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           _labPicker(context),
@@ -716,9 +747,10 @@ class _CollectionStep extends StatelessWidget {
         child: Text(
           'No labs in My labs yet. Add a lab from the Lab tab to continue.',
           style: GoogleFonts.inter(
-              fontSize: AppTypography.bodySmall,
-              color: AppColors.textSecondaryOf(context),
-              height: 1.45),
+            fontSize: AppTypography.bodySmall,
+            color: AppColors.textSecondaryOf(context),
+            height: 1.45,
+          ),
         ),
       );
     }
@@ -730,17 +762,19 @@ class _CollectionStep extends StatelessWidget {
           groupValue: draft.selectedLab,
           onChanged: (v) {
             if (v == null) return;
-            onUpdate(LabBookingDraft(
-              test: draft.test,
-              patientName: draft.patientName,
-              patientAge: draft.patientAge,
-              bookingForSelf: draft.bookingForSelf,
-              familyMemberIds: draft.familyMemberIds,
-              collectionType: draft.collectionType,
-              selectedLab: v,
-              selectedDate: draft.selectedDate,
-              selectedSlotLabel: draft.selectedSlotLabel,
-            ));
+            onUpdate(
+              LabBookingDraft(
+                test: draft.test,
+                patientName: draft.patientName,
+                patientAge: draft.patientAge,
+                bookingForSelf: draft.bookingForSelf,
+                familyMemberIds: draft.familyMemberIds,
+                collectionType: draft.collectionType,
+                selectedLab: v,
+                selectedDate: draft.selectedDate,
+                selectedSlotLabel: draft.selectedSlotLabel,
+              ),
+            );
           },
           child: Column(
             children: partnerLabs.map((l) {
@@ -759,8 +793,9 @@ class _CollectionStep extends StatelessWidget {
             child: Text(
               'Choose a lab to continue.',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondary),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
       ],
@@ -798,10 +833,11 @@ class _TypeCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             border: Border.all(
-                color: selected
-                    ? AppColors.labPurple
-                    : AppColors.borderOf(context),
-                width: selected ? 2 : 1),
+              color: selected
+                  ? AppColors.labPurple
+                  : AppColors.borderOf(context),
+              width: selected ? 2 : 1,
+            ),
           ),
           child: Row(
             children: [
@@ -811,12 +847,17 @@ class _TypeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                    Text(subtitle,
-                        style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context))),
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -831,28 +872,27 @@ class _TypeCard extends StatelessWidget {
 }
 
 class _ScheduleStep extends StatelessWidget {
-  const _ScheduleStep({
-    required this.draft,
-    required this.onUpdate,
-  });
+  const _ScheduleStep({required this.draft, required this.onUpdate});
 
   final LabBookingDraft draft;
   final ValueChanged<LabBookingDraft> onUpdate;
 
-  LabBookingDraft _copy(
-          {DateTime? date, String? slot, bool clearSlot = false}) =>
-      LabBookingDraft(
-        test: draft.test,
-        patientName: draft.patientName,
-        patientAge: draft.patientAge,
-        bookingForSelf: draft.bookingForSelf,
-        familyMemberIds: draft.familyMemberIds,
-        collectionType: draft.collectionType,
-        selectedLab: draft.selectedLab,
-        address: draft.address,
-        selectedDate: date ?? draft.selectedDate,
-        selectedSlotLabel: clearSlot ? null : (slot ?? draft.selectedSlotLabel),
-      );
+  LabBookingDraft _copy({
+    DateTime? date,
+    String? slot,
+    bool clearSlot = false,
+  }) => LabBookingDraft(
+    test: draft.test,
+    patientName: draft.patientName,
+    patientAge: draft.patientAge,
+    bookingForSelf: draft.bookingForSelf,
+    familyMemberIds: draft.familyMemberIds,
+    collectionType: draft.collectionType,
+    selectedLab: draft.selectedLab,
+    address: draft.address,
+    selectedDate: date ?? draft.selectedDate,
+    selectedSlotLabel: clearSlot ? null : (slot ?? draft.selectedSlotLabel),
+  );
 
   Future<void> _pickDate(BuildContext context) async {
     final now = DateTime.now();
@@ -862,8 +902,8 @@ class _ScheduleStep extends StatelessWidget {
     final clampedInitial = initial.isBefore(today)
         ? today
         : initial.isAfter(lastDay)
-            ? lastDay
-            : initial;
+        ? lastDay
+        : initial;
 
     final picked = await showDatePicker(
       context: context,
@@ -873,8 +913,7 @@ class _ScheduleStep extends StatelessWidget {
       helpText: 'Select collection date',
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context)
-              .colorScheme
+          colorScheme: Theme.of(context).colorScheme
               .copyWith(primary: AppColors.labPurple),
         ),
         child: child!,
@@ -888,7 +927,8 @@ class _ScheduleStep extends StatelessWidget {
   Future<void> _pickTime(BuildContext context) async {
     final now = DateTime.now();
     final date = draft.selectedDate ?? DateTime(now.year, now.month, now.day);
-    var initial = LabSlotTime.parse(draft.selectedSlotLabel) ??
+    var initial =
+        LabSlotTime.parse(draft.selectedSlotLabel) ??
         const TimeOfDay(hour: 9, minute: 0);
 
     final picked = await showTimePicker(
@@ -899,8 +939,7 @@ class _ScheduleStep extends StatelessWidget {
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
         child: Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context)
-                .colorScheme
+            colorScheme: Theme.of(context).colorScheme
                 .copyWith(primary: AppColors.labPurple),
           ),
           child: child!,
@@ -931,8 +970,10 @@ class _ScheduleStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Select date',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        Text(
+          'Select date',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 8),
         Material(
           color: AppColors.cardBgOf(context),
@@ -956,17 +997,21 @@ class _ScheduleStep extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Icon(Icons.chevron_right,
-                      color: AppColors.textSecondaryOf(context)
-                          .withValues(alpha: 0.7)),
+                  Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondaryOf(context)
+                        .withValues(alpha: 0.7),
+                  ),
                 ],
               ),
             ),
           ),
         ),
         const SizedBox(height: 20),
-        Text('Select time',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        Text(
+          'Select time',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 8),
         Material(
           color: AppColors.cardBgOf(context),
@@ -992,9 +1037,11 @@ class _ScheduleStep extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Icon(Icons.chevron_right,
-                      color: AppColors.textSecondaryOf(context)
-                          .withValues(alpha: 0.7)),
+                  Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondaryOf(context)
+                        .withValues(alpha: 0.7),
+                  ),
                 ],
               ),
             ),
@@ -1006,7 +1053,9 @@ class _ScheduleStep extends StatelessWidget {
             child: Text(
               'This time has already passed. Please pick another time.',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium, color: AppColors.error),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.error,
+              ),
             ),
           ),
       ],
@@ -1042,21 +1091,25 @@ class _ReviewStep extends StatelessWidget {
               Text(
                 tests.length == 1 ? 'Test' : '${tests.length} tests',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
               const SizedBox(height: 6),
               ...tests.map(
                 (test) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(test.name,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    test.name,
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-              Text('Patient: $patientLabel',
-                  style:
-                      GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
+              Text(
+                'Patient: $patientLabel',
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
+              ),
               Text(
                 '${DateFormat('dd MMM yyyy').format(draft.selectedDate!)} · ${draft.selectedSlotLabel}',
                 style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
@@ -1066,8 +1119,9 @@ class _ReviewStep extends StatelessWidget {
                     ? 'Home collection'
                     : 'Walk-in · ${draft.selectedLab?.name}',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelMedium,
-                    color: AppColors.labPurple),
+                  fontSize: AppTypography.labelMedium,
+                  color: AppColors.labPurple,
+                ),
               ),
             ],
           ),

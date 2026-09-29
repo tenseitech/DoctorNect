@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../utils/doctor_display_name.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -43,7 +45,10 @@ class DoctorListingCard extends StatelessWidget {
           body,
           if (showDivider)
             Divider(
-                height: 1, thickness: 1, color: AppColors.borderOf(context)),
+              height: 1,
+              thickness: 1,
+              color: AppColors.borderOf(context),
+            ),
         ],
       );
     }
@@ -248,8 +253,11 @@ class _LocationRow extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(Icons.location_on_outlined,
-            size: 14, color: AppColors.textSecondaryOf(context)),
+        Icon(
+          Icons.location_on_outlined,
+          size: 14,
+          color: AppColors.textSecondaryOf(context),
+        ),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -282,8 +290,8 @@ class _AvailabilityRow extends StatelessWidget {
     final availabilityColor = doctor.availability == DoctorAvailability.today
         ? const Color(0xFF16A34A)
         : doctor.availability == DoctorAvailability.tomorrow
-            ? const Color(0xFFF59E0B)
-            : AppColors.textSecondaryOf(context);
+        ? const Color(0xFFF59E0B)
+        : AppColors.textSecondaryOf(context);
 
     return Row(
       children: [
@@ -347,10 +355,13 @@ class _ActionRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             minimumSize: const Size(0, 40),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             textStyle: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+              fontSize: AppTypography.bodySmall,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           child: const Text('Book Appointment'),
         ),
@@ -362,10 +373,13 @@ class _ActionRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             minimumSize: const Size(0, 40),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             textStyle: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall, fontWeight: FontWeight.w600),
+              fontSize: AppTypography.bodySmall,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           child: const Text('View Profile'),
         ),
@@ -384,10 +398,12 @@ class _ActionRow extends StatelessWidget {
               minimumSize: const Size(0, 40),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
               textStyle: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  fontWeight: FontWeight.w600),
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             child: Text(isInMyDoctors ? 'Added' : 'Add to My Doctors'),
           ),
@@ -423,10 +439,12 @@ class _ActionColumn extends StatelessWidget {
               foregroundColor: AppColors.white,
               minimumSize: const Size(double.infinity, 42),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
               textStyle: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  fontWeight: FontWeight.w600),
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             child: const Text('Book'),
           ),
@@ -438,10 +456,12 @@ class _ActionColumn extends StatelessWidget {
               side: const BorderSide(color: AppColors.patientTeal),
               minimumSize: const Size(double.infinity, 42),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
               textStyle: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  fontWeight: FontWeight.w600),
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             child: const Text('View Profile'),
           ),
@@ -459,10 +479,12 @@ class _ActionColumn extends StatelessWidget {
                 ),
                 minimumSize: const Size(double.infinity, 42),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 textStyle: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall,
-                    fontWeight: FontWeight.w600),
+                  fontSize: AppTypography.bodySmall,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               child: Text(isInMyDoctors ? 'Added' : 'Add to My Doctors'),
             ),

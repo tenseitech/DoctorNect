@@ -1,6 +1,8 @@
 import '../../core/firebase/firestore_service.dart';
+
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -108,18 +110,20 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     if (inProgress.isNotEmpty) return inProgress.first;
 
-    final unratedDone = mine
-        .where((b) => b.isCompleted && !b.isRated && !b.isRatingSkipped)
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final unratedDone =
+        mine
+            .where((b) => b.isCompleted && !b.isRated && !b.isRatingSkipped)
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     if (unratedDone.isNotEmpty) return unratedDone.first;
 
     return null;
   }
 
   void _restoreActiveBooking() {
-    final patientId =
-        AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
+    final patientId = AmbulanceNotificationEmitter.bookerId(
+      widget.bookedByRole,
+    );
     if (patientId.isEmpty) return;
 
     final existing = _findRestorableBooking(patientId);
@@ -267,9 +271,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
 
   void _showBookingError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _bookAmbulance() async {
@@ -280,8 +283,9 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
     final pickupLocation = _pickupController.text.trim();
     setState(() => _submitting = true);
 
-    final patientId =
-        AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
+    final patientId = AmbulanceNotificationEmitter.bookerId(
+      widget.bookedByRole,
+    );
     if (patientId.isEmpty) {
       setState(() => _submitting = false);
       _showBookingError(
@@ -297,8 +301,9 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
         ? userCity!.trim()
         : pickupLocation.trim();
 
-    final onlineDrivers =
-        await _repository.fetchAllOnlineDrivers(userCity: requestCity);
+    final onlineDrivers = await _repository.fetchAllOnlineDrivers(
+      userCity: requestCity,
+    );
     if (!mounted) return;
 
     if (onlineDrivers.isEmpty) {
@@ -369,8 +374,9 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
       builder: (context, _) {
         final active = _activeBooking;
         final canInteract = active == null && !_submitting;
-        final patientId =
-            AmbulanceNotificationEmitter.bookerId(widget.bookedByRole);
+        final patientId = AmbulanceNotificationEmitter.bookerId(
+          widget.bookedByRole,
+        );
         return Scaffold(
           backgroundColor: AppColors.cardBgOf(context),
           appBar: AppBar(
@@ -394,8 +400,9 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: AmbulanceIcons.gradient.last
-                            .withValues(alpha: 0.28),
+                        color: AmbulanceIcons.gradient.last.withValues(
+                          alpha: 0.28,
+                        ),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -434,7 +441,10 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                   role: widget.bookedByRole,
                   activeBookingId: _activeBookingId,
                   onTap: () => _openAmbulanceHistory(
-                      context, patientId, widget.bookedByRole),
+                    context,
+                    patientId,
+                    widget.bookedByRole,
+                  ),
                 ),
               const SizedBox(width: 8),
             ],
@@ -445,8 +455,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
               final cardMaxWidth = isCompact
                   ? constraints.maxWidth
                   : ResponsiveLayout.isMedium(context)
-                      ? 720.0
-                      : 820.0;
+                  ? 720.0
+                  : 820.0;
 
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -469,8 +479,9 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                           decoration: BoxDecoration(
                             color: AppColors.surfaceOf(context),
                             borderRadius: BorderRadius.circular(16),
-                            border:
-                                Border.all(color: AppColors.borderOf(context)),
+                            border: Border.all(
+                              color: AppColors.borderOf(context),
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.textPrimaryOf(context)
@@ -509,35 +520,37 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                         _sync.stopPatientWatch();
                                         setState(() => _activeBookingId = null);
                                       },
-                                      onRate: active.isCompleted &&
+                                      onRate:
+                                          active.isCompleted &&
                                               !active.isRated &&
                                               !active.isRatingSkipped
                                           ? () => _rateTrip(context, active)
                                           : null,
-                                      onCancel: active.isPending ||
-                                              active.isAccepted
+                                      onCancel:
+                                          active.isPending || active.isAccepted
                                           ? () async {
                                               final messenger =
                                                   ScaffoldMessenger.of(context);
                                               final ok = await _repository
-                                                  .cancelBroadcast(
-                                                active.id,
-                                              );
+                                                  .cancelBroadcast(active.id);
                                               if (!mounted) return;
                                               if (ok) {
                                                 _sync.stopPatientWatch();
-                                                setState(() =>
-                                                    _activeBookingId = null);
+                                                setState(
+                                                  () => _activeBookingId = null,
+                                                );
                                                 messenger.showSnackBar(
                                                   const SnackBar(
                                                     content: Text(
-                                                        'Request cancelled'),
+                                                      'Request cancelled',
+                                                    ),
                                                     behavior: SnackBarBehavior
                                                         .floating,
                                                   ),
                                                 );
                                               } else {
-                                                final message = _repository
+                                                final message =
+                                                    _repository
                                                         .lastCancelFailureUserMessage ??
                                                     'Could not cancel this request. Please try again.';
                                                 messenger.showSnackBar(
@@ -560,11 +573,13 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       controller: _patientNameController,
                                       enabled: canInteract,
                                       decoration: _fieldDecoration(
-                                          'Patient name', Icons.person_outline),
+                                        'Patient name',
+                                        Icons.person_outline,
+                                      ),
                                       validator: (v) =>
                                           v == null || v.trim().isEmpty
-                                              ? 'Enter patient name'
-                                              : null,
+                                          ? 'Enter patient name'
+                                          : null,
                                     ),
                                     SizedBox(height: isCompact ? 18 : 12),
                                     PhoneNumberField(
@@ -592,17 +607,21 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                           ? _bookAmbulance
                                           : null,
                                       style: FilledButton.styleFrom(
-                                        backgroundColor:
-                                            const Color(0xFFDC2626),
-                                        disabledBackgroundColor:
-                                            const Color(0xFFDC2626)
-                                                .withValues(alpha: 0.35),
+                                        backgroundColor: const Color(
+                                          0xFFDC2626,
+                                        ),
+                                        disabledBackgroundColor: const Color(
+                                          0xFFDC2626,
+                                        ).withValues(alpha: 0.35),
                                         foregroundColor: AppColors.white,
-                                        minimumSize:
-                                            const Size(double.infinity, 54),
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          54,
+                                        ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(14),
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
                                         ),
                                       ),
                                       child: _submitting
@@ -612,7 +631,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2.5,
                                                 color: AppColors.surfaceOf(
-                                                    context),
+                                                  context,
+                                                ),
                                               ),
                                             )
                                           : Row(
@@ -620,7 +640,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                                   MainAxisAlignment.center,
                                               children: [
                                                 const AmbulancePlusSign(
-                                                    size: 22),
+                                                  size: 22,
+                                                ),
                                                 const SizedBox(width: 10),
                                                 Text(
                                                   'Book Ambulance',
@@ -640,8 +661,9 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       textAlign: TextAlign.center,
                                       style: GoogleFonts.inter(
                                         fontSize: 12.5,
-                                        color:
-                                            AppColors.textSecondaryOf(context),
+                                        color: AppColors.textSecondaryOf(
+                                          context,
+                                        ),
                                         height: 1.45,
                                         fontWeight: FontWeight.w400,
                                       ),
@@ -661,15 +683,20 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                               }
                                             : null,
                                         style: OutlinedButton.styleFrom(
-                                          foregroundColor:
-                                              const Color(0xFFDC2626),
+                                          foregroundColor: const Color(
+                                            0xFFDC2626,
+                                          ),
                                           side: const BorderSide(
-                                              color: Color(0xFFDC2626)),
-                                          minimumSize:
-                                              const Size(double.infinity, 48),
+                                            color: Color(0xFFDC2626),
+                                          ),
+                                          minimumSize: const Size(
+                                            double.infinity,
+                                            48,
+                                          ),
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                         ),
                                         child: Row(
@@ -697,7 +724,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                         style: GoogleFonts.inter(
                                           fontSize: AppTypography.labelSmall,
                                           color: AppColors.textSecondaryOf(
-                                              context),
+                                            context,
+                                          ),
                                           height: 1.35,
                                         ),
                                       ),
@@ -721,15 +749,20 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
   }
 
   void _openAmbulanceHistory(
-      BuildContext context, String patientId, AmbulanceBookedByRole role) {
+    BuildContext context,
+    String patientId,
+    AmbulanceBookedByRole role,
+  ) {
     showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
           child: _AmbulanceHistoryDialog(
             patientId: patientId,
             role: role,
@@ -758,8 +791,11 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
         color: AppColors.textSecondaryOf(context),
         fontWeight: FontWeight.w500,
       ),
-      prefixIcon:
-          Icon(icon, size: 19, color: AppColors.textSecondaryOf(context)),
+      prefixIcon: Icon(
+        icon,
+        size: 19,
+        color: AppColors.textSecondaryOf(context),
+      ),
       filled: true,
       fillColor: AppColors.cardBgOf(context),
       border: OutlineInputBorder(
@@ -812,10 +848,7 @@ class _EmergencyInfoStrip extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child: AmbulancePlusSign(
-                  size: 13,
-                  color: Color(0xFFDC2626),
-                ),
+                child: AmbulancePlusSign(size: 13, color: Color(0xFFDC2626)),
               ),
             ),
             const SizedBox(width: 10),
@@ -946,16 +979,17 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
           child: ListenableBuilder(
             listenable: AmbulanceStore.instance,
             builder: (context, _) {
-              final trips = AmbulanceStore.instance.bookings
-                  .where(
-                    (b) =>
-                        b.bookedById == patientId &&
-                        b.bookedByRole == role &&
-                        (b.isCompleted || b.isCancelled) &&
-                        b.id != activeBookingId,
-                  )
-                  .toList()
-                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              final trips =
+                  AmbulanceStore.instance.bookings
+                      .where(
+                        (b) =>
+                            b.bookedById == patientId &&
+                            b.bookedByRole == role &&
+                            (b.isCompleted || b.isCancelled) &&
+                            b.id != activeBookingId,
+                      )
+                      .toList()
+                    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
               return Column(
                 children: [
@@ -968,11 +1002,13 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
                           height: 40,
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                                colors: AmbulanceIcons.gradient),
+                              colors: AmbulanceIcons.gradient,
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child:
-                              const Center(child: AmbulancePlusSign(size: 18)),
+                          child: const Center(
+                            child: AmbulancePlusSign(size: 18),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1047,8 +1083,10 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
                             padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
                             child: Column(
                               children: trips
-                                  .map((trip) =>
-                                      _PatientHistoryTripCard(trip: trip))
+                                  .map(
+                                    (trip) =>
+                                        _PatientHistoryTripCard(trip: trip),
+                                  )
                                   .toList(),
                             ),
                           ),
@@ -1081,8 +1119,9 @@ class _PatientHistoryTripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDone = trip.isCompleted;
-    final statusColor =
-        isDone ? const Color(0xFF0D9488) : const Color(0xFFDC2626);
+    final statusColor = isDone
+        ? const Color(0xFF0D9488)
+        : const Color(0xFFDC2626);
     final statusLabel = isDone ? 'Completed' : 'Cancelled';
 
     return Container(
@@ -1133,17 +1172,20 @@ class _PatientHistoryTripCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ],
           const SizedBox(height: 6),
           Row(
             children: [
-              Icon(Icons.access_time,
-                  size: 13,
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.7)),
+              Icon(
+                Icons.access_time,
+                size: 13,
+                color: AppColors.textSecondaryOf(context)
+                    .withValues(alpha: 0.7),
+              ),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
@@ -1151,8 +1193,9 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.labelSmall,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
               ),
             ],
@@ -1170,15 +1213,19 @@ class _PatientHistoryTripCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.local_hospital_outlined,
-                          size: 14, color: AppColors.textSecondaryOf(context)),
+                      Icon(
+                        Icons.local_hospital_outlined,
+                        size: 14,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           trip.acceptedAmbulanceName!,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              fontWeight: FontWeight.w600),
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -1190,23 +1237,27 @@ class _PatientHistoryTripCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelSmall,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                   ],
                   if (trip.acceptedDriverPhone != null) ...[
                     SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.phone_outlined,
-                            size: 12,
-                            color: AppColors.textSecondaryOf(context)),
+                        Icon(
+                          Icons.phone_outlined,
+                          size: 12,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           trip.acceptedDriverPhone!,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelSmall,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.labelSmall,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                       ],
                     ),
@@ -1265,15 +1316,17 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   label: Text(
                     'Rate & Review',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        fontWeight: FontWeight.w600),
+                      fontSize: AppTypography.labelMedium,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFF59E0B),
                     foregroundColor: Colors.white,
                     minimumSize: const Size(0, 38),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
@@ -1319,44 +1372,46 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
         null,
         'All Types',
         Icons.notifications_active_outlined,
-        const Color(0xFF6366F1)
+        const Color(0xFF6366F1),
       ),
       (
         AmbulanceType.bls,
         'BLS',
         Icons.monitor_heart_outlined,
-        const Color(0xFF16A34A)
+        const Color(0xFF16A34A),
       ),
       (
         AmbulanceType.als,
         'ALS',
         Icons.medication_outlined,
-        const Color(0xFF0284C7)
+        const Color(0xFF0284C7),
       ),
       (
         AmbulanceType.icu,
         'ICU',
         Icons.emergency_outlined,
-        const Color(0xFFDC2626)
+        const Color(0xFFDC2626),
       ),
       (
         AmbulanceType.patientTransport,
         'Transport',
         Icons.accessible_outlined,
-        const Color(0xFFCA8A04)
+        const Color(0xFFCA8A04),
       ),
     ];
 
     final unselectedBg = isDark
         ? const Color(0xFF1E293B).withValues(alpha: 0.5)
         : const Color(0xFFF8FAFC);
-    final unselectedBorder =
-        isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final unselectedBorder = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
     final unselectedText = isDark
         ? AppColors.darkTextPrimary.withValues(alpha: 0.85)
         : const Color(0xFF334155);
-    final unselectedIcon =
-        isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B);
+    final unselectedIcon = isDark
+        ? AppColors.darkTextSecondary
+        : const Color(0xFF64748B);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1393,8 +1448,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                 final activeTextColor = isDark
                     ? Colors.white
                     : (color == const Color(0xFFCA8A04)
-                        ? const Color(0xFF854D0E)
-                        : color);
+                          ? const Color(0xFF854D0E)
+                          : color);
 
                 return InkWell(
                   onTap: enabled ? () => onChanged(type) : null,
@@ -1432,8 +1487,9 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                           label,
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            fontWeight:
-                                selected ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                             color: selected ? activeTextColor : unselectedText,
                           ),
                         ),
@@ -1464,8 +1520,9 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                   : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color:
-                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             child: Row(
@@ -1545,8 +1602,10 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
     String? resolvedAddress;
 
     try {
-      final placemarks =
-          await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      final placemarks = await placemarkFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
       if (placemarks.isNotEmpty) {
         final pm = placemarks.first;
         final parts = [
@@ -1570,18 +1629,20 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
           'format': 'json',
           'addressdetails': '1',
         });
-        final response = await http.get(
-          uri,
-          headers: const {'User-Agent': 'DoctorNect/1.0 (healthcare-app)'},
-        ).timeout(const Duration(seconds: 6));
+        final response = await http
+            .get(
+              uri,
+              headers: const {'User-Agent': 'DoctorNect/1.0 (healthcare-app)'},
+            )
+            .timeout(const Duration(seconds: 6));
 
         if (response.statusCode == 200) {
           final payload = jsonDecode(response.body) as Map<String, dynamic>;
           final address = payload['address'] as Map<String, dynamic>?;
           if (address != null) {
             final road = address['road']?.toString();
-            final sub =
-                (address['suburb'] ?? address['neighbourhood'])?.toString();
+            final sub = (address['suburb'] ?? address['neighbourhood'])
+                ?.toString();
             final city =
                 (address['city'] ?? address['town'] ?? address['village'])
                     ?.toString();
@@ -1689,8 +1750,10 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                   height: 14,
                   decoration: BoxDecoration(
                     color: AppColors.surfaceOf(context),
-                    border:
-                        Border.all(color: const Color(0xFFDC2626), width: 2.5),
+                    border: Border.all(
+                      color: const Color(0xFFDC2626),
+                      width: 2.5,
+                    ),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -1730,10 +1793,15 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                               width: 16,
                               height: 16,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Color(0xFFDC2626)),
+                                strokeWidth: 2,
+                                color: Color(0xFFDC2626),
+                              ),
                             )
-                          : const Icon(Icons.my_location,
-                              size: 20, color: Color(0xFFDC2626)),
+                          : const Icon(
+                              Icons.my_location,
+                              size: 20,
+                              color: Color(0xFFDC2626),
+                            ),
                       onPressed: widget.enabled && !_fetchingPickup
                           ? _fetchPickupLocation
                           : null,
@@ -1741,21 +1809,27 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                     filled: true,
                     fillColor: AppColors.surfaceOf(context),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 17),
+                      horizontal: 16,
+                      vertical: 17,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: AppColors.borderOf(context)),
+                      borderSide: BorderSide(
+                        color: AppColors.borderOf(context),
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: AppColors.borderOf(context)),
+                      borderSide: BorderSide(
+                        color: AppColors.borderOf(context),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                          color: Color(0xFFDC2626), width: 1.5),
+                        color: Color(0xFFDC2626),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty
@@ -1781,9 +1855,7 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                           children: [
                             Text(
                               'Location access is needed to auto-fill pickup.',
-                              style: GoogleFonts.inter(
-                                fontSize: 11,
-                              ),
+                              style: GoogleFonts.inter(fontSize: 11),
                             ),
                             InkWell(
                               onTap: _openDeviceLocationSettings,
@@ -1824,21 +1896,27 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                     filled: true,
                     fillColor: AppColors.surfaceOf(context),
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 17),
+                      horizontal: 16,
+                      vertical: 17,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: AppColors.borderOf(context)),
+                      borderSide: BorderSide(
+                        color: AppColors.borderOf(context),
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide:
-                          BorderSide(color: AppColors.borderOf(context)),
+                      borderSide: BorderSide(
+                        color: AppColors.borderOf(context),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                          color: Color(0xFFDC2626), width: 1.5),
+                        color: Color(0xFFDC2626),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty
@@ -1905,16 +1983,16 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
         .where('broadcastId', isEqualTo: broadcastId)
         .snapshots()
         .listen((snap) {
-      if (!mounted) return;
-      final total = snap.docs.length;
-      final rejected = snap.docs
-          .where((d) => (d.data()['status'] as String?) == 'rejected')
-          .length;
-      setState(() {
-        _totalNotified = total;
-        _rejectedCount = rejected;
-      });
-    });
+          if (!mounted) return;
+          final total = snap.docs.length;
+          final rejected = snap.docs
+              .where((d) => (d.data()['status'] as String?) == 'rejected')
+              .length;
+          setState(() {
+            _totalNotified = total;
+            _rejectedCount = rejected;
+          });
+        });
   }
 
   @override
@@ -1954,8 +2032,9 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
     if (driverId == null || driverId.isEmpty) return;
 
     setState(() => _loadingDetails = true);
-    final amb =
-        await FirestoreService.instance.ambulance.fetchAmbulanceById(driverId);
+    final amb = await FirestoreService.instance.ambulance.fetchAmbulanceById(
+      driverId,
+    );
     if (!mounted) return;
     setState(() {
       _loadingDetails = false;
@@ -2060,8 +2139,10 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                   widget.onDismiss != null)
                 GestureDetector(
                   onTap: () {
-                    FirestoreService.instance.ambulance
-                        .rateBroadcast(broadcastId: booking.id, stars: -1);
+                    FirestoreService.instance.ambulance.rateBroadcast(
+                      broadcastId: booking.id,
+                      stars: -1,
+                    );
                     widget.onDismiss?.call();
                   },
                   child: Container(
@@ -2071,8 +2152,11 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                           .withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.close_rounded,
-                        size: 16, color: AppColors.textSecondaryOf(context)),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                 ),
             ],
@@ -2106,8 +2190,10 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
             Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -2165,7 +2251,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     !booking.isRated &&
                     !booking.isRatingSkipped) ...[
                   FilledButton.icon(
-                    onPressed: widget.onRate ??
+                    onPressed:
+                        widget.onRate ??
                         () {
                           showAmbulanceRatingDialog(
                             context: context,
@@ -2178,14 +2265,17 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     label: Text(
                       'Rate Driver',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          fontWeight: FontWeight.w600),
+                        fontSize: AppTypography.labelMedium,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFF59E0B),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       minimumSize: const Size(0, 36),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -2198,8 +2288,11 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     booking.isRated) ...[
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded,
-                          color: Color(0xFFF59E0B), size: 16),
+                      const Icon(
+                        Icons.star_rounded,
+                        color: Color(0xFFF59E0B),
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Rated ${booking.rating}★',
@@ -2221,14 +2314,17 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondaryOf(context),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       minimumSize: const Size(0, 36),
                     ),
                     child: Text(
                       'Done',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          fontWeight: FontWeight.w600),
+                        fontSize: AppTypography.labelMedium,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -2327,8 +2423,9 @@ class _AcceptedDriverDetails extends StatelessWidget {
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: () => ExternalLauncher.callPhone(
-                          driverPhone!.trim(),
-                          context: context),
+                        driverPhone!.trim(),
+                        context: context,
+                      ),
                       icon: const Icon(Icons.phone, size: 18),
                       label: Text(
                         'Call ${driverPhone!.trim()}',
@@ -2372,12 +2469,14 @@ class _DetailRow extends StatelessWidget {
           child: RichText(
             text: TextSpan(
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context),
+              ),
               children: [
                 TextSpan(
-                    text: '$label: ',
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                  text: '$label: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 TextSpan(
                   text: value,
                   style: TextStyle(
@@ -2401,7 +2500,9 @@ class DigitsOnlyFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     var digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (maxLength != null && digits.length > maxLength!) {
       digits = digits.substring(0, maxLength!);
@@ -2415,10 +2516,7 @@ class DigitsOnlyFormatter extends TextInputFormatter {
 
 /// Rapido-style widget: shows how many drivers were notified and how many skipped.
 class _SkippedDriversRow extends StatelessWidget {
-  const _SkippedDriversRow({
-    required this.total,
-    required this.skipped,
-  });
+  const _SkippedDriversRow({required this.total, required this.skipped});
 
   final int total;
   final int skipped;

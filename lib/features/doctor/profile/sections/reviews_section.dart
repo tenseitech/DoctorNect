@@ -1,7 +1,9 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
 import 'dart:async';
 
 import '../../../../core/session/doctor_session.dart';
@@ -74,11 +76,15 @@ class _ReviewsSectionState extends State<ReviewsSection> {
           controller: ctrl,
           maxLines: 4,
           decoration: const InputDecoration(
-              hintText: 'Write your reply...', alignLabelWithHint: true),
+            hintText: 'Write your reply...',
+            alignLabelWithHint: true,
+          ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () async {
               // FIXED: await the Firestore write; only mark replied + toast on confirmed save.
@@ -86,14 +92,19 @@ class _ReviewsSectionState extends State<ReviewsSection> {
               final previous = review.doctorReply;
               setState(() => review.doctorReply = reply);
               try {
-                await DoctorProfileStore.instance
-                    .saveReply(reviewId: review.id, reply: reply);
+                await DoctorProfileStore.instance.saveReply(
+                  reviewId: review.id,
+                  reply: reply,
+                );
               } catch (_) {
                 if (!mounted) return; // FIXED: mounted check after await
-                setState(() => review.doctorReply =
-                    previous); // FIXED: roll back on failure
+                setState(
+                  () => review.doctorReply = previous,
+                ); // FIXED: roll back on failure
                 AppToast.info(
-                    context, 'Could not post reply. Please try again.');
+                  context,
+                  'Could not post reply. Please try again.',
+                );
                 return;
               }
               if (!ctx.mounted)
@@ -118,12 +129,15 @@ class _ReviewsSectionState extends State<ReviewsSection> {
       appBar: AppBar(title: const Text('Reviews')),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.doctorBlue))
+              child: CircularProgressIndicator(color: AppColors.doctorBlue),
+            )
           : Align(
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Column(
@@ -135,8 +149,9 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                         decoration: BoxDecoration(
                           color: AppColors.surfaceOf(context),
                           borderRadius: BorderRadius.circular(14),
-                          border:
-                              Border.all(color: AppColors.borderOf(context)),
+                          border: Border.all(
+                            color: AppColors.borderOf(context),
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.04),
@@ -172,8 +187,9 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                         children: List.generate(
                                           5,
                                           (i) => Padding(
-                                            padding:
-                                                const EdgeInsets.only(right: 2),
+                                            padding: const EdgeInsets.only(
+                                              right: 2,
+                                            ),
                                             child: Icon(
                                               i < p.rating.round()
                                                   ? Icons.star_rounded
@@ -190,7 +206,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                         style: GoogleFonts.inter(
                                           fontSize: AppTypography.labelMedium,
                                           color: AppColors.textSecondaryOf(
-                                              context),
+                                            context,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -207,11 +224,13 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                             ...List.generate(5, (i) {
                               final stars = 5 - i;
                               final count = breakdown[stars] ?? 0;
-                              final fraction =
-                                  maxCount == 0 ? 0.0 : count / maxCount;
+                              final fraction = maxCount == 0
+                                  ? 0.0
+                                  : count / maxCount;
                               return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 4.5),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4.5,
+                                ),
                                 child: Row(
                                   children: [
                                     SizedBox(
@@ -222,7 +241,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                           fontSize: AppTypography.labelSmall,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.textSecondaryOf(
-                                              context),
+                                            context,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -230,10 +250,12 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                       child: LinearProgressIndicator(
                                         value: fraction,
                                         minHeight: 8,
-                                        borderRadius:
-                                            BorderRadius.circular(999),
-                                        backgroundColor:
-                                            AppColors.borderOf(context),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                        backgroundColor: AppColors.borderOf(
+                                          context,
+                                        ),
                                         color: AppColors.doctorBlue,
                                       ),
                                     ),
@@ -247,7 +269,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                           fontSize: AppTypography.labelSmall,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.textSecondaryOf(
-                                              context),
+                                            context,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -437,8 +460,10 @@ class _ReviewsSectionState extends State<ReviewsSection> {
               onPressed: () => _reply(r),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, 30),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
                 foregroundColor: AppColors.doctorBlue,

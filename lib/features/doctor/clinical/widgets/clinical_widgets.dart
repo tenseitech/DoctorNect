@@ -64,7 +64,8 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: AppColors.borderOf(context).withValues(alpha: 0.65)),
+          color: AppColors.borderOf(context).withValues(alpha: 0.65),
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -75,8 +76,12 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
             child: InkWell(
               onTap: widget.collapsible ? _toggle : null,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(padding, padding - 1, padding,
-                    _expanded ? padding - 2 : padding - 1),
+                padding: EdgeInsets.fromLTRB(
+                  padding,
+                  padding - 1,
+                  padding,
+                  _expanded ? padding - 2 : padding - 1,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -100,8 +105,9 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelSmall,
-                                  color: AppColors.textSecondaryOf(context)),
+                                fontSize: AppTypography.labelSmall,
+                                color: AppColors.textSecondaryOf(context),
+                              ),
                             ),
                           ],
                         ],
@@ -126,9 +132,10 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
           ),
           if (_expanded) ...[
             Divider(
-                height: 1,
-                thickness: 1,
-                color: AppColors.borderOf(context).withValues(alpha: 0.5)),
+              height: 1,
+              thickness: 1,
+              color: AppColors.borderOf(context).withValues(alpha: 0.5),
+            ),
             Padding(
               padding: EdgeInsets.fromLTRB(padding, 8, padding, padding),
               child: widget.child,
@@ -142,7 +149,8 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
 
 typedef SuggestionFetcher = List<String> Function(String query);
 typedef ItemSuggestionFetcher = List<MedicineSearchSuggestion> Function(
-    String query);
+  String query,
+);
 
 class SearchSuggestionsField extends StatefulWidget {
   const SearchSuggestionsField({
@@ -158,11 +166,11 @@ class SearchSuggestionsField extends StatefulWidget {
     this.onItemSelected,
     this.maxSuggestionsHeight = 160,
   }) : assert(
-          suggestions != null ||
-              suggestionFetcher != null ||
-              itemSuggestionFetcher != null,
-          'Provide suggestions, suggestionFetcher, or itemSuggestionFetcher',
-        );
+         suggestions != null ||
+             suggestionFetcher != null ||
+             itemSuggestionFetcher != null,
+         'Provide suggestions, suggestionFetcher, or itemSuggestionFetcher',
+       );
 
   final String label;
   final TextEditingController controller;
@@ -257,8 +265,9 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
             focusNode: _focusNode,
             controller: widget.controller,
             decoration: InputDecoration(
-              labelText:
-                  widget.optional ? '${widget.label} (optional)' : widget.label,
+              labelText: widget.optional
+                  ? '${widget.label} (optional)'
+                  : widget.label,
               suffixIcon: const Icon(Icons.search, size: 20),
               isDense: true,
             ),
@@ -276,8 +285,9 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
               (_useItems ? _filteredItems.isNotEmpty : _filtered.isNotEmpty))
             Container(
               margin: const EdgeInsets.only(top: 4),
-              constraints:
-                  BoxConstraints(maxHeight: widget.maxSuggestionsHeight),
+              constraints: BoxConstraints(
+                maxHeight: widget.maxSuggestionsHeight,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.surfaceOf(context),
                 borderRadius: BorderRadius.circular(AppConstants.inputRadius),
@@ -300,9 +310,12 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
                       color: Colors.transparent,
                       child: ListTile(
                         dense: true,
-                        title: Text(item.name,
-                            style: GoogleFonts.inter(
-                                fontSize: AppTypography.bodySmall)),
+                        title: Text(
+                          item.name,
+                          style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                          ),
+                        ),
                         trailing: item.isCommunity
                             ? Text(
                                 'Community',
@@ -322,9 +335,12 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
                     color: Colors.transparent,
                     child: ListTile(
                       dense: true,
-                      title: Text(item,
-                          style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall)),
+                      title: Text(
+                        item,
+                        style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodySmall,
+                        ),
+                      ),
                       onTap: () =>
                           _selectItem(MedicineSearchSuggestion(name: item)),
                     ),

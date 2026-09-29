@@ -143,8 +143,8 @@ class _ProfileSettingsRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 22,
-                color:
-                    AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
+                color: AppColors.textSecondaryOf(context)
+                    .withValues(alpha: 0.7),
               ),
             ],
           ),
@@ -334,13 +334,15 @@ class ProfileHeroHeader extends StatelessWidget {
                     label: Text(
                       'Edit Profile',
                       style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: AppTypography.bodyMedium),
+                        fontWeight: FontWeight.w600,
+                        fontSize: AppTypography.bodyMedium,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
                       side: BorderSide(
-                          color: AppColors.doctorBlue.withValues(alpha: 0.45)),
+                        color: AppColors.doctorBlue.withValues(alpha: 0.45),
+                      ),
                       minimumSize: const Size(double.infinity, 44),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -482,8 +484,9 @@ class _EditableSectionScaffoldState extends State<EditableSectionScaffold> {
                 children: [
                   Builder(
                     builder: (context) {
-                      WidgetsBinding.instance
-                          .addPostFrameCallback((_) => markDirty());
+                      WidgetsBinding.instance.addPostFrameCallback(
+                        (_) => markDirty(),
+                      );
                       return widget.child;
                     },
                   ),
@@ -503,7 +506,8 @@ class _EditableSectionScaffoldState extends State<EditableSectionScaffold> {
                     decoration: BoxDecoration(
                       color: AppColors.surfaceOf(context),
                       border: Border(
-                          top: BorderSide(color: AppColors.borderOf(context))),
+                        top: BorderSide(color: AppColors.borderOf(context)),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.06),

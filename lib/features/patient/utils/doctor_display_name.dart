@@ -22,7 +22,9 @@ String formatExperienceYears(int years) {
 }
 
 String formatAvailabilityLabel(
-    DoctorAvailability availability, String nextSlot) {
+  DoctorAvailability availability,
+  String nextSlot,
+) {
   final slot = nextSlot.trim();
   if (slot.isNotEmpty && slot.toLowerCase() != 'check availability') {
     return slot;

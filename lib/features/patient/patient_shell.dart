@@ -17,7 +17,9 @@ import '../../core/notifications/patient_in_app_notification_sync.dart';
 import '../../core/notifications/patient_notification_prefs_sync.dart';
 import '../../core/notifications/patient_appointment_watcher.dart';
 import '../../core/notifications/patient_lab_booking_watcher.dart';
+
 import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -230,16 +232,23 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
               width: double.infinity,
               height: double.infinity,
               fit: BoxFit.cover,
-              cacheWidth:
-                  ResampledNetworkImage.cacheDimension(widget.size, context),
-              cacheHeight:
-                  ResampledNetworkImage.cacheDimension(widget.size, context),
+              cacheWidth: ResampledNetworkImage.cacheDimension(
+                widget.size,
+                context,
+              ),
+              cacheHeight: ResampledNetworkImage.cacheDimension(
+                widget.size,
+                context,
+              ),
               frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                 if (wasSynchronouslyLoaded || frame != null) {
                   return child;
                 }
-                return _buildInitialFallback(context, widget.size,
-                    isLoading: true);
+                return _buildInitialFallback(
+                  context,
+                  widget.size,
+                  isLoading: true,
+                );
               },
               errorBuilder: (_, __, ___) =>
                   _buildInitialFallback(context, widget.size),
@@ -260,14 +269,12 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
               color: widget.selected
                   ? (isDark ? Colors.white : AppColors.patientTeal)
                   : (isDark
-                      ? Colors.white.withValues(alpha: 0.35)
-                      : AppColors.borderOf(context).withValues(alpha: 0.4)),
+                        ? Colors.white.withValues(alpha: 0.35)
+                        : AppColors.borderOf(context).withValues(alpha: 0.4)),
               width: widget.selected ? 2.0 : 1.0,
             ),
           ),
-          child: ClipOval(
-            child: avatarContent,
-          ),
+          child: ClipOval(child: avatarContent),
         );
       },
     );
@@ -313,12 +320,13 @@ class _PatientShellState extends State<PatientShell> {
       label: 'Profile',
       customIconBuilder: (context, selected, iconColor, size) =>
           _PatientProfileTabAvatar(
-        selected: selected,
-        iconColor: iconColor,
-        size: size,
-        fallbackIcon:
-            selected ? Icons.person_rounded : Icons.person_outline_rounded,
-      ),
+            selected: selected,
+            iconColor: iconColor,
+            size: size,
+            fallbackIcon: selected
+                ? Icons.person_rounded
+                : Icons.person_outline_rounded,
+          ),
     ),
   ];
 
@@ -367,8 +375,10 @@ class _PatientShellState extends State<PatientShell> {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return;
     await SharedAppointmentsStore.instance.refreshForPatient(patientId);
-    await PatientLabBookingStore.instance
-        .refreshForPatient(patientId, preferCache: true);
+    await PatientLabBookingStore.instance.refreshForPatient(
+      patientId,
+      preferCache: true,
+    );
   }
 
   void _openFromPushIfNeeded() {
@@ -440,18 +450,18 @@ class _PatientShellState extends State<PatientShell> {
   }
 
   List<Widget> _buildPages() => [
-        PatientHomeScreen(onSelectTab: _selectTab),
-        const PatientAppointmentsScreen(),
-        const MyLabsScreen(embeddedInShell: true),
-        const AmbulanceBookingScreen(
-          bookedByRole: AmbulanceBookedByRole.patient,
-          embeddedInShell: true,
-        ),
-        PatientProfileScreen(
-          embeddedInShell: true,
-          onOpenAppointments: () => _selectTab(1),
-        ),
-      ];
+    PatientHomeScreen(onSelectTab: _selectTab),
+    const PatientAppointmentsScreen(),
+    const MyLabsScreen(embeddedInShell: true),
+    const AmbulanceBookingScreen(
+      bookedByRole: AmbulanceBookedByRole.patient,
+      embeddedInShell: true,
+    ),
+    PatientProfileScreen(
+      embeddedInShell: true,
+      onOpenAppointments: () => _selectTab(1),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -474,10 +484,7 @@ class _PatientShellState extends State<PatientShell> {
             onDestinationSelected: _selectTab,
             tabs: _tabs,
             requestDots: requestDots,
-            child: IndexedStack(
-              index: _index,
-              children: _buildPages(),
-            ),
+            child: IndexedStack(index: _index, children: _buildPages()),
           );
         },
       ),

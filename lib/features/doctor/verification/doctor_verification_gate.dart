@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../core/auth/demo_auth_config.dart';
 import '../../../core/auth/verification_lifecycle.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/session/doctor_session.dart';
@@ -30,7 +32,8 @@ class DoctorVerificationGate extends StatelessWidget {
     if (doctorId.isEmpty) {
       return const Scaffold(
         body: Center(
-            child: CircularProgressIndicator(color: AppColors.doctorBlue)),
+          child: CircularProgressIndicator(color: AppColors.doctorBlue),
+        ),
       );
     }
 
@@ -38,13 +41,16 @@ class DoctorVerificationGate extends StatelessWidget {
         ? FirebaseAuth.instance.currentUser?.phoneNumber
         : null;
 
-    final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+    final isDemoDoc =
+        DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
         doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
         DemoAuthConfig.isDemoDoctorPhone(
-            DoctorProfileStore.instance.profile.mobile) ||
+          DoctorProfileStore.instance.profile.mobile,
+        ) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
-        DoctorSession.loggedInDoctorId
-            .contains(DemoAuthConfig.demoDoctorPhone) ||
+        DoctorSession.loggedInDoctorId.contains(
+          DemoAuthConfig.demoDoctorPhone,
+        ) ||
         DemoAuthConfig.isDemoDoctorPhone(authPhone);
 
     if (isDemoDoc) {
@@ -59,12 +65,13 @@ class DoctorVerificationGate extends StatelessWidget {
       ]),
       builder: (context, _) {
         return StreamBuilder<bool>(
-          stream: FirestoreService.instance.doctorVerification
-              .watchVerified(doctorId),
+          stream: FirestoreService.instance.doctorVerification.watchVerified(
+            doctorId,
+          ),
           builder: (context, snapshot) {
             final streamVerified = snapshot.data ?? false;
-            final controllerVerified =
-                RoleVerificationController.instance.isVerified(UserType.doctor);
+            final controllerVerified = RoleVerificationController.instance
+                .isVerified(UserType.doctor);
             final verified = streamVerified || controllerVerified;
             return verifiedChildOverride ??
                 DoctorShell(verificationPending: !verified);

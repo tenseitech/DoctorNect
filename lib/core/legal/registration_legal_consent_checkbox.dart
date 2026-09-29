@@ -74,9 +74,9 @@ class RegistrationLegalConsentCheckbox extends StatelessWidget {
                     style: linkStyle,
                     recognizer: TapGestureRecognizer()
                       ..onTap = () => _openDocument(
-                            context,
-                            LegalDocumentType.termsOfService,
-                          ),
+                        context,
+                        LegalDocumentType.termsOfService,
+                      ),
                   ),
                   const TextSpan(text: ' and '),
                   TextSpan(
@@ -84,9 +84,9 @@ class RegistrationLegalConsentCheckbox extends StatelessWidget {
                     style: linkStyle,
                     recognizer: TapGestureRecognizer()
                       ..onTap = () => _openDocument(
-                            context,
-                            LegalDocumentType.privacyPolicy,
-                          ),
+                        context,
+                        LegalDocumentType.privacyPolicy,
+                      ),
                   ),
                   const TextSpan(text: '.'),
                 ],

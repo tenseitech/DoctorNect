@@ -23,8 +23,10 @@ abstract final class LabOrderService {
     bool homeCollection = false,
     String source = 'investigations',
   }) async {
-    final trimmedNames =
-        testNames.map((n) => n.trim()).where((n) => n.isNotEmpty).toList();
+    final trimmedNames = testNames
+        .map((n) => n.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
     if (trimmedNames.isEmpty) {
       throw ArgumentError('At least one lab test is required');
     }
@@ -54,8 +56,9 @@ abstract final class LabOrderService {
           ? labId!.trim()
           : null, // FIXED: persist labId on the order
       labName: labName?.trim().isNotEmpty == true ? labName!.trim() : null,
-      indication:
-          indication?.trim().isNotEmpty == true ? indication!.trim() : null,
+      indication: indication?.trim().isNotEmpty == true
+          ? indication!.trim()
+          : null,
       urgency: urgency,
       fastingRequired: fastingRequired,
       homeCollection: homeCollection,
@@ -64,7 +67,8 @@ abstract final class LabOrderService {
     );
 
     await LabOrderStore.instance.add(
-        order); // FIXED: await so a Firestore save failure propagates to the caller
+      order,
+    ); // FIXED: await so a Firestore save failure propagates to the caller
 
     final appointmentId = patient.appointmentId;
     if (appointmentId != null && appointmentId.isNotEmpty) {

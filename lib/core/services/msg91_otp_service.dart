@@ -4,8 +4,10 @@
 /// MSG91 auth keys and never talks to MSG91 directly.
 abstract final class Msg91OtpService {
   /// Normalizes mobile to include country code (default 91 for India).
-  static String formatMobileForMsg91(String rawDigits,
-      {String dialCode = '91'}) {
+  static String formatMobileForMsg91(
+    String rawDigits, {
+    String dialCode = '91',
+  }) {
     final clean = rawDigits.replaceAll(RegExp(r'\D'), '');
     final cleanDial = dialCode.replaceAll(RegExp(r'\D'), '');
     if (clean.startsWith(cleanDial)) return clean;
@@ -13,8 +15,10 @@ abstract final class Msg91OtpService {
     return clean;
   }
 
-  static Future<bool> retrySmsOtp(String mobileDigits,
-      {String retryType = 'text'}) async {
+  static Future<bool> retrySmsOtp(
+    String mobileDigits, {
+    String retryType = 'text',
+  }) async {
     return false;
   }
 
@@ -26,8 +30,7 @@ abstract final class Msg91OtpService {
   }) async {
     return (
       success: false,
-      error:
-          'Direct MSG91 access is disabled. OTP must be sent through Cloud Functions.',
+      error: 'Direct MSG91 access is disabled. OTP must be sent through Cloud Functions.',
       debugOtp: null,
     );
   }
@@ -39,8 +42,7 @@ abstract final class Msg91OtpService {
   }) async {
     return (
       success: false,
-      error:
-          'Direct MSG91 access is disabled. OTP must be verified through Cloud Functions.',
+      error: 'Direct MSG91 access is disabled. OTP must be verified through Cloud Functions.',
       sessionId: null,
     );
   }

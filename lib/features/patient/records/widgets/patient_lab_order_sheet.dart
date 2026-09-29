@@ -27,12 +27,12 @@ class _PatientLabOrderSheet extends StatelessWidget {
   final DoctorLabOrder order;
 
   String _statusLabel(String status) => switch (status) {
-        'completed' => 'Completed',
-        'in_progress' => 'In progress',
-        'sample_collected' => 'Sample collected',
-        'cancelled' => 'Cancelled',
-        _ => 'Ordered',
-      };
+    'completed' => 'Completed',
+    'in_progress' => 'In progress',
+    'sample_collected' => 'Sample collected',
+    'cancelled' => 'Cancelled',
+    _ => 'Ordered',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +64,10 @@ class _PatientLabOrderSheet extends StatelessWidget {
                     color: AppColors.patientTeal.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.science_outlined,
-                      color: AppColors.patientTeal),
+                  child: const Icon(
+                    Icons.science_outlined,
+                    color: AppColors.patientTeal,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -75,15 +77,17 @@ class _PatientLabOrderSheet extends StatelessWidget {
                       Text(
                         'Lab test order',
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.headlineSmall,
-                            fontWeight: FontWeight.w700),
+                          fontSize: AppTypography.headlineSmall,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       Text(
                         DateFormat('dd MMM yyyy · hh:mm a')
                             .format(order.createdAt),
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                     ],
                   ),
@@ -118,8 +122,9 @@ class _PatientLabOrderSheet extends StatelessWidget {
             Text(
               'Tests (${order.testNames.length})',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  fontWeight: FontWeight.w600),
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 8),
             ...order.testNames.map(
@@ -128,13 +133,20 @@ class _PatientLabOrderSheet extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.circle,
-                        size: 6, color: AppColors.patientTeal),
+                    const Icon(
+                      Icons.circle,
+                      size: 6,
+                      color: AppColors.patientTeal,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
-                        child: Text(test,
-                            style: GoogleFonts.inter(
-                                fontSize: AppTypography.bodyMedium))),
+                      child: Text(
+                        test,
+                        style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodyMedium,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -162,7 +174,8 @@ class _PatientLabOrderSheet extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.patientTeal),
+                    backgroundColor: AppColors.patientTeal,
+                  ),
                   child: const Text('View report'),
                 ),
               ),
@@ -199,16 +212,18 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  fontWeight: FontWeight.w600),
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

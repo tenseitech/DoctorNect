@@ -1,6 +1,8 @@
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -11,27 +13,28 @@ import '../data/lab_worklist_store.dart';
 import '../widgets/lab_report_upload_sheet.dart';
 import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../widgets/verification_status_banner.dart';
+import '../../../widgets/shell/role_empty_state.dart';
 import '../../../core/theme/app_typography.dart';
 
 String labOrderStatusLabel(String status) => switch (status) {
-      'ordered' => 'New',
-      'requested' => 'New request',
-      'confirmed' => 'Confirmed',
-      'declined' => 'Declined',
-      'processing' => 'Processing',
-      'completed' => 'Completed',
-      _ => status,
-    };
+  'ordered' => 'New',
+  'requested' => 'New request',
+  'confirmed' => 'Confirmed',
+  'declined' => 'Declined',
+  'processing' => 'Processing',
+  'completed' => 'Completed',
+  _ => status,
+};
 
 Color labOrderStatusColor(String status) => switch (status) {
-      'ordered' => AppColors.doctorBlue,
-      'requested' => AppColors.doctorBlue,
-      'confirmed' => AppColors.labPurple,
-      'declined' => AppColors.error,
-      'processing' => Colors.orange,
-      'completed' => AppColors.pharmacyGreen,
-      _ => AppColors.textSecondary,
-    };
+  'ordered' => AppColors.labPurple,
+  'requested' => AppColors.labPurple,
+  'confirmed' => AppColors.labPurple,
+  'declined' => AppColors.error,
+  'processing' => Colors.orange,
+  'completed' => AppColors.pharmacyGreen,
+  _ => AppColors.textSecondary,
+};
 
 DateTime _dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
@@ -68,16 +71,16 @@ DoctorLabOrder _bookingToOrder(LabBookingRecord b) {
 }
 
 String _sourceLabel(String source) => switch (source) {
-      'walkin' => 'Walk-in',
-      'patient' => 'Patient',
-      _ => 'Doctor',
-    };
+  'walkin' => 'Walk-in',
+  'patient' => 'Patient',
+  _ => 'Doctor',
+};
 
 Color _sourceColor(String source) => switch (source) {
-      'walkin' => Colors.orange,
-      'patient' => const Color(0xFF2563EB),
-      _ => const Color(0xFF059669),
-    };
+  'walkin' => Colors.orange,
+  'patient' => const Color(0xFF2563EB),
+  _ => const Color(0xFF059669),
+};
 
 String _orderSubtitle(DoctorLabOrder order) {
   final parts = <String>[];
@@ -121,7 +124,10 @@ class _LabOrdersTabState extends State<LabOrdersTab>
   }
 
   Future<void> _updateOrderStatus(
-      BuildContext context, DoctorLabOrder order, String status) async {
+    BuildContext context,
+    DoctorLabOrder order,
+    String status,
+  ) async {
     try {
       final isBooking = order.source == 'walkin' || order.source == 'patient';
       if (isBooking) {
@@ -132,31 +138,44 @@ class _LabOrdersTabState extends State<LabOrdersTab>
         final allIds = booking?.linkedBookingIds ?? [order.orderId];
         // Update all linked booking docs in Firestore
         await Future.wait(
-          allIds.map((id) => FirestoreService.instance.labBooking
-              .updateBookingStatus(id, status)),
+          allIds.map(
+            (id) => FirestoreService.instance.labBooking.updateBookingStatus(
+              id,
+              status,
+            ),
+          ),
         );
-        LabWorklistStore.instance
-            .updateBookingStatusLocal(order.orderId, status);
+        LabWorklistStore.instance.updateBookingStatusLocal(
+          order.orderId,
+          status,
+        );
       } else {
-        await FirestoreService.instance.labOrder
-            .updateOrderStatus(order.orderId, status);
+        await FirestoreService.instance.labOrder.updateOrderStatus(
+          order.orderId,
+          status,
+        );
         LabWorklistStore.instance.updateOrderStatusLocal(order.orderId, status);
       }
     } catch (_) {
       if (!context.mounted) return;
       AppToast.info(
-          context, 'Could not update order status. Please try again.');
+        context,
+        'Could not update order status. Please try again.',
+      );
     }
   }
 
   Future<void> _refreshAll() async {
     final labId = LabSession.loggedInLabId;
     if (labId.isEmpty) return;
-    final page = await FirestoreService.instance.labOrder
-        .fetchForLab(labId, preferCache: false);
+    final page = await FirestoreService.instance.labOrder.fetchForLab(
+      labId,
+      preferCache: false,
+    );
     LabWorklistStore.instance.mergeOrders(page.items);
-    final bookings =
-        await FirestoreService.instance.labBooking.fetchForLab(labId);
+    final bookings = await FirestoreService.instance.labBooking.fetchForLab(
+      labId,
+    );
     LabWorklistStore.instance.mergeBookings(bookings);
   }
 
@@ -168,8 +187,7 @@ class _LabOrdersTabState extends State<LabOrdersTab>
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context)
-              .colorScheme
+          colorScheme: Theme.of(context).colorScheme
               .copyWith(primary: AppColors.labPurple),
         ),
         child: child!,
@@ -214,8 +232,9 @@ class _LabOrdersTabState extends State<LabOrdersTab>
       listenable: LabWorklistStore.instance,
       builder: (context, _) {
         final dayOrders = _ordersForSelectedDate();
-        final newOrders =
-            dayOrders.where((o) => !_isCompletedOrder(o)).toList();
+        final newOrders = dayOrders
+            .where((o) => !_isCompletedOrder(o))
+            .toList();
         final completedOrders = dayOrders.where(_isCompletedOrder).toList();
 
         return LayoutBuilder(
@@ -232,6 +251,8 @@ class _LabOrdersTabState extends State<LabOrdersTab>
                   onToday: _goToToday,
                   onPickDate: _pickDate,
                   wide: wide,
+                  newCount: newOrders.length,
+                  doneCount: completedOrders.length,
                 ),
                 Expanded(
                   child: _DoctorOrdersPanel(
@@ -261,6 +282,8 @@ class _LabDayStatsHeader extends StatelessWidget {
     required this.onToday,
     required this.onPickDate,
     required this.wide,
+    required this.newCount,
+    required this.doneCount,
   });
 
   final DateTime selectedDate;
@@ -268,6 +291,33 @@ class _LabDayStatsHeader extends StatelessWidget {
   final VoidCallback onToday;
   final VoidCallback onPickDate;
   final bool wide;
+  final int newCount;
+  final int doneCount;
+
+  Widget _buildStatBadge(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 5),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: AppTypography.labelSmall,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -276,7 +326,7 @@ class _LabDayStatsHeader extends StatelessWidget {
         : DateFormat('EEE, dd MMM yyyy').format(selectedDate);
 
     return Container(
-      padding: EdgeInsets.fromLTRB(wide ? 24 : 16, 14, wide ? 24 : 16, 14),
+      padding: EdgeInsets.fromLTRB(wide ? 24 : 16, 12, wide ? 24 : 16, 12),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.labPurple, Color(0xFF6D28D9)],
@@ -284,86 +334,174 @@ class _LabDayStatsHeader extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Test Orders',
-                      style: GoogleFonts.inter(
-                        fontSize: wide ? 18 : 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+      child: wide
+          ? Row(
+              children: [
+                Text(
+                  'Test Orders',
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.headlineSmall,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                _buildStatBadge(TablerIcons.flask, '$newCount New'),
+                const SizedBox(width: 8),
+                _buildStatBadge(Icons.check_circle_outline, '$doneCount Done'),
+                const Spacer(),
+                if (!isToday)
+                  TextButton(
+                    onPressed: onToday,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white.withValues(alpha: 0.16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      dateLabel,
+                    child: Text(
+                      'Today',
                       style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: AppTypography.labelMedium,
+                      ),
+                    ),
+                  ),
+                IconButton(
+                  onPressed: onPickDate,
+                  icon: const Icon(
+                    Icons.calendar_month_outlined,
+                    color: Colors.white,
+                  ),
+                  tooltip: 'Pick date',
+                ),
+                const SizedBox(width: 4),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    PromotedAdsManagementScreen.open(
+                      context,
+                      providerType: 'lab',
+                      providerId: LabSession.loggedInLabId,
+                      providerEmail: '',
+                      providerContact: '',
+                      isVerified: true,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.campaign_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Promote Ad',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: AppTypography.labelMedium,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        dateLabel,
+                        style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodySmall,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.95),
+                        ),
+                      ),
+                    ),
+                    if (!isToday)
+                      TextButton(
+                        onPressed: onToday,
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.white.withValues(alpha: 0.16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                        ),
+                        child: Text(
+                          'Today',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: AppTypography.labelSmall,
+                          ),
+                        ),
+                      ),
+                    IconButton(
+                      onPressed: onPickDate,
+                      icon: const Icon(
+                        Icons.calendar_month_outlined,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                      tooltip: 'Pick date',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed: () {
+                        PromotedAdsManagementScreen.open(
+                          context,
+                          providerType: 'lab',
+                          providerId: LabSession.loggedInLabId,
+                          providerEmail: '',
+                          providerContact: '',
+                          isVerified: true,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.campaign_rounded,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                      tooltip: 'Promote Ad',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
                       ),
                     ),
                   ],
                 ),
-              ),
-              if (!isToday)
-                TextButton(
-                  onPressed: onToday,
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Colors.white.withValues(alpha: 0.16),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  ),
-                  child: Text('Today',
-                      style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: AppTypography.labelMedium)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildStatBadge(TablerIcons.flask, '$newCount New'),
+                    const SizedBox(width: 8),
+                    _buildStatBadge(
+                      Icons.check_circle_outline,
+                      '$doneCount Done',
+                    ),
+                  ],
                 ),
-              IconButton(
-                onPressed: onPickDate,
-                icon: const Icon(Icons.calendar_month_outlined,
-                    color: Colors.white),
-                tooltip: 'Pick date',
-              ),
-              const SizedBox(width: 4),
-              OutlinedButton.icon(
-                onPressed: () {
-                  PromotedAdsManagementScreen.open(
-                    context,
-                    providerType: 'lab',
-                    providerId: LabSession.loggedInLabId,
-                    providerEmail: '',
-                    providerContact: '',
-                    isVerified: true,
-                  );
-                },
-                icon: const Icon(Icons.campaign_rounded,
-                    size: 16, color: Colors.white),
-                label: const Text('Promote Ad',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: AppTypography.labelMedium,
-                        fontWeight: FontWeight.bold)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
     );
   }
 }
@@ -388,21 +526,26 @@ class _DoctorOrdersPanel extends StatelessWidget {
   final VoidCallback onSearchChanged;
   final Future<void> Function() onRefresh;
   final Future<void> Function(
-      BuildContext context, DoctorLabOrder order, String status) onUpdateStatus;
+    BuildContext context,
+    DoctorLabOrder order,
+    String status,
+  )
+  onUpdateStatus;
 
   @override
   Widget build(BuildContext context) {
     final dateLabel = DateFormat('dd MMM yyyy').format(selectedDate);
+    final wide = MediaQuery.of(context).size.width >= 900;
     final controlBar = Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 10),
+      padding: EdgeInsets.symmetric(horizontal: wide ? 20 : 12, vertical: 10),
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
-        border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+        border: Border(bottom: BorderSide(color: AppColors.borderOf(context))),
       ),
       child: Row(
         children: [
-          Expanded(
-            flex: 3,
+          SizedBox(
+            width: wide ? 240 : 160,
             child: _LabOrderTabSwitcher(
               controller: orderStatusTabController,
               newCount: newOrders.length,
@@ -411,7 +554,6 @@ class _DoctorOrdersPanel extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            flex: 2,
             child: _LabSearchField(
               controller: searchController,
               onChanged: onSearchChanged,
@@ -471,7 +613,12 @@ class _DoctorOrdersPanel extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           const SizedBox(height: 60),
-          _emptyState(emptyTitle, emptySubtitle, Icons.science_outlined),
+          RoleEmptyState(
+            icon: Icons.science_outlined,
+            title: emptyTitle,
+            subtitle: emptySubtitle,
+            accentColor: AppColors.labPurple,
+          ),
         ],
       );
     }
@@ -487,14 +634,14 @@ class _DoctorOrdersPanel extends StatelessWidget {
         // Find the original booking record for report sharing
         final booking = isBooking
             ? LabWorklistStore.instance.bookings
-                .where((b) => b.bookingId == order.orderId)
-                .firstOrNull
+                  .where((b) => b.bookingId == order.orderId)
+                  .firstOrNull
             : null;
 
         final bool hasReport = isBooking
             ? (booking?.hasReport ?? false)
             : (order.reportStorageUrl != null &&
-                order.reportStorageUrl!.isNotEmpty);
+                  order.reportStorageUrl!.isNotEmpty);
 
         return _LabOrderTile(
           order: order,
@@ -545,7 +692,7 @@ class _LabOrderTabSwitcher extends StatelessWidget {
                   label: 'New',
                   count: newCount,
                   selected: controller.index == 0,
-                  accentColor: AppColors.doctorBlue,
+                  accentColor: AppColors.labPurple,
                   onTap: () => controller.animateTo(0),
                 ),
               ),
@@ -598,9 +745,10 @@ class _OrderTabPill extends StatelessWidget {
             boxShadow: selected
                 ? [
                     BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.06),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2))
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
                   ]
                 : null,
           ),
@@ -620,13 +768,15 @@ class _OrderTabPill extends StatelessWidget {
               if (count > 0) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? accentColor.withValues(alpha: 0.12)
                         : AppColors.textSecondaryOf(context)
-                            .withValues(alpha: 0.12),
+                              .withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -674,19 +824,23 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                         child: Text(
                           'Order Details',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.headlineSmall,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimaryOf(context)),
+                            fontSize: AppTypography.headlineSmall,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimaryOf(context),
+                          ),
                         ),
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(context),
-                        icon: Icon(Icons.close,
-                            color: AppColors.textSecondaryOf(context)),
+                        icon: Icon(
+                          Icons.close,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         style: IconButton.styleFrom(
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
                     ],
                   ),
@@ -704,24 +858,27 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                         Text(
                           'Patient Info',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           order.patientName,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.headlineSmall,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimaryOf(context)),
+                            fontSize: AppTypography.headlineSmall,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimaryOf(context),
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '${order.patientAge} years old',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodyMedium,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.bodyMedium,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                       ],
                     ),
@@ -734,7 +891,8 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                         color: AppColors.labPurple.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                            color: AppColors.labPurple.withValues(alpha: 0.2)),
+                          color: AppColors.labPurple.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -742,23 +900,28 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                           Text(
                             'Referred By',
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.labPurple),
+                              fontSize: AppTypography.labelMedium,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.labPurple,
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              const Icon(Icons.medical_services_outlined,
-                                  size: 16, color: AppColors.labPurple),
+                              const Icon(
+                                Icons.medical_services_outlined,
+                                size: 16,
+                                color: AppColors.labPurple,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   'Dr. ${order.doctorName}',
                                   style: GoogleFonts.inter(
-                                      fontSize: AppTypography.bodyLarge,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimaryOf(context)),
+                                    fontSize: AppTypography.bodyLarge,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimaryOf(context),
+                                  ),
                                 ),
                               ),
                             ],
@@ -771,34 +934,41 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                   Text(
                     'Tests Ordered (${order.testNames.length})',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodyMedium,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimaryOf(context)),
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimaryOf(context),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  ...order.testNames.map((test) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.only(top: 2),
-                              child: Icon(Icons.science_outlined,
-                                  size: 16, color: AppColors.labPurple),
+                  ...order.testNames.map(
+                    (test) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Icon(
+                              Icons.science_outlined,
+                              size: 16,
+                              color: AppColors.labPurple,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                test,
-                                style: GoogleFonts.inter(
-                                    fontSize: AppTypography.bodyMedium,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.textPrimaryOf(context)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              test,
+                              style: GoogleFonts.inter(
+                                fontSize: AppTypography.bodyMedium,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimaryOf(context),
                               ),
                             ),
-                          ],
-                        ),
-                      )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -806,16 +976,18 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                       Text(
                         'Order Time:',
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                       Text(
                         DateFormat('dd MMM yyyy, hh:mm a')
                             .format(order.createdAt),
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimaryOf(context)),
+                          fontSize: AppTypography.labelMedium,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimaryOf(context),
+                        ),
                       ),
                     ],
                   ),
@@ -830,10 +1002,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
 }
 
 class _LabSearchField extends StatelessWidget {
-  const _LabSearchField({
-    required this.controller,
-    required this.onChanged,
-  });
+  const _LabSearchField({required this.controller, required this.onChanged});
 
   final TextEditingController controller;
   final VoidCallback onChanged;
@@ -846,12 +1015,17 @@ class _LabSearchField extends StatelessWidget {
       decoration: InputDecoration(
         hintText: 'Search',
         isDense: true,
-        prefixIcon: Icon(Icons.search,
-            size: 18, color: AppColors.textSecondaryOf(context)),
+        prefixIcon: Icon(
+          Icons.search,
+          size: 18,
+          color: AppColors.textSecondaryOf(context),
+        ),
         filled: true,
         fillColor: AppColors.surfaceOf(context),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 10,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -888,10 +1062,11 @@ class _LabOrderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = labOrderStatusColor(order.status);
     final gradient = isNewTab
-        ? const [Color(0xFF2563EB), Color(0xFF1D4ED8)]
+        ? const [AppColors.labPurple, Color(0xFF7C3AED)]
         : const [Color(0xFF059669), Color(0xFF047857)];
 
-    final bool showReport = onShareReport != null &&
+    final bool showReport =
+        onShareReport != null &&
         order.status != 'declined' &&
         order.status != 'requested';
 
@@ -935,8 +1110,9 @@ class _LabOrderTile extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                      fontSize: AppTypography.bodyMedium,
-                                      fontWeight: FontWeight.w700),
+                                    fontSize: AppTypography.bodyMedium,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                               _SourceBadge(source: order.source),
@@ -947,7 +1123,9 @@ class _LabOrderTile extends StatelessWidget {
                                 tooltip: 'Update Status',
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: statusColor.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(8),
@@ -958,30 +1136,38 @@ class _LabOrderTile extends StatelessWidget {
                                       Text(
                                         labOrderStatusLabel(order.status),
                                         style: GoogleFonts.inter(
-                                            fontSize: AppTypography.labelSmall,
-                                            fontWeight: FontWeight.w700,
-                                            color: statusColor),
+                                          fontSize: AppTypography.labelSmall,
+                                          fontWeight: FontWeight.w700,
+                                          color: statusColor,
+                                        ),
                                       ),
                                       const SizedBox(width: 4),
-                                      Icon(Icons.arrow_drop_down,
-                                          size: 14, color: statusColor),
+                                      Icon(
+                                        Icons.arrow_drop_down,
+                                        size: 14,
+                                        color: statusColor,
+                                      ),
                                     ],
                                   ),
                                 ),
-                                itemBuilder: (context) => [
-                                  'ordered',
-                                  'requested',
-                                  'confirmed',
-                                  'processing',
-                                  'completed',
-                                  'declined',
-                                ]
-                                    .map((status) => PopupMenuItem<String>(
-                                          value: status,
-                                          child:
-                                              Text(labOrderStatusLabel(status)),
-                                        ))
-                                    .toList(),
+                                itemBuilder: (context) =>
+                                    [
+                                          'ordered',
+                                          'requested',
+                                          'confirmed',
+                                          'processing',
+                                          'completed',
+                                          'declined',
+                                        ]
+                                        .map(
+                                          (status) => PopupMenuItem<String>(
+                                            value: status,
+                                            child: Text(
+                                              labOrderStatusLabel(status),
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
                               ),
                             ],
                           ),
@@ -989,8 +1175,9 @@ class _LabOrderTile extends StatelessWidget {
                           Text(
                             _orderSubtitle(order),
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                         ],
                       ),
@@ -1006,8 +1193,11 @@ class _LabOrderTile extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.science_outlined,
-                          size: 16, color: AppColors.textSecondaryOf(context)),
+                      Icon(
+                        Icons.science_outlined,
+                        size: 16,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -1015,8 +1205,9 @@ class _LabOrderTile extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              fontWeight: FontWeight.w500),
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -1026,15 +1217,19 @@ class _LabOrderTile extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      const Icon(Icons.check_circle_outline,
-                          size: 15, color: AppColors.pharmacyGreen),
+                      const Icon(
+                        Icons.check_circle_outline,
+                        size: 15,
+                        color: AppColors.pharmacyGreen,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         'Report sent',
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.pharmacyGreen,
-                            fontWeight: FontWeight.w600),
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.pharmacyGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -1081,8 +1276,9 @@ class _DateBadge extends StatelessWidget {
           Container(
             height: 17,
             width: double.infinity,
-            decoration:
-                BoxDecoration(gradient: LinearGradient(colors: gradient)),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: gradient),
+            ),
             alignment: Alignment.center,
             child: Text(
               DateFormat('MMM').format(date).toUpperCase(),
@@ -1099,9 +1295,10 @@ class _DateBadge extends StatelessWidget {
               child: Text(
                 DateFormat('dd').format(date),
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.headlineSmall,
-                    fontWeight: FontWeight.w800,
-                    height: 1),
+                  fontSize: AppTypography.headlineSmall,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
               ),
             ),
           ),
@@ -1130,37 +1327,11 @@ class _SourceBadge extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(
-            fontSize: 9, fontWeight: FontWeight.w700, color: color),
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
-}
-
-Widget _emptyState(String title, String subtitle, IconData icon) {
-  return Builder(
-    builder: (context) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          Icon(icon,
-              size: 48,
-              color: AppColors.textSecondaryOf(context).withValues(alpha: 0.5)),
-          const SizedBox(height: 12),
-          Text(title,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineSmall,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimaryOf(context))),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-                color: AppColors.textSecondaryOf(context), height: 1.4),
-          ),
-        ],
-      ),
-    ),
-  );
 }

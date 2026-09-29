@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -27,13 +28,13 @@ class _PatientBloodTestSheet extends StatelessWidget {
   final LabBookingRecord booking;
 
   String _statusLabel(String status) => switch (status.toLowerCase()) {
-        'completed' => booking.hasReport ? 'Report ready' : 'Completed',
-        'processing' => 'Processing',
-        'requested' => 'Awaiting lab approval',
-        'declined' => 'Declined by lab',
-        'cancelled' => 'Cancelled',
-        _ => 'Confirmed',
-      };
+    'completed' => booking.hasReport ? 'Report ready' : 'Completed',
+    'processing' => 'Processing',
+    'requested' => 'Awaiting lab approval',
+    'declined' => 'Declined by lab',
+    'cancelled' => 'Cancelled',
+    _ => 'Confirmed',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +74,10 @@ class _PatientBloodTestSheet extends StatelessWidget {
                       color: const Color(0xFFDC2626).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.bloodtype_outlined,
-                        color: Color(0xFFDC2626)),
+                    child: const Icon(
+                      Icons.bloodtype_outlined,
+                      color: Color(0xFFDC2626),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -84,16 +87,18 @@ class _PatientBloodTestSheet extends StatelessWidget {
                         Text(
                           booking.displayTestName,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.headlineSmall,
-                              fontWeight: FontWeight.w700),
+                            fontSize: AppTypography.headlineSmall,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           DateFormat('dd MMM yyyy · hh:mm a')
                               .format(booking.dateTime),
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                       ],
                     ),
@@ -117,16 +122,20 @@ class _PatientBloodTestSheet extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.check_circle_outline,
-                            size: 16, color: AppColors.labPurple),
+                        const Icon(
+                          Icons.check_circle_outline,
+                          size: 16,
+                          color: AppColors.labPurple,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             name,
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.bodySmall,
-                                color: AppColors.textPrimaryOf(context),
-                                height: 1.35),
+                              fontSize: AppTypography.bodySmall,
+                              color: AppColors.textPrimaryOf(context),
+                              height: 1.35,
+                            ),
                           ),
                         ),
                       ],
@@ -164,7 +173,8 @@ class _PatientBloodTestSheet extends StatelessWidget {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.patientTeal),
+                      backgroundColor: AppColors.patientTeal,
+                    ),
                     child: const Text('View report'),
                   ),
                 )
@@ -172,8 +182,9 @@ class _PatientBloodTestSheet extends StatelessWidget {
                 Text(
                   'Your lab will share the report here once it is ready.',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodySmall,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.bodySmall,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
               const SizedBox(height: 12),
               SizedBox(
@@ -209,16 +220,18 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  fontWeight: FontWeight.w600),
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

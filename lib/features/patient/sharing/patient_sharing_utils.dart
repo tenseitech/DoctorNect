@@ -41,11 +41,9 @@ abstract final class PatientSharingUtils {
   static bool hasSlotCapacityForPatients({
     required int existingSlotBookings,
     required int patientCount,
-  }) =>
-      existingSlotBookings + patientCount <= kMaxPatientsPerTimeSlot;
+  }) => existingSlotBookings + patientCount <= kMaxPatientsPerTimeSlot;
 
   static List<HealthRecord> filterHealthRecordsSharedWithDoctors(
     List<HealthRecord> records,
-  ) =>
-      records.where((record) => record.sharedWithDoctors).toList();
+  ) => records.where((record) => record.sharedWithDoctors).toList();
 }

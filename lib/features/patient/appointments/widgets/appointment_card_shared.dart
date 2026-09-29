@@ -14,16 +14,20 @@ BoxDecoration appointmentTabCardDecoration([BuildContext? context]) {
     color: context != null ? AppColors.surfaceOf(context) : Colors.white,
     borderRadius: BorderRadius.circular(12),
     border: Border.all(
-        color: context != null ? AppColors.borderOf(context) : _cardBorder),
+      color: context != null ? AppColors.borderOf(context) : _cardBorder,
+    ),
   );
 }
 
-const EdgeInsets appointmentFlatPadding =
-    EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+const EdgeInsets appointmentFlatPadding = EdgeInsets.symmetric(
+  horizontal: 16,
+  vertical: 14,
+);
 
 Widget appointmentDoctorAvatar(String doctorName) {
-  final initial =
-      doctorName.trim().isNotEmpty ? doctorName.trim()[0].toUpperCase() : 'D';
+  final initial = doctorName.trim().isNotEmpty
+      ? doctorName.trim()[0].toUpperCase()
+      : 'D';
   return CircleAvatar(
     radius: 20,
     backgroundColor: AppColors.patientTeal.withValues(alpha: 0.12),
@@ -88,7 +92,9 @@ ButtonStyle compactTealOutlinedButtonStyle() {
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     textStyle: GoogleFonts.inter(
-        fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
+      fontSize: AppTypography.bodyMedium,
+      fontWeight: FontWeight.w500,
+    ),
   ).copyWith(
     overlayColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.hovered) ||
@@ -108,7 +114,9 @@ ButtonStyle compactGhostButtonStyle() {
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     textStyle: GoogleFonts.inter(
-        fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w500),
+      fontSize: AppTypography.bodyMedium,
+      fontWeight: FontWeight.w500,
+    ),
   );
 }
 
@@ -137,7 +145,10 @@ TextStyle appointmentCardDoctorNameStyle([BuildContext? context]) {
 
 TextStyle appointmentCardDateStyle() {
   return GoogleFonts.inter(
-      fontSize: AppTypography.labelMedium, color: _textGray400, height: 1.35);
+    fontSize: AppTypography.labelMedium,
+    color: _textGray400,
+    height: 1.35,
+  );
 }
 
 class AppointmentCardWrapper extends StatelessWidget {
@@ -169,7 +180,10 @@ class AppointmentCardWrapper extends StatelessWidget {
           ),
           if (showDivider)
             Divider(
-                height: 1, thickness: 1, color: AppColors.borderOf(context)),
+              height: 1,
+              thickness: 1,
+              color: AppColors.borderOf(context),
+            ),
         ],
       );
     }

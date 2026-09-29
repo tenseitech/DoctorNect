@@ -23,7 +23,8 @@ abstract final class UnifiedAuthCoordinator {
     required String mobile,
     required UserType role,
   }) async {
-    final digits = FormValidators.registrationMobileDigits(mobile) ??
+    final digits =
+        FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile);
     if (digits == null || digits.length != 10) {
       return UnifiedAuthPath.register;
@@ -54,20 +55,20 @@ abstract final class UnifiedAuthCoordinator {
       path == UnifiedAuthPath.login ? 'login' : 'registration';
 
   static String roleLabel(UserType role) => switch (role) {
-        UserType.superAdmin => 'Super Admin',
-        UserType.doctor => 'Doctor',
-        UserType.patient => 'Patient',
-        UserType.medicalStore => 'Pharmacy',
-        UserType.lab => 'Lab',
-        UserType.ambulance => 'Ambulance',
-      };
+    UserType.superAdmin => 'Super Admin',
+    UserType.doctor => 'Doctor',
+    UserType.patient => 'Patient',
+    UserType.medicalStore => 'Pharmacy',
+    UserType.lab => 'Lab',
+    UserType.ambulance => 'Ambulance',
+  };
 
   static String roleSubtitle(UserType role) => switch (role) {
-        UserType.doctor => 'Manage appointments, patients & prescriptions',
-        UserType.patient => 'Book doctors, labs & track your health',
-        UserType.medicalStore => 'Receive and dispense prescriptions',
-        UserType.lab => 'Manage diagnostic test orders',
-        UserType.ambulance => 'Handle emergency pickup requests',
-        _ => 'Sign in to continue',
-      };
+    UserType.doctor => 'Manage appointments, patients & prescriptions',
+    UserType.patient => 'Book doctors, labs & track your health',
+    UserType.medicalStore => 'Receive and dispense prescriptions',
+    UserType.lab => 'Manage diagnostic test orders',
+    UserType.ambulance => 'Handle emergency pickup requests',
+    _ => 'Sign in to continue',
+  };
 }

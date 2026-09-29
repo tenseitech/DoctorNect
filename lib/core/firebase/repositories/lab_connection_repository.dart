@@ -19,21 +19,22 @@ class LabConnectionRepository {
         .collection(FirestorePaths.labConnections)
         .doc(connection.id)
         .set({
-      'doctorId': connection.doctorId,
-      'doctorName': connection.doctorName,
-      'labId': connection.labId,
-      'labName': connection.labName,
-      'status': connection.status.name,
-      'requestedBy': connection.requestedBy.name,
-      'requestedAt': Timestamp.fromDate(connection.requestedAt),
-      if (connection.respondedAt != null)
-        'respondedAt': Timestamp.fromDate(connection.respondedAt!),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+          'doctorId': connection.doctorId,
+          'doctorName': connection.doctorName,
+          'labId': connection.labId,
+          'labName': connection.labName,
+          'status': connection.status.name,
+          'requestedBy': connection.requestedBy.name,
+          'requestedAt': Timestamp.fromDate(connection.requestedAt),
+          if (connection.respondedAt != null)
+            'respondedAt': Timestamp.fromDate(connection.respondedAt!),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
   }
 
   Stream<List<LabConnection>> watchPendingConnectionsForDoctor(
-      String doctorId) {
+    String doctorId,
+  ) {
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
     return FirebaseFirestore.instance
@@ -99,8 +100,9 @@ class LabConnectionRepository {
       return const FirestorePage(items: [], hasMore: false);
     }
 
-    Query<Map<String, dynamic>> query =
-        FirebaseFirestore.instance.collection(FirestorePaths.labConnections);
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
+      FirestorePaths.labConnections,
+    );
 
     if (doctorId != null) {
       query = query.where('doctorId', isEqualTo: doctorId);
@@ -115,7 +117,9 @@ class LabConnectionRepository {
     }
 
     final snapshot = await FirestoreReadHelper.getQuery(
-        query: query, preferCache: preferCache);
+      query: query,
+      preferCache: preferCache,
+    );
     final items = _mapConnectionDocs(snapshot.docs);
 
     return FirestorePage(
@@ -149,8 +153,9 @@ class LabConnectionRepository {
         doctorName: data['doctorName'] as String? ?? '',
         labId: data['labId'] as String? ?? '',
         labName: data['labName'] as String? ?? '',
-        status: ConnectionStatus.values
-            .byName(data['status'] as String? ?? 'pending'),
+        status: ConnectionStatus.values.byName(
+          data['status'] as String? ?? 'pending',
+        ),
         requestedBy: LabConnectionRequester.values.byName(
           data['requestedBy'] as String? ?? LabConnectionRequester.lab.name,
         ),

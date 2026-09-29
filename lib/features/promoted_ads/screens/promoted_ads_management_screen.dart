@@ -28,8 +28,10 @@ class PromotedAdsManagementScreen extends StatelessWidget {
   final String providerContact;
   final bool isVerified;
 
-  static void showPromotionsPausedDialog(BuildContext context,
-      {String? notice}) {
+  static void showPromotionsPausedDialog(
+    BuildContext context, {
+    String? notice,
+  }) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -50,8 +52,9 @@ class PromotedAdsManagementScreen extends StatelessWidget {
         title: Text(
           'Promotional Ads Paused',
           style: GoogleFonts.inter(
-              fontWeight: FontWeight.w700,
-              fontSize: AppTypography.headlineSmall),
+            fontWeight: FontWeight.w700,
+            fontSize: AppTypography.headlineSmall,
+          ),
           textAlign: TextAlign.center,
         ),
         content: scrollableDialogContent(
@@ -60,9 +63,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                notice != null && notice.trim().isNotEmpty
-                    ? notice.trim()
-                    : 'Promotional ads and banner placements are currently paused by the Super Administrator. Please check back later or contact admin support.',
+                notice != null && notice.trim().isNotEmpty ? notice.trim() : 'Promotional ads and banner placements are currently paused by the Super Administrator. Please check back later or contact admin support.',
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(ctx),
@@ -72,16 +73,21 @@ class PromotedAdsManagementScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF59E0B).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline,
-                        size: 14, color: Color(0xFFD97706)),
+                    const Icon(
+                      Icons.info_outline,
+                      size: 14,
+                      color: Color(0xFFD97706),
+                    ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
@@ -108,7 +114,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
               backgroundColor: const Color(0xFF0F766E),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             child: Text(
               'Understood',
@@ -205,7 +212,9 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                   label: Text(
                     'Create New Ad',
                     style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w700, color: Colors.white),
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 )
               : null,
@@ -214,19 +223,22 @@ class PromotedAdsManagementScreen extends StatelessWidget {
               if (!isBannerEnabled)
                 Container(
                   width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   color: const Color(0xFFEF4444).withValues(alpha: 0.15),
                   child: Row(
                     children: [
-                      const Icon(Icons.pause_circle_outline,
-                          color: Color(0xFFEF4444), size: 20),
+                      const Icon(
+                        Icons.pause_circle_outline,
+                        color: Color(0xFFEF4444),
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          config.bannerNotice.isNotEmpty
-                              ? config.bannerNotice
-                              : 'Banner promotion system is currently paused by administrator.',
+                          config.bannerNotice.isNotEmpty ? config.bannerNotice : 'Banner promotion system is currently paused by administrator.',
                           style: GoogleFonts.inter(
                             fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
@@ -243,8 +255,10 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
-                          child: CircularProgressIndicator(
-                              color: AppColors.doctorBlue));
+                        child: CircularProgressIndicator(
+                          color: AppColors.doctorBlue,
+                        ),
+                      );
                     }
 
                     final ads = snapshot.data ?? [];
@@ -266,10 +280,11 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: (isDark
-                                              ? const Color(0xFF6366F1)
-                                              : AppColors.doctorBlue)
-                                          .withValues(alpha: 0.25),
+                                      color:
+                                          (isDark
+                                                  ? const Color(0xFF6366F1)
+                                                  : AppColors.doctorBlue)
+                                              .withValues(alpha: 0.25),
                                       blurRadius: 16,
                                       offset: const Offset(0, 4),
                                     ),
@@ -311,7 +326,9 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                                 style: FilledButton.styleFrom(
                                   backgroundColor: AppColors.doctorBlue,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 24, vertical: 12),
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
                                 ),
                               ),
                             ],
@@ -383,8 +400,9 @@ class _PromotedAdCard extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: SizedBox(
                   height: 120,
                   width: double.infinity,
@@ -396,15 +414,18 @@ class _PromotedAdCard extends StatelessWidget {
                           fit: BoxFit.cover,
                         )
                       : Container(
-                          color: AppColors.doctorBlue.withValues(alpha: 0.2)),
+                          color: AppColors.doctorBlue.withValues(alpha: 0.2),
+                        ),
                 ),
               ),
               Positioned(
                 top: 10,
                 right: 10,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor,
                     borderRadius: BorderRadius.circular(12),
@@ -424,16 +445,21 @@ class _PromotedAdCard extends StatelessWidget {
                   top: 10,
                   left: 10,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.timer_outlined,
-                            color: Colors.white, size: 14),
+                        const Icon(
+                          Icons.timer_outlined,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           ad.remainingTimeString,
@@ -495,8 +521,9 @@ class _PromotedAdCard extends StatelessWidget {
                     Text(
                       'Duration: ${_formatDuration(ad.durationHours)}',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: Colors.grey),
+                        fontSize: AppTypography.labelMedium,
+                        color: Colors.grey,
+                      ),
                     ),
                     Text(
                       ad.paymentStatus == 'verified'
@@ -516,15 +543,19 @@ class _PromotedAdCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.lock_outline_rounded,
-                          size: 14, color: Colors.grey),
+                      const Icon(
+                        Icons.lock_outline_rounded,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           'Active paid ads are read-only to ensure ad integrity.',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelSmall,
-                              color: Colors.grey),
+                            fontSize: AppTypography.labelSmall,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                     ],
@@ -539,10 +570,10 @@ class _PromotedAdCard extends StatelessWidget {
   }
 
   String _formatDuration(int hours) => switch (hours) {
-        24 => '1 Day',
-        72 => '3 Days',
-        168 => '1 Week',
-        720 => '1 Month',
-        _ => '$hours Hours',
-      };
+    24 => '1 Day',
+    72 => '3 Days',
+    168 => '1 Week',
+    720 => '1 Month',
+    _ => '$hours Hours',
+  };
 }

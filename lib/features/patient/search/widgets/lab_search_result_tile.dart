@@ -23,18 +23,18 @@ class LabSearchResultTile extends StatelessWidget {
   final bool showDivider;
 
   IconData get _icon => switch (kind) {
-        LabSearchResultKind.test => Icons.science_outlined,
-        LabSearchResultKind.package => Icons.local_offer_outlined,
-        LabSearchResultKind.lab => Icons.biotech_outlined,
-        LabSearchResultKind.ambulance => Icons.emergency_outlined,
-      };
+    LabSearchResultKind.test => Icons.science_outlined,
+    LabSearchResultKind.package => Icons.local_offer_outlined,
+    LabSearchResultKind.lab => Icons.biotech_outlined,
+    LabSearchResultKind.ambulance => Icons.emergency_outlined,
+  };
 
   Color get _color => switch (kind) {
-        LabSearchResultKind.test => AppColors.labPurple,
-        LabSearchResultKind.package => const Color(0xFF7C3AED),
-        LabSearchResultKind.lab => AppColors.patientTeal,
-        LabSearchResultKind.ambulance => const Color(0xFFEF4444),
-      };
+    LabSearchResultKind.test => AppColors.labPurple,
+    LabSearchResultKind.package => const Color(0xFF7C3AED),
+    LabSearchResultKind.lab => AppColors.patientTeal,
+    LabSearchResultKind.ambulance => const Color(0xFFEF4444),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -172,8 +172,10 @@ class LabSearchSectionHeader extends StatelessWidget {
                 onTap: onViewAll,
                 borderRadius: BorderRadius.circular(6),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

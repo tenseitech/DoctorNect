@@ -25,10 +25,8 @@ class EditPrescriptionScreen extends StatelessWidget {
     return Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => EditPrescriptionScreen(
-          patient: patient,
-          draft: draft.copy(),
-        ),
+        builder: (_) =>
+            EditPrescriptionScreen(patient: patient, draft: draft.copy()),
       ),
     );
   }
@@ -51,7 +49,8 @@ class EditPrescriptionScreen extends StatelessWidget {
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-              maxWidth: ResponsiveLayout.contentMaxWidth(context)),
+            maxWidth: ResponsiveLayout.contentMaxWidth(context),
+          ),
           child: WritePrescriptionScreen(
             patient: patient,
             existingDraft: draft,

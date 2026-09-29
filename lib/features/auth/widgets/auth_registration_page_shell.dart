@@ -44,8 +44,9 @@ class AuthRegistrationSection extends StatelessWidget {
           if (showDivider) ...[
             const SizedBox(height: 24),
             Divider(
-                color: AppColors.borderOf(context).withValues(alpha: 0.7),
-                height: 1),
+              color: AppColors.borderOf(context).withValues(alpha: 0.7),
+              height: 1,
+            ),
             const SizedBox(height: 8),
           ],
         ],
@@ -58,7 +59,8 @@ class AuthRegistrationSection extends StatelessWidget {
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppColors.borderOf(context).withValues(alpha: 0.85)),
+          color: AppColors.borderOf(context).withValues(alpha: 0.85),
+        ),
         boxShadow: [
           BoxShadow(
             color: accentColor.withValues(alpha: 0.06),
@@ -70,11 +72,7 @@ class AuthRegistrationSection extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          header,
-          const SizedBox(height: 16),
-          child,
-        ],
+        children: [header, const SizedBox(height: 16), child],
       ),
     );
   }

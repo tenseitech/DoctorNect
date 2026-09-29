@@ -45,42 +45,41 @@ class DoctorNectUserProfile {
       displayName: data['displayName'] as String? ?? '',
       email: data['email'] as String? ?? '',
       mobile: mobile,
-      verificationStatus:
-          isDemoDoctor ? 'verified' : data['verificationStatus'] as String?,
+      verificationStatus: isDemoDoctor
+          ? 'verified'
+          : data['verificationStatus'] as String?,
       rejectionReason: isDemoDoctor ? null : data['rejectionReason'] as String?,
       submittedAt: parseTimestamp(data['submittedAt']),
     );
   }
 
   Map<String, dynamic> toMap() => {
-        'role': _roleToString(role),
-        'profileId': profileId,
-        'displayName': displayName,
-        'email': email,
-        if (mobile != null) 'mobile': mobile,
-        if (verificationStatus != null)
-          'verificationStatus': verificationStatus,
-        if (rejectionReason != null) 'rejectionReason': rejectionReason,
-        if (submittedAt != null)
-          'submittedAt': Timestamp.fromDate(submittedAt!),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
+    'role': _roleToString(role),
+    'profileId': profileId,
+    'displayName': displayName,
+    'email': email,
+    if (mobile != null) 'mobile': mobile,
+    if (verificationStatus != null) 'verificationStatus': verificationStatus,
+    if (rejectionReason != null) 'rejectionReason': rejectionReason,
+    if (submittedAt != null) 'submittedAt': Timestamp.fromDate(submittedAt!),
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
 
   static UserType _roleFromString(String value) => switch (value) {
-        'super_admin' || 'superAdmin' => UserType.superAdmin,
-        'doctor' => UserType.doctor,
-        'medicalStore' => UserType.medicalStore,
-        'lab' => UserType.lab,
-        'ambulance' => UserType.ambulance,
-        _ => UserType.patient,
-      };
+    'super_admin' || 'superAdmin' => UserType.superAdmin,
+    'doctor' => UserType.doctor,
+    'medicalStore' => UserType.medicalStore,
+    'lab' => UserType.lab,
+    'ambulance' => UserType.ambulance,
+    _ => UserType.patient,
+  };
 
   static String _roleToString(UserType role) => switch (role) {
-        UserType.superAdmin => 'super_admin',
-        UserType.doctor => 'doctor',
-        UserType.medicalStore => 'medicalStore',
-        UserType.lab => 'lab',
-        UserType.patient => 'patient',
-        UserType.ambulance => 'ambulance',
-      };
+    UserType.superAdmin => 'super_admin',
+    UserType.doctor => 'doctor',
+    UserType.medicalStore => 'medicalStore',
+    UserType.lab => 'lab',
+    UserType.patient => 'patient',
+    UserType.ambulance => 'ambulance',
+  };
 }

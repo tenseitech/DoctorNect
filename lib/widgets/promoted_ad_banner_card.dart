@@ -25,12 +25,12 @@ class PromotedAdBannerCard extends StatelessWidget {
   final EdgeInsetsGeometry margin;
 
   String get _providerLabel => switch (providerType.toLowerCase()) {
-        'doctor' => 'Medical Practice & Clinic',
-        'lab' => 'Diagnostic Lab & Tests',
-        'pharmacy' => 'Medical Store & Pharmacy',
-        'ambulance' => 'Ambulance & Emergency Service',
-        _ => 'Healthcare Business',
-      };
+    'doctor' => 'Medical Practice & Clinic',
+    'lab' => 'Diagnostic Lab & Tests',
+    'pharmacy' => 'Medical Store & Pharmacy',
+    'ambulance' => 'Ambulance & Emergency Service',
+    _ => 'Healthcare Business',
+  };
 
   void _open(BuildContext context) {
     PromotedAdsManagementScreen.open(
@@ -85,7 +85,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3)),
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: const Icon(
                         TablerIcons.speakerphone,
@@ -96,7 +97,9 @@ class PromotedAdBannerCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFDE047),
                         borderRadius: BorderRadius.circular(8),
@@ -144,17 +147,21 @@ class PromotedAdBannerCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF0F766E),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     elevation: 2,
                   ),
                   child: Text(
                     'Book Ad',
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        fontWeight: FontWeight.w800),
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 );
 
@@ -186,7 +193,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.18),
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3)),
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: const Icon(
                         TablerIcons.speakerphone,
@@ -202,7 +210,9 @@ class PromotedAdBannerCard extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFDE047),
                               borderRadius: BorderRadius.circular(8),

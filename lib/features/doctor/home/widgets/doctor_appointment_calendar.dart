@@ -185,12 +185,14 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
 
             return AlertDialog(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Text(
                 'Select month & year',
                 style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppTypography.headlineSmall),
+                  fontWeight: FontWeight.w700,
+                  fontSize: AppTypography.headlineSmall,
+                ),
               ),
               content: SizedBox(
                 width: 300,
@@ -211,26 +213,33 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                       key: ValueKey(year),
                       initialValue: year,
                       decoration: InputDecoration(
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: AppColors.borderOf(context)),
+                          borderSide: BorderSide(
+                            color: AppColors.borderOf(context),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide:
-                              BorderSide(color: AppColors.borderOf(context)),
+                          borderSide: BorderSide(
+                            color: AppColors.borderOf(context),
+                          ),
                         ),
                       ),
                       items: years
                           .map(
                             (y) => DropdownMenuItem(
                               value: y,
-                              child: Text('$y',
-                                  style: GoogleFonts.inter(
-                                      fontSize: AppTypography.bodyMedium)),
+                              child: Text(
+                                '$y',
+                                style: GoogleFonts.inter(
+                                  fontSize: AppTypography.bodyMedium,
+                                ),
+                              ),
                             ),
                           )
                           .toList(),
@@ -258,8 +267,8 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                       children: List.generate(12, (index) {
                         final m = index + 1;
                         final isSelected = m == month;
-                        final label =
-                            DateFormat('MMM').format(DateTime(2024, m));
+                        final label = DateFormat('MMM')
+                            .format(DateTime(2024, m));
 
                         return Material(
                           color: Colors.transparent,
@@ -300,20 +309,26 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(dialogContext),
-                  child: Text('Cancel',
-                      style: GoogleFonts.inter(
-                          color: AppColors.textSecondaryOf(context))),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.inter(
+                      color: AppColors.textSecondaryOf(context),
+                    ),
+                  ),
                 ),
                 FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: _accent,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   onPressed: () =>
                       Navigator.pop(dialogContext, (year: year, month: month)),
-                  child: Text('Apply',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'Apply',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             );
@@ -335,8 +350,11 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
   Widget build(BuildContext context) {
     final config = widget.themeConfig;
     final monthStart = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
-    final daysInMonth =
-        DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0).day;
+    final daysInMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month + 1,
+      0,
+    ).day;
     final firstWeekday = monthStart.weekday % 7;
     final today = DateTime.now();
     final todayDay = DateTime(today.year, today.month, today.day);
@@ -356,7 +374,8 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
         border: compact
             ? null
             : Border.all(
-                color: config?.borderColor ?? AppColors.borderOf(context)),
+                color: config?.borderColor ?? AppColors.borderOf(context),
+              ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -370,15 +389,15 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 onPressed: _canGoToPreviousMonth
                     ? () => _setFocusedMonth(
-                          DateTime(_focusedMonth.year, _focusedMonth.month - 1),
-                        )
+                        DateTime(_focusedMonth.year, _focusedMonth.month - 1),
+                      )
                     : null,
                 icon: Icon(
                   Icons.chevron_left,
                   color: _canGoToPreviousMonth
                       ? _accent
                       : AppColors.textSecondaryOf(context)
-                          .withValues(alpha: 0.35),
+                            .withValues(alpha: 0.35),
                 ),
               ),
               Expanded(
@@ -389,7 +408,9 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 6, horizontal: 4),
+                        vertical: 6,
+                        horizontal: 4,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -398,7 +419,8 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                               DateFormat('MMMM yyyy').format(_focusedMonth),
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
-                              style: config?.headerStyle ??
+                              style:
+                                  config?.headerStyle ??
                                   GoogleFonts.inter(
                                     fontSize: monthFontSize,
                                     fontWeight: FontWeight.w700,
@@ -420,15 +442,15 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                 constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 onPressed: _canGoToNextMonth
                     ? () => _setFocusedMonth(
-                          DateTime(_focusedMonth.year, _focusedMonth.month + 1),
-                        )
+                        DateTime(_focusedMonth.year, _focusedMonth.month + 1),
+                      )
                     : null,
                 icon: Icon(
                   Icons.chevron_right,
                   color: _canGoToNextMonth
                       ? _accent
                       : AppColors.textSecondaryOf(context)
-                          .withValues(alpha: 0.35),
+                            .withValues(alpha: 0.35),
                 ),
               ),
             ],
@@ -440,7 +462,8 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                 child: Center(
                   child: Text(
                     label,
-                    style: config?.dayLabelStyle ??
+                    style:
+                        config?.dayLabelStyle ??
                         GoogleFonts.inter(
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w600,
@@ -466,12 +489,16 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
               if (index < firstWeekday) return const SizedBox.shrink();
 
               final day = index - firstWeekday + 1;
-              final date =
-                  DateTime(_focusedMonth.year, _focusedMonth.month, day);
+              final date = DateTime(
+                _focusedMonth.year,
+                _focusedMonth.month,
+                day,
+              );
               final isSelected = _isSameDay(date, selectedDate);
               final isToday = _isSameDay(date, todayDay);
               final enabled = widget.isDayEnabled?.call(date) ?? true;
-              final hasAppointments = widget.showAppointmentDots &&
+              final hasAppointments =
+                  widget.showAppointmentDots &&
                   _datesWithAppointments.any((d) => _isSameDay(d, date));
 
               final baseDayStyle = config?.dayNumberStyle;
@@ -486,8 +513,8 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                       color: isSelected
                           ? _accent
                           : isToday && enabled
-                              ? _accent.withValues(alpha: 0.1)
-                              : null,
+                          ? _accent.withValues(alpha: 0.1)
+                          : null,
                       borderRadius: BorderRadius.circular(8),
                       border: isToday && !isSelected && enabled
                           ? Border.all(color: _accent.withValues(alpha: 0.4))
@@ -498,22 +525,24 @@ class _DoctorAppointmentCalendarState extends State<DoctorAppointmentCalendar> {
                       children: [
                         Text(
                           '$day',
-                          style: (baseDayStyle ??
-                                  GoogleFonts.inter(fontSize: dayFontSize))
-                              .copyWith(
-                            fontWeight: isSelected || (isToday && enabled)
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: !enabled
-                                ? AppColors.textSecondaryOf(context)
-                                    .withValues(alpha: 0.45)
-                                : isSelected
-                                    ? Colors.white
-                                    : isToday
+                          style:
+                              (baseDayStyle ??
+                                      GoogleFonts.inter(fontSize: dayFontSize))
+                                  .copyWith(
+                                    fontWeight:
+                                        isSelected || (isToday && enabled)
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: !enabled
+                                        ? AppColors.textSecondaryOf(context)
+                                              .withValues(alpha: 0.45)
+                                        : isSelected
+                                        ? Colors.white
+                                        : isToday
                                         ? _accent
                                         : baseDayStyle?.color ??
-                                            AppColors.textPrimaryOf(context),
-                          ),
+                                              AppColors.textPrimaryOf(context),
+                                  ),
                         ),
                         if (hasAppointments) ...[
                           const SizedBox(height: 2),

@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -25,8 +26,9 @@ class ConnectDoctorsScreen extends StatelessWidget {
   final String? appBarTitle;
 
   String? _pharmacyCityLabel() {
-    final store =
-        MedicalStoreRegistry.findById(MedicalStoreSession.loggedInStoreId);
+    final store = MedicalStoreRegistry.findById(
+      MedicalStoreSession.loggedInStoreId,
+    );
     if (store == null) return null;
     return pharmacyCityFilter(city: store.city, address: store.address);
   }
@@ -47,33 +49,39 @@ class ConnectDoctorsScreen extends StatelessWidget {
       listenables: [connStore, prescStore],
       activeConnections: () => connStore
           .activeForStore(storeId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       fromDoctorRequests: () => connStore
           .pendingForStoreFromDoctor(storeId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       sentByPartnerInvites: () => connStore
           .pendingSentByStore(storeId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       cityFilter: _pharmacyCityLabel,
       searchDoctorsFn: (query) => sortDoctorsAlphabetically(
@@ -85,8 +93,10 @@ class ConnectDoctorsScreen extends StatelessWidget {
       ),
       activitySubtitleBuilder: (doctorId) {
         final count = prescStore.forStoreAndDoctor(storeId, doctorId).length;
-        final last =
-            prescStore.forStoreAndDoctor(storeId, doctorId).firstOrNull?.sentAt;
+        final last = prescStore
+            .forStoreAndDoctor(storeId, doctorId)
+            .firstOrNull
+            ?.sentAt;
         return '$count prescriptions${last != null ? ' Â· Last: ${DateFormat('dd MMM').format(last)}' : ''}';
       },
       onApproveConnection: (id, doctorName) => connStore.approveByStore(id),

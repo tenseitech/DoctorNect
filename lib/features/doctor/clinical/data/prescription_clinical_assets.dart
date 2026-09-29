@@ -29,12 +29,9 @@ abstract final class PrescriptionClinicalAssets {
     if (_idleScheduled) return;
     _idleScheduled = true;
 
-    SchedulerBinding.instance.scheduleTask(
-      () async {
-        await ensureLoaded();
-        onLoaded();
-      },
-      Priority.idle,
-    );
+    SchedulerBinding.instance.scheduleTask(() async {
+      await ensureLoaded();
+      onLoaded();
+    }, Priority.idle);
   }
 }

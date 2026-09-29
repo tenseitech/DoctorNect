@@ -55,7 +55,8 @@ class MultiSelectChips extends StatelessWidget {
                 color: isSelected ? accentColor : AppColors.borderOf(context),
               ),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
+                borderRadius: BorderRadius.circular(20),
+              ),
             );
           }).toList(),
         ),
@@ -64,7 +65,9 @@ class MultiSelectChips extends StatelessWidget {
           Text(
             errorText!,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium, color: AppColors.error),
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.error,
+            ),
           ),
         ],
       ],

@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../../../../core/theme/app_typography.dart';
 
 class PatientFiltersBar extends StatelessWidget {
@@ -176,9 +178,10 @@ class PatientFiltersBar extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(label,
-                  style:
-                      GoogleFonts.inter(fontSize: AppTypography.labelMedium)),
+              label: Text(
+                label,
+                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
+              ),
               selected: selected,
               onSelected: (_) => onFilterChanged(f),
               selectedColor: AppColors.doctorBlue.withValues(alpha: 0.15),
@@ -202,10 +205,13 @@ class PatientFiltersBar extends StatelessWidget {
     return Row(
       children: [
         if (!compact)
-          Text('Sort:',
-              style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context))),
+          Text(
+            'Sort:',
+            style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
+          ),
         if (!compact) const SizedBox(width: 8),
         Expanded(
           child: DropdownButtonFormField<PatientSort>(
@@ -227,10 +233,14 @@ class PatientFiltersBar extends StatelessWidget {
             ),
             items: const [
               DropdownMenuItem(
-                  value: PatientSort.lastVisit, child: Text('Last visit')),
+                value: PatientSort.lastVisit,
+                child: Text('Last visit'),
+              ),
               DropdownMenuItem(value: PatientSort.name, child: Text('Name')),
               DropdownMenuItem(
-                  value: PatientSort.appointmentCount, child: Text('Visits')),
+                value: PatientSort.appointmentCount,
+                child: Text('Visits'),
+              ),
             ],
             onChanged: (v) {
               if (v != null) onSortChanged(v);

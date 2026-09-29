@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -65,8 +66,10 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
     final summary = parts.join('\n');
     final appointmentId = widget.patient.appointmentId;
     if (appointmentId == null || appointmentId.isEmpty) {
-      AppToast.info(context,
-          'No appointment linked — clinical notes could not be saved.');
+      AppToast.info(
+        context,
+        'No appointment linked — clinical notes could not be saved.',
+      );
       return;
     }
 
@@ -155,9 +158,12 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
                       value: _allergySeverity,
                       isExpanded: true,
                       items: ClinicalMockData.allergySeverities
-                          .map((s) => DropdownMenuItem(
+                          .map(
+                            (s) => DropdownMenuItem(
                               value: s,
-                              child: Text(s, overflow: TextOverflow.ellipsis)))
+                              child: Text(s, overflow: TextOverflow.ellipsis),
+                            ),
+                          )
                           .toList(),
                       onChanged: (v) => setState(() => _allergySeverity = v!),
                     ),
@@ -165,10 +171,7 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              LabeledAddButton(
-                label: '+ Add Allergy',
-                onPressed: _addAllergy,
-              ),
+              LabeledAddButton(label: '+ Add Allergy', onPressed: _addAllergy),
               if (_allergies.isNotEmpty)
                 Wrap(
                   spacing: 6,
@@ -183,7 +186,9 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
                       label: Text('${a.name} (${a.severity})'),
                       deleteIconColor: color,
                       labelStyle: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium, color: color),
+                        fontSize: AppTypography.labelMedium,
+                        color: color,
+                      ),
                       side: BorderSide(color: color.withValues(alpha: 0.4)),
                       onDeleted: () => setState(() => _allergies.remove(a)),
                     );
@@ -216,14 +221,20 @@ class _InfoLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text('$label: ',
-            style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                color: AppColors.textSecondaryOf(context))),
-        Text(value,
-            style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                fontWeight: FontWeight.w600)),
+        Text(
+          '$label: ',
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.bodySmall,
+            color: AppColors.textSecondaryOf(context),
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.bodySmall,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

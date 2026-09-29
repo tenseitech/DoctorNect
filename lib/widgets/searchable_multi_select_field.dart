@@ -108,7 +108,9 @@ class SearchableMultiSelectField extends StatelessWidget {
                 label: Text(
                   item,
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium, color: accentColor),
+                    fontSize: AppTypography.labelMedium,
+                    color: accentColor,
+                  ),
                 ),
                 deleteIcon: Icon(Icons.close, size: 14, color: accentColor),
                 onDeleted: () {
@@ -256,8 +258,10 @@ class _SearchableMultiSelectSheetState
                           onPressed: _searchController.clear,
                         ),
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
@@ -268,7 +272,8 @@ class _SearchableMultiSelectSheetState
                       child: Text(
                         'No results for "${_searchController.text.trim()}"',
                         style: GoogleFonts.inter(
-                            color: AppColors.textSecondaryOf(context)),
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                     )
                   : ListView.builder(

@@ -11,10 +11,7 @@ import '../core/theme/app_typography.dart';
 /// Consolidated three-dot (⋮) overflow menu for top header bars.
 /// Contains QR Credentials Pass, Emergency SOS Hotline, and Theme Toggle.
 class HeaderOverflowMenu extends StatelessWidget {
-  const HeaderOverflowMenu({
-    super.key,
-    required this.userType,
-  });
+  const HeaderOverflowMenu({super.key, required this.userType});
 
   final UserType userType;
 
@@ -30,13 +27,14 @@ class HeaderOverflowMenu extends StatelessWidget {
         return PopupMenuButton<String>(
           icon: Icon(
             Icons.more_vert_rounded,
-            color:
-                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
+            color: Theme.of(context).colorScheme.onSurface
+                .withValues(alpha: 0.85),
             size: 22,
           ),
           tooltip: 'More options',
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           color: AppColors.surfaceOf(context),
           elevation: 6,
           onSelected: (value) {
@@ -99,8 +97,11 @@ class HeaderOverflowMenu extends StatelessWidget {
                         color: const Color(0xFFDC2626).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.emergency_rounded,
-                          color: Color(0xFFDC2626), size: 18),
+                      child: const Icon(
+                        Icons.emergency_rounded,
+                        color: Color(0xFFDC2626),
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Text(

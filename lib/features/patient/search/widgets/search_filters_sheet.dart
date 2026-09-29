@@ -48,8 +48,10 @@ class SearchFiltersSheet extends StatefulWidget {
         context: context,
         builder: (ctx) => Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 32,
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: ConstrainedBox(
@@ -141,10 +143,7 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
   }
 
   void _clearAll() {
-    Navigator.pop(
-      context,
-      const SearchFiltersResult(cleared: true),
-    );
+    Navigator.pop(context, const SearchFiltersResult(cleared: true));
   }
 
   void _apply() {
@@ -228,8 +227,9 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                           label: chip.label,
                           selected: selected,
                           onTap: () => setState(() {
-                            _specialityCategory =
-                                selected ? null : chip.categoryKey;
+                            _specialityCategory = selected
+                                ? null
+                                : chip.categoryKey;
                           }),
                         );
                       }).toList(),
@@ -246,8 +246,9 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                           runSpacing: 8,
                           children: [
                             if (_locationFilter != null &&
-                                !widget.locationOptions
-                                    .contains(_locationFilter))
+                                !widget.locationOptions.contains(
+                                  _locationFilter,
+                                ))
                               _OptionChip(
                                 label: '📍 $_locationFilter',
                                 selected: true,
@@ -272,7 +273,8 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                         const SizedBox(height: 10),
                         InkWell(
                           onTap: () => setState(
-                              () => _showCustomLocation = !_showCustomLocation),
+                            () => _showCustomLocation = !_showCustomLocation,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -422,8 +424,9 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                 child: Text(
                   'Apply filters',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodyLarge,
-                      fontWeight: FontWeight.w700),
+                    fontSize: AppTypography.bodyLarge,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -482,8 +485,9 @@ class _OptionChip extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color:
-                selected ? AppColors.patientTeal : AppColors.cardBgOf(context),
+            color: selected
+                ? AppColors.patientTeal
+                : AppColors.cardBgOf(context),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: selected

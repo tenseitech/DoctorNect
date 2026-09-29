@@ -32,8 +32,9 @@ InputDecoration authLoginFieldDecoration({
     suffixIcon: suffixIcon,
     counterText: counterText,
     filled: true,
-    fillColor:
-        readOnly ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
+    fillColor: readOnly
+        ? AppColors.cardBgOf(context)
+        : AppColors.surfaceOf(context),
     isDense: true,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
     border: border(AppColors.borderOf(context)),
@@ -43,9 +44,10 @@ InputDecoration authLoginFieldDecoration({
     focusedErrorBorder: border(AppColors.error, 1.6),
     disabledBorder: border(AppColors.borderOf(context)),
     errorStyle: GoogleFonts.inter(
-        fontSize: AppTypography.labelMedium,
-        color: AppColors.error,
-        height: 1.2),
+      fontSize: AppTypography.labelMedium,
+      color: AppColors.error,
+      height: 1.2,
+    ),
     errorMaxLines: 4,
   );
 }

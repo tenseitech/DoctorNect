@@ -1,4 +1,5 @@
 import '../../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -126,8 +127,9 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
         if (id != null) {
           setState(() {
             _selectedIds.add(id);
-            _extraItems
-                .add(TestCatalogItem(id: id, name: name, group: 'Custom'));
+            _extraItems.add(
+              TestCatalogItem(id: id, name: name, group: 'Custom'),
+            );
           });
           return;
         }
@@ -211,7 +213,9 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                       backgroundColor: AppColors.doctorBlue,
                       foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       textStyle: GoogleFonts.inter(
@@ -238,8 +242,10 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                           onPressed: () => _searchController.clear(),
                         ),
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
@@ -325,8 +331,9 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textPrimaryOf(context),
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                       ),
                     ),
                   ),
@@ -434,8 +441,9 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
         if (!mounted) return;
         if (savedName != null) {
           setState(() {
-            if (!_allOptions
-                .any((o) => o.toLowerCase() == savedName.toLowerCase())) {
+            if (!_allOptions.any(
+              (o) => o.toLowerCase() == savedName.toLowerCase(),
+            )) {
               _extraOptions.add(savedName);
             }
             if (!_selected.contains(savedName)) _selected.add(savedName);
@@ -513,7 +521,9 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                       backgroundColor: AppColors.doctorBlue,
                       foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       textStyle: GoogleFonts.inter(
@@ -540,8 +550,10 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                           onPressed: () => _searchController.clear(),
                         ),
                   isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
@@ -637,8 +649,11 @@ class _AddCustomSearchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading:
-          Icon(Icons.add_circle_outline, color: AppColors.doctorBlue, size: 22),
+      leading: Icon(
+        Icons.add_circle_outline,
+        color: AppColors.doctorBlue,
+        size: 22,
+      ),
       title: RichText(
         text: TextSpan(
           style: GoogleFonts.inter(

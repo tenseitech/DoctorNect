@@ -13,10 +13,13 @@ import '../../../core/theme/app_typography.dart';
 /// Bottom sheet to choose which connected stores receive a prescription.
 class SendToPharmacySheet {
   static Future<List<String>?> show(
-      BuildContext context, PrescriptionDraft draft) {
+    BuildContext context,
+    PrescriptionDraft draft,
+  ) {
     final doctorId = DoctorSession.loggedInDoctorId;
-    final connections =
-        PharmacyConnectionStore.instance.activeForDoctor(doctorId);
+    final connections = PharmacyConnectionStore.instance.activeForDoctor(
+      doctorId,
+    );
     if (connections.isEmpty) return Future.value(<String>[]);
 
     return showModalBottomSheet<List<String>>(
@@ -41,8 +44,9 @@ class _SendSheet extends StatefulWidget {
 }
 
 class _SendSheetState extends State<_SendSheet> {
-  late final Set<String> _selected =
-      widget.connections.map((c) => c.medicalStoreId).toSet();
+  late final Set<String> _selected = widget.connections
+      .map((c) => c.medicalStoreId)
+      .toSet();
   bool _sendToAll = true;
 
   @override
@@ -61,8 +65,9 @@ class _SendSheetState extends State<_SendSheet> {
           Text(
             'Send to Medical Stores',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.headlineSmall,
-                fontWeight: FontWeight.w700),
+              fontSize: AppTypography.headlineSmall,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -93,8 +98,11 @@ class _SendSheetState extends State<_SendSheet> {
                 value: _selected.contains(c.medicalStoreId),
                 title: Text(c.storeName),
                 subtitle: store != null
-                    ? Text(store.address,
-                        maxLines: 1, overflow: TextOverflow.ellipsis)
+                    ? Text(
+                        store.address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
                     : null,
                 onChanged: (v) {
                   setState(() {
@@ -118,7 +126,8 @@ class _SendSheetState extends State<_SendSheet> {
               minimumSize: const Size(double.infinity, 48),
             ),
             child: Text(
-                'Send to ${_selected.length} store${_selected.length == 1 ? '' : 's'}'),
+              'Send to ${_selected.length} store${_selected.length == 1 ? '' : 's'}',
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, <String>[]),
@@ -132,8 +141,10 @@ class _SendSheetState extends State<_SendSheet> {
 
 /// Shows delivery status per store for a prescription.
 class PrescriptionPharmacyStatusSection extends StatelessWidget {
-  const PrescriptionPharmacyStatusSection(
-      {super.key, required this.prescriptionId});
+  const PrescriptionPharmacyStatusSection({
+    super.key,
+    required this.prescriptionId,
+  });
 
   final String prescriptionId;
 
@@ -150,17 +161,21 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pharmacy delivery',
-            style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: AppTypography.bodySmall)),
+        Text(
+          'Pharmacy delivery',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: AppTypography.bodySmall,
+          ),
+        ),
         const SizedBox(height: 6),
         ...deliveries.map((d) {
           final color = switch (d.status) {
             PharmacyDeliveryStatus.sent => AppColors.doctorBlue,
             PharmacyDeliveryStatus.viewed => const Color(0xFFCA8A04),
-            PharmacyDeliveryStatus.partiallyDispensed =>
-              const Color(0xFFEA580C),
+            PharmacyDeliveryStatus.partiallyDispensed => const Color(
+              0xFFEA580C,
+            ),
             PharmacyDeliveryStatus.dispensed => AppColors.pharmacyGreen,
           };
           return Padding(
@@ -170,15 +185,20 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
                 Icon(Icons.local_pharmacy, size: 16, color: color),
                 const SizedBox(width: 6),
                 Expanded(
-                    child: Text(d.storeName,
-                        style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium))),
+                  child: Text(
+                    d.storeName,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.labelMedium,
+                    ),
+                  ),
+                ),
                 Text(
                   _statusLabel(d.status),
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall,
-                      fontWeight: FontWeight.w600,
-                      color: color),
+                    fontSize: AppTypography.labelSmall,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
               ],
             ),
@@ -189,9 +209,9 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
   }
 
   static String _statusLabel(PharmacyDeliveryStatus s) => switch (s) {
-        PharmacyDeliveryStatus.sent => 'Sent',
-        PharmacyDeliveryStatus.viewed => 'Viewed',
-        PharmacyDeliveryStatus.partiallyDispensed => 'Partial',
-        PharmacyDeliveryStatus.dispensed => 'Dispensed',
-      };
+    PharmacyDeliveryStatus.sent => 'Sent',
+    PharmacyDeliveryStatus.viewed => 'Viewed',
+    PharmacyDeliveryStatus.partiallyDispensed => 'Partial',
+    PharmacyDeliveryStatus.dispensed => 'Dispensed',
+  };
 }

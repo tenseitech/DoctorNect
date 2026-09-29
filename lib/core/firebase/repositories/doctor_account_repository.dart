@@ -40,7 +40,9 @@ class DoctorAccountRepository {
   }) async {
     if (!FirebaseBootstrap.isReady) {
       return const DoctorDeactivationStatus(
-          deactivated: false, canReactivate: false);
+        deactivated: false,
+        canReactivate: false,
+      );
     }
 
     try {
@@ -52,7 +54,9 @@ class DoctorAccountRepository {
       );
       if (!snap.exists || snap.data() == null) {
         return const DoctorDeactivationStatus(
-            deactivated: false, canReactivate: false);
+          deactivated: false,
+          canReactivate: false,
+        );
       }
 
       final data = snap.data()!;
@@ -69,7 +73,9 @@ class DoctorAccountRepository {
 
       if (!deactivated) {
         return const DoctorDeactivationStatus(
-            deactivated: false, canReactivate: false);
+          deactivated: false,
+          canReactivate: false,
+        );
       }
 
       final canReactivate =
@@ -82,14 +88,20 @@ class DoctorAccountRepository {
       );
     } catch (_) {
       return const DoctorDeactivationStatus(
-          deactivated: false, canReactivate: false);
+        deactivated: false,
+        canReactivate: false,
+      );
     }
   }
 
-  Future<bool> isDeactivated(String doctorId,
-      {bool preferCache = false}) async {
-    final status =
-        await fetchDeactivationStatus(doctorId, preferCache: preferCache);
+  Future<bool> isDeactivated(
+    String doctorId, {
+    bool preferCache = false,
+  }) async {
+    final status = await fetchDeactivationStatus(
+      doctorId,
+      preferCache: preferCache,
+    );
     return status.deactivated;
   }
 
@@ -111,7 +123,8 @@ class DoctorAccountRepository {
       final mobile = data['mobile'] as String? ?? data['phone'] as String?;
       if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
       if (data['verificationStatus'] == 'verified' ||
-          data['status'] == 'approved') return true;
+          data['status'] == 'approved')
+        return true;
       return _isTruthy(data['verified']);
     } catch (_) {
       return false;
@@ -174,8 +187,7 @@ class DoctorAccountRepository {
 
     batch.update(doctorRef, {
       'deactivated': false,
-      'verified':
-          false, // FIXED: reactivation must go through admin re-approval, like registration
+      'verified': false, // FIXED: reactivation must go through admin re-approval, like registration
       'reactivatedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });

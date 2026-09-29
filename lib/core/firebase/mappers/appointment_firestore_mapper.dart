@@ -40,8 +40,10 @@ abstract final class AppointmentFirestoreMapper {
     return const [];
   }
 
-  static Map<String, dynamic> toMap(DoctorNectAppointmentRecord record,
-      {String? patientId}) {
+  static Map<String, dynamic> toMap(
+    DoctorNectAppointmentRecord record, {
+    String? patientId,
+  }) {
     final resolvedPatientId = patientId ?? record.patientId;
 
     return {
@@ -93,7 +95,9 @@ abstract final class AppointmentFirestoreMapper {
   }
 
   static DoctorNectAppointmentRecord? fromMap(
-      String id, Map<String, dynamic> data) {
+    String id,
+    Map<String, dynamic> data,
+  ) {
     try {
       return DoctorNectAppointmentRecord(
         id: id,
@@ -110,8 +114,9 @@ abstract final class AppointmentFirestoreMapper {
         dateTime: (data['dateTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
         slotLabel: data['slotLabel'] as String? ?? '',
         tokenNumber: (data['tokenNumber'] as num?)?.toInt() ?? 0,
-        visitType: AppointmentType.values
-            .byName(data['visitType'] as String? ?? 'newVisit'),
+        visitType: AppointmentType.values.byName(
+          data['visitType'] as String? ?? 'newVisit',
+        ),
         patientStatus: PatientBookingStatus.values.byName(
           data['patientStatus'] as String? ?? 'pending',
         ),
@@ -129,15 +134,15 @@ abstract final class AppointmentFirestoreMapper {
         reviewRating: (data['reviewRating'] as num?)?.toInt(),
         reviewId: data['reviewId'] as String?,
         reviewCreatedAt: (data['reviewCreatedAt'] as Timestamp?)?.toDate(),
-        labReports:
-            (data['labReports'] as List<dynamic>? ?? const []).cast<String>(),
+        labReports: (data['labReports'] as List<dynamic>? ?? const [])
+            .cast<String>(),
         clinicalNotes: data['clinicalNotes'] as String?,
         contactNumber: data['contactNumber'] as String?,
         chiefComplaints: parseChiefComplaints(data),
         patientId: data['patientId'] as String?,
         source: data['source'] as String?,
-        symptoms:
-            (data['symptoms'] as List<dynamic>? ?? const []).cast<String>(),
+        symptoms: (data['symptoms'] as List<dynamic>? ?? const [])
+            .cast<String>(),
         observations: parseObservations(data),
         bookedByName: data['bookedByName'] as String?,
         patientRelation: data['patientRelation'] as String?,

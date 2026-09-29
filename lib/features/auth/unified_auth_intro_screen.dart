@@ -21,11 +21,7 @@ import 'widgets/unified_auth_mobile_field.dart';
 
 /// Intro screen shown after role selection, before the full mobile-number entry screen.
 class UnifiedAuthIntroScreen extends StatefulWidget {
-  const UnifiedAuthIntroScreen({
-    super.key,
-    this.role,
-    this.accentColor,
-  });
+  const UnifiedAuthIntroScreen({super.key, this.role, this.accentColor});
 
   final UserType? role;
   final Color? accentColor;
@@ -87,277 +83,220 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
   Color get _accent => widget.accentColor ?? _defaultAccent;
 
   Color get _defaultAccent => switch (widget.role) {
-        UserType.doctor => AppColors.doctorBlue,
-        UserType.patient => AppColors.patientTeal,
-        UserType.medicalStore => AppColors.pharmacyGreen,
-        UserType.lab => AppColors.labPurple,
-        UserType.ambulance => const Color(0xFFDC2626),
-        _ => AppColors.doctorBlue,
-      };
+    UserType.doctor => AppColors.doctorBlue,
+    UserType.patient => AppColors.patientTeal,
+    UserType.medicalStore => AppColors.pharmacyGreen,
+    UserType.lab => AppColors.labPurple,
+    UserType.ambulance => const Color(0xFFDC2626),
+    _ => AppColors.doctorBlue,
+  };
 
   IconData get _roleIcon => switch (widget.role) {
-        UserType.doctor => Icons.medical_services_outlined,
-        UserType.patient => Icons.person_outline,
-        UserType.medicalStore => Icons.local_pharmacy_outlined,
-        UserType.lab => Icons.biotech_outlined,
-        UserType.ambulance => Icons.emergency_outlined,
-        _ => Icons.local_hospital_outlined,
-      };
+    UserType.doctor => Icons.medical_services_outlined,
+    UserType.patient => Icons.person_outline,
+    UserType.medicalStore => Icons.local_pharmacy_outlined,
+    UserType.lab => Icons.biotech_outlined,
+    UserType.ambulance => Icons.emergency_outlined,
+    _ => Icons.local_hospital_outlined,
+  };
 
   List<_IntroSlideContent> get _slides => switch (widget.role) {
-        UserType.doctor => const [
-            _IntroSlideContent(
-              headline: 'Manage patients with ease',
-              supportingText:
-                  'Appointments, prescriptions and clinical notes — all in one secure workspace built for doctors.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Write prescriptions digitally',
-              supportingText:
-                  'Create, share and track prescriptions with patients and pharmacies in a few taps.',
-              placeholderIcon: Icons.medication_outlined,
-            ),
-            _IntroSlideContent(
-              headline: 'Your clinic, organized',
-              supportingText:
-                  'Stay on top of schedules, follow-ups and patient records without the paperwork.',
-              placeholderIcon: Icons.calendar_month_outlined,
-            ),
-            _IntroSlideContent(
-              headline: 'Seamless consultations',
-              supportingText:
-                  'Connect with patients through in-clinic visits and video consultations with instant follow-ups.',
-              placeholderIcon: Icons.videocam_outlined,
-            ),
-          ],
-        UserType.patient => const [
-            _IntroSlideContent(
-              headline: 'Your health, in your hands',
-              supportingText:
-                  'Book doctors, track prescriptions, and manage lab reports from one secure app.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Book appointments easily',
-              supportingText:
-                  'Find trusted doctors near you and schedule visits in minutes.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Care when you need it',
-              supportingText:
-                  'Access prescriptions, reports, and emergency services anytime.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Book lab tests and ambulance when you need them',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-          ],
-        UserType.medicalStore => const [
-            _IntroSlideContent(
-              headline: 'Streamline your pharmacy',
-              supportingText:
-                  'Receive digital prescriptions and serve patients faster from one workspace.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Manage orders digitally',
-              supportingText:
-                  'Track dispensing, inventory, and patient requests without the paperwork.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Connect with care partners',
-              supportingText:
-                  'Work seamlessly with doctors and patients on DoctorNect.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Grow your pharmacy with DoctorNect',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-          ],
-        UserType.lab => const [
-            _IntroSlideContent(
-              headline: 'Simplify lab operations',
-              supportingText:
-                  'Manage test orders, samples, and results from one connected dashboard.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Digital test reports',
-              supportingText:
-                  'Upload results and notify patients instantly — no manual follow-ups.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Manage sample requests',
-              supportingText:
-                  'Track walk-ins, home collections, and doctor orders in real time.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Partner with doctors on DoctorNect',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-          ],
-        UserType.ambulance => const [
-            _IntroSlideContent(
-              headline: 'Respond faster, save lives',
-              supportingText:
-                  'Accept emergency bookings and reach patients quickly when every minute counts.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Real-time dispatch alerts',
-              supportingText:
-                  'Navigate, accept requests, and stay coordinated on every call.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Quick patient handoff',
-              supportingText:
-                  'Share trip details and coordinate smoothly with hospitals and care teams.',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Keep your fleet available and responsive',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-          ],
-        _ => const [
-            _IntroSlideContent(
-              headline: 'Your health journey starts here with DoctorNect',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'One platform for every healthcare role',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Secure, simple and built for mobile',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-            _IntroSlideContent(
-              headline: 'Join thousands on DoctorNect today',
-              illustrationAsset: _kIntroIllustrationAsset,
-            ),
-          ],
-      };
+    UserType.doctor => const [
+      _IntroSlideContent(
+        headline: 'Manage patients with ease',
+        supportingText: 'Appointments, prescriptions and clinical notes — all in one secure workspace built for doctors.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Write prescriptions digitally',
+        supportingText: 'Create, share and track prescriptions with patients and pharmacies in a few taps.',
+        placeholderIcon: Icons.medication_outlined,
+      ),
+      _IntroSlideContent(
+        headline: 'Your clinic, organized',
+        supportingText: 'Stay on top of schedules, follow-ups and patient records without the paperwork.',
+        placeholderIcon: Icons.calendar_month_outlined,
+      ),
+      _IntroSlideContent(
+        headline: 'Seamless consultations',
+        supportingText: 'Connect with patients through in-clinic visits and video consultations with instant follow-ups.',
+        placeholderIcon: Icons.videocam_outlined,
+      ),
+    ],
+    UserType.patient => const [
+      _IntroSlideContent(
+        headline: 'Your health, in your hands',
+        supportingText: 'Book doctors, track prescriptions, and manage lab reports from one secure app.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Book appointments easily',
+        supportingText:
+            'Find trusted doctors near you and schedule visits in minutes.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Care when you need it',
+        supportingText:
+            'Access prescriptions, reports, and emergency services anytime.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Book lab tests and ambulance when you need them',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+    ],
+    UserType.medicalStore => const [
+      _IntroSlideContent(
+        headline: 'Streamline your pharmacy',
+        supportingText: 'Receive digital prescriptions and serve patients faster from one workspace.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Manage orders digitally',
+        supportingText: 'Track dispensing, inventory, and patient requests without the paperwork.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Connect with care partners',
+        supportingText:
+            'Work seamlessly with doctors and patients on DoctorNect.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Grow your pharmacy with DoctorNect',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+    ],
+    UserType.lab => const [
+      _IntroSlideContent(
+        headline: 'Simplify lab operations',
+        supportingText: 'Manage test orders, samples, and results from one connected dashboard.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Digital test reports',
+        supportingText: 'Upload results and notify patients instantly — no manual follow-ups.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Manage sample requests',
+        supportingText:
+            'Track walk-ins, home collections, and doctor orders in real time.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Partner with doctors on DoctorNect',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+    ],
+    UserType.ambulance => const [
+      _IntroSlideContent(
+        headline: 'Respond faster, save lives',
+        supportingText: 'Accept emergency bookings and reach patients quickly when every minute counts.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Real-time dispatch alerts',
+        supportingText:
+            'Navigate, accept requests, and stay coordinated on every call.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Quick patient handoff',
+        supportingText: 'Share trip details and coordinate smoothly with hospitals and care teams.',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Keep your fleet available and responsive',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+    ],
+    _ => const [
+      _IntroSlideContent(
+        headline: 'Your health journey starts here with DoctorNect',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'One platform for every healthcare role',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Secure, simple and built for mobile',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+      _IntroSlideContent(
+        headline: 'Join thousands on DoctorNect today',
+        illustrationAsset: _kIntroIllustrationAsset,
+      ),
+    ],
+  };
 
   /// Role-specific value props on the desktop brand panel (same styling for all).
   List<_DesktopFeatureItem> get _desktopFeatureBullets => switch (widget.role) {
-        UserType.doctor => const [
-            (
-              icon: Icons.lock_outline_rounded,
-              label: 'Secure patient records',
-            ),
-            (
-              icon: Icons.receipt_long_outlined,
-              label: 'Digital prescriptions',
-            ),
-            (icon: Icons.bolt_outlined, label: 'Instant consultations'),
-          ],
-        UserType.patient => const [
-            (
-              icon: Icons.event_available_outlined,
-              label: 'Book appointments easily'
-            ),
-            (
-              icon: Icons.medication_outlined,
-              label: 'Access prescriptions anytime',
-            ),
-            (
-              icon: Icons.video_call_outlined,
-              label: 'Video consult top doctors',
-            ),
-          ],
-        UserType.medicalStore => const [
-            (
-              icon: Icons.inventory_2_outlined,
-              label: 'Manage orders digitally',
-            ),
-            (
-              icon: Icons.receipt_long_outlined,
-              label: 'Track prescriptions',
-            ),
-            (
-              icon: Icons.hub_outlined,
-              label: 'Connect with patients & doctors',
-            ),
-          ],
-        UserType.lab => const [
-            (
-              icon: Icons.description_outlined,
-              label: 'Digital test reports',
-            ),
-            (
-              icon: Icons.biotech_outlined,
-              label: 'Manage sample requests',
-            ),
-            (
-              icon: Icons.speed_outlined,
-              label: 'Faster patient turnaround',
-            ),
-          ],
-        UserType.ambulance => const [
-            (
-              icon: Icons.notifications_active_outlined,
-              label: 'Real-time dispatch alerts',
-            ),
-            (
-              icon: Icons.transfer_within_a_station_outlined,
-              label: 'Quick patient handoff',
-            ),
-            (
-              icon: Icons.local_hospital_outlined,
-              label: 'Coordinate with hospitals',
-            ),
-          ],
-        _ => const [
-            (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
-            (
-              icon: Icons.receipt_long_outlined,
-              label: 'Digital prescriptions',
-            ),
-            (icon: Icons.bolt_outlined, label: 'Instant consultations'),
-          ],
-      };
+    UserType.doctor => const [
+      (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
+      (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
+      (icon: Icons.bolt_outlined, label: 'Instant consultations'),
+    ],
+    UserType.patient => const [
+      (icon: Icons.event_available_outlined, label: 'Book appointments easily'),
+      (icon: Icons.medication_outlined, label: 'Access prescriptions anytime'),
+      (icon: Icons.video_call_outlined, label: 'Video consult top doctors'),
+    ],
+    UserType.medicalStore => const [
+      (icon: Icons.inventory_2_outlined, label: 'Manage orders digitally'),
+      (icon: Icons.receipt_long_outlined, label: 'Track prescriptions'),
+      (icon: Icons.hub_outlined, label: 'Connect with patients & doctors'),
+    ],
+    UserType.lab => const [
+      (icon: Icons.description_outlined, label: 'Digital test reports'),
+      (icon: Icons.biotech_outlined, label: 'Manage sample requests'),
+      (icon: Icons.speed_outlined, label: 'Faster patient turnaround'),
+    ],
+    UserType.ambulance => const [
+      (
+        icon: Icons.notifications_active_outlined,
+        label: 'Real-time dispatch alerts',
+      ),
+      (
+        icon: Icons.transfer_within_a_station_outlined,
+        label: 'Quick patient handoff',
+      ),
+      (icon: Icons.local_hospital_outlined, label: 'Coordinate with hospitals'),
+    ],
+    _ => const [
+      (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
+      (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
+      (icon: Icons.bolt_outlined, label: 'Instant consultations'),
+    ],
+  };
 
   List<Color> get _gradientColors {
     final base = _accent;
     return switch (widget.role) {
       UserType.doctor => [
-          const Color(0xFF0A2F6B),
-          const Color(0xFF123E8A),
-          base,
-        ],
+        const Color(0xFF0A2F6B),
+        const Color(0xFF123E8A),
+        base,
+      ],
       UserType.patient => [
-          const Color(0xFF064E3B),
-          const Color(0xFF0B6B58),
-          base,
-        ],
+        const Color(0xFF064E3B),
+        const Color(0xFF0B6B58),
+        base,
+      ],
       UserType.medicalStore => [
-          const Color(0xFF065F46),
-          const Color(0xFF047857),
-          base,
-        ],
-      UserType.lab => [
-          const Color(0xFF312E81),
-          const Color(0xFF4338CA),
-          base,
-        ],
+        const Color(0xFF065F46),
+        const Color(0xFF047857),
+        base,
+      ],
+      UserType.lab => [const Color(0xFF312E81), const Color(0xFF4338CA), base],
       UserType.ambulance => [
-          const Color(0xFF7F1D1D),
-          const Color(0xFFB91C1C),
-          base,
-        ],
-      _ => [
-          base.withValues(alpha: 0.95),
-          base,
-        ],
+        const Color(0xFF7F1D1D),
+        const Color(0xFFB91C1C),
+        base,
+      ],
+      _ => [base.withValues(alpha: 0.95), base],
     };
   }
 
@@ -645,8 +584,9 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
   Widget _buildDesktopIntroLayout(BuildContext context) {
     final isDark = AppColors.isDark(context);
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : _IntroTheme.desktopRightBg,
+      backgroundColor: isDark
+          ? AppColors.darkBackground
+          : _IntroTheme.desktopRightBg,
       body: GestureDetector(
         onTap: _dismissKeyboard,
         behavior: HitTestBehavior.opaque,
@@ -678,8 +618,10 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
               builder: (context, constraints) {
                 // Scale with the panel so narrow desktops don't get a graphic
                 // that crowds the feature list.
-                final graphicSize =
-                    (constraints.maxWidth * 0.56).clamp(230.0, 430.0);
+                final graphicSize = (constraints.maxWidth * 0.56).clamp(
+                  230.0,
+                  430.0,
+                );
 
                 return Stack(
                   clipBehavior: Clip.none,
@@ -698,8 +640,10 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final tall = constraints.maxHeight >= 720;
-                final heroHeight =
-                    (constraints.maxHeight * 0.26).clamp(150.0, 220.0);
+                final heroHeight = (constraints.maxHeight * 0.26).clamp(
+                  150.0,
+                  220.0,
+                );
 
                 final panel = Padding(
                   padding: EdgeInsets.symmetric(
@@ -718,10 +662,7 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                               onPressed: () => Navigator.of(context).maybePop(),
                             ),
                             const SizedBox(width: 18),
-                            _DesktopBrandMark(
-                              accent: _accent,
-                              icon: _roleIcon,
-                            ),
+                            _DesktopBrandMark(accent: _accent, icon: _roleIcon),
                           ],
                         ),
                       ),
@@ -816,7 +757,9 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                 Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 48, vertical: 56),
+                      horizontal: 48,
+                      vertical: 56,
+                    ),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 440),
                       child: _FadeSlideIn(
@@ -944,8 +887,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                             ),
                           ),
                           SizedBox(
-                              height:
-                                  hasKeyboard ? 4 : (compactHeight ? 8 : 14)),
+                            height: hasKeyboard ? 4 : (compactHeight ? 8 : 14),
+                          ),
                           Expanded(
                             child: PageView.builder(
                               controller: _pageController,
@@ -1103,10 +1046,8 @@ class _MobileIntroThemeToggle extends StatelessWidget {
                 height: 36,
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
-                  transitionBuilder: (child, anim) => ScaleTransition(
-                    scale: anim,
-                    child: child,
-                  ),
+                  transitionBuilder: (child, anim) =>
+                      ScaleTransition(scale: anim, child: child),
                   child: Icon(
                     isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                     key: ValueKey(isDark),
@@ -1245,8 +1186,9 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
   }
 
   bool get _mobileValid {
-    final digits =
-        FormValidators.registrationMobileDigits(widget.mobileController.text);
+    final digits = FormValidators.registrationMobileDigits(
+      widget.mobileController.text,
+    );
     return digits != null && digits.length == 10;
   }
 
@@ -1318,9 +1260,7 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
               child: TweenAnimationBuilder<Color?>(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOut,
-                tween: ColorTween(
-                  end: _focused ? widget.accent : borderColor,
-                ),
+                tween: ColorTween(end: _focused ? widget.accent : borderColor),
                 builder: (context, animatedBorder, _) {
                   return UnifiedAuthMobileField(
                     controller: widget.mobileController,
@@ -1335,8 +1275,9 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
                     },
                     boxShadow: [
                       BoxShadow(
-                        color: widget.accent
-                            .withValues(alpha: _focused ? 0.14 : 0.0),
+                        color: widget.accent.withValues(
+                          alpha: _focused ? 0.14 : 0.0,
+                        ),
                         blurRadius: 14,
                         spreadRadius: 1,
                       ),
@@ -1369,8 +1310,10 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
               TextButton(
                 onPressed: widget.onTroubleSigningIn,
                 style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 6,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   foregroundColor: widget.accent,
@@ -1416,8 +1359,10 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
               TextButton(
                 onPressed: widget.flow.busy ? null : _changeNumber,
                 style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   foregroundColor: widget.accent,
@@ -1471,8 +1416,10 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
               TextButton(
                 onPressed: widget.onTroubleSigningIn,
                 style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 6,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -1579,8 +1526,11 @@ class _IntroPrimaryButton extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward_rounded,
-                      size: 18, color: Colors.white),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
                 ],
               ),
       ),
@@ -1589,10 +1539,7 @@ class _IntroPrimaryButton extends StatelessWidget {
 }
 
 class _TermsDisclaimer extends StatelessWidget {
-  const _TermsDisclaimer({
-    required this.accentColor,
-    required this.onTermsTap,
-  });
+  const _TermsDisclaimer({required this.accentColor, required this.onTermsTap});
 
   final Color accentColor;
   final VoidCallback onTermsTap;
@@ -1645,9 +1592,7 @@ class _SoftGlow extends StatelessWidget {
         height: diameter,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [color, color.withValues(alpha: 0)],
-          ),
+          gradient: RadialGradient(colors: [color, color.withValues(alpha: 0)]),
         ),
       ),
     );
@@ -1924,10 +1869,7 @@ class _BrandGraphicPainter extends CustomPainter {
 
 /// One-shot fade + slide entrance used to stagger the brand panel content.
 class _FadeSlideIn extends StatefulWidget {
-  const _FadeSlideIn({
-    required this.child,
-    this.delay = Duration.zero,
-  });
+  const _FadeSlideIn({required this.child, this.delay = Duration.zero});
 
   final Widget child;
   final Duration delay;
@@ -2026,10 +1968,8 @@ class _DesktopIntroThemeToggle extends StatelessWidget {
                 ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
-                  transitionBuilder: (child, anim) => ScaleTransition(
-                    scale: anim,
-                    child: child,
-                  ),
+                  transitionBuilder: (child, anim) =>
+                      ScaleTransition(scale: anim, child: child),
                   child: Icon(
                     isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                     key: ValueKey(isDark),
@@ -2087,11 +2027,7 @@ class _DesktopBrandMark extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(9),
           ),
-          child: Icon(
-            icon,
-            size: 19,
-            color: accent,
-          ),
+          child: Icon(icon, size: 19, color: accent),
         ),
         const SizedBox(width: 12),
         Text(
@@ -2110,10 +2046,7 @@ class _DesktopBrandMark extends StatelessWidget {
 }
 
 class _DesktopHeroText extends StatelessWidget {
-  const _DesktopHeroText({
-    required this.slide,
-    required this.headlineSize,
-  });
+  const _DesktopHeroText({required this.slide, required this.headlineSize});
 
   final _IntroSlideContent slide;
   final double headlineSize;
@@ -2294,13 +2227,15 @@ class _DesktopFeatureBulletState extends State<_DesktopFeatureBullet> {
                   ),
                   borderRadius: BorderRadius.circular(11),
                   border: Border.all(
-                    color:
-                        Colors.white.withValues(alpha: _hovered ? 0.36 : 0.20),
+                    color: Colors.white.withValues(
+                      alpha: _hovered ? 0.36 : 0.20,
+                    ),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.accent
-                          .withValues(alpha: _hovered ? 0.40 : 0.20),
+                      color: widget.accent.withValues(
+                        alpha: _hovered ? 0.40 : 0.20,
+                      ),
                       blurRadius: _hovered ? 18 : 12,
                       offset: const Offset(0, 4),
                     ),
@@ -2392,10 +2327,7 @@ class _DesktopAvatarStack extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: colors[index],
-                border: Border.all(
-                  color: accent,
-                  width: 2,
-                ),
+                border: Border.all(color: accent, width: 2),
               ),
               child: Icon(
                 Icons.person_rounded,
@@ -2446,8 +2378,8 @@ class _DesktopPrimaryButtonState extends State<_DesktopPrimaryButton> {
 
     final fill = interactive
         ? (hovered
-            ? [lifted, base]
-            : [base, Color.lerp(base, Colors.black, 0.08) ?? base])
+              ? [lifted, base]
+              : [base, Color.lerp(base, Colors.black, 0.08) ?? base])
         : [
             Color.lerp(base, Colors.white, 0.62) ?? base,
             Color.lerp(base, Colors.white, 0.54) ?? base,
@@ -2463,8 +2395,9 @@ class _DesktopPrimaryButtonState extends State<_DesktopPrimaryButton> {
       child: GestureDetector(
         onTapDown: interactive ? (_) => setState(() => _pressed = true) : null,
         onTapUp: interactive ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel:
-            interactive ? () => setState(() => _pressed = false) : null,
+        onTapCancel: interactive
+            ? () => setState(() => _pressed = false)
+            : null,
         onTap: interactive ? widget.onPressed : null,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 130),
@@ -2615,8 +2548,9 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
   }
 
   bool get _mobileValid {
-    final digits =
-        FormValidators.registrationMobileDigits(widget.mobileController.text);
+    final digits = FormValidators.registrationMobileDigits(
+      widget.mobileController.text,
+    );
     return digits != null && digits.length == 10;
   }
 
@@ -2739,8 +2673,9 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
               loadingLabel: isMobileStep ? 'Sending OTP...' : 'Verifying...',
               accent: widget.accent,
               enabled: isMobileStep ? _mobileValid : widget.flow.otpValid,
-              loading:
-                  isMobileStep ? widget.flow.sendingOtp : widget.flow.verifying,
+              loading: isMobileStep
+                  ? widget.flow.sendingOtp
+                  : widget.flow.verifying,
               onPressed: _submit,
             ),
             const SizedBox(height: 20),
@@ -2749,8 +2684,10 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
                 onPressed: widget.onTroubleSigningIn,
                 style: TextButton.styleFrom(
                   foregroundColor: widget.accent,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -2794,9 +2731,7 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
         TweenAnimationBuilder<Color?>(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOut,
-          tween: ColorTween(
-            end: _focused ? widget.accent : borderBase,
-          ),
+          tween: ColorTween(end: _focused ? widget.accent : borderBase),
           builder: (context, borderColor, _) {
             return UnifiedAuthMobileField(
               controller: widget.mobileController,
@@ -2913,26 +2848,26 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
   }
 
   TextStyle _titleStyle(BuildContext context) => GoogleFonts.inter(
-        fontSize: 26,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimaryOf(context),
-        letterSpacing: -0.6,
-        height: 1.2,
-      );
+    fontSize: 26,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimaryOf(context),
+    letterSpacing: -0.6,
+    height: 1.2,
+  );
 
   TextStyle _subtitleStyle(BuildContext context) => GoogleFonts.inter(
-        fontSize: 15,
-        fontWeight: FontWeight.w400,
-        color: AppColors.textSecondaryOf(context),
-        height: 1.5,
-      );
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textSecondaryOf(context),
+    height: 1.5,
+  );
 
   TextStyle _fieldLabelStyle(BuildContext context) => GoogleFonts.inter(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimaryOf(context),
-        height: 1.2,
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimaryOf(context),
+    height: 1.2,
+  );
 }
 
 class _IntroIllustration extends StatelessWidget {
@@ -3165,10 +3100,8 @@ void openUnifiedAuthIntro(
 }) {
   Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => UnifiedAuthIntroScreen(
-        role: role,
-        accentColor: accentColor,
-      ),
+      builder: (_) =>
+          UnifiedAuthIntroScreen(role: role, accentColor: accentColor),
     ),
   );
 }

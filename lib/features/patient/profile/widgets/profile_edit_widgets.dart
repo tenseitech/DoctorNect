@@ -45,8 +45,9 @@ abstract final class ProfileEditWidgets {
                     backgroundColor: AppColors.surfaceOf(context),
                     child: CircleAvatar(
                       radius: 38,
-                      backgroundColor:
-                          AppColors.patientTeal.withValues(alpha: 0.1),
+                      backgroundColor: AppColors.patientTeal.withValues(
+                        alpha: 0.1,
+                      ),
                       backgroundImage: avatarImage,
                       child: avatarImage == null
                           ? Text(
@@ -69,8 +70,11 @@ abstract final class ProfileEditWidgets {
                   child: CircleAvatar(
                     radius: 16,
                     backgroundColor: AppColors.patientTeal,
-                    child: const Icon(Icons.camera_alt_rounded,
-                        size: 16, color: AppColors.white),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      size: 16,
+                      color: AppColors.white,
+                    ),
                   ),
                 ),
             ],
@@ -89,8 +93,9 @@ abstract final class ProfileEditWidgets {
             Text(
               subtitle,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ],
           if (trailingBadge != null) ...[
@@ -147,8 +152,9 @@ abstract final class ProfileEditWidgets {
                         Text(
                           subtitle,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                     ],
                   ),
@@ -170,14 +176,18 @@ abstract final class ProfileEditWidgets {
         decoration: BoxDecoration(
           color: AppColors.patientTeal.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
-          border:
-              Border.all(color: AppColors.patientTeal.withValues(alpha: 0.25)),
+          border: Border.all(
+            color: AppColors.patientTeal.withValues(alpha: 0.25),
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.lock_outline,
-                size: 16, color: AppColors.patientTeal.withValues(alpha: 0.85)),
+            Icon(
+              Icons.lock_outline,
+              size: 16,
+              color: AppColors.patientTeal.withValues(alpha: 0.85),
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -195,10 +205,7 @@ abstract final class ProfileEditWidgets {
     );
   }
 
-  static Widget lockedField({
-    required String label,
-    required String value,
-  }) {
+  static Widget lockedField({required String label, required String value}) {
     return Builder(
       builder: (context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -216,8 +223,9 @@ abstract final class ProfileEditWidgets {
                   Text(
                     label,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: AppColors.textSecondaryOf(context)),
+                      fontSize: AppTypography.labelMedium,
+                      color: AppColors.textSecondaryOf(context),
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -231,10 +239,11 @@ abstract final class ProfileEditWidgets {
                 ],
               ),
             ),
-            Icon(Icons.lock_outline,
-                size: 16,
-                color:
-                    AppColors.textSecondaryOf(context).withValues(alpha: 0.7)),
+            Icon(
+              Icons.lock_outline,
+              size: 16,
+              color: AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
+            ),
           ],
         ),
       ),
@@ -276,8 +285,9 @@ abstract final class ProfileEditWidgets {
               return ChoiceChip(
                 label: Text(gender),
                 selected: isSelected,
-                onSelected:
-                    locked || select == null ? null : (_) => select(gender),
+                onSelected: locked || select == null
+                    ? null
+                    : (_) => select(gender),
                 selectedColor: AppColors.patientTeal.withValues(alpha: 0.2),
                 backgroundColor: AppColors.cardBgOf(context),
                 disabledColor: AppColors.cardBgOf(context),
@@ -286,8 +296,8 @@ abstract final class ProfileEditWidgets {
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
                       ? (locked
-                          ? AppColors.textPrimaryOf(context)
-                          : AppColors.patientTeal)
+                            ? AppColors.textPrimaryOf(context)
+                            : AppColors.patientTeal)
                       : AppColors.textSecondaryOf(context),
                 ),
                 side: BorderSide(
@@ -296,15 +306,20 @@ abstract final class ProfileEditWidgets {
                       : AppColors.borderOf(context),
                 ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
               );
             }).toList(),
           ),
           if (errorText != null) ...[
             const SizedBox(height: 4),
-            Text(errorText,
-                style: const TextStyle(
-                    color: Colors.red, fontSize: AppTypography.labelMedium)),
+            Text(
+              errorText,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: AppTypography.labelMedium,
+              ),
+            ),
           ],
         ],
       ),
@@ -333,8 +348,9 @@ abstract final class ProfileEditWidgets {
               return FilterChip(
                 label: Text(group),
                 selected: isSelected,
-                onSelected:
-                    locked || select == null ? null : (_) => select(group),
+                onSelected: locked || select == null
+                    ? null
+                    : (_) => select(group),
                 selectedColor: AppColors.patientTeal.withValues(alpha: 0.2),
                 backgroundColor: AppColors.cardBgOf(context),
                 disabledColor: AppColors.cardBgOf(context),
@@ -343,8 +359,8 @@ abstract final class ProfileEditWidgets {
                   fontSize: AppTypography.bodySmall,
                   color: isSelected
                       ? (locked
-                          ? AppColors.textPrimaryOf(context)
-                          : AppColors.patientTeal)
+                            ? AppColors.textPrimaryOf(context)
+                            : AppColors.patientTeal)
                       : AppColors.textSecondaryOf(context),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
@@ -354,15 +370,20 @@ abstract final class ProfileEditWidgets {
                       : AppColors.borderOf(context),
                 ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
+                  borderRadius: BorderRadius.circular(20),
+                ),
               );
             }).toList(),
           ),
           if (errorText != null) ...[
             const SizedBox(height: 4),
-            Text(errorText,
-                style: const TextStyle(
-                    color: Colors.red, fontSize: AppTypography.labelMedium)),
+            Text(
+              errorText,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: AppTypography.labelMedium,
+              ),
+            ),
           ],
         ],
       ),
@@ -423,8 +444,10 @@ abstract final class ProfileEditWidgets {
             if (category != null) ...[
               const SizedBox(height: 10),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
@@ -453,8 +476,9 @@ abstract final class ProfileEditWidgets {
                 child: Text(
                   'Enter height and weight to calculate your BMI.',
                   style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium,
-                      color: AppColors.textSecondaryOf(context)),
+                    fontSize: AppTypography.labelMedium,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
                 ),
               ),
           ],
@@ -480,8 +504,9 @@ abstract final class ProfileEditWidgets {
       suffixIcon: suffixIcon,
       counterText: counterText,
     ).copyWith(
-      fillColor:
-          editing ? AppColors.surfaceOf(context) : AppColors.cardBgOf(context),
+      fillColor: editing
+          ? AppColors.surfaceOf(context)
+          : AppColors.cardBgOf(context),
     );
   }
 
@@ -510,8 +535,9 @@ abstract final class ProfileEditWidgets {
           subtitle: Text(
             'Include this member under your health insurance',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
           value: value,
           onChanged: onChanged,

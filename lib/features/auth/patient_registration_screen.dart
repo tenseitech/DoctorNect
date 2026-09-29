@@ -1,4 +1,5 @@
 import '../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -90,7 +91,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     final digits = preMobile == null
         ? null
         : (FormValidators.registrationMobileDigits(preMobile) ??
-            FormValidators.mobileDigits(preMobile));
+              FormValidators.mobileDigits(preMobile));
     if (digits != null) {
       _mobileController.text = digits;
       _mobileVerified = true;
@@ -178,8 +179,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
       _locationError = (_country == null || _state == null || _city == null)
           ? 'Please select Country, State, and City'
           : null;
-      _mobileError =
-          !_mobileVerified ? 'Please verify your mobile number with OTP' : null;
+      _mobileError = !_mobileVerified
+          ? 'Please verify your mobile number with OTP'
+          : null;
     });
 
     final isFormValid = _formKey.currentState!.validate();
@@ -193,7 +195,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     }
     if (!_legalAccepted) {
       AppToast.info(
-          context, 'Please accept the Terms of Service and Privacy Policy');
+        context,
+        'Please accept the Terms of Service and Privacy Policy',
+      );
       return;
     }
 
@@ -202,8 +206,9 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     try {
       final patientId = 'p${DateTime.now().millisecondsSinceEpoch}';
       final name = _nameController.text.trim();
-      final age =
-          _dob == null ? 25 : DateTime.now().difference(_dob!).inDays ~/ 365;
+      final age = _dob == null
+          ? 25
+          : DateTime.now().difference(_dob!).inDays ~/ 365;
 
       final invitedDoctorId = PendingDoctorInviteStore.pendingDoctorId;
 
@@ -254,7 +259,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
             'primaryDoctorId': invitedDoctorId,
           'shareRecordsWithDoctors':
               PatientSharingUtils.deriveInitialShareRecordsWithDoctors(
-                  invitedDoctorId),
+                invitedDoctorId,
+              ),
           if (invitedDoctorId != null && invitedDoctorId.isNotEmpty)
             'careTeamDoctorIds': [invitedDoctorId],
         },
@@ -314,8 +320,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
       if (!mounted) return;
       AppToast.error(
         context,
-        describeUserFacingError(e,
-            fallback: 'Failed to pre-fill from Google. Please try again.'),
+        describeUserFacingError(
+          e,
+          fallback: 'Failed to pre-fill from Google. Please try again.',
+        ),
       );
     } finally {
       if (mounted) setState(() => _prefillingGoogle = false);
@@ -376,8 +384,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       child: InputDecorator(
                         decoration: _fieldDecoration(
                           label: 'Date of birth *',
-                          suffixIcon: const Icon(Icons.calendar_today_outlined,
-                              size: 20),
+                          suffixIcon: const Icon(
+                            Icons.calendar_today_outlined,
+                            size: 20,
+                          ),
                         ).copyWith(errorText: _dobError),
                         child: Text(
                           _dob == null
@@ -403,7 +413,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       ),
                       items: AppConstants.genders
                           .map(
-                              (g) => DropdownMenuItem(value: g, child: Text(g)))
+                            (g) => DropdownMenuItem(value: g, child: Text(g)),
+                          )
                           .toList(),
                       onChanged: (v) => setState(() => _gender = v),
                       validator: (v) =>
@@ -415,12 +426,16 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       isExpanded: true,
                       decoration: _fieldDecoration(
                         label: 'Blood group *',
-                        prefixIcon:
-                            const Icon(Icons.bloodtype_outlined, size: 20),
+                        prefixIcon: const Icon(
+                          Icons.bloodtype_outlined,
+                          size: 20,
+                        ),
                       ),
                       items: AppConstants.bloodGroups
-                          .map((bg) =>
-                              DropdownMenuItem(value: bg, child: Text(bg)))
+                          .map(
+                            (bg) =>
+                                DropdownMenuItem(value: bg, child: Text(bg)),
+                          )
                           .toList(),
                       onChanged: (v) => setState(() => _bloodGroup = v),
                       validator: (v) =>
@@ -450,8 +465,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                             decoration: _fieldDecoration(
                               label: 'Height (ft) *',
                               hintText: 'e.g. 5',
-                              prefixIcon:
-                                  const Icon(Icons.height_outlined, size: 20),
+                              prefixIcon: const Icon(
+                                Icons.height_outlined,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
@@ -476,8 +493,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                             decoration: _fieldDecoration(
                               label: 'Inches (in) *',
                               hintText: 'e.g. 8',
-                              prefixIcon: const Icon(Icons.straighten_outlined,
-                                  size: 20),
+                              prefixIcon: const Icon(
+                                Icons.straighten_outlined,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
@@ -487,14 +506,16 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                     TextFormField(
                       controller: _weightController,
                       focusNode: _weightFocusNode,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       autofillHints: const <String>[],
                       autocorrect: false,
                       enableSuggestions: false,
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d*\.?\d*')),
+                          RegExp(r'^\d*\.?\d*'),
+                        ),
                         LengthLimitingTextInputFormatter(6),
                       ],
                       validator: (v) =>
@@ -506,8 +527,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       decoration: _fieldDecoration(
                         label: 'Weight (kg) *',
                         hintText: 'e.g. 65',
-                        prefixIcon:
-                            const Icon(Icons.monitor_weight_outlined, size: 20),
+                        prefixIcon: const Icon(
+                          Icons.monitor_weight_outlined,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -530,8 +553,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                       InputDecorator(
                         decoration: _fieldDecoration(
                           label: 'Mobile number *',
-                          prefixIcon:
-                              const Icon(Icons.phone_outlined, size: 20),
+                          prefixIcon: const Icon(
+                            Icons.phone_outlined,
+                            size: 20,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -547,8 +572,11 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                                 ),
                               ),
                             ),
-                            Icon(Icons.verified_rounded,
-                                size: 18, color: accent),
+                            Icon(
+                              Icons.verified_rounded,
+                              size: 18,
+                              color: accent,
+                            ),
                           ],
                         ),
                       )
@@ -562,8 +590,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                         accentColor: accent,
                         phoneDecoration: _fieldDecoration(
                           label: 'Mobile number *',
-                          prefixIcon:
-                              const Icon(Icons.phone_outlined, size: 20),
+                          prefixIcon: const Icon(
+                            Icons.phone_outlined,
+                            size: 20,
+                          ),
                         ).copyWith(errorText: _mobileError),
                         onVerifiedChanged: (v) => setState(() {
                           _mobileVerified = v;

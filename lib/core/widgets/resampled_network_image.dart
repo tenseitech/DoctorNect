@@ -20,11 +20,7 @@ abstract final class ResampledNetworkImage {
     if (cacheW == null && cacheH == null) {
       return NetworkImage(url);
     }
-    return ResizeImage(
-      NetworkImage(url),
-      width: cacheW,
-      height: cacheH,
-    );
+    return ResizeImage(NetworkImage(url), width: cacheW, height: cacheH);
   }
 }
 

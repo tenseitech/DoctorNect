@@ -15,10 +15,7 @@ import 'prescription_preview_modal.dart';
 import '../../../../core/theme/app_typography.dart';
 
 class PatientPrescriptionHistoryScreen extends StatefulWidget {
-  const PatientPrescriptionHistoryScreen({
-    super.key,
-    required this.patient,
-  });
+  const PatientPrescriptionHistoryScreen({super.key, required this.patient});
 
   final PatientClinicalContext patient;
 
@@ -42,8 +39,9 @@ class _PatientPrescriptionHistoryScreenState
   }
 
   Future<void> _loadHistory() async {
-    final blocked =
-        !await DoctorPatientsService.canViewClinicalHistoryForKey(_patientId);
+    final blocked = !await DoctorPatientsService.canViewClinicalHistoryForKey(
+      _patientId,
+    );
     if (!blocked) {
       await ClinicalPrescriptionStore.instance.refreshForPatient(
         _patientId,
@@ -63,8 +61,9 @@ class _PatientPrescriptionHistoryScreenState
           title: Text(
             'Prescription History',
             style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: AppTypography.headlineSmall),
+              fontWeight: FontWeight.w600,
+              fontSize: AppTypography.headlineSmall,
+            ),
           ),
           backgroundColor: AppColors.surfaceOf(context),
           foregroundColor: AppColors.textPrimaryOf(context),
@@ -82,8 +81,9 @@ class _PatientPrescriptionHistoryScreenState
           title: Text(
             'Prescription History',
             style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                fontSize: AppTypography.headlineSmall),
+              fontWeight: FontWeight.w600,
+              fontSize: AppTypography.headlineSmall,
+            ),
           ),
           backgroundColor: AppColors.surfaceOf(context),
           foregroundColor: AppColors.textPrimaryOf(context),
@@ -98,14 +98,16 @@ class _PatientPrescriptionHistoryScreenState
     final hPad = ResponsiveLayout.isCompact(context) ? 12.0 : 20.0;
     final compact = ResponsiveLayout.isCompact(context);
     final screenW = ResponsiveLayout.screenWidth(context);
-    final tableMaxWidth =
-        compact ? screenW - (hPad * 2) : (screenW * 0.82).clamp(640.0, 880.0);
+    final tableMaxWidth = compact
+        ? screenW - (hPad * 2)
+        : (screenW * 0.82).clamp(640.0, 880.0);
 
     return ListenableBuilder(
       listenable: ClinicalPrescriptionStore.instance,
       builder: (context, _) {
-        final records =
-            ClinicalPrescriptionStore.instance.forPatient(patientId);
+        final records = ClinicalPrescriptionStore.instance.forPatient(
+          patientId,
+        );
 
         return Scaffold(
           backgroundColor: AppColors.cardBgOf(context),
@@ -113,8 +115,9 @@ class _PatientPrescriptionHistoryScreenState
             title: Text(
               'Prescription History',
               style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  fontSize: AppTypography.headlineSmall),
+                fontWeight: FontWeight.w600,
+                fontSize: AppTypography.headlineSmall,
+              ),
             ),
             backgroundColor: AppColors.surfaceOf(context),
             foregroundColor: AppColors.textPrimaryOf(context),
@@ -143,11 +146,13 @@ class _PatientPrescriptionHistoryScreenState
                             ),
                             const SizedBox(height: 10),
                             _HistoryTable(
-                                records: records,
-                                compact: compact,
-                                patient: widget.patient),
+                              records: records,
+                              compact: compact,
+                              patient: widget.patient,
+                            ),
                             if (ClinicalPrescriptionStore
-                                .instance.hasMorePatient) ...[
+                                .instance
+                                .hasMorePatient) ...[
                               const SizedBox(height: 12),
                               Align(
                                 alignment: Alignment.center,
@@ -155,22 +160,27 @@ class _PatientPrescriptionHistoryScreenState
                                   onPressed: () => ClinicalPrescriptionStore
                                       .instance
                                       .loadMoreForPatient(
-                                    patientId,
-                                    preferCache: false,
-                                  ),
+                                        patientId,
+                                        preferCache: false,
+                                      ),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.doctorBlue,
                                     side: BorderSide(
-                                        color: AppColors.doctorBlue
-                                            .withValues(alpha: 0.5)),
+                                      color: AppColors.doctorBlue.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 10),
+                                      horizontal: 20,
+                                      vertical: 10,
+                                    ),
                                   ),
                                   child: Text(
                                     'Load older prescriptions',
                                     style: GoogleFonts.inter(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: AppTypography.bodySmall),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: AppTypography.bodySmall,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -198,10 +208,11 @@ class _EmptyHistoryState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.history,
-                size: 48,
-                color:
-                    AppColors.textSecondaryOf(context).withValues(alpha: 0.45)),
+            Icon(
+              Icons.history,
+              size: 48,
+              color: AppColors.textSecondaryOf(context).withValues(alpha: 0.45),
+            ),
             const SizedBox(height: 12),
             Text(
               'No saved prescriptions yet',
@@ -216,8 +227,9 @@ class _EmptyHistoryState extends StatelessWidget {
               'Prescriptions saved to EMR for this patient will appear here.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ],
         ),
@@ -244,7 +256,8 @@ class _HistoryTable extends StatelessWidget {
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-            color: AppColors.borderOf(context).withValues(alpha: 0.75)),
+          color: AppColors.borderOf(context).withValues(alpha: 0.75),
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -252,8 +265,9 @@ class _HistoryTable extends StatelessWidget {
           _HistoryTableHeader(compact: compact),
           for (var i = 0; i < records.length; i++) ...[
             Divider(
-                height: 1,
-                color: AppColors.borderOf(context).withValues(alpha: 0.6)),
+              height: 1,
+              color: AppColors.borderOf(context).withValues(alpha: 0.6),
+            ),
             _HistoryTableRow(
               draft: records[i],
               compact: compact,
@@ -275,8 +289,10 @@ class _HistoryTableHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.cardBgOf(context),
-      padding:
-          EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 14,
+        vertical: 10,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -334,11 +350,13 @@ class _HistoryTableRow extends StatelessWidget {
     final meds = draft.validMedicines;
     if (meds.isEmpty) return '—';
 
-    final labels = meds.map((m) {
-      final name = m.name.trim();
-      final dosage = m.dosageLabel.trim();
-      return dosage.isEmpty ? name : '$name $dosage';
-    }).where((s) => s.isNotEmpty);
+    final labels = meds
+        .map((m) {
+          final name = m.name.trim();
+          final dosage = m.dosageLabel.trim();
+          return dosage.isEmpty ? name : '$name $dosage';
+        })
+        .where((s) => s.isNotEmpty);
 
     final list = labels.toList();
     if (list.length <= 2) return list.join(', ');
@@ -355,8 +373,10 @@ class _HistoryTableRow extends StatelessWidget {
     final rx = _prescriptionSummary(draft);
 
     return Padding(
-      padding:
-          EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 14,
+        vertical: 12,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -426,7 +446,9 @@ class _HistoryTableRow extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
                       padding: EdgeInsets.symmetric(
-                          horizontal: compact ? 4 : 8, vertical: 4),
+                        horizontal: compact ? 4 : 8,
+                        vertical: 4,
+                      ),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       textStyle: GoogleFonts.inter(
@@ -442,7 +464,9 @@ class _HistoryTableRow extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
                       padding: EdgeInsets.symmetric(
-                          horizontal: compact ? 4 : 8, vertical: 4),
+                        horizontal: compact ? 4 : 8,
+                        vertical: 4,
+                      ),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       textStyle: GoogleFonts.inter(

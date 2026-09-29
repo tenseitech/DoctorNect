@@ -16,7 +16,7 @@ class DoctorPosterWidget extends StatelessWidget {
         ? doctor.awards
         : [
             'Highly Rated Practitioner on DoctorNect',
-            'Dedicated to Patient Care'
+            'Dedicated to Patient Care',
           ];
 
     final aboutText = doctor.about.isNotEmpty
@@ -76,9 +76,10 @@ class DoctorPosterWidget extends StatelessWidget {
               'Dr. ${doctor.name}',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineLarge,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0F172A)),
+                fontSize: AppTypography.headlineLarge,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
             ),
             const SizedBox(height: 8),
             // Specialization & Rating
@@ -94,23 +95,27 @@ class DoctorPosterWidget extends StatelessWidget {
                   Text(
                     doctor.specialization,
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.headlineSmall,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF0F766E)),
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF0F766E),
+                    ),
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
-                    child:
-                        Text('•', style: TextStyle(color: Color(0xFF0F766E))),
+                    child: Text(
+                      '•',
+                      style: TextStyle(color: Color(0xFF0F766E)),
+                    ),
                   ),
                   const Icon(Icons.star, color: Color(0xFFF59E0B), size: 18),
                   const SizedBox(width: 4),
                   Text(
                     doctor.rating.toStringAsFixed(1),
                     style: GoogleFonts.inter(
-                        fontSize: AppTypography.headlineSmall,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A)),
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                    ),
                   ),
                 ],
               ),
@@ -120,9 +125,10 @@ class DoctorPosterWidget extends StatelessWidget {
             Text(
               'About',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineSmall,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A)),
+                fontSize: AppTypography.headlineSmall,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -131,40 +137,50 @@ class DoctorPosterWidget extends StatelessWidget {
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodyLarge,
-                  height: 1.5,
-                  color: const Color(0xFF475569)),
+                fontSize: AppTypography.bodyLarge,
+                height: 1.5,
+                color: const Color(0xFF475569),
+              ),
             ),
             const SizedBox(height: 32),
             // Achievements
             Text(
               'Achievements',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineSmall,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A)),
+                fontSize: AppTypography.headlineSmall,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
             ),
             const SizedBox(height: 12),
-            ...awards.take(3).map((a) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.check_circle,
-                          color: Color(0xFF0F766E), size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          a,
-                          style: GoogleFonts.inter(
+            ...awards
+                .take(3)
+                .map(
+                  (a) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          color: Color(0xFF0F766E),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            a,
+                            style: GoogleFonts.inter(
                               fontSize: AppTypography.bodyLarge,
                               color: const Color(0xFF334155),
-                              fontWeight: FontWeight.w500),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                )),
+                ),
             const Spacer(),
             // Footer
             Container(
@@ -175,15 +191,19 @@ class DoctorPosterWidget extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.local_hospital,
-                      color: Color(0xFF0F766E), size: 24),
+                  const Icon(
+                    Icons.local_hospital,
+                    color: Color(0xFF0F766E),
+                    size: 24,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'DoctorNect',
                     style: GoogleFonts.outfit(
-                        fontSize: AppTypography.headlineLarge,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F766E)),
+                      fontSize: AppTypography.headlineLarge,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F766E),
+                    ),
                   ),
                 ],
               ),

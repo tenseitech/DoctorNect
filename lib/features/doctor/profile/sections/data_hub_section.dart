@@ -52,7 +52,8 @@ class DataHubSection extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const PharmacyDataSection()),
+                    builder: (_) => const PharmacyDataSection(),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -75,7 +76,8 @@ class DataHubSection extends StatelessWidget {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (_) => const AmbulanceDataSection()),
+                    builder: (_) => const AmbulanceDataSection(),
+                  ),
                 ),
               ),
             ],

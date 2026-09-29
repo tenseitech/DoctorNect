@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/theme/app_colors.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../../../../core/theme/app_typography.dart';
 
 class HomeDoctorTile extends StatefulWidget {
@@ -86,8 +88,9 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                AppColors.patientTeal.withValues(alpha: 0.24),
+                            color: AppColors.patientTeal.withValues(
+                              alpha: 0.24,
+                            ),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -143,8 +146,11 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star_rounded,
-                            size: 12, color: Color(0xFFF59E0B)),
+                        const Icon(
+                          Icons.star_rounded,
+                          size: 12,
+                          color: Color(0xFFF59E0B),
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           doctor.rating.toStringAsFixed(1),
@@ -187,7 +193,9 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                            fontSize: 10.5, fontWeight: FontWeight.w700),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -203,8 +211,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                 color: AppColors.surfaceOf(context),
                 shape: const CircleBorder(),
                 elevation: 2,
-                shadowColor:
-                    AppColors.textPrimaryOf(context).withValues(alpha: 0.15),
+                shadowColor: AppColors.textPrimaryOf(context)
+                    .withValues(alpha: 0.15),
                 child: InkWell(
                   onTap: widget.onRemove,
                   customBorder: const CircleBorder(),
@@ -263,15 +271,12 @@ class HomeDoctorInlineMessage extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color:
-                  AppColors.patientTeal.withValues(alpha: isDark ? 0.14 : 0.08),
+              color: AppColors.patientTeal.withValues(
+                alpha: isDark ? 0.14 : 0.08,
+              ),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: 22,
-              color: AppColors.patientTeal,
-            ),
+            child: Icon(icon, size: 22, color: AppColors.patientTeal),
           ),
           const SizedBox(height: 12),
           ConstrainedBox(
@@ -286,10 +291,7 @@ class HomeDoctorInlineMessage extends StatelessWidget {
               ),
             ),
           ),
-          if (action != null) ...[
-            const SizedBox(height: 14),
-            action!,
-          ],
+          if (action != null) ...[const SizedBox(height: 14), action!],
         ],
       ),
     );

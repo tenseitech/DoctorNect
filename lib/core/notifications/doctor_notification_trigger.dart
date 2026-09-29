@@ -18,10 +18,7 @@ enum NotificationPriority { low, medium, high, critical }
 enum NotificationChannelTag { push, sms, email, app, whatsapp }
 
 class TriggerSpec {
-  const TriggerSpec({
-    required this.priority,
-    required this.channels,
-  });
+  const TriggerSpec({required this.priority, required this.channels});
 
   final NotificationPriority priority;
   final List<NotificationChannelTag> channels;
@@ -78,6 +75,7 @@ abstract final class DoctorTriggerCatalog {
   static TriggerSpec specFor(DoctorNotificationTrigger t) =>
       specs[t] ??
       const TriggerSpec(
-          priority: NotificationPriority.medium,
-          channels: [NotificationChannelTag.app]);
+        priority: NotificationPriority.medium,
+        channels: [NotificationChannelTag.app],
+      );
 }

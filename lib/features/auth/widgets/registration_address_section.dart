@@ -109,15 +109,18 @@ class _RegistrationAddressSectionState
             foregroundColor: widget.accentColor,
             side: BorderSide(color: widget.accentColor.withValues(alpha: 0.5)),
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           icon: _fetchingLocation
               ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: widget.accentColor),
+                    strokeWidth: 2,
+                    color: widget.accentColor,
+                  ),
                 )
               : const Icon(Icons.my_location_outlined, size: 20),
           label: Text(
@@ -150,9 +153,7 @@ class _RegistrationAddressSectionState
                   LengthLimitingTextInputFormatter(6),
                   FilteringTextInputFormatter.digitsOnly,
                 ]
-              : [
-                  LengthLimitingTextInputFormatter(10),
-                ],
+              : [LengthLimitingTextInputFormatter(10)],
           validator: (v) => widget.pinCodeRequired
               ? FormValidators.pincode(v, country: _selectedCountry)
               : FormValidators.optionalPincode(v, country: _selectedCountry),
@@ -167,8 +168,8 @@ class _RegistrationAddressSectionState
           textInputAction: TextInputAction.next,
           validator: widget.addressLine1Required
               ? (v) => (v == null || v.trim().isEmpty)
-                  ? 'Enter address line 1'
-                  : null
+                    ? 'Enter address line 1'
+                    : null
               : null,
         ),
         const SizedBox(height: 16),

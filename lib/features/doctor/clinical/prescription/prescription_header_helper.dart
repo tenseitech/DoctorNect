@@ -16,8 +16,10 @@ abstract final class PrescriptionHeaderHelper {
   /// Sourced from the patient's booking/appointment record so it reflects the
   /// doctor the patient actually consulted — not whoever happens to be signed
   /// in. Falls back to the prescription's own saved snapshot, then [fallback].
-  static String doctorNameForDraft(PrescriptionDraft draft,
-      {String? fallback}) {
+  static String doctorNameForDraft(
+    PrescriptionDraft draft, {
+    String? fallback,
+  }) {
     // 1. The exact booking this prescription was written against.
     final booked = _bookingDoctorName(draft.patient.appointmentId);
     if (booked != null && booked.isNotEmpty) return booked;
@@ -53,7 +55,8 @@ abstract final class PrescriptionHeaderHelper {
     }
     // Fall back to the live doctor directory.
     return _withPrefix(
-        RegisteredDoctorsStore.instance.findById(doctorId)?.name);
+      RegisteredDoctorsStore.instance.findById(doctorId)?.name,
+    );
   }
 
   static String? _withPrefix(String? raw) {
@@ -107,8 +110,9 @@ abstract final class PrescriptionHeaderHelper {
 
   static String formatSchedule(DoctorScheduleAvailability schedule) {
     final days = schedule.workingDays.join(', ');
-    final buf =
-        StringBuffer('$days · ${schedule.morningStart}–${schedule.morningEnd}');
+    final buf = StringBuffer(
+      '$days · ${schedule.morningStart}–${schedule.morningEnd}',
+    );
     if (schedule.eveningEnabled) {
       buf.write(' · ${schedule.eveningStart}–${schedule.eveningEnd}');
     }
@@ -118,11 +122,14 @@ abstract final class PrescriptionHeaderHelper {
   static Future<String> loadConsultationTimings(String doctorId) async {
     DoctorScheduleAvailability? schedule;
     try {
-      schedule = await FirestoreService.instance.doctorAvailability
-          .fetch(doctorId, preferCache: true);
+      schedule = await FirestoreService.instance.doctorAvailability.fetch(
+        doctorId,
+        preferCache: true,
+      );
     } catch (_) {}
-    _timingsCache =
-        formatSchedule(schedule ?? DoctorScheduleAvailability.defaults());
+    _timingsCache = formatSchedule(
+      schedule ?? DoctorScheduleAvailability.defaults(),
+    );
     return _timingsCache!;
   }
 

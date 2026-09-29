@@ -41,7 +41,7 @@ class PromotedAdModel {
   final String? razorpayPaymentId;
   final String paymentStatus; // 'pending', 'verified', 'failed'
   final String
-      status; // 'draft', 'pending_payment', 'active', 'expired', 'rejected'
+  status; // 'draft', 'pending_payment', 'active', 'expired', 'rejected'
   final DateTime? startTime;
   final DateTime? endTime;
   final DateTime? createdAt;

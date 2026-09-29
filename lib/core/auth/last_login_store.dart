@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../enums/user_type.dart';
 
 /// Caches last login email per role for locked login fields.

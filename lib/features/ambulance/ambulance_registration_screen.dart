@@ -46,16 +46,20 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
             ),
             const SizedBox(height: 16),
-            Text('Username',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            SelectableText(username,
-                style:
-                    GoogleFonts.inter(fontSize: AppTypography.headlineSmall)),
+            Text(
+              'Username',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+            SelectableText(
+              username,
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall),
+            ),
             const SizedBox(height: 12),
             Text('PIN', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            SelectableText(pin,
-                style:
-                    GoogleFonts.inter(fontSize: AppTypography.headlineSmall)),
+            SelectableText(
+              pin,
+              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall),
+            ),
           ],
         ),
         actions: [
@@ -76,7 +80,9 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
   }) async {
     if (!FirebaseBootstrap.isReady) {
       AppToast.error(
-          context, 'Firebase is not connected. Check internet and restart.');
+        context,
+        'Firebase is not connected. Check internet and restart.',
+      );
       return;
     }
 
@@ -88,7 +94,9 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
     if (!signedIn) {
       if (!context.mounted) return;
       AppToast.error(
-          context, 'Could not start a secure session. Please try again.');
+        context,
+        'Could not start a secure session. Please try again.',
+      );
       return;
     }
 
@@ -121,17 +129,18 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
     );
 
     try {
-      final result =
-          await FirestoreService.instance.ambulance.registerAmbulance(
-        ambulance,
-        extraFields: {
-          'qualification': qualification,
-          'profileCompleted': false,
-          'verified': false,
-          'verificationStatus': 'profile_incomplete',
-          'status': 'pending_review',
-        },
-      ).timeout(const Duration(seconds: 30));
+      final result = await FirestoreService.instance.ambulance
+          .registerAmbulance(
+            ambulance,
+            extraFields: {
+              'qualification': qualification,
+              'profileCompleted': false,
+              'verified': false,
+              'verificationStatus': 'profile_incomplete',
+              'status': 'pending_review',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (result.id == null) {
         if (!context.mounted) return;
@@ -162,8 +171,10 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
       if (!context.mounted) return;
       AppToast.error(
         context,
-        describeUserFacingError(e,
-            fallback: 'Registration failed. Please try again.'),
+        describeUserFacingError(
+          e,
+          fallback: 'Registration failed. Please try again.',
+        ),
       );
     }
   }
@@ -182,11 +193,11 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
       preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
-        context,
-        name: name,
-        qualification: qualification,
-        mobile: mobile,
-      ),
+            context,
+            name: name,
+            qualification: qualification,
+            mobile: mobile,
+          ),
     );
   }
 }

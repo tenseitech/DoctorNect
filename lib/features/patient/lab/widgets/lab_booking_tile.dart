@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -63,11 +64,11 @@ class LabBookingTile extends StatelessWidget {
                           colors: upcoming
                               ? [
                                   AppColors.labPurple,
-                                  AppColors.labPurple.withValues(alpha: 0.78)
+                                  AppColors.labPurple.withValues(alpha: 0.78),
                                 ]
                               : [
                                   status.color.withValues(alpha: 0.85),
-                                  status.color
+                                  status.color,
                                 ],
                         ),
                         borderRadius: BorderRadius.circular(13),
@@ -117,7 +118,9 @@ class LabBookingTile extends StatelessWidget {
                                 ),
                               ),
                               _StatusChip(
-                                  label: status.label, color: status.color),
+                                label: status.label,
+                                color: status.color,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 3),
@@ -137,8 +140,9 @@ class LabBookingTile extends StatelessWidget {
                             Text(
                               '${booking.allTestNames.length} tests booked',
                               style: GoogleFonts.inter(
-                                  fontSize: AppTypography.labelSmall,
-                                  color: AppColors.labPurple),
+                                fontSize: AppTypography.labelSmall,
+                                color: AppColors.labPurple,
+                              ),
                             ),
                           ],
                           const SizedBox(height: 2),
@@ -147,8 +151,9 @@ class LabBookingTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.labelMedium,
-                                color: AppColors.textSecondaryOf(context)),
+                              fontSize: AppTypography.labelMedium,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Row(
@@ -166,9 +171,9 @@ class LabBookingTile extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                      fontSize: AppTypography.labelMedium,
-                                      color:
-                                          AppColors.textSecondaryOf(context)),
+                                    fontSize: AppTypography.labelMedium,
+                                    color: AppColors.textSecondaryOf(context),
+                                  ),
                                 ),
                               ),
                             ],
@@ -212,7 +217,10 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: FontWeight.w700, color: color),
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }

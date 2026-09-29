@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+
 import '../../constants/app_constants.dart';
 import '../../data/shared_appointments_store.dart';
 import '../../../features/doctor/models/doctor_models.dart';
@@ -103,8 +104,9 @@ abstract final class AppointmentSupabaseMapper {
         slotLabel: row['slot_label'] as String? ?? '',
         tokenNumber: (row['token_number'] as num?)?.toInt() ?? 0,
         visitType: _parseVisitType(row['visit_type'] as String?),
-        patientStatus:
-            _parsePatientBookingStatus(row['patient_status'] as String?),
+        patientStatus: _parsePatientBookingStatus(
+          row['patient_status'] as String?,
+        ),
         doctorStatus: doctorStatus,
         clinicName: row['clinic_name'] as String?,
         clinicAddress: row['clinic_address'] as String?,

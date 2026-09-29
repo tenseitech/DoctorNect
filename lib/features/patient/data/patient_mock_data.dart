@@ -4,7 +4,9 @@ import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import '../../../core/constants/app_icons.dart';
 import '../../../core/constants/specialty_categories.dart';
 import '../../../core/data/shared_appointments_store.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import 'patient_favorites_store.dart';
 import 'registered_doctors_store.dart';
 
@@ -46,9 +48,9 @@ class PatientMockData {
   ];
 
   static List<SpecialityShortcut> get specialityShortcuts => [
-        for (final label in specialtyCategories.keys)
-          SpecialityShortcut(label: label, icon: _iconForCategory(label)),
-      ];
+    for (final label in specialtyCategories.keys)
+      SpecialityShortcut(label: label, icon: _iconForCategory(label)),
+  ];
 
   static IconData _iconForCategory(String label) {
     final l = label.toLowerCase();
@@ -186,12 +188,16 @@ class PatientMockData {
   }
 
   static List<RecentAppointment> get recentAppointments {
-    final completed = SharedAppointmentsStore.instance
-        .patientAppointments()
-        .where((a) =>
-            a.cancellationReason == null && a.dateTime.isBefore(DateTime.now()))
-        .toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final completed =
+        SharedAppointmentsStore.instance
+            .patientAppointments()
+            .where(
+              (a) =>
+                  a.cancellationReason == null &&
+                  a.dateTime.isBefore(DateTime.now()),
+            )
+            .toList()
+          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return completed.take(3).map((a) {
       return RecentAppointment(
         doctorName: 'Dr. ${a.doctorName}',

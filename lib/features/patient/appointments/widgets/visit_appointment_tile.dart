@@ -94,7 +94,9 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                               ),
                             ),
                             _StatusChip(
-                                label: status.label, color: status.color),
+                              label: status.label,
+                              color: status.color,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 3),
@@ -103,8 +105,9 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.labelMedium,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.labelMedium,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -122,8 +125,9 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                    fontSize: AppTypography.labelMedium,
-                                    color: AppColors.textSecondaryOf(context)),
+                                  fontSize: AppTypography.labelMedium,
+                                  color: AppColors.textSecondaryOf(context),
+                                ),
                               ),
                             ),
                           ],
@@ -207,8 +211,9 @@ class _DateBadge extends StatelessWidget {
       width: 48,
       height: 52,
       decoration: BoxDecoration(
-        color:
-            highlight ? const Color(0xFF0F766E) : color.withValues(alpha: 0.85),
+        color: highlight
+            ? const Color(0xFF0F766E)
+            : color.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -256,7 +261,10 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         label,
         style: GoogleFonts.inter(
-            fontSize: 10, fontWeight: FontWeight.w700, color: color),
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
@@ -56,7 +57,9 @@ abstract final class LocationService {
         if (!serviceEnabled) {
           if (context != null && context.mounted && showToast) {
             AppToast.error(
-                context, 'Location services are disabled. Please turn on GPS.');
+              context,
+              'Location services are disabled. Please turn on GPS.',
+            );
           }
           return null;
         }
@@ -76,8 +79,10 @@ abstract final class LocationService {
 
       if (permission == LocationPermission.deniedForever) {
         if (context != null && context.mounted && showToast) {
-          AppToast.error(context,
-              'Location permissions are permanently denied. Please enable in settings.');
+          AppToast.error(
+            context,
+            'Location permissions are permanently denied. Please enable in settings.',
+          );
         }
         return null;
       }
@@ -100,8 +105,10 @@ abstract final class LocationService {
 
       // 4. Try native geocoding (iOS & Android)
       try {
-        final placemarks =
-            await placemarkFromCoordinates(pos.latitude, pos.longitude);
+        final placemarks = await placemarkFromCoordinates(
+          pos.latitude,
+          pos.longitude,
+        );
         if (placemarks.isNotEmpty) {
           final pm = placemarks.first;
           line1 = pm.street;
@@ -124,12 +131,14 @@ abstract final class LocationService {
             'format': 'json',
             'addressdetails': '1',
           });
-          final response = await http.get(
-            uri,
-            headers: const {
-              'User-Agent': 'DoctorNect/1.0 (healthcare-ecosystem-app)'
-            },
-          ).timeout(const Duration(seconds: 6));
+          final response = await http
+              .get(
+                uri,
+                headers: const {
+                  'User-Agent': 'DoctorNect/1.0 (healthcare-ecosystem-app)',
+                },
+              )
+              .timeout(const Duration(seconds: 6));
 
           if (response.statusCode == 200) {
             final payload = jsonDecode(response.body) as Map<String, dynamic>;
@@ -137,12 +146,13 @@ abstract final class LocationService {
             fullAddress ??= payload['display_name'] as String?;
 
             if (address != null) {
-              city ??= (address['city'] ??
-                      address['town'] ??
-                      address['village'] ??
-                      address['suburb'] ??
-                      address['county'])
-                  ?.toString();
+              city ??=
+                  (address['city'] ??
+                          address['town'] ??
+                          address['village'] ??
+                          address['suburb'] ??
+                          address['county'])
+                      ?.toString();
               state ??=
                   (address['state'] ?? address['province'] ?? address['region'])
                       ?.toString();
@@ -151,11 +161,12 @@ abstract final class LocationService {
 
               final road = address['road']?.toString();
               final houseNumber = address['house_number']?.toString();
-              final neighbourhood = (address['suburb'] ??
-                      address['neighbourhood'] ??
-                      address['residential'] ??
-                      address['quarter'])
-                  ?.toString();
+              final neighbourhood =
+                  (address['suburb'] ??
+                          address['neighbourhood'] ??
+                          address['residential'] ??
+                          address['quarter'])
+                      ?.toString();
 
               if (line1 == null || line1.isEmpty) {
                 line1 = [
@@ -215,7 +226,9 @@ abstract final class LocationService {
     } catch (e) {
       if (context != null && context.mounted && showToast) {
         AppToast.error(
-            context, 'Failed to detect location. Please enter manually.');
+          context,
+          'Failed to detect location. Please enter manually.',
+        );
       }
       return null;
     }

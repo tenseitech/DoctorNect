@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,10 +27,13 @@ class PatientAddressSheet extends StatefulWidget {
       return showDialog<bool>(
         context: context,
         builder: (ctx) => Dialog(
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
             child: const PatientAddressSheet(),
@@ -103,9 +107,9 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
   }
 
   String? _validatePincode(String? value) => FormValidators.optionalPincode(
-        value,
-        country: _country ?? Countries.defaultCountry,
-      );
+    value,
+    country: _country ?? Countries.defaultCountry,
+  );
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -137,8 +141,9 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final postalLabel =
-        WorldLocations.postalCodeLabel(_country ?? Countries.defaultCountry);
+    final postalLabel = WorldLocations.postalCodeLabel(
+      _country ?? Countries.defaultCountry,
+    );
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -162,8 +167,9 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                     ),
                   ),
                   IconButton(
-                    onPressed:
-                        _submitting ? null : () => Navigator.pop(context),
+                    onPressed: _submitting
+                        ? null
+                        : () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
                   ),
                 ],
@@ -171,9 +177,10 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
               Text(
                 'Enter your full address for home visits, lab collection, and nearby doctor search.',
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall,
-                    color: AppColors.textSecondaryOf(context),
-                    height: 1.4),
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textSecondaryOf(context),
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 20),
               _field(
@@ -258,8 +265,9 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                     backgroundColor: AppColors.patientTeal,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.inputRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.inputRadius,
+                      ),
                     ),
                   ),
                   child: _submitting
@@ -267,13 +275,16 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : Text(
                           'Save location',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodyLarge,
-                              fontWeight: FontWeight.w600),
+                            fontSize: AppTypography.bodyLarge,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                 ),
               ),

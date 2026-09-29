@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/firebase/models/doctor_referral.dart';
@@ -10,7 +11,8 @@ import 'models/clinical_models.dart';
 abstract final class ReferralConsultService {
   /// Self-grants care-team access when [patients/{id}/doctor_links/{B}] exists (C1/C2).
   static Future<bool> prepareReceivingDoctorAccess(
-      DoctorReferral referral) async {
+    DoctorReferral referral,
+  ) async {
     if (!PatientProfileRepository.isRegisteredPatientId(referral.patientId)) {
       return false;
     }
@@ -22,16 +24,13 @@ abstract final class ReferralConsultService {
 
     final granted = await FirestoreService.instance.patientProfile
         .grantDoctorCareTeamAccess(
-      patientId: referral.patientId,
-      doctorId: doctorId,
-    );
+          patientId: referral.patientId,
+          doctorId: doctorId,
+        );
     if (!granted) return false;
 
     final profile = await FirestoreService.instance.patientProfile
-        .fetchPatientDocumentForDoctor(
-      referral.patientId,
-      preferCache: false,
-    );
+        .fetchPatientDocumentForDoctor(referral.patientId, preferCache: false);
     if (profile == null) return false;
     return true;
   }
@@ -76,8 +75,7 @@ abstract final class ReferralConsultService {
   }
 
   static void _snack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }

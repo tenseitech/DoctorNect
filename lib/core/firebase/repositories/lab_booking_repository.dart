@@ -115,36 +115,37 @@ class LabBookingRepository {
         .where((name) => name.isNotEmpty)
         .toList();
     final testIds = tests.map((test) => test.id).toList();
-    final summary =
-        PatientSelectedInvestigationsMapper.summaryFromNames(testNames);
+    final summary = PatientSelectedInvestigationsMapper.summaryFromNames(
+      testNames,
+    );
 
     await FirebaseFirestore.instance
         .collection(FirestorePaths.labBookings)
         .doc(bookingId)
         .set({
-      'bookingId': bookingId,
-      'patientId': patientId,
-      'testId': testIds.first,
-      'testIds': testIds,
-      'testName': summary,
-      'testNames': testNames,
-      'patientName': draft.patientName,
-      'patientAge': draft.patientAge,
-      'bookingForSelf': draft.bookingForSelf,
-      if (familyMemberId != null && familyMemberId.isNotEmpty)
-        'familyMemberId': familyMemberId,
-      'collectionType': draft.collectionType.name,
-      'partnerLab': draft.selectedLab?.name ?? '',
-      if (draft.selectedLab?.id != null && draft.selectedLab!.id!.isNotEmpty)
-        'labId': draft.selectedLab!
-            .id, // FIXED: persist labId so the lab operator can query their bookings
-      'address': draft.address ?? '',
-      'dateTime': Timestamp.fromDate(dateTime),
-      'slotLabel': draft.selectedSlotLabel,
-      'status': status,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+          'bookingId': bookingId,
+          'patientId': patientId,
+          'testId': testIds.first,
+          'testIds': testIds,
+          'testName': summary,
+          'testNames': testNames,
+          'patientName': draft.patientName,
+          'patientAge': draft.patientAge,
+          'bookingForSelf': draft.bookingForSelf,
+          if (familyMemberId != null && familyMemberId.isNotEmpty)
+            'familyMemberId': familyMemberId,
+          'collectionType': draft.collectionType.name,
+          'partnerLab': draft.selectedLab?.name ?? '',
+          if (draft.selectedLab?.id != null &&
+              draft.selectedLab!.id!.isNotEmpty)
+            'labId': draft.selectedLab!.id, // FIXED: persist labId so the lab operator can query their bookings
+          'address': draft.address ?? '',
+          'dateTime': Timestamp.fromDate(dateTime),
+          'slotLabel': draft.selectedSlotLabel,
+          'status': status,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
 
     return LabBookingRecord(
       bookingId: bookingId,
@@ -179,8 +180,10 @@ class LabBookingRepository {
     if (labId.isEmpty) {
       throw ArgumentError('Lab id is required');
     }
-    final trimmedTests =
-        testNames.map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
+    final trimmedTests = testNames
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
     if (trimmedTests.isEmpty) {
       throw ArgumentError('At least one test is required');
     }
@@ -190,38 +193,41 @@ class LabBookingRepository {
     final now = DateTime.now();
     final slotLabel = LabSlotTime.format(TimeOfDay.fromDateTime(now));
     final dateTime = LabSlotTime.combine(now, slotLabel);
-    final summary =
-        PatientSelectedInvestigationsMapper.summaryFromNames(trimmedTests);
+    final summary = PatientSelectedInvestigationsMapper.summaryFromNames(
+      trimmedTests,
+    );
 
     await FirebaseFirestore.instance
         .collection(FirestorePaths.labBookings)
         .doc(bookingId)
         .set({
-      'bookingId': bookingId,
-      'patientId': patientId,
-      'patientName': patientName.trim(),
-      'patientAge': patientAge,
-      'patientGender': AppConstants.normalizePatientGender(patientGender),
-      if (contactNumber != null && contactNumber.trim().isNotEmpty)
-        'contactNumber': contactNumber.trim(),
-      'testName': summary,
-      'testNames': trimmedTests,
-      'testId':
-          trimmedTests.first.toLowerCase().replaceAll(RegExp(r'\s+'), '_'),
-      'testIds': trimmedTests
-          .map((t) => t.toLowerCase().replaceAll(RegExp(r'\s+'), '_'))
-          .toList(),
-      'collectionType': LabCollectionType.walkIn.name,
-      'partnerLab': labName,
-      'labId': labId,
-      'address': '',
-      'dateTime': Timestamp.fromDate(dateTime),
-      'slotLabel': slotLabel,
-      'status': 'confirmed',
-      'source': 'walkin',
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+          'bookingId': bookingId,
+          'patientId': patientId,
+          'patientName': patientName.trim(),
+          'patientAge': patientAge,
+          'patientGender': AppConstants.normalizePatientGender(patientGender),
+          if (contactNumber != null && contactNumber.trim().isNotEmpty)
+            'contactNumber': contactNumber.trim(),
+          'testName': summary,
+          'testNames': trimmedTests,
+          'testId': trimmedTests.first.toLowerCase().replaceAll(
+            RegExp(r'\s+'),
+            '_',
+          ),
+          'testIds': trimmedTests
+              .map((t) => t.toLowerCase().replaceAll(RegExp(r'\s+'), '_'))
+              .toList(),
+          'collectionType': LabCollectionType.walkIn.name,
+          'partnerLab': labName,
+          'labId': labId,
+          'address': '',
+          'dateTime': Timestamp.fromDate(dateTime),
+          'slotLabel': slotLabel,
+          'status': 'confirmed',
+          'source': 'walkin',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
 
     return LabBookingRecord(
       bookingId: bookingId,
@@ -255,8 +261,10 @@ class LabBookingRepository {
       query: FirebaseFirestore.instance
           .collection(FirestorePaths.labBookings)
           .where('patientId', isEqualTo: patientId)
-          .where('dateTime',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(dayStart))
+          .where(
+            'dateTime',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(dayStart),
+          )
           .where('dateTime', isLessThan: Timestamp.fromDate(dayEnd)),
     );
 
@@ -325,10 +333,12 @@ class LabBookingRepository {
         .orderBy('dateTime', descending: true)
         .limit(100)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => _fromMap(doc.id, doc.data()))
-            .whereType<LabBookingRecord>()
-            .toList());
+        .map(
+          (snap) => snap.docs
+              .map((doc) => _fromMap(doc.id, doc.data()))
+              .whereType<LabBookingRecord>()
+              .toList(),
+        );
   }
 
   Stream<List<LabBookingRecord>> watchForPatient(String patientId) {
@@ -341,10 +351,12 @@ class LabBookingRepository {
         .orderBy('dateTime', descending: true)
         .limit(100)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => _fromMap(doc.id, doc.data()))
-            .whereType<LabBookingRecord>()
-            .toList());
+        .map(
+          (snap) => snap.docs
+              .map((doc) => _fromMap(doc.id, doc.data()))
+              .whereType<LabBookingRecord>()
+              .toList(),
+        );
   }
 
   Future<void> updateBookingStatus(String bookingId, String status) async {
@@ -352,10 +364,7 @@ class LabBookingRepository {
     await FirebaseFirestore.instance
         .collection(FirestorePaths.labBookings)
         .doc(bookingId)
-        .update({
-      'status': status,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+        .update({'status': status, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
   Future<String> submitReport({
@@ -434,11 +443,12 @@ class LabBookingRepository {
       final testNamesRaw = data['testNames'];
       final testNames = testNamesRaw is List
           ? testNamesRaw
-              .map((item) => item.toString().trim())
-              .where((name) => name.isNotEmpty)
-              .toList()
+                .map((item) => item.toString().trim())
+                .where((name) => name.isNotEmpty)
+                .toList()
           : <String>[];
-      final testName = data['testName'] as String? ??
+      final testName =
+          data['testName'] as String? ??
           (testNames.isNotEmpty
               ? PatientSelectedInvestigationsMapper.summaryFromNames(testNames)
               : 'Lab test');

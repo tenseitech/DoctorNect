@@ -55,10 +55,7 @@ Future<void> main() async {
 }
 
 class DoctorNectApp extends StatelessWidget {
-  const DoctorNectApp({
-    super.key,
-    this.initialScreen,
-  });
+  const DoctorNectApp({super.key, this.initialScreen});
 
   final Widget? initialScreen;
 

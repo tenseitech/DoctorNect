@@ -38,8 +38,10 @@ class CommunityDiagnosisRepository {
           .collection(FirestorePaths.communityDiagnoses)
           .orderBy('text')
           .limit(_fetchLimit);
-      final snap =
-          await FirestoreReadHelper.getQuery(query: query, preferCache: true);
+      final snap = await FirestoreReadHelper.getQuery(
+        query: query,
+        preferCache: true,
+      );
 
       _cache
         ..clear()
@@ -93,8 +95,10 @@ class CommunityDiagnosisRepository {
       results.add(value.trim());
     }
 
-    for (final item
-        in Icd10DiagnosesDatabase.instance.search(query, limit: limit)) {
+    for (final item in Icd10DiagnosesDatabase.instance.search(
+      query,
+      limit: limit,
+    )) {
       add(item);
       if (results.length >= limit) return results;
     }
@@ -124,11 +128,11 @@ class CommunityDiagnosisRepository {
     final doc = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityDiagnoses)
         .add({
-      'text': trimmed,
-      'textLower': trimmed.toLowerCase(),
-      'addedByDoctorId': doctorId,
-      'addedAt': FieldValue.serverTimestamp(),
-    });
+          'text': trimmed,
+          'textLower': trimmed.toLowerCase(),
+          'addedByDoctorId': doctorId,
+          'addedAt': FieldValue.serverTimestamp(),
+        });
 
     final diagnosis = CommunityDiagnosis(
       id: doc.id,
@@ -140,8 +144,10 @@ class CommunityDiagnosisRepository {
     return diagnosis;
   }
 
-  Future<void> persistCustomIfNeeded(String text,
-      {required String doctorId}) async {
+  Future<void> persistCustomIfNeeded(
+    String text, {
+    required String doctorId,
+  }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || isKnownDisplay(trimmed) || doctorId.isEmpty) return;
     try {
@@ -149,13 +155,15 @@ class CommunityDiagnosisRepository {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'CommunityDiagnosisRepository.persistCustomIfNeeded failed: $e\n$st');
+          'CommunityDiagnosisRepository.persistCustomIfNeeded failed: $e\n$st',
+        );
       }
     }
   }
 
   static CommunityDiagnosis _fromDoc(
-      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data();
     return CommunityDiagnosis(
       id: doc.id,

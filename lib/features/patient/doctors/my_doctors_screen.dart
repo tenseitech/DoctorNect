@@ -8,7 +8,9 @@ import '../booking/booking_flow_screen.dart';
 import '../data/patient_favorites_store.dart';
 import '../data/registered_doctors_store.dart';
 import '../doctor_profile/patient_doctor_profile_screen.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../../../widgets/labeled_remove_button.dart';
 import '../widgets/patient_favorites_sheets.dart';
 import '../../../core/theme/app_typography.dart';
@@ -50,8 +52,10 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
       backgroundColor: AppColors.cardBgOf(context),
       appBar: AppBar(
         centerTitle: true,
-        title: Text('My Doctor',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text(
+          'My Doctor',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: AppColors.cardBgOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
@@ -85,8 +89,9 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                     'No doctors in your list yet. Tap Add to search registered doctors or book a visit.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
-                        color: AppColors.textSecondaryOf(context),
-                        fontSize: AppTypography.bodyMedium),
+                      color: AppColors.textSecondaryOf(context),
+                      fontSize: AppTypography.bodyMedium,
+                    ),
                   ),
                 )
               : ListView.separated(
@@ -100,7 +105,9 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                       onRemove: () async {
                         final confirmed =
                             await PatientFavoritesSheets.confirmRemoveDoctor(
-                                context, doctor);
+                              context,
+                              doctor,
+                            );
                         if (!confirmed || !context.mounted) return;
                         await _favoritesStore.removeDoctor(doctor.id);
                       },
@@ -167,23 +174,26 @@ class _MyDoctorManageTile extends StatelessWidget {
                     Text(
                       'Dr. ${doctor.name}',
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodyLarge,
-                          fontWeight: FontWeight.w600),
+                        fontSize: AppTypography.bodyLarge,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       doctor.specialization,
                       style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: AppColors.textSecondaryOf(context)),
+                        fontSize: AppTypography.labelMedium,
+                        color: AppColors.textSecondaryOf(context),
+                      ),
                     ),
                     if (doctor.city.trim().isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         doctor.city,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            color: AppColors.textSecondaryOf(context)),
+                          fontSize: AppTypography.labelMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                       ),
                     ],
                   ],

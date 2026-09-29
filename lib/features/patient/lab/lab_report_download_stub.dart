@@ -12,10 +12,9 @@ Future<void> downloadLabReportBytes({
   required String mimeType,
 }) async {
   if (LabReportFileStore.isImageFile(fileName)) {
-    await Share.shareXFiles(
-      [XFile.fromData(bytes, name: fileName, mimeType: mimeType)],
-      text: fileName,
-    );
+    await Share.shareXFiles([
+      XFile.fromData(bytes, name: fileName, mimeType: mimeType),
+    ], text: fileName);
     return;
   }
 

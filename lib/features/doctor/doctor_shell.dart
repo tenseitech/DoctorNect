@@ -49,8 +49,9 @@ class DoctorShell extends StatefulWidget {
 class _DoctorShellState extends State<DoctorShell> {
   int _index = 0;
   int _appointmentsTab = 0;
-  late final PageController _pageController =
-      PageController(initialPage: _index);
+  late final PageController _pageController = PageController(
+    initialPage: _index,
+  );
   bool _isAnimatingToPage = false;
   final Set<int> _visitedTabs = {0};
 
@@ -115,11 +116,13 @@ class _DoctorShellState extends State<DoctorShell> {
         ? FirebaseAuth.instance.currentUser?.phoneNumber
         : null;
     return DemoAuthConfig.isDemoDoctorPhone(
-            DoctorProfileStore.instance.profile.mobile) ||
+          DoctorProfileStore.instance.profile.mobile,
+        ) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
         DemoAuthConfig.isDemoDoctorPhone(AppSession.doctorId) ||
-        DoctorSession.loggedInDoctorId
-            .contains(DemoAuthConfig.demoDoctorPhone) ||
+        DoctorSession.loggedInDoctorId.contains(
+          DemoAuthConfig.demoDoctorPhone,
+        ) ||
         AppSession.doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
         DemoAuthConfig.isDemoDoctorPhone(authPhone);
   }
@@ -133,11 +136,11 @@ class _DoctorShellState extends State<DoctorShell> {
             .collection(FirestorePaths.users)
             .doc(uid)
             .set({
-          'verified': true,
-          'verificationStatus': 'verified',
-          'status': 'approved',
-          'profileCompleted': true,
-        }, SetOptions(merge: true));
+              'verified': true,
+              'verificationStatus': 'verified',
+              'status': 'approved',
+              'profileCompleted': true,
+            }, SetOptions(merge: true));
       }
       final doctorId = DoctorSession.loggedInDoctorId.isNotEmpty
           ? DoctorSession.loggedInDoctorId
@@ -147,11 +150,11 @@ class _DoctorShellState extends State<DoctorShell> {
             .collection(FirestorePaths.doctors)
             .doc(doctorId)
             .set({
-          'verified': true,
-          'verificationStatus': 'verified',
-          'status': 'approved',
-          'profileCompleted': true,
-        }, SetOptions(merge: true));
+              'verified': true,
+              'verificationStatus': 'verified',
+              'status': 'approved',
+              'profileCompleted': true,
+            }, SetOptions(merge: true));
       }
     } catch (_) {}
   }
@@ -176,17 +179,23 @@ class _DoctorShellState extends State<DoctorShell> {
     final doctorId = DoctorSession.loggedInDoctorId;
     if (doctorId.isEmpty) return;
     FirestoreScreenSync.attachPendingConnections(
-        role: UserType.doctor, profileId: doctorId);
+      role: UserType.doctor,
+      profileId: doctorId,
+    );
     FirestoreScreenSync.attachLabPendingConnections(
-        role: UserType.doctor, profileId: doctorId);
+      role: UserType.doctor,
+      profileId: doctorId,
+    );
     FirestoreScreenSync.attachDoctorAppointments(doctorId);
   }
 
   List<bool> _requestDots(String doctorId) {
-    final storePending =
-        PharmacyConnectionStore.instance.pendingForDoctor(doctorId).isNotEmpty;
-    final labPending =
-        LabConnectionStore.instance.pendingForDoctor(doctorId).isNotEmpty;
+    final storePending = PharmacyConnectionStore.instance
+        .pendingForDoctor(doctorId)
+        .isNotEmpty;
+    final labPending = LabConnectionStore.instance
+        .pendingForDoctor(doctorId)
+        .isNotEmpty;
     return [false, false, false, storePending, labPending];
   }
 
@@ -249,10 +258,7 @@ class _DoctorShellState extends State<DoctorShell> {
       if (!mounted) return;
       await AppNotificationNavigator.openFromPushData(
         context,
-        data: {
-          'type': 'appointment_new',
-          'appointmentId': appointmentId,
-        },
+        data: {'type': 'appointment_new', 'appointmentId': appointmentId},
         audience: NotificationAudience.doctor,
       );
     });
@@ -285,13 +291,13 @@ class _DoctorShellState extends State<DoctorShell> {
       _isAnimatingToPage = true;
       _pageController
           .animateToPage(
-        index,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-      )
+            index,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+          )
           .then((_) {
-        _isAnimatingToPage = false;
-      });
+            _isAnimatingToPage = false;
+          });
     }
   }
 
@@ -320,17 +326,21 @@ class _DoctorShellState extends State<DoctorShell> {
     _attachConnectionListeners();
 
     if (index == 3) {
-      unawaited(PharmacyConnectionStore.instance.refreshActiveConnections(
-        role: UserType.doctor,
-        profileId: doctorId,
-        preferCache: true,
-      ));
+      unawaited(
+        PharmacyConnectionStore.instance.refreshActiveConnections(
+          role: UserType.doctor,
+          profileId: doctorId,
+          preferCache: true,
+        ),
+      );
     } else if (index == 4) {
-      unawaited(LabConnectionStore.instance.refreshActiveConnections(
-        role: UserType.doctor,
-        profileId: doctorId,
-        preferCache: true,
-      ));
+      unawaited(
+        LabConnectionStore.instance.refreshActiveConnections(
+          role: UserType.doctor,
+          profileId: doctorId,
+          preferCache: true,
+        ),
+      );
       unawaited(LabRegistry.refreshFromFirestore());
     }
   }

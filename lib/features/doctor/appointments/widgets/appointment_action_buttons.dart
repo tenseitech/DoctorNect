@@ -109,11 +109,7 @@ class AppointmentActionButtons extends StatelessWidget {
   }
 
   Widget _actionRow(List<Widget> children) {
-    return Wrap(
-      spacing: _gap,
-      runSpacing: _gap,
-      children: children,
-    );
+    return Wrap(spacing: _gap, runSpacing: _gap, children: children);
   }
 
   Widget _primaryButton({
@@ -136,9 +132,12 @@ class AppointmentActionButtons extends StatelessWidget {
           minimumSize: Size.zero,
           fixedSize: Size(_buttonWidth(label, fontSize), height),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(_radius)),
+            borderRadius: BorderRadius.circular(_radius),
+          ),
           textStyle: GoogleFonts.inter(
-              fontSize: fontSize, fontWeight: FontWeight.w600),
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         child: Text(label),
       ),
@@ -164,9 +163,12 @@ class AppointmentActionButtons extends StatelessWidget {
           minimumSize: Size.zero,
           fixedSize: Size(_buttonWidth(label, fontSize), height),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(_radius)),
+            borderRadius: BorderRadius.circular(_radius),
+          ),
           textStyle: GoogleFonts.inter(
-              fontSize: fontSize, fontWeight: FontWeight.w600),
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         child: Text(label),
       ),

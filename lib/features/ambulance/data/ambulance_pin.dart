@@ -85,7 +85,8 @@ abstract final class AmbulancePin {
   static Uint8List _randomSalt(int length) {
     final random = Random.secure();
     return Uint8List.fromList(
-        List<int>.generate(length, (_) => random.nextInt(256)));
+      List<int>.generate(length, (_) => random.nextInt(256)),
+    );
   }
 
   static String _toHex(List<int> bytes) =>
@@ -128,7 +129,7 @@ abstract final class AmbulancePin {
           (block >> 24) & 0xff,
           (block >> 16) & 0xff,
           (block >> 8) & 0xff,
-          block & 0xff
+          block & 0xff,
         ]);
       var u = Uint8List.fromList(hmac.convert(blockSalt.toBytes()).bytes);
       final t = Uint8List.fromList(u);

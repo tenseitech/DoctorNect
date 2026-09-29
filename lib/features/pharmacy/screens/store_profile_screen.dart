@@ -1,4 +1,5 @@
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -75,15 +76,21 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
         final store = MedicalStoreRegistry.findById(storeId);
         if (store == null) {
           return const Center(
-              child: CircularProgressIndicator(color: AppColors.pharmacyGreen));
+            child: CircularProgressIndicator(color: AppColors.pharmacyGreen),
+          );
         }
 
-        final connectedDoctors =
-            PharmacyConnectionStore.instance.activeForStore(storeId).length;
+        final connectedDoctors = PharmacyConnectionStore.instance
+            .activeForStore(storeId)
+            .length;
         final compact = ResponsiveLayout.isCompact(context);
         final profileSections = Padding(
-          padding:
-              EdgeInsets.fromLTRB(compact ? 16 : 24, 20, compact ? 16 : 24, 0),
+          padding: EdgeInsets.fromLTRB(
+            compact ? 16 : 24,
+            20,
+            compact ? 16 : 24,
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -105,8 +112,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                     label: 'Owner',
                     value: store.ownerName,
                     locked: true,
-                    supportMessage:
-                        'Owner name is permanent. Contact support@doctornect.com to request a change.',
+                    supportMessage: 'Owner name is permanent. Contact support@doctornect.com to request a change.',
                   ),
                   _ProfileField(
                     label: 'Address',
@@ -121,8 +127,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                     label: 'Drug license',
                     value: store.drugLicenseNumber,
                     locked: true,
-                    supportMessage:
-                        'Drug license cannot be changed after registration. Contact support@doctornect.com if this needs to be corrected.',
+                    supportMessage: 'Drug license cannot be changed after registration. Contact support@doctornect.com if this needs to be corrected.',
                   ),
                   _ProfileField(
                     label: 'GST number (optional)',
@@ -152,10 +157,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                       currentValue: store.phone,
                     ),
                   ),
-                  _ProfileField(
-                    label: 'Email (immutable)',
-                    value: store.email,
-                  ),
+                  _ProfileField(label: 'Email (immutable)', value: store.email),
                 ],
               ),
               StreamBuilder<BannerConfigModel>(
@@ -189,21 +191,28 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                                   isVerified: isVerified,
                                 );
                               },
-                              icon: const Icon(Icons.campaign_rounded,
-                                  size: 20, color: AppColors.pharmacyGreen),
+                              icon: const Icon(
+                                Icons.campaign_rounded,
+                                size: 20,
+                                color: AppColors.pharmacyGreen,
+                              ),
                               label: Text(
                                 'Promote Banner Ad on Patient Home',
                                 style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w600),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.pharmacyGreen,
                                 side: const BorderSide(
-                                    color: AppColors.pharmacyGreen),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
+                                  color: AppColors.pharmacyGreen,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12)),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             ),
                           ],
@@ -272,8 +281,11 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                     const SizedBox(height: 10),
                     OutlinedButton.icon(
                       onPressed: () => AppLogout.confirmAndSignOut(context),
-                      icon: const Icon(Icons.logout,
-                          size: 20, color: AppColors.error),
+                      icon: const Icon(
+                        Icons.logout,
+                        size: 20,
+                        color: AppColors.error,
+                      ),
                       label: Text(
                         'Log out',
                         style: GoogleFonts.inter(
@@ -284,7 +296,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: BorderSide(
-                            color: AppColors.error.withValues(alpha: 0.45)),
+                          color: AppColors.error.withValues(alpha: 0.45),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -343,8 +356,9 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
     bool optional = false,
   }) async {
     final parsedPhone = FormValidators.parsePhone(currentValue);
-    final initialText =
-        field == 'Phone' ? parsedPhone.localNumber : currentValue;
+    final initialText = field == 'Phone'
+        ? parsedPhone.localNumber
+        : currentValue;
     final controller = TextEditingController(text: initialText);
     var dialCode = parsedPhone.dialCode;
     var saving = false;
@@ -369,8 +383,10 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                 }
               }
               if (field == 'Phone') {
-                final phoneError = FormValidators.phoneLocal(controller.text,
-                    dialCode: dialCode);
+                final phoneError = FormValidators.phoneLocal(
+                  controller.text,
+                  dialCode: dialCode,
+                );
                 if (phoneError != null) {
                   setDialogState(() => errorText = phoneError);
                   return;
@@ -389,7 +405,9 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
 
               if (field == 'Phone' &&
                   !ContactChangeVerification.mobilesEqual(
-                      phoneValue!, currentValue)) {
+                    phoneValue!,
+                    currentValue,
+                  )) {
                 final verified = await ContactChangeVerification.verifyIfNeeded(
                   context: context,
                   channel: ContactVerificationChannel.mobile,
@@ -404,7 +422,9 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
 
               if (field == 'Email' &&
                   !ContactChangeVerification.emailsEqual(
-                      emailValue!, currentValue)) {
+                    emailValue!,
+                    currentValue,
+                  )) {
                 final verified = await ContactChangeVerification.verifyIfNeeded(
                   context: context,
                   channel: ContactVerificationChannel.email,
@@ -429,8 +449,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                 email: emailValue,
                 gstNumber:
                     field == 'GST number (optional)' && trimmed.isNotEmpty
-                        ? trimmed
-                        : null,
+                    ? trimmed
+                    : null,
                 clearGstNumber:
                     field == 'GST number (optional)' && trimmed.isEmpty,
               );
@@ -448,8 +468,10 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
             }
 
             return AlertDialog(
-              title: Text('Edit $field',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              title: Text(
+                'Edit $field',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -459,8 +481,9 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                       Text(
                         errorText!,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall,
-                            color: AppColors.error),
+                          fontSize: AppTypography.bodySmall,
+                          color: AppColors.error,
+                        ),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -471,8 +494,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                         onDialCodeChanged: (code) => dialCode = code,
                         decoration: const InputDecoration(
                           labelText: 'Phone',
-                          helperText:
-                              'OTP verification required when changing your number',
+                          helperText: 'OTP verification required when changing your number',
                           border: OutlineInputBorder(),
                         ),
                       )
@@ -489,8 +511,9 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                             : TextCapitalization.sentences,
                         decoration: InputDecoration(
                           labelText: field,
-                          hintText:
-                              optional ? 'Leave blank if not applicable' : null,
+                          hintText: optional
+                              ? 'Leave blank if not applicable'
+                              : null,
                           helperText: field == 'Email'
                               ? 'OTP verification required when changing your email'
                               : null,
@@ -517,7 +540,9 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Save'),
                 ),
@@ -582,8 +607,8 @@ class _ProfileHeaderBand extends StatelessWidget {
                   color: AppColors.surfaceOf(context).withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color:
-                          AppColors.surfaceOf(context).withValues(alpha: 0.28)),
+                    color: AppColors.surfaceOf(context).withValues(alpha: 0.28),
+                  ),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -621,7 +646,9 @@ class _ProfileHeaderBand extends StatelessWidget {
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.surfaceOf(context)
                             .withValues(alpha: 0.16),
@@ -647,9 +674,13 @@ class _ProfileHeaderBand extends StatelessWidget {
             runSpacing: 8,
             children: [
               _HeaderStatPill(
-                  icon: Icons.people_outline, label: '$connectedDoctors Dr.'),
+                icon: Icons.people_outline,
+                label: '$connectedDoctors Dr.',
+              ),
               _HeaderStatPill(
-                  icon: Icons.badge_outlined, label: store.drugLicenseNumber),
+                icon: Icons.badge_outlined,
+                label: store.drugLicenseNumber,
+              ),
             ],
           ),
         ],
@@ -718,8 +749,9 @@ class _ProfileSection extends StatelessWidget {
             Text(
               title,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodyMedium,
-                  fontWeight: FontWeight.w700),
+                fontSize: AppTypography.bodyMedium,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -727,8 +759,9 @@ class _ProfileSection extends StatelessWidget {
         Text(
           subtitle,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelMedium,
-              color: AppColors.textSecondaryOf(context)),
+            fontSize: AppTypography.labelMedium,
+            color: AppColors.textSecondaryOf(context),
+          ),
         ),
         const SizedBox(height: 10),
         if (rows.isNotEmpty)
@@ -746,7 +779,9 @@ class _ProfileSection extends StatelessWidget {
                     decoration: const BoxDecoration(color: _headerBg),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 11),
+                        horizontal: 16,
+                        vertical: 11,
+                      ),
                       child: Row(
                         children: [
                           Expanded(
@@ -776,10 +811,7 @@ class _ProfileSection extends StatelessWidget {
                     ),
                   ),
                   for (var i = 0; i < rows.length; i++)
-                    _ProfileTableRow(
-                      field: rows[i],
-                      showTopBorder: true,
-                    ),
+                    _ProfileTableRow(field: rows[i], showTopBorder: true),
                 ],
               ),
             ),
@@ -794,10 +826,7 @@ class _ProfileSection extends StatelessWidget {
 }
 
 class _ProfileTableRow extends StatelessWidget {
-  const _ProfileTableRow({
-    required this.field,
-    required this.showTopBorder,
-  });
+  const _ProfileTableRow({required this.field, required this.showTopBorder});
 
   final _ProfileField field;
   final bool showTopBorder;
@@ -860,8 +889,7 @@ class _ProfileTableRow extends StatelessWidget {
                   ] else if (field.locked) ...[
                     const SizedBox(width: 8),
                     Tooltip(
-                      message: field.supportMessage ??
-                          'This field can only be updated by DoctorNect support',
+                      message: field.supportMessage ?? 'This field can only be updated by DoctorNect support',
                       child: InkWell(
                         onTap: field.supportMessage == null
                             ? null
@@ -939,8 +967,10 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Change Password',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+      title: Text(
+        'Change Password',
+        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      ),
       content: scrollableDialogContent(
         context: context,
         child: Column(
@@ -948,9 +978,13 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (_error != null) ...[
-              Text(_error!,
-                  style: const TextStyle(
-                      color: Colors.red, fontSize: AppTypography.bodySmall)),
+              Text(
+                _error!,
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: AppTypography.bodySmall,
+                ),
+              ),
               const SizedBox(height: 12),
             ],
             TextField(
@@ -989,7 +1023,9 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Update'),
         ),
@@ -1009,17 +1045,22 @@ class _AddressEditDialog extends StatefulWidget {
 }
 
 class _AddressEditDialogState extends State<_AddressEditDialog> {
-  late final _address1Controller =
-      TextEditingController(text: widget.store.addressLine1);
-  late final _address2Controller =
-      TextEditingController(text: widget.store.addressLine2);
-  late final _pincodeController =
-      TextEditingController(text: widget.store.pincode);
+  late final _address1Controller = TextEditingController(
+    text: widget.store.addressLine1,
+  );
+  late final _address2Controller = TextEditingController(
+    text: widget.store.addressLine2,
+  );
+  late final _pincodeController = TextEditingController(
+    text: widget.store.pincode,
+  );
 
-  late String? _country =
-      widget.store.country.isNotEmpty ? widget.store.country : null;
-  late String? _state =
-      widget.store.state.isNotEmpty ? widget.store.state : null;
+  late String? _country = widget.store.country.isNotEmpty
+      ? widget.store.country
+      : null;
+  late String? _state = widget.store.state.isNotEmpty
+      ? widget.store.state
+      : null;
   late String? _city = widget.store.city.isNotEmpty ? widget.store.city : null;
 
   bool _saving = false;
@@ -1075,8 +1116,10 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Edit Address',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+      title: Text(
+        'Edit Address',
+        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1086,7 +1129,9 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
               Text(
                 _errorText!,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodySmall, color: AppColors.error),
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.error,
+                ),
               ),
               const SizedBox(height: 12),
             ],
@@ -1121,7 +1166,9 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Save'),
         ),

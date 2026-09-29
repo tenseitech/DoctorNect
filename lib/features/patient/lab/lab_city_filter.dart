@@ -19,7 +19,9 @@ abstract final class LabCityFilter {
   }
 
   static bool registeredLabInCity(
-      RegisteredLabProfile lab, String patientCity) {
+    RegisteredLabProfile lab,
+    String patientCity,
+  ) {
     return registeredLabMatchesCity(lab, patientCity);
   }
 

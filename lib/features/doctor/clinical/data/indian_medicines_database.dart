@@ -65,7 +65,8 @@ class IndianMedicinesDatabase {
       _names = lines;
     } catch (error, stackTrace) {
       debugPrint(
-          'IndianMedicinesDatabase: asset load failed, using fallback list. $error');
+        'IndianMedicinesDatabase: asset load failed, using fallback list. $error',
+      );
       debugPrint('$stackTrace');
       final fallback = List<String>.from(ClinicalMockData.drugSuggestions);
       _buildIndex(fallback);

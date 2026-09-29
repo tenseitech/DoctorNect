@@ -102,21 +102,26 @@ class AmbulanceStore extends ChangeNotifier {
   bool hasDriverRejectedBooking({
     required String ambulanceId,
     required String bookingId,
-  }) =>
-      _driverRejectedBookings[ambulanceId]?.contains(bookingId) ?? false;
+  }) => _driverRejectedBookings[ambulanceId]?.contains(bookingId) ?? false;
 
   /// Pending broadcast visible to a specific driver (excludes their rejections).
   bool isPendingForDriver(AmbulanceBooking booking, String ambulanceId) =>
       booking.isPending &&
       booking.acceptedAmbulanceId == null &&
       !hasDriverRejectedBooking(
-          ambulanceId: ambulanceId, bookingId: booking.id);
+        ambulanceId: ambulanceId,
+        bookingId: booking.id,
+      );
 
   /// Driver-declined booking for the cancelled tab (offline fallback).
   bool isDriverRejectedBookingView(
-          AmbulanceBooking booking, String ambulanceId) =>
+    AmbulanceBooking booking,
+    String ambulanceId,
+  ) =>
       hasDriverRejectedBooking(
-          ambulanceId: ambulanceId, bookingId: booking.id) &&
+        ambulanceId: ambulanceId,
+        bookingId: booking.id,
+      ) &&
       booking.isPending &&
       booking.acceptedAmbulanceId == null;
 
@@ -291,9 +296,11 @@ class AmbulanceStore extends ChangeNotifier {
       contactPhone: contactPhone?.trim() ?? '',
       notes:
           'Destination: $dropLocation · Broadcast to ${driverIds.length} drivers',
-      bookedByRole: bookedByRole ==
+      bookedByRole:
+          bookedByRole ==
               AmbulanceBookedByRole
-                  .doctor.name // FIXED: was hardcoded to patient
+                  .doctor
+                  .name // FIXED: was hardcoded to patient
           ? AmbulanceBookedByRole.doctor
           : AmbulanceBookedByRole.patient,
       bookedByName: patientName ?? 'Patient',
@@ -387,7 +394,9 @@ class AmbulanceStore extends ChangeNotifier {
 
     _driverRejectedBookings.putIfAbsent(ambulanceId, () => {}).add(bookingId);
     _removeDriverAlertsForBooking(
-        ambulanceId: ambulanceId, bookingId: bookingId);
+      ambulanceId: ambulanceId,
+      bookingId: bookingId,
+    );
     notifyListeners();
     return true;
   }
@@ -401,7 +410,8 @@ class AmbulanceStore extends ChangeNotifier {
     if (current.isCompleted) return true;
     if (current.isCancelled) return false;
 
-    final ownsTrip = driverId != null &&
+    final ownsTrip =
+        driverId != null &&
         driverId.isNotEmpty &&
         (current.acceptedAmbulanceId == driverId ||
             (current.acceptedAmbulanceId == null && current.isAccepted));

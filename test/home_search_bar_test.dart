@@ -5,52 +5,46 @@ import 'package:medibond/features/patient/home/widgets/home_search_bar.dart';
 void main() {
   group('HomeSearchBar animated rotating placeholder tests', () {
     testWidgets(
-        'Renders initial placeholder and transitions through loop every 2.5s',
-        (tester) async {
+      'Renders initial placeholder and transitions through loop every 2.5s',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: HomeSearchBar())),
+        );
+
+        // Initial frame: "Search for doctor" must be visible
+        expect(find.text('Search for doctor'), findsOneWidget);
+
+        // Advance by 2.5s -> transitions to "Search for lab"
+        await tester.pump(const Duration(milliseconds: 2500));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Search for lab'), findsOneWidget);
+
+        // Advance by 2.5s -> transitions to "Search for language or location"
+        await tester.pump(const Duration(milliseconds: 2500));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Search for language or location'), findsOneWidget);
+
+        // Advance by 2.5s -> transitions to "Search for ambulance"
+        await tester.pump(const Duration(milliseconds: 2500));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Search for ambulance'), findsOneWidget);
+
+        // Advance by 2.5s -> loops back to "Search for doctor"
+        await tester.pump(const Duration(milliseconds: 2500));
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Search for doctor'), findsOneWidget);
+
+        // Dispose widget cleanly
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('Focusing or typing hides the placeholder overlay', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: HomeSearchBar(),
-          ),
-        ),
-      );
-
-      // Initial frame: "Search for doctor" must be visible
-      expect(find.text('Search for doctor'), findsOneWidget);
-
-      // Advance by 2.5s -> transitions to "Search for lab"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for lab'), findsOneWidget);
-
-      // Advance by 2.5s -> transitions to "Search for language or location"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for language or location'), findsOneWidget);
-
-      // Advance by 2.5s -> transitions to "Search for ambulance"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for ambulance'), findsOneWidget);
-
-      // Advance by 2.5s -> loops back to "Search for doctor"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for doctor'), findsOneWidget);
-
-      // Dispose widget cleanly
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
-
-    testWidgets('Focusing or typing hides the placeholder overlay',
-        (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: HomeSearchBar(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: HomeSearchBar())),
       );
 
       expect(find.text('Search for doctor'), findsOneWidget);
@@ -88,16 +82,15 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('Search button submits query or triggers callback',
-        (tester) async {
+    testWidgets('Search button submits query or triggers callback', (
+      tester,
+    ) async {
       String submittedQuery = '';
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: HomeSearchBar(
-              onSubmitted: (q) => submittedQuery = q,
-            ),
+            body: HomeSearchBar(onSubmitted: (q) => submittedQuery = q),
           ),
         ),
       );

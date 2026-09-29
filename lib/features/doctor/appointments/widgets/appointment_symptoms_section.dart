@@ -44,13 +44,16 @@ class SymptomChipsPreview extends StatelessWidget {
       children: [
         for (final s in visible)
           Chip(
-            label: Text(s,
-                style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
+            label: Text(
+              s,
+              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
+            ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.1),
-            side:
-                BorderSide(color: AppColors.doctorBlue.withValues(alpha: 0.25)),
+            side: BorderSide(
+              color: AppColors.doctorBlue.withValues(alpha: 0.25),
+            ),
             labelStyle: GoogleFonts.inter(
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w500,
@@ -59,12 +62,14 @@ class SymptomChipsPreview extends StatelessWidget {
           ),
         if (extra > 0)
           Chip(
-            label: Text('+$extra',
-                style: GoogleFonts.inter(fontSize: AppTypography.labelSmall)),
+            label: Text(
+              '+$extra',
+              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
+            ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            backgroundColor:
-                AppColors.textSecondaryOf(context).withValues(alpha: 0.1),
+            backgroundColor: AppColors.textSecondaryOf(context)
+                .withValues(alpha: 0.1),
           ),
       ],
     );

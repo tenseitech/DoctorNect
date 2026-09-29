@@ -1,5 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -244,8 +245,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       builder: _datePickerTheme,
     );
     if (picked != null) {
-      setState(() =>
-          _blockedDates.add(DateTime(picked.year, picked.month, picked.day)));
+      setState(
+        () =>
+            _blockedDates.add(DateTime(picked.year, picked.month, picked.day)),
+      );
     }
   }
 
@@ -339,11 +342,13 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.doctorBlue))
+              child: CircularProgressIndicator(color: AppColors.doctorBlue),
+            )
           : Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                    maxWidth: ResponsiveLayout.contentMaxWidth(context)),
+                  maxWidth: ResponsiveLayout.contentMaxWidth(context),
+                ),
                 child: Form(
                   key: _formKey,
                   child: ListView(
@@ -366,12 +371,14 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                   _workingDays.remove(day);
                                 }
                               }),
-                              selectedColor:
-                                  AppColors.doctorBlue.withValues(alpha: 0.15),
+                              selectedColor: AppColors.doctorBlue.withValues(
+                                alpha: 0.15,
+                              ),
                               checkmarkColor: AppColors.doctorBlue,
                               labelStyle: GoogleFonts.inter(
-                                fontWeight:
-                                    active ? FontWeight.w600 : FontWeight.w400,
+                                fontWeight: active
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                                 color: active
                                     ? AppColors.doctorBlue
                                     : AppColors.textSecondaryOf(context),
@@ -404,9 +411,11 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                             ),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 8),
-                              child: Icon(Icons.arrow_forward,
-                                  size: 18,
-                                  color: AppColors.textSecondaryOf(context)),
+                              child: Icon(
+                                Icons.arrow_forward,
+                                size: 18,
+                                color: AppColors.textSecondaryOf(context),
+                              ),
                             ),
                             Expanded(
                               child: _TimeDropdown(
@@ -426,8 +435,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         title: 'Break Time',
                         trailing: Switch(
                           value: _breakEnabled,
-                          activeTrackColor:
-                              AppColors.doctorBlue.withValues(alpha: 0.5),
+                          activeTrackColor: AppColors.doctorBlue.withValues(
+                            alpha: 0.5,
+                          ),
                           activeThumbColor: AppColors.doctorBlue,
                           onChanged: (v) => setState(() {
                             _breakEnabled = v;
@@ -447,18 +457,24 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                           value: _breakStart,
                                           times: _timesBefore(_breakEnd).isEmpty
                                               ? _times.sublist(
-                                                  0, _times.length - 1)
+                                                  0,
+                                                  _times.length - 1,
+                                                )
                                               : _timesBefore(_breakEnd),
                                           onChanged: _onBreakStartChanged,
                                         ),
                                       ),
                                       Padding(
-                                        padding:
-                                            EdgeInsets.symmetric(horizontal: 8),
-                                        child: Icon(Icons.arrow_forward,
-                                            size: 18,
-                                            color: AppColors.textSecondaryOf(
-                                                context)),
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                        ),
+                                        child: Icon(
+                                          Icons.arrow_forward,
+                                          size: 18,
+                                          color: AppColors.textSecondaryOf(
+                                            context,
+                                          ),
+                                        ),
                                       ),
                                       Expanded(
                                         child: _TimeDropdown(
@@ -466,8 +482,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                           value: _breakEnd,
                                           times:
                                               _timesAfter(_breakStart).isEmpty
-                                                  ? [_breakEnd]
-                                                  : _timesAfter(_breakStart),
+                                              ? [_breakEnd]
+                                              : _timesAfter(_breakStart),
                                           onChanged: _onBreakEndChanged,
                                           errorText: _breakTimeError,
                                         ),
@@ -479,8 +495,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                             : Text(
                                 'No break scheduled',
                                 style: GoogleFonts.inter(
-                                    color: AppColors.textSecondaryOf(context),
-                                    fontSize: AppTypography.bodyMedium),
+                                  color: AppColors.textSecondaryOf(context),
+                                  fontSize: AppTypography.bodyMedium,
+                                ),
                               ),
                       ),
                       const SizedBox(height: 16),
@@ -496,8 +513,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               selected: selected,
                               onSelected: (_) =>
                                   setState(() => _slotDuration = mins),
-                              selectedColor:
-                                  AppColors.doctorBlue.withValues(alpha: 0.15),
+                              selectedColor: AppColors.doctorBlue.withValues(
+                                alpha: 0.15,
+                              ),
                               labelStyle: GoogleFonts.inter(
                                 color: selected
                                     ? AppColors.doctorBlue
@@ -512,7 +530,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                     : AppColors.borderOf(context),
                               ),
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             );
                           }).toList(),
                         ),
@@ -528,8 +547,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                             LengthLimitingTextInputFormatter(4),
                           ],
                           validator: FormValidators.maxAppointments,
-                          decoration:
-                              const InputDecoration(hintText: 'e.g. 20'),
+                          decoration: const InputDecoration(
+                            hintText: 'e.g. 20',
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -540,8 +560,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                           children: [
                             FilledButton.icon(
                               onPressed: () => _pickDates(range: false),
-                              icon: const Icon(Icons.event_busy_outlined,
-                                  size: 18),
+                              icon: const Icon(
+                                Icons.event_busy_outlined,
+                                size: 18,
+                              ),
                               label: const Text('Add Blocked Date'),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.doctorBlue,
@@ -554,17 +576,20 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: _blockedDates.map((d) {
-                                  final label =
-                                      DateFormat('dd MMM yyyy').format(d);
+                                  final label = DateFormat('dd MMM yyyy')
+                                      .format(d);
                                   return InputChip(
-                                    label: Text(label,
-                                        style: GoogleFonts.inter(
-                                            fontSize:
-                                                AppTypography.labelMedium)),
+                                    label: Text(
+                                      label,
+                                      style: GoogleFonts.inter(
+                                        fontSize: AppTypography.labelMedium,
+                                      ),
+                                    ),
                                     onDeleted: () =>
                                         setState(() => _blockedDates.remove(d)),
-                                    deleteIconColor:
-                                        AppColors.textSecondaryOf(context),
+                                    deleteIconColor: AppColors.textSecondaryOf(
+                                      context,
+                                    ),
                                   );
                                 }).toList(),
                               ),
@@ -580,8 +605,10 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                           children: [
                             OutlinedButton.icon(
                               onPressed: () => _pickDates(range: true),
-                              icon: const Icon(Icons.date_range_outlined,
-                                  size: 18),
+                              icon: const Icon(
+                                Icons.date_range_outlined,
+                                size: 18,
+                              ),
                               label: Text(
                                 _leaveStart == null
                                     ? 'Select Leave Range'
@@ -590,7 +617,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.doctorBlue,
                                 side: const BorderSide(
-                                    color: AppColors.doctorBlue),
+                                  color: AppColors.doctorBlue,
+                                ),
                               ),
                             ),
                             if (_leaveStart != null)
@@ -612,7 +640,9 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 height: 20,
                                 width: 20,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: AppColors.white),
+                                  strokeWidth: 2,
+                                  color: AppColors.white,
+                                ),
                               )
                             : const Text('Save Schedule'),
                       ),
@@ -688,26 +718,33 @@ class _TimeDropdown extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelMedium,
-              color: AppColors.textSecondaryOf(context)),
+            fontSize: AppTypography.labelMedium,
+            color: AppColors.textSecondaryOf(context),
+          ),
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           initialValue: value,
           isExpanded: true,
           decoration: InputDecoration(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             filled: true,
             fillColor: AppColors.surfaceOf(context),
             errorText: errorText,
           ),
           items: items
-              .map((t) => DropdownMenuItem(
+              .map(
+                (t) => DropdownMenuItem(
                   value: t,
-                  child: Text(t,
-                      style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodySmall))))
+                  child: Text(
+                    t,
+                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+                  ),
+                ),
+              )
               .toList(),
           onChanged: onChanged,
           validator: errorText != null ? (_) => errorText : null,

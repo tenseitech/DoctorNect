@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/data/shared_appointments_store.dart';
 import '../../doctor/models/doctor_models.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import 'registered_doctors_store.dart';
 
 enum FeaturedDoctorPeriod { day, week, month, year }
@@ -19,11 +21,11 @@ class FeaturedDoctorEntry {
   final int consultationCount;
 
   String get title => switch (period) {
-        FeaturedDoctorPeriod.day => 'Doctor of the Day',
-        FeaturedDoctorPeriod.week => 'Doctor of the Week',
-        FeaturedDoctorPeriod.month => 'Doctor of the Month',
-        FeaturedDoctorPeriod.year => 'Doctor of the Year',
-      };
+    FeaturedDoctorPeriod.day => 'Doctor of the Day',
+    FeaturedDoctorPeriod.week => 'Doctor of the Week',
+    FeaturedDoctorPeriod.month => 'Doctor of the Month',
+    FeaturedDoctorPeriod.year => 'Doctor of the Year',
+  };
 
   String get subtitle {
     if (consultationCount > 0) {
@@ -33,11 +35,11 @@ class FeaturedDoctorEntry {
   }
 
   Color get accent => switch (period) {
-        FeaturedDoctorPeriod.day => const Color(0xFF2563EB),
-        FeaturedDoctorPeriod.week => const Color(0xFF6366F1),
-        FeaturedDoctorPeriod.month => const Color(0xFFDB2777),
-        FeaturedDoctorPeriod.year => const Color(0xFFCA8A04),
-      };
+    FeaturedDoctorPeriod.day => const Color(0xFF2563EB),
+    FeaturedDoctorPeriod.week => const Color(0xFF6366F1),
+    FeaturedDoctorPeriod.month => const Color(0xFFDB2777),
+    FeaturedDoctorPeriod.year => const Color(0xFFCA8A04),
+  };
 }
 
 abstract final class FeaturedDoctorsService {
@@ -50,8 +52,9 @@ abstract final class FeaturedDoctorsService {
     final today = DateTime(now.year, now.month, now.day);
     return switch (period) {
       FeaturedDoctorPeriod.day => today,
-      FeaturedDoctorPeriod.week =>
-        today.subtract(Duration(days: today.weekday - DateTime.monday)),
+      FeaturedDoctorPeriod.week => today.subtract(
+        Duration(days: today.weekday - DateTime.monday),
+      ),
       FeaturedDoctorPeriod.month => DateTime(now.year, now.month),
       FeaturedDoctorPeriod.year => DateTime(now.year),
     };
@@ -129,7 +132,8 @@ abstract final class FeaturedDoctorsService {
     FeaturedDoctorPeriod period,
     DateTime now,
   ) {
-    final sorted = [...doctors]..sort((a, b) {
+    final sorted = [...doctors]
+      ..sort((a, b) {
         final rating = b.rating.compareTo(a.rating);
         if (rating != 0) return rating;
         return b.reviewCount.compareTo(a.reviewCount);

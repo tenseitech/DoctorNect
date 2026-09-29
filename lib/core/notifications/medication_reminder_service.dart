@@ -21,15 +21,17 @@ abstract final class MedicationReminderService {
     _initialized = true;
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      const androidInit =
-          AndroidInitializationSettings('@drawable/ic_notification');
+      const androidInit = AndroidInitializationSettings(
+        '@drawable/ic_notification',
+      );
       await _localNotifications.initialize(
         const InitializationSettings(android: androidInit),
       );
 
       await _localNotifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(
             const AndroidNotificationChannel(
               _channelId,
@@ -42,7 +44,8 @@ abstract final class MedicationReminderService {
   }
 
   static Future<void> updateScheduledReminders(
-      List<MedicationReminder> medications) async {
+    List<MedicationReminder> medications,
+  ) async {
     if (kIsWeb) return;
     await initialize();
 
@@ -54,19 +57,35 @@ abstract final class MedicationReminderService {
     for (final med in medications) {
       if (med.morningTime != null) {
         await _scheduleDaily(
-            notificationId++, med.name, 'Morning dose', med.morningTime!);
+          notificationId++,
+          med.name,
+          'Morning dose',
+          med.morningTime!,
+        );
       }
       if (med.afternoonTime != null) {
         await _scheduleDaily(
-            notificationId++, med.name, 'Afternoon dose', med.afternoonTime!);
+          notificationId++,
+          med.name,
+          'Afternoon dose',
+          med.afternoonTime!,
+        );
       }
       if (med.eveningTime != null) {
         await _scheduleDaily(
-            notificationId++, med.name, 'Evening dose', med.eveningTime!);
+          notificationId++,
+          med.name,
+          'Evening dose',
+          med.eveningTime!,
+        );
       }
       if (med.nightTime != null) {
         await _scheduleDaily(
-            notificationId++, med.name, 'Night dose', med.nightTime!);
+          notificationId++,
+          med.name,
+          'Night dose',
+          med.nightTime!,
+        );
       }
     }
   }
@@ -78,7 +97,11 @@ abstract final class MedicationReminderService {
   }
 
   static Future<void> _scheduleDaily(
-      int id, String medName, String doseName, String timeStr) async {
+    int id,
+    String medName,
+    String doseName,
+    String timeStr,
+  ) async {
     final parts = timeStr.split(' ');
     if (parts.isEmpty) return;
 
@@ -97,8 +120,14 @@ abstract final class MedicationReminderService {
     }
 
     final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }

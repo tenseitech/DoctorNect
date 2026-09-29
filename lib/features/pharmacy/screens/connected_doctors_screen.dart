@@ -23,38 +23,46 @@ class ConnectedDoctorsScreen extends StatelessWidget {
       listenables: [connStore, prescStore],
       activeConnections: () => connStore
           .activeForStore(storeId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       fromDoctorRequests: () => connStore
           .pendingForStoreFromDoctor(storeId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       sentByPartnerInvites: () => connStore
           .pendingSentByStore(storeId)
-          .map((c) => PartnerConnectionItem(
-                id: c.id,
-                doctorId: c.doctorId,
-                doctorName: c.doctorName,
-                requestedAt: c.requestedAt,
-                respondedAt: c.respondedAt,
-              ))
+          .map(
+            (c) => PartnerConnectionItem(
+              id: c.id,
+              doctorId: c.doctorId,
+              doctorName: c.doctorName,
+              requestedAt: c.requestedAt,
+              respondedAt: c.respondedAt,
+            ),
+          )
           .toList(),
       activitySubtitleBuilder: (doctorId) {
         final count = prescStore.forStoreAndDoctor(storeId, doctorId).length;
-        final last =
-            prescStore.forStoreAndDoctor(storeId, doctorId).firstOrNull?.sentAt;
+        final last = prescStore
+            .forStoreAndDoctor(storeId, doctorId)
+            .firstOrNull
+            ?.sentAt;
         return '$count prescriptions${last != null ? ' Â· Last: ${DateFormat('dd MMM').format(last)}' : ''}';
       },
       onApprove: (id, doctorName) {

@@ -33,11 +33,11 @@ class HealthRecordRow extends StatelessWidget {
   String get _provider => record.doctorName ?? record.labName ?? '—';
 
   String get _sourceLabel => switch (record.source) {
-        RecordSource.practo => 'Practo',
-        RecordSource.doctorSent => 'From doctor',
-        RecordSource.labSent => 'From lab',
-        RecordSource.selfUploaded => 'Self-uploaded',
-      };
+    RecordSource.practo => 'Practo',
+    RecordSource.doctorSent => 'From doctor',
+    RecordSource.labSent => 'From lab',
+    RecordSource.selfUploaded => 'Self-uploaded',
+  };
 
   String get _chipLabel => record.labBookedByLabel ?? _sourceLabel;
 
@@ -88,8 +88,9 @@ class HealthRecordRow extends StatelessWidget {
               Text(
                 year,
                 style: GoogleFonts.inter(
-                    fontSize: AppTypography.labelSmall,
-                    color: AppColors.textSecondaryOf(context)),
+                  fontSize: AppTypography.labelSmall,
+                  color: AppColors.textSecondaryOf(context),
+                ),
               ),
             ],
           ),
@@ -112,8 +113,9 @@ class HealthRecordRow extends StatelessWidget {
         Text(
           year,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.labelSmall,
-              color: AppColors.textSecondaryOf(context)),
+            fontSize: AppTypography.labelSmall,
+            color: AppColors.textSecondaryOf(context),
+          ),
         ),
       ],
     );

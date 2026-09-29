@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,11 +9,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../widgets/rotating_search_placeholder.dart';
 
 class HomeSearchBar extends StatefulWidget {
-  const HomeSearchBar({
-    super.key,
-    this.onTap,
-    this.onSubmitted,
-  });
+  const HomeSearchBar({super.key, this.onTap, this.onSubmitted});
 
   final VoidCallback? onTap;
   final ValueChanged<String>? onSubmitted;
@@ -243,9 +240,7 @@ class _SearchField extends StatelessWidget {
                   onTap: () => onSubmitted(controller.text),
                 )
               else
-                _DesktopSearchAction(
-                  onTap: () => onSubmitted(controller.text),
-                ),
+                _DesktopSearchAction(onTap: () => onSubmitted(controller.text)),
             ],
           ),
         ),
@@ -255,10 +250,7 @@ class _SearchField extends StatelessWidget {
 }
 
 class _MobileSearchAction extends StatelessWidget {
-  const _MobileSearchAction({
-    required this.active,
-    required this.onTap,
-  });
+  const _MobileSearchAction({required this.active, required this.onTap});
 
   final bool active;
   final VoidCallback onTap;
@@ -281,8 +273,9 @@ class _MobileSearchAction extends StatelessWidget {
             child: Icon(
               Icons.arrow_forward_rounded,
               size: 20,
-              color:
-                  active ? AppColors.surfaceOf(context) : AppColors.patientTeal,
+              color: active
+                  ? AppColors.surfaceOf(context)
+                  : AppColors.patientTeal,
             ),
           ),
         ),
@@ -449,12 +442,7 @@ class _TypewriterPlaceholderState extends State<_TypewriterPlaceholder> {
       TextSpan(
         text: widget.prefix,
         style: widget.style,
-        children: [
-          TextSpan(
-            text: typedWord,
-            style: widget.style,
-          ),
-        ],
+        children: [TextSpan(text: typedWord, style: widget.style)],
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,

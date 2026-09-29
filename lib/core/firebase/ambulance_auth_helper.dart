@@ -22,14 +22,15 @@ abstract final class AmbulanceAuthHelper {
     if (auth.currentUser != null && auth.currentUser!.isAnonymous == false) {
       try {
         await auth.signOut();
-        await auth.authStateChanges().firstWhere((u) => u == null).timeout(
-              const Duration(seconds: 10),
-              onTimeout: () => null,
-            );
+        await auth
+            .authStateChanges()
+            .firstWhere((u) => u == null)
+            .timeout(const Duration(seconds: 10), onTimeout: () => null);
       } catch (e, st) {
         if (kDebugMode) {
           debugPrint(
-              'Ambulance auth: could not clear existing session: $e\n$st');
+            'Ambulance auth: could not clear existing session: $e\n$st',
+          );
         }
         return false;
       }
@@ -48,16 +49,14 @@ abstract final class AmbulanceAuthHelper {
       await auth
           .authStateChanges()
           .firstWhere((u) => u?.isAnonymous == true)
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => null,
-          );
+          .timeout(const Duration(seconds: 10), onTimeout: () => null);
 
       final token = await user.getIdToken(true);
       if (token == null || token.isEmpty) {
         if (kDebugMode) {
           debugPrint(
-              'Ambulance auth: anonymous sign-in returned empty ID token');
+            'Ambulance auth: anonymous sign-in returned empty ID token',
+          );
         }
         return false;
       }

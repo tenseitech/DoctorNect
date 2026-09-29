@@ -97,11 +97,11 @@ class MedicalStoreRegistrationScreen extends StatelessWidget {
       preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
-        context,
-        name: name,
-        qualification: qualification,
-        mobile: mobile,
-      ),
+            context,
+            name: name,
+            qualification: qualification,
+            mobile: mobile,
+          ),
     );
   }
 }

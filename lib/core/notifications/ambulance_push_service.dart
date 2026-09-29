@@ -1,4 +1,5 @@
 import 'package:medibond/core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -34,8 +35,9 @@ abstract final class AmbulancePushService {
     _initialized = true;
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      const androidInit =
-          AndroidInitializationSettings('@drawable/ic_notification');
+      const androidInit = AndroidInitializationSettings(
+        '@drawable/ic_notification',
+      );
       await _localNotifications.initialize(
         const InitializationSettings(android: androidInit),
         onDidReceiveNotificationResponse: _onLocalNotificationTap,
@@ -43,7 +45,8 @@ abstract final class AmbulancePushService {
 
       await _localNotifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(
             const AndroidNotificationChannel(
               _channelId,
@@ -55,8 +58,9 @@ abstract final class AmbulancePushService {
     }
 
     _foregroundSub ??= FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-    _openedSub ??=
-        FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
+    _openedSub ??= FirebaseMessaging.onMessageOpenedApp.listen(
+      _onMessageOpened,
+    );
 
     final initial = await FirebaseMessaging.instance.getInitialMessage();
     if (initial != null) {
@@ -88,8 +92,10 @@ abstract final class AmbulancePushService {
       if (kDebugMode) {
         debugPrint('Ambulance FCM token (copy for Firebase test): [REDACTED]');
       }
-      await FirestoreService.instance.ambulance
-          .saveDriverFcmToken(driverId, token);
+      await FirestoreService.instance.ambulance.saveDriverFcmToken(
+        driverId,
+        token,
+      );
     } else if (kDebugMode) {
       debugPrint('Ambulance push: FCM token is null or empty');
     }
@@ -100,8 +106,10 @@ abstract final class AmbulancePushService {
       if (kDebugMode) {
         debugPrint('Ambulance FCM token refreshed: [REDACTED]');
       }
-      await FirestoreService.instance.ambulance
-          .saveDriverFcmToken(_activeDriverId!, newToken);
+      await FirestoreService.instance.ambulance.saveDriverFcmToken(
+        _activeDriverId!,
+        newToken,
+      );
     });
   }
 

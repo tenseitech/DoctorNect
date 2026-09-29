@@ -1,5 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -9,10 +10,7 @@ import '../data/ambulance_store.dart';
 import '../../../core/theme/app_typography.dart';
 
 class AmbulanceAvailabilityToggle extends StatefulWidget {
-  const AmbulanceAvailabilityToggle({
-    super.key,
-    required this.ambulanceId,
-  });
+  const AmbulanceAvailabilityToggle({super.key, required this.ambulanceId});
 
   final String ambulanceId;
 
@@ -40,15 +38,15 @@ class _AmbulanceAvailabilityToggleState
         _localValue = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not connect. Please try again.'),
-        ),
+        const SnackBar(content: Text('Could not connect. Please try again.')),
       );
       return;
     }
 
-    final ok = await FirestoreService.instance.ambulance
-        .updateAvailability(widget.ambulanceId, value);
+    final ok = await FirestoreService.instance.ambulance.updateAvailability(
+      widget.ambulanceId,
+      value,
+    );
     if (!mounted) return;
     setState(() {
       _saving = false;
@@ -58,7 +56,9 @@ class _AmbulanceAvailabilityToggleState
     });
     if (!ok) {
       AppToast.info(
-          context, 'Could not update availability. Please try again.');
+        context,
+        'Could not update availability. Please try again.',
+      );
     }
   }
 
@@ -80,8 +80,9 @@ class _AmbulanceAvailabilityToggleState
                   : AppColors.borderOf(context),
             ),
           ),
-          color:
-              isOnline ? const Color(0xFFF0FDF4) : AppColors.surfaceOf(context),
+          color: isOnline
+              ? const Color(0xFFF0FDF4)
+              : AppColors.surfaceOf(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -128,8 +129,8 @@ class _AmbulanceAvailabilityToggleState
                     value: isOnline,
                     onChanged: _onChanged,
                     activeThumbColor: const Color(0xFF16A34A),
-                    activeTrackColor:
-                        const Color(0xFF16A34A).withValues(alpha: 0.35),
+                    activeTrackColor: const Color(0xFF16A34A)
+                        .withValues(alpha: 0.35),
                   ),
               ],
             ),

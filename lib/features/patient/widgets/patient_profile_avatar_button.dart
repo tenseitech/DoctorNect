@@ -8,6 +8,7 @@ import '../../../core/session/patient_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../profile/data/patient_photo_local_store.dart';
 import '../profile/data/patient_profile_mock.dart';
+
 import 'package:medibond/features/shared/screens/patient_profile_screen.dart';
 
 class PatientProfileAvatarButton extends StatefulWidget {
@@ -94,8 +95,9 @@ class _PatientProfileAvatarButtonState
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.patientTeal
-                    .withValues(alpha: _pressed ? 0.16 : 0.22),
+                color: AppColors.patientTeal.withValues(
+                  alpha: _pressed ? 0.16 : 0.22,
+                ),
                 blurRadius: _pressed ? 4 : 6,
                 offset: Offset(0, _pressed ? 1 : 2),
               ),

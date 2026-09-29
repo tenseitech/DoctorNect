@@ -1,4 +1,5 @@
 import '../../../../core/firebase/firestore_service.dart';
+
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/session/doctor_session.dart';
@@ -23,33 +24,35 @@ abstract final class PatientClinicalBaselineLoader {
 
   /// Returns the most recent saved prescription that contains baseline data.
   static PrescriptionDraft? latestBaselineDraft(String patientId) {
-    for (final draft
-        in ClinicalPrescriptionStore.instance.forPatient(patientId)) {
+    for (final draft in ClinicalPrescriptionStore.instance.forPatient(
+      patientId,
+    )) {
       if (hasBaselineData(draft)) return draft;
     }
     return null;
   }
 
   static Future<PrescriptionDraft?> fetchLatestBaselineDraft(
-      String patientId) async {
+    String patientId,
+  ) async {
     if (patientId.isEmpty) return null;
     try {
       final doctorId = DoctorSession.loggedInDoctorId;
       if (doctorId.isNotEmpty) {
         if (!await FirestoreService.instance.patientProfile
             .isPatientSharingClinicalDataWithDoctors(
-          patientId,
-          preferCache: false,
-        )) {
+              patientId,
+              preferCache: false,
+            )) {
           return null;
         }
 
         final page = await FirestoreService.instance.prescription
             .fetchForDoctorAndPatientForDoctor(
-          doctorId,
-          patientId,
-          preferCache: false,
-        );
+              doctorId,
+              patientId,
+              preferCache: false,
+            );
         for (final draft in page.items) {
           if (hasBaselineData(draft)) return draft;
         }
@@ -64,7 +67,8 @@ abstract final class PatientClinicalBaselineLoader {
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint(
-            'PatientClinicalBaselineLoader.fetchLatestBaselineDraft failed: $e\n$st');
+          'PatientClinicalBaselineLoader.fetchLatestBaselineDraft failed: $e\n$st',
+        );
       }
       return null;
     }
@@ -73,9 +77,7 @@ abstract final class PatientClinicalBaselineLoader {
   static Future<String?> fetchProfileAllergiesText(String patientId) async {
     if (patientId.isEmpty) return null;
     if (!await FirestoreService.instance.patientProfile
-        .isPatientSharingClinicalDataWithDoctors(
-      patientId,
-    )) {
+        .isPatientSharingClinicalDataWithDoctors(patientId)) {
       return null;
     }
     final data = await FirestoreService.instance.patientProfile

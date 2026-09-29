@@ -7,24 +7,42 @@ import 'package:medibond/core/admin/super_admin_verification_service.dart';
 void main() {
   group('VerificationStage enum and helpers', () {
     test('fromString parses correctly for all stages', () {
-      expect(VerificationStage.fromString('registered'),
-          VerificationStage.registered);
-      expect(VerificationStage.fromString('profile_incomplete'),
-          VerificationStage.profileIncomplete);
-      expect(VerificationStage.fromString('submitted_for_verification'),
-          VerificationStage.submittedForVerification);
-      expect(VerificationStage.fromString('pending_review'),
-          VerificationStage.submittedForVerification);
       expect(
-          VerificationStage.fromString('verified'), VerificationStage.verified);
+        VerificationStage.fromString('registered'),
+        VerificationStage.registered,
+      );
       expect(
-          VerificationStage.fromString('approved'), VerificationStage.verified);
-      expect(VerificationStage.fromString('revision_requested'),
-          VerificationStage.revisionRequested);
+        VerificationStage.fromString('profile_incomplete'),
+        VerificationStage.profileIncomplete,
+      );
       expect(
-          VerificationStage.fromString('rejected'), VerificationStage.rejected);
-      expect(VerificationStage.fromString('unknown_value'),
-          VerificationStage.registered);
+        VerificationStage.fromString('submitted_for_verification'),
+        VerificationStage.submittedForVerification,
+      );
+      expect(
+        VerificationStage.fromString('pending_review'),
+        VerificationStage.submittedForVerification,
+      );
+      expect(
+        VerificationStage.fromString('verified'),
+        VerificationStage.verified,
+      );
+      expect(
+        VerificationStage.fromString('approved'),
+        VerificationStage.verified,
+      );
+      expect(
+        VerificationStage.fromString('revision_requested'),
+        VerificationStage.revisionRequested,
+      );
+      expect(
+        VerificationStage.fromString('rejected'),
+        VerificationStage.rejected,
+      );
+      expect(
+        VerificationStage.fromString('unknown_value'),
+        VerificationStage.registered,
+      );
     });
 
     test('VerificationStage helper getters work accurately', () {
@@ -58,14 +76,16 @@ void main() {
 
   group('VerificationRequirementsConfig checklist per role', () {
     test('Patient requires no verification', () {
-      final reqs =
-          VerificationRequirementsConfig.requirementsForRole(UserType.patient);
+      final reqs = VerificationRequirementsConfig.requirementsForRole(
+        UserType.patient,
+      );
       expect(reqs, isEmpty);
     });
 
     test('Doctor checklist evaluated correctly', () {
-      final reqs =
-          VerificationRequirementsConfig.requirementsForRole(UserType.doctor);
+      final reqs = VerificationRequirementsConfig.requirementsForRole(
+        UserType.doctor,
+      );
       expect(reqs.length, greaterThanOrEqualTo(4));
 
       final emptyProfile = <String, dynamic>{};
@@ -97,7 +117,8 @@ void main() {
 
     test('Pharmacy checklist evaluated correctly', () {
       final reqs = VerificationRequirementsConfig.requirementsForRole(
-          UserType.medicalStore);
+        UserType.medicalStore,
+      );
       expect(reqs.length, greaterThanOrEqualTo(3));
 
       final incompleteProfile = <String, dynamic>{
@@ -127,8 +148,9 @@ void main() {
     });
 
     test('Lab checklist evaluated correctly', () {
-      final reqs =
-          VerificationRequirementsConfig.requirementsForRole(UserType.lab);
+      final reqs = VerificationRequirementsConfig.requirementsForRole(
+        UserType.lab,
+      );
       expect(reqs.length, greaterThanOrEqualTo(3));
 
       final completeProfile = <String, dynamic>{
@@ -147,7 +169,8 @@ void main() {
 
     test('Ambulance checklist evaluated correctly', () {
       final reqs = VerificationRequirementsConfig.requirementsForRole(
-          UserType.ambulance);
+        UserType.ambulance,
+      );
       expect(reqs.length, greaterThanOrEqualTo(4));
 
       final completeProfile = <String, dynamic>{
@@ -167,35 +190,41 @@ void main() {
   });
 
   group('DoctorNectUserProfile with verification lifecycle', () {
-    test('deserializes verificationStatus, rejectionReason, and submittedAt',
-        () {
-      final submittedDate = DateTime(2026, 9, 20, 10, 30);
-      final map = <String, dynamic>{
-        'email': 'doctor@example.com',
-        'role': 'doctor',
-        'profileId': 'doc-123',
-        'displayName': 'Dr. Sharma',
-        'verified': false,
-        'verificationStatus': 'revision_requested',
-        'rejectionReason':
-            'Please upload clear copy of medical council registration.',
-        'submittedAt': submittedDate,
-      };
+    test(
+      'deserializes verificationStatus, rejectionReason, and submittedAt',
+      () {
+        final submittedDate = DateTime(2026, 9, 20, 10, 30);
+        final map = <String, dynamic>{
+          'email': 'doctor@example.com',
+          'role': 'doctor',
+          'profileId': 'doc-123',
+          'displayName': 'Dr. Sharma',
+          'verified': false,
+          'verificationStatus': 'revision_requested',
+          'rejectionReason':
+              'Please upload clear copy of medical council registration.',
+          'submittedAt': submittedDate,
+        };
 
-      final profile = DoctorNectUserProfile.fromMap('uid-123', map);
-      expect(profile.role, UserType.doctor);
-      expect(profile.profileId, 'doc-123');
-      expect(profile.verificationStatus, 'revision_requested');
-      expect(profile.rejectionReason,
-          'Please upload clear copy of medical council registration.');
-      expect(profile.submittedAt, isNotNull);
+        final profile = DoctorNectUserProfile.fromMap('uid-123', map);
+        expect(profile.role, UserType.doctor);
+        expect(profile.profileId, 'doc-123');
+        expect(profile.verificationStatus, 'revision_requested');
+        expect(
+          profile.rejectionReason,
+          'Please upload clear copy of medical council registration.',
+        );
+        expect(profile.submittedAt, isNotNull);
 
-      final serialized = profile.toMap();
-      expect(serialized['verificationStatus'], 'revision_requested');
-      expect(serialized['rejectionReason'],
-          'Please upload clear copy of medical council registration.');
-      expect(serialized['role'], 'doctor');
-    });
+        final serialized = profile.toMap();
+        expect(serialized['verificationStatus'], 'revision_requested');
+        expect(
+          serialized['rejectionReason'],
+          'Please upload clear copy of medical council registration.',
+        );
+        expect(serialized['role'], 'doctor');
+      },
+    );
 
     test('handles null verificationStatus gracefully', () {
       final map = <String, dynamic>{
@@ -230,8 +259,10 @@ void main() {
       expect(applicant.role, UserType.doctor);
       expect(applicant.profileId, 'doc-789');
       expect(applicant.verified, isFalse);
-      expect(applicant.verificationStatus,
-          VerificationStage.submittedForVerification);
+      expect(
+        applicant.verificationStatus,
+        VerificationStage.submittedForVerification,
+      );
       expect(applicant.verificationStatus.isPending, isTrue);
     });
 

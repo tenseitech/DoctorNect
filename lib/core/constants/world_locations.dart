@@ -4,9 +4,9 @@ import 'world_locations_data.dart';
 /// States / provinces and cities for every supported [Countries.all] entry.
 abstract final class WorldLocations {
   static Map<String, Map<String, List<String>>> get _data => {
-        'India': IndianCities.byState,
-        ...WorldLocationsData.byCountry,
-      };
+    'India': IndianCities.byState,
+    ...WorldLocationsData.byCountry,
+  };
 
   static bool hasData(String country) {
     final regions = _data[country];
@@ -35,7 +35,10 @@ abstract final class WorldLocations {
   }
 
   static List<String> citiesWithLegacy(
-      String country, String state, String? legacy) {
+    String country,
+    String state,
+    String? legacy,
+  ) {
     final base = citiesFor(country, state);
     final value = legacy?.trim();
     if (value == null || value.isEmpty || base.contains(value)) return base;

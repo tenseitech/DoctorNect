@@ -24,65 +24,68 @@ void main() {
   });
 
   group('DigitalHealthCardSheet Tests', () {
-    testWidgets('Doctor credentials pass has NO "Scan to Verify Pass" section',
-        (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+    testWidgets(
+      'Doctor credentials pass has NO "Scan to Verify Pass" section',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(AppColors.doctorBlue),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => DigitalHealthCardSheet.show(
-                  context,
-                  userType: UserType.doctor,
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(AppColors.doctorBlue),
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => DigitalHealthCardSheet.show(
+                    context,
+                    userType: UserType.doctor,
+                  ),
+                  child: const Text('Open Pass'),
                 ),
-                child: const Text('Open Pass'),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Open Pass'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Pass'));
+        await tester.pumpAndSettle();
 
-      // Verify sheet title
-      expect(find.text('Digital Doctor Credentials Pass'), findsOneWidget);
+        // Verify sheet title
+        expect(find.text('Digital Doctor Credentials Pass'), findsOneWidget);
 
-      // Verify Doctor Card details
-      expect(find.text('DoctorNect PASS'), findsOneWidget);
-      expect(find.text('VERIFIED'), findsOneWidget);
-      expect(find.text('Dr. k1'), findsOneWidget);
-      expect(find.text('General Surgery'), findsOneWidget);
-      expect(find.text('REGISTRATION NO.'), findsOneWidget);
-      expect(find.text('MAH215165412'), findsOneWidget);
-      expect(find.text('COUNCIL'), findsOneWidget);
-      expect(find.text('Maharashtra'), findsOneWidget);
+        // Verify Doctor Card details
+        expect(find.text('DoctorNect PASS'), findsOneWidget);
+        expect(find.text('VERIFIED'), findsOneWidget);
+        expect(find.text('Dr. k1'), findsOneWidget);
+        expect(find.text('General Surgery'), findsOneWidget);
+        expect(find.text('REGISTRATION NO.'), findsOneWidget);
+        expect(find.text('MAH215165412'), findsOneWidget);
+        expect(find.text('COUNCIL'), findsOneWidget);
+        expect(find.text('Maharashtra'), findsOneWidget);
 
-      // Verify "Scan to Verify Pass" is REMOVED
-      expect(find.text('Scan to Verify Pass'), findsNothing);
-      expect(
-        find.textContaining('Allows patients and pharmacies'),
-        findsNothing,
-      );
+        // Verify "Scan to Verify Pass" is REMOVED
+        expect(find.text('Scan to Verify Pass'), findsNothing);
+        expect(
+          find.textContaining('Allows patients and pharmacies'),
+          findsNothing,
+        );
 
-      // Verify action buttons
-      expect(find.text('Share Pass'), findsOneWidget);
-      expect(find.text('Done'), findsOneWidget);
+        // Verify action buttons
+        expect(find.text('Share Pass'), findsOneWidget);
+        expect(find.text('Done'), findsOneWidget);
 
-      // Tap Done closes the sheet
-      await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
-      expect(find.text('Digital Doctor Credentials Pass'), findsNothing);
-    });
+        // Tap Done closes the sheet
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+        expect(find.text('Digital Doctor Credentials Pass'), findsNothing);
+      },
+    );
 
-    testWidgets('Patient health card also has no "Scan to Verify Pass"',
-        (tester) async {
+    testWidgets('Patient health card also has no "Scan to Verify Pass"', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());

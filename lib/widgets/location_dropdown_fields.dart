@@ -62,14 +62,21 @@ class LocationDropdownFields extends StatelessWidget {
     if (selectedState == null || selectedState.isEmpty) {
       return const [];
     }
-    final options =
-        WorldLocations.citiesWithLegacy(selectedCountry, selectedState, city);
+    final options = WorldLocations.citiesWithLegacy(
+      selectedCountry,
+      selectedState,
+      city,
+    );
     return [...options]
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
   }
 
-  InputDecoration _decoration(BuildContext context, String label,
-      {String? hint, bool isRequired = false}) {
+  InputDecoration _decoration(
+    BuildContext context,
+    String label, {
+    String? hint,
+    bool isRequired = false,
+  }) {
     if (!usePatientFieldStyle) {
       return RequiredFieldLabels.decorate(
         InputDecoration(hintText: hint),
@@ -99,12 +106,15 @@ class LocationDropdownFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveCountry = _effectiveCountry;
-    final selectedCountry =
-        _countryOptions.contains(effectiveCountry) ? effectiveCountry : null;
-    final selectedState =
-        state != null && _stateOptions.contains(state) ? state : null;
-    final selectedCity =
-        city != null && _cityOptions.contains(city) ? city : null;
+    final selectedCountry = _countryOptions.contains(effectiveCountry)
+        ? effectiveCountry
+        : null;
+    final selectedState = state != null && _stateOptions.contains(state)
+        ? state
+        : null;
+    final selectedCity = city != null && _cityOptions.contains(city)
+        ? city
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,8 +124,11 @@ class LocationDropdownFields extends StatelessWidget {
           title: 'Country',
           value: selectedCountry,
           items: _countryOptions,
-          decoration:
-              _decoration(context, 'Country', isRequired: countryRequired),
+          decoration: _decoration(
+            context,
+            'Country',
+            isRequired: countryRequired,
+          ),
           hintText: 'Select country',
           validator: countryRequired
               ? (v) => FormValidators.dropdown(v, field: 'Country')
@@ -129,8 +142,11 @@ class LocationDropdownFields extends StatelessWidget {
             title: 'State',
             value: selectedState,
             items: _stateOptions,
-            decoration:
-                _decoration(context, 'State', isRequired: stateRequired),
+            decoration: _decoration(
+              context,
+              'State',
+              isRequired: stateRequired,
+            ),
             hintText: 'Select state',
             validator: stateRequired
                 ? (v) => FormValidators.dropdown(v, field: 'State')
@@ -139,8 +155,9 @@ class LocationDropdownFields extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SearchableDropdownFormField(
-            key:
-                ValueKey('city-$effectiveCountry-$selectedState-$selectedCity'),
+            key: ValueKey(
+              'city-$effectiveCountry-$selectedState-$selectedCity',
+            ),
             title: 'City',
             value: selectedCity,
             items: _cityOptions,

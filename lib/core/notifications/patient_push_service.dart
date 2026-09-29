@@ -1,4 +1,5 @@
 import 'package:medibond/core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -41,16 +42,18 @@ abstract final class PatientPushService {
     _initialized = true;
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      const androidInit =
-          AndroidInitializationSettings('@drawable/ic_notification');
+      const androidInit = AndroidInitializationSettings(
+        '@drawable/ic_notification',
+      );
       await _localNotifications.initialize(
         const InitializationSettings(android: androidInit),
         onDidReceiveNotificationResponse: _onLocalNotificationTap,
       );
 
-      final androidPlugin =
-          _localNotifications.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _localNotifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       await androidPlugin?.createNotificationChannel(
         const AndroidNotificationChannel(
@@ -79,8 +82,9 @@ abstract final class PatientPushService {
     }
 
     _foregroundSub ??= FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-    _openedSub ??=
-        FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
+    _openedSub ??= FirebaseMessaging.onMessageOpenedApp.listen(
+      _onMessageOpened,
+    );
 
     final initial = await FirebaseMessaging.instance.getInitialMessage();
     if (initial != null) {
@@ -104,15 +108,19 @@ abstract final class PatientPushService {
 
     final token = await messaging.getToken();
     if (token != null && token.isNotEmpty) {
-      await FirestoreService.instance.patientProfile
-          .savePatientFcmToken(patientId, token);
+      await FirestoreService.instance.patientProfile.savePatientFcmToken(
+        patientId,
+        token,
+      );
     }
 
     await _tokenRefreshSub?.cancel();
     _tokenRefreshSub = messaging.onTokenRefresh.listen((newToken) async {
       if (_activePatientId == null || newToken.isEmpty) return;
-      await FirestoreService.instance.patientProfile
-          .savePatientFcmToken(_activePatientId!, newToken);
+      await FirestoreService.instance.patientProfile.savePatientFcmToken(
+        _activePatientId!,
+        newToken,
+      );
     });
   }
 
@@ -127,8 +135,9 @@ abstract final class PatientPushService {
     _tokenRefreshSub = null;
 
     if (patientId == null || patientId.isEmpty) return;
-    await FirestoreService.instance.patientProfile
-        .clearPatientFcmToken(patientId);
+    await FirestoreService.instance.patientProfile.clearPatientFcmToken(
+      patientId,
+    );
     if (!kIsWeb) {
       await FirebaseMessaging.instance.deleteToken();
     }

@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../../core/auth/contact_change_otp_service.dart';
 import '../../../core/auth/contact_change_verification.dart';
 import '../../../core/constants/app_constants.dart';
@@ -34,8 +35,11 @@ import 'widgets/profile_edit_widgets.dart';
 import '../../../core/theme/app_typography.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen(
-      {super.key, required this.profile, required this.onSaved});
+  const EditProfileScreen({
+    super.key,
+    required this.profile,
+    required this.onSaved,
+  });
 
   final PatientProfile profile;
   final VoidCallback onSaved;
@@ -50,11 +54,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _emailFocus = FocusNode();
   late final _nameController = TextEditingController(text: widget.profile.name);
   late final _mobileParsed = FormValidators.parsePhone(widget.profile.mobile);
-  late final _mobileController =
-      TextEditingController(text: _mobileParsed.localNumber);
+  late final _mobileController = TextEditingController(
+    text: _mobileParsed.localNumber,
+  );
   late String _mobileDialCode = _mobileParsed.dialCode;
-  late final _emailController =
-      TextEditingController(text: widget.profile.email);
+  late final _emailController = TextEditingController(
+    text: widget.profile.email,
+  );
   late final _ageController = TextEditingController(
     text: widget.profile.age > 0 ? '${widget.profile.age}' : '',
   );
@@ -66,11 +72,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   );
 
   late final _address1Controller = TextEditingController(
-      text: PatientProfileMock.profileAddress.addressLine1);
+    text: PatientProfileMock.profileAddress.addressLine1,
+  );
   late final _address2Controller = TextEditingController(
-      text: PatientProfileMock.profileAddress.addressLine2);
-  late final _pincodeController =
-      TextEditingController(text: PatientProfileMock.profileAddress.pincode);
+    text: PatientProfileMock.profileAddress.addressLine2,
+  );
+  late final _pincodeController = TextEditingController(
+    text: PatientProfileMock.profileAddress.pincode,
+  );
 
   String? _country;
   String? _state;
@@ -104,8 +113,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _calculateBmi({bool notify = true}) {
     final heightCm = double.tryParse(_heightController.text) ?? 0.0;
     final weightKg = double.tryParse(_weightController.text) ?? 0.0;
-    final bmi =
-        PatientBmiUtils.calculate(heightCm: heightCm, weightKg: weightKg);
+    final bmi = PatientBmiUtils.calculate(
+      heightCm: heightCm,
+      weightKg: weightKg,
+    );
 
     if (bmi != null) {
       _bmiValue = bmi;
@@ -153,10 +164,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickPhoto() async {
-    final photoUrl = _photoUrl ??
+    final photoUrl =
+        _photoUrl ??
         widget.profile.photoUrl ??
         PatientProfileMock.profile.photoUrl;
-    final localBytes = _localPhotoBytes ??
+    final localBytes =
+        _localPhotoBytes ??
         PatientPhotoLocalStore.readCached(_effectivePatientId());
     final hasLocalPhoto = localBytes != null && localBytes.isNotEmpty;
     final hasNetworkPhoto =
@@ -193,11 +206,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             if (currentImage != null)
               ListTile(
-                leading:
-                    const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                title: const Text('Remove Photo',
-                    style: TextStyle(
-                        color: Colors.red, fontWeight: FontWeight.w500)),
+                leading: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red,
+                ),
+                title: const Text(
+                  'Remove Photo',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
                 onTap: () => Navigator.pop(ctx, 'remove'),
               ),
           ],
@@ -234,9 +253,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 .collection(FirestorePaths.users)
                 .doc(patientId)
                 .set({
-              'photoUrl': FieldValue.delete(),
-              'photoURL': FieldValue.delete(),
-            }, SetOptions(merge: true));
+                  'photoUrl': FieldValue.delete(),
+                  'photoURL': FieldValue.delete(),
+                }, SetOptions(merge: true));
           } catch (_) {}
           try {
             final user = FirebaseAuth.instance.currentUser;
@@ -311,7 +330,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (FirebaseBootstrap.isReady) {
         try {
           remoteUrl = await PatientPhotoLocalStore.uploadToFirebaseStorage(
-              patientId, bytes);
+            patientId,
+            bytes,
+          );
         } catch (e) {
           if (kDebugMode)
             debugPrint('[EditProfile] Storage upload warning: $e');
@@ -341,10 +362,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               .collection(FirestorePaths.users)
               .doc(patientId)
               .set({
-            'photoUrl': remoteUrl ?? finalUrl,
-            'photoURL': remoteUrl ?? finalUrl,
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+                'photoUrl': remoteUrl ?? finalUrl,
+                'photoURL': remoteUrl ?? finalUrl,
+                'updatedAt': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true));
         } catch (_) {}
 
         try {
@@ -371,14 +392,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   String _currentFormattedMobile() => ContactChangeVerification.canonicalMobile(
-        _mobileDialCode,
-        _mobileController.text.trim(),
-      );
+    _mobileDialCode,
+    _mobileController.text.trim(),
+  );
 
   void _onMobileInputChanged() {
     final current = _currentFormattedMobile();
     final saved = ContactChangeVerification.canonicalMobileFromStored(
-        widget.profile.mobile);
+      widget.profile.mobile,
+    );
     if (current == saved) {
       _verifiedMobileTarget = null;
     } else if (_verifiedMobileTarget != current) {
@@ -435,7 +457,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _handleMobileEditComplete() async {
     final nextMobile = _currentFormattedMobile();
     final saved = ContactChangeVerification.canonicalMobileFromStored(
-        widget.profile.mobile);
+      widget.profile.mobile,
+    );
 
     if (nextMobile == saved) {
       setState(() {
@@ -487,8 +510,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
       _mobileFocus.requestFocus();
       final text = _mobileController.text;
-      _mobileController.selection =
-          TextSelection(baseOffset: 0, extentOffset: text.length);
+      _mobileController.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: text.length,
+      );
     });
   }
 
@@ -512,8 +537,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           : null;
       _bloodGroupError =
           (_selectedBloodGroup == null || _selectedBloodGroup!.isEmpty)
-              ? 'Please select a blood group'
-              : null;
+          ? 'Please select a blood group'
+          : null;
     });
 
     final formState = _formKey.currentState;
@@ -521,7 +546,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     final nextMobile = _currentFormattedMobile();
     final mobileChanged = !ContactChangeVerification.mobilesEqual(
-        nextMobile, widget.profile.mobile);
+      nextMobile,
+      widget.profile.mobile,
+    );
 
     if (mobileChanged && _verifiedMobileTarget != nextMobile) {
       final localErr = FormValidators.phoneLocal(
@@ -541,7 +568,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (!mounted) return;
       if (!verified) {
         AppToast.info(
-            context, 'Verify your new mobile number with OTP before saving.');
+          context,
+          'Verify your new mobile number with OTP before saving.',
+        );
         return;
       }
       setState(() => _verifiedMobileTarget = nextMobile);
@@ -569,17 +598,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         double.tryParse(_weightController.text.trim()) ?? 0.0;
     widget.profile.mobile = _currentFormattedMobile();
 
-    PatientProfileMock.profileAddress =
-        PatientProfileMock.profileAddress.copyWith(
-      country: _country?.trim().isNotEmpty == true
-          ? _country!.trim()
-          : Countries.defaultCountry,
-      state: _state?.trim() ?? '',
-      city: _city?.trim() ?? '',
-      addressLine1: _address1Controller.text.trim(),
-      addressLine2: _address2Controller.text.trim(),
-      pincode: _pincodeController.text.trim(),
-    );
+    PatientProfileMock.profileAddress = PatientProfileMock.profileAddress
+        .copyWith(
+          country: _country?.trim().isNotEmpty == true
+              ? _country!.trim()
+              : Countries.defaultCountry,
+          state: _state?.trim() ?? '',
+          city: _city?.trim() ?? '',
+          addressLine1: _address1Controller.text.trim(),
+          addressLine2: _address2Controller.text.trim(),
+          pincode: _pincodeController.text.trim(),
+        );
     if (_city != null && _city!.trim().isNotEmpty) {
       PatientProfileMock.profileCity = _city!.trim();
     }
@@ -604,12 +633,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final initial =
-        _displayName.isNotEmpty ? _displayName[0].toUpperCase() : 'P';
-    final photoUrl = _photoUrl ??
+    final initial = _displayName.isNotEmpty
+        ? _displayName[0].toUpperCase()
+        : 'P';
+    final photoUrl =
+        _photoUrl ??
         widget.profile.photoUrl ??
         PatientProfileMock.profile.photoUrl;
-    final localBytes = _localPhotoBytes ??
+    final localBytes =
+        _localPhotoBytes ??
         PatientPhotoLocalStore.readCached(_effectivePatientId());
     final hasLocalPhoto = localBytes != null && localBytes.isNotEmpty;
     final hasNetworkPhoto =
@@ -624,8 +656,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Personal Information',
-          context: context),
+      appBar: PatientProfileFormStyles.profileAppBar(
+        'Personal Information',
+        context: context,
+      ),
       body: Form(
         key: _formKey,
         child: Column(
@@ -653,8 +687,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           ProfileEditWidgets.lockedNote(
-                            message:
-                                'Full name, gender, and blood group cannot be changed here. Contact support if incorrect.',
+                            message: 'Full name, gender, and blood group cannot be changed here. Contact support if incorrect.',
                           ),
                           const SizedBox(height: 14),
                           ProfileEditWidgets.lockedField(
@@ -677,10 +710,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ],
                             decoration:
                                 PatientProfileFormStyles.fieldDecoration(
-                              context,
-                              labelText: 'Age',
-                              isRequired: true,
-                            ),
+                                  context,
+                                  labelText: 'Age',
+                                  isRequired: true,
+                                ),
                             validator: FormValidators.age,
                           ),
                         ],
@@ -706,15 +739,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   controller: _heightController,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
-                                          decimal: true),
+                                        decimal: true,
+                                      ),
                                   inputFormatters: [
                                     FilteringTextInputFormatter.allow(
-                                        RegExp(r'^\d*\.?\d*')),
+                                      RegExp(r'^\d*\.?\d*'),
+                                    ),
                                   ],
                                   decoration:
                                       PatientProfileFormStyles.fieldDecoration(
-                                          context,
-                                          labelText: 'Height (cm)'),
+                                        context,
+                                        labelText: 'Height (cm)',
+                                      ),
                                   onChanged: (_) => _calculateBmi(),
                                 ),
                               ),
@@ -724,15 +760,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   controller: _weightController,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(
-                                          decimal: true),
+                                        decimal: true,
+                                      ),
                                   inputFormatters: [
                                     FilteringTextInputFormatter.allow(
-                                        RegExp(r'^\d*\.?\d*')),
+                                      RegExp(r'^\d*\.?\d*'),
+                                    ),
                                   ],
                                   decoration:
                                       PatientProfileFormStyles.fieldDecoration(
-                                          context,
-                                          labelText: 'Weight (kg)'),
+                                        context,
+                                        labelText: 'Weight (kg)',
+                                      ),
                                   onChanged: (_) => _calculateBmi(),
                                 ),
                               ),
@@ -772,7 +811,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               suffixIcon: _editingMobile
                                   ? null
                                   : ProfileEditWidgets.changeAction(
-                                      onPressed: _requestMobileChange),
+                                      onPressed: _requestMobileChange,
+                                    ),
                               counterText: _editingMobile
                                   ? '${_mobileController.text.length}/$_mobileMaxLength'
                                   : null,

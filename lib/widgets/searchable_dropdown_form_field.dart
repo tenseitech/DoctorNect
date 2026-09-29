@@ -16,61 +16,60 @@ class SearchableDropdownFormField extends FormField<String> {
     super.validator,
     super.enabled = true,
   }) : super(
-          initialValue: value,
-          builder: (FormFieldState<String> state) {
-            final context = state.context;
-            final effectiveDecoration =
-                (decoration ?? const InputDecoration()).copyWith(
-              errorText: state.errorText,
-            );
+         initialValue: value,
+         builder: (FormFieldState<String> state) {
+           final context = state.context;
+           final effectiveDecoration = (decoration ?? const InputDecoration())
+               .copyWith(errorText: state.errorText);
 
-            final displayValue =
-                value != null && value.isNotEmpty ? value : null;
+           final displayValue = value != null && value.isNotEmpty
+               ? value
+               : null;
 
-            return InkWell(
-              onTap: enabled
-                  ? () async {
-                      final selected = await SearchableDropdownModalSheet.show(
-                        context,
-                        title: title,
-                        initialValue: value,
-                        items: items,
-                      );
+           return InkWell(
+             onTap: enabled
+                 ? () async {
+                     final selected = await SearchableDropdownModalSheet.show(
+                       context,
+                       title: title,
+                       initialValue: value,
+                       items: items,
+                     );
 
-                      if (selected != null) {
-                        state.didChange(selected);
-                        onChanged?.call(selected);
-                      }
-                    }
-                  : null,
-              borderRadius: BorderRadius.circular(10),
-              child: InputDecorator(
-                decoration: effectiveDecoration.copyWith(
-                  suffixIcon: Icon(
-                    Icons.arrow_drop_down_rounded,
-                    color: enabled
-                        ? AppColors.textSecondaryOf(context)
-                        : AppColors.textSecondaryOf(context)
-                            .withValues(alpha: 0.4),
-                  ),
-                ),
-                isEmpty: false,
-                child: Text(
-                  displayValue ?? hintText ?? 'Select $title',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: AppTypography.bodyMedium,
-                    color: displayValue != null
-                        ? AppColors.textPrimaryOf(context)
-                        : AppColors.textSecondaryOf(context)
-                            .withValues(alpha: enabled ? 0.75 : 0.4),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
+                     if (selected != null) {
+                       state.didChange(selected);
+                       onChanged?.call(selected);
+                     }
+                   }
+                 : null,
+             borderRadius: BorderRadius.circular(10),
+             child: InputDecorator(
+               decoration: effectiveDecoration.copyWith(
+                 suffixIcon: Icon(
+                   Icons.arrow_drop_down_rounded,
+                   color: enabled
+                       ? AppColors.textSecondaryOf(context)
+                       : AppColors.textSecondaryOf(context)
+                             .withValues(alpha: 0.4),
+                 ),
+               ),
+               isEmpty: false,
+               child: Text(
+                 displayValue ?? hintText ?? 'Select $title',
+                 maxLines: 1,
+                 overflow: TextOverflow.ellipsis,
+                 style: GoogleFonts.inter(
+                   fontSize: AppTypography.bodyMedium,
+                   color: displayValue != null
+                       ? AppColors.textPrimaryOf(context)
+                       : AppColors.textSecondaryOf(context)
+                             .withValues(alpha: enabled ? 0.75 : 0.4),
+                 ),
+               ),
+             ),
+           );
+         },
+       );
 }
 
 class SearchableDropdownModalSheet extends StatefulWidget {
@@ -147,10 +146,12 @@ class _SearchableDropdownModalSheetState
 
           // 2. Word start match (e.g. "maha" matches "Maharashtra")
           final words = itemLower.split(RegExp(r'[\s\-_,]+'));
-          if (words.any((w) =>
-              w.startsWith(q) ||
-              (cleanQ.isNotEmpty &&
-                  w.replaceAll(RegExp(r'[^a-z0-9]'), '').startsWith(cleanQ)))) {
+          if (words.any(
+            (w) =>
+                w.startsWith(q) ||
+                (cleanQ.isNotEmpty &&
+                    w.replaceAll(RegExp(r'[^a-z0-9]'), '').startsWith(cleanQ)),
+          )) {
             return true;
           }
 
@@ -179,8 +180,9 @@ class _SearchableDropdownModalSheetState
     final bg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
     final rawQuery = _searchController.text.trim();
-    final hasExactMatch = _filteredItems
-        .any((item) => item.toLowerCase() == rawQuery.toLowerCase());
+    final hasExactMatch = _filteredItems.any(
+      (item) => item.toLowerCase() == rawQuery.toLowerCase(),
+    );
     final hasCustomTile = rawQuery.isNotEmpty && !hasExactMatch;
 
     return Center(
@@ -194,8 +196,9 @@ class _SearchableDropdownModalSheetState
             return Container(
               decoration: BoxDecoration(
                 color: bg,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
@@ -247,8 +250,10 @@ class _SearchableDropdownModalSheetState
                   ),
                   // Search Bar
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: TextField(
                       controller: _searchController,
                       autofocus: true,
@@ -272,8 +277,10 @@ class _SearchableDropdownModalSheetState
                         ),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                icon:
-                                    const Icon(Icons.cancel_rounded, size: 18),
+                                icon: const Icon(
+                                  Icons.cancel_rounded,
+                                  size: 18,
+                                ),
                                 onPressed: () {
                                   _searchController.clear();
                                   _onSearchChanged('');
@@ -285,7 +292,9 @@ class _SearchableDropdownModalSheetState
                             ? const Color(0xFF0F172A).withValues(alpha: 0.45)
                             : const Color(0xFFF8FAFC),
                         contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12, horizontal: 16),
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(
@@ -367,8 +376,9 @@ class _SearchableDropdownModalSheetState
                                 );
                               }
 
-                              final itemIndex =
-                                  hasCustomTile ? index - 1 : index;
+                              final itemIndex = hasCustomTile
+                                  ? index - 1
+                                  : index;
                               final item = _filteredItems[itemIndex];
                               final isSelected = item == widget.initialValue;
 
@@ -422,8 +432,8 @@ class _SearchableDropdownModalSheetState
                 color: isSelected
                     ? AppColors.patientTeal.withValues(alpha: 0.35)
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.04)
-                        : Colors.black.withValues(alpha: 0.035)),
+                          ? Colors.white.withValues(alpha: 0.04)
+                          : Colors.black.withValues(alpha: 0.035)),
                 width: 1.0,
               ),
             ),
@@ -434,8 +444,9 @@ class _SearchableDropdownModalSheetState
                     text,
                     style: GoogleFonts.inter(
                       fontSize: 15,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: isSelected ? AppColors.patientTeal : textPrimary,
                       letterSpacing: -0.1,
                     ),

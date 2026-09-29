@@ -41,8 +41,9 @@ class BookingStepHeader extends StatelessWidget {
                       color: active ? accentColor : AppColors.cardBgOf(context),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color:
-                            active ? accentColor : AppColors.borderOf(context),
+                        color: active
+                            ? accentColor
+                            : AppColors.borderOf(context),
                       ),
                     ),
                     child: Text(
@@ -87,8 +88,9 @@ class BookingStepHeader extends StatelessWidget {
         Text(
           title,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.headlineSmall,
-              fontWeight: FontWeight.w700),
+            fontSize: AppTypography.headlineSmall,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );

@@ -41,8 +41,7 @@ enum VerificationStage {
     return switch (value.trim().toLowerCase()) {
       'verified' || 'approved' => VerificationStage.verified,
       'submitted_for_verification' ||
-      'pending_review' =>
-        VerificationStage.submittedForVerification,
+      'pending_review' => VerificationStage.submittedForVerification,
       'revision_requested' => VerificationStage.revisionRequested,
       'rejected' => VerificationStage.rejected,
       'profile_incomplete' => VerificationStage.profileIncomplete,
@@ -61,17 +60,17 @@ enum VerificationStage {
   /// Non-blocking toast message shown when tapping a locked navigation item or dashboard action.
   String get lockedToastMessage =>
       this == VerificationStage.submittedForVerification
-          ? 'Your profile is under verification'
-          : 'Complete your profile to unlock this';
+      ? 'Your profile is under verification'
+      : 'Complete your profile to unlock this';
 
   String get displayLabel => switch (this) {
-        VerificationStage.registered => 'Registration Complete',
-        VerificationStage.profileIncomplete => 'Profile Incomplete',
-        VerificationStage.submittedForVerification => 'Under Review',
-        VerificationStage.verified => 'Verified',
-        VerificationStage.revisionRequested => 'Action Required',
-        VerificationStage.rejected => 'Rejected',
-      };
+    VerificationStage.registered => 'Registration Complete',
+    VerificationStage.profileIncomplete => 'Profile Incomplete',
+    VerificationStage.submittedForVerification => 'Under Review',
+    VerificationStage.verified => 'Verified',
+    VerificationStage.revisionRequested => 'Action Required',
+    VerificationStage.rejected => 'Rejected',
+  };
 }
 
 /// Document or credential requirement definition.
@@ -95,97 +94,95 @@ abstract final class VerificationRequirementsConfig {
   static List<VerificationRequirementItem> requirementsForRole(UserType role) {
     return switch (role) {
       UserType.doctor => const [
-          VerificationRequirementItem(
-            key: 'qualification',
-            label: 'Medical Degree / Qualification',
-            description: 'Recognized medical degree (e.g., MBBS, MD, MS)',
-          ),
-          VerificationRequirementItem(
-            key: 'councilNumber',
-            label: 'Medical Registration Number',
-            description:
-                'State or National Medical Council registration number',
-          ),
-          VerificationRequirementItem(
-            key: 'stateCouncil',
-            label: 'Registration Authority',
-            description: 'Issuing State / National Medical Council',
-          ),
-          VerificationRequirementItem(
-            key: 'registrationCertificate',
-            label: 'Registration Certificate',
-            description:
-                'Official council registration document or certificate',
-            isDocument: true,
-          ),
-          VerificationRequirementItem(
-            key: 'idProof',
-            label: 'Identity Proof',
-            description: 'Government-issued photo identification',
-            isDocument: true,
-          ),
-        ],
+        VerificationRequirementItem(
+          key: 'qualification',
+          label: 'Medical Degree / Qualification',
+          description: 'Recognized medical degree (e.g., MBBS, MD, MS)',
+        ),
+        VerificationRequirementItem(
+          key: 'councilNumber',
+          label: 'Medical Registration Number',
+          description: 'State or National Medical Council registration number',
+        ),
+        VerificationRequirementItem(
+          key: 'stateCouncil',
+          label: 'Registration Authority',
+          description: 'Issuing State / National Medical Council',
+        ),
+        VerificationRequirementItem(
+          key: 'registrationCertificate',
+          label: 'Registration Certificate',
+          description: 'Official council registration document or certificate',
+          isDocument: true,
+        ),
+        VerificationRequirementItem(
+          key: 'idProof',
+          label: 'Identity Proof',
+          description: 'Government-issued photo identification',
+          isDocument: true,
+        ),
+      ],
       UserType.medicalStore => const [
-          VerificationRequirementItem(
-            key: 'storeName',
-            label: 'Pharmacy / Store Name',
-            description: 'Registered business name of the medical store',
-          ),
-          VerificationRequirementItem(
-            key: 'drugLicenseNumber',
-            label: 'Drug License Number',
-            description: 'Valid Form 20/21 drug retail license number',
-          ),
-          VerificationRequirementItem(
-            key: 'ownerName',
-            label: 'Owner / Pharmacist Name',
-            description: 'Name of the licensed pharmacist or owner',
-          ),
-          VerificationRequirementItem(
-            key: 'address',
-            label: 'Physical Store Address',
-            description: 'Complete commercial address with PIN code',
-          ),
-        ],
+        VerificationRequirementItem(
+          key: 'storeName',
+          label: 'Pharmacy / Store Name',
+          description: 'Registered business name of the medical store',
+        ),
+        VerificationRequirementItem(
+          key: 'drugLicenseNumber',
+          label: 'Drug License Number',
+          description: 'Valid Form 20/21 drug retail license number',
+        ),
+        VerificationRequirementItem(
+          key: 'ownerName',
+          label: 'Owner / Pharmacist Name',
+          description: 'Name of the licensed pharmacist or owner',
+        ),
+        VerificationRequirementItem(
+          key: 'address',
+          label: 'Physical Store Address',
+          description: 'Complete commercial address with PIN code',
+        ),
+      ],
       UserType.lab => const [
-          VerificationRequirementItem(
-            key: 'labName',
-            label: 'Diagnostic Lab Name',
-            description: 'Registered diagnostic centre or laboratory name',
-          ),
-          VerificationRequirementItem(
-            key: 'licenseNumber',
-            label: 'Clinical Establishment License',
-            description: 'Valid diagnostic/pathology registration number',
-          ),
-          VerificationRequirementItem(
-            key: 'address',
-            label: 'Lab Location & Address',
-            description: 'Complete laboratory facility address with PIN code',
-          ),
-        ],
+        VerificationRequirementItem(
+          key: 'labName',
+          label: 'Diagnostic Lab Name',
+          description: 'Registered diagnostic centre or laboratory name',
+        ),
+        VerificationRequirementItem(
+          key: 'licenseNumber',
+          label: 'Clinical Establishment License',
+          description: 'Valid diagnostic/pathology registration number',
+        ),
+        VerificationRequirementItem(
+          key: 'address',
+          label: 'Lab Location & Address',
+          description: 'Complete laboratory facility address with PIN code',
+        ),
+      ],
       UserType.ambulance => const [
-          VerificationRequirementItem(
-            key: 'serviceName',
-            label: 'Ambulance Service Name',
-            description: 'Fleet or emergency transport service name',
-          ),
-          VerificationRequirementItem(
-            key: 'vehicleNumber',
-            label: 'Vehicle Registration Number',
-            description: 'Commercial motor vehicle registration number',
-          ),
-          VerificationRequirementItem(
-            key: 'driverName',
-            label: 'Driver / Operator Name',
-            description: 'Name of the designated ambulance driver',
-          ),
-          VerificationRequirementItem(
-            key: 'licenseNumber',
-            label: 'Driver License Number',
-            description: 'Commercial driving license number',
-          ),
-        ],
+        VerificationRequirementItem(
+          key: 'serviceName',
+          label: 'Ambulance Service Name',
+          description: 'Fleet or emergency transport service name',
+        ),
+        VerificationRequirementItem(
+          key: 'vehicleNumber',
+          label: 'Vehicle Registration Number',
+          description: 'Commercial motor vehicle registration number',
+        ),
+        VerificationRequirementItem(
+          key: 'driverName',
+          label: 'Driver / Operator Name',
+          description: 'Name of the designated ambulance driver',
+        ),
+        VerificationRequirementItem(
+          key: 'licenseNumber',
+          label: 'Driver License Number',
+          description: 'Commercial driving license number',
+        ),
+      ],
       _ => const [],
     };
   }
@@ -289,36 +286,36 @@ class RoleVerificationController extends ChangeNotifier {
             ? VerificationStage.verified
             : VerificationStage.profileIncomplete,
       UserType.medicalStore => () {
-          final id = MedicalStoreSession.loggedInStoreId;
-          final store = id.isNotEmpty
-              ? MedicalStoreRegistry.findById(id)
-              : (MedicalStoreRegistry.all.isNotEmpty
+        final id = MedicalStoreSession.loggedInStoreId;
+        final store = id.isNotEmpty
+            ? MedicalStoreRegistry.findById(id)
+            : (MedicalStoreRegistry.all.isNotEmpty
                   ? MedicalStoreRegistry.all.first
                   : null);
-          return (store?.verified ?? false)
-              ? VerificationStage.verified
-              : VerificationStage.profileIncomplete;
-        }(),
+        return (store?.verified ?? false)
+            ? VerificationStage.verified
+            : VerificationStage.profileIncomplete;
+      }(),
       UserType.lab => () {
-          final id = LabSession.loggedInLabId;
-          final lab = id.isNotEmpty
-              ? LabRegistry.findById(id)
-              : (LabRegistry.all.isNotEmpty ? LabRegistry.all.first : null);
-          return (lab?.verified ?? false)
-              ? VerificationStage.verified
-              : VerificationStage.profileIncomplete;
-        }(),
+        final id = LabSession.loggedInLabId;
+        final lab = id.isNotEmpty
+            ? LabRegistry.findById(id)
+            : (LabRegistry.all.isNotEmpty ? LabRegistry.all.first : null);
+        return (lab?.verified ?? false)
+            ? VerificationStage.verified
+            : VerificationStage.profileIncomplete;
+      }(),
       UserType.ambulance => () {
-          final id = AmbulanceSession.loggedInAmbulanceId;
-          final amb = id.isNotEmpty
-              ? AmbulanceStore.instance.findAmbulance(id)
-              : (AmbulanceStore.instance.registeredAmbulances.isNotEmpty
+        final id = AmbulanceSession.loggedInAmbulanceId;
+        final amb = id.isNotEmpty
+            ? AmbulanceStore.instance.findAmbulance(id)
+            : (AmbulanceStore.instance.registeredAmbulances.isNotEmpty
                   ? AmbulanceStore.instance.registeredAmbulances.first
                   : null);
-          return (amb?.verified ?? false)
-              ? VerificationStage.verified
-              : VerificationStage.profileIncomplete;
-        }(),
+        return (amb?.verified ?? false)
+            ? VerificationStage.verified
+            : VerificationStage.profileIncomplete;
+      }(),
       _ => VerificationStage.verified,
     };
   }
@@ -346,8 +343,9 @@ class RoleVerificationController extends ChangeNotifier {
   }) {
     _stageOverrides[role] = stage;
     if (rejectionReason != null) {
-      _rejectionReasons[role] =
-          rejectionReason.trim().isEmpty ? null : rejectionReason.trim();
+      _rejectionReasons[role] = rejectionReason.trim().isEmpty
+          ? null
+          : rejectionReason.trim();
     } else if (stage == VerificationStage.verified ||
         stage == VerificationStage.submittedForVerification) {
       _rejectionReasons.remove(role);
@@ -359,8 +357,9 @@ class RoleVerificationController extends ChangeNotifier {
   void _syncStoreVerificationFlag(UserType role, bool verified) {
     switch (role) {
       case UserType.doctor:
-        DoctorProfileStore.instance.profile.verificationStatus =
-            verified ? VerificationStatus.verified : VerificationStatus.pending;
+        DoctorProfileStore.instance.profile.verificationStatus = verified
+            ? VerificationStatus.verified
+            : VerificationStatus.pending;
       case UserType.medicalStore:
         final id = MedicalStoreSession.loggedInStoreId;
         final store = id.isNotEmpty ? MedicalStoreRegistry.findById(id) : null;
@@ -394,8 +393,9 @@ class RoleVerificationController extends ChangeNotifier {
         }
       case UserType.ambulance:
         final id = AmbulanceSession.loggedInAmbulanceId;
-        final amb =
-            id.isNotEmpty ? AmbulanceStore.instance.findAmbulance(id) : null;
+        final amb = id.isNotEmpty
+            ? AmbulanceStore.instance.findAmbulance(id)
+            : null;
         if (amb != null && amb.verified != verified) {
           AmbulanceStore.instance.updateRegisteredAmbulance(
             amb.copyWith(verified: verified),
@@ -462,8 +462,8 @@ class RoleVerificationController extends ChangeNotifier {
         final store = id.isNotEmpty
             ? MedicalStoreRegistry.findById(id)
             : (MedicalStoreRegistry.all.isNotEmpty
-                ? MedicalStoreRegistry.all.first
-                : null);
+                  ? MedicalStoreRegistry.all.first
+                  : null);
         if (store != null) {
           if (store.storeName.trim().isNotEmpty) {
             result['storeName'] = store.storeName.trim();
@@ -515,8 +515,8 @@ class RoleVerificationController extends ChangeNotifier {
         final amb = id.isNotEmpty
             ? AmbulanceStore.instance.findAmbulance(id)
             : (AmbulanceStore.instance.registeredAmbulances.isNotEmpty
-                ? AmbulanceStore.instance.registeredAmbulances.first
-                : null);
+                  ? AmbulanceStore.instance.registeredAmbulances.first
+                  : null);
         if (amb != null) {
           if (amb.serviceName.trim().isNotEmpty) {
             result['serviceName'] = amb.serviceName.trim();

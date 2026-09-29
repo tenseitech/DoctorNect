@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,8 +46,9 @@ void main() {
       }
     });
 
-    testWidgets('Renders floating glassmorphic taskbar on mobile',
-        (tester) async {
+    testWidgets('Renders floating glassmorphic taskbar on mobile', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -78,8 +80,9 @@ void main() {
 
       // Check that BackdropFilter is present for the blur effect
       expect(find.byType(BackdropFilter), findsOneWidget);
-      final backdrop =
-          tester.widget<BackdropFilter>(find.byType(BackdropFilter));
+      final backdrop = tester.widget<BackdropFilter>(
+        find.byType(BackdropFilter),
+      );
       expect(backdrop.filter, isNotNull);
 
       // Verify all 5 tab labels are visible

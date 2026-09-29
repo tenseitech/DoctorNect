@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -147,13 +148,17 @@ class _RegistrationMobileOtpSectionState
     if (!mounted) return;
     if (conflict == true) {
       AppToast.error(
-          context, MobileRegistrationLookup.registrationConflictMessage);
+        context,
+        MobileRegistrationLookup.registrationConflictMessage,
+      );
       return;
     }
 
     setState(() => _sending = true);
-    final result =
-        await RegistrationOtpService.sendOtp(digits, role: widget.role);
+    final result = await RegistrationOtpService.sendOtp(
+      digits,
+      role: widget.role,
+    );
     if (!mounted) return;
 
     if (result.error != null) {
@@ -179,8 +184,11 @@ class _RegistrationMobileOtpSectionState
       return;
     }
     setState(() => _sending = true);
-    final error =
-        await RegistrationOtpService.verify(digits, _otp, role: widget.role);
+    final error = await RegistrationOtpService.verify(
+      digits,
+      _otp,
+      role: widget.role,
+    );
     if (!mounted) return;
     setState(() => _sending = false);
     if (error != null) {
@@ -196,20 +204,17 @@ class _RegistrationMobileOtpSectionState
     return SizedBox(
       height: 20,
       width: 20,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: spinnerColor,
-      ),
+      child: CircularProgressIndicator(strokeWidth: 2, color: spinnerColor),
     );
   }
 
   ButtonStyle get _primaryButtonStyle => FilledButton.styleFrom(
-        backgroundColor: widget.accentColor,
-        foregroundColor: widget.accentColor.computeLuminance() > 0.5
-            ? Colors.black
-            : Colors.white,
-        minimumSize: const Size.fromHeight(48),
-      );
+    backgroundColor: widget.accentColor,
+    foregroundColor: widget.accentColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white,
+    minimumSize: const Size.fromHeight(48),
+  );
 
   Widget _buildFingerprint() {
     return Text(
@@ -236,13 +241,17 @@ class _RegistrationMobileOtpSectionState
               color: AppColors.pharmacyGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                  color: AppColors.pharmacyGreen.withValues(alpha: 0.4)),
+                color: AppColors.pharmacyGreen.withValues(alpha: 0.4),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.verified_outlined,
-                    color: AppColors.pharmacyGreen, size: 22),
+                Icon(
+                  Icons.verified_outlined,
+                  color: AppColors.pharmacyGreen,
+                  size: 22,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -323,8 +332,9 @@ class _RegistrationMobileOtpSectionState
           Text(
             'Enter the 6-digit code sent to $_dialCode ${_maskedDigits(sentDigits)}',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.labelMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.labelMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
           const SizedBox(height: 14),
           OtpInput(

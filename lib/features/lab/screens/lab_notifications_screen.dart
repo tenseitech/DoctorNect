@@ -7,7 +7,9 @@ import '../../../core/session/lab_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/lab_notification_store.dart';
 import '../models/lab_notification.dart';
+
 import 'package:medibond/features/shared/widgets/lab_page_layout.dart';
+
 import '../../../core/theme/app_typography.dart';
 
 enum _LabNotifFilter { all, unread, read }
@@ -41,12 +43,15 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
     final groups = <String, List<LabNotification>>{};
     for (final item in items) {
       final day = DateTime(
-          item.createdAt.year, item.createdAt.month, item.createdAt.day);
+        item.createdAt.year,
+        item.createdAt.month,
+        item.createdAt.day,
+      );
       final label = day == today
           ? 'Today'
           : day == yesterday
-              ? 'Yesterday'
-              : DateFormat('dd MMM yyyy').format(item.createdAt);
+          ? 'Yesterday'
+          : DateFormat('dd MMM yyyy').format(item.createdAt);
       groups.putIfAbsent(label, () => []).add(item);
     }
     return groups;
@@ -60,8 +65,9 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
       listenable: LabNotificationStore.instance,
       builder: (context, _) {
         final allItems = LabNotificationStore.instance.forLab(labId);
-        final unreadCount =
-            LabNotificationStore.instance.unreadCountForLab(labId);
+        final unreadCount = LabNotificationStore.instance.unreadCountForLab(
+          labId,
+        );
         final items = _filtered(allItems);
         final groups = _groupByDay(items);
 
@@ -79,8 +85,9 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                         Text(
                           'Notifications',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.headlineLarge,
-                              fontWeight: FontWeight.w700),
+                            fontSize: AppTypography.headlineLarge,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -88,8 +95,9 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                               ? '$unreadCount unread · connection, orders & bookings'
                               : 'Connection updates, new orders, and booking alerts',
                           style: GoogleFonts.inter(
-                              fontSize: AppTypography.bodySmall,
-                              color: AppColors.textSecondaryOf(context)),
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
                         ),
                       ],
                     ),
@@ -106,15 +114,18 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                         side: const BorderSide(color: _labPurple),
                         visualDensity: VisualDensity.compact,
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                       ),
                       child: Text(
                         'Mark all read',
                         maxLines: 1,
                         softWrap: false,
                         style: GoogleFonts.inter(
-                            fontSize: AppTypography.bodySmall,
-                            fontWeight: FontWeight.w600),
+                          fontSize: AppTypography.bodySmall,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -172,8 +183,10 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                         children: [
                           for (final entry in groups.entries) ...[
                             Padding(
-                              padding:
-                                  const EdgeInsets.only(bottom: 10, top: 4),
+                              padding: const EdgeInsets.only(
+                                bottom: 10,
+                                top: 4,
+                              ),
                               child: Text(
                                 entry.key,
                                 style: GoogleFonts.inter(
@@ -195,8 +208,10 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                             const SizedBox(height: 8),
                           ],
                           SizedBox(
-                              height:
-                                  ResponsiveLayout.isCompact(context) ? 8 : 16),
+                            height: ResponsiveLayout.isCompact(context)
+                                ? 8
+                                : 16,
+                          ),
                         ],
                       ),
               ),
@@ -255,8 +270,10 @@ class _FilterPill extends StatelessWidget {
               if (count > 0) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: selected
                         ? AppColors.white.withValues(alpha: 0.22)
@@ -268,8 +285,9 @@ class _FilterPill extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w700,
-                      color:
-                          selected ? AppColors.surfaceOf(context) : _labPurple,
+                      color: selected
+                          ? AppColors.surfaceOf(context)
+                          : _labPurple,
                     ),
                   ),
                 ),
@@ -283,10 +301,7 @@ class _FilterPill extends StatelessWidget {
 }
 
 class _LabNotificationCard extends StatelessWidget {
-  const _LabNotificationCard({
-    required this.notification,
-    required this.onTap,
-  });
+  const _LabNotificationCard({required this.notification, required this.onTap});
 
   final LabNotification notification;
   final VoidCallback onTap;
@@ -384,7 +399,9 @@ class _LabNotificationCard extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: style.badgeColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
@@ -506,20 +523,20 @@ class _EmptyNotifications extends StatelessWidget {
   Widget build(BuildContext context) {
     final (title, subtitle, icon) = switch (filter) {
       _LabNotifFilter.unread => (
-          'No unread alerts',
-          'You\'re all caught up. New bookings and orders will show up here.',
-          Icons.mark_email_read_outlined,
-        ),
+        'No unread alerts',
+        'You\'re all caught up. New bookings and orders will show up here.',
+        Icons.mark_email_read_outlined,
+      ),
       _LabNotifFilter.read => (
-          'No read notifications',
-          'Notifications you open will appear in this list.',
-          Icons.inbox_outlined,
-        ),
+        'No read notifications',
+        'Notifications you open will appear in this list.',
+        Icons.inbox_outlined,
+      ),
       _LabNotifFilter.all => (
-          'No notifications yet',
-          'Connection updates, lab orders, and patient bookings will appear here.',
-          Icons.notifications_none_outlined,
-        ),
+        'No notifications yet',
+        'Connection updates, lab orders, and patient bookings will appear here.',
+        Icons.notifications_none_outlined,
+      ),
     };
 
     return Center(
@@ -548,8 +565,9 @@ class _EmptyNotifications extends StatelessWidget {
               title,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineSmall,
-                  fontWeight: FontWeight.w700),
+                fontSize: AppTypography.headlineSmall,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 8),
             Text(

@@ -42,8 +42,10 @@ class DoctorStorePatientsScreen extends StatelessWidget {
     if (substituted.isEmpty) return 'No';
 
     final names = substituted
-        .map((l) =>
-            l.substituteName.isNotEmpty ? l.substituteName : l.medicineName)
+        .map(
+          (l) =>
+              l.substituteName.isNotEmpty ? l.substituteName : l.medicineName,
+        )
         .join(', ');
     return 'Yes — $names';
   }
@@ -55,8 +57,10 @@ class DoctorStorePatientsScreen extends StatelessWidget {
       sectionTitle: 'Patient prescriptions',
       accentColor: AppColors.pharmacyGreen,
       listenable: PharmacyPrescriptionStore.instance,
-      allItems: () => PharmacyPrescriptionStore.instance
-          .forStoreAndDoctor(storeId, doctorId),
+      allItems: () => PharmacyPrescriptionStore.instance.forStoreAndDoctor(
+        storeId,
+        doctorId,
+      ),
       itemDate: (d) => d.dispensedAt ?? d.sentAt,
       searchPredicate: (d, q) {
         final patient = d.draft.patient.patientName.toLowerCase();
@@ -73,7 +77,7 @@ class DoctorStorePatientsScreen extends StatelessWidget {
         'Patient',
         'Dispensed',
         'Dispense note',
-        'Substitute'
+        'Substitute',
       ],
       columnWidths: const {
         0: FixedColumnWidth(108),
@@ -85,10 +89,14 @@ class DoctorStorePatientsScreen extends StatelessWidget {
       rowBuilder: (context, d, dateFormat) => [
         DocPartnerTableBodyCell(dateFormat.format(d.dispensedAt ?? d.sentAt)),
         DocPartnerTableBodyCell(d.draft.patient.patientName, bold: true),
-        DocPartnerTableBodyCell(_dispenseLabel(d),
-            color: _dispenseColor(d), bold: true),
         DocPartnerTableBodyCell(
-            d.dispensingNotes.isEmpty ? '—' : d.dispensingNotes),
+          _dispenseLabel(d),
+          color: _dispenseColor(d),
+          bold: true,
+        ),
+        DocPartnerTableBodyCell(
+          d.dispensingNotes.isEmpty ? '—' : d.dispensingNotes,
+        ),
         DocPartnerTableBodyCell(_substituteLabel(d)),
       ],
     );

@@ -28,9 +28,8 @@ class TroubleSigningInScreen extends StatelessWidget {
   }
 
   void _openSupport(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
-    );
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
   }
 
   @override
@@ -88,8 +87,7 @@ class TroubleSigningInScreen extends StatelessWidget {
                     accentColor: accentColor,
                     icon: Icons.mail_outline_rounded,
                     title: 'Already have an account?',
-                    description:
-                        'You can sign in with your registered email id and password',
+                    description: 'You can sign in with your registered email id and password',
                     ctaLabel: 'Sign in with email',
                     onCtaTap: () => _onSignInWithEmail(context),
                   ),
@@ -98,8 +96,7 @@ class TroubleSigningInScreen extends StatelessWidget {
                     accentColor: accentColor,
                     icon: Icons.chat_bubble_outline_rounded,
                     title: 'Can not sign in?',
-                    description:
-                        'Get instant answers to your queries from our support team',
+                    description: 'Get instant answers to your queries from our support team',
                     ctaLabel: 'Contact Customer Support',
                     onCtaTap: () => _openSupport(context),
                   ),
@@ -169,7 +166,10 @@ class _HelpOptionCard extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Divider(
-                height: 1, thickness: 1, color: AppColors.borderOf(context)),
+              height: 1,
+              thickness: 1,
+              color: AppColors.borderOf(context),
+            ),
             InkWell(
               onTap: onCtaTap,
               borderRadius: const BorderRadius.vertical(

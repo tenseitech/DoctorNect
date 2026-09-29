@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../core/notifications/app_toast.dart';
 
 abstract final class FormScrollHelper {

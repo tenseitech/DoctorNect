@@ -1,5 +1,7 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -94,12 +96,12 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
             .doc(widget.ticketId)
             .collection('messages')
             .add({
-          'senderId': 'support_agent_mock',
-          'senderName': 'Support Agent',
-          'senderRole': 'support',
-          'text': replyText,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+              'senderId': 'support_agent_mock',
+              'senderName': 'Support Agent',
+              'senderRole': 'support',
+              'text': replyText,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
 
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       });
@@ -139,14 +141,16 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
             Text(
               'Ticket #$formattedTicketId',
               style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  fontSize: AppTypography.headlineSmall),
+                fontWeight: FontWeight.w600,
+                fontSize: AppTypography.headlineSmall,
+              ),
             ),
             Text(
               widget.issueType,
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ],
         ),
@@ -168,7 +172,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                 ),
               ),
             ),
-          )
+          ),
         ],
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
@@ -178,7 +182,9 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final contentWidth = PatientProfileFormStyles.resolveContentWidth(
-              context, constraints);
+            context,
+            constraints,
+          );
 
           return Align(
             alignment: Alignment.topCenter,
@@ -195,7 +201,9 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                       color: AppColors.surfaceOf(context),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: AppColors.borderOf(context), width: 0.5),
+                        color: AppColors.borderOf(context),
+                        width: 0.5,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,9 +242,11 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                           SizedBox(height: 6),
                           Row(
                             children: [
-                              Icon(Icons.attach_file,
-                                  size: 12,
-                                  color: AppColors.textSecondaryOf(context)),
+                              Icon(
+                                Icons.attach_file,
+                                size: 12,
+                                color: AppColors.textSecondaryOf(context),
+                              ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
@@ -269,7 +279,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                             ConnectionState.waiting) {
                           return const Center(
                             child: CircularProgressIndicator(
-                                color: AppColors.patientTeal),
+                              color: AppColors.patientTeal,
+                            ),
                           );
                         }
 
@@ -277,20 +288,24 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
 
                         // Trigger scroll to bottom on load
                         if (messages.isNotEmpty) {
-                          WidgetsBinding.instance
-                              .addPostFrameCallback((_) => _scrollToBottom());
+                          WidgetsBinding.instance.addPostFrameCallback(
+                            (_) => _scrollToBottom(),
+                          );
                         }
 
                         return ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           itemCount: messages.isEmpty ? 1 : messages.length,
                           itemBuilder: (context, index) {
                             if (messages.isEmpty) {
                               return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 32.0),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 32.0,
+                                ),
                                 child: Center(
                                   child: Text(
                                     'No messages yet. Send a message to start conversation.',
@@ -315,7 +330,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
 
                             final timeLabel = timestamp != null
                                 ? DateFormat('hh:mm a')
-                                    .format(timestamp.toDate())
+                                      .format(timestamp.toDate())
                                 : 'Sending...';
 
                             return Align(
@@ -328,7 +343,9 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                   maxWidth: constraints.maxWidth * 0.75,
                                 ),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 10),
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isMe
                                       ? AppColors.patientTeal
@@ -337,7 +354,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                       ? null
                                       : Border.all(
                                           color: AppColors.borderOf(context),
-                                          width: 0.5),
+                                          width: 0.5,
+                                        ),
                                   borderRadius: BorderRadius.only(
                                     topLeft: const Radius.circular(12),
                                     topRight: const Radius.circular(12),
@@ -379,9 +397,10 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                           fontSize: 9,
                                           color: isMe
                                               ? AppColors.surfaceOf(context)
-                                                  .withValues(alpha: 0.7)
+                                                    .withValues(alpha: 0.7)
                                               : AppColors.textSecondaryOf(
-                                                  context),
+                                                  context,
+                                                ),
                                         ),
                                       ),
                                     ),
@@ -402,7 +421,9 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                       color: AppColors.surfaceOf(context),
                       border: Border(
                         top: BorderSide(
-                            color: AppColors.borderOf(context), width: 0.5),
+                          color: AppColors.borderOf(context),
+                          width: 0.5,
+                        ),
                       ),
                     ),
                     child: Row(
@@ -413,8 +434,9 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                             decoration: InputDecoration(
                               hintText: 'Type a message...',
                               hintStyle: GoogleFonts.inter(
-                                  color: AppColors.textSecondaryOf(context),
-                                  fontSize: AppTypography.bodyMedium),
+                                color: AppColors.textSecondaryOf(context),
+                                fontSize: AppTypography.bodyMedium,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(24),
                                 borderSide: BorderSide.none,
@@ -422,7 +444,9 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                               filled: true,
                               fillColor: AppColors.cardBgOf(context),
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
                             ),
                             textCapitalization: TextCapitalization.sentences,
                             onSubmitted: (_) => _sendMessage(),
@@ -435,8 +459,11 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.send,
-                                color: AppColors.white, size: 20),
+                            icon: const Icon(
+                              Icons.send,
+                              color: AppColors.white,
+                              size: 20,
+                            ),
                             onPressed: _sendMessage,
                           ),
                         ),

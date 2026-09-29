@@ -1,5 +1,6 @@
 import '../../core/firebase/firestore_service.dart';
 import '../../core/notifications/app_toast.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -112,7 +113,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
     } catch (_) {
       if (!mounted) return;
       _applyAmbulance(
-          AmbulanceStore.instance.findAmbulance(widget.ambulanceId));
+        AmbulanceStore.instance.findAmbulance(widget.ambulanceId),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -161,11 +163,15 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       return;
     }
 
-    final newPhone =
-        FormValidators.formatFullPhone(_phoneDialCode, _phoneCtrl.text.trim());
+    final newPhone = FormValidators.formatFullPhone(
+      _phoneDialCode,
+      _phoneCtrl.text.trim(),
+    );
     if (!ContactChangeVerification.mobilesEqual(newPhone, current.phone)) {
-      final phoneErr = FormValidators.phoneLocal(_phoneCtrl.text.trim(),
-          dialCode: _phoneDialCode);
+      final phoneErr = FormValidators.phoneLocal(
+        _phoneCtrl.text.trim(),
+        dialCode: _phoneDialCode,
+      );
       if (phoneErr != null) {
         AppToast.info(context, phoneErr);
         return;
@@ -182,7 +188,9 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       if (!mounted) return;
       if (!verified) {
         AppToast.info(
-            context, 'Verify your new mobile number with OTP before saving.');
+          context,
+          'Verify your new mobile number with OTP before saving.',
+        );
         return;
       }
     }
@@ -200,7 +208,9 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       ownerName: _ownerNameCtrl.text.trim(),
       driverName: _driverNameCtrl.text.trim(),
       phone: FormValidators.formatFullPhone(
-          _phoneDialCode, _phoneCtrl.text.trim()),
+        _phoneDialCode,
+        _phoneCtrl.text.trim(),
+      ),
       vehicleNumber: FormValidators.normalizeVehicleNumber(_vehicleCtrl.text),
       ambulanceType: _ambulanceType,
       city: _city!,
@@ -219,8 +229,9 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       pincode: _pincodeCtrl.text.trim(),
     );
 
-    final ok = await FirestoreService.instance.ambulance
-        .updateAmbulanceProfile(updated);
+    final ok = await FirestoreService.instance.ambulance.updateAmbulanceProfile(
+      updated,
+    );
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
 
@@ -261,255 +272,268 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
     final amb = _ambulance;
     final content = _loading
         ? const Center(
-            child: CircularProgressIndicator(color: Color(0xFFDC2626)))
+            child: CircularProgressIndicator(color: Color(0xFFDC2626)),
+          )
         : amb == null
-            ? Center(
-                child: Text(
-                  'Profile not found',
-                  style: GoogleFonts.inter(
-                      color: AppColors.textSecondaryOf(context)),
-                ),
-              )
-            : Builder(
-                builder: (context) {
-                  final live = AmbulanceStore.instance
-                          .findAmbulance(widget.ambulanceId) ??
-                      amb;
-                  return Form(
-                    key: _formKey,
-                    child: ListView(
-                      children: [
-                        if (widget.embedded) ...[
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Profile',
-                                      style: GoogleFonts.inter(
-                                          fontSize: AppTypography.headlineLarge,
-                                          fontWeight: FontWeight.w700),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Service details, availability & account',
-                                      style: GoogleFonts.inter(
-                                          fontSize: AppTypography.bodySmall,
-                                          color: AppColors.textSecondaryOf(
-                                              context)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (!_loading)
-                                TextButton(
-                                  onPressed: _saving
-                                      ? null
-                                      : () {
-                                          if (_editing) {
-                                            _applyAmbulance(live);
-                                          }
-                                          setState(() => _editing = !_editing);
-                                        },
-                                  child: Text(
-                                    _editing ? 'Cancel' : 'Edit',
-                                    style: GoogleFonts.inter(
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFFDC2626),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          AmbulanceAvailabilityToggle(
-                              ambulanceId: widget.ambulanceId),
-                          const SizedBox(height: 16),
-                        ],
-                        _ProfileHeaderCard(ambulance: live),
-                        const VerificationSubmissionCard(
-                            role: UserType.ambulance),
-                        const SizedBox(height: 16),
-                        if (_editing) ...[
-                          _buildEditForm(live),
-                          const SizedBox(height: 20),
-                          FilledButton(
-                            onPressed: _saving ? null : _saveProfile,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFDC2626),
-                              minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _saving
-                                ? SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: AppColors.surfaceOf(context),
-                                    ),
-                                  )
-                                : Text(
-                                    'Save Profile',
-                                    style: GoogleFonts.inter(
-                                        fontWeight: FontWeight.w700),
-                                  ),
-                          ),
-                        ] else ...[
-                          _ProfileSection(
-                            title: 'Service',
-                            children: [
-                              _InfoRow('Service name', live.serviceName),
-                              _InfoRow('Owner', live.ownerName),
-                              _InfoRow('Username', live.username),
-                            ],
-                          ),
-                          _ProfileSection(
-                            title: 'Driver & contact',
-                            children: [
-                              _InfoRow('Driver name', live.driverName),
-                              _InfoRow('Phone', live.phone),
-                            ],
-                          ),
-                          _ProfileSection(
-                            title: 'Vehicle',
-                            children: [
-                              _InfoRow('Vehicle number', live.vehicleNumber),
-                              _InfoRow(
-                                  'Ambulance type', live.ambulanceTypeLabel),
-                            ],
-                          ),
-                          _ProfileSection(
-                            title: 'Location',
-                            children: [
-                              _InfoRow('City', live.city),
-                              if (live.serviceAreas.isNotEmpty)
-                                _InfoRow('Service areas',
-                                    live.serviceAreas.join(', ')),
-                              _InfoRow('Address',
-                                  '${live.addressLine1}${live.addressLine2.isNotEmpty ? ', ${live.addressLine2}' : ''}\n${live.city}, ${live.state} - ${live.pincode}'),
-                            ],
-                          ),
-                          _ProfileSection(
-                            title: 'Licensing',
-                            children: [
-                              _InfoRow('License', live.licenseNumber),
-                              _InfoRow('Insurance', live.insuranceNumber),
-                            ],
-                          ),
-                          _ProfileSection(
-                            title: 'Operations',
-                            children: [
-                              _InfoRow(
-                                'Rate per km',
-                                live.ratePerKm != null
-                                    ? '₹${live.ratePerKm!.toStringAsFixed(0)}'
-                                    : '—',
-                              ),
-                              _InfoRow(
-                                'Equipment',
-                                [
-                                  if (live.hasOxygen) 'Oxygen',
-                                  if (live.hasVentilator) 'Ventilator',
-                                  if (live.hasStretcher) 'Stretcher',
-                                  if (live.is24x7) '24×7',
-                                ].join(' · ').ifEmpty('—'),
-                              ),
-                              _InfoRow('Status',
-                                  live.available ? 'Online' : 'Offline'),
-                            ],
-                          ),
-                          if (live.ratingCount > 0)
-                            _ProfileSection(
-                              title: 'Ratings',
+        ? Center(
+            child: Text(
+              'Profile not found',
+              style: GoogleFonts.inter(
+                color: AppColors.textSecondaryOf(context),
+              ),
+            ),
+          )
+        : Builder(
+            builder: (context) {
+              final live =
+                  AmbulanceStore.instance.findAmbulance(widget.ambulanceId) ??
+                  amb;
+              return Form(
+                key: _formKey,
+                child: ListView(
+                  children: [
+                    if (widget.embedded) ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _InfoRow(
-                                  'Average rating',
-                                  '${live.averageRating.toStringAsFixed(1)} / 5 (${live.ratingCount} reviews)',
+                                Text(
+                                  'Profile',
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.headlineLarge,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Service details, availability & account',
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.bodySmall,
+                                    color: AppColors.textSecondaryOf(context),
+                                  ),
                                 ),
                               ],
                             ),
-                          StreamBuilder<BannerConfigModel>(
-                            stream: BannerConfigService.streamConfig(),
-                            builder: (context, snapshot) {
-                              final config = snapshot.data;
-                              if (config != null && !config.enabled) {
-                                return const SizedBox.shrink();
-                              }
-
-                              return _ProfileSection(
-                                title: 'Advertising',
-                                children: [
-                                  ListTile(
-                                    leading: const Icon(Icons.campaign_rounded,
-                                        color: Color(0xFFDC2626)),
-                                    title: Text(
-                                      'Promote Banner Ad',
-                                      style: GoogleFonts.inter(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: AppTypography.bodyMedium),
-                                    ),
-                                    subtitle: Text(
-                                      'Advertise ambulance service on Patient Home',
-                                      style: GoogleFonts.inter(
-                                          fontSize: AppTypography.labelMedium,
-                                          color: Colors.grey),
-                                    ),
-                                    trailing: const Icon(Icons.chevron_right),
-                                    onTap: () {
-                                      const isVerified = true;
-                                      PromotedAdsManagementScreen.open(
-                                        context,
-                                        providerType: 'ambulance',
-                                        providerId: widget.ambulanceId,
-                                        providerEmail: '',
-                                        providerContact: live.phone,
-                                        isVerified: isVerified,
-                                      );
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
                           ),
-                          _AboutSection(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AboutScreen(
-                                    accentColor: Color(0xFFDC2626),
-                                    audience: LegalAudience.ambulance,
+                          if (!_loading)
+                            TextButton(
+                              onPressed: _saving
+                                  ? null
+                                  : () {
+                                      if (_editing) {
+                                        _applyAmbulance(live);
+                                      }
+                                      setState(() => _editing = !_editing);
+                                    },
+                              child: Text(
+                                _editing ? 'Cancel' : 'Edit',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFDC2626),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      AmbulanceAvailabilityToggle(
+                        ambulanceId: widget.ambulanceId,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    _ProfileHeaderCard(ambulance: live),
+                    const VerificationSubmissionCard(role: UserType.ambulance),
+                    const SizedBox(height: 16),
+                    if (_editing) ...[
+                      _buildEditForm(live),
+                      const SizedBox(height: 20),
+                      FilledButton(
+                        onPressed: _saving ? null : _saveProfile,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC2626),
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _saving
+                            ? SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: AppColors.surfaceOf(context),
+                                ),
+                              )
+                            : Text(
+                                'Save Profile',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ] else ...[
+                      _ProfileSection(
+                        title: 'Service',
+                        children: [
+                          _InfoRow('Service name', live.serviceName),
+                          _InfoRow('Owner', live.ownerName),
+                          _InfoRow('Username', live.username),
+                        ],
+                      ),
+                      _ProfileSection(
+                        title: 'Driver & contact',
+                        children: [
+                          _InfoRow('Driver name', live.driverName),
+                          _InfoRow('Phone', live.phone),
+                        ],
+                      ),
+                      _ProfileSection(
+                        title: 'Vehicle',
+                        children: [
+                          _InfoRow('Vehicle number', live.vehicleNumber),
+                          _InfoRow('Ambulance type', live.ambulanceTypeLabel),
+                        ],
+                      ),
+                      _ProfileSection(
+                        title: 'Location',
+                        children: [
+                          _InfoRow('City', live.city),
+                          if (live.serviceAreas.isNotEmpty)
+                            _InfoRow(
+                              'Service areas',
+                              live.serviceAreas.join(', '),
+                            ),
+                          _InfoRow(
+                            'Address',
+                            '${live.addressLine1}${live.addressLine2.isNotEmpty ? ', ${live.addressLine2}' : ''}\n${live.city}, ${live.state} - ${live.pincode}',
+                          ),
+                        ],
+                      ),
+                      _ProfileSection(
+                        title: 'Licensing',
+                        children: [
+                          _InfoRow('License', live.licenseNumber),
+                          _InfoRow('Insurance', live.insuranceNumber),
+                        ],
+                      ),
+                      _ProfileSection(
+                        title: 'Operations',
+                        children: [
+                          _InfoRow(
+                            'Rate per km',
+                            live.ratePerKm != null
+                                ? '₹${live.ratePerKm!.toStringAsFixed(0)}'
+                                : '—',
+                          ),
+                          _InfoRow(
+                            'Equipment',
+                            [
+                              if (live.hasOxygen) 'Oxygen',
+                              if (live.hasVentilator) 'Ventilator',
+                              if (live.hasStretcher) 'Stretcher',
+                              if (live.is24x7) '24×7',
+                            ].join(' · ').ifEmpty('—'),
+                          ),
+                          _InfoRow(
+                            'Status',
+                            live.available ? 'Online' : 'Offline',
+                          ),
+                        ],
+                      ),
+                      if (live.ratingCount > 0)
+                        _ProfileSection(
+                          title: 'Ratings',
+                          children: [
+                            _InfoRow(
+                              'Average rating',
+                              '${live.averageRating.toStringAsFixed(1)} / 5 (${live.ratingCount} reviews)',
+                            ),
+                          ],
+                        ),
+                      StreamBuilder<BannerConfigModel>(
+                        stream: BannerConfigService.streamConfig(),
+                        builder: (context, snapshot) {
+                          final config = snapshot.data;
+                          if (config != null && !config.enabled) {
+                            return const SizedBox.shrink();
+                          }
+
+                          return _ProfileSection(
+                            title: 'Advertising',
+                            children: [
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.campaign_rounded,
+                                  color: Color(0xFFDC2626),
+                                ),
+                                title: Text(
+                                  'Promote Banner Ad',
+                                  style: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: AppTypography.bodyMedium,
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                        ],
-                        if (widget.embedded && widget.onLogout != null) ...[
-                          const SizedBox(height: 20),
-                          OutlinedButton.icon(
-                            onPressed: widget.onLogout,
-                            icon: const Icon(Icons.logout, size: 18),
-                            label: const Text('Logout'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFDC2626),
-                              side: const BorderSide(color: Color(0xFFDC2626)),
-                              minimumSize: const Size(double.infinity, 48),
+                                subtitle: Text(
+                                  'Advertise ambulance service on Patient Home',
+                                  style: GoogleFonts.inter(
+                                    fontSize: AppTypography.labelMedium,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  const isVerified = true;
+                                  PromotedAdsManagementScreen.open(
+                                    context,
+                                    providerType: 'ambulance',
+                                    providerId: widget.ambulanceId,
+                                    providerEmail: '',
+                                    providerContact: live.phone,
+                                    isVerified: isVerified,
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      _AboutSection(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AboutScreen(
+                                accentColor: Color(0xFFDC2626),
+                                audience: LegalAudience.ambulance,
+                              ),
                             ),
-                          ),
-                        ],
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  );
-                },
+                          );
+                        },
+                      ),
+                    ],
+                    if (widget.embedded && widget.onLogout != null) ...[
+                      const SizedBox(height: 20),
+                      OutlinedButton.icon(
+                        onPressed: widget.onLogout,
+                        icon: const Icon(Icons.logout, size: 18),
+                        label: const Text('Logout'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFDC2626),
+                          side: const BorderSide(color: Color(0xFFDC2626)),
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
               );
+            },
+          );
 
     if (widget.embedded) {
       return AmbulancePageLayout(child: content);
@@ -521,8 +545,10 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
-        title: Text('My Profile',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text(
+          'My Profile',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         actions: [
           if (!_loading && amb != null)
             TextButton(
@@ -560,8 +586,11 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
         _ProfileSection(
           title: 'Edit service',
           children: [
-            _editField(_serviceNameCtrl, 'Service name',
-                Icons.local_hospital_outlined),
+            _editField(
+              _serviceNameCtrl,
+              'Service name',
+              Icons.local_hospital_outlined,
+            ),
             _editField(_ownerNameCtrl, 'Owner name', Icons.business_outlined),
           ],
         ),
@@ -596,7 +625,9 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
               child: DropdownButtonFormField<AmbulanceType>(
                 initialValue: _ambulanceType,
                 decoration: _inputDecoration(
-                    'Ambulance type', Icons.medical_services_outlined),
+                  'Ambulance type',
+                  Icons.medical_services_outlined,
+                ),
                 items: AmbulanceType.values
                     .map(
                       (t) => DropdownMenuItem(
@@ -676,8 +707,9 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
             Text(
               'Username: ${amb.username}',
               style: GoogleFonts.inter(
-                  fontSize: AppTypography.labelMedium,
-                  color: AppColors.textSecondaryOf(context)),
+                fontSize: AppTypography.labelMedium,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ],
         ),
@@ -703,7 +735,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
         inputFormatters: inputFormatters,
         maxLines: maxLines,
         textCapitalization: capitalization,
-        validator: validator ??
+        validator:
+            validator ??
             (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         decoration: _inputDecoration(label, icon),
       ),
@@ -713,8 +746,11 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      prefixIcon:
-          Icon(icon, size: 20, color: AppColors.textSecondaryOf(context)),
+      prefixIcon: Icon(
+        icon,
+        size: 20,
+        color: AppColors.textSecondaryOf(context),
+      ),
       filled: true,
       fillColor: AppColors.surfaceOf(context),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -730,11 +766,11 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
   }
 
   String _typeLabel(AmbulanceType type) => switch (type) {
-        AmbulanceType.bls => 'BLS (Basic)',
-        AmbulanceType.als => 'ALS (Advanced)',
-        AmbulanceType.icu => 'ICU',
-        AmbulanceType.patientTransport => 'Patient Transport',
-      };
+    AmbulanceType.bls => 'BLS (Basic)',
+    AmbulanceType.als => 'ALS (Advanced)',
+    AmbulanceType.icu => 'ICU',
+    AmbulanceType.patientTransport => 'Patient Transport',
+  };
 }
 
 extension on String {
@@ -768,8 +804,11 @@ class _ProfileHeaderCard extends StatelessWidget {
                 ),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(Icons.local_hospital,
-                  color: AppColors.surfaceOf(context), size: 32),
+              child: Icon(
+                Icons.local_hospital,
+                color: AppColors.surfaceOf(context),
+                size: 32,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -830,8 +869,11 @@ class _AboutSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              const Icon(Icons.info_outline,
-                  color: Color(0xFFDC2626), size: 22),
+              const Icon(
+                Icons.info_outline,
+                color: Color(0xFFDC2626),
+                size: 22,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -854,8 +896,10 @@ class _AboutSection extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right,
-                  color: AppColors.textSecondaryOf(context)),
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ],
           ),
         ),
@@ -967,32 +1011,40 @@ class _EquipmentToggles extends StatelessWidget {
       children: [
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Oxygen',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+          title: Text(
+            'Oxygen',
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+          ),
           value: hasOxygen,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onOxygen,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Ventilator',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+          title: Text(
+            'Ventilator',
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+          ),
           value: hasVentilator,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onVentilator,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Stretcher',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+          title: Text(
+            'Stretcher',
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+          ),
           value: hasStretcher,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: onStretcher,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('24×7 service',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium)),
+          title: Text(
+            '24×7 service',
+            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+          ),
           value: is24x7,
           activeThumbColor: const Color(0xFFDC2626),
           onChanged: on24x7,
@@ -1009,7 +1061,9 @@ class DigitsOnlyFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     final trimmed = maxLength != null && digits.length > maxLength!
         ? digits.substring(0, maxLength!)

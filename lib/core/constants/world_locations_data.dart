@@ -16,7 +16,7 @@ abstract final class WorldLocationsData {
         'Adelaide',
         'Mount Gambier',
         'Whyalla',
-        'Murray Bridge'
+        'Murray Bridge',
       ],
       'Tasmania': ['Hobart', 'Launceston', 'Devonport', 'Burnie'],
       'Australian Capital Territory': ['Canberra', 'Belconnen', 'Tuggeranong'],
@@ -61,19 +61,19 @@ abstract final class WorldLocationsData {
         'Paris',
         'Boulogne-Billancourt',
         'Saint-Denis',
-        'Versailles'
+        'Versailles',
       ],
       "Provence-Alpes-Cote d'Azur": [
         'Marseille',
         'Nice',
         'Toulon',
-        'Aix-en-Provence'
+        'Aix-en-Provence',
       ],
       'Auvergne-Rhone-Alpes': [
         'Lyon',
         'Grenoble',
         'Saint-Etienne',
-        'Clermont-Ferrand'
+        'Clermont-Ferrand',
       ],
       'Occitanie': ['Toulouse', 'Montpellier', 'Nimes', 'Perpignan'],
       'Nouvelle-Aquitaine': ['Bordeaux', 'Limoges', 'Poitiers', 'La Rochelle'],
@@ -86,7 +86,7 @@ abstract final class WorldLocationsData {
         'Stuttgart',
         'Mannheim',
         'Karlsruhe',
-        'Freiburg im Breisgau'
+        'Freiburg im Breisgau',
       ],
       'Hesse': ['Frankfurt', 'Wiesbaden', 'Darmstadt', 'Kassel'],
       'Lower Saxony': ['Hanover', 'Braunschweig', 'Osnabruck', 'Oldenburg'],
@@ -97,7 +97,7 @@ abstract final class WorldLocationsData {
         'Jakarta',
         'South Jakarta',
         'West Jakarta',
-        'East Jakarta'
+        'East Jakarta',
       ],
       'West Java': ['Bandung', 'Bekasi', 'Bogor', 'Depok'],
       'East Java': ['Surabaya', 'Malang', 'Sidoarjo', 'Kediri'],
@@ -137,7 +137,7 @@ abstract final class WorldLocationsData {
         'George Town',
         'Butterworth',
         'Bukit Mertajam',
-        'Nibong Tebal'
+        'Nibong Tebal',
       ],
       'Sabah': ['Kota Kinabalu', 'Sandakan', 'Tawau', 'Lahad Datu'],
       'Sarawak': ['Kuching', 'Miri', 'Sibu', 'Bintulu'],
@@ -164,7 +164,7 @@ abstract final class WorldLocationsData {
         'Butwal',
         'Siddharthanagar',
         'Nepalgunj',
-        'Tulsipur'
+        'Tulsipur',
       ],
       'Madhesh Province': ['Janakpur', 'Birgunj', 'Kalaiya', 'Rajbiraj'],
       'Karnali Province': ['Birendranagar', 'Jumla', 'Dailekh', 'Salyan'],
@@ -182,7 +182,7 @@ abstract final class WorldLocationsData {
         'Wellington',
         'Lower Hutt',
         'Porirua',
-        'Upper Hutt'
+        'Upper Hutt',
       ],
       'Canterbury Region': ['Christchurch', 'Timaru', 'Ashburton', 'Rangiora'],
       'Waikato Region': ['Hamilton', 'Tauranga', 'Cambridge', 'Te Awamutu'],
@@ -228,7 +228,7 @@ abstract final class WorldLocationsData {
         'Durban',
         'Pietermaritzburg',
         'Richards Bay',
-        'Newcastle'
+        'Newcastle',
       ],
       'Eastern Cape': ['Gqeberha', 'East London', 'Mthatha', 'Bhisho'],
       'Free State': ['Bloemfontein', 'Welkom', 'Bethlehem', 'Sasolburg'],
@@ -238,7 +238,7 @@ abstract final class WorldLocationsData {
         'Colombo',
         'Sri Jayawardenepura Kotte',
         'Negombo',
-        'Moratuwa'
+        'Moratuwa',
       ],
       'Central Province': ['Kandy', 'Nuwara Eliya', 'Matale', 'Gampola'],
       'Southern Province': ['Galle', 'Matara', 'Hambantota', 'Tangalle'],
@@ -247,7 +247,7 @@ abstract final class WorldLocationsData {
         'Kurunegala',
         'Puttalam',
         'Chilaw',
-        'Kuliyapitiya'
+        'Kuliyapitiya',
       ],
     },
     'Switzerland': {
@@ -263,20 +263,20 @@ abstract final class WorldLocationsData {
         'Chiang Mai',
         'Fang',
         'San Kamphaeng',
-        'Chom Thong'
+        'Chom Thong',
       ],
       'Chon Buri Province': [
         'Pattaya',
         'Si Racha',
         'Chon Buri',
-        'Laem Chabang'
+        'Laem Chabang',
       ],
       'Phuket Province': ['Phuket', 'Patong', 'Karon', 'Rawai'],
       'Nakhon Ratchasima Province': [
         'Nakhon Ratchasima',
         'Pak Chong',
         'Sikhio',
-        'Non Sung'
+        'Non Sung',
       ],
       'Khon Kaen Province': ['Khon Kaen', 'Chum Phae', 'Phon', 'Nam Phong'],
     },

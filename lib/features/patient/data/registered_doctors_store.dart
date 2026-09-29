@@ -1,4 +1,5 @@
 import '../../../core/firebase/firestore_service.dart';
+
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -65,29 +66,30 @@ class RegisteredDoctorsStore extends ChangeNotifier {
     _streamSub = FirestoreService.instance.doctorDirectory
         .streamAllDoctors(verifiedOnly: true)
         .listen(
-      (doctors) {
-        if (doctors.isNotEmpty) {
-          _registered
-            ..clear()
-            ..addAll(doctors);
-          notifyListeners();
-        } else if (_registered.isEmpty) {
-          notifyListeners();
-        }
-      },
-      onError: (e) {
-        if (kDebugMode) debugPrint('[RegisteredDoctorsStore] stream error: $e');
-        _streamActive = false;
-        _streamSub?.cancel();
-        _streamSub = null;
-        // Rules/auth failures will not recover by retrying every 3s.
-        if (e is FirebaseException && e.code == 'permission-denied') {
-          _permissionDenied = true;
-          return;
-        }
-        Future.delayed(const Duration(seconds: 3), startListening);
-      },
-    );
+          (doctors) {
+            if (doctors.isNotEmpty) {
+              _registered
+                ..clear()
+                ..addAll(doctors);
+              notifyListeners();
+            } else if (_registered.isEmpty) {
+              notifyListeners();
+            }
+          },
+          onError: (e) {
+            if (kDebugMode)
+              debugPrint('[RegisteredDoctorsStore] stream error: $e');
+            _streamActive = false;
+            _streamSub?.cancel();
+            _streamSub = null;
+            // Rules/auth failures will not recover by retrying every 3s.
+            if (e is FirebaseException && e.code == 'permission-denied') {
+              _permissionDenied = true;
+              return;
+            }
+            Future.delayed(const Duration(seconds: 3), startListening);
+          },
+        );
   }
 
   @visibleForTesting

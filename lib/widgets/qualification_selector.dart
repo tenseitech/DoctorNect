@@ -26,28 +26,29 @@ class QualificationSelector extends FormField<String> {
     bool registrationStyle = false,
     FormFieldValidator<String>? validator,
   }) : super(
-          initialValue: _initialFieldValue(initialValue),
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          validator: validator ??
-              (isRequired
-                  ? (value) {
-                      final trimmed = value?.trim() ?? '';
-                      if (trimmed.isEmpty) return '$label is required';
-                      return null;
-                    }
-                  : null),
-          builder: (state) => _QualificationSelectorBody(
-            state: state,
-            onChanged: onChanged,
-            label: label,
-            prefixIcon: prefixIcon,
-            accentColor: accentColor,
-            isRequired: isRequired,
-            decorationBuilder: decorationBuilder,
-            registrationStyle: registrationStyle,
-            initialCustomValue: _initialCustomValue(initialValue),
-          ),
-        );
+         initialValue: _initialFieldValue(initialValue),
+         autovalidateMode: AutovalidateMode.onUserInteraction,
+         validator:
+             validator ??
+             (isRequired
+                 ? (value) {
+                     final trimmed = value?.trim() ?? '';
+                     if (trimmed.isEmpty) return '$label is required';
+                     return null;
+                   }
+                 : null),
+         builder: (state) => _QualificationSelectorBody(
+           state: state,
+           onChanged: onChanged,
+           label: label,
+           prefixIcon: prefixIcon,
+           accentColor: accentColor,
+           isRequired: isRequired,
+           decorationBuilder: decorationBuilder,
+           registrationStyle: registrationStyle,
+           initialCustomValue: _initialCustomValue(initialValue),
+         ),
+       );
 
   static String? _initialFieldValue(String? value) {
     final trimmed = value?.trim() ?? '';
@@ -154,7 +155,9 @@ class _QualificationSelectorBodyState
         : (widget.isRequired ? '${widget.label} *' : widget.label);
     final textStyle = widget.registrationStyle
         ? GoogleFonts.inter(
-            fontSize: AppTypography.bodyMedium, fontWeight: FontWeight.w600)
+            fontSize: AppTypography.bodyMedium,
+            fontWeight: FontWeight.w600,
+          )
         : null;
 
     return Column(
@@ -169,17 +172,19 @@ class _QualificationSelectorBodyState
           style: textStyle,
           decoration: _decorate(label: label, errorText: errorText),
           items: AppConstants.doctorQualifications
-              .map((q) => DropdownMenuItem(
-                    value: q,
-                    child: Text(
-                      q,
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodyMedium,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
+              .map(
+                (q) => DropdownMenuItem(
+                  value: q,
+                  child: Text(
+                    q,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodyMedium,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
-                  ))
+                  ),
+                ),
+              )
               .toList(),
           onChanged: _onDropdownChanged,
         ),

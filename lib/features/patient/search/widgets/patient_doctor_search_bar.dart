@@ -136,8 +136,10 @@ class _PatientDoctorSearchBarState extends State<PatientDoctorSearchBar> {
                             .withValues(alpha: 0.75),
                       ),
                       padding: EdgeInsets.zero,
-                      constraints:
-                          const BoxConstraints(minWidth: 36, minHeight: 36),
+                      constraints: const BoxConstraints(
+                        minWidth: 36,
+                        minHeight: 36,
+                      ),
                       tooltip: 'Clear',
                     );
                   },
@@ -238,8 +240,10 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                 if (hasActive) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.patientTeal,
                       borderRadius: BorderRadius.circular(999),

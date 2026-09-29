@@ -1,4 +1,5 @@
 import '../../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,13 +28,15 @@ class _ConsultationSettingsSectionState
   final _formKey = GlobalKey<FormState>();
 
   late final _duration = TextEditingController(text: '${_p.avgDurationMins}');
-  late final _maxPatients =
-      TextEditingController(text: '${_p.maxPatientsPerDay}');
+  late final _maxPatients = TextEditingController(
+    text: '${_p.maxPatientsPerDay}',
+  );
   late int _advanceDays = _p.advanceBookingDays;
   late bool _autoAccept = _p.autoAcceptAppointments;
   late bool _apptReminders = _p.appointmentReminders;
-  late final _remindHours =
-      TextEditingController(text: '${_p.remindHoursBefore}');
+  late final _remindHours = TextEditingController(
+    text: '${_p.remindHoursBefore}',
+  );
   bool _dirty = false;
 
   DoctorProfileData get _p => DoctorProfileStore.instance.profile;
@@ -58,8 +61,10 @@ class _ConsultationSettingsSectionState
       await DoctorProfileStore.instance.persist(DoctorSession.loggedInDoctorId);
     } catch (_) {
       if (!mounted) return; // FIXED: mounted check after await
-      AppToast.info(context,
-          'Could not save changes. Please check your connection and try again.');
+      AppToast.info(
+        context,
+        'Could not save changes. Please check your connection and try again.',
+      );
       return;
     }
     if (!mounted) return; // FIXED: mounted check after await
@@ -85,14 +90,17 @@ class _ConsultationSettingsSectionState
             child: Align(
               alignment: Alignment.topCenter,
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 24,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Card(
                     elevation: 2,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(24),
                       child: Form(
@@ -108,7 +116,8 @@ class _ConsultationSettingsSectionState
                                     ? 'New patient requests are confirmed instantly.'
                                     : 'You review each request and tap Accept or Decline.',
                                 style: GoogleFonts.inter(
-                                    fontSize: AppTypography.bodySmall),
+                                  fontSize: AppTypography.bodySmall,
+                                ),
                               ),
                               value: _autoAccept,
                               onChanged: (v) {
@@ -144,12 +153,15 @@ class _ConsultationSettingsSectionState
                                 LengthLimitingTextInputFormatter(3),
                               ],
                               decoration: const InputDecoration(
-                                  labelText: 'Max patients per day'),
+                                labelText: 'Max patients per day',
+                              ),
                               onChanged: (_) => _markDirty(),
                             ),
                             const SizedBox(height: 16),
-                            Text('Advance booking allowed',
-                                style: Theme.of(context).textTheme.titleSmall),
+                            Text(
+                              'Advance booking allowed',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
                             const SizedBox(height: 8),
                             Wrap(
                               spacing: 8,
@@ -169,9 +181,10 @@ class _ConsultationSettingsSectionState
                             const SizedBox(height: 12),
                             Align(
                               alignment: Alignment.centerLeft,
-                              child: Text('Appointment Reminders',
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium),
+                              child: Text(
+                                'Appointment Reminders',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             SwitchListTile(
@@ -182,11 +195,13 @@ class _ConsultationSettingsSectionState
                                     ? 'Patients receive automated reminder alerts before their appointment.'
                                     : 'No reminders will be sent.',
                                 style: GoogleFonts.inter(
-                                    fontSize: AppTypography.bodySmall),
+                                  fontSize: AppTypography.bodySmall,
+                                ),
                               ),
                               value: _apptReminders,
-                              activeTrackColor:
-                                  AppColors.doctorBlue.withValues(alpha: 0.5),
+                              activeTrackColor: AppColors.doctorBlue.withValues(
+                                alpha: 0.5,
+                              ),
                               activeThumbColor: AppColors.doctorBlue,
                               onChanged: (v) {
                                 setState(() => _apptReminders = v);

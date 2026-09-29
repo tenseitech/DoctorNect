@@ -67,7 +67,8 @@ class _PatientBookingConfirmedBaseState
 
   @override
   Widget build(BuildContext context) {
-    final iconData = widget.headerIcon ??
+    final iconData =
+        widget.headerIcon ??
         (widget.isPending ? Icons.schedule_send_outlined : Icons.check);
 
     final content = Column(
@@ -82,8 +83,9 @@ class _PatientBookingConfirmedBaseState
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: widget.primaryAccent
-                    .withValues(alpha: widget.centerCard ? 0.12 : 1.0),
+                color: widget.primaryAccent.withValues(
+                  alpha: widget.centerCard ? 0.12 : 1.0,
+                ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -100,8 +102,9 @@ class _PatientBookingConfirmedBaseState
         Text(
           widget.title,
           style: GoogleFonts.inter(
-              fontSize: AppTypography.headlineLarge,
-              fontWeight: FontWeight.w700),
+            fontSize: AppTypography.headlineLarge,
+            fontWeight: FontWeight.w700,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 6),
@@ -116,9 +119,10 @@ class _PatientBookingConfirmedBaseState
             widget.subMessage!,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodySmall,
-                color: AppColors.textSecondaryOf(context),
-                height: 1.45),
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textSecondaryOf(context),
+              height: 1.45,
+            ),
           ),
         ],
         const SizedBox(height: 20),
@@ -144,8 +148,9 @@ class _PatientBookingConfirmedBaseState
             backgroundColor: widget.primaryAccent,
             foregroundColor: AppColors.white,
             minimumSize: const Size(double.infinity, 48),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           child: Text(
             widget.primaryActionLabel,
@@ -160,8 +165,9 @@ class _PatientBookingConfirmedBaseState
             child: Text(
               widget.secondaryActionLabel!,
               style: GoogleFonts.inter(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondaryOf(context)),
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondaryOf(context),
+              ),
             ),
           ),
         ],
@@ -183,10 +189,7 @@ class _PatientBookingConfirmedBaseState
     return Scaffold(
       backgroundColor: AppColors.surfaceOf(context),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: content,
-        ),
+        child: Padding(padding: const EdgeInsets.all(24), child: content),
       ),
     );
   }

@@ -6,7 +6,9 @@ import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/patient_favorites_store.dart';
 import '../../data/registered_doctors_store.dart';
+
 import 'package:medibond/features/patient/models/patient_models.dart';
+
 import '../../widgets/patient_favorites_sheets.dart';
 import 'home_doctor_tile.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -42,12 +44,16 @@ class MyDoctorSection extends StatelessWidget {
         final subtitle = doctors.isEmpty
             ? 'Doctors you have added'
             : doctors.length == 1
-                ? '1 doctor in your list'
-                : '${doctors.length} doctors in your list';
+            ? '1 doctor in your list'
+            : '${doctors.length} doctors in your list';
 
         return Padding(
-          padding:
-              EdgeInsets.fromLTRB(16, compact ? 12 : 20, 16, compact ? 12 : 20),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            compact ? 12 : 20,
+            16,
+            compact ? 12 : 20,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -86,8 +92,7 @@ class MyDoctorSection extends StatelessWidget {
               if (doctors.isEmpty)
                 HomeDoctorInlineMessage(
                   icon: Icons.person_add_outlined,
-                  text:
-                      'You haven’t added any doctors yet — add one to get started.',
+                  text: 'You haven’t added any doctors yet — add one to get started.',
                   action: _buildAddButton(),
                 )
               else
@@ -137,8 +142,10 @@ class MyDoctorSection extends StatelessWidget {
   }
 
   Future<void> _confirmRemoveDoctor(BuildContext context, MyDoc doctor) async {
-    final confirmed =
-        await PatientFavoritesSheets.confirmRemoveDoctor(context, doctor);
+    final confirmed = await PatientFavoritesSheets.confirmRemoveDoctor(
+      context,
+      doctor,
+    );
     if (!confirmed || !context.mounted) return;
     await PatientFavoritesStore.instance.removeDoctor(doctor.id);
   }

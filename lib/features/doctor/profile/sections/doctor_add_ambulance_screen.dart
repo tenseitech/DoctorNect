@@ -67,8 +67,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
     if (!FirebaseBootstrap.isReady) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('Firebase is not connected. Check internet and try again.'),
+          content: Text(
+            'Firebase is not connected. Check internet and try again.',
+          ),
         ),
       );
       return;
@@ -141,8 +142,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
           constraints: const BoxConstraints(maxWidth: 540),
           child: Card(
             margin: const EdgeInsets.all(16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Form(
               key: _formKey,
               child: ListView(
@@ -166,7 +168,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                   ),
                   const SizedBox(height: 20),
                   const AmbulanceFormSectionTitle(
-                      title: 'Service Information', icon: Icons.business),
+                    title: 'Service Information',
+                    icon: Icons.business,
+                  ),
                   const SizedBox(height: 10),
                   AmbulanceFormField(
                     controller: _serviceNameCtrl,
@@ -182,7 +186,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                   ),
                   const SizedBox(height: 20),
                   const AmbulanceFormSectionTitle(
-                      title: 'Driver Details', icon: Icons.badge_outlined),
+                    title: 'Driver Details',
+                    icon: Icons.badge_outlined,
+                  ),
                   const SizedBox(height: 10),
                   AmbulanceFormField(
                     controller: _driverNameCtrl,
@@ -200,26 +206,33 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                         FormValidators.phoneLocal(v, dialCode: _phoneDialCode),
                     decoration: RequiredFieldLabels.decorate(
                       InputDecoration(
-                        prefixIcon: Icon(Icons.phone_outlined,
-                            size: 20,
-                            color: AppColors.textSecondaryOf(context)),
+                        prefixIcon: Icon(
+                          Icons.phone_outlined,
+                          size: 20,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
                         filled: true,
                         fillColor: AppColors.surfaceOf(context),
                         border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(12))),
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
-                          borderSide:
-                              BorderSide(color: AppColors.borderOf(context)),
+                          borderSide: BorderSide(
+                            color: AppColors.borderOf(context),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.all(Radius.circular(12)),
-                          borderSide:
-                              BorderSide(color: Color(0xFFDC2626), width: 1.5),
+                          borderSide: BorderSide(
+                            color: Color(0xFFDC2626),
+                            width: 1.5,
+                          ),
                         ),
-                        contentPadding:
-                            EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
                       ),
                       'Driver Phone',
                       isRequired: true,
@@ -227,8 +240,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                   ),
                   const SizedBox(height: 20),
                   const AmbulanceFormSectionTitle(
-                      title: 'Vehicle Information',
-                      icon: Icons.local_shipping_outlined),
+                    title: 'Vehicle Information',
+                    icon: Icons.local_shipping_outlined,
+                  ),
                   const SizedBox(height: 10),
                   AmbulanceFormField(
                     controller: _vehicleNumberCtrl,
@@ -246,7 +260,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                   ),
                   const SizedBox(height: 20),
                   const AmbulanceFormSectionTitle(
-                      title: 'Service Area', icon: Icons.location_on_outlined),
+                    title: 'Service Area',
+                    icon: Icons.location_on_outlined,
+                  ),
                   const SizedBox(height: 10),
                   AmbulanceFormField(
                     controller: _cityCtrl,
@@ -271,8 +287,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                   ),
                   const SizedBox(height: 20),
                   const AmbulanceFormSectionTitle(
-                      title: 'Licensing & Insurance',
-                      icon: Icons.verified_outlined),
+                    title: 'Licensing & Insurance',
+                    icon: Icons.verified_outlined,
+                  ),
                   const SizedBox(height: 10),
                   AmbulanceFormField(
                     controller: _licenseCtrl,
@@ -289,8 +306,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                   ),
                   const SizedBox(height: 20),
                   const AmbulanceFormSectionTitle(
-                      title: 'Equipment & Features',
-                      icon: Icons.medical_services_outlined),
+                    title: 'Equipment & Features',
+                    icon: Icons.medical_services_outlined,
+                  ),
                   const SizedBox(height: 8),
                   AmbulanceFormToggleRow(
                     label: 'Has Oxygen Supply',
@@ -314,7 +332,9 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                   ),
                   const SizedBox(height: 20),
                   const AmbulanceFormSectionTitle(
-                      title: 'Pricing', icon: Icons.currency_rupee),
+                    title: 'Pricing',
+                    icon: Icons.currency_rupee,
+                  ),
                   const SizedBox(height: 10),
                   AmbulanceFormField(
                     controller: _rateCtrl,
@@ -322,7 +342,7 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                     icon: Icons.currency_rupee,
                     keyboard: TextInputType.number,
                     formatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))
+                      FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
                     ],
                   ),
                   const SizedBox(height: 28),
@@ -332,21 +352,24 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                       backgroundColor: const Color(0xFFDC2626),
                       minimumSize: Size(double.infinity, 52),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     child: _submitting
                         ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: AppColors.surfaceOf(context)),
+                              strokeWidth: 2.5,
+                              color: AppColors.surfaceOf(context),
+                            ),
                           )
                         : Text(
                             'Create Invite Link',
                             style: GoogleFonts.inter(
-                                fontSize: AppTypography.headlineSmall,
-                                fontWeight: FontWeight.w700),
+                              fontSize: AppTypography.headlineSmall,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                   ),
                 ],

@@ -38,8 +38,9 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
   ];
 
   static const _kVirtualBase = 10000; // start mid-way so left swipe works too
-  final PageController _pageController =
-      PageController(initialPage: _kVirtualBase);
+  final PageController _pageController = PageController(
+    initialPage: _kVirtualBase,
+  );
   int _currentPage = _kVirtualBase;
   Timer? _autoTimer;
   int _entryCount = 4; // updated each build
@@ -84,20 +85,45 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
 
   static List<FeaturedDoctorEntry> _demoEntries() {
     final demos = [
-      _makeDemoDoctor('Dr. Aryan Mehta', 'Cardiologist', 'Heart Care Clinic',
-          'Mumbai', FeaturedDoctorPeriod.day),
-      _makeDemoDoctor('Dr. Priya Sharma', 'Dermatologist', 'Skin & Glow Clinic',
-          'Delhi', FeaturedDoctorPeriod.week),
-      _makeDemoDoctor('Dr. Rohit Verma', 'Orthopedic', 'Bone & Joint Centre',
-          'Pune', FeaturedDoctorPeriod.month),
-      _makeDemoDoctor('Dr. Sneha Rao', 'Gynecologist', 'Wellness Hospital',
-          'Bangalore', FeaturedDoctorPeriod.year),
+      _makeDemoDoctor(
+        'Dr. Aryan Mehta',
+        'Cardiologist',
+        'Heart Care Clinic',
+        'Mumbai',
+        FeaturedDoctorPeriod.day,
+      ),
+      _makeDemoDoctor(
+        'Dr. Priya Sharma',
+        'Dermatologist',
+        'Skin & Glow Clinic',
+        'Delhi',
+        FeaturedDoctorPeriod.week,
+      ),
+      _makeDemoDoctor(
+        'Dr. Rohit Verma',
+        'Orthopedic',
+        'Bone & Joint Centre',
+        'Pune',
+        FeaturedDoctorPeriod.month,
+      ),
+      _makeDemoDoctor(
+        'Dr. Sneha Rao',
+        'Gynecologist',
+        'Wellness Hospital',
+        'Bangalore',
+        FeaturedDoctorPeriod.year,
+      ),
     ];
     return demos;
   }
 
-  static FeaturedDoctorEntry _makeDemoDoctor(String name, String spec,
-      String clinic, String city, FeaturedDoctorPeriod period) {
+  static FeaturedDoctorEntry _makeDemoDoctor(
+    String name,
+    String spec,
+    String clinic,
+    String city,
+    FeaturedDoctorPeriod period,
+  ) {
     return FeaturedDoctorEntry(
       period: period,
       doctor: DoctorListing(
@@ -144,8 +170,9 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
         Text(
           'Featured Doctors',
           style: GoogleFonts.inter(
-              fontSize: AppTypography.headlineSmall,
-              fontWeight: FontWeight.w600),
+            fontSize: AppTypography.headlineSmall,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -169,8 +196,9 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                   borderRadius: BorderRadius.circular(AppConstants.cardRadius),
                   child: InkWell(
                     onTap: () => _openProfile(doctor),
-                    borderRadius:
-                        BorderRadius.circular(AppConstants.cardRadius),
+                    borderRadius: BorderRadius.circular(
+                      AppConstants.cardRadius,
+                    ),
                     child: Padding(
                       padding: EdgeInsets.all(isCompact ? 12 : 14),
                       child: Row(
@@ -191,10 +219,13 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color:
-                                        AppColors.white.withValues(alpha: 0.2),
+                                    color: AppColors.white.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -231,33 +262,43 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                 if (clinic.isNotEmpty) ...[
                                   const SizedBox(height: 2),
                                   _InfoRow(
-                                      icon: Icons.local_hospital_outlined,
-                                      text: clinic),
+                                    icon: Icons.local_hospital_outlined,
+                                    text: clinic,
+                                  ),
                                 ],
                                 if (address.isNotEmpty)
                                   _InfoRow(
-                                      icon: Icons.location_on_outlined,
-                                      text: address),
+                                    icon: Icons.location_on_outlined,
+                                    text: address,
+                                  ),
                                 if (state.isNotEmpty)
                                   _InfoRow(
-                                      icon: Icons.map_outlined, text: state),
+                                    icon: Icons.map_outlined,
+                                    text: state,
+                                  ),
                                 const SizedBox(height: 2),
-                                Row(children: [
-                                  const Icon(Icons.star,
-                                      size: 13, color: Color(0xFFFDE047)),
-                                  Flexible(
-                                    child: Text(
-                                      ' ${doctor.rating} · ${entry.subtitle}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: GoogleFonts.inter(
-                                        fontSize: AppTypography.labelSmall,
-                                        color:
-                                            Colors.white.withValues(alpha: 0.9),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.star,
+                                      size: 13,
+                                      color: Color(0xFFFDE047),
+                                    ),
+                                    Flexible(
+                                      child: Text(
+                                        ' ${doctor.rating} · ${entry.subtitle}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          fontSize: AppTypography.labelSmall,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.9,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ]),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
@@ -272,17 +313,24 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => BookingFlowScreen(
-                                          doctorId: doctor.id),
+                                        doctorId: doctor.id,
+                                      ),
                                     ),
                                   ),
-                                  icon: const Icon(Icons.calendar_month,
-                                      color: Colors.white, size: 18),
+                                  icon: const Icon(
+                                    Icons.calendar_month,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                   tooltip: 'Book',
                                   constraints: const BoxConstraints(
-                                      minWidth: 36, minHeight: 36),
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
                                   style: IconButton.styleFrom(
-                                    backgroundColor:
-                                        AppColors.white.withValues(alpha: 0.22),
+                                    backgroundColor: AppColors.white.withValues(
+                                      alpha: 0.22,
+                                    ),
                                     padding: EdgeInsets.zero,
                                   ),
                                 ),
@@ -297,8 +345,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color:
-                                          Colors.white.withValues(alpha: 0.3)),
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -312,8 +360,11 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                       ),
                                     ),
                                     const SizedBox(width: 3),
-                                    const Icon(Icons.arrow_forward_rounded,
-                                        size: 12, color: Colors.white),
+                                    const Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 12,
+                                      color: Colors.white,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -343,8 +394,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                 decoration: BoxDecoration(
                   color: active
                       ? (_isPatient
-                          ? AppColors.patientTeal
-                          : AppColors.doctorBlue)
+                            ? AppColors.patientTeal
+                            : AppColors.doctorBlue)
                       : Colors.grey[300],
                   borderRadius: BorderRadius.circular(3),
                 ),
@@ -445,8 +496,10 @@ class _FeaturedDoctorPhoto extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.35), width: 2),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.35),
+          width: 2,
+        ),
         color: Colors.white.withValues(alpha: 0.15),
       ),
       clipBehavior: Clip.antiAlias,

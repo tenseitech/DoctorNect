@@ -15,8 +15,10 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
-      appBar: PatientProfileFormStyles.profileAppBar('Ticket History',
-          context: context),
+      appBar: PatientProfileFormStyles.profileAppBar(
+        'Ticket History',
+        context: context,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('support_tickets')
@@ -151,7 +153,9 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                              color: AppColors.borderOf(context), width: 0.5),
+                            color: AppColors.borderOf(context),
+                            width: 0.5,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,10 +165,13 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.patientTeal
-                                        .withValues(alpha: 0.1),
+                                    color: AppColors.patientTeal.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -178,7 +185,9 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: statusBg,
                                     borderRadius: BorderRadius.circular(6),
@@ -207,10 +216,11 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                               SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Icon(Icons.attach_file,
-                                      size: 14,
-                                      color:
-                                          AppColors.textSecondaryOf(context)),
+                                  Icon(
+                                    Icons.attach_file,
+                                    size: 14,
+                                    color: AppColors.textSecondaryOf(context),
+                                  ),
                                   const SizedBox(width: 4),
                                   Expanded(
                                     child: Text(
@@ -219,8 +229,9 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
                                         fontSize: AppTypography.labelMedium,
-                                        color:
-                                            AppColors.textSecondaryOf(context),
+                                        color: AppColors.textSecondaryOf(
+                                          context,
+                                        ),
                                         fontStyle: FontStyle.italic,
                                       ),
                                     ),
@@ -230,7 +241,9 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                             ],
                             SizedBox(height: 12),
                             Divider(
-                                height: 1, color: AppColors.borderOf(context)),
+                              height: 1,
+                              color: AppColors.borderOf(context),
+                            ),
                             const SizedBox(height: 8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,

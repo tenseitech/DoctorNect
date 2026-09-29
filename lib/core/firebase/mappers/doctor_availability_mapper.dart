@@ -4,7 +4,9 @@ import '../models/doctor_availability.dart';
 
 abstract final class DoctorScheduleAvailabilityMapper {
   static Map<String, dynamic> toMap(
-      String doctorId, DoctorScheduleAvailability schedule) {
+    String doctorId,
+    DoctorScheduleAvailability schedule,
+  ) {
     return {
       'doctorId': doctorId,
       'workingDays': schedule.workingDays,
@@ -41,9 +43,10 @@ abstract final class DoctorScheduleAvailabilityMapper {
       }
 
       return DoctorScheduleAvailability(
-        workingDays: (data['workingDays'] as List<dynamic>? ??
-                const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
-            .cast<String>(),
+        workingDays:
+            (data['workingDays'] as List<dynamic>? ??
+                    const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
+                .cast<String>(),
         morningStart: data['morningStart'] as String? ?? '09:00 AM',
         morningEnd: data['morningEnd'] as String? ?? '01:00 PM',
         eveningEnabled: data['eveningEnabled'] as bool? ?? true,

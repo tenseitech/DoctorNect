@@ -1,4 +1,5 @@
 import '../../../core/notifications/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -106,8 +107,9 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
                 ? 'Edit your review'
                 : 'Rate Dr. ${widget.doctorName}',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.headlineMedium,
-                fontWeight: FontWeight.w700),
+              fontSize: AppTypography.headlineMedium,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -115,8 +117,9 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
                 ? 'You can edit this review within 48 hours of posting.'
                 : 'How was your visit?',
             style: GoogleFonts.inter(
-                fontSize: AppTypography.bodyMedium,
-                color: AppColors.textSecondaryOf(context)),
+              fontSize: AppTypography.bodyMedium,
+              color: AppColors.textSecondaryOf(context),
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -146,8 +149,9 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText: 'Share your experience (optional)',
-              hintStyle:
-                  GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+              hintStyle: GoogleFonts.inter(
+                color: AppColors.textSecondaryOf(context),
+              ),
               border: const OutlineInputBorder(),
               alignLabelWithHint: true,
             ),
@@ -165,7 +169,9 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
                     height: 22,
                     width: 22,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.white),
+                      strokeWidth: 2,
+                      color: AppColors.white,
+                    ),
                   )
                 : Text(widget.isEdit ? 'Save changes' : 'Submit'),
           ),

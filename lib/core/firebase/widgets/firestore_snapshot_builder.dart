@@ -25,8 +25,10 @@ class FirestoreSnapshotBuilder extends StatefulWidget {
   final bool realtime;
   final bool preferCache;
   final Widget Function(
-          BuildContext context, QuerySnapshot<Map<String, dynamic>> snapshot)
-      builder;
+    BuildContext context,
+    QuerySnapshot<Map<String, dynamic>> snapshot,
+  )
+  builder;
   final Widget Function(BuildContext context)? loading;
   final Widget Function(BuildContext context, Object error)? error;
 

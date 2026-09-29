@@ -16,10 +16,8 @@ import 'ambulance_auth_helper.dart';
 abstract final class AmbulanceCallableClient {
   static const _region = 'asia-south1';
 
-  static FirebaseFunctions get _functions => FirebaseFunctions.instanceFor(
-        app: Firebase.app(),
-        region: _region,
-      );
+  static FirebaseFunctions get _functions =>
+      FirebaseFunctions.instanceFor(app: Firebase.app(), region: _region);
 
   /// Username/password verify — web uses CORS-enabled HTTP with explicit Bearer token.
   static Future<Map<String, dynamic>> verifyDriverLogin(
@@ -40,8 +38,9 @@ abstract final class AmbulanceCallableClient {
       await _prepareAuth();
     }
 
-    final result =
-        await _functions.httpsCallable(name).call<Map<String, dynamic>>(data);
+    final result = await _functions
+        .httpsCallable(name)
+        .call<Map<String, dynamic>>(data);
     return Map<String, dynamic>.from(result.data);
   }
 

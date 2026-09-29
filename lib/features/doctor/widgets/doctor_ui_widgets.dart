@@ -218,13 +218,14 @@ class SharedSlotBadge extends StatelessWidget {
     if (reason == null || reason.isEmpty) return const SizedBox.shrink();
 
     final isEmergency = reason.toLowerCase() == 'emergency';
-    final color =
-        isEmergency ? const Color(0xFFDC2626) : const Color(0xFFEA580C);
+    final color = isEmergency
+        ? const Color(0xFFDC2626)
+        : const Color(0xFFEA580C);
     final label = isEmergency
         ? (compact ? 'Emergency' : 'Emergency slot')
         : (compact && reason.length > 18
-            ? '${reason.substring(0, 16)}…'
-            : reason);
+              ? '${reason.substring(0, 16)}…'
+              : reason);
 
     return StatusBadge(
       label: label,
@@ -235,11 +236,7 @@ class SharedSlotBadge extends StatelessWidget {
 }
 
 class PatientAvatar extends StatelessWidget {
-  const PatientAvatar({
-    super.key,
-    required this.name,
-    required this.gender,
-  });
+  const PatientAvatar({super.key, required this.name, required this.gender});
 
   final String name;
   final String gender;
@@ -256,10 +253,7 @@ class PatientAvatar extends StatelessWidget {
       backgroundColor: color.withValues(alpha: 0.15),
       child: Text(
         initial,
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
+        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: color),
       ),
     );
   }

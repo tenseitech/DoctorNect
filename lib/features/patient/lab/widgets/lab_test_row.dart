@@ -20,17 +20,17 @@ class LabTestRow extends StatelessWidget {
   static ({IconData icon, Color color}) _sampleStyle(SampleType type) {
     return switch (type) {
       SampleType.blood => (
-          icon: Icons.bloodtype_outlined,
-          color: const Color(0xFFDC2626),
-        ),
+        icon: Icons.bloodtype_outlined,
+        color: const Color(0xFFDC2626),
+      ),
       SampleType.urine => (
-          icon: Icons.water_drop_outlined,
-          color: const Color(0xFF2563EB),
-        ),
+        icon: Icons.water_drop_outlined,
+        color: const Color(0xFF2563EB),
+      ),
       SampleType.stool => (
-          icon: Icons.science_outlined,
-          color: const Color(0xFFD97706),
-        ),
+        icon: Icons.science_outlined,
+        color: const Color(0xFFD97706),
+      ),
     };
   }
 
