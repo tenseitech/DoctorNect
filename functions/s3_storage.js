@@ -721,6 +721,9 @@ exports.deleteS3Object = onCall(CALLABLE_OPTIONS, async (request) => {
   return deleteS3ObjectHandler(request.data, request.auth, db);
 });
 
+exports.awsAccessKeyId = awsAccessKeyId;
+exports.awsSecretAccessKey = awsSecretAccessKey;
+
 // Export handlers & testing helpers for unit tests
 exports._test = {
   getS3UploadUrlHandler,

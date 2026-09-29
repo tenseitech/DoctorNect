@@ -98,6 +98,10 @@ const {
   clientFacingHttpsMessage,
 } = require('./public_error_messages');
 const { deleteMyAccountHandler } = require('./delete_my_account');
+const {
+  awsAccessKeyId,
+  awsSecretAccessKey,
+} = require('./s3_storage');
 
 assertProductionSecrets();
 assertProductionOtpSafety();
@@ -1813,7 +1817,11 @@ exports.processMailQueueMsg91 = onDocumentCreated(
 
 /** Permanently deletes the caller's Firestore, Storage, and Auth data. */
 exports.deleteMyAccount = onCall(
-  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
+  {
+    region: CALLABLE_REGION,
+    enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
+    secrets: [awsAccessKeyId, awsSecretAccessKey],
+  },
   protectCallable('deleteMyAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
     return deleteMyAccountHandler(request.auth.uid);
