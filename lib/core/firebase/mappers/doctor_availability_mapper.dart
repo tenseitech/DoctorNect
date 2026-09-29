@@ -43,10 +43,9 @@ abstract final class DoctorScheduleAvailabilityMapper {
       }
 
       return DoctorScheduleAvailability(
-        workingDays:
-            (data['workingDays'] as List<dynamic>? ??
-                    const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
-                .cast<String>(),
+        workingDays: (data['workingDays'] as List<dynamic>? ??
+                const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
+            .cast<String>(),
         morningStart: data['morningStart'] as String? ?? '09:00 AM',
         morningEnd: data['morningEnd'] as String? ?? '01:00 PM',
         eveningEnabled: data['eveningEnabled'] as bool? ?? true,

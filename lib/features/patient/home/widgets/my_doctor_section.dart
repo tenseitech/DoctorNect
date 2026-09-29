@@ -44,8 +44,8 @@ class MyDoctorSection extends StatelessWidget {
         final subtitle = doctors.isEmpty
             ? 'Doctors you have added'
             : doctors.length == 1
-            ? '1 doctor in your list'
-            : '${doctors.length} doctors in your list';
+                ? '1 doctor in your list'
+                : '${doctors.length} doctors in your list';
 
         return Padding(
           padding: EdgeInsets.fromLTRB(
@@ -92,7 +92,8 @@ class MyDoctorSection extends StatelessWidget {
               if (doctors.isEmpty)
                 HomeDoctorInlineMessage(
                   icon: Icons.person_add_outlined,
-                  text: 'You haven’t added any doctors yet — add one to get started.',
+                  text:
+                      'You haven’t added any doctors yet — add one to get started.',
                   action: _buildAddButton(),
                 )
               else

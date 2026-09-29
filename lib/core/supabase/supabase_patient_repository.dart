@@ -141,15 +141,12 @@ class SupabasePatientRepository {
     await PatientWriteGuard.run(
       context: context,
       action: () async {
-        await _client
-            .from('appointments')
-            .update({
-              'patient_status': 'cancelled',
-              'cancellation_reason': reason,
-              'sync_origin': 'patient_supabase',
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('appointment_id', appointmentId);
+        await _client.from('appointments').update({
+          'patient_status': 'cancelled',
+          'cancellation_reason': reason,
+          'sync_origin': 'patient_supabase',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('appointment_id', appointmentId);
       },
     );
   }
@@ -284,8 +281,8 @@ class SupabasePatientRepository {
   }) async {
     final validFileStorage =
         (fileStorage == 'cloudUploaded' || fileStorage == 'firebase')
-        ? 'cloudUploaded'
-        : (fileStorage == 'none' ? 'none' : 'localOnly');
+            ? 'cloudUploaded'
+            : (fileStorage == 'none' ? 'none' : 'localOnly');
 
     return PatientWriteGuard.run(
       context: context,

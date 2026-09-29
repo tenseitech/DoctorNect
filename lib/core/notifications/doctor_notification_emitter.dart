@@ -63,15 +63,16 @@ abstract final class DoctorNotificationEmitter {
     required String timeLabel,
     required AppointmentType visitType,
     String? appointmentId,
-  }) => emit(
-    newAppointmentBooked(
-      patientName: patientName,
-      date: date,
-      timeLabel: timeLabel,
-      visitType: visitType,
-      appointmentId: appointmentId,
-    ),
-  );
+  }) =>
+      emit(
+        newAppointmentBooked(
+          patientName: patientName,
+          date: date,
+          timeLabel: timeLabel,
+          visitType: visitType,
+          appointmentId: appointmentId,
+        ),
+      );
 
   static void notifyNewAppointmentRequest({
     required String patientName,
@@ -88,9 +89,8 @@ abstract final class DoctorNotificationEmitter {
         type: AppNotificationType.booking,
         target: AppNotificationTarget.appointmentDetail,
         targetId: appointmentId,
-        dedupeKey: appointmentId != null
-            ? 'd_appt_request_$appointmentId'
-            : null,
+        dedupeKey:
+            appointmentId != null ? 'd_appt_request_$appointmentId' : null,
       ),
     );
   }
@@ -100,132 +100,137 @@ abstract final class DoctorNotificationEmitter {
     required String dateTimeLabel,
     required String reason,
     String? appointmentId,
-  }) => emit(
-    _build(
-      trigger: DoctorNotificationTrigger.appointmentCancelledByPatient,
-      title: 'Cancelled',
-      body: '$patientName: $reason.',
-      type: AppNotificationType.cancellation,
-      target: AppNotificationTarget.appointments,
-      targetId: appointmentId,
-      dedupeKey: appointmentId != null ? 'd_appt_cancel_$appointmentId' : null,
-    ),
-  );
+  }) =>
+      emit(
+        _build(
+          trigger: DoctorNotificationTrigger.appointmentCancelledByPatient,
+          title: 'Cancelled',
+          body: '$patientName: $reason.',
+          type: AppNotificationType.cancellation,
+          target: AppNotificationTarget.appointments,
+          targetId: appointmentId,
+          dedupeKey:
+              appointmentId != null ? 'd_appt_cancel_$appointmentId' : null,
+        ),
+      );
 
   static void notifyAppointmentRescheduledByPatient({
     required String patientName,
     required String oldLabel,
     required String newLabel,
     String? appointmentId,
-  }) => emit(
-    _build(
-      trigger: DoctorNotificationTrigger.appointmentRescheduledByPatient,
-      title: 'Rescheduled',
-      body: '$patientName: $oldLabel -> $newLabel.',
-      type: AppNotificationType.appointment,
-      target: AppNotificationTarget.appointmentDetail,
-      targetId: appointmentId,
-      dedupeKey: appointmentId != null
-          ? 'd_appt_reschedule_$appointmentId'
-          : null,
-    ),
-  );
+  }) =>
+      emit(
+        _build(
+          trigger: DoctorNotificationTrigger.appointmentRescheduledByPatient,
+          title: 'Rescheduled',
+          body: '$patientName: $oldLabel -> $newLabel.',
+          type: AppNotificationType.appointment,
+          target: AppNotificationTarget.appointmentDetail,
+          targetId: appointmentId,
+          dedupeKey:
+              appointmentId != null ? 'd_appt_reschedule_$appointmentId' : null,
+        ),
+      );
 
   static void notifyTomorrowSummary({required String summary}) => emit(
-    _build(
-      trigger: DoctorNotificationTrigger.appointmentReminderTomorrow,
-      title: 'Tomorrow\'s schedule',
-      body: summary,
-      type: AppNotificationType.reminder,
-      target: AppNotificationTarget.appointments,
-      dedupeKey:
-          'reminder_tomorrow_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
-    ),
-  );
+        _build(
+          trigger: DoctorNotificationTrigger.appointmentReminderTomorrow,
+          title: 'Tomorrow\'s schedule',
+          body: summary,
+          type: AppNotificationType.reminder,
+          target: AppNotificationTarget.appointments,
+          dedupeKey:
+              'reminder_tomorrow_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        ),
+      );
 
   static void notifyTodaySchedule({required String summary}) => emit(
-    _build(
-      trigger: DoctorNotificationTrigger.appointmentReminderToday,
-      title: 'Today\'s schedule',
-      body: summary,
-      type: AppNotificationType.reminder,
-      target: AppNotificationTarget.appointments,
-      dedupeKey:
-          'reminder_today_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
-    ),
-  );
+        _build(
+          trigger: DoctorNotificationTrigger.appointmentReminderToday,
+          title: 'Today\'s schedule',
+          body: summary,
+          type: AppNotificationType.reminder,
+          target: AppNotificationTarget.appointments,
+          dedupeKey:
+              'reminder_today_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        ),
+      );
 
   static void notifyNextPatient({
     required String patientName,
     required String reason,
     required String appointmentId,
     required DateTime appointmentTime,
-  }) => emit(
-    _build(
-      trigger: DoctorNotificationTrigger.nextPatientReminder,
-      title: 'Next patient in 15 minutes',
-      body: '$patientName · Reason: $reason',
-      type: AppNotificationType.reminder,
-      target: AppNotificationTarget.appointmentDetail,
-      targetId: appointmentId,
-      dedupeKey:
-          'next_patient_${appointmentId}_${appointmentTime.millisecondsSinceEpoch ~/ 60000}',
-    ),
-  );
+  }) =>
+      emit(
+        _build(
+          trigger: DoctorNotificationTrigger.nextPatientReminder,
+          title: 'Next patient in 15 minutes',
+          body: '$patientName · Reason: $reason',
+          type: AppNotificationType.reminder,
+          target: AppNotificationTarget.appointmentDetail,
+          targetId: appointmentId,
+          dedupeKey:
+              'next_patient_${appointmentId}_${appointmentTime.millisecondsSinceEpoch ~/ 60000}',
+        ),
+      );
 
   static AppNotification patientNoShowAlert({
     required String patientName,
     required String slotLabel,
     required String appointmentId,
-  }) => _build(
-    trigger: DoctorNotificationTrigger.patientNoShow,
-    title: 'No-show',
-    body: patientName,
-    type: AppNotificationType.appointment,
-    target: AppNotificationTarget.appointmentDetail,
-    targetId: appointmentId,
-    primaryAction: const AppNotificationAction(
-      label: 'Mark as no-show',
-      actionKey: 'mark_no_show',
-    ),
-    dedupeKey: 'no_show_$appointmentId',
-  );
+  }) =>
+      _build(
+        trigger: DoctorNotificationTrigger.patientNoShow,
+        title: 'No-show',
+        body: patientName,
+        type: AppNotificationType.appointment,
+        target: AppNotificationTarget.appointmentDetail,
+        targetId: appointmentId,
+        primaryAction: const AppNotificationAction(
+          label: 'Mark as no-show',
+          actionKey: 'mark_no_show',
+        ),
+        dedupeKey: 'no_show_$appointmentId',
+      );
 
   static AppNotification kycApproved() => _build(
-    trigger: DoctorNotificationTrigger.kycApproved,
-    title: 'KYC verified',
-    body: 'Account approved.',
-    type: AppNotificationType.kyc,
-    target: AppNotificationTarget.profile,
-    primaryAction: const AppNotificationAction(
-      label: 'Complete profile',
-      actionKey: 'open_profile',
-    ),
-    dedupeKey: 'kyc_approved',
-  );
+        trigger: DoctorNotificationTrigger.kycApproved,
+        title: 'KYC verified',
+        body: 'Account approved.',
+        type: AppNotificationType.kyc,
+        target: AppNotificationTarget.profile,
+        primaryAction: const AppNotificationAction(
+          label: 'Complete profile',
+          actionKey: 'open_profile',
+        ),
+        dedupeKey: 'kyc_approved',
+      );
 
   static void notifySlotsFillingUp({required int percentBooked}) => emit(
-    _build(
-      trigger: DoctorNotificationTrigger.slotsFillingUp,
-      title: 'Slots filling up',
-      body: '$percentBooked% booked.',
-      type: AppNotificationType.system,
-      target: AppNotificationTarget.schedule,
-      primaryAction: const AppNotificationAction(
-        label: 'Add slots',
-        actionKey: 'add_slots',
-      ),
-      dedupeKey: 'slots_80_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
-    ),
-  );
+        _build(
+          trigger: DoctorNotificationTrigger.slotsFillingUp,
+          title: 'Slots filling up',
+          body: '$percentBooked% booked.',
+          type: AppNotificationType.system,
+          target: AppNotificationTarget.schedule,
+          primaryAction: const AppNotificationAction(
+            label: 'Add slots',
+            actionKey: 'add_slots',
+          ),
+          dedupeKey:
+              'slots_80_${DateFormat('yyyy-MM-dd').format(DateTime.now())}',
+        ),
+      );
 
   static AppNotification patientMarkedNoShow(String appointmentId) => _build(
-    trigger: DoctorNotificationTrigger.patientNoShow,
-    title: 'No-show marked',
-    body: 'Appointment $appointmentId',
-    type: AppNotificationType.appointment,
-    target: AppNotificationTarget.appointmentDetail,
-    targetId: appointmentId,
-    dedupeKey: 'd_no_show_marked_$appointmentId',
-  );
+        trigger: DoctorNotificationTrigger.patientNoShow,
+        title: 'No-show marked',
+        body: 'Appointment $appointmentId',
+        type: AppNotificationType.appointment,
+        target: AppNotificationTarget.appointmentDetail,
+        targetId: appointmentId,
+        dedupeKey: 'd_no_show_marked_$appointmentId',
+      );
 }

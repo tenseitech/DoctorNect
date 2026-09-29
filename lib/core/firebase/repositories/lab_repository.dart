@@ -88,9 +88,8 @@ class LabRepository {
   Future<bool> isLabVerified(String labId) async {
     if (!FirebaseBootstrap.isReady || labId.isEmpty) return false;
     final snap = await FirestoreReadHelper.getDocument(
-      reference: FirebaseFirestore.instance
-          .collection(FirestorePaths.labs)
-          .doc(labId),
+      reference:
+          FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),
       preferCache: false,
     );
     if (!snap.exists || snap.data() == null) return false;
@@ -104,9 +103,8 @@ class LabRepository {
   }) async {
     if (!FirebaseBootstrap.isReady || labId.isEmpty) return null;
     final snap = await FirestoreReadHelper.getDocument(
-      reference: FirebaseFirestore.instance
-          .collection(FirestorePaths.labs)
-          .doc(labId),
+      reference:
+          FirebaseFirestore.instance.collection(FirestorePaths.labs).doc(labId),
       preferCache: preferCache,
     );
     if (!snap.exists || snap.data() == null) return null;

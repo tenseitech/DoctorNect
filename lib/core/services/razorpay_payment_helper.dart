@@ -56,8 +56,7 @@ class RazorpayPaymentHelper {
       _completer!.complete(
         RazorpayPaymentResult(
           success: false,
-          errorMessage:
-              response.message ??
+          errorMessage: response.message ??
               'Payment failed or cancelled (code: ${response.code})',
         ),
       );

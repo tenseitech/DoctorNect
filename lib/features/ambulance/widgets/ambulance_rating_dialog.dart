@@ -173,22 +173,21 @@ Future<bool> showAmbulanceRatingDialog({
                       onPressed: selectedStars > 0
                           ? () async {
                               final ok = await FirestoreService
-                                  .instance
-                                  .ambulance
+                                  .instance.ambulance
                                   .rateBroadcast(
-                                    broadcastId: bookingId,
-                                    stars: selectedStars,
-                                    review: reviewCtrl.text.trim().isEmpty
-                                        ? null
-                                        : reviewCtrl.text.trim(),
-                                  );
+                                broadcastId: bookingId,
+                                stars: selectedStars,
+                                review: reviewCtrl.text.trim().isEmpty
+                                    ? null
+                                    : reviewCtrl.text.trim(),
+                              );
                               if (ctx.mounted) Navigator.pop(ctx, ok);
                             }
                           : null,
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFF59E0B),
-                        disabledBackgroundColor: const Color(0xFFF59E0B)
-                            .withValues(alpha: 0.3),
+                        disabledBackgroundColor:
+                            const Color(0xFFF59E0B).withValues(alpha: 0.3),
                         minimumSize: const Size(0, 44),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -211,10 +210,10 @@ Future<bool> showAmbulanceRatingDialog({
 }
 
 String _ratingLabel(int stars) => switch (stars) {
-  1 => 'Poor',
-  2 => 'Below Average',
-  3 => 'Average',
-  4 => 'Good',
-  5 => 'Excellent!',
-  _ => '',
-};
+      1 => 'Poor',
+      2 => 'Below Average',
+      3 => 'Average',
+      4 => 'Good',
+      5 => 'Excellent!',
+      _ => '',
+    };

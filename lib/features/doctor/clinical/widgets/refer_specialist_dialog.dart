@@ -281,11 +281,10 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                   final list = RegisteredDoctorsStore.instance.verifiedDoctors
                       .where((d) => d.id != selfId)
                       .where((d) {
-                        if (query.isEmpty) return true;
-                        return d.name.toLowerCase().contains(query) ||
-                            d.specialization.toLowerCase().contains(query);
-                      })
-                      .toList();
+                    if (query.isEmpty) return true;
+                    return d.name.toLowerCase().contains(query) ||
+                        d.specialization.toLowerCase().contains(query);
+                  }).toList();
 
                   if (list.isEmpty) {
                     return Padding(
@@ -369,7 +368,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                               style: FilledButton.styleFrom(
                                 backgroundColor: sent
                                     ? AppColors.textSecondaryOf(context)
-                                          .withValues(alpha: 0.35)
+                                        .withValues(alpha: 0.35)
                                     : const Color(0xFF16A34A),
                                 foregroundColor: Colors.white,
                                 disabledBackgroundColor:

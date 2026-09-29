@@ -92,14 +92,12 @@ class AmbulanceInvite {
     AmbulanceType type = AmbulanceType.bls;
     final rawType = data['ambulanceType'] as String?;
     if (rawType != null) {
-      type =
-          AmbulanceType.values.where((t) => t.name == rawType).firstOrNull ??
+      type = AmbulanceType.values.where((t) => t.name == rawType).firstOrNull ??
           AmbulanceType.bls;
     }
 
     final rawStatus = data['status'] as String? ?? 'pending';
-    final status =
-        AmbulanceInviteStatus.values
+    final status = AmbulanceInviteStatus.values
             .where((s) => s.name == rawStatus)
             .firstOrNull ??
         AmbulanceInviteStatus.pending;
@@ -134,28 +132,28 @@ class AmbulanceInvite {
   }
 
   Map<String, dynamic> toMap() => {
-    'token': token,
-    'doctorId': doctorId,
-    'doctorName': doctorName,
-    'ambulanceId': ambulanceId,
-    'status': status.name,
-    'serviceName': serviceName,
-    'ownerName': ownerName,
-    'driverName': driverName,
-    'phone': phone,
-    'vehicleNumber': vehicleNumber,
-    'ambulanceType': ambulanceType.name,
-    'city': city,
-    'serviceAreas': serviceAreas,
-    'baseAddress': baseAddress,
-    'licenseNumber': licenseNumber,
-    'insuranceNumber': insuranceNumber,
-    'hasOxygen': hasOxygen,
-    'hasVentilator': hasVentilator,
-    'hasStretcher': hasStretcher,
-    'is24x7': is24x7,
-    if (ratePerKm != null) 'ratePerKm': ratePerKm,
-  };
+        'token': token,
+        'doctorId': doctorId,
+        'doctorName': doctorName,
+        'ambulanceId': ambulanceId,
+        'status': status.name,
+        'serviceName': serviceName,
+        'ownerName': ownerName,
+        'driverName': driverName,
+        'phone': phone,
+        'vehicleNumber': vehicleNumber,
+        'ambulanceType': ambulanceType.name,
+        'city': city,
+        'serviceAreas': serviceAreas,
+        'baseAddress': baseAddress,
+        'licenseNumber': licenseNumber,
+        'insuranceNumber': insuranceNumber,
+        'hasOxygen': hasOxygen,
+        'hasVentilator': hasVentilator,
+        'hasStretcher': hasStretcher,
+        'is24x7': is24x7,
+        if (ratePerKm != null) 'ratePerKm': ratePerKm,
+      };
 
   static DateTime? _parseDate(dynamic value) {
     if (value == null) return null;

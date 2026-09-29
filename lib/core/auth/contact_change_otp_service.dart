@@ -100,8 +100,7 @@ abstract final class ContactChangeOtpService {
 
   static String _maskMobile(String raw) {
     final canonical = _normalizeMobile(raw);
-    final digits =
-        canonical?.replaceAll(RegExp(r'\D'), '') ??
+    final digits = canonical?.replaceAll(RegExp(r'\D'), '') ??
         raw.replaceAll(RegExp(r'\D'), '');
     if (digits.length < 4) return raw;
     return '******${digits.substring(digits.length - 4)}';

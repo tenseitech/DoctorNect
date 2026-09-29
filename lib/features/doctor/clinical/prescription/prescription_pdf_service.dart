@@ -37,12 +37,10 @@ class PrescriptionPdfService {
       fallback: DoctorProfileStore.displayNameWithPrefix,
     );
     final date = DateFormat('dd MMM yyyy').format(draft.prescriptionDate);
-    final meds = draft.validMedicines
-        .map((m) {
-          final dosage = m.dosageLabel.trim();
-          return dosage.isEmpty ? m.name.trim() : '${m.name.trim()} ($dosage)';
-        })
-        .join('\n• ');
+    final meds = draft.validMedicines.map((m) {
+      final dosage = m.dosageLabel.trim();
+      return dosage.isEmpty ? m.name.trim() : '${m.name.trim()} ($dosage)';
+    }).join('\n• ');
 
     final buffer = StringBuffer()
       ..writeln('Prescription — ${draft.patient.patientName}')
@@ -87,9 +85,8 @@ class PrescriptionPdfService {
     );
     final profile = DoctorProfileStore.instance.profile;
     final hasDoctorSnapshot = draft.doctorName.isNotEmpty;
-    final doctorId = hasDoctorSnapshot
-        ? draft.doctorId
-        : DoctorSession.loggedInDoctorId;
+    final doctorId =
+        hasDoctorSnapshot ? draft.doctorId : DoctorSession.loggedInDoctorId;
     await PrescriptionHeaderHelper.loadConsultationTimings(doctorId);
     final qualifications = hasDoctorSnapshot
         ? draft.doctorQualifications
@@ -100,15 +97,12 @@ class PrescriptionPdfService {
       draft,
       fallback: DoctorProfileStore.displayNameWithPrefix,
     );
-    final displaySpecialization = hasDoctorSnapshot
-        ? draft.doctorSpecialization
-        : profile.specialization;
-    final displayRegNumber = hasDoctorSnapshot
-        ? draft.doctorRegNumber
-        : profile.councilNumber;
-    final displayClinicName = hasDoctorSnapshot
-        ? draft.clinicName
-        : profile.clinicName;
+    final displaySpecialization =
+        hasDoctorSnapshot ? draft.doctorSpecialization : profile.specialization;
+    final displayRegNumber =
+        hasDoctorSnapshot ? draft.doctorRegNumber : profile.councilNumber;
+    final displayClinicName =
+        hasDoctorSnapshot ? draft.clinicName : profile.clinicName;
     final address = hasDoctorSnapshot
         ? draft.clinicAddress
         : PrescriptionHeaderHelper.clinicAddressLine(profile);
@@ -540,9 +534,8 @@ class PrescriptionPdfService {
                 cell,
                 style: pw.TextStyle(
                   fontSize: 8,
-                  fontWeight: isHeader
-                      ? pw.FontWeight.bold
-                      : pw.FontWeight.normal,
+                  fontWeight:
+                      isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
                 ),
               ),
             );

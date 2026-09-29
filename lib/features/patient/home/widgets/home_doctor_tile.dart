@@ -216,8 +216,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                 color: AppColors.surfaceOf(context),
                 shape: const CircleBorder(),
                 elevation: 2,
-                shadowColor: AppColors.textPrimaryOf(context)
-                    .withValues(alpha: 0.15),
+                shadowColor:
+                    AppColors.textPrimaryOf(context).withValues(alpha: 0.15),
                 child: InkWell(
                   onTap: widget.onRemove,
                   customBorder: const CircleBorder(),

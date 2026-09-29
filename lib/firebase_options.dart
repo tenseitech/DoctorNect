@@ -76,7 +76,7 @@ class DefaultFirebaseOptions {
     }
     final platformHint = defineName == 'FIREBASE_API_KEY_ANDROID'
         ? ' On Android, pass FIREBASE_API_KEY_ANDROID (from google-services.json), '
-              'run .\\scripts\\run_local.ps1, or add keys to lib/firebase_options.secrets.dart.'
+            'run .\\scripts\\run_local.ps1, or add keys to lib/firebase_options.secrets.dart.'
         : '';
     throw StateError(
       'Missing $defineName. Pass --dart-define=$defineName=<your Firebase API key> at build/run time.$platformHint',
@@ -127,7 +127,8 @@ class DefaultFirebaseOptions {
       messagingSenderId: '658118593597',
       projectId: 'medibond-45fad',
       storageBucket: 'medibond-45fad.firebasestorage.app',
-      iosClientId: '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
+      iosClientId:
+          '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
       iosBundleId: 'com.tenseitech.doctornect',
     );
   }
@@ -144,7 +145,8 @@ class DefaultFirebaseOptions {
       messagingSenderId: '658118593597',
       projectId: 'medibond-45fad',
       storageBucket: 'medibond-45fad.firebasestorage.app',
-      iosClientId: '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
+      iosClientId:
+          '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
       iosBundleId: 'com.tenseitech.doctornect',
     );
   }

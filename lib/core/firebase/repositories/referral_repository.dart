@@ -21,26 +21,27 @@ class ReferralRepository {
         .collection(FirestorePaths.referrals)
         .doc(referral.referralId)
         .set({
-          ...ReferralFirestoreMapper.toMap(referral),
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      ...ReferralFirestoreMapper.toMap(referral),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     if (referral.patientId.isNotEmpty &&
         PatientProfileRepository.isRegisteredPatientId(referral.patientId)) {
-      final linkOk = await PatientProfileRepository.instance
-          .ensureDoctorPatientLink(
-            patientId: referral.patientId,
-            doctorId: referral.toDoctorId,
-            source: 'referral',
-            fromDoctorId: referral.fromDoctorId,
-            referralId: referral.referralId,
-          );
+      final linkOk =
+          await PatientProfileRepository.instance.ensureDoctorPatientLink(
+        patientId: referral.patientId,
+        doctorId: referral.toDoctorId,
+        source: 'referral',
+        fromDoctorId: referral.fromDoctorId,
+        referralId: referral.referralId,
+      );
       if (!linkOk) {
         throw FirebaseException(
           plugin: 'cloud_firestore',
           code: 'permission-denied',
-          message: 'Referral was saved but the specialist could not be linked to this patient.',
+          message:
+              'Referral was saved but the specialist could not be linked to this patient.',
         );
       }
     }

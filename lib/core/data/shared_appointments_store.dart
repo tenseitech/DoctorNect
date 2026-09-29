@@ -279,7 +279,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
   Future<void> _persist(
     DoctorNectAppointmentRecord record, {
     String? patientId,
-    bool rethrowOnError = false, // FIXED: let booking flows surface write failures instead of only logging
+    bool rethrowOnError =
+        false, // FIXED: let booking flows surface write failures instead of only logging
   }) async {
     if (!FirebaseBootstrap.isReady) {
       if (rethrowOnError) {
@@ -325,8 +326,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
 
   // FIXED: derive the appointment time from the slot label (e.g. "04:30 PM") instead of ignoring it
   static DateTime _dateTimeForSlot(DateTime date, String slotLabel) {
-    final match = RegExp(r'(\d{1,2}):(\d{2})\s*([AaPp][Mm])?')
-        .firstMatch(slotLabel);
+    final match =
+        RegExp(r'(\d{1,2}):(\d{2})\s*([AaPp][Mm])?').firstMatch(slotLabel);
     if (match != null) {
       var hour = int.tryParse(match.group(1)!) ?? 0;
       final minute = int.tryParse(match.group(2)!) ?? 0;
@@ -390,8 +391,7 @@ class SharedAppointmentsStore extends ChangeNotifier {
   }) {
     if (doctorId.isEmpty) return false;
 
-    final hasPriorById =
-        patientId != null &&
+    final hasPriorById = patientId != null &&
         patientId.isNotEmpty &&
         _records.any(
           (r) =>
@@ -493,24 +493,23 @@ class SharedAppointmentsStore extends ChangeNotifier {
   List<Appointment> upcomingForDoctor(String doctorId, {int limit = 30}) {
     final now = DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
-    final list =
-        _records
-            .where((r) {
-              if (r.doctorId != doctorId || r.isCancelled) return false;
-              final apptDay = DateTime(
-                r.dateTime.year,
-                r.dateTime.month,
-                r.dateTime.day,
-              );
-              if (!apptDay.isAfter(todayStart)) return false;
-              return r.doctorStatus == AppointmentStatus.pendingRequest ||
-                  r.doctorStatus == AppointmentStatus.waiting ||
-                  r.doctorStatus == AppointmentStatus.confirmed ||
-                  r.doctorStatus == AppointmentStatus.inProgress;
-            })
-            .map(_toDoctor)
-            .toList()
-          ..sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
+    final list = _records
+        .where((r) {
+          if (r.doctorId != doctorId || r.isCancelled) return false;
+          final apptDay = DateTime(
+            r.dateTime.year,
+            r.dateTime.month,
+            r.dateTime.day,
+          );
+          if (!apptDay.isAfter(todayStart)) return false;
+          return r.doctorStatus == AppointmentStatus.pendingRequest ||
+              r.doctorStatus == AppointmentStatus.waiting ||
+              r.doctorStatus == AppointmentStatus.confirmed ||
+              r.doctorStatus == AppointmentStatus.inProgress;
+        })
+        .map(_toDoctor)
+        .toList()
+      ..sort((a, b) => a.appointmentDate.compareTo(b.appointmentDate));
 
     return list.length > limit ? list.sublist(0, limit) : list;
   }
@@ -583,12 +582,11 @@ class SharedAppointmentsStore extends ChangeNotifier {
         ? AppointmentStatus.confirmed
         : AppointmentStatus.pendingRequest;
     final patientId = PatientSession.loggedInPatientId;
-    final visitType =
-        _isReturningPatient(
-          patientId: patientId,
-          patientName: patientName,
-          doctorId: doctorId,
-        )
+    final visitType = _isReturningPatient(
+      patientId: patientId,
+      patientName: patientName,
+      doctorId: doctorId,
+    )
         ? AppointmentType.followUp
         : AppointmentType.newVisit;
 
@@ -701,12 +699,11 @@ class SharedAppointmentsStore extends ChangeNotifier {
     final day = DateTime(dateTime.year, dateTime.month, dateTime.day);
     final tokenNumber = nextTokenNumberForDoctorOnDate(doctorId, day);
 
-    final visitType =
-        _isReturningPatient(
-          patientId: patientId,
-          patientName: patientName,
-          doctorId: doctorId,
-        )
+    final visitType = _isReturningPatient(
+      patientId: patientId,
+      patientName: patientName,
+      doctorId: doctorId,
+    )
         ? AppointmentType.followUp
         : AppointmentType.newVisit;
 
@@ -1029,8 +1026,8 @@ class SharedAppointmentsStore extends ChangeNotifier {
     final patientName = PatientProfileMock.profile.name.isNotEmpty
         ? PatientProfileMock.profile.name
         : (PatientSession.loggedInPatientName.isNotEmpty
-              ? PatientSession.loggedInPatientName
-              : r.patientName);
+            ? PatientSession.loggedInPatientName
+            : r.patientName);
 
     final reviewId = await FirestoreService.instance.review.submitReview(
       patientId: patientId,

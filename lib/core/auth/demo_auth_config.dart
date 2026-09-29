@@ -15,40 +15,35 @@ abstract final class DemoAuthConfig {
 
   static bool isDemoDoctorPhone(String? phone) {
     if (phone == null || phone.isEmpty) return false;
-    final digits =
-        FormValidators.mobileDigits(phone) ??
+    final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
     return digits == demoDoctorPhone;
   }
 
   static bool isDemoPharmacyPhone(String? phone) {
     if (phone == null || phone.isEmpty) return false;
-    final digits =
-        FormValidators.mobileDigits(phone) ??
+    final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
     return digits == demoPharmacyPhone;
   }
 
   static bool isDemoLabPhone(String? phone) {
     if (phone == null || phone.isEmpty) return false;
-    final digits =
-        FormValidators.mobileDigits(phone) ??
+    final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
     return digits == demoLabPhone;
   }
 
   static bool isDemoAmbulancePhone(String? phone) {
     if (phone == null || phone.isEmpty) return false;
-    final digits =
-        FormValidators.mobileDigits(phone) ??
+    final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
     return digits == demoAmbulancePhone;
   }
 
   static bool isDemoPatientPhone(String? phone) {
     if (phone == null || phone.isEmpty) return false;
-    final digits =
-        FormValidators.mobileDigits(phone) ??
+    final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
     return digits == demoPatientPhone;
   }
@@ -66,8 +61,7 @@ abstract final class DemoAuthConfig {
 
   static bool isAnyDemoPhone(String? phone) {
     if (phone == null || phone.isEmpty) return false;
-    final digits =
-        FormValidators.mobileDigits(phone) ??
+    final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
     return digits == demoDoctorPhone ||
         digits == demoPharmacyPhone ||

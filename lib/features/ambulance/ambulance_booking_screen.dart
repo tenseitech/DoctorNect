@@ -110,11 +110,10 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     if (inProgress.isNotEmpty) return inProgress.first;
 
-    final unratedDone =
-        mine
-            .where((b) => b.isCompleted && !b.isRated && !b.isRatingSkipped)
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final unratedDone = mine
+        .where((b) => b.isCompleted && !b.isRated && !b.isRatingSkipped)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
     if (unratedDone.isNotEmpty) return unratedDone.first;
 
     return null;
@@ -455,8 +454,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
               final cardMaxWidth = isCompact
                   ? constraints.maxWidth
                   : ResponsiveLayout.isMedium(context)
-                  ? 720.0
-                  : 820.0;
+                      ? 720.0
+                      : 820.0;
 
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -520,14 +519,13 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                         _sync.stopPatientWatch();
                                         setState(() => _activeBookingId = null);
                                       },
-                                      onRate:
-                                          active.isCompleted &&
+                                      onRate: active.isCompleted &&
                                               !active.isRated &&
                                               !active.isRatingSkipped
                                           ? () => _rateTrip(context, active)
                                           : null,
-                                      onCancel:
-                                          active.isPending || active.isAccepted
+                                      onCancel: active.isPending ||
+                                              active.isAccepted
                                           ? () async {
                                               final messenger =
                                                   ScaffoldMessenger.of(context);
@@ -549,8 +547,7 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                                   ),
                                                 );
                                               } else {
-                                                final message =
-                                                    _repository
+                                                final message = _repository
                                                         .lastCancelFailureUserMessage ??
                                                     'Could not cancel this request. Please try again.';
                                                 messenger.showSnackBar(
@@ -578,8 +575,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       ),
                                       validator: (v) =>
                                           v == null || v.trim().isEmpty
-                                          ? 'Enter patient name'
-                                          : null,
+                                              ? 'Enter patient name'
+                                              : null,
                                     ),
                                     SizedBox(height: isCompact ? 18 : 12),
                                     PhoneNumberField(
@@ -979,17 +976,16 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
           child: ListenableBuilder(
             listenable: AmbulanceStore.instance,
             builder: (context, _) {
-              final trips =
-                  AmbulanceStore.instance.bookings
-                      .where(
-                        (b) =>
-                            b.bookedById == patientId &&
-                            b.bookedByRole == role &&
-                            (b.isCompleted || b.isCancelled) &&
-                            b.id != activeBookingId,
-                      )
-                      .toList()
-                    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              final trips = AmbulanceStore.instance.bookings
+                  .where(
+                    (b) =>
+                        b.bookedById == patientId &&
+                        b.bookedByRole == role &&
+                        (b.isCompleted || b.isCancelled) &&
+                        b.id != activeBookingId,
+                  )
+                  .toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
               return Column(
                 children: [
@@ -1119,9 +1115,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDone = trip.isCompleted;
-    final statusColor = isDone
-        ? const Color(0xFF0D9488)
-        : const Color(0xFFDC2626);
+    final statusColor =
+        isDone ? const Color(0xFF0D9488) : const Color(0xFFDC2626);
     final statusLabel = isDone ? 'Completed' : 'Cancelled';
 
     return Container(
@@ -1183,8 +1178,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
               Icon(
                 Icons.access_time,
                 size: 13,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.7),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -1403,15 +1398,13 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
     final unselectedBg = isDark
         ? const Color(0xFF1E293B).withValues(alpha: 0.5)
         : const Color(0xFFF8FAFC);
-    final unselectedBorder = isDark
-        ? const Color(0xFF334155)
-        : const Color(0xFFE2E8F0);
+    final unselectedBorder =
+        isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
     final unselectedText = isDark
         ? AppColors.darkTextPrimary.withValues(alpha: 0.85)
         : const Color(0xFF334155);
-    final unselectedIcon = isDark
-        ? AppColors.darkTextSecondary
-        : const Color(0xFF64748B);
+    final unselectedIcon =
+        isDark ? AppColors.darkTextSecondary : const Color(0xFF64748B);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1448,8 +1441,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                 final activeTextColor = isDark
                     ? Colors.white
                     : (color == const Color(0xFFCA8A04)
-                          ? const Color(0xFF854D0E)
-                          : color);
+                        ? const Color(0xFF854D0E)
+                        : color);
 
                 return InkWell(
                   onTap: enabled ? () => onChanged(type) : null,
@@ -1487,9 +1480,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                           label,
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
+                            fontWeight:
+                                selected ? FontWeight.w600 : FontWeight.w500,
                             color: selected ? activeTextColor : unselectedText,
                           ),
                         ),
@@ -1520,9 +1512,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                   : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isDark
-                    ? const Color(0xFF334155)
-                    : const Color(0xFFE2E8F0),
+                color:
+                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
               ),
             ),
             child: Row(
@@ -1629,20 +1620,18 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
           'format': 'json',
           'addressdetails': '1',
         });
-        final response = await http
-            .get(
-              uri,
-              headers: const {'User-Agent': 'DoctorNect/1.0 (healthcare-app)'},
-            )
-            .timeout(const Duration(seconds: 6));
+        final response = await http.get(
+          uri,
+          headers: const {'User-Agent': 'DoctorNect/1.0 (healthcare-app)'},
+        ).timeout(const Duration(seconds: 6));
 
         if (response.statusCode == 200) {
           final payload = jsonDecode(response.body) as Map<String, dynamic>;
           final address = payload['address'] as Map<String, dynamic>?;
           if (address != null) {
             final road = address['road']?.toString();
-            final sub = (address['suburb'] ?? address['neighbourhood'])
-                ?.toString();
+            final sub =
+                (address['suburb'] ?? address['neighbourhood'])?.toString();
             final city =
                 (address['city'] ?? address['town'] ?? address['village'])
                     ?.toString();
@@ -1983,16 +1972,16 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
         .where('broadcastId', isEqualTo: broadcastId)
         .snapshots()
         .listen((snap) {
-          if (!mounted) return;
-          final total = snap.docs.length;
-          final rejected = snap.docs
-              .where((d) => (d.data()['status'] as String?) == 'rejected')
-              .length;
-          setState(() {
-            _totalNotified = total;
-            _rejectedCount = rejected;
-          });
-        });
+      if (!mounted) return;
+      final total = snap.docs.length;
+      final rejected = snap.docs
+          .where((d) => (d.data()['status'] as String?) == 'rejected')
+          .length;
+      setState(() {
+        _totalNotified = total;
+        _rejectedCount = rejected;
+      });
+    });
   }
 
   @override
@@ -2251,8 +2240,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     !booking.isRated &&
                     !booking.isRatingSkipped) ...[
                   FilledButton.icon(
-                    onPressed:
-                        widget.onRate ??
+                    onPressed: widget.onRate ??
                         () {
                           showAmbulanceRatingDialog(
                             context: context,

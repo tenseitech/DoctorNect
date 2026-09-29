@@ -62,14 +62,12 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
 
     list = switch (_typeFilter) {
       _PatientTypeFilter.all => list,
-      _PatientTypeFilter.walkIn =>
-        list
-            .where((b) => b.collectionType == LabCollectionType.walkIn.name)
-            .toList(),
-      _PatientTypeFilter.home =>
-        list
-            .where((b) => b.collectionType == LabCollectionType.home.name)
-            .toList(),
+      _PatientTypeFilter.walkIn => list
+          .where((b) => b.collectionType == LabCollectionType.walkIn.name)
+          .toList(),
+      _PatientTypeFilter.home => list
+          .where((b) => b.collectionType == LabCollectionType.home.name)
+          .toList(),
       _PatientTypeFilter.reportPending => list.where(_needsReport).toList(),
     };
 
@@ -115,8 +113,8 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme
-              .copyWith(primary: _labPurple),
+          colorScheme:
+              Theme.of(context).colorScheme.copyWith(primary: _labPurple),
         ),
         child: child!,
       ),
@@ -317,9 +315,8 @@ class _DateFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = selectedDate == null
-        ? 'All dates'
-        : dateFormat.format(selectedDate!);
+    final label =
+        selectedDate == null ? 'All dates' : dateFormat.format(selectedDate!);
 
     return Row(
       children: [
@@ -487,21 +484,20 @@ class _PatientBookingCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                itemBuilder: (context) =>
-                    [
-                          'requested',
-                          'confirmed',
-                          'processing',
-                          'completed',
-                          'declined',
-                        ]
-                        .map(
-                          (status) => PopupMenuItem<String>(
-                            value: status,
-                            child: Text(labOrderStatusLabel(status)),
-                          ),
-                        )
-                        .toList(),
+                itemBuilder: (context) => [
+                  'requested',
+                  'confirmed',
+                  'processing',
+                  'completed',
+                  'declined',
+                ]
+                    .map(
+                      (status) => PopupMenuItem<String>(
+                        value: status,
+                        child: Text(labOrderStatusLabel(status)),
+                      ),
+                    )
+                    .toList(),
               ),
             ],
           ),

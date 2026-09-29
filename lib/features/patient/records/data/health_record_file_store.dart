@@ -27,7 +27,9 @@ abstract final class HealthRecordFileStore {
   static Future<Uint8List?> Function(String url)? mockDownloadFromUrl;
 
   @visibleForTesting
-  static Future<String?> Function(String patientId, String recordId, String fileName, Uint8List bytes)? mockFirebaseUpload;
+  static Future<String?> Function(
+          String patientId, String recordId, String fileName, Uint8List bytes)?
+      mockFirebaseUpload;
 
   static String _cacheKey(String patientId, String recordId, String fileName) =>
       '$patientId/$recordId/$fileName';
@@ -39,7 +41,8 @@ abstract final class HealthRecordFileStore {
     String patientId,
     String recordId,
     String fileName,
-  ) => 'health_records/$patientId/$recordId/${_sanitizeFileName(fileName)}';
+  ) =>
+      'health_records/$patientId/$recordId/${_sanitizeFileName(fileName)}';
 
   static String? mimeTypeFor(String fileName) {
     final lower = fileName.toLowerCase();

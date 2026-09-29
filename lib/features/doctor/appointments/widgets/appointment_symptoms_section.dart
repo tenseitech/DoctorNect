@@ -68,8 +68,8 @@ class SymptomChipsPreview extends StatelessWidget {
             ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            backgroundColor: AppColors.textSecondaryOf(context)
-                .withValues(alpha: 0.1),
+            backgroundColor:
+                AppColors.textSecondaryOf(context).withValues(alpha: 0.1),
           ),
       ],
     );

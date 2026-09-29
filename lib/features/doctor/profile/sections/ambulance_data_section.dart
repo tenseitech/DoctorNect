@@ -264,18 +264,18 @@ class _BookingRow extends StatelessWidget {
   final AmbulanceBooking booking;
 
   Color get _statusColor => switch (booking.status) {
-    AmbulanceBookingStatus.pending => Colors.orange[600]!,
-    AmbulanceBookingStatus.accepted => AppColors.pharmacyGreen,
-    AmbulanceBookingStatus.cancelled => Colors.grey[500]!,
-    AmbulanceBookingStatus.completed => const Color(0xFF0D9488),
-  };
+        AmbulanceBookingStatus.pending => Colors.orange[600]!,
+        AmbulanceBookingStatus.accepted => AppColors.pharmacyGreen,
+        AmbulanceBookingStatus.cancelled => Colors.grey[500]!,
+        AmbulanceBookingStatus.completed => const Color(0xFF0D9488),
+      };
 
   String get _statusLabel => switch (booking.status) {
-    AmbulanceBookingStatus.pending => 'Pending',
-    AmbulanceBookingStatus.accepted => 'Accepted',
-    AmbulanceBookingStatus.cancelled => 'Cancelled',
-    AmbulanceBookingStatus.completed => 'Completed',
-  };
+        AmbulanceBookingStatus.pending => 'Pending',
+        AmbulanceBookingStatus.accepted => 'Accepted',
+        AmbulanceBookingStatus.cancelled => 'Cancelled',
+        AmbulanceBookingStatus.completed => 'Completed',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -382,19 +382,19 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 52, color: Colors.grey[300]),
-        const SizedBox(height: 12),
-        Text(
-          message,
-          style: GoogleFonts.inter(
-            fontSize: AppTypography.bodyMedium,
-            color: Colors.grey[500],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 52, color: Colors.grey[300]),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyMedium,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }

@@ -46,9 +46,9 @@ class AppointmentTabCard extends StatelessWidget {
     final symptoms = appointment.symptoms.isNotEmpty
         ? appointment.symptoms
         : (SharedAppointmentsStore.instance
-                  .findRecordById(appointment.id)
-                  ?.symptoms ??
-              const []);
+                .findRecordById(appointment.id)
+                ?.symptoms ??
+            const []);
     final wide = !ResponsiveLayout.isCompact(context);
 
     return Padding(

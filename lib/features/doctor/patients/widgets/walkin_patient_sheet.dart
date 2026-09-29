@@ -151,8 +151,8 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat('EEE, dd MMM yyyy · hh:mm a')
-        .format(_dateTime);
+    final dateLabel =
+        DateFormat('EEE, dd MMM yyyy · hh:mm a').format(_dateTime);
 
     return SafeArea(
       child: SingleChildScrollView(

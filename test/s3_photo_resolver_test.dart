@@ -22,7 +22,8 @@ class FakeS3PresignApi implements S3PresignApi {
     batchCalls.add(List<String>.from(objectKeys));
     final map = <String, String>{};
     for (final key in objectKeys) {
-      map[key] = urlsToReturn[key] ?? 'https://s3.example.com/$key?presigned=true';
+      map[key] =
+          urlsToReturn[key] ?? 'https://s3.example.com/$key?presigned=true';
     }
     return map;
   }
@@ -89,11 +90,73 @@ void main() {
 
   // Minimal valid 1x1 PNG bytes for codec decode test
   final validPngBytes = Uint8List.fromList([
-    137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
-    0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196,
-    137, 0, 0, 0, 10, 73, 68, 65, 84, 120, 156, 99, 0, 1, 0,
-    0, 5, 0, 1, 13, 10, 45, 180, 0, 0, 0, 0, 73, 69, 78,
-    68, 174, 66, 96, 130
+    137,
+    80,
+    78,
+    71,
+    13,
+    10,
+    26,
+    10,
+    0,
+    0,
+    0,
+    13,
+    73,
+    72,
+    68,
+    82,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    8,
+    6,
+    0,
+    0,
+    0,
+    31,
+    21,
+    196,
+    137,
+    0,
+    0,
+    0,
+    10,
+    73,
+    68,
+    65,
+    84,
+    120,
+    156,
+    99,
+    0,
+    1,
+    0,
+    0,
+    5,
+    0,
+    1,
+    13,
+    10,
+    45,
+    180,
+    0,
+    0,
+    0,
+    0,
+    73,
+    69,
+    78,
+    68,
+    174,
+    66,
+    96,
+    130
   ]);
 
   setUp(() {
@@ -102,7 +165,9 @@ void main() {
   });
 
   group('S3PhotoResolver microtask batching and chunking', () {
-    test('Multiple requests within one microtask are batched into a single API call', () async {
+    test(
+        'Multiple requests within one microtask are batched into a single API call',
+        () async {
       final f1 = resolver.resolveUrl('patients/p1/profile/profile.jpg');
       final f2 = resolver.resolveUrl('patients/p2/profile/profile.jpg');
       final f3 = resolver.resolveUrl('doctor_profiles/d1/profile/profile.jpg');
@@ -111,18 +176,24 @@ void main() {
 
       expect(fakeApi.batchCalls.length, 1);
       expect(fakeApi.batchCalls[0].length, 3);
-      expect(fakeApi.batchCalls[0], containsAll([
-        'patients/p1/profile/profile.jpg',
-        'patients/p2/profile/profile.jpg',
-        'doctor_profiles/d1/profile/profile.jpg',
-      ]));
+      expect(
+          fakeApi.batchCalls[0],
+          containsAll([
+            'patients/p1/profile/profile.jpg',
+            'patients/p2/profile/profile.jpg',
+            'doctor_profiles/d1/profile/profile.jpg',
+          ]));
 
-      expect(results[0], 'https://s3.example.com/patients/p1/profile/profile.jpg?presigned=true');
-      expect(results[1], 'https://s3.example.com/patients/p2/profile/profile.jpg?presigned=true');
-      expect(results[2], 'https://s3.example.com/doctor_profiles/d1/profile/profile.jpg?presigned=true');
+      expect(results[0],
+          'https://s3.example.com/patients/p1/profile/profile.jpg?presigned=true');
+      expect(results[1],
+          'https://s3.example.com/patients/p2/profile/profile.jpg?presigned=true');
+      expect(results[2],
+          'https://s3.example.com/doctor_profiles/d1/profile/profile.jpg?presigned=true');
     });
 
-    test('Requests exceeding 20 keys are chunked into max-20 batches', () async {
+    test('Requests exceeding 20 keys are chunked into max-20 batches',
+        () async {
       final keys = List.generate(25, (i) => 'patients/p$i/profile/profile.jpg');
       final futures = keys.map((k) => resolver.resolveUrl(k)).toList();
 
@@ -136,7 +207,8 @@ void main() {
   });
 
   group('S3PhotoResolver memory caching and proactive refresh', () {
-    test('Subsequent resolution of cached key does not call backend API', () async {
+    test('Subsequent resolution of cached key does not call backend API',
+        () async {
       const key = 'patients/cached_user/profile/profile.jpg';
       final url1 = await resolver.resolveUrl(key);
       expect(fakeApi.batchCalls.length, 1);
@@ -148,7 +220,9 @@ void main() {
       expect(url2, equals(url1));
     });
 
-    test('Proactive refresh: key expiring within 5 minutes triggers fresh fetch', () async {
+    test(
+        'Proactive refresh: key expiring within 5 minutes triggers fresh fetch',
+        () async {
       const key = 'patients/expiring_user/profile/profile.jpg';
       const staleUrl = 'https://s3.example.com/stale-url';
       const freshUrl = 'https://s3.example.com/fresh-url';
@@ -170,7 +244,8 @@ void main() {
       expect(resolvedUrl, freshUrl);
     });
 
-    test('Key expiring in > 5 minutes returns cached URL without fetch', () async {
+    test('Key expiring in > 5 minutes returns cached URL without fetch',
+        () async {
       const key = 'patients/valid_user/profile/profile.jpg';
       const validUrl = 'https://s3.example.com/valid-url';
 
@@ -190,11 +265,15 @@ void main() {
   });
 
   group('S3KeyImageKey cache identity', () {
-    test('Equality and hash code are strictly based on objectKey and scale (not presigned URL)', () {
+    test(
+        'Equality and hash code are strictly based on objectKey and scale (not presigned URL)',
+        () {
       const key1 = S3KeyImageKey('patients/p1/profile/profile.jpg', scale: 1.0);
       const key2 = S3KeyImageKey('patients/p1/profile/profile.jpg', scale: 1.0);
-      const keyDiffScale = S3KeyImageKey('patients/p1/profile/profile.jpg', scale: 2.0);
-      const keyDiffObject = S3KeyImageKey('patients/p2/profile/profile.jpg', scale: 1.0);
+      const keyDiffScale =
+          S3KeyImageKey('patients/p1/profile/profile.jpg', scale: 2.0);
+      const keyDiffObject =
+          S3KeyImageKey('patients/p2/profile/profile.jpg', scale: 1.0);
 
       expect(key1, equals(key2));
       expect(key1.hashCode, equals(key2.hashCode));
@@ -259,7 +338,9 @@ void main() {
   });
 
   group('S3KeyImageProvider 403 single retry', () {
-    test('Retries on HTTP 403 by invalidating cache and fetching a fresh presigned URL', () async {
+    test(
+        'Retries on HTTP 403 by invalidating cache and fetching a fresh presigned URL',
+        () async {
       const key = 'patients/p_retry/profile/profile.jpg';
       const initialExpiredUrl = 'https://s3.example.com/expired-url';
       const refreshedUrl = 'https://s3.example.com/fresh-working-url';
@@ -282,7 +363,8 @@ void main() {
           return http.Response('Forbidden', 403);
         } else if (request.url.toString() == refreshedUrl) {
           // Second attempt with fresh URL succeeds
-          return http.Response.bytes(validPngBytes, 200, headers: {'content-type': 'image/png'});
+          return http.Response.bytes(validPngBytes, 200,
+              headers: {'content-type': 'image/png'});
         }
         return http.Response('Not Found', 404);
       });
@@ -298,8 +380,9 @@ void main() {
 
       // Verify that after encountering 403 on the first call, it made a 2nd call with refreshed URL
       // We can directly call the private loader or simulate image loading
-      final completer = provider.loadImage(keyObj, PaintingBinding.instance.instantiateImageCodecWithSize);
-      
+      final completer = provider.loadImage(
+          keyObj, PaintingBinding.instance.instantiateImageCodecWithSize);
+
       var imageLoaded = false;
       var failed = false;
       completer.addListener(ImageStreamListener(

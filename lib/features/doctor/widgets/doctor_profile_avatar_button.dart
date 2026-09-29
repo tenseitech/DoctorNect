@@ -58,8 +58,7 @@ class _DoctorProfileAvatarButtonState extends State<DoctorProfileAvatarButton> {
     BuildContext context,
   ) {
     final doctorId = DoctorSession.activeDoctorId;
-    final bytes =
-        profileBytes ??
+    final bytes = profileBytes ??
         _localPhotoBytes ??
         DoctorPhotoLocalStore.readCached(doctorId);
     final profile = DoctorProfileStore.instance.profile;

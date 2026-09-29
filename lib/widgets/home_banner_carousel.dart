@@ -48,9 +48,8 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
   @override
   void initState() {
     super.initState();
-    final initialPage = widget.items.isNotEmpty
-        ? widget.items.length * 1000
-        : 0;
+    final initialPage =
+        widget.items.isNotEmpty ? widget.items.length * 1000 : 0;
     _controller = PageController(initialPage: initialPage);
     if (widget.items.length > 1) {
       _startAutoScroll();
@@ -122,19 +121,18 @@ class _HomeBannerCarouselState extends State<HomeBannerCarousel> {
     final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
     final height = (isWide ? 220.0 : 130.0) * textScale;
     final hasCardInset = widget.cardHorizontalInsetFraction > 0;
-    final borderRadius = hasCardInset || !isWide
-        ? AppConstants.cardRadius.toDouble()
-        : 0.0;
+    final borderRadius =
+        hasCardInset || !isWide ? AppConstants.cardRadius.toDouble() : 0.0;
     final hasMultipleSlides = widget.items.length > 1;
     final showNavButtons =
         widget.showNavButtons && (hasCardInset || isWide) && hasMultipleSlides;
     final sideGutter = showNavButtons
         ? (hasCardInset
-              ? screenWidth * widget.cardHorizontalInsetFraction
-              : (isWide ? _legacyWideNavGutter : 0.0))
+            ? screenWidth * widget.cardHorizontalInsetFraction
+            : (isWide ? _legacyWideNavGutter : 0.0))
         : (hasCardInset
-              ? screenWidth * widget.cardHorizontalInsetFraction
-              : 0.0);
+            ? screenWidth * widget.cardHorizontalInsetFraction
+            : 0.0);
     final navButtonSize = sideGutter >= _navButtonSize
         ? _navButtonSize
         : (sideGutter * 0.82).clamp(26.0, _navButtonSize);
@@ -298,8 +296,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
     final badgeColor = isTip
         ? const Color(0xFF16A34A)
         : (banner.gradientColors.isNotEmpty
-              ? banner.gradientColors.first
-              : const Color(0xFF2563EB));
+            ? banner.gradientColors.first
+            : const Color(0xFF2563EB));
 
     final bannerBody = Stack(
       fit: StackFit.expand,
@@ -399,8 +397,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
     final badgeColor = isTip
         ? const Color(0xFF16A34A)
         : (banner.gradientColors.isNotEmpty
-              ? banner.gradientColors.first
-              : const Color(0xFF2563EB));
+            ? banner.gradientColors.first
+            : const Color(0xFF2563EB));
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
@@ -469,8 +467,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                             FilledButton(
                               onPressed:
                                   item.ctaRoute != null && onCtaTap != null
-                                  ? () => onCtaTap!(item.ctaRoute)
-                                  : null,
+                                      ? () => onCtaTap!(item.ctaRoute)
+                                      : null,
                               style: FilledButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: banner.gradientColors.first,

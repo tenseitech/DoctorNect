@@ -153,15 +153,15 @@ class _SegmentTabState extends State<_SegmentTab> {
               color: selected
                   ? accent
                   : (_hovered
-                        ? accent.withValues(alpha: 0.08)
-                        : AppColors.cardBgOf(context)),
+                      ? accent.withValues(alpha: 0.08)
+                      : AppColors.cardBgOf(context)),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
                 color: selected
                     ? accent
                     : (_hovered
-                          ? accent.withValues(alpha: 0.35)
-                          : AppColors.borderOf(context)),
+                        ? accent.withValues(alpha: 0.35)
+                        : AppColors.borderOf(context)),
               ),
             ),
             child: Text(

@@ -68,8 +68,10 @@ class DoctorPosterWidget extends StatelessWidget {
                 width: 140,
                 height: 140,
                 fit: BoxFit.cover,
-                errorWidget: const Icon(Icons.person, size: 80, color: Colors.grey),
-                placeholder: const Icon(Icons.person, size: 80, color: Colors.grey),
+                errorWidget:
+                    const Icon(Icons.person, size: 80, color: Colors.grey),
+                placeholder:
+                    const Icon(Icons.person, size: 80, color: Colors.grey),
               ),
             ),
             const SizedBox(height: 24),
@@ -155,9 +157,7 @@ class DoctorPosterWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...awards
-                .take(3)
-                .map(
+            ...awards.take(3).map(
                   (a) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(

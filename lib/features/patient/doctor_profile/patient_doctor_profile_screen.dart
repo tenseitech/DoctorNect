@@ -97,11 +97,11 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
     }
     PatientDoctorReview? existingReview;
     if (patientId.isNotEmpty) {
-      existingReview = await FirestoreService.instance.review
-          .fetchReviewForPatientAndDoctor(
-            patientId: patientId,
-            doctorId: widget.doctorId,
-          );
+      existingReview =
+          await FirestoreService.instance.review.fetchReviewForPatientAndDoctor(
+        patientId: patientId,
+        doctorId: widget.doctorId,
+      );
     }
     if (!mounted) return;
 
@@ -144,10 +144,10 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
       initialComment: review.text,
       onSubmit: (rating, comment) =>
           SharedAppointmentsStore.instance.updateReviewByReviewId(
-            reviewId: review.id,
-            rating: rating,
-            comment: comment,
-          ),
+        reviewId: review.id,
+        rating: rating,
+        comment: comment,
+      ),
     );
     if (!mounted || submitted != true) return;
     setState(() {
@@ -218,7 +218,7 @@ class _DoctorProfileBody extends StatelessWidget {
   final PatientAppointment? reviewableVisit;
   final VoidCallback onRateDoctor;
   final void Function(PatientDoctorReview review, String doctorName)
-  onEditReview;
+      onEditReview;
 
   @override
   Widget build(BuildContext context) {
@@ -435,12 +435,12 @@ class _ProfileTabPanel extends StatelessWidget {
       0 => _OverviewTab(doctor: doctor),
       1 => _ExperienceTab(doctor: doctor),
       2 => _ReviewsTab(
-        doctor: doctor,
-        sort: reviewSort,
-        onSort: onReviewSortChanged,
-        onEditReview: onEditReview,
-        onRateDoctor: onRateDoctor,
-      ),
+          doctor: doctor,
+          sort: reviewSort,
+          onSort: onReviewSortChanged,
+          onEditReview: onEditReview,
+          onRateDoctor: onRateDoctor,
+        ),
       _ => _LocationTab(doctor: doctor),
     };
   }
@@ -1471,8 +1471,8 @@ class _LocationTab extends StatelessWidget {
                 Icon(
                   Icons.map_outlined,
                   size: 40,
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.5),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -1570,9 +1570,8 @@ class _ClinicTimingsTable extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: today
-                  ? AppColors.patientTeal.withValues(alpha: 0.06)
-                  : null,
+              color:
+                  today ? AppColors.patientTeal.withValues(alpha: 0.06) : null,
               border: Border(
                 bottom: BorderSide(
                   color: AppColors.borderOf(context).withValues(alpha: 0.6),

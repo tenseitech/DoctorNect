@@ -50,8 +50,8 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
       final label = day == today
           ? 'Today'
           : day == yesterday
-          ? 'Yesterday'
-          : DateFormat('dd MMM yyyy').format(item.createdAt);
+              ? 'Yesterday'
+              : DateFormat('dd MMM yyyy').format(item.createdAt);
       groups.putIfAbsent(label, () => []).add(item);
     }
     return groups;
@@ -208,9 +208,8 @@ class _LabNotificationsScreenState extends State<LabNotificationsScreen> {
                             const SizedBox(height: 8),
                           ],
                           SizedBox(
-                            height: ResponsiveLayout.isCompact(context)
-                                ? 8
-                                : 16,
+                            height:
+                                ResponsiveLayout.isCompact(context) ? 8 : 16,
                           ),
                         ],
                       ),
@@ -285,9 +284,8 @@ class _FilterPill extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w700,
-                      color: selected
-                          ? AppColors.surfaceOf(context)
-                          : _labPurple,
+                      color:
+                          selected ? AppColors.surfaceOf(context) : _labPurple,
                     ),
                   ),
                 ),
@@ -523,20 +521,20 @@ class _EmptyNotifications extends StatelessWidget {
   Widget build(BuildContext context) {
     final (title, subtitle, icon) = switch (filter) {
       _LabNotifFilter.unread => (
-        'No unread alerts',
-        'You\'re all caught up. New bookings and orders will show up here.',
-        Icons.mark_email_read_outlined,
-      ),
+          'No unread alerts',
+          'You\'re all caught up. New bookings and orders will show up here.',
+          Icons.mark_email_read_outlined,
+        ),
       _LabNotifFilter.read => (
-        'No read notifications',
-        'Notifications you open will appear in this list.',
-        Icons.inbox_outlined,
-      ),
+          'No read notifications',
+          'Notifications you open will appear in this list.',
+          Icons.inbox_outlined,
+        ),
       _LabNotifFilter.all => (
-        'No notifications yet',
-        'Connection updates, lab orders, and patient bookings will appear here.',
-        Icons.notifications_none_outlined,
-      ),
+          'No notifications yet',
+          'Connection updates, lab orders, and patient bookings will appear here.',
+          Icons.notifications_none_outlined,
+        ),
     };
 
     return Center(

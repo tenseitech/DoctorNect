@@ -38,15 +38,12 @@ class UserRepository {
     Map<String, dynamic>? roleData,
   }) async {
     final userRef = _db.collection(FirestorePaths.users).doc(user.uid);
-    final normalizedMobile = mobile == null
-        ? null
-        : FormValidators.mobileDigits(mobile);
-    final isDemoDoctor =
-        role == UserType.doctor &&
+    final normalizedMobile =
+        mobile == null ? null : FormValidators.mobileDigits(mobile);
+    final isDemoDoctor = role == UserType.doctor &&
         (DemoAuthConfig.isDemoDoctorPhone(normalizedMobile) ||
             DemoAuthConfig.isDemoDoctorPhone(mobile));
-    final requiresVerification =
-        (role == UserType.doctor ||
+    final requiresVerification = (role == UserType.doctor ||
             role == UserType.medicalStore ||
             role == UserType.lab ||
             role == UserType.ambulance) &&
@@ -73,9 +70,8 @@ class UserRepository {
         'mobileVerifiedAt': FieldValue.serverTimestamp(),
       },
       'verified': !requiresVerification,
-      'verificationStatus': requiresVerification
-          ? 'profile_incomplete'
-          : 'verified',
+      'verificationStatus':
+          requiresVerification ? 'profile_incomplete' : 'verified',
       'status': requiresVerification ? 'pending_review' : 'approved',
       'profileCompleted': isDemoDoctor ? true : false,
       'createdAt': FieldValue.serverTimestamp(),
@@ -137,10 +133,9 @@ class UserRepository {
       UserType.patient => data['name'] as String? ?? 'Patient',
       UserType.lab =>
         data['labName'] as String? ?? data['name'] as String? ?? 'Lab',
-      UserType.ambulance =>
-        data['serviceName'] as String? ??
-            data['name'] as String? ??
-            'Ambulance',
+      UserType.ambulance => data['serviceName'] as String? ??
+          data['name'] as String? ??
+          'Ambulance',
     };
 
     await _db.collection(FirestorePaths.users).doc(user.uid).set({
@@ -220,8 +215,7 @@ class UserRepository {
         final profileId = data['profileId'] as String? ?? '';
         if (profileId.isEmpty) continue;
 
-        final displayName =
-            data['displayName'] as String? ??
+        final displayName = data['displayName'] as String? ??
             user.displayName ??
             switch (expectedRole) {
               UserType.superAdmin => 'Super Admin',
@@ -271,9 +265,8 @@ class UserRepository {
     try {
       final patientId = 'p${DateTime.now().millisecondsSinceEpoch}';
       final rawName = user.displayName?.trim();
-      final displayName = (rawName != null && rawName.isNotEmpty)
-          ? rawName
-          : 'Patient';
+      final displayName =
+          (rawName != null && rawName.isNotEmpty) ? rawName : 'Patient';
       final rawEmail = user.email?.trim() ?? '';
       final normalizedEmail = _normalizeEmail(rawEmail);
       final photoUrl = user.photoURL;
@@ -524,8 +517,7 @@ class UserRepository {
       }
 
       if (mobile != null && mobile.trim().isNotEmpty) {
-        final digits =
-            FormValidators.registrationMobileDigits(mobile) ??
+        final digits = FormValidators.registrationMobileDigits(mobile) ??
             FormValidators.mobileDigits(mobile);
         if (digits != null && digits.isNotEmpty) {
           final existingRole = await _findRoleWithMobile(digits);
@@ -633,16 +625,14 @@ class UserRepository {
   }
 
   Future<UserType?> findRoleWithMobile(String mobile) {
-    final digits =
-        FormValidators.registrationMobileDigits(mobile) ??
+    final digits = FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile) ??
         mobile.trim();
     return _findRoleWithMobile(digits);
   }
 
   Set<String> _buildMobileCandidates(String rawMobile) {
-    final digits =
-        FormValidators.registrationMobileDigits(rawMobile) ??
+    final digits = FormValidators.registrationMobileDigits(rawMobile) ??
         FormValidators.mobileDigits(rawMobile) ??
         rawMobile.replaceAll(RegExp(r'[^\d]'), '');
 
@@ -664,8 +654,7 @@ class UserRepository {
     required UserType role,
     required String mobile,
   }) async {
-    final digits =
-        FormValidators.registrationMobileDigits(mobile) ??
+    final digits = FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile) ??
         mobile.trim();
     if (digits.isEmpty) return null;
@@ -816,10 +805,8 @@ class UserRepository {
       UserType.ambulance: FirestorePaths.ambulances,
     };
 
-    final roleFutures =
-        <
-          Future<({UserType role, QuerySnapshot<Map<String, dynamic>> snap})?>
-        >[];
+    final roleFutures = <Future<
+        ({UserType role, QuerySnapshot<Map<String, dynamic>> snap})?>>[];
     for (final entry in roleCollections.entries) {
       final role = entry.key;
       final collPath = entry.value;
@@ -833,8 +820,10 @@ class UserRepository {
                 .limit(1)
                 .get(const GetOptions(source: Source.server))
                 .then<
-                  ({UserType role, QuerySnapshot<Map<String, dynamic>> snap})?
-                >(
+                    ({
+                      UserType role,
+                      QuerySnapshot<Map<String, dynamic>> snap
+                    })?>(
                   (s) => s.docs.isNotEmpty ? (role: role, snap: s) : null,
                   onError: (_) => null,
                 ),

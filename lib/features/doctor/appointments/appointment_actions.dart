@@ -35,7 +35,8 @@ abstract final class DoctorAppointmentActions {
               content: Text(
                 describeUserFacingError(
                   e,
-                  fallback: "Couldn't reschedule this appointment. Please check your connection and try again.",
+                  fallback:
+                      "Couldn't reschedule this appointment. Please check your connection and try again.",
                 ),
               ),
             ),
@@ -88,7 +89,8 @@ abstract final class DoctorAppointmentActions {
                     content: Text(
                       describeUserFacingError(
                         e,
-                        fallback: "Couldn't cancel this appointment. Please check your connection and try again.",
+                        fallback:
+                            "Couldn't cancel this appointment. Please check your connection and try again.",
                       ),
                     ),
                   ),

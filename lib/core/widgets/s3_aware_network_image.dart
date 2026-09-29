@@ -162,7 +162,8 @@ class S3AwareNetworkImage extends StatelessWidget {
         return SizedBox(
           width: width,
           height: height,
-          child: errorWidget ?? const Icon(Icons.broken_image_outlined, size: 24),
+          child:
+              errorWidget ?? const Icon(Icons.broken_image_outlined, size: 24),
         );
       },
     );

@@ -80,8 +80,7 @@ class CompleteProfilePrompt extends StatelessWidget {
       _ => AppColors.doctorBlue,
     };
 
-    final effectiveStage =
-        stage ??
+    final effectiveStage = stage ??
         (verificationPending
             ? VerificationStage.submittedForVerification
             : VerificationStage.registered);
@@ -93,33 +92,33 @@ class CompleteProfilePrompt extends StatelessWidget {
       String? buttonText,
     ) = switch (effectiveStage) {
       VerificationStage.submittedForVerification => (
-        Icons.hourglass_top_rounded,
-        'Profile under review',
-        'Your profile has been submitted. An administrator will review and approve your account. You can browse the app, but live operational data will appear after approval.',
-        null,
-      ),
+          Icons.hourglass_top_rounded,
+          'Profile under review',
+          'Your profile has been submitted. An administrator will review and approve your account. You can browse the app, but live operational data will appear after approval.',
+          null,
+        ),
       VerificationStage.revisionRequested => (
-        Icons.warning_amber_rounded,
-        'Revisions Requested by Super Admin',
-        rejectionReason != null && rejectionReason!.isNotEmpty
-            ? 'Reason: "$rejectionReason". Please update your profile details and resubmit for approval.'
-            : 'Super Admin requested updates to your submitted profile. Please review and make the necessary corrections.',
-        'Update Profile & Resubmit',
-      ),
+          Icons.warning_amber_rounded,
+          'Revisions Requested by Super Admin',
+          rejectionReason != null && rejectionReason!.isNotEmpty
+              ? 'Reason: "$rejectionReason". Please update your profile details and resubmit for approval.'
+              : 'Super Admin requested updates to your submitted profile. Please review and make the necessary corrections.',
+          'Update Profile & Resubmit',
+        ),
       VerificationStage.rejected => (
-        Icons.cancel_outlined,
-        'Verification Rejected',
-        rejectionReason != null && rejectionReason!.isNotEmpty
-            ? 'Reason: "$rejectionReason". Please update your credentials or contact administrator support.'
-            : 'Your verification was not approved. Please review your submitted details.',
-        'Review Profile',
-      ),
+          Icons.cancel_outlined,
+          'Verification Rejected',
+          rejectionReason != null && rejectionReason!.isNotEmpty
+              ? 'Reason: "$rejectionReason". Please update your credentials or contact administrator support.'
+              : 'Your verification was not approved. Please review your submitted details.',
+          'Review Profile',
+        ),
       _ => (
-        Icons.person_add_alt_1_outlined,
-        'Complete your profile to continue',
-        'Fill in your full profile details and submit for verification to access appointments, orders, and live data in your dashboard.',
-        'Complete profile',
-      ),
+          Icons.person_add_alt_1_outlined,
+          'Complete your profile to continue',
+          'Fill in your full profile details and submit for verification to access appointments, orders, and live data in your dashboard.',
+          'Complete profile',
+        ),
     };
 
     return Center(
@@ -198,8 +197,7 @@ class ProfileDataGate extends StatelessWidget {
         ? FirebaseAuth.instance.currentUser?.phoneNumber
         : null;
 
-    final isDemoAccount =
-        DemoAuthConfig.isDemoRolePhone(role, authPhone) ||
+    final isDemoAccount = DemoAuthConfig.isDemoRolePhone(role, authPhone) ||
         (role == UserType.doctor &&
             (DemoAuthConfig.isDemoDoctorPhone(
                   DoctorProfileStore.instance.profile.mobile,
@@ -276,14 +274,12 @@ class ProfileDataGate extends StatelessWidget {
           return CompleteProfilePrompt(role: role);
         }
 
-        final mobile =
-            data['mobile'] as String? ??
+        final mobile = data['mobile'] as String? ??
             data['phone'] as String? ??
             data['phoneNumber'] as String?;
         final profileId = data['profileId'] as String? ?? '';
         final email = data['email'] as String? ?? '';
-        final isDemo =
-            isDemoAccount ||
+        final isDemo = isDemoAccount ||
             DemoAuthConfig.isDemoRolePhone(role, mobile) ||
             DemoAuthConfig.isDemoRolePhone(role, profileId) ||
             profileId.contains(DemoAuthConfig.demoDoctorPhone) ||
@@ -302,23 +298,21 @@ class ProfileDataGate extends StatelessWidget {
                 .collection(FirestorePaths.users)
                 .doc(uid)
                 .set({
-                  'verified': true,
-                  'verificationStatus': 'verified',
-                  'status': 'approved',
-                  'profileCompleted': true,
-                }, SetOptions(merge: true));
+              'verified': true,
+              'verificationStatus': 'verified',
+              'status': 'approved',
+              'profileCompleted': true,
+            }, SetOptions(merge: true));
           }
           return child;
         }
 
-        final isVerified =
-            data['verified'] == true ||
+        final isVerified = data['verified'] == true ||
             data['verificationStatus'] == 'verified' ||
             data['status'] == 'approved';
         if (isVerified) return child;
 
-        final statusStr =
-            data['verificationStatus'] as String? ??
+        final statusStr = data['verificationStatus'] as String? ??
             data['status'] as String? ??
             (verificationPending ? 'submitted_for_verification' : 'registered');
         final stage = VerificationStage.fromString(statusStr);

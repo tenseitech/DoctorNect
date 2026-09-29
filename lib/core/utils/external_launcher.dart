@@ -183,9 +183,8 @@ class ExternalLauncher {
     String? url,
     BuildContext? context,
   }) async {
-    final shareUrl = url?.trim().isNotEmpty == true
-        ? url!.trim()
-        : 'https://doctornect.com';
+    final shareUrl =
+        url?.trim().isNotEmpty == true ? url!.trim() : 'https://doctornect.com';
     final tgWeb = Uri.parse(
       'https://t.me/share/url?url=${Uri.encodeComponent(shareUrl)}&text=${Uri.encodeComponent(text)}',
     );

@@ -24,9 +24,9 @@ abstract final class ReferralConsultService {
 
     final granted = await FirestoreService.instance.patientProfile
         .grantDoctorCareTeamAccess(
-          patientId: referral.patientId,
-          doctorId: doctorId,
-        );
+      patientId: referral.patientId,
+      doctorId: doctorId,
+    );
     if (!granted) return false;
 
     final profile = await FirestoreService.instance.patientProfile

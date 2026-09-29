@@ -227,9 +227,8 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                           label: chip.label,
                           selected: selected,
                           onTap: () => setState(() {
-                            _specialityCategory = selected
-                                ? null
-                                : chip.categoryKey;
+                            _specialityCategory =
+                                selected ? null : chip.categoryKey;
                           }),
                         );
                       }).toList(),
@@ -485,9 +484,8 @@ class _OptionChip extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: selected
-                ? AppColors.patientTeal
-                : AppColors.cardBgOf(context),
+            color:
+                selected ? AppColors.patientTeal : AppColors.cardBgOf(context),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: selected

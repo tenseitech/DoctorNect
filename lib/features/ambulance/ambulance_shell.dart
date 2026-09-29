@@ -173,9 +173,8 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final ambulanceTheme = isDark
-        ? AppTheme.dark(_accent)
-        : AppTheme.light(_accent);
+    final ambulanceTheme =
+        isDark ? AppTheme.dark(_accent) : AppTheme.light(_accent);
 
     return Theme(
       data: ambulanceTheme,
@@ -185,7 +184,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
           final ambulanceId = AmbulanceSession.loggedInAmbulanceId;
           final ambulance =
               AmbulanceStore.instance.findAmbulance(ambulanceId) ??
-              widget.ambulance;
+                  widget.ambulance;
           final unread = AmbulanceStore.instance.unreadAlertCount(ambulanceId);
           final hasPendingRequests = AmbulanceStore.instance.bookings.any(
             (b) => b.isPending && b.acceptedAmbulanceId == null,

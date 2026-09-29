@@ -91,8 +91,7 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
           if (result.pincode != null && result.pincode!.isNotEmpty) {
             _pincode.text = result.pincode!;
           }
-          _maps.text =
-              result.mapsUrl ??
+          _maps.text = result.mapsUrl ??
               'https://www.google.com/maps/search/?api=1&query=${result.latitude},${result.longitude}';
           _dirty = true;
         });
@@ -347,8 +346,8 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                               DropdownButtonFormField<String>(
                                 initialValue:
                                     _presetClinicTypes.contains(_selectedType)
-                                    ? _selectedType
-                                    : _presetClinicTypes.first,
+                                        ? _selectedType
+                                        : _presetClinicTypes.first,
                                 isExpanded: true,
                                 decoration: RequiredFieldLabels.decorate(
                                   const InputDecoration(),
@@ -438,8 +437,7 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                             ),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<String>(
-                              initialValue:
-                                  _country != null &&
+                              initialValue: _country != null &&
                                       _countryOptions.contains(_country)
                                   ? _country
                                   : null,
@@ -469,8 +467,7 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                             if (_hasLocationData) ...[
                               DropdownButtonFormField<String>(
                                 key: ValueKey('state-$_country'),
-                                initialValue:
-                                    _state != null &&
+                                initialValue: _state != null &&
                                         _stateOptions.contains(_state)
                                     ? _state
                                     : null,
@@ -498,8 +495,7 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                               const SizedBox(height: 12),
                               DropdownButtonFormField<String>(
                                 key: ValueKey('city-$_country-$_state'),
-                                initialValue:
-                                    _city != null &&
+                                initialValue: _city != null &&
                                         _cityOptions.contains(_city)
                                     ? _city
                                     : null,
@@ -575,9 +571,8 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                 ),
                                 const Spacer(),
                                 FilledButton.icon(
-                                  onPressed: _photos.length < 5
-                                      ? _addPhoto
-                                      : null,
+                                  onPressed:
+                                      _photos.length < 5 ? _addPhoto : null,
                                   icon: const Icon(
                                     Icons.add_photo_alternate_outlined,
                                     size: 18,
@@ -653,9 +648,8 @@ class _ClinicTypeModeChip extends StatelessWidget {
           style: TextStyle(
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w500,
-            color: selected
-                ? AppColors.surfaceOf(context)
-                : Colors.grey.shade700,
+            color:
+                selected ? AppColors.surfaceOf(context) : Colors.grey.shade700,
           ),
         ),
       ),

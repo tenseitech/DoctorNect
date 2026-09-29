@@ -713,9 +713,8 @@ class _StackedLoginScaffold extends StatelessWidget {
     );
 
     final horizontalPadding = compact ? 16.0 : 24.0;
-    final formMaxWidth = isMedium
-        ? 480.0
-        : (compact ? double.infinity : maxWidth);
+    final formMaxWidth =
+        isMedium ? 480.0 : (compact ? double.infinity : maxWidth);
 
     return Scaffold(
       backgroundColor: AppColors.cardBgOf(context),
@@ -779,9 +778,8 @@ class _StackedLoginScaffold extends StatelessWidget {
                           ],
                           Text(
                             welcomeTitle,
-                            textAlign: compact
-                                ? TextAlign.center
-                                : TextAlign.left,
+                            textAlign:
+                                compact ? TextAlign.center : TextAlign.left,
                             style: GoogleFonts.inter(
                               fontSize: compact ? 22 : 24,
                               fontWeight: FontWeight.w800,
@@ -792,9 +790,8 @@ class _StackedLoginScaffold extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             subtitle,
-                            textAlign: compact
-                                ? TextAlign.center
-                                : TextAlign.left,
+                            textAlign:
+                                compact ? TextAlign.center : TextAlign.left,
                             style: GoogleFonts.inter(
                               fontSize: AppTypography.bodyMedium,
                               color: AppColors.textSecondaryOf(context),

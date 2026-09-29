@@ -143,8 +143,8 @@ class _ProfileSettingsRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 22,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.7),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
               ),
             ],
           ),

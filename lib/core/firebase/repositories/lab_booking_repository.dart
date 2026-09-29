@@ -93,7 +93,8 @@ class LabBookingRepository {
   @visibleForTesting
   FirebaseFirestore? firestoreOverride;
 
-  FirebaseFirestore get firestore => firestoreOverride ?? FirebaseFirestore.instance;
+  FirebaseFirestore get firestore =>
+      firestoreOverride ?? FirebaseFirestore.instance;
 
   static String newBookingId({int suffix = 0}) {
     final stamp = DateTime.now().microsecondsSinceEpoch;
@@ -133,29 +134,29 @@ class LabBookingRepository {
         .collection(FirestorePaths.labBookings)
         .doc(bookingId)
         .set({
-          'bookingId': bookingId,
-          'patientId': patientId,
-          'testId': testIds.first,
-          'testIds': testIds,
-          'testName': summary,
-          'testNames': testNames,
-          'patientName': draft.patientName,
-          'patientAge': draft.patientAge,
-          'bookingForSelf': draft.bookingForSelf,
-          if (familyMemberId != null && familyMemberId.isNotEmpty)
-            'familyMemberId': familyMemberId,
-          'collectionType': draft.collectionType.name,
-          'partnerLab': draft.selectedLab?.name ?? '',
-          if (draft.selectedLab?.id != null &&
-              draft.selectedLab!.id!.isNotEmpty)
-            'labId': draft.selectedLab!.id, // FIXED: persist labId so the lab operator can query their bookings
-          'address': draft.address ?? '',
-          'dateTime': Timestamp.fromDate(dateTime),
-          'slotLabel': draft.selectedSlotLabel,
-          'status': status,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      'bookingId': bookingId,
+      'patientId': patientId,
+      'testId': testIds.first,
+      'testIds': testIds,
+      'testName': summary,
+      'testNames': testNames,
+      'patientName': draft.patientName,
+      'patientAge': draft.patientAge,
+      'bookingForSelf': draft.bookingForSelf,
+      if (familyMemberId != null && familyMemberId.isNotEmpty)
+        'familyMemberId': familyMemberId,
+      'collectionType': draft.collectionType.name,
+      'partnerLab': draft.selectedLab?.name ?? '',
+      if (draft.selectedLab?.id != null && draft.selectedLab!.id!.isNotEmpty)
+        'labId': draft.selectedLab!
+            .id, // FIXED: persist labId so the lab operator can query their bookings
+      'address': draft.address ?? '',
+      'dateTime': Timestamp.fromDate(dateTime),
+      'slotLabel': draft.selectedSlotLabel,
+      'status': status,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     return LabBookingRecord(
       bookingId: bookingId,
@@ -190,10 +191,8 @@ class LabBookingRepository {
     if (labId.isEmpty) {
       throw ArgumentError('Lab id is required');
     }
-    final trimmedTests = testNames
-        .map((t) => t.trim())
-        .where((t) => t.isNotEmpty)
-        .toList();
+    final trimmedTests =
+        testNames.map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
     if (trimmedTests.isEmpty) {
       throw ArgumentError('At least one test is required');
     }
@@ -211,33 +210,33 @@ class LabBookingRepository {
         .collection(FirestorePaths.labBookings)
         .doc(bookingId)
         .set({
-          'bookingId': bookingId,
-          'patientId': patientId,
-          'patientName': patientName.trim(),
-          'patientAge': patientAge,
-          'patientGender': AppConstants.normalizePatientGender(patientGender),
-          if (contactNumber != null && contactNumber.trim().isNotEmpty)
-            'contactNumber': contactNumber.trim(),
-          'testName': summary,
-          'testNames': trimmedTests,
-          'testId': trimmedTests.first.toLowerCase().replaceAll(
+      'bookingId': bookingId,
+      'patientId': patientId,
+      'patientName': patientName.trim(),
+      'patientAge': patientAge,
+      'patientGender': AppConstants.normalizePatientGender(patientGender),
+      if (contactNumber != null && contactNumber.trim().isNotEmpty)
+        'contactNumber': contactNumber.trim(),
+      'testName': summary,
+      'testNames': trimmedTests,
+      'testId': trimmedTests.first.toLowerCase().replaceAll(
             RegExp(r'\s+'),
             '_',
           ),
-          'testIds': trimmedTests
-              .map((t) => t.toLowerCase().replaceAll(RegExp(r'\s+'), '_'))
-              .toList(),
-          'collectionType': LabCollectionType.walkIn.name,
-          'partnerLab': labName,
-          'labId': labId,
-          'address': '',
-          'dateTime': Timestamp.fromDate(dateTime),
-          'slotLabel': slotLabel,
-          'status': 'confirmed',
-          'source': 'walkin',
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      'testIds': trimmedTests
+          .map((t) => t.toLowerCase().replaceAll(RegExp(r'\s+'), '_'))
+          .toList(),
+      'collectionType': LabCollectionType.walkIn.name,
+      'partnerLab': labName,
+      'labId': labId,
+      'address': '',
+      'dateTime': Timestamp.fromDate(dateTime),
+      'slotLabel': slotLabel,
+      'status': 'confirmed',
+      'source': 'walkin',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     return LabBookingRecord(
       bookingId: bookingId,
@@ -441,9 +440,7 @@ class LabBookingRepository {
       final batch = firestore.batch();
       for (final id in bookingIds) {
         batch.update(
-          firestore
-              .collection(FirestorePaths.labBookings)
-              .doc(id),
+          firestore.collection(FirestorePaths.labBookings).doc(id),
           updatePayload,
         );
       }
@@ -467,12 +464,11 @@ class LabBookingRepository {
       final testNamesRaw = data['testNames'];
       final testNames = testNamesRaw is List
           ? testNamesRaw
-                .map((item) => item.toString().trim())
-                .where((name) => name.isNotEmpty)
-                .toList()
+              .map((item) => item.toString().trim())
+              .where((name) => name.isNotEmpty)
+              .toList()
           : <String>[];
-      final testName =
-          data['testName'] as String? ??
+      final testName = data['testName'] as String? ??
           (testNames.isNotEmpty
               ? PatientSelectedInvestigationsMapper.summaryFromNames(testNames)
               : 'Lab test');

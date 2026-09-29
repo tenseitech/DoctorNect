@@ -265,7 +265,8 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
 
       // Persist to Firestore if available
       try {
-        await PatientProfileRepository.instance.saveHealthRecord(patientId, record);
+        await PatientProfileRepository.instance
+            .saveHealthRecord(patientId, record);
       } catch (e) {
         if (kDebugMode) {
           debugPrint('add_record_screen: Firestore saveHealthRecord error: $e');

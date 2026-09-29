@@ -158,8 +158,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         ? DoctorProfileStore.displayName
         : DoctorSession.loggedInDoctorName;
     final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'D';
-    final localBytes =
-        profile.photoBytes ??
+    final localBytes = profile.photoBytes ??
         _localPhotoBytes ??
         DoctorPhotoLocalStore.readCached(DoctorSession.loggedInDoctorId);
     final avatarImage = S3AwareImageProvider.resolveProvider(
@@ -235,35 +234,35 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   List<ProfileWebActionData> _profileWebActions() => [
-    ProfileWebActionData(
-      icon: Icons.person_outline,
-      label: 'Personal Information',
-      subtitle: 'Name, contact, languages',
-      iconGradient: const [AppColors.doctorBlue, Color(0xFF0F4A82)],
-      onTap: () => _openSection(const PersonalInfoSection()),
-    ),
-    ProfileWebActionData(
-      icon: Icons.work_outline,
-      label: 'Professional Details',
-      subtitle: 'Specialization & certifications',
-      iconGradient: const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-      onTap: () => _openSection(const ProfessionalDetailsSection()),
-    ),
-    ProfileWebActionData(
-      icon: Icons.local_hospital_outlined,
-      label: 'Clinic Information',
-      subtitle: 'Address, photos, maps',
-      iconGradient: const [Color(0xFF0891B2), Color(0xFF0E7490)],
-      onTap: () => _openSection(const ClinicInfoSection()),
-    ),
-    ProfileWebActionData(
-      icon: Icons.tune_rounded,
-      label: 'Consultation Settings',
-      subtitle: 'Duration & booking rules',
-      iconGradient: const [Color(0xFFEA580C), Color(0xFFC2410C)],
-      onTap: () => _openSection(const ConsultationSettingsSection()),
-    ),
-  ];
+        ProfileWebActionData(
+          icon: Icons.person_outline,
+          label: 'Personal Information',
+          subtitle: 'Name, contact, languages',
+          iconGradient: const [AppColors.doctorBlue, Color(0xFF0F4A82)],
+          onTap: () => _openSection(const PersonalInfoSection()),
+        ),
+        ProfileWebActionData(
+          icon: Icons.work_outline,
+          label: 'Professional Details',
+          subtitle: 'Specialization & certifications',
+          iconGradient: const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+          onTap: () => _openSection(const ProfessionalDetailsSection()),
+        ),
+        ProfileWebActionData(
+          icon: Icons.local_hospital_outlined,
+          label: 'Clinic Information',
+          subtitle: 'Address, photos, maps',
+          iconGradient: const [Color(0xFF0891B2), Color(0xFF0E7490)],
+          onTap: () => _openSection(const ClinicInfoSection()),
+        ),
+        ProfileWebActionData(
+          icon: Icons.tune_rounded,
+          label: 'Consultation Settings',
+          subtitle: 'Duration & booking rules',
+          iconGradient: const [Color(0xFFEA580C), Color(0xFFC2410C)],
+          onTap: () => _openSection(const ConsultationSettingsSection()),
+        ),
+      ];
 
   void _openAbout() {
     Navigator.push(
@@ -278,52 +277,52 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   List<ProfileWebActionData> _accountWebActions() => [
-    ProfileWebActionData(
-      icon: Icons.lock_outline,
-      label: 'Account & Security',
-      subtitle: 'Password & privacy',
-      iconGradient: const [Color(0xFF475569), Color(0xFF334155)],
-      onTap: () => _openSection(const AccountSecuritySection()),
-    ),
-    ProfileWebActionData(
-      icon: Icons.info_outline,
-      label: 'About',
-      subtitle: 'App version & legal',
-      iconGradient: const [Color(0xFF64748B), Color(0xFF475569)],
-      onTap: _openAbout,
-    ),
-    ProfileWebActionData(
-      icon: Icons.person_remove_outlined,
-      label: 'Delete Account',
-      subtitle: 'Permanently remove data',
-      iconGradient: const [Color(0xFFEF4444), Color(0xFFB91C1C)],
-      onTap: () => _confirmDeleteAccount(context),
-    ),
-  ];
+        ProfileWebActionData(
+          icon: Icons.lock_outline,
+          label: 'Account & Security',
+          subtitle: 'Password & privacy',
+          iconGradient: const [Color(0xFF475569), Color(0xFF334155)],
+          onTap: () => _openSection(const AccountSecuritySection()),
+        ),
+        ProfileWebActionData(
+          icon: Icons.info_outline,
+          label: 'About',
+          subtitle: 'App version & legal',
+          iconGradient: const [Color(0xFF64748B), Color(0xFF475569)],
+          onTap: _openAbout,
+        ),
+        ProfileWebActionData(
+          icon: Icons.person_remove_outlined,
+          label: 'Delete Account',
+          subtitle: 'Permanently remove data',
+          iconGradient: const [Color(0xFFEF4444), Color(0xFFB91C1C)],
+          onTap: () => _confirmDeleteAccount(context),
+        ),
+      ];
 
   List<ProfileWebActionData> _networkWebActions() => [
-    ProfileWebActionData(
-      icon: Icons.local_pharmacy_outlined,
-      label: 'Connected Medical Stores',
-      subtitle: 'Pharmacy network links',
-      iconGradient: const [Color(0xFF059669), Color(0xFF047857)],
-      onTap: () => _push(const DoctorConnectedStoresScreen()),
-    ),
-    ProfileWebActionData(
-      icon: Icons.biotech_outlined,
-      label: 'Connected Labs',
-      subtitle: 'Diagnostic lab partners',
-      iconGradient: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-      onTap: () => _push(const DoctorConnectedLabsScreen()),
-    ),
-    ProfileWebActionData(
-      icon: Icons.emergency_outlined,
-      label: 'Add Ambulance',
-      subtitle: 'Register emergency drivers',
-      iconGradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
-      onTap: () => _openSection(const DoctorAddAmbulanceScreen()),
-    ),
-  ];
+        ProfileWebActionData(
+          icon: Icons.local_pharmacy_outlined,
+          label: 'Connected Medical Stores',
+          subtitle: 'Pharmacy network links',
+          iconGradient: const [Color(0xFF059669), Color(0xFF047857)],
+          onTap: () => _push(const DoctorConnectedStoresScreen()),
+        ),
+        ProfileWebActionData(
+          icon: Icons.biotech_outlined,
+          label: 'Connected Labs',
+          subtitle: 'Diagnostic lab partners',
+          iconGradient: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+          onTap: () => _push(const DoctorConnectedLabsScreen()),
+        ),
+        ProfileWebActionData(
+          icon: Icons.emergency_outlined,
+          label: 'Add Ambulance',
+          subtitle: 'Register emergency drivers',
+          iconGradient: const [Color(0xFFDC2626), Color(0xFFB91C1C)],
+          onTap: () => _openSection(const DoctorAddAmbulanceScreen()),
+        ),
+      ];
 
   List<ProfileWebActionData> _insightsWebActions() {
     final p = DoctorProfileStore.instance.profile;
@@ -398,8 +397,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       profile: p,
                       displayName: DoctorProfileStore.displayNameWithPrefix,
                       verificationStatus: DoctorProfileStore
-                          .instance
-                          .dashboardVerificationStatus,
+                          .instance.dashboardVerificationStatus,
                       avatar: _buildProfileAvatar(),
                       onPickPhoto: _pickPhoto,
                       onEdit: () => _openSection(EditProfileSection()),

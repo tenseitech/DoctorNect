@@ -117,7 +117,8 @@ void main() {
     const oldKey = 'promoted_ads/provider_doc_1/ad_old/banner.jpg';
     final imageBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8]);
 
-    test('Success: S3 upload -> Firestore doc set -> Old S3 banner deleted', () async {
+    test('Success: S3 upload -> Firestore doc set -> Old S3 banner deleted',
+        () async {
       final ad = await PromotedAdsService.createDraftAd(
         providerType: 'doctor',
         providerId: providerId,
@@ -138,7 +139,8 @@ void main() {
       expect(testS3.deleteCallCount, 1);
       expect(testS3.deletedKeys, contains(oldKey));
 
-      final doc = await fakeFirestore.collection('promotedAds').doc(ad.adId).get();
+      final doc =
+          await fakeFirestore.collection('promotedAds').doc(ad.adId).get();
       expect(doc.exists, isTrue);
       expect(doc.data()?['imageKey'], ad.imageKey);
       expect(doc.data()?['imageStorage'], 's3');
@@ -167,7 +169,9 @@ void main() {
       expect(testS3.deletedKeys, isEmpty);
     });
 
-    test('S3 upload fails -> Firestore not written and Old S3 banner is NOT deleted', () async {
+    test(
+        'S3 upload fails -> Firestore not written and Old S3 banner is NOT deleted',
+        () async {
       testS3.shouldFailUpload = true;
 
       await expectLater(
@@ -217,7 +221,8 @@ void main() {
       });
     });
 
-    test('Success: S3 upload -> Firestore update -> Old S3 banner deleted', () async {
+    test('Success: S3 upload -> Firestore update -> Old S3 banner deleted',
+        () async {
       final updated = await PromotedAdsService.updateAdBanner(
         adId: adId,
         providerId: providerId,
@@ -256,7 +261,9 @@ void main() {
       expect(testS3.deletedKeys, isEmpty);
     });
 
-    test('S3 upload fails -> Firestore not updated and Old S3 banner is NOT deleted', () async {
+    test(
+        'S3 upload fails -> Firestore not updated and Old S3 banner is NOT deleted',
+        () async {
       testS3.shouldFailUpload = true;
 
       await expectLater(

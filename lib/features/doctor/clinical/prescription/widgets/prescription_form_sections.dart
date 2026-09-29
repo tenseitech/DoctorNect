@@ -65,9 +65,8 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
     final qualifications = PrescriptionHeaderHelper.qualificationsLine(p);
     final doctorName = DoctorProfileStore.displayNameWithPrefix;
     final contact = p.mobile.trim().isEmpty ? 'Not set' : p.mobile.trim();
-    final regNo = p.councilNumber.trim().isEmpty
-        ? 'Not set'
-        : p.councilNumber.trim();
+    final regNo =
+        p.councilNumber.trim().isEmpty ? 'Not set' : p.councilNumber.trim();
 
     return ClinicalSectionCard(
       title: 'Doctor & clinic',
@@ -101,9 +100,8 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
             _DetailRow(label: 'Specialization', value: p.specialization.trim()),
           _DetailRow(
             label: 'Clinic',
-            value: p.clinicName.trim().isEmpty
-                ? 'Not set'
-                : p.clinicName.trim(),
+            value:
+                p.clinicName.trim().isEmpty ? 'Not set' : p.clinicName.trim(),
             muted: p.clinicName.trim().isEmpty,
           ),
           _DetailRow(
@@ -213,9 +211,8 @@ class PrescriptionPatientSection extends StatelessWidget {
     final patient = draft.patient;
     final gender = patient.gender ?? '—';
     final date = DateFormat('dd MMM yyyy').format(draft.prescriptionDate);
-    final patientId = draft.patientId.trim().isNotEmpty
-        ? draft.patientId
-        : 'Not linked';
+    final patientId =
+        draft.patientId.trim().isNotEmpty ? draft.patientId : 'Not linked';
 
     return ClinicalSectionCard(
       title: 'Patient',
@@ -892,8 +889,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
     );
 
     for (final id in result.selectedIds) {
-      final item = CommunityInvestigationsRepository.instance
-          .resolveLabCatalogItem(id);
+      final item =
+          CommunityInvestigationsRepository.instance.resolveLabCatalogItem(id);
       if (item == null) continue;
       final prev = existingByCatalog[id];
       draft.investigations.add(
@@ -932,8 +929,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
     final result = await MultiSelectTestPicker.show(
       context,
       title: 'Select Radiology Tests',
-      catalog: CommunityInvestigationsRepository.instance
-          .mergedRadiologyCatalog(),
+      catalog:
+          CommunityInvestigationsRepository.instance.mergedRadiologyCatalog(),
       initiallySelectedIds: selectedIds,
       initiallyCustomNames: customNames,
       customAddLabel: '+ Add Radiology Test',
@@ -942,10 +939,10 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
           ? (name) async {
               final test = await CommunityInvestigationsRepository.instance
                   .addRadiologyTest(
-                    name: name,
-                    group: 'Custom',
-                    doctorId: _authorId,
-                  );
+                name: name,
+                group: 'Custom',
+                doctorId: _authorId,
+              );
               return test?.id;
             }
           : null,
@@ -1048,8 +1045,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
 
     for (final id in ids) {
       if (draft.investigations.any((e) => e.catalogId == id)) continue;
-      final lab = CommunityInvestigationsRepository.instance
-          .resolveLabCatalogItem(id);
+      final lab =
+          CommunityInvestigationsRepository.instance.resolveLabCatalogItem(id);
       if (lab != null) {
         draft.investigations.add(
           InvestigationEntry(
@@ -1153,8 +1150,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
                 side: active
                     ? BorderSide.none
                     : BorderSide(
-                        color: AppColors.borderOf(context)
-                            .withValues(alpha: 0.8),
+                        color:
+                            AppColors.borderOf(context).withValues(alpha: 0.8),
                       ),
                 onPressed: () => _applyTemplate(t),
               );
@@ -1284,9 +1281,8 @@ class _PickerField extends StatelessWidget {
                         color: count > 0
                             ? AppColors.textSecondaryOf(context)
                             : AppColors.textPrimaryOf(context),
-                        fontWeight: count > 0
-                            ? FontWeight.w500
-                            : FontWeight.w600,
+                        fontWeight:
+                            count > 0 ? FontWeight.w500 : FontWeight.w600,
                       ),
                     ),
                     if (count > 0) ...[
@@ -1666,9 +1662,8 @@ class PrescriptionFollowUpFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final next = draft.nextVisit;
-    final nextLabel = next == null
-        ? 'Not set'
-        : DateFormat('dd MMM yyyy').format(next);
+    final nextLabel =
+        next == null ? 'Not set' : DateFormat('dd MMM yyyy').format(next);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

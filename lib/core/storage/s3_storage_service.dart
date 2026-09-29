@@ -34,7 +34,8 @@ class S3StorageService implements StorageService {
     void Function(int sentBytes, int totalBytes)? onProgress,
   }) async {
     if (bytes.isEmpty) {
-      throw const StorageException('Cannot upload an empty file.', code: 'empty-file');
+      throw const StorageException('Cannot upload an empty file.',
+          code: 'empty-file');
     }
 
     final totalBytes = bytes.length;
@@ -81,7 +82,8 @@ class S3StorageService implements StorageService {
       }
 
       final bodyStr = response.body;
-      if (response.statusCode == 403 && bodyStr.contains('SignatureDoesNotMatch')) {
+      if (response.statusCode == 403 &&
+          bodyStr.contains('SignatureDoesNotMatch')) {
         throw const StorageException(
           'S3 upload signature mismatch: verify Content-Type and file size match exactly.',
           code: 'signature-does-not-match',
@@ -98,7 +100,8 @@ class S3StorageService implements StorageService {
       if (kDebugMode) {
         debugPrint('[S3StorageService] HTTP upload error: $e');
       }
-      throw StorageException('Network error while uploading to S3.', code: 'network-error');
+      throw StorageException('Network error while uploading to S3.',
+          code: 'network-error');
     }
   }
 
@@ -148,7 +151,8 @@ class S3StorageService implements StorageService {
     // Batch resolve in chunks of 20 (API cap)
     const chunkSize = 20;
     for (var i = 0; i < s3Keys.length; i += chunkSize) {
-      final end = (i + chunkSize < s3Keys.length) ? i + chunkSize : s3Keys.length;
+      final end =
+          (i + chunkSize < s3Keys.length) ? i + chunkSize : s3Keys.length;
       final chunk = s3Keys.sublist(i, end);
 
       try {

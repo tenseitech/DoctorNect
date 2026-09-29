@@ -30,7 +30,8 @@ abstract final class Msg91OtpService {
   }) async {
     return (
       success: false,
-      error: 'Direct MSG91 access is disabled. OTP must be sent through Cloud Functions.',
+      error:
+          'Direct MSG91 access is disabled. OTP must be sent through Cloud Functions.',
       debugOtp: null,
     );
   }
@@ -42,7 +43,8 @@ abstract final class Msg91OtpService {
   }) async {
     return (
       success: false,
-      error: 'Direct MSG91 access is disabled. OTP must be verified through Cloud Functions.',
+      error:
+          'Direct MSG91 access is disabled. OTP must be verified through Cloud Functions.',
       sessionId: null,
     );
   }

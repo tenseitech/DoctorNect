@@ -91,7 +91,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     final digits = preMobile == null
         ? null
         : (FormValidators.registrationMobileDigits(preMobile) ??
-              FormValidators.mobileDigits(preMobile));
+            FormValidators.mobileDigits(preMobile));
     if (digits != null) {
       _mobileController.text = digits;
       _mobileVerified = true;
@@ -179,9 +179,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
       _locationError = (_country == null || _state == null || _city == null)
           ? 'Please select Country, State, and City'
           : null;
-      _mobileError = !_mobileVerified
-          ? 'Please verify your mobile number with OTP'
-          : null;
+      _mobileError =
+          !_mobileVerified ? 'Please verify your mobile number with OTP' : null;
     });
 
     final isFormValid = _formKey.currentState!.validate();
@@ -206,9 +205,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     try {
       final patientId = 'p${DateTime.now().millisecondsSinceEpoch}';
       final name = _nameController.text.trim();
-      final age = _dob == null
-          ? 25
-          : DateTime.now().difference(_dob!).inDays ~/ 365;
+      final age =
+          _dob == null ? 25 : DateTime.now().difference(_dob!).inDays ~/ 365;
 
       final invitedDoctorId = PendingDoctorInviteStore.pendingDoctorId;
 
@@ -259,8 +257,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
             'primaryDoctorId': invitedDoctorId,
           'shareRecordsWithDoctors':
               PatientSharingUtils.deriveInitialShareRecordsWithDoctors(
-                invitedDoctorId,
-              ),
+            invitedDoctorId,
+          ),
           if (invitedDoctorId != null && invitedDoctorId.isNotEmpty)
             'careTeamDoctorIds': [invitedDoctorId],
         },

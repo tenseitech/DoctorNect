@@ -148,7 +148,6 @@ class ProfilePhotoAvatar extends StatelessWidget {
   final Color? backgroundColor;
   final Color? fallbackColor;
 
-
   ImageProvider? _imageProvider(BuildContext context) {
     final diameter = radius * 2;
     return S3AwareImageProvider.resolveProvider(

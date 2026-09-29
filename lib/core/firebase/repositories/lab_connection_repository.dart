@@ -19,17 +19,17 @@ class LabConnectionRepository {
         .collection(FirestorePaths.labConnections)
         .doc(connection.id)
         .set({
-          'doctorId': connection.doctorId,
-          'doctorName': connection.doctorName,
-          'labId': connection.labId,
-          'labName': connection.labName,
-          'status': connection.status.name,
-          'requestedBy': connection.requestedBy.name,
-          'requestedAt': Timestamp.fromDate(connection.requestedAt),
-          if (connection.respondedAt != null)
-            'respondedAt': Timestamp.fromDate(connection.respondedAt!),
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      'doctorId': connection.doctorId,
+      'doctorName': connection.doctorName,
+      'labId': connection.labId,
+      'labName': connection.labName,
+      'status': connection.status.name,
+      'requestedBy': connection.requestedBy.name,
+      'requestedAt': Timestamp.fromDate(connection.requestedAt),
+      if (connection.respondedAt != null)
+        'respondedAt': Timestamp.fromDate(connection.respondedAt!),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Stream<List<LabConnection>> watchPendingConnectionsForDoctor(

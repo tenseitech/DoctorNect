@@ -77,9 +77,8 @@ class LogoutRailTile extends StatelessWidget {
           vertical: 12,
         ),
         child: Row(
-          mainAxisAlignment: extended
-              ? MainAxisAlignment.start
-              : MainAxisAlignment.center,
+          mainAxisAlignment:
+              extended ? MainAxisAlignment.start : MainAxisAlignment.center,
           children: [
             const Icon(Icons.logout, color: AppColors.error, size: 22),
             if (extended) ...[

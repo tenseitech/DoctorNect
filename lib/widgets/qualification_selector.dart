@@ -26,29 +26,28 @@ class QualificationSelector extends FormField<String> {
     bool registrationStyle = false,
     FormFieldValidator<String>? validator,
   }) : super(
-         initialValue: _initialFieldValue(initialValue),
-         autovalidateMode: AutovalidateMode.onUserInteraction,
-         validator:
-             validator ??
-             (isRequired
-                 ? (value) {
-                     final trimmed = value?.trim() ?? '';
-                     if (trimmed.isEmpty) return '$label is required';
-                     return null;
-                   }
-                 : null),
-         builder: (state) => _QualificationSelectorBody(
-           state: state,
-           onChanged: onChanged,
-           label: label,
-           prefixIcon: prefixIcon,
-           accentColor: accentColor,
-           isRequired: isRequired,
-           decorationBuilder: decorationBuilder,
-           registrationStyle: registrationStyle,
-           initialCustomValue: _initialCustomValue(initialValue),
-         ),
-       );
+          initialValue: _initialFieldValue(initialValue),
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: validator ??
+              (isRequired
+                  ? (value) {
+                      final trimmed = value?.trim() ?? '';
+                      if (trimmed.isEmpty) return '$label is required';
+                      return null;
+                    }
+                  : null),
+          builder: (state) => _QualificationSelectorBody(
+            state: state,
+            onChanged: onChanged,
+            label: label,
+            prefixIcon: prefixIcon,
+            accentColor: accentColor,
+            isRequired: isRequired,
+            decorationBuilder: decorationBuilder,
+            registrationStyle: registrationStyle,
+            initialCustomValue: _initialCustomValue(initialValue),
+          ),
+        );
 
   static String? _initialFieldValue(String? value) {
     final trimmed = value?.trim() ?? '';

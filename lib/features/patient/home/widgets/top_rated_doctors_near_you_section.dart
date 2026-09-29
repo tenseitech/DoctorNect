@@ -90,12 +90,11 @@ class _TopRatedDoctorsNearYouSectionState
     if (allVerified.isEmpty) return const [];
 
     final address = PatientProfileMock.profileAddress;
-    final patientCity =
-        (address.city.isNotEmpty
-                ? address.city
-                : PatientProfileMock.profileCity)
-            .trim()
-            .toLowerCase();
+    final patientCity = (address.city.isNotEmpty
+            ? address.city
+            : PatientProfileMock.profileCity)
+        .trim()
+        .toLowerCase();
     final patientState = address.state.trim().toLowerCase();
     final patientArea =
         '${address.addressLine1} ${address.addressLine2} ${address.landmark}'
@@ -201,7 +200,9 @@ class _TopRatedDoctorsNearYouSectionState
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurface
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
                         .withValues(alpha: 0.7),
                   ),
                 ),
@@ -309,9 +310,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
     if (doctor.clinicName.trim().isNotEmpty) {
       parts.add(doctor.clinicName.trim());
     }
-    final cityOrArea = doctor.area.trim().isNotEmpty
-        ? doctor.area.trim()
-        : doctor.city.trim();
+    final cityOrArea =
+        doctor.area.trim().isNotEmpty ? doctor.area.trim() : doctor.city.trim();
     if (cityOrArea.isNotEmpty) {
       parts.add(cityOrArea);
     }
@@ -553,7 +553,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
 }
 
 class _DoctorPhotoData {
-  const _DoctorPhotoData({this.path, this.url, this.photoKey, this.photoStorage});
+  const _DoctorPhotoData(
+      {this.path, this.url, this.photoKey, this.photoStorage});
 
   final String? path;
   final String? url;

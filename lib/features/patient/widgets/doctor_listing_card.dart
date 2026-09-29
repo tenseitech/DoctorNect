@@ -297,8 +297,8 @@ class _AvailabilityRow extends StatelessWidget {
     final availabilityColor = doctor.availability == DoctorAvailability.today
         ? const Color(0xFF16A34A)
         : doctor.availability == DoctorAvailability.tomorrow
-        ? const Color(0xFFF59E0B)
-        : AppColors.textSecondaryOf(context);
+            ? const Color(0xFFF59E0B)
+            : AppColors.textSecondaryOf(context);
 
     return Row(
       children: [

@@ -212,9 +212,9 @@ void main() {
       () {
         final filtered =
             PatientSharingUtils.filterHealthRecordsSharedWithDoctors([
-              _healthRecord(id: 'private', sharedWithDoctors: false),
-              _healthRecord(id: 'shared', sharedWithDoctors: true),
-            ]);
+          _healthRecord(id: 'private', sharedWithDoctors: false),
+          _healthRecord(id: 'shared', sharedWithDoctors: true),
+        ]);
         expect(filtered.map((r) => r.id), ['shared']);
       },
     );

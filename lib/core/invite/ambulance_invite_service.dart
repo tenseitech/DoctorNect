@@ -30,12 +30,10 @@ abstract final class AmbulanceInviteService {
     required String serviceName,
     required String link,
   }) {
-    final doctor = doctorName.trim().isEmpty
-        ? 'Your doctor'
-        : doctorName.trim();
-    final service = serviceName.trim().isEmpty
-        ? 'ambulance service'
-        : serviceName.trim();
+    final doctor =
+        doctorName.trim().isEmpty ? 'Your doctor' : doctorName.trim();
+    final service =
+        serviceName.trim().isEmpty ? 'ambulance service' : serviceName.trim();
     return '$doctor invited you to join DoctorNect as the driver for $service. '
         'Download the app, open this link, set your PIN and login:\n$link';
   }
@@ -57,9 +55,8 @@ abstract final class AmbulanceInviteService {
     // Unguessable IDs — never use timestamps (enumerable IDOR).
     final inviteId = 'amb-inv-${_generateToken()}';
     final token = _generateToken();
-    final ambulanceId = draft.id.isNotEmpty
-        ? draft.id
-        : 'amb-reg-${_generateToken()}';
+    final ambulanceId =
+        draft.id.isNotEmpty ? draft.id : 'amb-reg-${_generateToken()}';
     final expiresAt = DateTime.now().add(const Duration(days: 30));
 
     final invite = AmbulanceInvite(
@@ -94,10 +91,10 @@ abstract final class AmbulanceInviteService {
           .collection(FirestorePaths.ambulanceInvites)
           .doc(inviteId)
           .set({
-            ...invite.toMap(),
-            'createdAt': FieldValue.serverTimestamp(),
-            'expiresAt': Timestamp.fromDate(expiresAt),
-          });
+        ...invite.toMap(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'expiresAt': Timestamp.fromDate(expiresAt),
+      });
       return (
         inviteId: inviteId,
         link: buildInviteLink(inviteId: inviteId, token: token),
@@ -175,10 +172,10 @@ abstract final class AmbulanceInviteService {
           .collection(FirestorePaths.ambulanceInvites)
           .doc(inviteId)
           .set({
-            'status': AmbulanceInviteStatus.completed.name,
-            'username': cleanUsername,
-            'completedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        'status': AmbulanceInviteStatus.completed.name,
+        'username': cleanUsername,
+        'completedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode)
         debugPrint('completeInviteSetup mark completed failed: $e');

@@ -166,11 +166,11 @@ class SearchSuggestionsField extends StatefulWidget {
     this.onItemSelected,
     this.maxSuggestionsHeight = 160,
   }) : assert(
-         suggestions != null ||
-             suggestionFetcher != null ||
-             itemSuggestionFetcher != null,
-         'Provide suggestions, suggestionFetcher, or itemSuggestionFetcher',
-       );
+          suggestions != null ||
+              suggestionFetcher != null ||
+              itemSuggestionFetcher != null,
+          'Provide suggestions, suggestionFetcher, or itemSuggestionFetcher',
+        );
 
   final String label;
   final TextEditingController controller;
@@ -265,9 +265,8 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
             focusNode: _focusNode,
             controller: widget.controller,
             decoration: InputDecoration(
-              labelText: widget.optional
-                  ? '${widget.label} (optional)'
-                  : widget.label,
+              labelText:
+                  widget.optional ? '${widget.label} (optional)' : widget.label,
               suffixIcon: const Icon(Icons.search, size: 20),
               isDense: true,
             ),

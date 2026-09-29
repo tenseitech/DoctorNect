@@ -32,22 +32,22 @@ class SlotTimeButton extends StatelessWidget {
     final bg = booked
         ? AppColors.cardBgOf(context)
         : selected
-        ? AppColors.patientTeal
-        : Colors.transparent;
+            ? AppColors.patientTeal
+            : Colors.transparent;
     final fg = booked
         ? AppColors.textSecondaryOf(context)
         : selected
-        ? AppColors.white
-        : _shared
-        ? const Color(0xFFB45309)
-        : AppColors.patientTeal;
+            ? AppColors.white
+            : _shared
+                ? const Color(0xFFB45309)
+                : AppColors.patientTeal;
     final border = booked
         ? AppColors.borderOf(context)
         : selected
-        ? AppColors.patientTeal
-        : _shared
-        ? const Color(0xFFF59E0B)
-        : AppColors.patientTeal;
+            ? AppColors.patientTeal
+            : _shared
+                ? const Color(0xFFF59E0B)
+                : AppColors.patientTeal;
 
     return Material(
       color: bg,
@@ -69,9 +69,8 @@ class SlotTimeButton extends StatelessWidget {
             border: Border.all(color: border, width: selected ? 0 : 1.5),
           ),
           child: Column(
-            mainAxisAlignment: compact
-                ? MainAxisAlignment.center
-                : MainAxisAlignment.start,
+            mainAxisAlignment:
+                compact ? MainAxisAlignment.center : MainAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(

@@ -17,24 +17,24 @@ import '../../../widgets/shell/role_empty_state.dart';
 import '../../../core/theme/app_typography.dart';
 
 String labOrderStatusLabel(String status) => switch (status) {
-  'ordered' => 'New',
-  'requested' => 'New request',
-  'confirmed' => 'Confirmed',
-  'declined' => 'Declined',
-  'processing' => 'Processing',
-  'completed' => 'Completed',
-  _ => status,
-};
+      'ordered' => 'New',
+      'requested' => 'New request',
+      'confirmed' => 'Confirmed',
+      'declined' => 'Declined',
+      'processing' => 'Processing',
+      'completed' => 'Completed',
+      _ => status,
+    };
 
 Color labOrderStatusColor(String status) => switch (status) {
-  'ordered' => AppColors.labPurple,
-  'requested' => AppColors.labPurple,
-  'confirmed' => AppColors.labPurple,
-  'declined' => AppColors.error,
-  'processing' => Colors.orange,
-  'completed' => AppColors.pharmacyGreen,
-  _ => AppColors.textSecondary,
-};
+      'ordered' => AppColors.labPurple,
+      'requested' => AppColors.labPurple,
+      'confirmed' => AppColors.labPurple,
+      'declined' => AppColors.error,
+      'processing' => Colors.orange,
+      'completed' => AppColors.pharmacyGreen,
+      _ => AppColors.textSecondary,
+    };
 
 DateTime _dateOnly(DateTime value) =>
     DateTime(value.year, value.month, value.day);
@@ -71,16 +71,16 @@ DoctorLabOrder _bookingToOrder(LabBookingRecord b) {
 }
 
 String _sourceLabel(String source) => switch (source) {
-  'walkin' => 'Walk-in',
-  'patient' => 'Patient',
-  _ => 'Doctor',
-};
+      'walkin' => 'Walk-in',
+      'patient' => 'Patient',
+      _ => 'Doctor',
+    };
 
 Color _sourceColor(String source) => switch (source) {
-  'walkin' => Colors.orange,
-  'patient' => const Color(0xFF2563EB),
-  _ => const Color(0xFF059669),
-};
+      'walkin' => Colors.orange,
+      'patient' => const Color(0xFF2563EB),
+      _ => const Color(0xFF059669),
+    };
 
 String _orderSubtitle(DoctorLabOrder order) {
   final parts = <String>[];
@@ -187,7 +187,8 @@ class _LabOrdersTabState extends State<LabOrdersTab>
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme
+          colorScheme: Theme.of(context)
+              .colorScheme
               .copyWith(primary: AppColors.labPurple),
         ),
         child: child!,
@@ -232,9 +233,8 @@ class _LabOrdersTabState extends State<LabOrdersTab>
       listenable: LabWorklistStore.instance,
       builder: (context, _) {
         final dayOrders = _ordersForSelectedDate();
-        final newOrders = dayOrders
-            .where((o) => !_isCompletedOrder(o))
-            .toList();
+        final newOrders =
+            dayOrders.where((o) => !_isCompletedOrder(o)).toList();
         final completedOrders = dayOrders.where(_isCompletedOrder).toList();
 
         return LayoutBuilder(
@@ -529,8 +529,7 @@ class _DoctorOrdersPanel extends StatelessWidget {
     BuildContext context,
     DoctorLabOrder order,
     String status,
-  )
-  onUpdateStatus;
+  ) onUpdateStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -634,14 +633,14 @@ class _DoctorOrdersPanel extends StatelessWidget {
         // Find the original booking record for report sharing
         final booking = isBooking
             ? LabWorklistStore.instance.bookings
-                  .where((b) => b.bookingId == order.orderId)
-                  .firstOrNull
+                .where((b) => b.bookingId == order.orderId)
+                .firstOrNull
             : null;
 
         final bool hasReport = isBooking
             ? (booking?.hasReport ?? false)
             : (order.reportStorageUrl != null &&
-                  order.reportStorageUrl!.isNotEmpty);
+                order.reportStorageUrl!.isNotEmpty);
 
         return _LabOrderTile(
           order: order,
@@ -776,7 +775,7 @@ class _OrderTabPill extends StatelessWidget {
                     color: selected
                         ? accentColor.withValues(alpha: 0.12)
                         : AppColors.textSecondaryOf(context)
-                              .withValues(alpha: 0.12),
+                            .withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -1065,8 +1064,7 @@ class _LabOrderTile extends StatelessWidget {
         ? const [AppColors.labPurple, Color(0xFF7C3AED)]
         : const [Color(0xFF059669), Color(0xFF047857)];
 
-    final bool showReport =
-        onShareReport != null &&
+    final bool showReport = onShareReport != null &&
         order.status != 'declined' &&
         order.status != 'requested';
 
@@ -1150,24 +1148,23 @@ class _LabOrderTile extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-                                itemBuilder: (context) =>
-                                    [
-                                          'ordered',
-                                          'requested',
-                                          'confirmed',
-                                          'processing',
-                                          'completed',
-                                          'declined',
-                                        ]
-                                        .map(
-                                          (status) => PopupMenuItem<String>(
-                                            value: status,
-                                            child: Text(
-                                              labOrderStatusLabel(status),
-                                            ),
-                                          ),
-                                        )
-                                        .toList(),
+                                itemBuilder: (context) => [
+                                  'ordered',
+                                  'requested',
+                                  'confirmed',
+                                  'processing',
+                                  'completed',
+                                  'declined',
+                                ]
+                                    .map(
+                                      (status) => PopupMenuItem<String>(
+                                        value: status,
+                                        child: Text(
+                                          labOrderStatusLabel(status),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
                               ),
                             ],
                           ),

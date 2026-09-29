@@ -185,62 +185,65 @@ class _MedicalDirectorySectionState extends State<MedicalDirectorySection> {
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : _entries.isEmpty
-          ? const Center(child: Text('No entries added yet.'))
-          : Align(
-              alignment: Alignment.topCenter,
-              child: RefreshIndicator(
-                onRefresh: () => _store.refreshForDoctor(preferCache: false),
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 24,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: Column(
-                      children: _entries.map((entry) {
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            title: Text(entry.name),
-                            subtitle: Text('${entry.type} • ${entry.phone}'),
-                            onTap: () => ExternalLauncher.callPhone(
-                              entry.phone,
-                              context: context,
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.phone, size: 20),
-                                  onPressed: () => ExternalLauncher.callPhone(
-                                    entry.phone,
-                                    context: context,
-                                  ),
+              ? const Center(child: Text('No entries added yet.'))
+              : Align(
+                  alignment: Alignment.topCenter,
+                  child: RefreshIndicator(
+                    onRefresh: () =>
+                        _store.refreshForDoctor(preferCache: false),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 24,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 560),
+                        child: Column(
+                          children: _entries.map((entry) {
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ListTile(
+                                title: Text(entry.name),
+                                subtitle:
+                                    Text('${entry.type} • ${entry.phone}'),
+                                onTap: () => ExternalLauncher.callPhone(
+                                  entry.phone,
+                                  context: context,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.edit, size: 20),
-                                  onPressed: () => _editEntry(entry),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.phone, size: 20),
+                                      onPressed: () =>
+                                          ExternalLauncher.callPhone(
+                                        entry.phone,
+                                        context: context,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, size: 20),
+                                      onPressed: () => _editEntry(entry),
+                                    ),
+                                    LabeledRemoveButton(
+                                      label: 'Delete',
+                                      onPressed: () => _deleteEntry(entry),
+                                    ),
+                                  ],
                                 ),
-                                LabeledRemoveButton(
-                                  label: 'Delete',
-                                  onPressed: () => _deleteEntry(entry),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addEntry,
         child: const Icon(Icons.add),

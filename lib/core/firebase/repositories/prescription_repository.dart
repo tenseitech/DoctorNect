@@ -101,9 +101,9 @@ class PrescriptionRepository {
   }) async {
     if (!await PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
-          patientId,
-          preferCache: preferCache,
-        )) {
+      patientId,
+      preferCache: preferCache,
+    )) {
       return const FirestorePage(items: [], hasMore: false);
     }
     return fetchForPatient(
@@ -142,9 +142,9 @@ class PrescriptionRepository {
   }) async {
     if (!await PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
-          patientId,
-          preferCache: preferCache,
-        )) {
+      patientId,
+      preferCache: preferCache,
+    )) {
       return const FirestorePage(items: [], hasMore: false);
     }
     return fetchForDoctorAndPatient(

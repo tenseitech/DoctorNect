@@ -137,28 +137,24 @@ class DoctorDirectoryRepository {
       final listing = DoctorListing(
         id: docId,
         name: name,
-        specialization:
-            readString(['specialization', 'spec', 'specialty']) ??
+        specialization: readString(['specialization', 'spec', 'specialty']) ??
             'General Physician',
         qualification: readString(['qualification', 'degree']) ?? 'MBBS',
         experienceYears:
             readNum(['experienceYears', 'experience', 'yearsExperience'])
-                ?.toInt() ??
-            1,
+                    ?.toInt() ??
+                1,
         rating: readNum(['rating', 'avgRating'])?.toDouble() ?? 0.0,
         reviewCount:
             readNum(['reviewCount', 'reviews', 'totalReviews'])?.toInt() ?? 0,
-        clinicName:
-            readString(['clinicName', 'clinic', 'hospitalName']) ??
+        clinicName: readString(['clinicName', 'clinic', 'hospitalName']) ??
             '$name Clinic',
         area: nestedCity ?? readString(['area', 'locality', 'location']) ?? '',
         city: nestedCity ?? readString(['city']) ?? '',
-        addressLine1:
-            nestedLine1 ??
+        addressLine1: nestedLine1 ??
             readString(['addressLine1', 'address', 'addr', 'line1']) ??
             '',
-        state:
-            nestedState ??
+        state: nestedState ??
             readString(['state', 'stateCouncil', 'stateName']) ??
             '',
         photoPath: readString(['photoPath']),

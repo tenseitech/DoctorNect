@@ -110,12 +110,12 @@ abstract final class DoctorProfileShareSheet {
 
                     try {
                       final screenshotController = ScreenshotController();
-                      final bytes = await screenshotController
-                          .captureFromWidget(
-                            DoctorPosterWidget(doctor: doctor),
-                            delay: const Duration(milliseconds: 100),
-                            context: context,
-                          );
+                      final bytes =
+                          await screenshotController.captureFromWidget(
+                        DoctorPosterWidget(doctor: doctor),
+                        delay: const Duration(milliseconds: 100),
+                        context: context,
+                      );
 
                       final xFile = XFile.fromData(
                         bytes,

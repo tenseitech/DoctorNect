@@ -26,7 +26,9 @@ abstract final class LabReportFileStore {
   static Future<Uint8List?> Function(String url)? mockDownloadFromUrl;
 
   @visibleForTesting
-  static Future<String?> Function(String patientId, String bookingId, String fileName, Uint8List bytes)? mockFirebaseUpload;
+  static Future<String?> Function(
+          String patientId, String bookingId, String fileName, Uint8List bytes)?
+      mockFirebaseUpload;
 
   @visibleForTesting
   static S3StorageService? s3Override;
@@ -48,7 +50,8 @@ abstract final class LabReportFileStore {
     String patientId,
     String bookingId,
     String fileName,
-  ) => 'lab_reports/$patientId/$bookingId/${_sanitizeFileName(fileName)}';
+  ) =>
+      'lab_reports/$patientId/$bookingId/${_sanitizeFileName(fileName)}';
 
   static Future<String> _localDirPath(
     String patientId,
@@ -67,8 +70,8 @@ abstract final class LabReportFileStore {
     final ext = lower.endsWith('.png')
         ? '.png'
         : lower.endsWith('.jpg') || lower.endsWith('.jpeg')
-        ? '.jpg'
-        : '.pdf';
+            ? '.jpg'
+            : '.pdf';
     final slug = testName
         .replaceAll(RegExp(r'[^\w\s-]'), '')
         .trim()
@@ -393,4 +396,3 @@ abstract final class LabReportFileStore {
     return downloaded;
   }
 }
-

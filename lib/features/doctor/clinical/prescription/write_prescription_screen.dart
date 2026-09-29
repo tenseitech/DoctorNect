@@ -140,8 +140,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
     try {
       final baseline =
           await PatientClinicalBaselineLoader.fetchLatestBaselineDraft(
-            patientId,
-          );
+        patientId,
+      );
       if (!mounted) return;
 
       if (baseline != null) {
@@ -155,8 +155,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
       if (_allergiesController.text.trim().isEmpty) {
         final profileAllergies =
             await PatientClinicalBaselineLoader.fetchProfileAllergiesText(
-              patientId,
-            );
+          patientId,
+        );
         if (!mounted) return;
         if (profileAllergies != null && profileAllergies.isNotEmpty) {
           _allergiesController.text = profileAllergies;
@@ -464,7 +464,9 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e is StateError ? e.message : 'Prescription saved, but sending referral(s) failed. Please retry from Refer.',
+            e is StateError
+                ? e.message
+                : 'Prescription saved, but sending referral(s) failed. Please retry from Refer.',
           ),
         ),
       );
@@ -857,8 +859,7 @@ class _PreviousPrescriptionsSectionState
                   ),
                 _PrevRxCard(
                   draft: latestRecords[i],
-                  isActive:
-                      latestRecords[i].prescriptionId ==
+                  isActive: latestRecords[i].prescriptionId ==
                       widget.activePrescriptionId,
                   onEdit: () => widget.onEdit(latestRecords[i].copy()),
                 ),
@@ -919,13 +920,11 @@ class _PrevRxCard extends StatelessWidget {
                 if (meds.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    meds
-                        .map((m) {
-                          final name = m.name.trim();
-                          final dosage = m.dosageLabel.trim();
-                          return dosage.isEmpty ? name : '$name $dosage';
-                        })
-                        .join(' · '),
+                    meds.map((m) {
+                      final name = m.name.trim();
+                      final dosage = m.dosageLabel.trim();
+                      return dosage.isEmpty ? name : '$name $dosage';
+                    }).join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(

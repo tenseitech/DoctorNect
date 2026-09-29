@@ -59,8 +59,7 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
-    final atBottom =
-        position.maxScrollExtent <= 0 ||
+    final atBottom = position.maxScrollExtent <= 0 ||
         position.pixels >= position.maxScrollExtent - 24;
     if (atBottom && !_reachedBottom) {
       setState(() => _reachedBottom = true);

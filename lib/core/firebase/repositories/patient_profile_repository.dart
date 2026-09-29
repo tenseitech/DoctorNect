@@ -162,9 +162,9 @@ class PatientProfileRepository {
           .collection(FirestorePaths.patients)
           .doc(patientId)
           .set({
-            'careTeamDoctorIds': FieldValue.arrayUnion([doctorId]),
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        'careTeamDoctorIds': FieldValue.arrayUnion([doctorId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
       return true;
     } catch (_) {
       return false;
@@ -180,10 +180,10 @@ class PatientProfileRepository {
         .collection(FirestorePaths.patients)
         .doc(patientId)
         .set({
-          ...data,
-          'patientId': patientId,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      ...data,
+      'patientId': patientId,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<List<HealthRecord>> fetchHealthRecords(String patientId) async {
@@ -223,7 +223,8 @@ class PatientProfileRepository {
           storageKey: data['storageKey'] as String?,
           storageProvider: data['storageProvider'] as String?,
         );
-      }).toList()..sort((a, b) => b.date.compareTo(a.date));
+      }).toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
       return records;
     } catch (e) {
       rethrow; // FIXED: surface fetch failures to callers instead of returning an empty list
@@ -237,9 +238,9 @@ class PatientProfileRepository {
         .collection(FirestorePaths.patients)
         .doc(patientId)
         .set({
-          'fcmToken': token,
-          'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      'fcmToken': token,
+      'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<void> clearPatientFcmToken(String patientId) async {
@@ -248,9 +249,9 @@ class PatientProfileRepository {
         .collection(FirestorePaths.patients)
         .doc(patientId)
         .set({
-          'fcmToken': FieldValue.delete(),
-          'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      'fcmToken': FieldValue.delete(),
+      'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<void> saveHealthRecord(String patientId, HealthRecord record) async {
@@ -259,26 +260,26 @@ class PatientProfileRepository {
         .collection(FirestorePaths.healthRecords)
         .doc(record.id)
         .set({
-          'patientId': patientId,
-          'title': record.title,
-          'type': record.type.name,
-          'date': Timestamp.fromDate(record.date),
-          'source': record.source.name,
-          'fileName': record.fileName,
-          if (record.doctorName != null) 'doctorName': record.doctorName,
-          if (record.labName != null) 'labName': record.labName,
-          'isImage': record.isImage,
-          if (record.notes != null) 'notes': record.notes,
-          'sharedWithDoctors': record.sharedWithDoctors,
-          if (record.fileStorage != HealthRecordFileStorage.none)
-            'fileStorage': record.fileStorage.name,
-          if (record.storageUrl != null) 'storageUrl': record.storageUrl,
-          if (record.storageKey != null) 'storageKey': record.storageKey,
-          if (record.storageProvider != null)
-            'storageProvider': record.storageProvider,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      'patientId': patientId,
+      'title': record.title,
+      'type': record.type.name,
+      'date': Timestamp.fromDate(record.date),
+      'source': record.source.name,
+      'fileName': record.fileName,
+      if (record.doctorName != null) 'doctorName': record.doctorName,
+      if (record.labName != null) 'labName': record.labName,
+      'isImage': record.isImage,
+      if (record.notes != null) 'notes': record.notes,
+      'sharedWithDoctors': record.sharedWithDoctors,
+      if (record.fileStorage != HealthRecordFileStorage.none)
+        'fileStorage': record.fileStorage.name,
+      if (record.storageUrl != null) 'storageUrl': record.storageUrl,
+      if (record.storageKey != null) 'storageKey': record.storageKey,
+      if (record.storageProvider != null)
+        'storageProvider': record.storageProvider,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> deleteHealthRecord(String recordId) async {

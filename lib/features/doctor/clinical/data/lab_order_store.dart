@@ -68,9 +68,9 @@ class LabOrderStore extends ChangeNotifier {
     if (patientId.isEmpty) return true;
     return FirestoreService.instance.patientProfile
         .isPatientSharingClinicalDataWithDoctors(
-          patientId,
-          preferCache: preferCache,
-        );
+      patientId,
+      preferCache: preferCache,
+    );
   }
 
   Future<List<DoctorLabOrder>> _filterOrdersForDoctor(

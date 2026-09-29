@@ -40,7 +40,8 @@ class S3PhotoResolver {
   /// Resolves an objectKey to a presigned download URL.
   /// If already in cache and not expiring soon, returns immediately.
   /// Otherwise, queues for the next microtask batch.
-  Future<String?> resolveUrl(String objectKey, {bool forceRefresh = false}) async {
+  Future<String?> resolveUrl(String objectKey,
+      {bool forceRefresh = false}) async {
     final cleanKey = objectKey.trim();
     if (cleanKey.isEmpty) return null;
 
@@ -68,7 +69,8 @@ class S3PhotoResolver {
     if (_pendingCompleters.isEmpty) return;
 
     final keysToResolve = _pendingCompleters.keys.toList();
-    final completersMap = Map<String, List<Completer<String?>>>.from(_pendingCompleters);
+    final completersMap =
+        Map<String, List<Completer<String?>>>.from(_pendingCompleters);
     _pendingCompleters.clear();
 
     // Chunk into batches of at most 20 keys (Cloud Function limit)
@@ -171,11 +173,13 @@ class S3KeyImageProvider extends ImageProvider<S3KeyImageKey> {
 
   @override
   Future<S3KeyImageKey> obtainKey(ImageConfiguration configuration) {
-    return SynchronousFuture<S3KeyImageKey>(S3KeyImageKey(objectKey, scale: scale));
+    return SynchronousFuture<S3KeyImageKey>(
+        S3KeyImageKey(objectKey, scale: scale));
   }
 
   @override
-  ImageStreamCompleter loadImage(S3KeyImageKey key, ImageDecoderCallback decode) {
+  ImageStreamCompleter loadImage(
+      S3KeyImageKey key, ImageDecoderCallback decode) {
     return MultiFrameImageStreamCompleter(
       codec: _loadAsync(key, decode),
       scale: key.scale,
@@ -187,7 +191,8 @@ class S3KeyImageProvider extends ImageProvider<S3KeyImageKey> {
     );
   }
 
-  Future<ui.Codec> _loadAsync(S3KeyImageKey key, ImageDecoderCallback decode) async {
+  Future<ui.Codec> _loadAsync(
+      S3KeyImageKey key, ImageDecoderCallback decode) async {
     final client = httpClient ?? resolver._httpClient;
 
     // 1. Resolve URL from resolver
@@ -213,7 +218,9 @@ class S3KeyImageProvider extends ImageProvider<S3KeyImageKey> {
       }
     }
 
-    if (response == null || response.statusCode != 200 || response.bodyBytes.isEmpty) {
+    if (response == null ||
+        response.statusCode != 200 ||
+        response.bodyBytes.isEmpty) {
       throw StateError(
         'Failed to load S3 image bytes for ${key.objectKey}: HTTP ${response?.statusCode ?? "no response"}',
       );

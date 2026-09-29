@@ -255,8 +255,8 @@ abstract final class AppConstants {
   };
 
   static List<String> get allSpecializations => [
-    for (final list in specializationCategories.values) ...list,
-  ];
+        for (final list in specializationCategories.values) ...list,
+      ];
 
   // Backward-compatible alias
   static List<String> get specializations => allSpecializations;

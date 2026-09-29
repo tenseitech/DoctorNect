@@ -62,7 +62,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
       return booking.dateTime.year == today.year &&
           booking.dateTime.month == today.month &&
           booking.dateTime.day == today.day;
-    }).toList()..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    }).toList()
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
 
   Future<void> _submit() async {
@@ -87,19 +88,19 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
     setState(() => _submitting = true);
 
     try {
-      final booking = await FirestoreService.instance.labBooking
-          .saveWalkInBooking(
-            labId: labId,
-            labName: labName.isNotEmpty ? labName : 'Lab',
-            patientName: _nameController.text.trim(),
-            patientAge: age,
-            patientGender: _gender!,
-            testNames: _tests,
-            contactNumber: FormValidators.formatFullPhone(
-              _phoneDialCode,
-              _phoneController.text.trim(),
-            ),
-          );
+      final booking =
+          await FirestoreService.instance.labBooking.saveWalkInBooking(
+        labId: labId,
+        labName: labName.isNotEmpty ? labName : 'Lab',
+        patientName: _nameController.text.trim(),
+        patientAge: age,
+        patientGender: _gender!,
+        testNames: _tests,
+        contactNumber: FormValidators.formatFullPhone(
+          _phoneDialCode,
+          _phoneController.text.trim(),
+        ),
+      );
       LabWorklistStore.instance.mergeBookings([booking]);
 
       if (!mounted) return;
@@ -361,7 +362,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       child: RoleEmptyState(
                         icon: Icons.person_add_disabled_outlined,
                         title: "No walk-in patients today",
-                        subtitle: "Patients registered at the counter today will appear here.",
+                        subtitle:
+                            "Patients registered at the counter today will appear here.",
                         accentColor: _labPurple,
                         compact: true,
                       ),

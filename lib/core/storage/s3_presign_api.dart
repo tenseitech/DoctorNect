@@ -18,7 +18,8 @@ class S3UploadCredentials {
     final uploadUrl = map['uploadUrl'] as String?;
     final objectKey = map['objectKey'] as String?;
     if (uploadUrl == null || objectKey == null) {
-      throw StateError('Invalid server response: missing uploadUrl or objectKey.');
+      throw StateError(
+          'Invalid server response: missing uploadUrl or objectKey.');
     }
     return S3UploadCredentials(
       uploadUrl: uploadUrl,
@@ -56,7 +57,9 @@ class StorageException implements Exception {
   final String? code;
 
   @override
-  String toString() => code != null ? 'StorageException($code): $message' : 'StorageException: $message';
+  String toString() => code != null
+      ? 'StorageException($code): $message'
+      : 'StorageException: $message';
 }
 
 /// Isolation boundary for all S3 presign Cloud Function endpoints.
@@ -96,7 +99,8 @@ class S3PresignApi {
       return S3UploadCredentials.fromMap(data);
     } on FirebaseFunctionsException catch (e) {
       if (kDebugMode) {
-        debugPrint('[S3PresignApi] getUploadUrl failed: ${e.code} - ${e.message}');
+        debugPrint(
+            '[S3PresignApi] getUploadUrl failed: ${e.code} - ${e.message}');
       }
       throw StorageException(
         e.message ?? 'Failed to get upload authorization.',
@@ -106,7 +110,8 @@ class S3PresignApi {
       if (kDebugMode) {
         debugPrint('[S3PresignApi] getUploadUrl unexpected error: $e');
       }
-      throw StorageException('Could not connect to storage backend.', code: 'network-error');
+      throw StorageException('Could not connect to storage backend.',
+          code: 'network-error');
     }
   }
 
@@ -125,7 +130,8 @@ class S3PresignApi {
       return S3DownloadResult.fromMap(response.data);
     } on FirebaseFunctionsException catch (e) {
       if (kDebugMode) {
-        debugPrint('[S3PresignApi] getDownloadUrl failed for key: ${e.code} - ${e.message}');
+        debugPrint(
+            '[S3PresignApi] getDownloadUrl failed for key: ${e.code} - ${e.message}');
       }
       throw StorageException(
         e.message ?? 'Access to this file was denied or expired.',
@@ -135,7 +141,8 @@ class S3PresignApi {
       if (kDebugMode) {
         debugPrint('[S3PresignApi] getDownloadUrl error: $e');
       }
-      throw StorageException('Could not connect to storage backend.', code: 'network-error');
+      throw StorageException('Could not connect to storage backend.',
+          code: 'network-error');
     }
   }
 
@@ -158,7 +165,8 @@ class S3PresignApi {
       );
     } on FirebaseFunctionsException catch (e) {
       if (kDebugMode) {
-        debugPrint('[S3PresignApi] getDownloadUrls failed: ${e.code} - ${e.message}');
+        debugPrint(
+            '[S3PresignApi] getDownloadUrls failed: ${e.code} - ${e.message}');
       }
       throw StorageException(
         e.message ?? 'Failed to fetch media URLs.',
@@ -187,7 +195,8 @@ class S3PresignApi {
       return response.data['success'] == true;
     } on FirebaseFunctionsException catch (e) {
       if (kDebugMode) {
-        debugPrint('[S3PresignApi] deleteObject failed: ${e.code} - ${e.message}');
+        debugPrint(
+            '[S3PresignApi] deleteObject failed: ${e.code} - ${e.message}');
       }
       throw StorageException(
         e.message ?? 'Could not delete file.',

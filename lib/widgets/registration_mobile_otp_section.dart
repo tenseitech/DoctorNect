@@ -209,12 +209,12 @@ class _RegistrationMobileOtpSectionState
   }
 
   ButtonStyle get _primaryButtonStyle => FilledButton.styleFrom(
-    backgroundColor: widget.accentColor,
-    foregroundColor: widget.accentColor.computeLuminance() > 0.5
-        ? Colors.black
-        : Colors.white,
-    minimumSize: const Size.fromHeight(48),
-  );
+        backgroundColor: widget.accentColor,
+        foregroundColor: widget.accentColor.computeLuminance() > 0.5
+            ? Colors.black
+            : Colors.white,
+        minimumSize: const Size.fromHeight(48),
+      );
 
   Widget _buildFingerprint() {
     return Text(

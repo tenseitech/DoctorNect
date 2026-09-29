@@ -395,8 +395,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                 decoration: BoxDecoration(
                   color: active
                       ? (_isPatient
-                            ? AppColors.patientTeal
-                            : AppColors.doctorBlue)
+                          ? AppColors.patientTeal
+                          : AppColors.doctorBlue)
                       : Colors.grey[300],
                   borderRadius: BorderRadius.circular(3),
                 ),

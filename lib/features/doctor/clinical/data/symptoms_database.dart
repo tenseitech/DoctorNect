@@ -71,8 +71,8 @@ class SymptomsDatabase extends ChangeNotifier {
       final merged = byCode.values.toList()
         ..sort(
           (a, b) => a.displayName.toLowerCase().compareTo(
-            b.displayName.toLowerCase(),
-          ),
+                b.displayName.toLowerCase(),
+              ),
         );
       _entries = merged;
       debugPrint(
@@ -161,14 +161,11 @@ class SymptomsDatabase extends ChangeNotifier {
 
   static String _titleCase(String raw) {
     if (raw.isEmpty) return raw;
-    return raw
-        .split(RegExp(r'\s+'))
-        .map((word) {
-          if (word.isEmpty) return word;
-          if (word.length == 1) return word.toUpperCase();
-          return '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}';
-        })
-        .join(' ');
+    return raw.split(RegExp(r'\s+')).map((word) {
+      if (word.isEmpty) return word;
+      if (word.length == 1) return word.toUpperCase();
+      return '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}';
+    }).join(' ');
   }
 
   static String _codeToDisplayName(String code) {

@@ -138,7 +138,8 @@ class _DoctorAppointmentDetailScreenState
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't accept this appointment. Please check your connection and try again.",
             ),
           ),
         ),
@@ -160,7 +161,8 @@ class _DoctorAppointmentDetailScreenState
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't decline this appointment. Please check your connection and try again.",
             ),
           ),
         ),
@@ -802,8 +804,7 @@ class _ActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isActive =
-        appointment.status == AppointmentStatus.confirmed ||
+    final isActive = appointment.status == AppointmentStatus.confirmed ||
         appointment.status == AppointmentStatus.inProgress ||
         appointment.status == AppointmentStatus.waiting;
     final ctx = _patientContext();
@@ -1006,7 +1007,8 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't cancel this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't cancel this appointment. Please check your connection and try again.",
             ),
           ),
         ),
@@ -1018,11 +1020,11 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
     final patientId = PatientSession.loggedInPatientId;
     PatientDoctorReview? existingReview;
     if (patientId.isNotEmpty) {
-      existingReview = await FirestoreService.instance.review
-          .fetchReviewForPatientAndDoctor(
-            patientId: patientId,
-            doctorId: a.doctorId,
-          );
+      existingReview =
+          await FirestoreService.instance.review.fetchReviewForPatientAndDoctor(
+        patientId: patientId,
+        doctorId: a.doctorId,
+      );
     }
     if (!context.mounted) return;
 
@@ -1475,21 +1477,21 @@ class _StatusHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color, bg) = switch ((cancelled, upcoming)) {
       (true, _) => (
-        'Cancelled',
-        const Color(0xFFDC2626),
-        const Color(0xFFFEF2F2),
-      ),
+          'Cancelled',
+          const Color(0xFFDC2626),
+          const Color(0xFFFEF2F2),
+        ),
       (false, true) => (
-        appointment.status == PatientBookingStatus.confirmed
-            ? 'Confirmed'
-            : 'Pending',
-        appointment.status == PatientBookingStatus.confirmed
-            ? const Color(0xFF16A34A)
-            : const Color(0xFFD97706),
-        appointment.status == PatientBookingStatus.confirmed
-            ? const Color(0xFFF0FDF4)
-            : const Color(0xFFFFFBEB),
-      ),
+          appointment.status == PatientBookingStatus.confirmed
+              ? 'Confirmed'
+              : 'Pending',
+          appointment.status == PatientBookingStatus.confirmed
+              ? const Color(0xFF16A34A)
+              : const Color(0xFFD97706),
+          appointment.status == PatientBookingStatus.confirmed
+              ? const Color(0xFFF0FDF4)
+              : const Color(0xFFFFFBEB),
+        ),
       _ => ('Completed', const Color(0xFF2563EB), const Color(0xFFEFF6FF)),
     };
 
@@ -1554,8 +1556,8 @@ class _StatusHeader extends StatelessWidget {
               cancelled
                   ? Icons.event_busy_outlined
                   : upcoming
-                  ? Icons.event_available_outlined
-                  : Icons.event_available,
+                      ? Icons.event_available_outlined
+                      : Icons.event_available,
               color: AppColors.patientTeal,
             ),
           ),

@@ -235,9 +235,8 @@ abstract final class PatientProfileFormStyles {
   static AppBar profileAppBar(String title, {BuildContext? context}) {
     return AppBar(
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-      backgroundColor: context != null
-          ? AppColors.surfaceOf(context)
-          : Colors.white,
+      backgroundColor:
+          context != null ? AppColors.surfaceOf(context) : Colors.white,
       foregroundColor: context != null
           ? AppColors.textPrimaryOf(context)
           : AppColors.textPrimary,

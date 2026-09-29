@@ -38,9 +38,8 @@ class PatientListCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             border: Border.all(color: AppColors.borderOf(context)),
           ),
-          child: wide
-              ? _buildWideLayout(context)
-              : _buildCompactLayout(context),
+          child:
+              wide ? _buildWideLayout(context) : _buildCompactLayout(context),
         ),
       ),
     );
@@ -213,9 +212,8 @@ class _ConditionChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = maxVisible == null
-        ? conditions
-        : conditions.take(maxVisible!).toList();
+    final visible =
+        maxVisible == null ? conditions : conditions.take(maxVisible!).toList();
     final hidden = maxVisible == null ? 0 : conditions.length - visible.length;
 
     return Wrap(

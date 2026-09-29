@@ -182,7 +182,8 @@ class PatientNotificationScheduler {
     final upcoming = PatientProfileMock.vaccinations.where((v) {
       final daysUntil = v.date.difference(now).inDays;
       return daysUntil >= 0 && daysUntil <= 7;
-    }).toList()..sort((a, b) => a.date.compareTo(b.date));
+    }).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
     if (upcoming.isEmpty) return;
     final next = upcoming.first;
     PatientNotificationEmitter.notifyVaccinationDue(

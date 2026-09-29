@@ -252,9 +252,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                                   fontSize: compact ? 18 : 22,
                                   fontWeight: FontWeight.w700,
                                   height: 1.15,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               SizedBox(height: compact ? 2 : 4),
@@ -388,10 +387,10 @@ class _PatientLocationRow extends StatelessWidget {
     final resolvedCity = address.shortLabel.isNotEmpty
         ? address.shortLabel
         : (city != null && city!.trim().isNotEmpty
-              ? city!.trim()
-              : (PatientProfileMock.profileCity.trim().isNotEmpty
-                    ? PatientProfileMock.profileCity.trim()
-                    : ''));
+            ? city!.trim()
+            : (PatientProfileMock.profileCity.trim().isNotEmpty
+                ? PatientProfileMock.profileCity.trim()
+                : ''));
     final hasLocation = resolvedCity.isNotEmpty;
     final label = hasLocation ? resolvedCity : 'Change location';
 
@@ -421,9 +420,8 @@ class _PatientLocationRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.bodySmall,
-                      fontWeight: hasLocation
-                          ? FontWeight.w500
-                          : FontWeight.w600,
+                      fontWeight:
+                          hasLocation ? FontWeight.w500 : FontWeight.w600,
                       height: 1.2,
                       color: hasLocation
                           ? AppColors.textSecondaryOf(context)

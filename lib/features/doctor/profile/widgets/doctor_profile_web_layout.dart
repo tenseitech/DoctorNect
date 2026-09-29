@@ -37,9 +37,9 @@ class DoctorProfileWebLayout extends StatelessWidget {
   final List<ProfileWebActionData> insightsActions;
 
   List<ProfileWebActionData> get _sidebarQuickLinks => [
-    ...accountActions,
-    ...insightsActions,
-  ];
+        ...accountActions,
+        ...insightsActions,
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -360,8 +360,7 @@ class _SidebarQuickLinkState extends State<_SidebarQuickLink> {
 
   @override
   Widget build(BuildContext context) {
-    final gradient =
-        widget.action.iconGradient ??
+    final gradient = widget.action.iconGradient ??
         const [AppColors.doctorBlue, Color(0xFF0F4A82)];
 
     return MouseRegion(
@@ -570,8 +569,7 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
 
   @override
   Widget build(BuildContext context) {
-    final gradient =
-        widget.action.iconGradient ??
+    final gradient = widget.action.iconGradient ??
         const [AppColors.doctorBlue, Color(0xFF0F4A82)];
 
     return MouseRegion(
@@ -649,8 +647,8 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 22,
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.8),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
                 ),
               ],
             ),

@@ -87,8 +87,7 @@ class MedicalStoreRepository {
         country: aCountry,
         state: aState,
         pincode: aPinCode,
-        drugLicenseNumber:
-            (data['drugLicenseNumber'] as String?) ??
+        drugLicenseNumber: (data['drugLicenseNumber'] as String?) ??
             (data['licenseNumber'] as String?) ??
             '',
         phone: data['phone'] as String? ?? '',

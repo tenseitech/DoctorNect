@@ -136,11 +136,11 @@ class _DoctorShellState extends State<DoctorShell> {
             .collection(FirestorePaths.users)
             .doc(uid)
             .set({
-              'verified': true,
-              'verificationStatus': 'verified',
-              'status': 'approved',
-              'profileCompleted': true,
-            }, SetOptions(merge: true));
+          'verified': true,
+          'verificationStatus': 'verified',
+          'status': 'approved',
+          'profileCompleted': true,
+        }, SetOptions(merge: true));
       }
       final doctorId = DoctorSession.loggedInDoctorId.isNotEmpty
           ? DoctorSession.loggedInDoctorId
@@ -150,11 +150,11 @@ class _DoctorShellState extends State<DoctorShell> {
             .collection(FirestorePaths.doctors)
             .doc(doctorId)
             .set({
-              'verified': true,
-              'verificationStatus': 'verified',
-              'status': 'approved',
-              'profileCompleted': true,
-            }, SetOptions(merge: true));
+          'verified': true,
+          'verificationStatus': 'verified',
+          'status': 'approved',
+          'profileCompleted': true,
+        }, SetOptions(merge: true));
       }
     } catch (_) {}
   }
@@ -190,12 +190,10 @@ class _DoctorShellState extends State<DoctorShell> {
   }
 
   List<bool> _requestDots(String doctorId) {
-    final storePending = PharmacyConnectionStore.instance
-        .pendingForDoctor(doctorId)
-        .isNotEmpty;
-    final labPending = LabConnectionStore.instance
-        .pendingForDoctor(doctorId)
-        .isNotEmpty;
+    final storePending =
+        PharmacyConnectionStore.instance.pendingForDoctor(doctorId).isNotEmpty;
+    final labPending =
+        LabConnectionStore.instance.pendingForDoctor(doctorId).isNotEmpty;
     return [false, false, false, storePending, labPending];
   }
 
@@ -291,13 +289,13 @@ class _DoctorShellState extends State<DoctorShell> {
       _isAnimatingToPage = true;
       _pageController
           .animateToPage(
-            index,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-          )
+        index,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+      )
           .then((_) {
-            _isAnimatingToPage = false;
-          });
+        _isAnimatingToPage = false;
+      });
     }
   }
 

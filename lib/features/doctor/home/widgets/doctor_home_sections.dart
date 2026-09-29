@@ -27,8 +27,7 @@ class DoctorHomeTopBar extends StatelessWidget {
     final compact = ResponsiveLayout.isCompact(context);
     final rawName = displayName.trim();
     final cleanName = rawName.isEmpty ? 'Doctor' : rawName;
-    final greetingText =
-        (cleanName.toLowerCase().startsWith('dr.') ||
+    final greetingText = (cleanName.toLowerCase().startsWith('dr.') ||
             cleanName.toLowerCase().startsWith('dr '))
         ? 'Hi, $cleanName'
         : 'Hi, Dr. $cleanName';
@@ -422,8 +421,8 @@ class DoctorHomeStatsStrip extends StatelessWidget {
                       Container(
                         width: 1,
                         height: 40,
-                        color: AppColors.borderOf(context)
-                            .withValues(alpha: 0.85),
+                        color:
+                            AppColors.borderOf(context).withValues(alpha: 0.85),
                       ),
                   ],
                 ],
@@ -460,8 +459,8 @@ class DoctorHomeStatsStrip extends StatelessWidget {
                       Container(
                         width: 1,
                         height: statsHeight - 28,
-                        color: AppColors.borderOf(context)
-                            .withValues(alpha: 0.85),
+                        color:
+                            AppColors.borderOf(context).withValues(alpha: 0.85),
                       ),
                   ],
                 ],
@@ -967,9 +966,8 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final limit = constraints.maxWidth >= 800 ? 6 : 4;
-        final maxVisible = widget.services.length > limit
-            ? limit
-            : widget.services.length;
+        final maxVisible =
+            widget.services.length > limit ? limit : widget.services.length;
 
         return Row(
           children: [
@@ -1103,8 +1101,8 @@ class _DoctorServiceTile extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 size: 16,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.8),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
               ),
             ],
           ),
@@ -1257,9 +1255,8 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                   vertical: 7,
                 ),
                 child: Row(
-                  mainAxisSize: stackActions
-                      ? MainAxisSize.max
-                      : MainAxisSize.min,
+                  mainAxisSize:
+                      stackActions ? MainAxisSize.max : MainAxisSize.min,
                   children: [
                     Container(
                       width: 32,
@@ -1464,8 +1461,8 @@ class ClinicalToolsDrawer extends StatelessWidget {
           return SlideTransition(
             position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
                 .animate(
-                  CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-                ),
+              CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+            ),
             child: child,
           );
         },

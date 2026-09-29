@@ -112,34 +112,34 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                           ),
                         ]
                       : _hovered
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.16),
-                            blurRadius: 22,
-                            offset: const Offset(0, 8),
-                          ),
-                          BoxShadow(
-                            color: AppColors.textPrimary.withValues(
-                              alpha: 0.06,
-                            ),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: AppColors.textPrimary.withValues(
-                              alpha: 0.05,
-                            ),
-                            blurRadius: 14,
-                            offset: const Offset(0, 3),
-                          ),
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.04),
-                            blurRadius: 8,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
+                          ? [
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.16),
+                                blurRadius: 22,
+                                offset: const Offset(0, 8),
+                              ),
+                              BoxShadow(
+                                color: AppColors.textPrimary.withValues(
+                                  alpha: 0.06,
+                                ),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: AppColors.textPrimary.withValues(
+                                  alpha: 0.05,
+                                ),
+                                blurRadius: 14,
+                                offset: const Offset(0, 3),
+                              ),
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
                   color: _hovered && isWeb
                       ? color.withValues(alpha: 0.035)
                       : AppColors.surfaceOf(context),
@@ -233,7 +233,7 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                               color: _hovered || isMobile
                                   ? color
                                   : AppColors.textSecondaryOf(context)
-                                        .withValues(alpha: 0.55),
+                                      .withValues(alpha: 0.55),
                             ),
                           ],
                         ),

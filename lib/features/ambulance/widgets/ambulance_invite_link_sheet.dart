@@ -68,8 +68,8 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.3),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

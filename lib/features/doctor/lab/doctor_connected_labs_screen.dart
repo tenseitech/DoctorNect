@@ -36,9 +36,9 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
   StreamSubscription<List<DoctorLabOrder>>? _ordersSub;
 
   String? _doctorCity() => pharmacyCityFilter(
-    city: DoctorProfileStore.instance.profile.city,
-    address: DoctorProfileStore.instance.profile.addressLine1,
-  );
+        city: DoctorProfileStore.instance.profile.city,
+        address: DoctorProfileStore.instance.profile.addressLine1,
+      );
 
   @override
   void initState() {
@@ -106,7 +106,8 @@ class _DoctorConnectedLabsScreenState extends State<DoctorConnectedLabsScreen> {
     return DoctorConnectedPartnersBaseView(
       partnerRole: UserType.lab,
       partnerHeaderTitle: 'Diagnostic Labs',
-      partnerHeaderSubtitle: 'Connect with verified diagnostic labs to send electronic lab orders.',
+      partnerHeaderSubtitle:
+          'Connect with verified diagnostic labs to send electronic lab orders.',
       partnerTypeLabel: 'Lab',
       accentColor: AppColors.labPurple,
       showAppBar: widget.showAppBar,

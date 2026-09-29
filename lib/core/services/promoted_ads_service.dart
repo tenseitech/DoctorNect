@@ -19,7 +19,8 @@ abstract final class PromotedAdsService {
   static const _collection = 'promotedAds';
 
   static String _generateAdId() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     final rnd = math.Random();
     return String.fromCharCodes(Iterable.generate(
       20,
@@ -239,7 +240,8 @@ abstract final class PromotedAdsService {
           await _s3.deleteObject(oldImageKey.trim());
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('[PromotedAdsService] failed to delete old S3 banner: $e');
+            debugPrint(
+                '[PromotedAdsService] failed to delete old S3 banner: $e');
           }
         }
       }
@@ -325,7 +327,8 @@ abstract final class PromotedAdsService {
 
   /// Stream of active ads for real-time patient carousel updates (respects Super Admin config.enabled)
   static Stream<List<PromotedAdModel>> streamActiveAds() {
-    if (!FirebaseBootstrap.isReady && firestoreOverride == null) return Stream.value([]);
+    if (!FirebaseBootstrap.isReady && firestoreOverride == null)
+      return Stream.value([]);
 
     final controller = StreamController<List<PromotedAdModel>>.broadcast();
     BannerConfigModel lastConfig = const BannerConfigModel();
@@ -357,11 +360,9 @@ abstract final class PromotedAdsService {
         .where('status', isEqualTo: 'active')
         .snapshots()
         .listen((snap) {
-          lastAds = snap.docs
-              .map((d) => PromotedAdModel.fromFirestore(d))
-              .toList();
-          emit();
-        }, onError: (_) => emit());
+      lastAds = snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
+      emit();
+    }, onError: (_) => emit());
 
     controller.onCancel = () {
       configSub.cancel();
@@ -373,22 +374,21 @@ abstract final class PromotedAdsService {
 
   /// 5. Query provider's own ads for "My Ads" dashboard view
   static Stream<List<PromotedAdModel>> streamProviderAds(String providerId) {
-    if ((!FirebaseBootstrap.isReady && firestoreOverride == null) || providerId.isEmpty)
-      return Stream.value([]);
+    if ((!FirebaseBootstrap.isReady && firestoreOverride == null) ||
+        providerId.isEmpty) return Stream.value([]);
     return _db
         .collection(_collection)
         .where('providerId', isEqualTo: providerId)
         .snapshots()
         .map((snap) {
-          final list = snap.docs
-              .map((d) => PromotedAdModel.fromFirestore(d))
-              .toList();
-          list.sort(
-            (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
-              a.createdAt ?? DateTime.now(),
-            ),
-          );
-          return list;
-        });
+      final list =
+          snap.docs.map((d) => PromotedAdModel.fromFirestore(d)).toList();
+      list.sort(
+        (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+          a.createdAt ?? DateTime.now(),
+        ),
+      );
+      return list;
+    });
   }
 }

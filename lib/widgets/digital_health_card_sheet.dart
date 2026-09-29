@@ -49,8 +49,8 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
 
-      final renderObject = _passCardBoundaryKey.currentContext
-          ?.findRenderObject();
+      final renderObject =
+          _passCardBoundaryKey.currentContext?.findRenderObject();
       if (renderObject is! RenderRepaintBoundary || !renderObject.attached) {
         throw StateError('Pass card is not ready to share');
       }
@@ -100,28 +100,28 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
 
     final name = isDoctor
         ? (doctorProfile.fullName.trim().isEmpty
-              ? 'Dr. Doctor'
-              : (doctorProfile.fullName.trim().toLowerCase().startsWith('dr.')
-                    ? doctorProfile.fullName.trim()
-                    : 'Dr. ${doctorProfile.fullName.trim()}'))
+            ? 'Dr. Doctor'
+            : (doctorProfile.fullName.trim().toLowerCase().startsWith('dr.')
+                ? doctorProfile.fullName.trim()
+                : 'Dr. ${doctorProfile.fullName.trim()}'))
         : (patientProfile.name.isEmpty ? 'Patient' : patientProfile.name);
 
     final subtitle = isDoctor
         ? (doctorProfile.specialization.isEmpty
-              ? 'Medical Practitioner'
-              : doctorProfile.specialization)
+            ? 'Medical Practitioner'
+            : doctorProfile.specialization)
         : 'Patient ID: P-884210';
 
     final regNumber = isDoctor
         ? (doctorProfile.councilNumber.isEmpty
-              ? 'MCI-884210'
-              : doctorProfile.councilNumber)
+            ? 'MCI-884210'
+            : doctorProfile.councilNumber)
         : 'Blood Group: ${patientProfile.bloodGroup}';
 
     final stateCouncil = isDoctor
         ? (doctorProfile.stateCouncil.isEmpty
-              ? 'State Medical Council'
-              : doctorProfile.stateCouncil)
+            ? 'State Medical Council'
+            : doctorProfile.stateCouncil)
         : 'Gender/Age: ${patientProfile.gender}, ${patientProfile.age} yrs';
 
     final accent = isDoctor ? AppColors.doctorBlue : AppColors.patientTeal;
@@ -193,12 +193,12 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
                     onPressed: _sharingPass
                         ? null
                         : () => _sharePass(
-                            isDoctor: isDoctor,
-                            name: name,
-                            subtitle: subtitle,
-                            regNumber: regNumber,
-                            stateCouncil: stateCouncil,
-                          ),
+                              isDoctor: isDoctor,
+                              name: name,
+                              subtitle: subtitle,
+                              regNumber: regNumber,
+                              stateCouncil: stateCouncil,
+                            ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(48),
                       side: BorderSide(color: accent),

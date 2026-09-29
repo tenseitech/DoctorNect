@@ -138,15 +138,14 @@ void main() {
     const bookingId = 'booking_test_456';
     const fileName = 'Complete_Blood_Count_Lab_Report.pdf';
     // Valid PDF header "%PDF-1.4..."
-    final samplePdfBytes =
-        Uint8List.fromList(utf8.encode('%PDF-1.4 sample pdf content for lab testing'));
+    final samplePdfBytes = Uint8List.fromList(
+        utf8.encode('%PDF-1.4 sample pdf content for lab testing'));
 
     test('flag OFF: uploads to Firebase Storage, S3 is NOT called', () async {
       StorageFeatureFlag.debugOverride = false;
 
       var firebaseUploadCalled = false;
-      LabReportFileStore.mockFirebaseUpload =
-          (pId, bId, fName, bytes) async {
+      LabReportFileStore.mockFirebaseUpload = (pId, bId, fName, bytes) async {
         firebaseUploadCalled = true;
         expect(pId, equals(patientId));
         expect(bId, equals(bookingId));
@@ -169,12 +168,13 @@ void main() {
       expect(fakeS3.uploadCallCount, equals(0));
     });
 
-    test('flag ON: uploads via S3StorageService with parentId="{patientId}/{bookingId}"', () async {
+    test(
+        'flag ON: uploads via S3StorageService with parentId="{patientId}/{bookingId}"',
+        () async {
       StorageFeatureFlag.debugOverride = true;
 
       var firebaseUploadCalled = false;
-      LabReportFileStore.mockFirebaseUpload =
-          (pId, bId, fName, bytes) async {
+      LabReportFileStore.mockFirebaseUpload = (pId, bId, fName, bytes) async {
         firebaseUploadCalled = true;
         return 'https://firebasestorage.googleapis.com/unexpected';
       };
@@ -189,7 +189,8 @@ void main() {
       expect(result, isNotNull);
       expect(result!.provider, equals('s3'));
       expect(result.isS3, isTrue);
-      expect(result.objectKey, equals('lab_reports/$patientId/$bookingId/$fileName'));
+      expect(result.objectKey,
+          equals('lab_reports/$patientId/$bookingId/$fileName'));
       expect(fakeS3.uploadCallCount, equals(1));
       expect(fakeS3.lastUploadedPurpose, equals('lab_reports'));
       expect(fakeS3.lastUploadedParentId, equals('$patientId/$bookingId'));
@@ -198,9 +199,12 @@ void main() {
       expect(firebaseUploadCalled, isFalse);
     });
 
-    test('load with reportStorageProvider "s3" resolves presigned URL and downloads bytes', () async {
+    test(
+        'load with reportStorageProvider "s3" resolves presigned URL and downloads bytes',
+        () async {
       const expectedKey = 'lab_reports/$patientId/$bookingId/uuid-123.pdf';
-      const fakePresignedUrl = 'https://s3.ap-south-1.amazonaws.com/doctornect/presigned-token-url';
+      const fakePresignedUrl =
+          'https://s3.ap-south-1.amazonaws.com/doctornect/presigned-token-url';
 
       fakeS3.downloadUrlToReturn = fakePresignedUrl;
 
@@ -233,8 +237,11 @@ void main() {
       expect(legacyDownloadCalled, isFalse);
     });
 
-    test('load with legacy firebasestorage URL routes to legacy path without S3', () async {
-      const legacyUrl = 'https://firebasestorage.googleapis.com/v0/b/app/o/lab_reports%2Fp1%2Ffile.pdf?alt=media';
+    test(
+        'load with legacy firebasestorage URL routes to legacy path without S3',
+        () async {
+      const legacyUrl =
+          'https://firebasestorage.googleapis.com/v0/b/app/o/lab_reports%2Fp1%2Ffile.pdf?alt=media';
 
       var legacyCalled = false;
       LabReportFileStore.mockDownloadFromUrl = (url) async {
@@ -260,8 +267,10 @@ void main() {
       expect(fakeS3.getDownloadUrlCallCount, equals(0));
     });
 
-    test('report with no storageProvider still opens via legacy download', () async {
-      const legacyUrl = 'https://firebasestorage.googleapis.com/v0/b/app/o/p1_b1.pdf';
+    test('report with no storageProvider still opens via legacy download',
+        () async {
+      const legacyUrl =
+          'https://firebasestorage.googleapis.com/v0/b/app/o/p1_b1.pdf';
 
       var legacyCalled = false;
       LabReportFileStore.mockDownloadFromUrl = (url) async {
@@ -284,7 +293,9 @@ void main() {
       expect(fakeS3.getDownloadUrlCallCount, equals(0));
     });
 
-    test('cache invalidation: replacing report with new storageKey does not serve old cached bytes', () async {
+    test(
+        'cache invalidation: replacing report with new storageKey does not serve old cached bytes',
+        () async {
       final oldPdfBytes =
           Uint8List.fromList(utf8.encode('%PDF-1.4 OLD_REPORT_CONTENT_UUID_1'));
       final newPdfBytes =
@@ -312,7 +323,8 @@ void main() {
       expect(cachedOld, equals(oldPdfBytes));
 
       // 2. Set up HTTP mock to return the new report when fetching newKey
-      fakeS3.downloadUrlToReturn = 'https://s3.ap-south-1.amazonaws.com/doctornect/new-presigned-url';
+      fakeS3.downloadUrlToReturn =
+          'https://s3.ap-south-1.amazonaws.com/doctornect/new-presigned-url';
       var httpCallCount = 0;
       LabReportFileStore.httpClient = FakeHttpClient((request) async {
         httpCallCount++;
@@ -335,7 +347,9 @@ void main() {
       expect(fakeS3.lastRequestedKey, equals(newKey));
     });
 
-    test('deleteS3Report: deletes old S3 object via S3StorageService.deleteObject', () async {
+    test(
+        'deleteS3Report: deletes old S3 object via S3StorageService.deleteObject',
+        () async {
       const oldKey = 'lab_reports/$patientId/$bookingId/old-uuid-to-delete.pdf';
 
       await LabReportFileStore.deleteS3Report(oldKey);

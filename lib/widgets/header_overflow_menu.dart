@@ -27,8 +27,8 @@ class HeaderOverflowMenu extends StatelessWidget {
         return PopupMenuButton<String>(
           icon: Icon(
             Icons.more_vert_rounded,
-            color: Theme.of(context).colorScheme.onSurface
-                .withValues(alpha: 0.85),
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
             size: 22,
           ),
           tooltip: 'More options',

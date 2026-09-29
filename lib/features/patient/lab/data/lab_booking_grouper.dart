@@ -68,9 +68,8 @@ abstract final class LabBookingGrouper {
         orderedNames,
       ),
       testNames: orderedNames,
-      groupedBookingIds: sorted
-          .map((item) => item.bookingId)
-          .toList(growable: false),
+      groupedBookingIds:
+          sorted.map((item) => item.bookingId).toList(growable: false),
       dateTime: primary.dateTime,
       slotLabel: primary.slotLabel,
       collectionType: primary.collectionType,
@@ -101,8 +100,8 @@ abstract final class LabBookingGrouper {
         (a, b) =>
             (b.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
                 .compareTo(
-                  a.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
-                ),
+          a.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+        ),
       );
       return withNameOnly.first;
     }
@@ -110,8 +109,8 @@ abstract final class LabBookingGrouper {
     withReport.sort(
       (a, b) => (b.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
           .compareTo(
-            a.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
-          ),
+        a.reportSubmittedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+      ),
     );
     return withReport.first;
   }

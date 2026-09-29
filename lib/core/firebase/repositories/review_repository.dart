@@ -116,9 +116,8 @@ class ReviewRepository {
 
     final firestore = FirebaseFirestore.instance;
     final reviewId = existingReview?.id ?? '${patientId}_$doctorId';
-    final reviewRef = firestore
-        .collection(FirestorePaths.reviews)
-        .doc(reviewId);
+    final reviewRef =
+        firestore.collection(FirestorePaths.reviews).doc(reviewId);
 
     final reviewData = <String, dynamic>{
       'patientId': patientId,
@@ -164,9 +163,8 @@ class ReviewRepository {
     if (rating < 1 || rating > 5) return false;
 
     final firestore = FirebaseFirestore.instance;
-    final reviewRef = firestore
-        .collection(FirestorePaths.reviews)
-        .doc(reviewId);
+    final reviewRef =
+        firestore.collection(FirestorePaths.reviews).doc(reviewId);
 
     try {
       final reviewSnap = await reviewRef.get();
@@ -258,11 +256,10 @@ class ReviewRepository {
         preferCache: true,
       );
 
-      final reviews =
-          snapshot.docs
-              .map((doc) => _reviewFromPublicDoc(doc.id, doc.data()))
-              .toList()
-            ..sort((a, b) => b.date.compareTo(a.date));
+      final reviews = snapshot.docs
+          .map((doc) => _reviewFromPublicDoc(doc.id, doc.data()))
+          .toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
       return reviews;
     } catch (_) {
       return const [];
@@ -324,12 +321,10 @@ class ReviewRepository {
     }
 
     final firestore = FirebaseFirestore.instance;
-    final reviewRef = firestore
-        .collection(FirestorePaths.reviews)
-        .doc(reviewId);
-    final publicReviewRef = firestore
-        .collection(FirestorePaths.reviewPublic)
-        .doc(reviewId);
+    final reviewRef =
+        firestore.collection(FirestorePaths.reviews).doc(reviewId);
+    final publicReviewRef =
+        firestore.collection(FirestorePaths.reviewPublic).doc(reviewId);
     final voteRef = reviewRef.collection('votes').doc(patientId);
 
     try {

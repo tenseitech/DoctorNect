@@ -189,19 +189,19 @@ void main() {
 
   group('FirestoreService.instance.doctorAvailability.slotsForDate', () {
     test('generates morning and evening slots on a working day', () async {
-      final slots = await FirestoreService.instance.doctorAvailability
-          .slotsForDate(
-            doctorId: 'doc_test',
-            date: kBookingTestMonday,
-            existingAppointments: const [],
-            referenceTime: DateTime(
-              kBookingTestMonday.year,
-              kBookingTestMonday.month,
-              kBookingTestMonday.day,
-              8,
-              0,
-            ),
-          );
+      final slots =
+          await FirestoreService.instance.doctorAvailability.slotsForDate(
+        doctorId: 'doc_test',
+        date: kBookingTestMonday,
+        existingAppointments: const [],
+        referenceTime: DateTime(
+          kBookingTestMonday.year,
+          kBookingTestMonday.month,
+          kBookingTestMonday.day,
+          8,
+          0,
+        ),
+      );
 
       expect(slots, isNotEmpty);
       expect(slots.first.label, '09:00 AM');
@@ -219,19 +219,19 @@ void main() {
         ),
       );
 
-      final slots = await FirestoreService.instance.doctorAvailability
-          .slotsForDate(
-            doctorId: 'doc_test',
-            date: kBookingTestMonday,
-            existingAppointments: existing,
-            referenceTime: DateTime(
-              kBookingTestMonday.year,
-              kBookingTestMonday.month,
-              kBookingTestMonday.day,
-              8,
-              0,
-            ),
-          );
+      final slots =
+          await FirestoreService.instance.doctorAvailability.slotsForDate(
+        doctorId: 'doc_test',
+        date: kBookingTestMonday,
+        existingAppointments: existing,
+        referenceTime: DateTime(
+          kBookingTestMonday.year,
+          kBookingTestMonday.month,
+          kBookingTestMonday.day,
+          8,
+          0,
+        ),
+      );
 
       final tenAm = slots.firstWhere((s) => s.label == '10:00 AM');
       expect(tenAm.bookingCount, 3);
@@ -242,19 +242,19 @@ void main() {
     test('partial slot shows booking count but stays available', () async {
       final existing = [bookingRecord(id: 'rec1', slotLabel: '10:00 AM')];
 
-      final slots = await FirestoreService.instance.doctorAvailability
-          .slotsForDate(
-            doctorId: 'doc_test',
-            date: kBookingTestMonday,
-            existingAppointments: existing,
-            referenceTime: DateTime(
-              kBookingTestMonday.year,
-              kBookingTestMonday.month,
-              kBookingTestMonday.day,
-              8,
-              0,
-            ),
-          );
+      final slots =
+          await FirestoreService.instance.doctorAvailability.slotsForDate(
+        doctorId: 'doc_test',
+        date: kBookingTestMonday,
+        existingAppointments: existing,
+        referenceTime: DateTime(
+          kBookingTestMonday.year,
+          kBookingTestMonday.month,
+          kBookingTestMonday.day,
+          8,
+          0,
+        ),
+      );
 
       final tenAm = slots.firstWhere((s) => s.label == '10:00 AM');
       expect(tenAm.bookingCount, 1);
@@ -263,13 +263,13 @@ void main() {
     });
 
     test('returns empty list on weekly off', () async {
-      final slots = await FirestoreService.instance.doctorAvailability
-          .slotsForDate(
-            doctorId: 'doc_test',
-            date: DateTime(2026, 8, 1),
-            existingAppointments: const [],
-            referenceTime: DateTime(2026, 8, 1, 8, 0),
-          );
+      final slots =
+          await FirestoreService.instance.doctorAvailability.slotsForDate(
+        doctorId: 'doc_test',
+        date: DateTime(2026, 8, 1),
+        existingAppointments: const [],
+        referenceTime: DateTime(2026, 8, 1, 8, 0),
+      );
       expect(slots, isEmpty);
     });
   });

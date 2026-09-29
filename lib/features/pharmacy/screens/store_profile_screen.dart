@@ -80,9 +80,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
           );
         }
 
-        final connectedDoctors = PharmacyConnectionStore.instance
-            .activeForStore(storeId)
-            .length;
+        final connectedDoctors =
+            PharmacyConnectionStore.instance.activeForStore(storeId).length;
         final compact = ResponsiveLayout.isCompact(context);
         final profileSections = Padding(
           padding: EdgeInsets.fromLTRB(
@@ -112,7 +111,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                     label: 'Owner',
                     value: store.ownerName,
                     locked: true,
-                    supportMessage: 'Owner name is permanent. Contact support@doctornect.com to request a change.',
+                    supportMessage:
+                        'Owner name is permanent. Contact support@doctornect.com to request a change.',
                   ),
                   _ProfileField(
                     label: 'Address',
@@ -127,7 +127,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                     label: 'Drug license',
                     value: store.drugLicenseNumber,
                     locked: true,
-                    supportMessage: 'Drug license cannot be changed after registration. Contact support@doctornect.com if this needs to be corrected.',
+                    supportMessage:
+                        'Drug license cannot be changed after registration. Contact support@doctornect.com if this needs to be corrected.',
                   ),
                   _ProfileField(
                     label: 'GST number (optional)',
@@ -356,9 +357,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
     bool optional = false,
   }) async {
     final parsedPhone = FormValidators.parsePhone(currentValue);
-    final initialText = field == 'Phone'
-        ? parsedPhone.localNumber
-        : currentValue;
+    final initialText =
+        field == 'Phone' ? parsedPhone.localNumber : currentValue;
     final controller = TextEditingController(text: initialText);
     var dialCode = parsedPhone.dialCode;
     var saving = false;
@@ -449,8 +449,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                 email: emailValue,
                 gstNumber:
                     field == 'GST number (optional)' && trimmed.isNotEmpty
-                    ? trimmed
-                    : null,
+                        ? trimmed
+                        : null,
                 clearGstNumber:
                     field == 'GST number (optional)' && trimmed.isEmpty,
               );
@@ -494,7 +494,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                         onDialCodeChanged: (code) => dialCode = code,
                         decoration: const InputDecoration(
                           labelText: 'Phone',
-                          helperText: 'OTP verification required when changing your number',
+                          helperText:
+                              'OTP verification required when changing your number',
                           border: OutlineInputBorder(),
                         ),
                       )
@@ -511,9 +512,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                             : TextCapitalization.sentences,
                         decoration: InputDecoration(
                           labelText: field,
-                          hintText: optional
-                              ? 'Leave blank if not applicable'
-                              : null,
+                          hintText:
+                              optional ? 'Leave blank if not applicable' : null,
                           helperText: field == 'Email'
                               ? 'OTP verification required when changing your email'
                               : null,
@@ -889,7 +889,8 @@ class _ProfileTableRow extends StatelessWidget {
                   ] else if (field.locked) ...[
                     const SizedBox(width: 8),
                     Tooltip(
-                      message: field.supportMessage ?? 'This field can only be updated by DoctorNect support',
+                      message: field.supportMessage ??
+                          'This field can only be updated by DoctorNect support',
                       child: InkWell(
                         onTap: field.supportMessage == null
                             ? null
@@ -1055,12 +1056,10 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
     text: widget.store.pincode,
   );
 
-  late String? _country = widget.store.country.isNotEmpty
-      ? widget.store.country
-      : null;
-  late String? _state = widget.store.state.isNotEmpty
-      ? widget.store.state
-      : null;
+  late String? _country =
+      widget.store.country.isNotEmpty ? widget.store.country : null;
+  late String? _state =
+      widget.store.state.isNotEmpty ? widget.store.state : null;
   late String? _city = widget.store.city.isNotEmpty ? widget.store.city : null;
 
   bool _saving = false;

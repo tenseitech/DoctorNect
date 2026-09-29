@@ -149,9 +149,9 @@ class AmbulanceRepository {
           .collection('private')
           .doc('settings')
           .set({
-            'fcmToken': token,
-            'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        'fcmToken': token,
+        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) debugPrint('saveDriverFcmToken failed: $e');
     }
@@ -168,9 +168,9 @@ class AmbulanceRepository {
           .collection('private')
           .doc('settings')
           .set({
-            'fcmToken': FieldValue.delete(),
-            'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+        'fcmToken': FieldValue.delete(),
+        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) debugPrint('clearDriverFcmToken failed: $e');
     }
@@ -221,7 +221,8 @@ class AmbulanceRepository {
           return AmbulanceRegisterResult(
             error: _registerAmbulanceErrorMessage(
               e,
-              fallback: 'Could not save login credentials. Check permissions and try again.',
+              fallback:
+                  'Could not save login credentials. Check permissions and try again.',
             ),
           );
         }
@@ -234,7 +235,8 @@ class AmbulanceRepository {
       return AmbulanceRegisterResult(
         error: _registerAmbulanceErrorMessage(
           e,
-          fallback: 'Could not save ambulance registration. Check connection and try again.',
+          fallback:
+              'Could not save ambulance registration. Check connection and try again.',
         ),
       );
     }
@@ -425,24 +427,22 @@ class AmbulanceRepository {
         .where((a) => _isRegistered(a) && a.available)
         .where((a) => type == null || a.ambulanceType == type)
         .where((a) {
-          if (requestCity.isEmpty) return false;
-          return ambulanceMatchesRequestCity(
-            requestCity: requestCity,
-            ambulanceCity: a.city,
-            serviceAreas: a.serviceAreas,
-            baseAddress: a.baseAddress,
-          );
-        })
-        .where((a) {
-          if (normalizedArea.isEmpty) return true;
-          if (a.serviceAreas.isEmpty) return true;
-          return a.serviceAreas.any((s) {
-            final serviceArea = normalizeArea(s);
-            return serviceArea.contains(normalizedArea) ||
-                normalizedArea.contains(serviceArea);
-          });
-        })
-        .toList()
+      if (requestCity.isEmpty) return false;
+      return ambulanceMatchesRequestCity(
+        requestCity: requestCity,
+        ambulanceCity: a.city,
+        serviceAreas: a.serviceAreas,
+        baseAddress: a.baseAddress,
+      );
+    }).where((a) {
+      if (normalizedArea.isEmpty) return true;
+      if (a.serviceAreas.isEmpty) return true;
+      return a.serviceAreas.any((s) {
+        final serviceArea = normalizeArea(s);
+        return serviceArea.contains(normalizedArea) ||
+            normalizedArea.contains(serviceArea);
+      });
+    }).toList()
       ..sort((a, b) => a.serviceName.compareTo(b.serviceName));
   }
 
@@ -1046,11 +1046,10 @@ class AmbulanceRepository {
           .collection(FirestorePaths.ambulanceBroadcasts)
           .doc(broadcastId)
           .update({
-            'rating': stars,
-            if (review != null && review.trim().isNotEmpty)
-              'review': review.trim(),
-            'ratedAt': FieldValue.serverTimestamp(),
-          });
+        'rating': stars,
+        if (review != null && review.trim().isNotEmpty) 'review': review.trim(),
+        'ratedAt': FieldValue.serverTimestamp(),
+      });
 
       final reqSnap = await firestore
           .collection(FirestorePaths.ambulanceRequests)
@@ -1137,8 +1136,8 @@ class AmbulanceRepository {
           .collection(FirestorePaths.ambulances)
           .doc(id)
           .set({
-            'isAvailable': available,
-          }, SetOptions(merge: true)); // FIXED: await before local update
+        'isAvailable': available,
+      }, SetOptions(merge: true)); // FIXED: await before local update
       AmbulanceStore.instance.updateAvailability(
         id,
         available,
@@ -1347,7 +1346,8 @@ class AmbulanceRepository {
       if (text.contains('ClientException') ||
           text.contains('Failed to fetch')) {
         return const AmbulanceDriverLoginResult(
-          errorMessage: 'Could not reach login service. Check your connection and try again.',
+          errorMessage:
+              'Could not reach login service. Check your connection and try again.',
         );
       }
       return AmbulanceDriverLoginResult(
@@ -1367,15 +1367,14 @@ class AmbulanceRepository {
         'Too many login attempts. Please try again later.',
       'permission-denied' =>
         'Incorrect username or password. Please try again.',
-      'invalid-argument' =>
-        (e.message != null && e.message!.trim().isNotEmpty)
-            ? e.message!.trim()
-            : 'Invalid username or password. Please try again.',
+      'invalid-argument' => (e.message != null && e.message!.trim().isNotEmpty)
+          ? e.message!.trim()
+          : 'Invalid username or password. Please try again.',
       'internal' => 'Could not verify login right now. Please try again.',
       _ => describeFirebaseError(
-        e,
-        fallback: 'Incorrect username or password. Please try again.',
-      ),
+          e,
+          fallback: 'Incorrect username or password. Please try again.',
+        ),
     };
   }
 

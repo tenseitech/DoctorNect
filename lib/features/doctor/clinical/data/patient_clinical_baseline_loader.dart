@@ -41,18 +41,18 @@ abstract final class PatientClinicalBaselineLoader {
       if (doctorId.isNotEmpty) {
         if (!await FirestoreService.instance.patientProfile
             .isPatientSharingClinicalDataWithDoctors(
-              patientId,
-              preferCache: false,
-            )) {
+          patientId,
+          preferCache: false,
+        )) {
           return null;
         }
 
         final page = await FirestoreService.instance.prescription
             .fetchForDoctorAndPatientForDoctor(
-              doctorId,
-              patientId,
-              preferCache: false,
-            );
+          doctorId,
+          patientId,
+          preferCache: false,
+        );
         for (final draft in page.items) {
           if (hasBaselineData(draft)) return draft;
         }

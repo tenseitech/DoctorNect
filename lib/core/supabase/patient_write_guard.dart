@@ -94,8 +94,7 @@ abstract final class PatientWriteGuard {
     try {
       return await action();
     } on PostgrestException catch (e) {
-      final isPermissionDenied =
-          e.code == '42501' ||
+      final isPermissionDenied = e.code == '42501' ||
           e.message.toLowerCase().contains('permission denied') ||
           e.message.toLowerCase().contains('insufficient_privilege');
 

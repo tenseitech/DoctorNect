@@ -209,12 +209,12 @@ class CommunityInvestigationsRepository {
     final docRef = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityLabTests)
         .add({
-          'name': trimmed,
-          'nameLower': trimmed.toLowerCase(),
-          'group': group.trim().isEmpty ? 'Custom' : group.trim(),
-          'addedByDoctorId': doctorId,
-          'addedAt': FieldValue.serverTimestamp(),
-        });
+      'name': trimmed,
+      'nameLower': trimmed.toLowerCase(),
+      'group': group.trim().isEmpty ? 'Custom' : group.trim(),
+      'addedByDoctorId': doctorId,
+      'addedAt': FieldValue.serverTimestamp(),
+    });
 
     final snapshot = await FirestoreReadHelper.getDocument(
       reference: docRef,
@@ -248,12 +248,12 @@ class CommunityInvestigationsRepository {
     final docRef = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityRadiology)
         .add({
-          'name': trimmed,
-          'nameLower': trimmed.toLowerCase(),
-          'group': group.trim().isEmpty ? 'Custom' : group.trim(),
-          'addedByDoctorId': doctorId,
-          'addedAt': FieldValue.serverTimestamp(),
-        });
+      'name': trimmed,
+      'nameLower': trimmed.toLowerCase(),
+      'group': group.trim().isEmpty ? 'Custom' : group.trim(),
+      'addedByDoctorId': doctorId,
+      'addedAt': FieldValue.serverTimestamp(),
+    });
 
     final snapshot = await FirestoreReadHelper.getDocument(
       reference: docRef,
@@ -284,11 +284,11 @@ class CommunityInvestigationsRepository {
     final doc = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityBodyParts)
         .add({
-          'name': trimmed,
-          'nameLower': trimmed.toLowerCase(),
-          'addedByDoctorId': doctorId,
-          'addedAt': FieldValue.serverTimestamp(),
-        });
+      'name': trimmed,
+      'nameLower': trimmed.toLowerCase(),
+      'addedByDoctorId': doctorId,
+      'addedAt': FieldValue.serverTimestamp(),
+    });
 
     final part = CommunityBodyPart(
       id: doc.id,

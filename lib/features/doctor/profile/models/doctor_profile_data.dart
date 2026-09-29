@@ -184,12 +184,12 @@ class PatientReview {
   int helpfulCount;
 
   PatientReview copy() => PatientReview(
-    id: id,
-    maskedName: maskedName,
-    rating: rating,
-    text: text,
-    date: date,
-    doctorReply: doctorReply,
-    helpfulCount: helpfulCount,
-  );
+        id: id,
+        maskedName: maskedName,
+        rating: rating,
+        text: text,
+        date: date,
+        doctorReply: doctorReply,
+        helpfulCount: helpfulCount,
+      );
 }

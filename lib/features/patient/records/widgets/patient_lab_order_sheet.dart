@@ -27,12 +27,12 @@ class _PatientLabOrderSheet extends StatelessWidget {
   final DoctorLabOrder order;
 
   String _statusLabel(String status) => switch (status) {
-    'completed' => 'Completed',
-    'in_progress' => 'In progress',
-    'sample_collected' => 'Sample collected',
-    'cancelled' => 'Cancelled',
-    _ => 'Ordered',
-  };
+        'completed' => 'Completed',
+        'in_progress' => 'In progress',
+        'sample_collected' => 'Sample collected',
+        'cancelled' => 'Cancelled',
+        _ => 'Ordered',
+      };
 
   @override
   Widget build(BuildContext context) {

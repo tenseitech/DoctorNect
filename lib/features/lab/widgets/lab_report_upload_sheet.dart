@@ -264,9 +264,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
       } else if (widget.order != null) {
         final o = widget.order!;
         final reportFileName = LabReportFileStore.reportFileNameFor(
-          testName: o.testNames.isNotEmpty
-              ? o.testNames.join(', ')
-              : 'Lab test',
+          testName:
+              o.testNames.isNotEmpty ? o.testNames.join(', ') : 'Lab test',
           originalFileName: file.name,
         );
         final uploadResult =
@@ -318,8 +317,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
         final plugin = e.plugin;
         message = e.code == 'unauthorized' || e.code == 'permission-denied'
             ? plugin == 'firebase_storage'
-                  ? 'Upload denied — storage permission error (${e.code}). Contact support.'
-                  : 'Could not save report — permission error (${e.code}). Contact support.'
+                ? 'Upload denied — storage permission error (${e.code}). Contact support.'
+                : 'Could not save report — permission error (${e.code}). Contact support.'
             : 'Upload failed: ${e.message ?? e.code}';
       } else if (e is TimeoutException) {
         message = 'Upload timed out. Check your connection and try again.';

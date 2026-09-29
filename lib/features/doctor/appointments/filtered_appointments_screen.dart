@@ -111,7 +111,8 @@ class _FilteredAppointmentsScreenState
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't accept this appointment. Please check your connection and try again.",
             ),
           ),
         ),
@@ -132,7 +133,8 @@ class _FilteredAppointmentsScreenState
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't decline this appointment. Please check your connection and try again.",
             ),
           ),
         ),
@@ -181,8 +183,8 @@ class _FilteredAppointmentsScreenState
 
     String emptyTabLabel = 'Today';
     if (widget.selectedDate != null) {
-      emptyTabLabel = DateFormat('EEE, d MMM yyyy')
-          .format(widget.selectedDate!);
+      emptyTabLabel =
+          DateFormat('EEE, d MMM yyyy').format(widget.selectedDate!);
     } else {
       switch (widget.tab) {
         case AppointmentListTab.today:

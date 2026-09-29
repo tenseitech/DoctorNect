@@ -124,8 +124,7 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
     final patients = _filteredPatients;
     final stores = _filteredStores;
     final labs = _filteredLabs;
-    final hasResults =
-        patients.isNotEmpty ||
+    final hasResults = patients.isNotEmpty ||
         stores.isNotEmpty ||
         labs.isNotEmpty ||
         _showAmbulance;
@@ -194,100 +193,101 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
               ),
             )
           : !hasResults
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.search_off_rounded,
-                    size: 48,
-                    color: AppColors.textSecondaryOf(context)
-                        .withValues(alpha: 0.4),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'No results found for "$_query"',
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.bodyMedium,
-                      color: AppColors.textSecondaryOf(context),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              children: [
-                if (patients.isNotEmpty) ...[
-                  _SectionHeader(title: 'Patients', count: patients.length),
-                  ...patients.map(
-                    (a) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _PatientRow(
-                        appointment: a,
-                        onTap: () {
-                          Navigator.pop(context);
-                          widget.onPatientSelected(a);
-                        },
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 48,
+                        color: AppColors.textSecondaryOf(context)
+                            .withValues(alpha: 0.4),
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No results found for "$_query"',
+                        style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodyMedium,
+                          color: AppColors.textSecondaryOf(context),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                ],
-                if (stores.isNotEmpty) ...[
-                  _SectionHeader(
-                    title: 'Medical Stores',
-                    count: stores.length,
-                    color: AppColors.pharmacyGreen,
-                  ),
-                  ...stores.map(
-                    (s) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _MedicalStoreRow(store: s),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (labs.isNotEmpty) ...[
-                  _SectionHeader(
-                    title: 'Labs',
-                    count: labs.length,
-                    color: Color(0xFF8B5CF6),
-                  ),
-                  ...labs.map(
-                    (l) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _LabRow(lab: l),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (_showAmbulance) ...[
-                  const _SectionHeader(
-                    title: 'Services',
-                    count: 1,
-                    color: Colors.red,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _AmbulanceRow(
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AmbulanceBookingScreen(
-                              bookedByRole: AmbulanceBookedByRole.doctor,
-                            ),
+                )
+              : ListView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  children: [
+                    if (patients.isNotEmpty) ...[
+                      _SectionHeader(title: 'Patients', count: patients.length),
+                      ...patients.map(
+                        (a) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _PatientRow(
+                            appointment: a,
+                            onTap: () {
+                              Navigator.pop(context);
+                              widget.onPatientSelected(a);
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              ],
-            ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (stores.isNotEmpty) ...[
+                      _SectionHeader(
+                        title: 'Medical Stores',
+                        count: stores.length,
+                        color: AppColors.pharmacyGreen,
+                      ),
+                      ...stores.map(
+                        (s) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _MedicalStoreRow(store: s),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (labs.isNotEmpty) ...[
+                      _SectionHeader(
+                        title: 'Labs',
+                        count: labs.length,
+                        color: Color(0xFF8B5CF6),
+                      ),
+                      ...labs.map(
+                        (l) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _LabRow(lab: l),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_showAmbulance) ...[
+                      const _SectionHeader(
+                        title: 'Services',
+                        count: 1,
+                        color: Colors.red,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _AmbulanceRow(
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AmbulanceBookingScreen(
+                                  bookedByRole: AmbulanceBookedByRole.doctor,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
+                ),
     );
   }
 }
@@ -389,8 +389,8 @@ class _PatientRow extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.6),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.6),
               ),
             ],
           ),
@@ -580,8 +580,8 @@ class _AmbulanceRow extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.6),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.6),
               ),
             ],
           ),

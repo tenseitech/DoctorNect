@@ -52,7 +52,8 @@ class ProfilePhotoUploader {
     bool? useS3Override,
   }) async {
     if (patientId.isEmpty || bytes.isEmpty) {
-      return const ProfilePhotoUploadResult(photoStorage: 'none', success: false);
+      return const ProfilePhotoUploadResult(
+          photoStorage: 'none', success: false);
     }
 
     // Save locally
@@ -98,7 +99,9 @@ class ProfilePhotoUploader {
         try {
           await _s3.deleteObject(oldPhotoKey.trim());
         } catch (e) {
-          if (kDebugMode) debugPrint('[ProfilePhotoUploader] failed to delete old S3 photo: $e');
+          if (kDebugMode)
+            debugPrint(
+                '[ProfilePhotoUploader] failed to delete old S3 photo: $e');
         }
       }
 
@@ -112,11 +115,13 @@ class ProfilePhotoUploader {
       String? remoteUrl;
       if (FirebaseBootstrap.isReady || firestoreOverride != null) {
         try {
-          remoteUrl = await PatientPhotoLocalStore.uploadToFirebaseStorage(patientId, bytes);
+          remoteUrl = await PatientPhotoLocalStore.uploadToFirebaseStorage(
+              patientId, bytes);
         } catch (_) {}
       }
 
-      final finalUrl = remoteUrl ?? 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      final finalUrl =
+          remoteUrl ?? 'data:image/jpeg;base64,${base64Encode(bytes)}';
 
       if (FirebaseBootstrap.isReady || firestoreOverride != null) {
         await _db.collection(FirestorePaths.patients).doc(patientId).set({
@@ -164,7 +169,8 @@ class ProfilePhotoUploader {
     bool? useS3Override,
   }) async {
     if (doctorId.isEmpty || bytes.isEmpty) {
-      return const ProfilePhotoUploadResult(photoStorage: 'none', success: false);
+      return const ProfilePhotoUploadResult(
+          photoStorage: 'none', success: false);
     }
 
     // Save locally
@@ -210,7 +216,9 @@ class ProfilePhotoUploader {
         try {
           await _s3.deleteObject(oldPhotoKey.trim());
         } catch (e) {
-          if (kDebugMode) debugPrint('[ProfilePhotoUploader] failed to delete old S3 photo: $e');
+          if (kDebugMode)
+            debugPrint(
+                '[ProfilePhotoUploader] failed to delete old S3 photo: $e');
         }
       }
 

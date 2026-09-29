@@ -86,22 +86,22 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
   Color get _accent => widget.accentColor ?? _defaultAccent;
 
   Color get _defaultAccent => switch (widget.role) {
-    UserType.doctor => AppColors.doctorBlue,
-    UserType.patient => AppColors.patientTeal,
-    UserType.medicalStore => AppColors.pharmacyGreen,
-    UserType.lab => AppColors.labPurple,
-    UserType.ambulance => const Color(0xFFDC2626),
-    _ => AppColors.doctorBlue,
-  };
+        UserType.doctor => AppColors.doctorBlue,
+        UserType.patient => AppColors.patientTeal,
+        UserType.medicalStore => AppColors.pharmacyGreen,
+        UserType.lab => AppColors.labPurple,
+        UserType.ambulance => const Color(0xFFDC2626),
+        _ => AppColors.doctorBlue,
+      };
 
   IconData get _roleIcon => switch (widget.role) {
-    UserType.doctor => Icons.medical_services_outlined,
-    UserType.patient => Icons.person_outline,
-    UserType.medicalStore => Icons.local_pharmacy_outlined,
-    UserType.lab => Icons.biotech_outlined,
-    UserType.ambulance => Icons.emergency_outlined,
-    _ => Icons.local_hospital_outlined,
-  };
+        UserType.doctor => Icons.medical_services_outlined,
+        UserType.patient => Icons.person_outline,
+        UserType.medicalStore => Icons.local_pharmacy_outlined,
+        UserType.lab => Icons.biotech_outlined,
+        UserType.ambulance => Icons.emergency_outlined,
+        _ => Icons.local_hospital_outlined,
+      };
 
   List<_IntroSlideContent> get _slides => switch (widget.role) {
         UserType.doctor => const [
@@ -248,68 +248,86 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
 
   /// Role-specific value props on the desktop brand panel (same styling for all).
   List<_DesktopFeatureItem> get _desktopFeatureBullets => switch (widget.role) {
-    UserType.doctor => const [
-      (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
-      (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
-      (icon: Icons.bolt_outlined, label: 'Instant consultations'),
-    ],
-    UserType.patient => const [
-      (icon: Icons.event_available_outlined, label: 'Book appointments easily'),
-      (icon: Icons.medication_outlined, label: 'Access prescriptions anytime'),
-      (icon: Icons.video_call_outlined, label: 'Video consult top doctors'),
-    ],
-    UserType.medicalStore => const [
-      (icon: Icons.inventory_2_outlined, label: 'Manage orders digitally'),
-      (icon: Icons.receipt_long_outlined, label: 'Track prescriptions'),
-      (icon: Icons.hub_outlined, label: 'Connect with patients & doctors'),
-    ],
-    UserType.lab => const [
-      (icon: Icons.description_outlined, label: 'Digital test reports'),
-      (icon: Icons.biotech_outlined, label: 'Manage sample requests'),
-      (icon: Icons.speed_outlined, label: 'Faster patient turnaround'),
-    ],
-    UserType.ambulance => const [
-      (
-        icon: Icons.notifications_active_outlined,
-        label: 'Real-time dispatch alerts',
-      ),
-      (
-        icon: Icons.transfer_within_a_station_outlined,
-        label: 'Quick patient handoff',
-      ),
-      (icon: Icons.local_hospital_outlined, label: 'Coordinate with hospitals'),
-    ],
-    _ => const [
-      (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
-      (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
-      (icon: Icons.bolt_outlined, label: 'Instant consultations'),
-    ],
-  };
+        UserType.doctor => const [
+            (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
+            (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
+            (icon: Icons.bolt_outlined, label: 'Instant consultations'),
+          ],
+        UserType.patient => const [
+            (
+              icon: Icons.event_available_outlined,
+              label: 'Book appointments easily'
+            ),
+            (
+              icon: Icons.medication_outlined,
+              label: 'Access prescriptions anytime'
+            ),
+            (
+              icon: Icons.video_call_outlined,
+              label: 'Video consult top doctors'
+            ),
+          ],
+        UserType.medicalStore => const [
+            (
+              icon: Icons.inventory_2_outlined,
+              label: 'Manage orders digitally'
+            ),
+            (icon: Icons.receipt_long_outlined, label: 'Track prescriptions'),
+            (
+              icon: Icons.hub_outlined,
+              label: 'Connect with patients & doctors'
+            ),
+          ],
+        UserType.lab => const [
+            (icon: Icons.description_outlined, label: 'Digital test reports'),
+            (icon: Icons.biotech_outlined, label: 'Manage sample requests'),
+            (icon: Icons.speed_outlined, label: 'Faster patient turnaround'),
+          ],
+        UserType.ambulance => const [
+            (
+              icon: Icons.notifications_active_outlined,
+              label: 'Real-time dispatch alerts',
+            ),
+            (
+              icon: Icons.transfer_within_a_station_outlined,
+              label: 'Quick patient handoff',
+            ),
+            (
+              icon: Icons.local_hospital_outlined,
+              label: 'Coordinate with hospitals'
+            ),
+          ],
+        _ => const [
+            (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
+            (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
+            (icon: Icons.bolt_outlined, label: 'Instant consultations'),
+          ],
+      };
 
   List<Color> get _gradientColors {
     final base = _accent;
     return switch (widget.role) {
       UserType.doctor => [
-        const Color(0xFF0A2F6B),
-        const Color(0xFF123E8A),
-        base,
-      ],
+          const Color(0xFF0A2F6B),
+          const Color(0xFF123E8A),
+          base,
+        ],
       UserType.patient => [
-        const Color(0xFF064E3B),
-        const Color(0xFF0B6B58),
-        base,
-      ],
+          const Color(0xFF064E3B),
+          const Color(0xFF0B6B58),
+          base,
+        ],
       UserType.medicalStore => [
-        const Color(0xFF065F46),
-        const Color(0xFF047857),
-        base,
-      ],
+          const Color(0xFF065F46),
+          const Color(0xFF047857),
+          base,
+        ],
       UserType.lab => [const Color(0xFF312E81), const Color(0xFF4338CA), base],
       UserType.ambulance => [
-        const Color(0xFF7F1D1D),
-        const Color(0xFFB91C1C),
-        base,
-      ],
+          const Color(0xFF7F1D1D),
+          const Color(0xFFB91C1C),
+          base,
+        ],
       _ => [base.withValues(alpha: 0.95), base],
     };
   }
@@ -598,9 +616,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
   Widget _buildDesktopIntroLayout(BuildContext context) {
     final isDark = AppColors.isDark(context);
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.darkBackground
-          : _IntroTheme.desktopRightBg,
+      backgroundColor:
+          isDark ? AppColors.darkBackground : _IntroTheme.desktopRightBg,
       body: GestureDetector(
         onTap: _dismissKeyboard,
         behavior: HitTestBehavior.opaque,
@@ -2392,8 +2409,8 @@ class _DesktopPrimaryButtonState extends State<_DesktopPrimaryButton> {
 
     final fill = interactive
         ? (hovered
-              ? [lifted, base]
-              : [base, Color.lerp(base, Colors.black, 0.08) ?? base])
+            ? [lifted, base]
+            : [base, Color.lerp(base, Colors.black, 0.08) ?? base])
         : [
             Color.lerp(base, Colors.white, 0.62) ?? base,
             Color.lerp(base, Colors.white, 0.54) ?? base,
@@ -2409,9 +2426,8 @@ class _DesktopPrimaryButtonState extends State<_DesktopPrimaryButton> {
       child: GestureDetector(
         onTapDown: interactive ? (_) => setState(() => _pressed = true) : null,
         onTapUp: interactive ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel: interactive
-            ? () => setState(() => _pressed = false)
-            : null,
+        onTapCancel:
+            interactive ? () => setState(() => _pressed = false) : null,
         onTap: interactive ? widget.onPressed : null,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 130),
@@ -2687,9 +2703,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
               loadingLabel: isMobileStep ? 'Sending OTP...' : 'Verifying...',
               accent: widget.accent,
               enabled: isMobileStep ? _mobileValid : widget.flow.otpValid,
-              loading: isMobileStep
-                  ? widget.flow.sendingOtp
-                  : widget.flow.verifying,
+              loading:
+                  isMobileStep ? widget.flow.sendingOtp : widget.flow.verifying,
               onPressed: _submit,
             ),
             const SizedBox(height: 20),
@@ -2862,26 +2877,26 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
   }
 
   TextStyle _titleStyle(BuildContext context) => GoogleFonts.inter(
-    fontSize: 26,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textPrimaryOf(context),
-    letterSpacing: -0.6,
-    height: 1.2,
-  );
+        fontSize: 26,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimaryOf(context),
+        letterSpacing: -0.6,
+        height: 1.2,
+      );
 
   TextStyle _subtitleStyle(BuildContext context) => GoogleFonts.inter(
-    fontSize: 15,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textSecondaryOf(context),
-    height: 1.5,
-  );
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondaryOf(context),
+        height: 1.5,
+      );
 
   TextStyle _fieldLabelStyle(BuildContext context) => GoogleFonts.inter(
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimaryOf(context),
-    height: 1.2,
-  );
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimaryOf(context),
+        height: 1.2,
+      );
 }
 
 class _IntroIllustration extends StatelessWidget {

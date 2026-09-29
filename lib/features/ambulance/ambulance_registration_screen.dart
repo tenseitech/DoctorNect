@@ -129,18 +129,17 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
     );
 
     try {
-      final result = await FirestoreService.instance.ambulance
-          .registerAmbulance(
-            ambulance,
-            extraFields: {
-              'qualification': qualification,
-              'profileCompleted': false,
-              'verified': false,
-              'verificationStatus': 'profile_incomplete',
-              'status': 'pending_review',
-            },
-          )
-          .timeout(const Duration(seconds: 30));
+      final result =
+          await FirestoreService.instance.ambulance.registerAmbulance(
+        ambulance,
+        extraFields: {
+          'qualification': qualification,
+          'profileCompleted': false,
+          'verified': false,
+          'verificationStatus': 'profile_incomplete',
+          'status': 'pending_review',
+        },
+      ).timeout(const Duration(seconds: 30));
 
       if (result.id == null) {
         if (!context.mounted) return;
@@ -193,11 +192,11 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
       preVerifiedMobile: preVerifiedMobile,
       onSubmit: ({required name, required qualification, required mobile}) =>
           _register(
-            context,
-            name: name,
-            qualification: qualification,
-            mobile: mobile,
-          ),
+        context,
+        name: name,
+        qualification: qualification,
+        mobile: mobile,
+      ),
     );
   }
 }

@@ -87,37 +87,37 @@ class _ServiceStyle {
   static _ServiceStyle forRoute(String route) {
     return switch (route) {
       'records' => const _ServiceStyle(
-        gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-        subtitle: 'Health records',
-      ),
+          gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+          subtitle: 'Health records',
+        ),
       'sos' => const _ServiceStyle(
-        gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
-        subtitle: 'Emergency help',
-      ),
+          gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+          subtitle: 'Emergency help',
+        ),
       'digital-pass' => const _ServiceStyle(
-        gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
-        subtitle: 'Digital ID pass',
-      ),
+          gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
+          subtitle: 'Digital ID pass',
+        ),
       'near-you' => const _ServiceStyle(
-        gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
-        subtitle: 'Dr. in city',
-      ),
+          gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
+          subtitle: 'Dr. in city',
+        ),
       'my-lab' => const _ServiceStyle(
-        gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-        subtitle: 'Saved labs',
-      ),
+          gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+          subtitle: 'Saved labs',
+        ),
       'appointments' => const _ServiceStyle(
-        gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
-        subtitle: 'Upcoming visits',
-      ),
+          gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
+          subtitle: 'Upcoming visits',
+        ),
       'ambulance' => const _ServiceStyle(
-        gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
-        subtitle: 'Emergency help',
-      ),
+          gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+          subtitle: 'Emergency help',
+        ),
       _ => const _ServiceStyle(
-        gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
-        subtitle: 'Open service',
-      ),
+          gradient: [Color(0xFF0D9488), Color(0xFF0369A1)],
+          subtitle: 'Open service',
+        ),
     };
   }
 }
@@ -310,8 +310,8 @@ class _ServiceTileState extends State<_ServiceTile> {
               Icon(
                 Icons.chevron_right,
                 size: 18,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.8),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
               ),
             ],
           ),

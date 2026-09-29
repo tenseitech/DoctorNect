@@ -112,7 +112,8 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
                                     Icons.alternate_email_outlined,
                                     size: 20,
                                   ),
-                                  helperText: 'Used for account recovery if you lose access',
+                                  helperText:
+                                      'Used for account recovery if you lose access',
                                 ),
                                 validator: FormValidators.optionalEmail,
                                 onChanged: (_) => _markDirty(),
@@ -192,7 +193,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
     } on FirebaseAuthException catch (e) {
       final msg = switch (e.code) {
         'wrong-password' ||
-        'invalid-credential' => 'Current password is incorrect.',
+        'invalid-credential' =>
+          'Current password is incorrect.',
         'weak-password' =>
           'New password is too weak. Use at least 6 characters.',
         'too-many-requests' => 'Too many attempts. Please try again later.',

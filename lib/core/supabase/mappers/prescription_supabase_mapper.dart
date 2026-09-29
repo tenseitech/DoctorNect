@@ -18,7 +18,7 @@ abstract final class PrescriptionSupabaseMapper {
       if (data['prescription_date'] != null) {
         prescriptionDate =
             DateTime.tryParse(data['prescription_date'].toString()) ??
-            DateTime.now();
+                DateTime.now();
       }
 
       final draft = PrescriptionDraft(
@@ -77,8 +77,7 @@ abstract final class PrescriptionSupabaseMapper {
       }
 
       // 1. Medicines
-      final rawMeds =
-          data['prescription_medicines'] as List<dynamic>? ??
+      final rawMeds = data['prescription_medicines'] as List<dynamic>? ??
           data['medicines'] as List<dynamic>? ??
           const [];
       draft.medicines = rawMeds.map((raw) {
@@ -90,14 +89,13 @@ abstract final class PrescriptionSupabaseMapper {
         _applyDosage(entry, map['dosage'] as String? ?? '');
         entry.form = map['form'] as String? ?? 'Tablet';
         entry.instructions = map['instructions'] as String? ?? '';
-        entry.specialInstructions =
-            (map['special_instructions'] ?? map['specialInstructions'])
-                as String? ??
+        entry.specialInstructions = (map['special_instructions'] ??
+                map['specialInstructions']) as String? ??
             '';
         entry.isSos = (map['is_sos'] ?? map['isSos']) as bool? ?? false;
         entry.substituteAllowed =
             (map['substitute_allowed'] ?? map['substituteAllowed']) as bool? ??
-            true;
+                true;
         _applyDuration(entry, map['duration'] as String? ?? '');
         entry.quantity = map['quantity'] as String? ?? '';
         _applyFrequency(entry, map['frequency'] as String? ?? '');
@@ -105,8 +103,7 @@ abstract final class PrescriptionSupabaseMapper {
       }).toList();
 
       // 2. Investigations
-      final rawInv =
-          data['prescription_investigations'] as List<dynamic>? ??
+      final rawInv = data['prescription_investigations'] as List<dynamic>? ??
           data['investigations'] as List<dynamic>? ??
           const [];
       draft.investigations = rawInv
@@ -130,8 +127,7 @@ abstract final class PrescriptionSupabaseMapper {
           .toList();
 
       // 3. Referrals
-      final rawRef =
-          data['prescription_referrals'] as List<dynamic>? ??
+      final rawRef = data['prescription_referrals'] as List<dynamic>? ??
           data['referrals'] as List<dynamic>? ??
           const [];
       draft.referrals = rawRef

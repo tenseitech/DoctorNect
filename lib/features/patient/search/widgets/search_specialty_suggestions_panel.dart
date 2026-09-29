@@ -153,8 +153,8 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                 Icon(
                   Icons.north_west_rounded,
                   size: 16,
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.7),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
                 ),
               ],
             ),

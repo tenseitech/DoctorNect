@@ -112,10 +112,10 @@ class _SplashScreenState extends State<SplashScreen> {
           Text(
             'Your Health, Our Priority',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondaryOf(context),
-              letterSpacing: 0.2,
-            ),
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondaryOf(context),
+                  letterSpacing: 0.2,
+                ),
             textAlign: TextAlign.center,
           ),
         ],

@@ -148,7 +148,9 @@ void main() {
       },
     );
 
-    test('doctor_home_screen.dart _clinicalServices includes Doctor Pass and Emergency SOS entries and _networkServices renames Refer a Colleague', () {
+    test(
+        'doctor_home_screen.dart _clinicalServices includes Doctor Pass and Emergency SOS entries and _networkServices renames Refer a Colleague',
+        () {
       final source = File('lib/features/doctor/home/doctor_home_screen.dart')
           .readAsStringSync();
       expect(source, contains("label: 'Doctor Pass'"));
@@ -756,7 +758,9 @@ void main() {
     );
   });
 
-  group('Patient location validation (Pincode & Address optional, City/State/Country mandatory)', () {
+  group(
+      'Patient location validation (Pincode & Address optional, City/State/Country mandatory)',
+      () {
     testWidgets(
       'RegistrationAddressSection in Patient mode makes Pincode and Address Line 1 optional (no asterisk) while requiring Country, State, and City',
       (tester) async {

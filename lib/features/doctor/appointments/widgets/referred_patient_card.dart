@@ -21,8 +21,8 @@ class ReferredPatientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat('dd MMM yyyy, hh:mm a')
-        .format(referral.createdAt);
+    final dateLabel =
+        DateFormat('dd MMM yyyy, hh:mm a').format(referral.createdAt);
 
     final canConsult = incoming && onOpenConsult != null;
 

@@ -128,7 +128,8 @@ void main() {
     const patientId = 'p_test_123';
     const recordId = 'hr_test_456';
     const fileName = 'blood_test.pdf';
-    final sampleBytes = Uint8List.fromList(utf8.encode('PDF_MOCK_DATA_CONTENT'));
+    final sampleBytes =
+        Uint8List.fromList(utf8.encode('PDF_MOCK_DATA_CONTENT'));
 
     test('flag OFF: uploads to Firebase Storage, S3 is NOT called', () async {
       StorageFeatureFlag.debugOverride = false;
@@ -158,7 +159,8 @@ void main() {
       expect(fakeS3.uploadCallCount, equals(0));
     });
 
-    test('flag ON: uploads via S3StorageService, Firebase upload is NOT called', () async {
+    test('flag ON: uploads via S3StorageService, Firebase upload is NOT called',
+        () async {
       StorageFeatureFlag.debugOverride = true;
 
       var firebaseUploadCalled = false;
@@ -178,7 +180,8 @@ void main() {
       expect(result, isNotNull);
       expect(result!.provider, equals('s3'));
       expect(result.isS3, isTrue);
-      expect(result.objectKey, equals('health_records/$patientId/$recordId/$fileName'));
+      expect(result.objectKey,
+          equals('health_records/$patientId/$recordId/$fileName'));
       expect(fakeS3.uploadCallCount, equals(1));
       expect(fakeS3.lastUploadedPurpose, equals('health_records'));
       expect(fakeS3.lastUploadedParentId, equals('$patientId/$recordId'));
@@ -187,10 +190,13 @@ void main() {
       expect(firebaseUploadCalled, isFalse);
     });
 
-    test('load with storageProvider "s3" resolves presigned URL and downloads bytes', () async {
+    test(
+        'load with storageProvider "s3" resolves presigned URL and downloads bytes',
+        () async {
       final expectedContent = utf8.encode('S3_PRESIGNED_DOWNLOAD_BODY');
       const expectedKey = 'health_records/$patientId/$recordId/uuid-123.pdf';
-      const fakePresignedUrl = 'https://s3.ap-south-1.amazonaws.com/doctornect/presigned-token-url';
+      const fakePresignedUrl =
+          'https://s3.ap-south-1.amazonaws.com/doctornect/presigned-token-url';
 
       fakeS3.downloadUrlToReturn = fakePresignedUrl;
 
@@ -223,9 +229,12 @@ void main() {
       expect(legacyDownloadCalled, isFalse);
     });
 
-    test('load with legacy firebasestorage URL routes to legacy path without S3', () async {
+    test(
+        'load with legacy firebasestorage URL routes to legacy path without S3',
+        () async {
       final legacyContent = utf8.encode('FIREBASE_LEGACY_BYTES');
-      const legacyUrl = 'https://firebasestorage.googleapis.com/v0/b/app/o/health_records%2Fp1%2Ffile.pdf?alt=media';
+      const legacyUrl =
+          'https://firebasestorage.googleapis.com/v0/b/app/o/health_records%2Fp1%2Ffile.pdf?alt=media';
 
       var legacyCalled = false;
       HealthRecordFileStore.mockDownloadFromUrl = (url) async {
@@ -251,9 +260,11 @@ void main() {
       expect(fakeS3.getDownloadUrlCallCount, equals(0));
     });
 
-    test('record with no storageProvider still opens via legacy download', () async {
+    test('record with no storageProvider still opens via legacy download',
+        () async {
       final content = utf8.encode('UNTAGGED_PROVIDER_CONTENT');
-      const legacyUrl = 'https://firebasestorage.googleapis.com/v0/b/app/o/p1_r1.pdf';
+      const legacyUrl =
+          'https://firebasestorage.googleapis.com/v0/b/app/o/p1_r1.pdf';
 
       var legacyCalled = false;
       HealthRecordFileStore.mockDownloadFromUrl = (url) async {

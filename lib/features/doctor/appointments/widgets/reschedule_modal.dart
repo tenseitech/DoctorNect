@@ -26,7 +26,7 @@ class RescheduleModal extends StatefulWidget {
 
   final Appointment appointment;
   final void Function(DateTime date, String slot, String reason, bool notify)
-  onConfirm;
+      onConfirm;
   final bool showDragHandle;
 
   static const rescheduleReasons = [
@@ -45,8 +45,7 @@ class RescheduleModal extends StatefulWidget {
       String slot,
       String reason,
       bool notify,
-    )
-    onConfirm,
+    ) onConfirm,
   }) {
     final compact = ResponsiveLayout.isCompact(context);
 
@@ -116,20 +115,19 @@ class _RescheduleModalState extends State<RescheduleModal> {
 
   Future<void> _loadSlots() async {
     setState(() => _loadingSlots = true);
-    final slots = await FirestoreService.instance.doctorAvailability
-        .slotsForDate(
-          doctorId: DoctorSession.loggedInDoctorId,
-          date: _selectedDate,
-        );
+    final slots =
+        await FirestoreService.instance.doctorAvailability.slotsForDate(
+      doctorId: DoctorSession.loggedInDoctorId,
+      date: _selectedDate,
+    );
     if (!mounted) return;
     setState(() {
       _availableSlots = slots
           .where((s) => s.status == SlotStatus.available)
           .map((s) => s.label)
           .toList();
-      _selectedSlot = _availableSlots.contains(_selectedSlot)
-          ? _selectedSlot
-          : null;
+      _selectedSlot =
+          _availableSlots.contains(_selectedSlot) ? _selectedSlot : null;
       _loadingSlots = false;
     });
   }
@@ -501,9 +499,8 @@ class _SlotChip extends StatelessWidget {
                 : AppColors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: selected
-                  ? AppColors.doctorBlue
-                  : AppColors.borderOf(context),
+              color:
+                  selected ? AppColors.doctorBlue : AppColors.borderOf(context),
             ),
           ),
           child: Text(

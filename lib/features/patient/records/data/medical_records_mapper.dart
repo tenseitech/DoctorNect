@@ -41,10 +41,9 @@ abstract final class MedicalRecordsMapper {
         records.where((r) => r.labOrderId != null).toList(),
       MedicalRecordFilter.bloodTest =>
         records.where((r) => r.labBookingId != null).toList(),
-      MedicalRecordFilter.tests =>
-        records
-            .where((r) => r.labOrderId != null || r.labBookingId != null)
-            .toList(),
+      MedicalRecordFilter.tests => records
+          .where((r) => r.labOrderId != null || r.labBookingId != null)
+          .toList(),
     };
   }
 
@@ -73,8 +72,8 @@ abstract final class MedicalRecordsMapper {
     final title = tests.isEmpty
         ? 'Lab test order'
         : tests.length == 1
-        ? tests.first
-        : '${tests.first} + ${tests.length - 1} more';
+            ? tests.first
+            : '${tests.first} + ${tests.length - 1} more';
 
     return HealthRecord(
       id: 'doctor_lab_${order.orderId}',

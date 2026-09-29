@@ -27,7 +27,9 @@ void main() {
       expect(html, contains('scripts/splash-bootstrap.js'));
     });
 
-    test('web/scripts/splash-bootstrap.js initializes Flutter without splash DOM logic', () {
+    test(
+        'web/scripts/splash-bootstrap.js initializes Flutter without splash DOM logic',
+        () {
       final js = File('web/scripts/splash-bootstrap.js').readAsStringSync();
       expect(js, isNot(contains('app-loading-splash')));
       expect(js, contains('flutter_bootstrap.js'));

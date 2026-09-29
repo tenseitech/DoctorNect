@@ -273,9 +273,8 @@ class _MobileSearchAction extends StatelessWidget {
             child: Icon(
               Icons.arrow_forward_rounded,
               size: 20,
-              color: active
-                  ? AppColors.surfaceOf(context)
-                  : AppColors.patientTeal,
+              color:
+                  active ? AppColors.surfaceOf(context) : AppColors.patientTeal,
             ),
           ),
         ),

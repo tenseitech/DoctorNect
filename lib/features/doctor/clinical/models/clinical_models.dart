@@ -32,9 +32,8 @@ class PrescriptionVitals {
 
 class MedicineEntry {
   MedicineEntry({String? id})
-    : id =
-          id ??
-          '${DateTime.now().microsecondsSinceEpoch}_${_globalEntryIdCounter++}';
+      : id = id ??
+            '${DateTime.now().microsecondsSinceEpoch}_${_globalEntryIdCounter++}';
 
   final String id;
   String name = '';
@@ -100,9 +99,8 @@ class InvestigationEntry {
     this.group = '',
     this.notes = '',
     this.catalogId,
-  }) : id =
-           id ??
-           '${DateTime.now().microsecondsSinceEpoch}_${_globalEntryIdCounter++}';
+  }) : id = id ??
+            '${DateTime.now().microsecondsSinceEpoch}_${_globalEntryIdCounter++}';
 
   final String id;
   final String? catalogId;
@@ -149,8 +147,8 @@ class PrescriptionDraft {
     required this.patient,
     String? prescriptionId,
     DateTime? prescriptionDate,
-  }) : prescriptionId = prescriptionId ?? _newPrescriptionId(),
-       prescriptionDate = prescriptionDate ?? DateTime.now();
+  })  : prescriptionId = prescriptionId ?? _newPrescriptionId(),
+        prescriptionDate = prescriptionDate ?? DateTime.now();
 
   final PatientClinicalContext patient;
   final String prescriptionId;
@@ -197,7 +195,9 @@ class PrescriptionDraft {
     return 'RX-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.millisecondsSinceEpoch % 100000}';
   }
 
-  String get patientId => patient.patientId ?? ''; // FIXED: never fabricate a PAT-{hash} id; empty means unresolved so callers block the write
+  String get patientId =>
+      patient.patientId ??
+      ''; // FIXED: never fabricate a PAT-{hash} id; empty means unresolved so callers block the write
 
   bool get hasResolvedPatientId =>
       patient.patientId != null &&

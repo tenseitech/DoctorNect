@@ -231,8 +231,8 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
               color: widget.selected
                   ? (isDark ? Colors.white : AppColors.patientTeal)
                   : (isDark
-                        ? Colors.white.withValues(alpha: 0.35)
-                        : AppColors.borderOf(context).withValues(alpha: 0.4)),
+                      ? Colors.white.withValues(alpha: 0.35)
+                      : AppColors.borderOf(context).withValues(alpha: 0.4)),
               width: widget.selected ? 2.0 : 1.0,
             ),
           ),
@@ -282,13 +282,12 @@ class _PatientShellState extends State<PatientShell> {
       label: 'Profile',
       customIconBuilder: (context, selected, iconColor, size) =>
           _PatientProfileTabAvatar(
-            selected: selected,
-            iconColor: iconColor,
-            size: size,
-            fallbackIcon: selected
-                ? Icons.person_rounded
-                : Icons.person_outline_rounded,
-          ),
+        selected: selected,
+        iconColor: iconColor,
+        size: size,
+        fallbackIcon:
+            selected ? Icons.person_rounded : Icons.person_outline_rounded,
+      ),
     ),
   ];
 
@@ -412,18 +411,18 @@ class _PatientShellState extends State<PatientShell> {
   }
 
   List<Widget> _buildPages() => [
-    PatientHomeScreen(onSelectTab: _selectTab),
-    const PatientAppointmentsScreen(),
-    const MyLabsScreen(embeddedInShell: true),
-    const AmbulanceBookingScreen(
-      bookedByRole: AmbulanceBookedByRole.patient,
-      embeddedInShell: true,
-    ),
-    PatientProfileScreen(
-      embeddedInShell: true,
-      onOpenAppointments: () => _selectTab(1),
-    ),
-  ];
+        PatientHomeScreen(onSelectTab: _selectTab),
+        const PatientAppointmentsScreen(),
+        const MyLabsScreen(embeddedInShell: true),
+        const AmbulanceBookingScreen(
+          bookedByRole: AmbulanceBookedByRole.patient,
+          embeddedInShell: true,
+        ),
+        PatientProfileScreen(
+          embeddedInShell: true,
+          onOpenAppointments: () => _selectTab(1),
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {

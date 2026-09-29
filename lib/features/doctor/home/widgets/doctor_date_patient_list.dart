@@ -86,16 +86,16 @@ List<_QueueEntry> _groupAppointments(List<Appointment> appointments) {
       continue;
     }
 
-    final group =
-        appointments.where((a) {
-          if (used.contains(a.id)) return false;
-          return _belongsToFamilyGroup(a, booker, appt);
-        }).toList()..sort((a, b) {
-          final order = _familyMemberSortOrder(a)
-              .compareTo(_familyMemberSortOrder(b));
-          if (order != 0) return order;
-          return a.tokenNumber.compareTo(b.tokenNumber);
-        });
+    final group = appointments.where((a) {
+      if (used.contains(a.id)) return false;
+      return _belongsToFamilyGroup(a, booker, appt);
+    }).toList()
+      ..sort((a, b) {
+        final order =
+            _familyMemberSortOrder(a).compareTo(_familyMemberSortOrder(b));
+        if (order != 0) return order;
+        return a.tokenNumber.compareTo(b.tokenNumber);
+      });
 
     if (group.length > 1) {
       for (final member in group) {
@@ -905,7 +905,7 @@ class _UpcomingFamilyMemberCardState extends State<_UpcomingFamilyMemberCard> {
                       color: _hovered
                           ? AppColors.doctorBlue
                           : AppColors.textSecondaryOf(context)
-                                .withValues(alpha: 0.45),
+                              .withValues(alpha: 0.45),
                     ),
                   ),
               ],
@@ -968,9 +968,8 @@ class _UpcomingTileFooter extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
-                  color: hovered
-                      ? const Color(0xFF1D4ED8)
-                      : AppColors.doctorBlue,
+                  color:
+                      hovered ? const Color(0xFF1D4ED8) : AppColors.doctorBlue,
                 ),
               ),
               const SizedBox(width: 2),
@@ -1249,9 +1248,8 @@ class _PatientAppointmentCard extends StatelessWidget {
                 SizedBox(
                   width: compact ? double.infinity : null,
                   child: Align(
-                    alignment: compact
-                        ? Alignment.center
-                        : Alignment.centerRight,
+                    alignment:
+                        compact ? Alignment.center : Alignment.centerRight,
                     child: FilledButton(
                       onPressed: _primaryAction,
                       style: FilledButton.styleFrom(
@@ -1527,8 +1525,8 @@ class _FamilyMemberRow extends StatelessWidget {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.6),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.6),
                 ),
             ],
           ),

@@ -41,9 +41,8 @@ class BookingStepHeader extends StatelessWidget {
                       color: active ? accentColor : AppColors.cardBgOf(context),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: active
-                            ? accentColor
-                            : AppColors.borderOf(context),
+                        color:
+                            active ? accentColor : AppColors.borderOf(context),
                       ),
                     ),
                     child: Text(

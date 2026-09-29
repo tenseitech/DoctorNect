@@ -41,8 +41,7 @@ class MobileRegistrationLookup {
       return null;
     }
 
-    final digits =
-        FormValidators.registrationMobileDigits(mobile) ??
+    final digits = FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile);
     if (digits == null || digits.length != 10) return null;
 
@@ -50,12 +49,10 @@ class MobileRegistrationLookup {
       final result = await _functions
           .httpsCallable('lookupMobileRegistration')
           .call<Map<String, dynamic>>({
-            'mobile': digits,
-            'role': _roleValue(role),
-            'intent': intent == MobileLookupIntent.login
-                ? 'login'
-                : 'registration',
-          });
+        'mobile': digits,
+        'role': _roleValue(role),
+        'intent': intent == MobileLookupIntent.login ? 'login' : 'registration',
+      });
       final data = Map<String, dynamic>.from(result.data);
       if (data['ok'] != true) return null;
       return data['conflict'] == true;
@@ -73,11 +70,11 @@ class MobileRegistrationLookup {
   }
 
   static String _roleValue(UserType role) => switch (role) {
-    UserType.superAdmin => 'super_admin',
-    UserType.doctor => 'doctor',
-    UserType.patient => 'patient',
-    UserType.medicalStore => 'medicalStore',
-    UserType.lab => 'lab',
-    UserType.ambulance => 'ambulance',
-  };
+        UserType.superAdmin => 'super_admin',
+        UserType.doctor => 'doctor',
+        UserType.patient => 'patient',
+        UserType.medicalStore => 'medicalStore',
+        UserType.lab => 'lab',
+        UserType.ambulance => 'ambulance',
+      };
 }

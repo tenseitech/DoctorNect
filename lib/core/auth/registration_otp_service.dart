@@ -39,8 +39,7 @@ class RegistrationOtpService {
       digits = FormValidators.registrationMobileDigits(trimmed);
       if (digits == null) {
         return (
-          error:
-              FormValidators.phoneLocal(
+          error: FormValidators.phoneLocal(
                 trimmed,
                 dialCode: CountryPhoneCodes.defaultDialCode,
               ) ??
@@ -50,7 +49,8 @@ class RegistrationOtpService {
       }
     } else {
       return (
-        error: 'Email OTP is disabled. Please use your 10-digit mobile number for phone verification.',
+        error:
+            'Email OTP is disabled. Please use your 10-digit mobile number for phone verification.',
         debugOtp: null,
       );
     }
@@ -166,9 +166,8 @@ class RegistrationOtpService {
       final data = Map<String, dynamic>.from(result.data);
       if (data['ok'] == true) {
         final sessionId = data['sessionId'] as String?;
-        _verificationSessionId = sessionId != null && sessionId.isNotEmpty
-            ? sessionId
-            : null;
+        _verificationSessionId =
+            sessionId != null && sessionId.isNotEmpty ? sessionId : null;
         final token = data['customToken'] as String?;
         _loginCustomToken = token != null && token.isNotEmpty ? token : null;
         return null;
@@ -198,8 +197,7 @@ class RegistrationOtpService {
     if (!FirebaseBootstrap.isReady) {
       return (error: 'Firebase is not available.', customToken: null);
     }
-    final digits =
-        FormValidators.registrationMobileDigits(mobile) ??
+    final digits = FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile);
     if (digits == null || digits.isEmpty) {
       return (
@@ -223,10 +221,10 @@ class RegistrationOtpService {
       final result = await _functions
           .httpsCallable('completeMobileOtpLogin')
           .call<Map<String, dynamic>>({
-            'mobile': digits,
-            'sessionId': sessionId,
-            'role': _roleValue(role),
-          });
+        'mobile': digits,
+        'sessionId': sessionId,
+        'role': _roleValue(role),
+      });
       final data = Map<String, dynamic>.from(result.data);
       final token = data['customToken'] as String?;
       if (data['ok'] == true && token != null && token.isNotEmpty) {
@@ -269,11 +267,11 @@ class RegistrationOtpService {
       final result = await _functions
           .httpsCallable('resetUserPasswordWithOtp')
           .call<Map<String, dynamic>>({
-            'identifier': identifier.trim(),
-            'sessionId': sessionId,
-            'newPassword': newPassword,
-            'role': _roleValue(role),
-          });
+        'identifier': identifier.trim(),
+        'sessionId': sessionId,
+        'newPassword': newPassword,
+        'role': _roleValue(role),
+      });
       final data = Map<String, dynamic>.from(result.data);
       if (data['ok'] == true || data['success'] == true) {
         clearVerificationSession();
@@ -350,13 +348,13 @@ class RegistrationOtpService {
       finalizePatientVerification(sessionId);
 
   static String _roleValue(UserType role) => switch (role) {
-    UserType.superAdmin => 'super_admin',
-    UserType.doctor => 'doctor',
-    UserType.patient => 'patient',
-    UserType.medicalStore => 'medicalStore',
-    UserType.lab => 'lab',
-    UserType.ambulance => 'ambulance',
-  };
+        UserType.superAdmin => 'super_admin',
+        UserType.doctor => 'doctor',
+        UserType.patient => 'patient',
+        UserType.medicalStore => 'medicalStore',
+        UserType.lab => 'lab',
+        UserType.ambulance => 'ambulance',
+      };
 
   static String mapCallableError(FirebaseFunctionsException e) =>
       _mapFunctionsError(e);
@@ -371,33 +369,33 @@ class RegistrationOtpService {
       if (kIsWeb) {
         return kDebugMode
             ? 'App Check rejected this request. Configure reCAPTCHA for web: '
-                  '--dart-define=RECAPTCHA_SITE_KEY=your_key and register localhost '
-                  'in Firebase App Check + reCAPTCHA admin.'
+                '--dart-define=RECAPTCHA_SITE_KEY=your_key and register localhost '
+                'in Firebase App Check + reCAPTCHA admin.'
             : 'Security verification failed. Please use the official mobile app.';
       }
       return kDebugMode
           ? 'App Check rejected this OTP request. Register the debug token from '
-                'device logs in Firebase Console → App Check, then restart the app.'
+              'device logs in Firebase Console → App Check, then restart the app.'
           : 'Security verification failed. Update the app and try again.';
     }
 
     final rawMessage = _cleanFunctionsMessage(e.message);
     return switch (e.code) {
-      'already-exists' =>
-        rawMessage.isNotEmpty
-            ? rawMessage
-            : 'This mobile number is already registered under another account.',
-      'not-found' =>
-        rawMessage.isNotEmpty
-            ? rawMessage
-            : 'No account found for this mobile number. Please register first.',
+      'already-exists' => rawMessage.isNotEmpty
+          ? rawMessage
+          : 'This mobile number is already registered under another account.',
+      'not-found' => rawMessage.isNotEmpty
+          ? rawMessage
+          : 'No account found for this mobile number. Please register first.',
       'failed-precondition' => _failedPreconditionMessage(rawMessage),
       'deadline-exceeded' => 'OTP expired. Send a new one.',
       'permission-denied' => 'Incorrect OTP. Check the code and try again.',
       'resource-exhausted' => _resourceExhaustedMessage(rawMessage),
       'invalid-argument' =>
         rawMessage.isNotEmpty ? rawMessage : 'Invalid OTP request.',
-      'unavailable' => rawMessage.isNotEmpty ? rawMessage : 'SMS service is temporarily unavailable. Please try again shortly.',
+      'unavailable' => rawMessage.isNotEmpty
+          ? rawMessage
+          : 'SMS service is temporarily unavailable. Please try again shortly.',
       'internal' || 'unknown' => _serviceUnavailable,
       _ => rawMessage.isNotEmpty ? rawMessage : _serviceUnavailable,
     };

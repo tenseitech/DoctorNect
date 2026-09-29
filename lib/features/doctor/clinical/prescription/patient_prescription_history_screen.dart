@@ -98,9 +98,8 @@ class _PatientPrescriptionHistoryScreenState
     final hPad = ResponsiveLayout.isCompact(context) ? 12.0 : 20.0;
     final compact = ResponsiveLayout.isCompact(context);
     final screenW = ResponsiveLayout.screenWidth(context);
-    final tableMaxWidth = compact
-        ? screenW - (hPad * 2)
-        : (screenW * 0.82).clamp(640.0, 880.0);
+    final tableMaxWidth =
+        compact ? screenW - (hPad * 2) : (screenW * 0.82).clamp(640.0, 880.0);
 
     return ListenableBuilder(
       listenable: ClinicalPrescriptionStore.instance,
@@ -151,8 +150,7 @@ class _PatientPrescriptionHistoryScreenState
                               patient: widget.patient,
                             ),
                             if (ClinicalPrescriptionStore
-                                .instance
-                                .hasMorePatient) ...[
+                                .instance.hasMorePatient) ...[
                               const SizedBox(height: 12),
                               Align(
                                 alignment: Alignment.center,
@@ -160,9 +158,9 @@ class _PatientPrescriptionHistoryScreenState
                                   onPressed: () => ClinicalPrescriptionStore
                                       .instance
                                       .loadMoreForPatient(
-                                        patientId,
-                                        preferCache: false,
-                                      ),
+                                    patientId,
+                                    preferCache: false,
+                                  ),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.doctorBlue,
                                     side: BorderSide(
@@ -350,13 +348,11 @@ class _HistoryTableRow extends StatelessWidget {
     final meds = draft.validMedicines;
     if (meds.isEmpty) return '—';
 
-    final labels = meds
-        .map((m) {
-          final name = m.name.trim();
-          final dosage = m.dosageLabel.trim();
-          return dosage.isEmpty ? name : '$name $dosage';
-        })
-        .where((s) => s.isNotEmpty);
+    final labels = meds.map((m) {
+      final name = m.name.trim();
+      final dosage = m.dosageLabel.trim();
+      return dosage.isEmpty ? name : '$name $dosage';
+    }).where((s) => s.isNotEmpty);
 
     final list = labels.toList();
     if (list.length <= 2) return list.join(', ');

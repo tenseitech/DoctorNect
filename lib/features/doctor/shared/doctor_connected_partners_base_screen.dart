@@ -279,14 +279,14 @@ class _DoctorConnectedPartnersBaseViewState
         final cityLabel = widget.cityFilterLabel()?.trim();
         final discoveryPartners = widget.inlineCityDiscovery
             ? (widget
-                  .searchResults()
-                  .where((p) => !widget.isConnected(p.id))
-                  .toList()
-                ..sort(
-                  (a, b) => a.name.trim().toLowerCase().compareTo(
-                    b.name.trim().toLowerCase(),
-                  ),
-                ))
+                .searchResults()
+                .where((p) => !widget.isConnected(p.id))
+                .toList()
+              ..sort(
+                (a, b) => a.name.trim().toLowerCase().compareTo(
+                      b.name.trim().toLowerCase(),
+                    ),
+              ))
             : const <DoctorPartnerProfileItem>[];
 
         return ListView(

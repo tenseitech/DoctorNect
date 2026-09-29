@@ -32,11 +32,11 @@ class SavedLabEntry {
       PartnerLab(id: id, name: name, rating: rating, area: area);
 
   Map<String, dynamic> toMap() => {
-    if (id != null && id!.trim().isNotEmpty) 'id': id,
-    'name': name,
-    'rating': rating,
-    'area': area,
-  };
+        if (id != null && id!.trim().isNotEmpty) 'id': id,
+        'name': name,
+        'rating': rating,
+        'area': area,
+      };
 
   factory SavedLabEntry.fromMap(Map<String, dynamic> data) {
     return SavedLabEntry(
@@ -92,32 +92,34 @@ class SavedDoctorEntry {
   final String? photoStorage;
 
   MyDoc toMyDoc() => MyDoc(
-    id: id,
-    name: name,
-    specialization: specialization,
-    rating: rating,
-    reviewCount: reviewCount,
-    city: city,
-    photoUrl: photoUrl,
-    photoPath: photoPath,
-    photoKey: photoKey,
-    photoStorage: photoStorage,
-  );
+        id: id,
+        name: name,
+        specialization: specialization,
+        rating: rating,
+        reviewCount: reviewCount,
+        city: city,
+        photoUrl: photoUrl,
+        photoPath: photoPath,
+        photoKey: photoKey,
+        photoStorage: photoStorage,
+      );
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'name': name,
-    'specialization': specialization,
-    'rating': rating,
-    'reviewCount': reviewCount,
-    'city': city,
-    if (photoUrl != null && photoUrl!.trim().isNotEmpty) 'photoUrl': photoUrl,
-    if (photoPath != null && photoPath!.trim().isNotEmpty)
-      'photoPath': photoPath,
-    if (photoKey != null && photoKey!.trim().isNotEmpty) 'photoKey': photoKey,
-    if (photoStorage != null && photoStorage!.trim().isNotEmpty)
-      'photoStorage': photoStorage,
-  };
+        'id': id,
+        'name': name,
+        'specialization': specialization,
+        'rating': rating,
+        'reviewCount': reviewCount,
+        'city': city,
+        if (photoUrl != null && photoUrl!.trim().isNotEmpty)
+          'photoUrl': photoUrl,
+        if (photoPath != null && photoPath!.trim().isNotEmpty)
+          'photoPath': photoPath,
+        if (photoKey != null && photoKey!.trim().isNotEmpty)
+          'photoKey': photoKey,
+        if (photoStorage != null && photoStorage!.trim().isNotEmpty)
+          'photoStorage': photoStorage,
+      };
 
   factory SavedDoctorEntry.fromMap(Map<String, dynamic> data) {
     return SavedDoctorEntry(
@@ -234,8 +236,8 @@ class PatientFavoritesStore extends ChangeNotifier {
       ..clear()
       ..addAll(
         (data?['addedLabs'] as List<dynamic>? ?? const []).whereType<Map>().map(
-          (item) => SavedLabEntry.fromMap(Map<String, dynamic>.from(item)),
-        ),
+              (item) => SavedLabEntry.fromMap(Map<String, dynamic>.from(item)),
+            ),
       );
     notifyListeners();
   }

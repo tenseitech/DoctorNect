@@ -111,8 +111,8 @@ class Icd10DiagnosesDatabase {
       );
     }
 
-    final match = RegExp(r'^([A-Za-z]\d{2}(?:\.\d+)?)\s+(.+)$')
-        .firstMatch(line);
+    final match =
+        RegExp(r'^([A-Za-z]\d{2}(?:\.\d+)?)\s+(.+)$').firstMatch(line);
     if (match != null) {
       return _Icd10Entry(match.group(1)!, match.group(2)!.trim());
     }

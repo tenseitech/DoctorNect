@@ -10,7 +10,9 @@ enum VitalAdvisoryLevel {
 class VitalAdvisory {
   const VitalAdvisory({this.level = VitalAdvisoryLevel.none, this.message});
 
-  const VitalAdvisory.none() : level = VitalAdvisoryLevel.none, message = null;
+  const VitalAdvisory.none()
+      : level = VitalAdvisoryLevel.none,
+        message = null;
 
   final VitalAdvisoryLevel level;
   final String? message;

@@ -68,9 +68,9 @@ class SupabaseAuthService {
   }
 
   Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    'apikey': SupabaseBootstrap.resolvedAnonKey,
-  };
+        'Content-Type': 'application/json',
+        'apikey': SupabaseBootstrap.resolvedAnonKey,
+      };
 
   /// 1. Resolve whether user should login, register, or is blocked due to wrong role
   Future<AuthResolution> resolvePath({

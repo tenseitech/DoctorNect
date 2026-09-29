@@ -103,8 +103,8 @@ void main() {
 
     test('uses debug override stream in tests', () async {
       final controller = StreamController<bool>();
-      DoctorVerificationRepository.debugWatchVerifiedOverride = (_) =>
-          controller.stream;
+      DoctorVerificationRepository.debugWatchVerifiedOverride =
+          (_) => controller.stream;
 
       final pending = DoctorVerificationRepository.instance.watchVerified(
         doctorId,

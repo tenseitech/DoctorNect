@@ -54,14 +54,14 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
   String? _error;
 
   String get _codeTypeLabel => switch (widget.channel) {
-    ContactVerificationChannel.mobile => 'OTP',
-    ContactVerificationChannel.email => 'Verification Code',
-  };
+        ContactVerificationChannel.mobile => 'OTP',
+        ContactVerificationChannel.email => 'Verification Code',
+      };
 
   String get _channelLabel => switch (widget.channel) {
-    ContactVerificationChannel.mobile => 'Mobile Number',
-    ContactVerificationChannel.email => 'Email Address',
-  };
+        ContactVerificationChannel.mobile => 'Mobile Number',
+        ContactVerificationChannel.email => 'Email Address',
+      };
 
   Future<void> _sendOtp() async {
     setState(() {

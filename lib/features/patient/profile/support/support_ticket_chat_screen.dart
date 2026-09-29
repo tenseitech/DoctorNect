@@ -96,12 +96,12 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
             .doc(widget.ticketId)
             .collection('messages')
             .add({
-              'senderId': 'support_agent_mock',
-              'senderName': 'Support Agent',
-              'senderRole': 'support',
-              'text': replyText,
-              'createdAt': FieldValue.serverTimestamp(),
-            });
+          'senderId': 'support_agent_mock',
+          'senderName': 'Support Agent',
+          'senderRole': 'support',
+          'text': replyText,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
 
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       });
@@ -330,7 +330,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
 
                             final timeLabel = timestamp != null
                                 ? DateFormat('hh:mm a')
-                                      .format(timestamp.toDate())
+                                    .format(timestamp.toDate())
                                 : 'Sending...';
 
                             return Align(
@@ -397,7 +397,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                           fontSize: 9,
                                           color: isMe
                                               ? AppColors.surfaceOf(context)
-                                                    .withValues(alpha: 0.7)
+                                                  .withValues(alpha: 0.7)
                                               : AppColors.textSecondaryOf(
                                                   context,
                                                 ),

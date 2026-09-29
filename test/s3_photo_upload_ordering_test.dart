@@ -132,7 +132,8 @@ void main() {
     const oldKey = 'patients/p_123/profile/old_avatar.jpg';
     final sampleBytes = Uint8List.fromList([1, 2, 3, 4, 5]);
 
-    test('Success: S3 upload -> Firestore update -> Old S3 photo deleted', () async {
+    test('Success: S3 upload -> Firestore update -> Old S3 photo deleted',
+        () async {
       final result = await ProfilePhotoUploader.instance.uploadPatientPhoto(
         patientId: patientId,
         bytes: sampleBytes,
@@ -152,7 +153,8 @@ void main() {
           .doc(patientId)
           .get();
       expect(patientDoc.exists, isTrue);
-      expect(patientDoc.data()?['photoKey'], 'patient_profile/p_123/profile.jpg');
+      expect(
+          patientDoc.data()?['photoKey'], 'patient_profile/p_123/profile.jpg');
       expect(patientDoc.data()?['photoStorage'], 's3');
 
       final userDoc = await fakeFirestore
@@ -182,7 +184,9 @@ void main() {
       expect(testS3.deletedKeys, isEmpty);
     });
 
-    test('S3 upload fails -> Firestore not updated, Old S3 photo is NOT deleted', () async {
+    test(
+        'S3 upload fails -> Firestore not updated, Old S3 photo is NOT deleted',
+        () async {
       testS3.shouldFailUpload = true;
 
       await expectLater(
@@ -212,7 +216,8 @@ void main() {
     const oldKey = 'doctor_profiles/doc_456/profile/old_pic.jpg';
     final sampleBytes = Uint8List.fromList([10, 20, 30, 40]);
 
-    test('Success: S3 upload -> Firestore update -> Old S3 photo deleted', () async {
+    test('Success: S3 upload -> Firestore update -> Old S3 photo deleted',
+        () async {
       final result = await ProfilePhotoUploader.instance.uploadDoctorPhoto(
         doctorId: doctorId,
         bytes: sampleBytes,
@@ -262,7 +267,9 @@ void main() {
       expect(testS3.deletedKeys, isEmpty);
     });
 
-    test('S3 upload fails -> Firestore not updated, Old S3 photo is NOT deleted', () async {
+    test(
+        'S3 upload fails -> Firestore not updated, Old S3 photo is NOT deleted',
+        () async {
       testS3.shouldFailUpload = true;
 
       await expectLater(
@@ -291,9 +298,11 @@ void main() {
     const bookingId = 'LAB_BOOK_101';
     const patientId = 'p_789';
     const oldReportKey = 'lab_reports/p_789/LAB_BOOK_101/old_report.pdf';
-    final pdfBytes = Uint8List.fromList([37, 80, 68, 70, 45, 49, 46, 52]); // %PDF-1.4
+    final pdfBytes =
+        Uint8List.fromList([37, 80, 68, 70, 45, 49, 46, 52]); // %PDF-1.4
 
-    test('Success: S3 upload -> Firestore update -> Old S3 report deleted', () async {
+    test('Success: S3 upload -> Firestore update -> Old S3 report deleted',
+        () async {
       // Seed existing booking document in Firestore
       await fakeFirestore
           .collection(FirestorePaths.labBookings)
@@ -345,7 +354,9 @@ void main() {
       expect(testS3.deletedKeys, isEmpty);
     });
 
-    test('S3 upload fails -> Firestore not updated, Old S3 report is NOT deleted', () async {
+    test(
+        'S3 upload fails -> Firestore not updated, Old S3 report is NOT deleted',
+        () async {
       testS3.shouldFailUpload = true;
 
       await fakeFirestore
@@ -383,9 +394,11 @@ void main() {
     const orderId = 'ORDER_202';
     const patientId = 'p_888';
     const oldReportKey = 'lab_reports/p_888/ORDER_202/old_order_report.pdf';
-    final pdfBytes = Uint8List.fromList([37, 80, 68, 70, 45, 49, 46, 52]); // %PDF-1.4
+    final pdfBytes =
+        Uint8List.fromList([37, 80, 68, 70, 45, 49, 46, 52]); // %PDF-1.4
 
-    test('Success: S3 upload -> Firestore update -> Old S3 report deleted', () async {
+    test('Success: S3 upload -> Firestore update -> Old S3 report deleted',
+        () async {
       // Seed existing order document in Firestore
       await fakeFirestore
           .collection(FirestorePaths.labOrders)
@@ -436,7 +449,9 @@ void main() {
       expect(testS3.deletedKeys, isEmpty);
     });
 
-    test('S3 upload fails -> Firestore not updated, Old S3 report is NOT deleted', () async {
+    test(
+        'S3 upload fails -> Firestore not updated, Old S3 report is NOT deleted',
+        () async {
       testS3.shouldFailUpload = true;
 
       await fakeFirestore

@@ -107,7 +107,8 @@ class _LabReportScreenState extends State<LabReportScreen> {
         error =
             'Could not load the report. Check your connection and try again.';
       } else if (!LabReportFileStore.matchesDeclaredType(bytes, fileName)) {
-        error = 'The linked report file looks invalid or mismatched. Ask your lab to re-upload the correct report.';
+        error =
+            'The linked report file looks invalid or mismatched. Ask your lab to re-upload the correct report.';
       }
 
       setState(() {
@@ -151,8 +152,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
     await lab_report_download.downloadLabReportBytes(
       bytes: bytes,
       fileName: fileName,
-      mimeType:
-          LabReportFileStore.mimeTypeFor(fileName) ??
+      mimeType: LabReportFileStore.mimeTypeFor(fileName) ??
           'application/octet-stream',
     );
   }
