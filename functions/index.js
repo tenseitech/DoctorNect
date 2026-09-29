@@ -994,23 +994,47 @@ exports.lookupMobileRegistration = onCall(
 exports.verifyUserRegistrationOtp = onCall(
   { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
   withSecurityLogging('verifyUserRegistrationOtp', async (request) => {
-  try {
-    const firestore = getFirestore();
-    await enforceAbuseLimit(firestore, request, 'api', {
-      message: 'Too many OTP verification attempts. Please try again later.',
+    const mobileLast4 = String(request.data?.mobile || request.data?.identifier || '')
+      .replace(/\D/g, '')
+      .slice(-4);
+    console.info('[verifyUserRegistrationOtp] Callable request received', {
+      hasAppCheck: Boolean(request.app),
+      appId: request.app?.appId || null,
+      otpType: request.data?.otpType || 'registration',
+      role: request.data?.role || 'patient',
+      mobileLast4: mobileLast4 || 'unknown',
+      otpLength: String(request.data?.otp || '').trim().length,
+      platform: request.rawRequest?.headers?.['x-client-platform'] || 'unknown',
     });
-    return await verifyUserRegistrationOtp(
-      firestore,
-      request.data || {},
-      request.auth,
-      { clientIp: getCallableClientIp(request) },
-    );
-  } catch (err) {
-    console.error('verifyUserRegistrationOtp failed', err);
-    if (err instanceof HttpsError) throw err;
-    throw new HttpsError('internal', 'Could not verify OTP. Please try again.');
-  }
-}),
+    try {
+      const firestore = getFirestore();
+      await enforceAbuseLimit(firestore, request, 'api', {
+        message: 'Too many OTP verification attempts. Please try again later.',
+      });
+      const result = await verifyUserRegistrationOtp(
+        firestore,
+        request.data || {},
+        request.auth,
+        { clientIp: getCallableClientIp(request) },
+      );
+      console.info('[verifyUserRegistrationOtp] Callable request succeeded', {
+        mobileLast4: mobileLast4 || 'unknown',
+        ok: result?.ok,
+        hasSessionId: Boolean(result?.sessionId),
+        hasCustomToken: Boolean(result?.customToken),
+      });
+      return result;
+    } catch (err) {
+      console.error('[verifyUserRegistrationOtp] Callable request failed', {
+        mobileLast4: mobileLast4 || 'unknown',
+        errorCode: err.code || 'unknown',
+        errorMessage: err.message,
+        details: err.details || null,
+      });
+      if (err instanceof HttpsError) throw err;
+      throw new HttpsError('internal', 'Could not verify OTP. Please try again.');
+    }
+  }),
 );
 /** Applies a pre-registration OTP session to the signed-in patient account. */
 exports.finalizePatientOtpVerification = onCall(

@@ -144,15 +144,15 @@ function isTestMode() {
 }
 
 function normalizeMobileDigits(mobile) {
-  const digits = String(mobile || '').replace(/\D/g, '');
-  let normalized = digits;
-  if (normalized.length === 12 && normalized.startsWith('91')) {
-    normalized = normalized.slice(2);
-  } else if (normalized.length === 11 && normalized.startsWith('0')) {
-    normalized = normalized.slice(1);
+  let digits = String(mobile || '').replace(/\D/g, '');
+  while (digits.length > 10 && digits.startsWith('91')) {
+    digits = digits.slice(2);
   }
-  if (normalized.length !== 10 || !/^[6-9]\d{9}$/.test(normalized)) return '';
-  return normalized;
+  while (digits.length > 10 && digits.startsWith('0')) {
+    digits = digits.slice(1);
+  }
+  if (digits.length !== 10 || !/^[6-9]\d{9}$/.test(digits)) return '';
+  return digits;
 }
 
 function mobileHash(role, digits) {
@@ -244,9 +244,21 @@ function ambulancePinMatches(storedPin, enteredPin) {
   return false;
 }
 
+function normalizeRole(role) {
+  const raw = String(role || '').trim();
+  const lower = raw.toLowerCase();
+  if (lower === 'patient') return 'patient';
+  if (lower === 'doctor') return 'doctor';
+  if (lower === 'medicalstore' || lower === 'medical_store' || lower === 'pharmacy') return 'medicalStore';
+  if (lower === 'lab') return 'lab';
+  if (lower === 'ambulance') return 'ambulance';
+  return raw;
+}
+
 function assertSupportedRole(role) {
+  const normalized = normalizeRole(role);
   const supported = new Set(['patient', 'doctor', 'lab', 'medicalStore', 'ambulance']);
-  if (!supported.has(role)) {
+  if (!supported.has(normalized)) {
     throw new HttpsError(
       'invalid-argument',
       'Unsupported role. Use patient, doctor, lab, medicalStore, or ambulance.',
@@ -595,6 +607,45 @@ function buildMsg91OtpRequest({ mobileDigits, code, templateId, senderId }) {
 }
 
 function requestMsg91Api({ authKey, path, method = 'GET' }) {
+  const proxyUrl = String(process.env.MSG91_PROXY_URL || '').trim();
+  const proxySecret = String(process.env.PROXY_SECRET || '').trim();
+
+  // If a static IP Cloud Run proxy is configured, route through it to satisfy MSG91 IP allowlisting
+  if (proxyUrl && proxySecret) {
+    return new Promise((resolve, reject) => {
+      const u = new URL(proxyUrl);
+      const options = {
+        hostname: u.hostname,
+        port: u.port || (u.protocol === 'https:' ? 443 : 80),
+        path: u.pathname + (path.startsWith('/') ? path : `/${path}`),
+        method,
+        headers: {
+          authkey: authKey,
+          'x-proxy-key': proxySecret,
+          accept: 'application/json',
+        },
+      };
+
+      const protocol = u.protocol === 'http:' ? require('http') : https;
+      const req = protocol.request(options, (res) => {
+        let responseData = '';
+        res.on('data', (chunk) => { responseData += chunk; });
+        res.on('end', () => {
+          resolve({
+            statusCode: res.statusCode || 0,
+            body: responseData,
+          });
+        });
+      });
+
+      req.setTimeout(8000, () => {
+        req.destroy(new Error('MSG91 proxy API request timed out'));
+      });
+      req.on('error', (err) => reject(err));
+      req.end();
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'control.msg91.com',
@@ -617,6 +668,9 @@ function requestMsg91Api({ authKey, path, method = 'GET' }) {
       });
     });
 
+    req.setTimeout(8000, () => {
+      req.destroy(new Error('MSG91 API request timed out'));
+    });
     req.on('error', (err) => reject(err));
     req.end();
   });
@@ -633,7 +687,8 @@ function parseMsg91OtpVerifyResponse(statusCode, rawBody) {
     }
   }
   const type = String(parsed?.type || '').trim().toLowerCase();
-  if (statusCode >= 200 && statusCode < 300 && type === 'success') {
+  const message = String(parsed?.message || parsed?.msg || '').trim().toLowerCase();
+  if (statusCode >= 200 && statusCode < 300 && (type === 'success' || message.includes('already verified') || message.includes('verified success'))) {
     return { ok: true, parsed };
   }
   return {
@@ -653,6 +708,11 @@ async function verifyMsg91Otp(mobileDigits, otp) {
   const normalizedMobile = normalizeMobileDigits(mobileDigits);
   const normalizedOtp = String(otp || '').trim();
   if (!authKey || !normalizedMobile || !/^\d{6}$/.test(normalizedOtp)) {
+    console.warn('[verifyMsg91Otp] Skipped check: missing authKey, invalid mobile, or invalid otp format', {
+      hasAuthKey: Boolean(authKey),
+      hasMobile: Boolean(normalizedMobile),
+      otpLength: normalizedOtp.length,
+    });
     return false;
   }
 
@@ -674,6 +734,14 @@ async function verifyMsg91Otp(mobileDigits, otp) {
         httpStatus: statusCode,
         responseBody: body,
       });
+      console.warn(`[verifyMsg91Otp] MSG91 rejected OTP for mobile ending ${normalizedMobile.slice(-4)}, httpStatus=${statusCode}, response=${body}`);
+    } else {
+      logMsg91Otp('verify_confirmed', {
+        severity: 'INFO',
+        mobile: maskMsg91Mobile(normalizedMobile),
+        httpStatus: statusCode,
+      });
+      console.info(`[verifyMsg91Otp] MSG91 confirmed OTP for mobile ending ${normalizedMobile.slice(-4)}`);
     }
     return parsed.ok;
   } catch (err) {
@@ -682,6 +750,7 @@ async function verifyMsg91Otp(mobileDigits, otp) {
       mobile: maskMsg91Mobile(normalizedMobile),
       error: err?.message || String(err),
     });
+    console.error(`[verifyMsg91Otp] MSG91 network error for mobile ending ${normalizedMobile.slice(-4)}:`, err?.message || err);
     return false;
   }
 }
@@ -1218,6 +1287,28 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     ...(isDemoAccount ? { demoAccount: true } : {}),
   });
 
+  // Mirror OTP challenge token in Redis cache if available
+  try {
+    const { redis } = require('./redis');
+    if (redis && digits) {
+      const ttlSec = Math.max(1, Math.floor(expiryMs / 1000));
+      const redisPayload = JSON.stringify({
+        code,
+        otpHash: hashOtp(code),
+        role,
+        mobileDigits: digits,
+        expiresAt: Date.now() + expiryMs,
+      });
+      await Promise.all([
+        redis.set(`otp:challenge:${digits}`, redisPayload, 'EX', ttlSec).catch(() => {}),
+        redis.set(`otp:challenge:${role}:${digits}`, redisPayload, 'EX', ttlSec).catch(() => {}),
+      ]);
+      console.info(`[sendUserRegistrationOtp] OTP cached in Redis for mobile ending ${digits.slice(-4)}`);
+    }
+  } catch (redisErr) {
+    console.warn('[sendUserRegistrationOtp] Redis cache write skipped:', redisErr.message);
+  }
+
   // Outbound MSG91 API call via VPC Connector (static IP).
   try {
     if (isDemoAccount) {
@@ -1229,6 +1320,15 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   } catch (err) {
     await challengeRef.delete().catch(() => {});
+    try {
+      const { redis } = require('./redis');
+      if (redis && digits) {
+        await Promise.all([
+          redis.del(`otp:challenge:${digits}`).catch(() => {}),
+          redis.del(`otp:challenge:${role}:${digits}`).catch(() => {}),
+        ]).catch(() => {});
+      }
+    } catch (_) {}
     throw err;
   }
 
@@ -1259,15 +1359,64 @@ async function isChallengeOtpValid({ otp, challenge, isDemoAccount, demoOtp }) {
 /**
  * Atomically validates an OTP challenge, increments failed attempts, or consumes it.
  * Prevents concurrent verify calls from bypassing lockout or reusing a challenge.
+ *
+ * Supports fast-path local hash match, Redis cached challenge token, and fallback
+ * to MSG91 verify API when MSG91 delivers its own gateway-generated OTP.
  */
-async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAccount }) {
+async function consumeOtpChallengeAtomically(
+  db,
+  { challengeKey, otp, isDemoAccount, mobileDigits, role },
+) {
   const challengeRef = db.collection('otp_challenges').doc(challengeKey);
+  const digits = normalizeMobileDigits(mobileDigits);
+  const normalizedRole = role ? normalizeRole(role) : null;
+
+  // 1. Locate challenge document: primary key, fallback by mobileDigits if role differed
+  let effectiveChallengeRef = challengeRef;
+  if (typeof challengeRef.get === 'function') {
+    try {
+      const initialSnap = await challengeRef.get();
+      if (!initialSnap.exists && digits && typeof db.collection === 'function') {
+        const query = db.collection('otp_challenges');
+        if (typeof query.where === 'function') {
+          const fallbackSnap = await query.where('mobileDigits', '==', digits).limit(1).get();
+          if (fallbackSnap && !fallbackSnap.empty) {
+            console.info(
+              `[consumeOtpChallengeAtomically] Found challenge via mobileDigits fallback for mobile ending ${digits.slice(-4)}`,
+            );
+            effectiveChallengeRef = fallbackSnap.docs[0].ref;
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 2. Query Redis cache for OTP token
+  let redisChallenge = null;
+  let redisClient = null;
+  try {
+    redisClient = require('./redis').redis;
+    if (redisClient && digits) {
+      const raw = (await redisClient.get(`otp:challenge:${digits}`).catch(() => null))
+        || (normalizedRole ? await redisClient.get(`otp:challenge:${normalizedRole}:${digits}`).catch(() => null) : null);
+      if (raw) {
+        redisChallenge = JSON.parse(raw);
+        console.info(`[consumeOtpChallengeAtomically] REDIS_KEY_FOUND for mobile ending ${digits.slice(-4)}`);
+      } else {
+        console.info(`[consumeOtpChallengeAtomically] REDIS_KEY_NOT_FOUND for mobile ending ${digits.slice(-4)}`);
+      }
+    }
+  } catch (redisErr) {
+    console.warn('[consumeOtpChallengeAtomically] Redis lookup skipped:', redisErr.message);
+  }
+
   const demoConfig = await getDemoConfig();
   const demoOtp =
     demoConfig?.demoOtp != null ? String(demoConfig.demoOtp).trim() : null;
 
+  // 3. Atomically check challenge state and fast-path local hash match
   const outcome = await db.runTransaction(async (tx) => {
-    const challengeSnap = await tx.get(challengeRef);
+    const challengeSnap = await tx.get(effectiveChallengeRef);
     if (!challengeSnap.exists) {
       return { status: 'missing' };
     }
@@ -1275,43 +1424,134 @@ async function consumeOtpChallengeAtomically(db, { challengeKey, otp, isDemoAcco
     const challenge = challengeSnap.data() || {};
     const expiresAt = challenge.expiresAt?.toDate?.();
     if (!expiresAt || Date.now() > expiresAt.getTime()) {
-      tx.delete(challengeRef);
+      tx.delete(effectiveChallengeRef);
       return { status: 'expired' };
     }
 
     const attempts = Number(challenge.attempts) || 0;
     if (attempts >= 5) {
-      tx.delete(challengeRef);
+      tx.delete(effectiveChallengeRef);
       return { status: 'locked' };
     }
 
     const treatAsDemo = isDemoAccount || challenge.demoAccount === true;
-    const otpValid = otpHashesEqual(hashOtp(otp), challenge.otpHash)
+    const localMatch = otpHashesEqual(hashOtp(otp), challenge.otpHash)
       || (treatAsDemo && demoOtp != null && otp === demoOtp)
-      || (!treatAsDemo && isTestMode() && otp === DEV_TEST_OTP);
-    if (!otpValid) {
-      tx.set(challengeRef, { attempts: attempts + 1 }, { merge: true });
-      return { status: 'invalid', attempts: attempts + 1 };
+      || (!treatAsDemo && isTestMode() && otp === DEV_TEST_OTP)
+      || (redisChallenge?.otpHash && otpHashesEqual(hashOtp(otp), redisChallenge.otpHash))
+      || (redisChallenge?.code && String(redisChallenge.code).trim() === otp);
+
+    if (localMatch) {
+      tx.delete(effectiveChallengeRef);
+      return { status: 'consumed', challenge, treatAsDemo };
     }
 
-    tx.delete(challengeRef);
-    return { status: 'consumed' };
+    // Local hash didn't match. Check if MSG91 verify API should be queried outside transaction.
+    const canCheckMsg91 = !treatAsDemo && !isTestMode() && Boolean(challenge.mobileDigits || digits);
+    if (canCheckMsg91) {
+      return { status: 'check_msg91', challenge, attempts };
+    }
+
+    // No MSG91 fallback available (e.g. test mode, demo, or missing mobile). Increment attempts.
+    tx.set(effectiveChallengeRef, { attempts: attempts + 1 }, { merge: true });
+    return { status: 'invalid', attempts: attempts + 1, challenge };
   });
 
-  switch (outcome.status) {
-    case 'missing':
-      throw new HttpsError('failed-precondition', 'Send OTP first.');
-    case 'expired':
-      throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
-    case 'locked':
-      throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
-    case 'invalid':
-      throw new HttpsError('permission-denied', 'Invalid OTP.');
-    case 'consumed':
-      return { consumed: true };
-    default:
-      throw new HttpsError('internal', 'OTP verification failed.');
+  // Handle immediate outcomes
+  if (outcome.status === 'consumed') {
+    if (redisClient && digits) {
+      await Promise.all([
+        redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
+        normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
+      ]).catch(() => {});
+    }
+    console.info(`[consumeOtpChallengeAtomically] OTP_VERIFIED successfully (local match) for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
+    return { consumed: true };
   }
+
+  if (outcome.status === 'missing') {
+    console.warn(`[consumeOtpChallengeAtomically] OTP_NOT_FOUND (Firestore missing) for challengeKey=${challengeKey}`);
+    throw new HttpsError('failed-precondition', 'Send OTP first.');
+  }
+
+  if (outcome.status === 'expired') {
+    console.warn(`[consumeOtpChallengeAtomically] OTP_EXPIRED for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
+    if (redisClient && digits) {
+      await Promise.all([
+        redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
+        normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
+      ]).catch(() => {});
+    }
+    throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
+  }
+
+  if (outcome.status === 'locked') {
+    console.warn(`[consumeOtpChallengeAtomically] OTP_LOCKED for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
+    if (redisClient && digits) {
+      await Promise.all([
+        redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
+        normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
+      ]).catch(() => {});
+    }
+    throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
+  }
+
+  if (outcome.status === 'invalid') {
+    console.warn(`[consumeOtpChallengeAtomically] INVALID_CODE attempt ${outcome.attempts}/5 for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
+    throw new HttpsError('permission-denied', 'Invalid OTP.');
+  }
+
+  // 4. If status is 'check_msg91', query MSG91 v5 OTP verify API
+  if (outcome.status === 'check_msg91') {
+    const mobileForMsg91 = outcome.challenge.mobileDigits || digits;
+    console.info(`[consumeOtpChallengeAtomically] Querying MSG91 verify API for mobile ending ${mobileForMsg91.slice(-4)}`);
+    const msg91Valid = await verifyMsg91Otp(mobileForMsg91, otp);
+
+    if (msg91Valid) {
+      // Consume challenge document atomically
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(effectiveChallengeRef);
+        if (snap.exists) {
+          tx.delete(effectiveChallengeRef);
+        }
+      });
+      if (redisClient && digits) {
+        await Promise.all([
+          redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
+          normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
+        ]).catch(() => {});
+      }
+      console.info(`[consumeOtpChallengeAtomically] OTP_VERIFIED successfully (MSG91 API confirmed) for mobile ending ${mobileForMsg91.slice(-4)}`);
+      return { consumed: true };
+    }
+
+    // Both local hash and MSG91 rejected the code -> Increment attempts
+    const failOutcome = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(effectiveChallengeRef);
+      if (!snap.exists) return { status: 'missing' };
+      const curAttempts = (Number(snap.data()?.attempts) || 0) + 1;
+      if (curAttempts >= 5) {
+        tx.delete(effectiveChallengeRef);
+        return { status: 'locked', attempts: curAttempts };
+      }
+      tx.set(effectiveChallengeRef, { attempts: curAttempts }, { merge: true });
+      return { status: 'invalid', attempts: curAttempts };
+    });
+
+    console.warn(`[consumeOtpChallengeAtomically] INVALID_CODE (MSG91 rejected) attempt ${failOutcome.attempts}/5 for mobile ending ${mobileForMsg91.slice(-4)}`);
+    if (failOutcome.status === 'locked') {
+      if (redisClient && digits) {
+        await Promise.all([
+          redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
+          normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
+        ]).catch(() => {});
+      }
+      throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
+    }
+    throw new HttpsError('permission-denied', 'Invalid OTP.');
+  }
+
+  throw new HttpsError('internal', 'OTP verification failed.');
 }
 
 /**
@@ -1405,7 +1645,7 @@ function assertAmbulanceOtpSession(session, mobileDigits) {
 }
 
 async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' } = {}) {
-  const role = String(data?.role || 'patient').trim();
+  const role = normalizeRole(data?.role || 'patient');
   assertSupportedRole(role);
 
   const emailInput = String(data?.email || data?.identifier || '').trim().toLowerCase();
@@ -1416,6 +1656,7 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
 
   const digits = normalizeMobileDigits(data?.mobile || data?.identifier);
   const otp = String(data?.otp || '').trim();
+  const otpType = String(data?.otpType || 'registration').trim();
 
   if (!digits) {
     throw new HttpsError('invalid-argument', 'Enter a valid 10-digit mobile number.');
@@ -1423,6 +1664,14 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
   if (!/^\d{6}$/.test(otp)) {
     throw new HttpsError('invalid-argument', 'Enter the 6-digit OTP.');
   }
+
+  console.info('[verifyUserRegistrationOtp] Starting verification', {
+    role,
+    otpType,
+    mobileLast4: digits.slice(-4),
+    otpLength: otp.length,
+    hasAuth: Boolean(auth?.uid),
+  });
 
   await enforceVerifyOtpRateLimits(db, { clientIp, role, digits });
 
@@ -1433,15 +1682,18 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     challengeKey,
     otp,
     isDemoAccount,
+    mobileDigits: digits,
+    role,
   });
 
   const verifiedAt = FieldValue.serverTimestamp();
   const sessionExpiresAt = Timestamp.fromDate(new Date(Date.now() + SESSION_EXPIRY_MS));
   const sessionId = crypto.randomBytes(16).toString('hex');
-  const otpType = String(data?.otpType || 'registration').trim();
 
-  // Signed-in account — refresh mobileVerified only when users/{uid} already exists.
-  if (auth?.uid && !isEmail) {
+  // Signed-in account — refresh mobileVerified only when users/{uid} already exists
+  // and the caller explicitly intends to update their contact info (contact_change).
+  // For standard registration or mobile login, never let a stale auth token block verification.
+  if (auth?.uid && !isEmail && otpType === 'contact_change') {
     const userProfile = await readUserProfile(db, auth.uid);
     if (userProfile) {
       const signedInRoles = new Set(['patient', 'doctor', 'lab', 'medicalStore', 'ambulance']);
@@ -1511,7 +1763,7 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
     if (!search.found || !search.uid) {
       throw new HttpsError('not-found', 'No account found for this mobile number. Please register first.');
     }
-    if (search.role && search.role !== role) {
+    if (search.role && normalizeRole(search.role) !== role) {
       console.warn('[verifyUserRegistrationOtp] Login blocked: account type mismatch', {
         mobileSuffix: digits.slice(-4),
         requestedRole: role,
@@ -1527,6 +1779,11 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
       }
     }
     const customToken = await getAuth().createCustomToken(search.uid, { role });
+    console.info('[verifyUserRegistrationOtp] Login OTP verified successfully, customToken minted', {
+      role,
+      mobileLast4: digits.slice(-4),
+      uid: search.uid,
+    });
     return {
       ok: true,
       mobileVerified: true,
@@ -1535,6 +1792,12 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
       uid: search.uid,
     };
   }
+
+  console.info('[verifyUserRegistrationOtp] Registration OTP verified successfully, sessionId generated', {
+    role,
+    mobileLast4: digits.slice(-4),
+    sessionId,
+  });
 
   return {
     ok: true,
@@ -2364,4 +2627,7 @@ module.exports = {
   isDemoMobileInput,
   isDemoPhone,
   isTestMode,
+  normalizeRole,
+  normalizeMobileDigits,
+  verifyMsg91Otp,
 };

@@ -160,10 +160,24 @@ class RegistrationOtpService {
         'mobile': digits,
         'otpType': otpType,
       };
+      if (kDebugMode) {
+        debugPrint(
+          '[RegistrationOtpService] verifyUserRegistrationOtp call '
+          'role=${_roleValue(role)} mobile=******${digits.substring(digits.length - 4)} '
+          'otpLength=${otp.trim().length} otpType=$otpType',
+        );
+      }
       final result = await _functions
           .httpsCallable('verifyUserRegistrationOtp')
           .call<Map<String, dynamic>>(payload);
       final data = Map<String, dynamic>.from(result.data);
+      if (kDebugMode) {
+        debugPrint(
+          '[RegistrationOtpService] verifyUserRegistrationOtp response '
+          'ok=${data['ok']} hasSessionId=${data['sessionId'] != null} '
+          'hasCustomToken=${data['customToken'] != null}',
+        );
+      }
       if (data['ok'] == true) {
         final sessionId = data['sessionId'] as String?;
         _verificationSessionId =
@@ -176,13 +190,14 @@ class RegistrationOtpService {
     } on FirebaseFunctionsException catch (e) {
       if (kDebugMode) {
         debugPrint(
-          '[RegistrationOtpService] verify error: ${e.code} - ${e.message}',
+          '[RegistrationOtpService] verify error: ${e.code} - ${e.message} '
+          'details=${e.details}',
         );
       }
       return _mapFunctionsError(e);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[RegistrationOtpService] verify error: $e');
+        debugPrint('[RegistrationOtpService] verify unknown error: $e');
       }
       return 'Invalid or expired OTP. Please try again.';
     }
@@ -380,6 +395,12 @@ class RegistrationOtpService {
     }
 
     final rawMessage = _cleanFunctionsMessage(e.message);
+    if (kDebugMode) {
+      debugPrint(
+        '[RegistrationOtpService] _mapFunctionsError: code=${e.code} '
+        'message="$rawMessage" details=${e.details}',
+      );
+    }
     return switch (e.code) {
       'already-exists' => rawMessage.isNotEmpty
           ? rawMessage
@@ -389,7 +410,11 @@ class RegistrationOtpService {
           : 'No account found for this mobile number. Please register first.',
       'failed-precondition' => _failedPreconditionMessage(rawMessage),
       'deadline-exceeded' => 'OTP expired. Send a new one.',
-      'permission-denied' => 'Incorrect OTP. Check the code and try again.',
+      'permission-denied' => rawMessage.isNotEmpty &&
+              !rawMessage.toLowerCase().contains('permission-denied') &&
+              !rawMessage.toLowerCase().contains('permission denied')
+          ? rawMessage
+          : 'Incorrect OTP. Check the code and try again.',
       'resource-exhausted' => _resourceExhaustedMessage(rawMessage),
       'invalid-argument' =>
         rawMessage.isNotEmpty ? rawMessage : 'Invalid OTP request.',
