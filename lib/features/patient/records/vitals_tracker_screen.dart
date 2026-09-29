@@ -293,9 +293,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                           color: selected
                               ? AppColors.patientTeal
                               : AppColors.textSecondaryOf(context),
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w400,
                         ),
                         side: BorderSide(
                           color: selected

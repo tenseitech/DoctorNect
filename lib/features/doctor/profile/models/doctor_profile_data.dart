@@ -13,6 +13,8 @@ class DoctorProfileData {
     this.photoPath,
     this.photoBytes,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
     this.dateOfBirth,
     this.gender = 'Male',
     this.mobile = '',
@@ -63,6 +65,8 @@ class DoctorProfileData {
   String? photoPath;
   Uint8List? photoBytes;
   String? photoUrl;
+  String? photoKey;
+  String? photoStorage;
   DateTime? dateOfBirth;
   String gender;
   String mobile;
@@ -114,6 +118,8 @@ class DoctorProfileData {
       photoPath: photoPath,
       photoBytes: photoBytes,
       photoUrl: photoUrl,
+      photoKey: photoKey,
+      photoStorage: photoStorage,
       dateOfBirth: dateOfBirth,
       gender: gender,
       mobile: mobile,
@@ -178,12 +184,12 @@ class PatientReview {
   int helpfulCount;
 
   PatientReview copy() => PatientReview(
-    id: id,
-    maskedName: maskedName,
-    rating: rating,
-    text: text,
-    date: date,
-    doctorReply: doctorReply,
-    helpfulCount: helpfulCount,
-  );
+        id: id,
+        maskedName: maskedName,
+        rating: rating,
+        text: text,
+        date: date,
+        doctorReply: doctorReply,
+        helpfulCount: helpfulCount,
+      );
 }

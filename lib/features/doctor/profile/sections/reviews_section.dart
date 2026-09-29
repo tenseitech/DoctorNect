@@ -224,9 +224,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                             ...List.generate(5, (i) {
                               final stars = 5 - i;
                               final count = breakdown[stars] ?? 0;
-                              final fraction = maxCount == 0
-                                  ? 0.0
-                                  : count / maxCount;
+                              final fraction =
+                                  maxCount == 0 ? 0.0 : count / maxCount;
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 4.5,

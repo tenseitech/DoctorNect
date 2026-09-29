@@ -86,9 +86,8 @@ class _AmbulanceAvailabilityToggleState
                   : AppColors.borderOf(context),
             ),
           ),
-          color: isOnline
-              ? const Color(0xFFF0FDF4)
-              : AppColors.surfaceOf(context),
+          color:
+              isOnline ? const Color(0xFFF0FDF4) : AppColors.surfaceOf(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -135,8 +134,8 @@ class _AmbulanceAvailabilityToggleState
                     value: isOnline,
                     onChanged: _onChanged,
                     activeThumbColor: const Color(0xFF16A34A),
-                    activeTrackColor: const Color(0xFF16A34A)
-                        .withValues(alpha: 0.35),
+                    activeTrackColor:
+                        const Color(0xFF16A34A).withValues(alpha: 0.35),
                   ),
               ],
             ),

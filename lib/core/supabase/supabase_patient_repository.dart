@@ -141,15 +141,12 @@ class SupabasePatientRepository {
     await PatientWriteGuard.run(
       context: context,
       action: () async {
-        await _client
-            .from('appointments')
-            .update({
-              'patient_status': 'cancelled',
-              'cancellation_reason': reason,
-              'sync_origin': 'patient_supabase',
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('appointment_id', appointmentId);
+        await _client.from('appointments').update({
+          'patient_status': 'cancelled',
+          'cancellation_reason': reason,
+          'sync_origin': 'patient_supabase',
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('appointment_id', appointmentId);
       },
     );
   }
@@ -279,11 +276,13 @@ class SupabasePatientRepository {
     bool sharedWithDoctors = true,
     String fileStorage = 'localOnly',
     String? storageUrl,
+    String? storageKey,
+    String? storageProvider,
   }) async {
     final validFileStorage =
         (fileStorage == 'cloudUploaded' || fileStorage == 'firebase')
-        ? 'cloudUploaded'
-        : (fileStorage == 'none' ? 'none' : 'localOnly');
+            ? 'cloudUploaded'
+            : (fileStorage == 'none' ? 'none' : 'localOnly');
 
     return PatientWriteGuard.run(
       context: context,
@@ -303,6 +302,8 @@ class SupabasePatientRepository {
           'shared_with_doctors': sharedWithDoctors,
           'file_storage': validFileStorage,
           'storage_url': storageUrl,
+          if (storageKey != null) 'storage_key': storageKey,
+          if (storageProvider != null) 'storage_provider': storageProvider,
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
         };

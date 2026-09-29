@@ -70,9 +70,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
           );
         }
 
-        final connectedDoctors = LabConnectionStore.instance
-            .activeForLab(labId)
-            .length;
+        final connectedDoctors =
+            LabConnectionStore.instance.activeForLab(labId).length;
         final compact = ResponsiveLayout.isCompact(context);
 
         return LabPageLayout(
@@ -128,7 +127,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                     label: 'License number',
                     value: lab.licenseNumber,
                     locked: true,
-                    supportMessage: 'License number cannot be changed after registration. Contact support@doctornect.com if this needs to be corrected.',
+                    supportMessage:
+                        'License number cannot be changed after registration. Contact support@doctornect.com if this needs to be corrected.',
                     tooltipText: 'Cannot be changed after verification',
                   ),
                   _LabInfoTile(
@@ -256,9 +256,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
     bool optional = false,
   }) async {
     final parsedPhone = FormValidators.parsePhone(currentValue);
-    final initialText = field == 'Phone'
-        ? parsedPhone.localNumber
-        : currentValue;
+    final initialText =
+        field == 'Phone' ? parsedPhone.localNumber : currentValue;
     final controller = TextEditingController(text: initialText);
     var dialCode = parsedPhone.dialCode;
     var saving = false;
@@ -349,8 +348,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                 email: emailValue,
                 gstNumber:
                     field == 'GST number (optional)' && trimmed.isNotEmpty
-                    ? trimmed
-                    : null,
+                        ? trimmed
+                        : null,
                 clearGstNumber:
                     field == 'GST number (optional)' && trimmed.isEmpty,
               );
@@ -397,7 +396,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                         onDialCodeChanged: (code) => dialCode = code,
                         decoration: const InputDecoration(
                           labelText: 'Phone',
-                          helperText: 'OTP verification required when changing your number',
+                          helperText:
+                              'OTP verification required when changing your number',
                           border: OutlineInputBorder(),
                         ),
                       )
@@ -414,9 +414,8 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                             : TextCapitalization.sentences,
                         decoration: InputDecoration(
                           labelText: field,
-                          hintText: optional
-                              ? 'Leave blank if not applicable'
-                              : null,
+                          hintText:
+                              optional ? 'Leave blank if not applicable' : null,
                           helperText: field == 'Email'
                               ? 'OTP verification required when changing your email'
                               : null,
@@ -540,9 +539,8 @@ class _LabHeroCard extends StatelessWidget {
                       children: [
                         _HeroChip(
                           icon: Icons.verified_outlined,
-                          label: lab.verified
-                              ? 'Verified lab'
-                              : 'Diagnostic Lab',
+                          label:
+                              lab.verified ? 'Verified lab' : 'Diagnostic Lab',
                         ),
                         if (connectedDoctors > 0)
                           _HeroChip(
@@ -837,8 +835,8 @@ class _LabActionTile extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.7),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
               ),
             ],
           ),
@@ -869,9 +867,8 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
     text: widget.lab.pincode,
   );
 
-  late String? _country = widget.lab.country.isNotEmpty
-      ? widget.lab.country
-      : null;
+  late String? _country =
+      widget.lab.country.isNotEmpty ? widget.lab.country : null;
   late String? _state = widget.lab.state.isNotEmpty ? widget.lab.state : null;
   late String? _city = widget.lab.city.isNotEmpty ? widget.lab.city : null;
 

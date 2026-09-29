@@ -68,8 +68,8 @@ class _PasswordFieldState extends State<PasswordField> {
     final hasUpper = RegExp(r'[A-Z]').hasMatch(text);
     final hasLower = RegExp(r'[a-z]').hasMatch(text);
     final hasDigit = RegExp(r'[0-9]').hasMatch(text);
-    final hasSpecial = RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\+=/\\]')
-        .hasMatch(text);
+    final hasSpecial =
+        RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\+=/\\]').hasMatch(text);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,9 +165,8 @@ class _RequirementPill extends StatelessWidget {
       duration: const Duration(milliseconds: 200),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: met
-            ? activeColor.withValues(alpha: 0.12)
-            : const Color(0xFFF1F5F9),
+        color:
+            met ? activeColor.withValues(alpha: 0.12) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
           color: met

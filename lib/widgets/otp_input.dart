@@ -222,15 +222,15 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
 
           final double gap = needsScaling
               ? ((availableForBoxesAndGaps - (AppConstants.otpLength * 38.0)) /
-                        (AppConstants.otpLength - 1))
-                    .clamp(4.0, OtpInput._boxGap)
+                      (AppConstants.otpLength - 1))
+                  .clamp(4.0, OtpInput._boxGap)
               : OtpInput._boxGap;
 
           final double totalGaps = (AppConstants.otpLength - 1) * gap;
           final double boxW = needsScaling
               ? ((availableForBoxesAndGaps - totalGaps) /
-                        AppConstants.otpLength)
-                    .clamp(34.0, OtpInput._boxWidth)
+                      AppConstants.otpLength)
+                  .clamp(34.0, OtpInput._boxWidth)
               : OtpInput._boxWidth;
 
           return FittedBox(
@@ -240,11 +240,9 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                for (
-                  int index = 0;
-                  index < AppConstants.otpLength;
-                  index++
-                ) ...[
+                for (int index = 0;
+                    index < AppConstants.otpLength;
+                    index++) ...[
                   if (index > 0) SizedBox(width: gap),
                   SizedBox(
                     width: boxW,
@@ -279,9 +277,9 @@ class _OtpInputState extends State<OtpInput> with CodeAutoFill {
                         onChanged: (v) => _onChanged(index, v),
                         onTap: () =>
                             _controllers[index].selection = TextSelection(
-                              baseOffset: 0,
-                              extentOffset: _controllers[index].text.length,
-                            ),
+                          baseOffset: 0,
+                          extentOffset: _controllers[index].text.length,
+                        ),
                         onEditingComplete: () {
                           if (index < AppConstants.otpLength - 1) {
                             _focusNodes[index + 1].requestFocus();

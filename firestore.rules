@@ -147,6 +147,8 @@ service cloud.firestore {
         'updatedAt',
         'reportFileName',
         'reportStorageUrl',
+        'reportStorageKey',
+        'reportStorageProvider',
         'reportSubmittedAt',
         'reportBookingId',
       ];
@@ -339,6 +341,35 @@ service cloud.firestore {
         && data.dateTime is timestamp;
     }
 
+    function validPatientProfileStorage(data, patientId) {
+      return (data.get('photoStorage', '') != 's3' && data.get('photoKey', '') == '')
+        || (data.get('photoKey', '') is string
+            && data.get('photoKey', '').matches('^patients/' + patientId + '/profile/[a-zA-Z0-9._-]+$'));
+    }
+
+    function validDoctorProfileStorage(data, doctorId) {
+      return (data.get('photoStorage', '') != 's3' && data.get('photoKey', '') == '')
+        || (data.get('photoKey', '') is string
+            && data.get('photoKey', '').matches('^doctor_profiles/' + doctorId + '/profile/[a-zA-Z0-9._-]+$'));
+    }
+
+    function validUserProfileStorage(data, uid) {
+      return (data.get('photoStorage', '') != 's3' && data.get('photoKey', '') == '')
+        || (data.get('photoKey', '') is string
+            && (data.get('photoKey', '').matches('^patients/' + uid + '/profile/[a-zA-Z0-9._-]+$')
+                || data.get('photoKey', '').matches('^doctor_profiles/' + uid + '/profile/[a-zA-Z0-9._-]+$')
+                || (data.get('profileId', '') != '' && (
+                    data.get('photoKey', '').matches('^patients/' + data.get('profileId', '') + '/profile/[a-zA-Z0-9._-]+$')
+                    || data.get('photoKey', '').matches('^doctor_profiles/' + data.get('profileId', '') + '/profile/[a-zA-Z0-9._-]+$')
+                ))));
+    }
+
+    function validPromotedAdStorage(data, providerId) {
+      return (data.get('imageStorage', '') != 's3' && data.get('imageKey', '') == '')
+        || (data.get('imageKey', '') is string
+            && data.get('imageKey', '').matches('^promoted_ads/' + providerId + '/[a-zA-Z0-9_-]+/[a-zA-Z0-9._-]+$'));
+    }
+
     // ─── users/{uid} ───────────────────────────────────────────────────────
     // Created on register; role: "doctor" | "patient"
 
@@ -350,7 +381,8 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.keys().hasAll(['role', 'createdAt'])
         && request.resource.data.role in ['doctor', 'patient', 'medicalStore', 'lab', 'ambulance']
-        && registrationVerifiedFieldsValid())
+        && registrationVerifiedFieldsValid()
+        && validUserProfileStorage(request.resource.data, uid))
         || isSuperAdmin();
       allow update: if isSuperAdmin()
         || (isSignedIn()
@@ -358,7 +390,8 @@ service cloud.firestore {
           && request.resource.data.role == resource.data.role
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'profileId', 'verified', 'verifiedAt'])
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
-              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']));
+              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete'])
+          && validUserProfileStorage(request.resource.data, uid));
       allow delete: if isSuperAdmin();
     }
 
@@ -374,7 +407,8 @@ service cloud.firestore {
       allow create: if (isSignedIn()
         && request.resource.data.get('ownerUid', '') == request.auth.uid
         && request.resource.data.get('doctorId', doctorId) == doctorId
-        && registrationVerifiedFieldsValid())
+        && registrationVerifiedFieldsValid()
+        && validDoctorProfileStorage(request.resource.data, doctorId))
         || isSuperAdmin();
       // Rating aggregates are Cloud Functions (Admin SDK) only — never client-writable.
       allow update: if isSuperAdmin()
@@ -383,7 +417,8 @@ service cloud.firestore {
           && !request.resource.data.diff(resource.data).affectedKeys()
               .hasAny(['verified', 'verifiedAt', 'mobile', 'phone', 'rating', 'reviewCount'])
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
-              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']))
+              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete'])
+          && validDoctorProfileStorage(request.resource.data, doctorId))
         || (doctorEmailMatchesAuth()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid'])
             && request.resource.data.get('ownerUid', '') == request.auth.uid)
@@ -404,9 +439,11 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.get('ownerUid', '') == request.auth.uid
         && request.resource.data.get('patientId', patientId) == patientId
-        && registrationVerifiedFieldsValid();
+        && registrationVerifiedFieldsValid()
+        && validPatientProfileStorage(request.resource.data, patientId);
       allow update: if (ownsPatient(patientId)
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'verifiedAt']))
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['verified', 'verifiedAt'])
+          && validPatientProfileStorage(request.resource.data, patientId))
         || careTeamGrantUpdate(patientId);
       allow delete: if false;
 
@@ -534,13 +571,27 @@ service cloud.firestore {
 
     // ─── health_records/{recordId} ─────────────────────────────────────────
 
+    function validHealthRecordStorage(data) {
+      return !('storageProvider' in data)
+        || data.storageProvider != 's3'
+        || ('storageKey' in data
+            && data.storageKey is string
+            && data.storageKey.matches('^health_records/' + data.patientId + '/.+'));
+    }
+
     match /health_records/{recordId} {
       allow read: if (isPatient() && resource.data.patientId == myPatientId())
         || (isVerifiedDoctor()
           && resource.data.sharedWithDoctors == true
           && doctorCanAccessPatientRecord(resource.data.patientId));
-      allow create: if isPatient() && request.resource.data.patientId == myPatientId();
-      allow update, delete: if isPatient() && resource.data.patientId == myPatientId();
+      allow create: if isPatient()
+        && request.resource.data.patientId == myPatientId()
+        && validHealthRecordStorage(request.resource.data);
+      allow update: if isPatient()
+        && resource.data.patientId == myPatientId()
+        && request.resource.data.patientId == myPatientId()
+        && validHealthRecordStorage(request.resource.data);
+      allow delete: if isPatient() && resource.data.patientId == myPatientId();
     }
 
     // ─── lab_catalog/{docId} ───────────────────────────────────────────────
@@ -553,6 +604,12 @@ service cloud.firestore {
 
     // ─── lab_bookings/{bookingId} ──────────────────────────────────────────
 
+    function validLabReportStorage(data, patientId, targetId) {
+      return data.get('reportStorageProvider', '') != 's3'
+        || (data.get('reportStorageKey', '') is string
+            && data.get('reportStorageKey', '').matches('^lab_reports/' + patientId + '/' + targetId + '/.+'));
+    }
+
     match /lab_bookings/{bookingId} {
       allow read: if (isPatient() && resource.data.patientId == myPatientId())
         || (isLab() && resource.data.labId == myLabId()); // FIXED: lab reads bookings addressed to them
@@ -562,11 +619,13 @@ service cloud.firestore {
       allow update: if (isPatient()
           && resource.data.patientId == myPatientId()
           && request.resource.data.patientId == resource.data.patientId
-          && request.resource.data.get('labId', '') == resource.data.get('labId', ''))
+          && request.resource.data.get('labId', '') == resource.data.get('labId', '')
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['reportStorageKey', 'reportStorageProvider', 'reportStorageUrl', 'reportFileName', 'reportSubmittedAt', 'reportBookingId']))
         || (isLab() && resource.data.get('labId', '') == myLabId()
           && request.resource.data.patientId == resource.data.patientId
           && request.resource.data.get('labId', '') == resource.data.get('labId', '')
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(labBookingLabUpdateKeys())); // FIXED: lab can submit report fields
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(labBookingLabUpdateKeys())
+          && validLabReportStorage(request.resource.data, resource.data.patientId, bookingId));
       allow delete: if false;
     }
 
@@ -620,11 +679,13 @@ service cloud.firestore {
           && resource.data.doctorId == myDoctorId()
           && request.resource.data.doctorId == resource.data.doctorId
           && request.resource.data.patientId == resource.data.patientId
-          && doctorCanReadPatientClinicalData(resource.data.get('patientId', '')))
+          && doctorCanReadPatientClinicalData(resource.data.get('patientId', ''))
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['reportStorageKey', 'reportStorageProvider', 'reportStorageUrl', 'reportFileName', 'reportSubmittedAt']))
         || (isLab() && resource.data.get('labId', '') == myLabId()
           && request.resource.data.patientId == resource.data.patientId
           && request.resource.data.doctorId == resource.data.doctorId
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'reportFileName', 'reportStorageUrl', 'reportSubmittedAt'])); // FIXED: lab can update status and reports
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'reportFileName', 'reportStorageUrl', 'reportStorageKey', 'reportStorageProvider', 'reportSubmittedAt'])
+          && validLabReportStorage(request.resource.data, resource.data.patientId, orderId));
       allow delete: if false;
     }
 
@@ -1052,7 +1113,8 @@ service cloud.firestore {
         || (isSignedIn()
           && request.resource.data.providerId == request.auth.uid
           && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending_payment')
-          && request.resource.data.paymentStatus == 'pending');
+          && request.resource.data.paymentStatus == 'pending'
+          && validPromotedAdStorage(request.resource.data, request.auth.uid));
 
       // Update: Super Admin can update all fields; Provider can edit draft content
       allow update: if isSuperAdmin()
@@ -1060,7 +1122,8 @@ service cloud.firestore {
           && resource.data.providerId == request.auth.uid
           && request.resource.data.providerId == resource.data.providerId
           && request.resource.data.status != 'active'
-          && request.resource.data.paymentStatus != 'verified');
+          && request.resource.data.paymentStatus != 'verified'
+          && validPromotedAdStorage(request.resource.data, resource.data.providerId));
 
       // Deletion: Super Admin or owning provider
       allow delete: if isSuperAdmin()

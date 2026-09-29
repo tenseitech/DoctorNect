@@ -5,8 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../widgets/profile_photo_image_io.dart'
-    if (dart.library.html) '../../../../widgets/profile_photo_image_stub.dart';
 import '../../../../core/auth/patient_details_guard.dart';
 import '../../booking/booking_flow_screen.dart';
 import '../../data/registered_doctors_store.dart';
@@ -16,6 +14,7 @@ import 'package:medibond/features/patient/models/patient_models.dart';
 
 import '../../profile/data/patient_profile_mock.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/s3_aware_network_image.dart';
 
 /// Promotional banner section on the Patient Home Screen showcasing
 /// top-rated verified doctors near the patient's location.
@@ -92,12 +91,11 @@ class _TopRatedDoctorsNearYouSectionState
     if (allVerified.isEmpty) return const [];
 
     final address = PatientProfileMock.profileAddress;
-    final patientCity =
-        (address.city.isNotEmpty
-                ? address.city
-                : PatientProfileMock.profileCity)
-            .trim()
-            .toLowerCase();
+    final patientCity = (address.city.isNotEmpty
+            ? address.city
+            : PatientProfileMock.profileCity)
+        .trim()
+        .toLowerCase();
     final patientState = address.state.trim().toLowerCase();
     final patientArea =
         '${address.addressLine1} ${address.addressLine2} ${address.landmark}'
@@ -152,7 +150,8 @@ class _TopRatedDoctorsNearYouSectionState
     PatientDetailsGuard.run(context, () {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => BookingFlowScreen(doctorId: doctor.id)),
+        MaterialPageRoute(
+            builder: (_) => BookingFlowScreen(doctorId: doctor.id)),
       );
     });
   }
@@ -205,7 +204,9 @@ class _TopRatedDoctorsNearYouSectionState
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurface
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
                         .withValues(alpha: 0.7),
                   ),
                 ),
@@ -313,9 +314,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
     if (doctor.clinicName.trim().isNotEmpty) {
       parts.add(doctor.clinicName.trim());
     }
-    final cityOrArea = doctor.area.trim().isNotEmpty
-        ? doctor.area.trim()
-        : doctor.city.trim();
+    final cityOrArea =
+        doctor.area.trim().isNotEmpty ? doctor.area.trim() : doctor.city.trim();
     if (cityOrArea.isNotEmpty) {
       parts.add(cityOrArea);
     }
@@ -357,6 +357,8 @@ class _TopRatedDoctorCard extends StatelessWidget {
                   displayName: doctor.name,
                   photoPath: photo.path,
                   photoUrl: photo.url,
+                  photoKey: photo.photoKey,
+                  photoStorage: photo.photoStorage,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -555,20 +557,22 @@ class _TopRatedDoctorCard extends StatelessWidget {
 }
 
 class _DoctorPhotoData {
-  const _DoctorPhotoData({this.path, this.url});
+  const _DoctorPhotoData(
+      {this.path, this.url, this.photoKey, this.photoStorage});
 
   final String? path;
   final String? url;
+  final String? photoKey;
+  final String? photoStorage;
 }
 
 _DoctorPhotoData _resolveDoctorPhoto(DoctorListing doctor) {
-  if (doctor.photoUrl != null && doctor.photoUrl!.trim().isNotEmpty) {
-    return _DoctorPhotoData(url: doctor.photoUrl);
-  }
-  if (doctor.photoPath != null && doctor.photoPath!.trim().isNotEmpty) {
-    return _DoctorPhotoData(path: doctor.photoPath);
-  }
-  return const _DoctorPhotoData();
+  return _DoctorPhotoData(
+    url: doctor.photoUrl,
+    path: doctor.photoPath,
+    photoKey: doctor.photoKey,
+    photoStorage: doctor.photoStorage,
+  );
 }
 
 class _DoctorPhotoAvatar extends StatelessWidget {
@@ -576,22 +580,27 @@ class _DoctorPhotoAvatar extends StatelessWidget {
     required this.displayName,
     this.photoPath,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String displayName;
   final String? photoPath;
   final String? photoUrl;
-
-  ImageProvider? get _provider {
-    if (photoUrl != null && photoUrl!.trim().isNotEmpty) {
-      return NetworkImage(photoUrl!.trim());
-    }
-    return profilePhotoFileProvider(photoPath);
-  }
+  final String? photoKey;
+  final String? photoStorage;
 
   @override
   Widget build(BuildContext context) {
-    final image = _provider;
+    final image = S3AwareImageProvider.resolveProvider(
+      photoKey: photoKey,
+      photoStorage: photoStorage,
+      legacyUrl: photoUrl,
+      photoPath: photoPath,
+      context: context,
+      width: 68,
+      height: 68,
+    );
     final initial = displayName.trim().isNotEmpty
         ? displayName.trim()[0].toUpperCase()
         : 'D';

@@ -136,9 +136,8 @@ class _SuperAdminVerificationScreenState
                     selectedColor: const Color(0xFF4F46E5),
                     labelStyle: GoogleFonts.inter(
                       fontSize: AppTypography.labelMedium,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected
                           ? Colors.white
                           : AppColors.textPrimaryOf(context),
@@ -167,9 +166,8 @@ class _SuperAdminVerificationScreenState
                         : const Color(0xFFEEF2FF),
                     labelStyle: GoogleFonts.inter(
                       fontSize: AppTypography.labelSmall,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected
                           ? const Color(0xFF4F46E5)
                           : AppColors.textSecondaryOf(context),
@@ -285,8 +283,8 @@ class _ApplicantCard extends StatelessWidget {
     final dateStr = applicant.submittedAt != null
         ? DateFormat('d MMM yyyy, h:mm a').format(applicant.submittedAt!)
         : (applicant.createdAt != null
-              ? DateFormat('d MMM yyyy').format(applicant.createdAt!)
-              : 'Recently');
+            ? DateFormat('d MMM yyyy').format(applicant.createdAt!)
+            : 'Recently');
 
     return Card(
       elevation: 0,
@@ -402,21 +400,21 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (Color bg, Color text) = switch (stage) {
       VerificationStage.verified => (
-        const Color(0xFFDCFCE7),
-        const Color(0xFF15803D),
-      ),
+          const Color(0xFFDCFCE7),
+          const Color(0xFF15803D),
+        ),
       VerificationStage.submittedForVerification => (
-        const Color(0xFFDBEAFE),
-        const Color(0xFF1D4ED8),
-      ),
+          const Color(0xFFDBEAFE),
+          const Color(0xFF1D4ED8),
+        ),
       VerificationStage.revisionRequested => (
-        const Color(0xFFFEF3C7),
-        const Color(0xFFB45309),
-      ),
+          const Color(0xFFFEF3C7),
+          const Color(0xFFB45309),
+        ),
       VerificationStage.rejected => (
-        const Color(0xFFFEE2E2),
-        const Color(0xFFB91C1C),
-      ),
+          const Color(0xFFFEE2E2),
+          const Color(0xFFB91C1C),
+        ),
       _ => (const Color(0xFFF1F5F9), const Color(0xFF475569)),
     };
 

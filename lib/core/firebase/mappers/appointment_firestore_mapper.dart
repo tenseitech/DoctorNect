@@ -134,15 +134,15 @@ abstract final class AppointmentFirestoreMapper {
         reviewRating: (data['reviewRating'] as num?)?.toInt(),
         reviewId: data['reviewId'] as String?,
         reviewCreatedAt: (data['reviewCreatedAt'] as Timestamp?)?.toDate(),
-        labReports: (data['labReports'] as List<dynamic>? ?? const [])
-            .cast<String>(),
+        labReports:
+            (data['labReports'] as List<dynamic>? ?? const []).cast<String>(),
         clinicalNotes: data['clinicalNotes'] as String?,
         contactNumber: data['contactNumber'] as String?,
         chiefComplaints: parseChiefComplaints(data),
         patientId: data['patientId'] as String?,
         source: data['source'] as String?,
-        symptoms: (data['symptoms'] as List<dynamic>? ?? const [])
-            .cast<String>(),
+        symptoms:
+            (data['symptoms'] as List<dynamic>? ?? const []).cast<String>(),
         observations: parseObservations(data),
         bookedByName: data['bookedByName'] as String?,
         patientRelation: data['patientRelation'] as String?,

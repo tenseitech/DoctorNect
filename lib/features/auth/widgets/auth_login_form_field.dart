@@ -32,9 +32,8 @@ InputDecoration authLoginFieldDecoration({
     suffixIcon: suffixIcon,
     counterText: counterText,
     filled: true,
-    fillColor: readOnly
-        ? AppColors.cardBgOf(context)
-        : AppColors.surfaceOf(context),
+    fillColor:
+        readOnly ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
     isDense: true,
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
     border: border(AppColors.borderOf(context)),

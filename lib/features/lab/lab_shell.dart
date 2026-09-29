@@ -139,8 +139,7 @@ class _LabShellState extends State<LabShell> {
           final unreadAlerts = LabNotificationStore.instance.unreadCountForLab(
             labId,
           );
-          final connectPending =
-              labId.isNotEmpty &&
+          final connectPending = labId.isNotEmpty &&
               (LabConnectionStore.instance
                       .pendingForLabFromDoctor(labId)
                       .isNotEmpty ||

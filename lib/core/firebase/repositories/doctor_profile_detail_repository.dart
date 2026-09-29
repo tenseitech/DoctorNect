@@ -36,14 +36,12 @@ class DoctorProfileDetailRepository {
     if (data == null && listing == null) return null;
 
     final name = data?['name'] as String? ?? listing?.name ?? 'Doctor';
-    final specialization =
-        data?['specialization'] as String? ??
+    final specialization = data?['specialization'] as String? ??
         listing?.specialization ??
         'General Physician';
     final qualification =
         data?['qualification'] as String? ?? listing?.qualification ?? 'MBBS';
-    final experienceYears =
-        (data?['experienceYears'] as num?)?.toInt() ??
+    final experienceYears = (data?['experienceYears'] as num?)?.toInt() ??
         listing?.experienceYears ??
         1;
     final rating =
@@ -51,15 +49,16 @@ class DoctorProfileDetailRepository {
     final reviewCount =
         (data?['reviewCount'] as num?)?.toInt() ?? listing?.reviewCount ?? 0;
     final verified = data?['verified'] as bool? ?? listing?.verified ?? false;
-    final languages =
-        (data?['languages'] as List<dynamic>? ??
-                listing?.languages ??
-                const ['English'])
-            .cast<String>();
-    final photoUrl =
-        data?['photoUrl'] as String? ??
+    final languages = (data?['languages'] as List<dynamic>? ??
+            listing?.languages ??
+            const ['English'])
+        .cast<String>();
+    final photoUrl = data?['photoUrl'] as String? ??
         data?['photoURL'] as String? ??
         listing?.photoUrl;
+    final photoKey = data?['photoKey'] as String? ?? listing?.photoKey;
+    final photoStorage =
+        data?['photoStorage'] as String? ?? listing?.photoStorage;
     String mobile = data?['mobile'] as String? ?? '';
     if (mobile.isEmpty && data != null && data['ownerUid'] != null) {
       try {
@@ -109,8 +108,7 @@ class DoctorProfileDetailRepository {
           : 'Dr. $name is a dedicated $specialization with $experienceYears+ years of clinical experience, committed to delivering high-quality healthcare.';
       finalAbout = data?['about'] as String? ?? defaultAbout;
     } else {
-      finalAbout =
-          data?['about'] as String? ??
+      finalAbout = data?['about'] as String? ??
           'Dr. $name is a registered $specialization with $experienceYears+ years of experience.';
     }
 
@@ -135,7 +133,7 @@ class DoctorProfileDetailRepository {
     final computedRating = reviews.isEmpty
         ? rating
         : reviews.fold<double>(0, (total, review) => total + review.rating) /
-              reviews.length;
+            reviews.length;
     final computedReviewCount = reviews.isEmpty ? reviewCount : reviews.length;
 
     final superSpecialization = data?['superSpecialization'] as String? ?? '';
@@ -180,13 +178,14 @@ class DoctorProfileDetailRepository {
       reviews: reviews,
       address: address,
       landmark: data?['landmark'] as String? ?? '',
-      mapsUrl:
-          data?['mapsLink'] as String? ??
+      mapsUrl: data?['mapsLink'] as String? ??
           'https://maps.google.com/?q=${Uri.encodeComponent('$clinicName $city')}',
       nearbyLandmarks: const [],
       clinicName: clinicName,
       area: city,
       photoUrl: photoUrl,
+      photoKey: photoKey,
+      photoStorage: photoStorage,
     );
   }
 

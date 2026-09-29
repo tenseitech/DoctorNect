@@ -21,9 +21,9 @@ class RoleAccountRepository {
     return switch (role) {
       UserType.superAdmin => true,
       UserType.doctor => await DoctorAccountRepository.instance.isVerified(
-        profileId,
-        preferCache: preferCache,
-      ),
+          profileId,
+          preferCache: preferCache,
+        ),
       UserType.patient => true,
       UserType.lab => true,
       UserType.medicalStore => true,

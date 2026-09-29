@@ -188,7 +188,8 @@ class AboutScreen extends StatelessWidget {
                         color: AppColors.textSecondaryOf(context),
                       ),
                       onTap: () => ExternalLauncher.shareViaWhatsApp(
-                        text: 'Hello DoctorNect Support, I have a query about the app.',
+                        text:
+                            'Hello DoctorNect Support, I have a query about the app.',
                         phone: PatientProfileMock.supportWhatsApp,
                         context: context,
                       ),

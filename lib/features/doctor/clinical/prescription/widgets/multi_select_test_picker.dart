@@ -331,9 +331,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textPrimaryOf(context),
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w400,
                       ),
                     ),
                   ),

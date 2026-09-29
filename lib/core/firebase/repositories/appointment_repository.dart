@@ -119,14 +119,13 @@ class AppointmentRepository {
   List<DoctorNectAppointmentRecord> _recordsFromSnapshot(
     QuerySnapshot<Map<String, dynamic>> snapshot,
   ) {
-    final records =
-        snapshot.docs
-            .map(
-              (doc) => AppointmentFirestoreMapper.fromMap(doc.id, doc.data()),
-            )
-            .whereType<DoctorNectAppointmentRecord>()
-            .toList()
-          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final records = snapshot.docs
+        .map(
+          (doc) => AppointmentFirestoreMapper.fromMap(doc.id, doc.data()),
+        )
+        .whereType<DoctorNectAppointmentRecord>()
+        .toList()
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return records;
   }
 
@@ -144,14 +143,13 @@ class AppointmentRepository {
       preferCache: preferCache,
     );
 
-    final records =
-        snapshot.docs
-            .map(
-              (doc) => AppointmentFirestoreMapper.fromMap(doc.id, doc.data()),
-            )
-            .whereType<DoctorNectAppointmentRecord>()
-            .toList()
-          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final records = snapshot.docs
+        .map(
+          (doc) => AppointmentFirestoreMapper.fromMap(doc.id, doc.data()),
+        )
+        .whereType<DoctorNectAppointmentRecord>()
+        .toList()
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return records;
   }
 }

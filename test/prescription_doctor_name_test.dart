@@ -49,7 +49,8 @@ PrescriptionDraft _draft({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('PrescriptionHeaderHelper.doctorNameForDraft (name printed on PDF)', () {
+  group('PrescriptionHeaderHelper.doctorNameForDraft (name printed on PDF)',
+      () {
     setUp(() {
       // Seed two bookings with two different doctors to prove each prescription
       // resolves to *its own* booking's doctor (multi-doctor edge case).
@@ -92,7 +93,8 @@ void main() {
       },
     );
 
-    test('resolves by doctorId when snapshot is empty and appointment is unlinked '
+    test(
+        'resolves by doctorId when snapshot is empty and appointment is unlinked '
         '(the real-world "Dr. Doctor" bug)', () {
       final name = PrescriptionHeaderHelper.doctorNameForDraft(
         // No snapshot, no matching appointmentId — only the doctorId is known.

@@ -61,9 +61,8 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
     final statusColor = a.status == PatientBookingStatus.confirmed
         ? const Color(0xFF16A34A)
         : const Color(0xFFF59E0B);
-    final statusLabel = a.status == PatientBookingStatus.confirmed
-        ? 'Confirmed'
-        : 'Pending';
+    final statusLabel =
+        a.status == PatientBookingStatus.confirmed ? 'Confirmed' : 'Pending';
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +96,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
                     a.slotLabel != null && a.slotLabel!.trim().isNotEmpty
                         ? '${DateFormat('EEE, dd MMM yyyy').format(a.dateTime)} · ${a.slotLabel}'
                         : DateFormat('EEE, dd MMM yyyy · hh:mm a')
-                              .format(a.dateTime),
+                            .format(a.dateTime),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(

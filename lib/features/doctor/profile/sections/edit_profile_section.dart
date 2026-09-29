@@ -14,6 +14,7 @@ import '../data/doctor_photo_local_store.dart';
 import '../data/doctor_profile_store.dart';
 import '../widgets/section_save_bar.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/s3_aware_network_image.dart';
 
 /// Quick edit for top-card fields: name, specialization, languages.
 class EditProfileSection extends StatefulWidget {
@@ -57,13 +58,12 @@ class _EditProfileSectionState extends State<EditProfileSection> {
   ImageProvider? get _avatarImage {
     final doctorId = DoctorSession.activeDoctorId;
     final bytes = _p.photoBytes ?? DoctorPhotoLocalStore.readCached(doctorId);
-    if (bytes != null && bytes.isNotEmpty) {
-      return MemoryImage(bytes);
-    }
-    if (_p.photoUrl != null && _p.photoUrl!.trim().isNotEmpty) {
-      return NetworkImage(_p.photoUrl!.trim());
-    }
-    return null;
+    return S3AwareImageProvider.resolveProvider(
+      photoKey: _p.photoKey,
+      photoStorage: _p.photoStorage,
+      legacyUrl: _p.photoUrl,
+      photoBytes: bytes,
+    );
   }
 
   Future<void> _pickPhoto() async {

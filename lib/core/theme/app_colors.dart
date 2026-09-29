@@ -43,42 +43,42 @@ abstract final class AppColors {
       isDark(context) ? darkBorder : border;
 
   static List<BoxShadow> cardShadowOf(BuildContext context) => [
-    BoxShadow(
-      color: isDark(context)
-          ? Colors.black.withValues(alpha: 0.3)
-          : textPrimary.withValues(alpha: 0.04),
-      blurRadius: 16,
-      offset: const Offset(0, 4),
-    ),
-    BoxShadow(
-      color: isDark(context)
-          ? Colors.black.withValues(alpha: 0.2)
-          : textPrimary.withValues(alpha: 0.02),
-      blurRadius: 4,
-      offset: const Offset(0, 1),
-    ),
-  ];
+        BoxShadow(
+          color: isDark(context)
+              ? Colors.black.withValues(alpha: 0.3)
+              : textPrimary.withValues(alpha: 0.04),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: isDark(context)
+              ? Colors.black.withValues(alpha: 0.2)
+              : textPrimary.withValues(alpha: 0.02),
+          blurRadius: 4,
+          offset: const Offset(0, 1),
+        ),
+      ];
 
   static List<BoxShadow> get cardShadow => [
-    BoxShadow(
-      color: textPrimary.withValues(alpha: 0.04),
-      blurRadius: 16,
-      offset: const Offset(0, 4),
-    ),
-    BoxShadow(
-      color: textPrimary.withValues(alpha: 0.02),
-      blurRadius: 4,
-      offset: const Offset(0, 1),
-    ),
-  ];
+        BoxShadow(
+          color: textPrimary.withValues(alpha: 0.04),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: textPrimary.withValues(alpha: 0.02),
+          blurRadius: 4,
+          offset: const Offset(0, 1),
+        ),
+      ];
 
   static List<BoxShadow> get hoverShadow => [
-    BoxShadow(
-      color: textPrimary.withValues(alpha: 0.08),
-      blurRadius: 20,
-      offset: const Offset(0, 8),
-    ),
-  ];
+        BoxShadow(
+          color: textPrimary.withValues(alpha: 0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ];
 
   static LinearGradient doctorGradient = const LinearGradient(
     begin: Alignment.topLeft,

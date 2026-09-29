@@ -114,11 +114,10 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
       listenable: store,
       builder: (context, _) {
         final bookings = store.bookings;
-        final pending =
-            bookings
-                .where((b) => store.isPendingForDriver(b, ambulanceId))
-                .toList()
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final pending = bookings
+            .where((b) => store.isPendingForDriver(b, ambulanceId))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         final mine = bookings
             .where(
@@ -128,25 +127,23 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
                   b.acceptedAmbulanceId == ambulanceId,
             )
             .toList();
-        final completed =
-            bookings
-                .where(
-                  (b) => b.isCompleted && b.acceptedAmbulanceId == ambulanceId,
-                )
-                .toList()
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        final cancelled =
-            bookings
-                .where(
-                  (b) =>
-                      (b.isCancelled &&
-                          (b.acceptedAmbulanceId == ambulanceId ||
-                              (b.acceptedAmbulanceId == null &&
-                                  b.rawStatus == 'rejected'))) ||
-                      store.isDriverRejectedBookingView(b, ambulanceId),
-                )
-                .toList()
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final completed = bookings
+            .where(
+              (b) => b.isCompleted && b.acceptedAmbulanceId == ambulanceId,
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final cancelled = bookings
+            .where(
+              (b) =>
+                  (b.isCancelled &&
+                      (b.acceptedAmbulanceId == ambulanceId ||
+                          (b.acceptedAmbulanceId == null &&
+                              b.rawStatus == 'rejected'))) ||
+                  store.isDriverRejectedBookingView(b, ambulanceId),
+            )
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -345,7 +342,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     } else {
       final message =
           FirestoreService.instance.ambulance.lastCancelFailureUserMessage ??
-          'Could not cancel this trip. Please try again.';
+              'Could not cancel this trip. Please try again.';
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
     }
@@ -373,8 +370,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
 
     await AmbulanceAuthHelper.ensureSignedIn();
 
-    final ambulance =
-        AmbulanceStore.instance.findAmbulance(ambulanceId) ??
+    final ambulance = AmbulanceStore.instance.findAmbulance(ambulanceId) ??
         await FirestoreService.instance.ambulance.fetchAmbulanceById(
           ambulanceId,
         );
@@ -391,7 +387,7 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     } else {
       final message =
           FirestoreService.instance.ambulance.lastAcceptFailureUserMessage ??
-          'Could not accept this trip. Please try again.';
+              'Could not accept this trip. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
       );
@@ -579,9 +575,8 @@ class _TripTabPill extends StatelessWidget {
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(vertical: 9),
             decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.surfaceOf(context)
-                  : Colors.transparent,
+              color:
+                  selected ? AppColors.surfaceOf(context) : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               boxShadow: selected
                   ? [
@@ -600,9 +595,8 @@ class _TripTabPill extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w800,
-                    color: selected
-                        ? color
-                        : AppColors.textSecondaryOf(context),
+                    color:
+                        selected ? color : AppColors.textSecondaryOf(context),
                   ),
                 ),
                 Text(
@@ -610,9 +604,8 @@ class _TripTabPill extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: selected
-                        ? color
-                        : AppColors.textSecondaryOf(context),
+                    color:
+                        selected ? color : AppColors.textSecondaryOf(context),
                   ),
                 ),
               ],
@@ -762,17 +755,16 @@ class _RequestCard extends StatelessWidget {
     final borderColor = isCompleted
         ? const Color(0xFF16A34A)
         : highlight
-        ? const Color(0xFF2563EB)
-        : alreadyTaken
-        ? AppColors.borderOf(context)
-        : const Color(0xFFF59E0B);
+            ? const Color(0xFF2563EB)
+            : alreadyTaken
+                ? AppColors.borderOf(context)
+                : const Color(0xFFF59E0B);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: highlight
-            ? const Color(0xFFEFF6FF)
-            : AppColors.surfaceOf(context),
+        color:
+            highlight ? const Color(0xFFEFF6FF) : AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor.withValues(alpha: highlight ? 0.3 : 0.4),
@@ -939,8 +931,8 @@ class _RequestCard extends StatelessWidget {
                 Icon(
                   Icons.access_time,
                   size: 13,
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.6),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.6),
                 ),
                 const SizedBox(width: 4),
                 Text(

@@ -47,8 +47,8 @@ class LabBookingConfirmedScreen extends StatelessWidget {
           headerIcon: pending ? Icons.hourglass_top : Icons.check_circle,
           subMessage: pending
               ? (booking.labName != null
-                    ? 'Waiting for ${booking.labName} to accept your request. You will be notified when the lab responds.'
-                    : 'Waiting for the lab to accept your request. You will be notified when the lab responds.')
+                  ? 'Waiting for ${booking.labName} to accept your request. You will be notified when the lab responds.'
+                  : 'Waiting for the lab to accept your request. You will be notified when the lab responds.')
               : null,
           primaryAccent: accent,
           primaryActionLabel: 'View Bookings',

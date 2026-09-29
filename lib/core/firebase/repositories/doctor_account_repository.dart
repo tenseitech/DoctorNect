@@ -123,8 +123,7 @@ class DoctorAccountRepository {
       final mobile = data['mobile'] as String? ?? data['phone'] as String?;
       if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
       if (data['verificationStatus'] == 'verified' ||
-          data['status'] == 'approved')
-        return true;
+          data['status'] == 'approved') return true;
       return _isTruthy(data['verified']);
     } catch (_) {
       return false;
@@ -187,7 +186,8 @@ class DoctorAccountRepository {
 
     batch.update(doctorRef, {
       'deactivated': false,
-      'verified': false, // FIXED: reactivation must go through admin re-approval, like registration
+      'verified':
+          false, // FIXED: reactivation must go through admin re-approval, like registration
       'reactivatedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });

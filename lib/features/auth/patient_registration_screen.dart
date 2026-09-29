@@ -57,7 +57,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     final digits = preMobile == null
         ? null
         : (FormValidators.registrationMobileDigits(preMobile) ??
-              FormValidators.mobileDigits(preMobile));
+            FormValidators.mobileDigits(preMobile));
     if (digits != null) {
       _mobileController.text = digits;
       _mobileVerified = true;
@@ -95,9 +95,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
 
   Future<void> _createAccount() async {
     setState(() {
-      _mobileError = !_mobileVerified
-          ? 'Please verify your mobile number with OTP'
-          : null;
+      _mobileError =
+          !_mobileVerified ? 'Please verify your mobile number with OTP' : null;
     });
 
     final isFormValid = _formKey.currentState!.validate();
@@ -129,7 +128,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
 
       final mobileDigitsOnly = FormValidators.mobileDigits(mobile) ??
           mobile.replaceAll(RegExp(r'\D'), '');
-      final authEmail = RegistrationCredentials.emailForMobile(mobileDigitsOnly);
+      final authEmail =
+          RegistrationCredentials.emailForMobile(mobileDigitsOnly);
       final password = RegistrationCredentials.generatePassword();
 
       final result = await FirebaseAuthService.instance.registerProfile(
@@ -164,8 +164,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
             'primaryDoctorId': invitedDoctorId,
           'shareRecordsWithDoctors':
               PatientSharingUtils.deriveInitialShareRecordsWithDoctors(
-                invitedDoctorId,
-              ),
+            invitedDoctorId,
+          ),
           if (invitedDoctorId != null && invitedDoctorId.isNotEmpty)
             'careTeamDoctorIds': [invitedDoctorId],
         },

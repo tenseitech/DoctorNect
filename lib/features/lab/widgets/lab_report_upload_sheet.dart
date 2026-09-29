@@ -228,17 +228,18 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
     try {
       if (widget.booking != null) {
         final b = widget.booking!;
-        final storageUrl = await FirestoreService.instance.labBooking
-            .submitReport(
-              bookingId: b.bookingId,
-              patientId: b.patientId,
-              fileName: LabReportFileStore.reportFileNameFor(
-                testName: b.displayTestName,
-                originalFileName: file.name,
-              ),
-              bytes: bytes,
-              linkedBookingIds: b.linkedBookingIds,
-            );
+        final uploadResult =
+            await FirestoreService.instance.labBooking.submitReport(
+          bookingId: b.bookingId,
+          patientId: b.patientId,
+          fileName: LabReportFileStore.reportFileNameFor(
+            testName: b.displayTestName,
+            originalFileName: file.name,
+          ),
+          bytes: bytes,
+          linkedBookingIds: b.linkedBookingIds,
+          existingReportStorageKey: b.reportStorageKey,
+        );
 
         LabWorklistStore.instance.applyBookingReportLocal(
           LabBookingRecord(
@@ -259,7 +260,9 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
               testName: b.displayTestName,
               originalFileName: file.name,
             ),
-            reportStorageUrl: storageUrl,
+            reportStorageUrl: uploadResult.downloadUrl,
+            reportStorageKey: uploadResult.objectKey,
+            reportStorageProvider: uploadResult.provider,
             reportSubmittedAt: DateTime.now(),
             reportBookingId: b.bookingId,
           ),
@@ -267,18 +270,18 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
       } else if (widget.order != null) {
         final o = widget.order!;
         final reportFileName = LabReportFileStore.reportFileNameFor(
-          testName: o.testNames.isNotEmpty
-              ? o.testNames.join(', ')
-              : 'Lab test',
+          testName:
+              o.testNames.isNotEmpty ? o.testNames.join(', ') : 'Lab test',
           originalFileName: file.name,
         );
-        final storageUrl = await FirestoreService.instance.labOrder
-            .submitReport(
-              orderId: o.orderId,
-              patientId: o.patientId,
-              fileName: reportFileName,
-              bytes: bytes,
-            );
+        final uploadResult =
+            await FirestoreService.instance.labOrder.submitReport(
+          orderId: o.orderId,
+          patientId: o.patientId,
+          fileName: reportFileName,
+          bytes: bytes,
+          existingReportStorageKey: o.reportStorageKey,
+        );
 
         LabWorklistStore.instance.applyOrderReportLocal(
           DoctorLabOrder(
@@ -301,7 +304,9 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             source: o.source,
             status: 'completed',
             reportFileName: reportFileName,
-            reportStorageUrl: storageUrl,
+            reportStorageUrl: uploadResult.downloadUrl,
+            reportStorageKey: uploadResult.objectKey,
+            reportStorageProvider: uploadResult.provider,
             reportSubmittedAt: DateTime.now(),
           ),
         );
@@ -318,8 +323,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
         final plugin = e.plugin;
         message = e.code == 'unauthorized' || e.code == 'permission-denied'
             ? plugin == 'firebase_storage'
-                  ? 'Upload denied — storage permission error (${e.code}). Contact support.'
-                  : 'Could not save report — permission error (${e.code}). Contact support.'
+                ? 'Upload denied — storage permission error (${e.code}). Contact support.'
+                : 'Could not save report — permission error (${e.code}). Contact support.'
             : 'Upload failed: ${e.message ?? e.code}';
       } else if (e is TimeoutException) {
         message = 'Upload timed out. Check your connection and try again.';

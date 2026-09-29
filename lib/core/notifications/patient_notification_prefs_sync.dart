@@ -24,18 +24,18 @@ abstract final class PatientNotificationPrefsSync {
         .doc(patientId)
         .snapshots()
         .listen(
-          (snapshot) {
-            if (!snapshot.exists) return;
-            final prefs = snapshot.data()?['notificationPrefs'];
-            if (prefs is! Map<String, dynamic>) return;
-            PatientProfileMock.applyNotificationPrefsFromFirestore(prefs);
-          },
-          onError: (Object e, StackTrace st) {
-            if (kDebugMode) {
-              debugPrint('Patient notification prefs sync error: $e\n$st');
-            }
-          },
-        );
+      (snapshot) {
+        if (!snapshot.exists) return;
+        final prefs = snapshot.data()?['notificationPrefs'];
+        if (prefs is! Map<String, dynamic>) return;
+        PatientProfileMock.applyNotificationPrefsFromFirestore(prefs);
+      },
+      onError: (Object e, StackTrace st) {
+        if (kDebugMode) {
+          debugPrint('Patient notification prefs sync error: $e\n$st');
+        }
+      },
+    );
   }
 
   static void stop() {

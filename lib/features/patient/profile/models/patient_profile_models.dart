@@ -50,14 +50,14 @@ class PatientAddress {
   }
 
   Map<String, dynamic> toMap() => {
-    'addressLine1': addressLine1,
-    'addressLine2': addressLine2,
-    'country': country,
-    'city': city,
-    'state': state,
-    'pincode': pincode,
-    'landmark': landmark,
-  };
+        'addressLine1': addressLine1,
+        'addressLine2': addressLine2,
+        'country': country,
+        'city': city,
+        'state': state,
+        'pincode': pincode,
+        'landmark': landmark,
+      };
 
   factory PatientAddress.fromMap(Map<String, dynamic>? data) {
     if (data == null) return const PatientAddress();
@@ -105,6 +105,8 @@ class PatientProfile {
     this.weight = 0.0,
     this.photoInitial,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
   });
 
   String name;
@@ -117,6 +119,8 @@ class PatientProfile {
   double weight;
   String? photoInitial;
   String? photoUrl;
+  String? photoKey;
+  String? photoStorage;
 }
 
 class FamilyProfileMember {
@@ -147,13 +151,13 @@ class FamilyProfileMember {
   final String? photoInitial;
 
   String get relationLabel => switch (relation) {
-    FamilyRelation.spouse => 'Spouse',
-    FamilyRelation.child => 'Child',
-    FamilyRelation.parent => 'Parent',
-    FamilyRelation.sibling => 'Sibling',
-    FamilyRelation.friend => 'Friend',
-    FamilyRelation.other => 'Other',
-  };
+        FamilyRelation.spouse => 'Spouse',
+        FamilyRelation.child => 'Child',
+        FamilyRelation.parent => 'Parent',
+        FamilyRelation.sibling => 'Sibling',
+        FamilyRelation.friend => 'Friend',
+        FamilyRelation.other => 'Other',
+      };
 }
 
 class PatientPrescription {

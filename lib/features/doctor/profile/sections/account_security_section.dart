@@ -1,10 +1,15 @@
 import '../../../../core/notifications/app_toast.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../models/doctor_profile_data.dart';
 
 import '../../../../core/session/doctor_session.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/validators/form_validators.dart';
+import '../../../../widgets/overflow_safe_layout.dart';
 import '../data/doctor_profile_store.dart';
 import '../widgets/section_save_bar.dart';
 
@@ -112,6 +117,218 @@ class _AccountSecuritySectionState extends State<AccountSecuritySection> {
           SectionSaveBar(visible: _dirty, onSave: _save),
         ],
       ),
+    );
+  }
+}
+
+// ── Change Password Dialog ────────────────────────────────────────────────────
+
+class _ChangePasswordDialog extends StatefulWidget {
+  const _ChangePasswordDialog({required this.parentContext});
+  final BuildContext parentContext;
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _currentCtrl = TextEditingController();
+  final _newCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _showCurrent = false;
+  bool _showNew = false;
+  bool _showConfirm = false;
+  bool _loading = false;
+  String? _errorMsg;
+
+  @override
+  void dispose() {
+    _currentCtrl.dispose();
+    _newCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _errorMsg = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || user.email == null) {
+        setState(() {
+          _errorMsg = 'No logged-in user found. Please re-login.';
+          _loading = false;
+        });
+        return;
+      }
+
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: _currentCtrl.text,
+      );
+      await user.reauthenticateWithCredential(credential);
+      await user.updatePassword(_newCtrl.text);
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } on FirebaseAuthException catch (e) {
+      final msg = switch (e.code) {
+        'wrong-password' ||
+        'invalid-credential' =>
+          'Current password is incorrect.',
+        'weak-password' =>
+          'New password is too weak. Use at least 6 characters.',
+        'too-many-requests' => 'Too many attempts. Please try again later.',
+        _ => e.message ?? 'Password change failed.',
+      };
+      setState(() {
+        _errorMsg = msg;
+        _loading = false;
+      });
+    } catch (_) {
+      setState(() {
+        _errorMsg = 'Something went wrong. Please try again.';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.lock_outline, color: AppColors.doctorBlue, size: 22),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Change Password',
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: AppTypography.headlineSmall,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: scrollableDialogContent(
+        context: context,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_errorMsg != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEDED),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    _errorMsg!,
+                    style: GoogleFonts.inter(
+                      fontSize: AppTypography.bodySmall,
+                      color: const Color(0xFFDC2626),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              TextFormField(
+                controller: _currentCtrl,
+                obscureText: !_showCurrent,
+                decoration: InputDecoration(
+                  labelText: 'Current password',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showCurrent
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _showCurrent = !_showCurrent),
+                  ),
+                ),
+                validator: FormValidators.currentPassword,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _newCtrl,
+                obscureText: !_showNew,
+                decoration: InputDecoration(
+                  labelText: 'New password',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showNew
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _showNew = !_showNew),
+                  ),
+                ),
+                validator: (v) =>
+                    FormValidators.changePassword(v, _currentCtrl.text),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _confirmCtrl,
+                obscureText: !_showConfirm,
+                decoration: InputDecoration(
+                  labelText: 'Confirm new password',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showConfirm
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _showConfirm = !_showConfirm),
+                  ),
+                ),
+                validator: (v) =>
+                    FormValidators.confirmNewPassword(v, _newCtrl.text),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _loading ? null : _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.doctorBlue,
+            foregroundColor: Colors.white,
+          ),
+          child: _loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text('Update'),
+        ),
+      ],
     );
   }
 }

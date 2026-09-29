@@ -8,6 +8,16 @@ import 'firebase_options.secrets.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 class DefaultFirebaseOptions {
+  /// Whether Firebase options have a non-empty API key configured for the current platform.
+  static bool get isConfigured {
+    try {
+      final options = _unsafeCurrentPlatform;
+      return options.apiKey.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static FirebaseOptions get currentPlatform {
     final options = _unsafeCurrentPlatform;
     _requireConfiguredApiKey(_apiKeyDefineName(), options.apiKey);
@@ -28,10 +38,8 @@ class DefaultFirebaseOptions {
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        // Linux is used in CI test runners; fall back to web configuration.
+        return web;
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
@@ -76,7 +84,7 @@ class DefaultFirebaseOptions {
     }
     final platformHint = defineName == 'FIREBASE_API_KEY_ANDROID'
         ? ' On Android, pass FIREBASE_API_KEY_ANDROID (from google-services.json), '
-              'run .\\scripts\\run_local.ps1, or add keys to lib/firebase_options.secrets.dart.'
+            'run .\\scripts\\run_local.ps1, or add keys to lib/firebase_options.secrets.dart.'
         : '';
     throw StateError(
       'Missing $defineName. Pass --dart-define=$defineName=<your Firebase API key> at build/run time.$platformHint',
@@ -127,7 +135,8 @@ class DefaultFirebaseOptions {
       messagingSenderId: '658118593597',
       projectId: 'medibond-45fad',
       storageBucket: 'medibond-45fad.firebasestorage.app',
-      iosClientId: '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
+      iosClientId:
+          '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
       iosBundleId: 'com.tenseitech.doctornect',
     );
   }
@@ -144,7 +153,8 @@ class DefaultFirebaseOptions {
       messagingSenderId: '658118593597',
       projectId: 'medibond-45fad',
       storageBucket: 'medibond-45fad.firebasestorage.app',
-      iosClientId: '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
+      iosClientId:
+          '658118593597-79iinf5gtfbt1ivlfatlk5g7epkorni9.apps.googleusercontent.com',
       iosBundleId: 'com.tenseitech.doctornect',
     );
   }

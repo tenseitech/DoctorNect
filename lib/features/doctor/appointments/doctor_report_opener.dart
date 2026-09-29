@@ -58,6 +58,8 @@ abstract final class DoctorReportOpener {
           recordId: record.id,
           fileName: reportName,
           storageUrl: record.storageUrl,
+          storageKey: record.storageKey,
+          storageProvider: record.storageProvider,
         );
         if (bytes != null) {
           if (!context.mounted) return;
@@ -70,8 +72,7 @@ abstract final class DoctorReportOpener {
             fileName: reportName,
             doctorName: record.doctorName,
             labName: record.labName,
-            isImage:
-                reportName.toLowerCase().endsWith('.jpg') ||
+            isImage: reportName.toLowerCase().endsWith('.jpg') ||
                 reportName.toLowerCase().endsWith('.jpeg') ||
                 reportName.toLowerCase().endsWith('.png') ||
                 reportName.toLowerCase().endsWith('.webp'),
@@ -79,6 +80,8 @@ abstract final class DoctorReportOpener {
             sharedWithDoctors: record.sharedWithDoctors,
             fileStorage: record.fileStorage,
             storageUrl: record.storageUrl,
+            storageKey: record.storageKey,
+            storageProvider: record.storageProvider,
           );
           await Navigator.push<void>(
             context,
@@ -97,7 +100,8 @@ abstract final class DoctorReportOpener {
       _showMessage(
         context,
         title: reportName,
-        message: 'Report file is not available on this device. Ask the patient to upload and share it from the Records tab.',
+        message:
+            'Report file is not available on this device. Ask the patient to upload and share it from the Records tab.',
       );
     } catch (_) {
       if (!context.mounted) return;

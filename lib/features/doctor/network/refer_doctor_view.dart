@@ -75,8 +75,7 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
   Future<void> _copyLink() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final link =
-        _link ??
+    final link = _link ??
         DoctorInviteService.buildNetworkInviteLink(
           doctorId: DoctorSession.loggedInDoctorId,
           userType: InviteNetworkUserType.doctor,
@@ -91,8 +90,7 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
   Future<void> _shareLink() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final link =
-        _link ??
+    final link = _link ??
         DoctorInviteService.buildNetworkInviteLink(
           doctorId: DoctorSession.loggedInDoctorId,
           userType: InviteNetworkUserType.doctor,

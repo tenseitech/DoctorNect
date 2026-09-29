@@ -78,9 +78,8 @@ void main() {
         }
 
         // 3. Filter chips (Top / Newest) use consistent StadiumBorder pill shape and showCheckmark: false
-        final filterChips = tester
-            .widgetList<FilterChip>(find.byType(FilterChip))
-            .toList();
+        final filterChips =
+            tester.widgetList<FilterChip>(find.byType(FilterChip)).toList();
         expect(filterChips.length, 2);
         for (final chip in filterChips) {
           expect(chip.shape, isA<StadiumBorder>());

@@ -30,8 +30,7 @@ class PatientTabItem {
     bool selected,
     Color iconColor,
     double size,
-  )?
-  customIconBuilder;
+  )? customIconBuilder;
 
   String get mobileLabel => shortLabel ?? label;
 
@@ -438,14 +437,14 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                         final iconColor = selected
                             ? (isDark ? Colors.white : AppColors.patientTeal)
                             : (isDark
-                                  ? Colors.white.withValues(alpha: 0.70)
-                                  : const Color(0xFF64748B));
+                                ? Colors.white.withValues(alpha: 0.70)
+                                : const Color(0xFF64748B));
 
                         final labelColor = selected
                             ? (isDark ? Colors.white : AppColors.patientTeal)
                             : (isDark
-                                  ? Colors.white.withValues(alpha: 0.70)
-                                  : const Color(0xFF64748B));
+                                ? Colors.white.withValues(alpha: 0.70)
+                                : const Color(0xFF64748B));
 
                         return Expanded(
                           child: Material(

@@ -41,7 +41,8 @@ const List<QuickRxTemplate> kRxTemplates = [
       'Tab. Telmisartan 40 mg (1-0-0 before breakfast x 30 days)',
       'Tab. Amlodipine 5 mg (0-0-1 after dinner x 30 days)',
     ],
-    advice: 'Low salt diet (<3g/day), daily morning blood pressure tracking, 30 mins brisk walking.',
+    advice:
+        'Low salt diet (<3g/day), daily morning blood pressure tracking, 30 mins brisk walking.',
   ),
   QuickRxTemplate(
     title: 'Type 2 Diabetes Routine Check',
@@ -51,7 +52,8 @@ const List<QuickRxTemplate> kRxTemplates = [
       'Tab. Metformin 500 mg SR (1-0-1 after meals x 30 days)',
       'Tab. Teneligliptin 20 mg (1-0-0 before breakfast x 30 days)',
     ],
-    advice: 'Fasting & PP Blood Sugar test after 15 days, avoid refined sugars and carbs.',
+    advice:
+        'Fasting & PP Blood Sugar test after 15 days, avoid refined sugars and carbs.',
   ),
   QuickRxTemplate(
     title: 'Acidity, Gastritis & GERD',

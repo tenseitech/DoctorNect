@@ -126,9 +126,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
       return;
     }
 
-    final selectedTests = _allTests
-        .where((t) => _selectedTestIds.contains(t.id))
-        .toList();
+    final selectedTests =
+        _allTests.where((t) => _selectedTestIds.contains(t.id)).toList();
     final selected = _labOptions
         .where((o) => o.name == _labController.text.trim())
         .firstOrNull;
@@ -140,8 +139,7 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
         patient: widget.patient,
         testIds: selectedTests.map((t) => t.id).toList(),
         testNames: selectedTests.map((t) => t.name).toList(),
-        labId:
-            selected?.id ??
+        labId: selected?.id ??
             _selectedLabId, // FIXED: pass registered lab id when selected
         labName: lab.isNotEmpty ? lab : null,
         indication: _indicationController.text.trim(),
@@ -353,9 +351,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                       )
                       .toList(),
                   onChanged: (v) {
-                    final picked = _labOptions
-                        .where((o) => o.name == v)
-                        .firstOrNull;
+                    final picked =
+                        _labOptions.where((o) => o.name == v).firstOrNull;
                     setState(() {
                       _labController.text = v ?? '';
                       _selectedLabId = picked?.id;

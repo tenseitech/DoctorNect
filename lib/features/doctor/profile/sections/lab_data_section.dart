@@ -178,8 +178,8 @@ class _LabDataSectionState extends State<LabDataSection> {
                             Text(
                               _search.isEmpty
                                   ? (total == 0
-                                        ? 'No lab orders yet'
-                                        : 'No visible lab orders')
+                                      ? 'No lab orders yet'
+                                      : 'No visible lab orders')
                                   : 'No results for "$_search"',
                               style: GoogleFonts.inter(
                                 fontSize: AppTypography.bodyMedium,
@@ -218,8 +218,7 @@ class _LabDataSectionState extends State<LabDataSection> {
                           constraints: const BoxConstraints(maxWidth: 680),
                           child: ListView.separated(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                            itemCount:
-                                orders.length +
+                            itemCount: orders.length +
                                 (LabOrderStore.instance.hasMore ? 1 : 0),
                             separatorBuilder: (_, __) =>
                                 const Divider(height: 1),

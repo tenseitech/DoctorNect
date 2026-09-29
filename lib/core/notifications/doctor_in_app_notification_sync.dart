@@ -22,33 +22,33 @@ abstract final class DoctorInAppNotificationSync {
     _sub = FirestoreService.instance.inAppNotification
         .watchForRecipient(recipientUid)
         .listen(
-          (notifications) {
-            InAppNotificationService.instance.mergeDoctorFirestoreNotifications(
-              notifications,
-            );
-
-            if (!_seededInitialSnapshot) {
-              _knownNotificationIds
-                ..clear()
-                ..addAll(notifications.map((n) => n.id));
-              _seededInitialSnapshot = true;
-              return;
-            }
-
-            for (final notification in notifications) {
-              if (_knownNotificationIds.contains(notification.id)) continue;
-              _knownNotificationIds.add(notification.id);
-              if (notification.isRead) continue;
-              InAppNotificationService.instance.onDoctorNotificationArrived
-                  ?.call(notification);
-            }
-          },
-          onError: (Object e, StackTrace st) {
-            if (kDebugMode) {
-              debugPrint('Doctor in-app notification sync error: $e\n$st');
-            }
-          },
+      (notifications) {
+        InAppNotificationService.instance.mergeDoctorFirestoreNotifications(
+          notifications,
         );
+
+        if (!_seededInitialSnapshot) {
+          _knownNotificationIds
+            ..clear()
+            ..addAll(notifications.map((n) => n.id));
+          _seededInitialSnapshot = true;
+          return;
+        }
+
+        for (final notification in notifications) {
+          if (_knownNotificationIds.contains(notification.id)) continue;
+          _knownNotificationIds.add(notification.id);
+          if (notification.isRead) continue;
+          InAppNotificationService.instance.onDoctorNotificationArrived
+              ?.call(notification);
+        }
+      },
+      onError: (Object e, StackTrace st) {
+        if (kDebugMode) {
+          debugPrint('Doctor in-app notification sync error: $e\n$st');
+        }
+      },
+    );
   }
 
   static void stop() {

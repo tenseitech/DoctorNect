@@ -73,9 +73,9 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
   static const _labPurple = AppColors.labPurple;
 
   String get _link => LabDoctorInviteService.buildInviteLink(
-    LabSession.loggedInLabId,
-    role: widget.role,
-  );
+        LabSession.loggedInLabId,
+        role: widget.role,
+      );
 
   Future<void> _copyLink() async {
     final message = LabDoctorInviteService.inviteMessage(
@@ -111,8 +111,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.textSecondaryOf(context)
-                      .withValues(alpha: 0.3),
+                  color:
+                      AppColors.textSecondaryOf(context).withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),

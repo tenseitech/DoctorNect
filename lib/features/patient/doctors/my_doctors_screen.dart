@@ -106,9 +106,9 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                       onRemove: () async {
                         final confirmed =
                             await PatientFavoritesSheets.confirmRemoveDoctor(
-                              context,
-                              doctor,
-                            );
+                          context,
+                          doctor,
+                        );
                         if (!confirmed || !context.mounted) return;
                         await _favoritesStore.removeDoctor(doctor.id);
                       },

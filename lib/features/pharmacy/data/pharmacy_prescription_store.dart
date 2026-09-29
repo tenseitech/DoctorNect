@@ -47,7 +47,8 @@ class PharmacyPrescriptionStore extends ChangeNotifier {
         return false;
       }
       return true;
-    }).toList()..sort((a, b) => b.sentAt.compareTo(a.sentAt));
+    }).toList()
+      ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
   }
 
   Future<void> refreshForPatient(

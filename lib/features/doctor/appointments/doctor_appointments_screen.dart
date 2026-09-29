@@ -147,7 +147,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't accept this appointment. Please check your connection and try again.",
             ),
           ),
         ),
@@ -168,7 +169,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't decline this appointment. Please check your connection and try again.",
             ),
           ),
         ),
@@ -297,10 +299,10 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                                     onCancel: () => _cancelAppointment(appt),
                                     onReschedule: () =>
                                         DoctorAppointmentActions.reschedule(
-                                          context,
-                                          appointment: appt,
-                                          onComplete: () => setState(() {}),
-                                        ),
+                                      context,
+                                      appointment: appt,
+                                      onComplete: () => setState(() {}),
+                                    ),
                                   );
                                 },
                               );

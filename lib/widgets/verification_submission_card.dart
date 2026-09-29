@@ -54,15 +54,17 @@ class _VerificationSubmissionCardState
 
     try {
       final batch = FirebaseFirestore.instance.batch();
-      final userRef = FirebaseFirestore.instance
-          .collection(FirestorePaths.users)
-          .doc(uid);
+      final userRef =
+          FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);
 
-      batch.set(userRef, {
-        'verificationStatus': 'submitted_for_verification',
-        'status': 'pending_review',
-        'submittedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      batch.set(
+          userRef,
+          {
+            'verificationStatus': 'submitted_for_verification',
+            'status': 'pending_review',
+            'submittedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
 
       final roleCol = switch (widget.role) {
         UserType.doctor => FirestorePaths.doctors,
@@ -73,14 +75,16 @@ class _VerificationSubmissionCardState
       };
 
       if (roleCol != null && profileId != null && profileId.isNotEmpty) {
-        final roleRef = FirebaseFirestore.instance
-            .collection(roleCol)
-            .doc(profileId);
-        batch.set(roleRef, {
-          'verificationStatus': 'submitted_for_verification',
-          'status': 'pending_review',
-          'submittedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        final roleRef =
+            FirebaseFirestore.instance.collection(roleCol).doc(profileId);
+        batch.set(
+            roleRef,
+            {
+              'verificationStatus': 'submitted_for_verification',
+              'status': 'pending_review',
+              'submittedAt': FieldValue.serverTimestamp(),
+            },
+            SetOptions(merge: true));
       }
 
       await batch.commit();
@@ -118,12 +122,10 @@ class _VerificationSubmissionCardState
         }
         final data = snapshot.data!.data() ?? {};
         final mobile = data['mobile'] as String? ?? data['phone'] as String?;
-        final isDemoDoctor =
-            widget.role == UserType.doctor &&
+        final isDemoDoctor = widget.role == UserType.doctor &&
             DemoAuthConfig.isDemoDoctorPhone(mobile);
         final isVerified = data['verified'] == true || isDemoDoctor;
-        final statusStr =
-            data['verificationStatus'] as String? ??
+        final statusStr = data['verificationStatus'] as String? ??
             data['status'] as String? ??
             'registered';
         final stage = isVerified
@@ -186,8 +188,8 @@ class _VerificationSubmissionCardState
                   stage.isVerified
                       ? Icons.verified_rounded
                       : (stage.isPending
-                            ? Icons.hourglass_top_rounded
-                            : Icons.shield_outlined),
+                          ? Icons.hourglass_top_rounded
+                          : Icons.shield_outlined),
                   color: stage.isVerified ? const Color(0xFF16A34A) : accent,
                   size: 22,
                 ),
@@ -211,10 +213,10 @@ class _VerificationSubmissionCardState
                     color: stage.isVerified
                         ? const Color(0xFFDCFCE7)
                         : (stage.isPending
-                              ? const Color(0xFFDBEAFE)
-                              : (stage.isRevisionRequested
-                                    ? const Color(0xFFFEF3C7)
-                                    : const Color(0xFFF1F5F9))),
+                            ? const Color(0xFFDBEAFE)
+                            : (stage.isRevisionRequested
+                                ? const Color(0xFFFEF3C7)
+                                : const Color(0xFFF1F5F9))),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -225,10 +227,10 @@ class _VerificationSubmissionCardState
                       color: stage.isVerified
                           ? const Color(0xFF15803D)
                           : (stage.isPending
-                                ? const Color(0xFF1D4ED8)
-                                : (stage.isRevisionRequested
-                                      ? const Color(0xFFB45309)
-                                      : AppColors.textSecondaryOf(context))),
+                              ? const Color(0xFF1D4ED8)
+                              : (stage.isRevisionRequested
+                                  ? const Color(0xFFB45309)
+                                  : AppColors.textSecondaryOf(context))),
                     ),
                   ),
                 ),
@@ -369,7 +371,7 @@ class _VerificationSubmissionCardState
                       onPressed: _submitting
                           ? null
                           : () =>
-                                _submitForVerification(context, uid, profileId),
+                              _submitForVerification(context, uid, profileId),
                       icon: _submitting
                           ? const SizedBox(
                               width: 18,

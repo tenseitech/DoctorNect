@@ -25,8 +25,7 @@ DoctorNectAppointmentRecord bookingRecord({
     patientName: 'Test Patient',
     patientAge: 30,
     patientGender: 'Male',
-    dateTime:
-        dateTime ??
+    dateTime: dateTime ??
         DateTime(
           kBookingTestMonday.year,
           kBookingTestMonday.month,

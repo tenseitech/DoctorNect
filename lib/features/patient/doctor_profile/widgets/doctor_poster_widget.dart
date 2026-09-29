@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/widgets/resampled_network_image.dart';
+import '../../../../core/widgets/s3_aware_network_image.dart';
 import '../models/doctor_profile_detail.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -61,14 +61,18 @@ class DoctorPosterWidget extends StatelessWidget {
                 color: Colors.grey.shade100,
               ),
               clipBehavior: Clip.antiAlias,
-              child: doctor.photoUrl != null && doctor.photoUrl!.isNotEmpty
-                  ? ResampledNetworkImageWidget(
-                      url: doctor.photoUrl!,
-                      width: 140,
-                      height: 140,
-                      fit: BoxFit.cover,
-                    )
-                  : const Icon(Icons.person, size: 80, color: Colors.grey),
+              child: S3AwareNetworkImage(
+                photoKey: doctor.photoKey,
+                photoStorage: doctor.photoStorage,
+                legacyUrl: doctor.photoUrl,
+                width: 140,
+                height: 140,
+                fit: BoxFit.cover,
+                errorWidget:
+                    const Icon(Icons.person, size: 80, color: Colors.grey),
+                placeholder:
+                    const Icon(Icons.person, size: 80, color: Colors.grey),
+              ),
             ),
             const SizedBox(height: 24),
             // Name
@@ -153,9 +157,7 @@ class DoctorPosterWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            ...awards
-                .take(3)
-                .map(
+            ...awards.take(3).map(
                   (a) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(

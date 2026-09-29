@@ -211,8 +211,8 @@ class InAppNotificationService extends ChangeNotifier {
   List<AppNotification> get doctorInbox => List.unmodifiable(_doctor);
 
   List<AppNotification> get patientInbox => List.unmodifiable(
-    _patient.where((n) => !_isPrescriptionExpiringAlert(n)),
-  );
+        _patient.where((n) => !_isPrescriptionExpiringAlert(n)),
+      );
 
   int get unreadDoctorCount => _doctor.where((n) => !n.isRead).length;
 
@@ -236,7 +236,8 @@ class InAppNotificationService extends ChangeNotifier {
       DoctorNotificationTrigger.appointmentCancelledByPatient => true,
       DoctorNotificationTrigger.appointmentReminderTomorrow ||
       DoctorNotificationTrigger.appointmentReminderToday ||
-      DoctorNotificationTrigger.nextPatientReminder => p.appointmentReminders,
+      DoctorNotificationTrigger.nextPatientReminder =>
+        p.appointmentReminders,
       _ => true,
     };
   }
@@ -254,9 +255,11 @@ class InAppNotificationService extends ChangeNotifier {
       PatientNotificationTrigger.labReportReady ||
       PatientNotificationTrigger.labBookingAccepted ||
       PatientNotificationTrigger.labBookingDeclined ||
-      PatientNotificationTrigger.labOrderSent => p.labReportAlert,
+      PatientNotificationTrigger.labOrderSent =>
+        p.labReportAlert,
       PatientNotificationTrigger.labBookingUpdate ||
-      PatientNotificationTrigger.pharmacyDeliveryUpdate => true,
+      PatientNotificationTrigger.pharmacyDeliveryUpdate =>
+        true,
       PatientNotificationTrigger.medicineReminder => p.medicationReminders,
       PatientNotificationTrigger.healthTipOfDay => p.healthTips,
       _ => true,
@@ -371,9 +374,8 @@ class InAppNotificationService extends ChangeNotifier {
     if (index < 0 || _doctor[index].isRead) return;
 
     final readKey = _storageKey(_doctor[index]);
-    final matching = _doctor
-        .where((n) => !n.isRead && _storageKey(n) == readKey)
-        .toList();
+    final matching =
+        _doctor.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
     if (matching.isEmpty) return;
 
     final firestoreUnreadIds = <String>[];
@@ -440,9 +442,8 @@ class InAppNotificationService extends ChangeNotifier {
     if (index < 0 || _patient[index].isRead) return;
 
     final readKey = _storageKey(_patient[index]);
-    final matching = _patient
-        .where((n) => !n.isRead && _storageKey(n) == readKey)
-        .toList();
+    final matching =
+        _patient.where((n) => !n.isRead && _storageKey(n) == readKey).toList();
     if (matching.isEmpty) return;
 
     final firestoreUnreadIds = <String>[];

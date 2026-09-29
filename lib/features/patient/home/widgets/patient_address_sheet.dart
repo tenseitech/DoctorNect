@@ -107,9 +107,9 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
   }
 
   String? _validatePincode(String? value) => FormValidators.optionalPincode(
-    value,
-    country: _country ?? Countries.defaultCountry,
-  );
+        value,
+        country: _country ?? Countries.defaultCountry,
+      );
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -167,9 +167,8 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                     ),
                   ),
                   IconButton(
-                    onPressed: _submitting
-                        ? null
-                        : () => Navigator.pop(context),
+                    onPressed:
+                        _submitting ? null : () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
                   ),
                 ],

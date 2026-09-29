@@ -143,8 +143,8 @@ class _ProfileSettingsRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 22,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.7),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
               ),
             ],
           ),
@@ -195,6 +195,8 @@ class ProfileHeroHeader extends StatelessWidget {
     this.photoPath,
     this.photoBytes,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
     required this.onEditPhoto,
     required this.onEditProfile,
   });
@@ -207,6 +209,8 @@ class ProfileHeroHeader extends StatelessWidget {
   final String? photoPath;
   final Uint8List? photoBytes;
   final String? photoUrl;
+  final String? photoKey;
+  final String? photoStorage;
   final VoidCallback onEditPhoto;
   final VoidCallback onEditProfile;
 
@@ -255,6 +259,8 @@ class ProfileHeroHeader extends StatelessWidget {
                         photoPath: photoPath,
                         photoBytes: photoBytes,
                         photoUrl: photoUrl,
+                        photoKey: photoKey,
+                        photoStorage: photoStorage,
                         radius: 42,
                       ),
                     ),

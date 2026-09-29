@@ -483,12 +483,10 @@ class _RoleNavTileState extends State<_RoleNavTile> {
   @override
   Widget build(BuildContext context) {
     final icon = widget.selected ? widget.selectedIcon : widget.icon;
-    final iconColor = widget.selected
-        ? Colors.white
-        : AppColors.textPrimaryOf(context);
-    final labelColor = widget.selected
-        ? Colors.white
-        : AppColors.textPrimaryOf(context);
+    final iconColor =
+        widget.selected ? Colors.white : AppColors.textPrimaryOf(context);
+    final labelColor =
+        widget.selected ? Colors.white : AppColors.textPrimaryOf(context);
 
     final decoration = widget.selected
         ? BoxDecoration(
@@ -535,9 +533,8 @@ class _RoleNavTileState extends State<_RoleNavTile> {
                     widget.label,
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.bodySmall,
-                      fontWeight: widget.selected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
+                      fontWeight:
+                          widget.selected ? FontWeight.w700 : FontWeight.w500,
                       color: labelColor,
                     ),
                   ),
@@ -713,14 +710,12 @@ class _RoleBottomNav extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           SafeBottomNavLabel(
-                            label:
-                                item.mobileLabel ??
+                            label: item.mobileLabel ??
                                 compactBottomNavLabel(item.label),
                             style: GoogleFonts.inter(
                               fontSize: 10,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
                               color: labelColor,
                             ),
                           ),

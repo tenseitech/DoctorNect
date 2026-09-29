@@ -17,15 +17,12 @@ import '../../core/notifications/patient_in_app_notification_sync.dart';
 import '../../core/notifications/patient_notification_prefs_sync.dart';
 import '../../core/notifications/patient_appointment_watcher.dart';
 import '../../core/notifications/patient_lab_booking_watcher.dart';
-
-import 'dart:convert';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/firebase/firebase_bootstrap.dart';
 import '../../core/session/app_session.dart';
-import '../../core/widgets/resampled_network_image.dart';
+import '../../core/widgets/s3_aware_network_image.dart';
 import '../../core/notifications/patient_notification_scheduler.dart';
 import '../../core/notifications/patient_push_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -194,68 +191,33 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
           } catch (_) {}
         }
 
-        Widget avatarContent;
-        if (bytes != null && bytes.isNotEmpty) {
-          avatarContent = Image.memory(
-            bytes,
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                _buildInitialFallback(context, widget.size),
-          );
-        } else if (photoUrl != null && photoUrl.isNotEmpty) {
-          if (photoUrl.startsWith('data:image')) {
-            Uint8List? dataUriBytes;
-            try {
-              final commaIndex = photoUrl.indexOf(',');
-              if (commaIndex != -1) {
-                dataUriBytes = base64Decode(photoUrl.substring(commaIndex + 1));
-              }
-            } catch (_) {}
-            if (dataUriBytes != null && dataUriBytes.isNotEmpty) {
-              avatarContent = Image.memory(
-                dataUriBytes,
+        final imageProvider = S3AwareImageProvider.resolveProvider(
+          photoKey: profile.photoKey,
+          photoStorage: profile.photoStorage,
+          legacyUrl: photoUrl,
+          photoBytes: bytes,
+          context: context,
+          width: widget.size,
+          height: widget.size,
+        );
+
+        final Widget avatarContent = imageProvider != null
+            ? Image(
+                image: imageProvider,
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded || frame != null) {
+                    return child;
+                  }
+                  return _buildInitialFallback(context, widget.size,
+                      isLoading: true);
+                },
                 errorBuilder: (_, __, ___) =>
                     _buildInitialFallback(context, widget.size),
-              );
-            } else {
-              avatarContent = _buildInitialFallback(context, widget.size);
-            }
-          } else {
-            avatarContent = Image.network(
-              photoUrl,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-              cacheWidth: ResampledNetworkImage.cacheDimension(
-                widget.size,
-                context,
-              ),
-              cacheHeight: ResampledNetworkImage.cacheDimension(
-                widget.size,
-                context,
-              ),
-              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                if (wasSynchronouslyLoaded || frame != null) {
-                  return child;
-                }
-                return _buildInitialFallback(
-                  context,
-                  widget.size,
-                  isLoading: true,
-                );
-              },
-              errorBuilder: (_, __, ___) =>
-                  _buildInitialFallback(context, widget.size),
-            );
-          }
-        } else {
-          avatarContent = _buildInitialFallback(context, widget.size);
-        }
+              )
+            : _buildInitialFallback(context, widget.size);
 
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
@@ -268,8 +230,8 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
               color: widget.selected
                   ? (isDark ? Colors.white : AppColors.patientTeal)
                   : (isDark
-                        ? Colors.white.withValues(alpha: 0.35)
-                        : AppColors.borderOf(context).withValues(alpha: 0.4)),
+                      ? Colors.white.withValues(alpha: 0.35)
+                      : AppColors.borderOf(context).withValues(alpha: 0.4)),
               width: widget.selected ? 2.0 : 1.0,
             ),
           ),
@@ -319,13 +281,12 @@ class _PatientShellState extends State<PatientShell> {
       label: 'Profile',
       customIconBuilder: (context, selected, iconColor, size) =>
           _PatientProfileTabAvatar(
-            selected: selected,
-            iconColor: iconColor,
-            size: size,
-            fallbackIcon: selected
-                ? Icons.person_rounded
-                : Icons.person_outline_rounded,
-          ),
+        selected: selected,
+        iconColor: iconColor,
+        size: size,
+        fallbackIcon:
+            selected ? Icons.person_rounded : Icons.person_outline_rounded,
+      ),
     ),
   ];
 
@@ -445,18 +406,18 @@ class _PatientShellState extends State<PatientShell> {
   }
 
   List<Widget> _buildPages() => [
-    PatientHomeScreen(onSelectTab: _selectTab),
-    const PatientAppointmentsScreen(),
-    const MyLabsScreen(embeddedInShell: true),
-    const AmbulanceBookingScreen(
-      bookedByRole: AmbulanceBookedByRole.patient,
-      embeddedInShell: true,
-    ),
-    PatientProfileScreen(
-      embeddedInShell: true,
-      onOpenAppointments: () => _selectTab(1),
-    ),
-  ];
+        PatientHomeScreen(onSelectTab: _selectTab),
+        const PatientAppointmentsScreen(),
+        const MyLabsScreen(embeddedInShell: true),
+        const AmbulanceBookingScreen(
+          bookedByRole: AmbulanceBookedByRole.patient,
+          embeddedInShell: true,
+        ),
+        PatientProfileScreen(
+          embeddedInShell: true,
+          onOpenAppointments: () => _selectTab(1),
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {

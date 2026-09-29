@@ -91,8 +91,8 @@ class DoctorProfileMenuTile extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.85),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.85),
               ),
             ],
           ),

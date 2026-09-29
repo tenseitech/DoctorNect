@@ -61,76 +61,78 @@ class WelcomeScreen extends StatelessWidget {
   }
 
   List<_WelcomeRoleOption> _roleOptions(BuildContext context) => [
-    _WelcomeRoleOption(
-      title: UnifiedAuthCoordinator.roleLabel(UserType.doctor),
-      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.doctor),
-      color: AppColors.doctorBlue,
-      icon: Icons.medical_services_rounded,
-      onTap: () => isNewUser
-          ? _onSelectRoleForNewUser(context, UserType.doctor)
-          : _openUnifiedAuth(context, UserType.doctor, AppColors.doctorBlue),
-    ),
-    _WelcomeRoleOption(
-      title: UnifiedAuthCoordinator.roleLabel(UserType.patient),
-      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.patient),
-      color: AppColors.patientTeal,
-      icon: Icons.person_rounded,
-      onTap: () => isNewUser
-          ? _onSelectRoleForNewUser(context, UserType.patient)
-          : _openUnifiedAuth(context, UserType.patient, AppColors.patientTeal),
-    ),
-    _WelcomeRoleOption(
-      title: UnifiedAuthCoordinator.roleLabel(UserType.medicalStore),
-      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.medicalStore),
-      color: AppColors.pharmacyGreen,
-      icon: Icons.local_pharmacy_rounded,
-      onTap: () => isNewUser
-          ? _onSelectRoleForNewUser(context, UserType.medicalStore)
-          : _openUnifiedAuth(
-              context,
-              UserType.medicalStore,
-              AppColors.pharmacyGreen,
-            ),
-    ),
-    _WelcomeRoleOption(
-      title: UnifiedAuthCoordinator.roleLabel(UserType.lab),
-      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.lab),
-      color: AppColors.labPurple,
-      icon: Icons.biotech_rounded,
-      onTap: () => isNewUser
-          ? _onSelectRoleForNewUser(context, UserType.lab)
-          : _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
-    ),
-    _WelcomeRoleOption(
-      title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
-      subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
-      color: const Color(0xFFDC2626),
-      icon: Icons.emergency_rounded,
-      onTap: () {
-        if (!isNewUser && PendingAmbulanceInviteStore.hasPending) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AmbulanceInviteSetupScreen(
-                inviteId: PendingAmbulanceInviteStore.inviteId!,
-                token: PendingAmbulanceInviteStore.token!,
-              ),
-            ),
-          );
-          return;
-        }
-        if (isNewUser) {
-          _onSelectRoleForNewUser(context, UserType.ambulance);
-        } else {
-          _openUnifiedAuth(
-            context,
-            UserType.ambulance,
-            const Color(0xFFDC2626),
-          );
-        }
-      },
-    ),
-  ];
+        _WelcomeRoleOption(
+          title: UnifiedAuthCoordinator.roleLabel(UserType.doctor),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.doctor),
+          color: AppColors.doctorBlue,
+          icon: Icons.medical_services_rounded,
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.doctor)
+              : _openUnifiedAuth(
+                  context, UserType.doctor, AppColors.doctorBlue),
+        ),
+        _WelcomeRoleOption(
+          title: UnifiedAuthCoordinator.roleLabel(UserType.patient),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.patient),
+          color: AppColors.patientTeal,
+          icon: Icons.person_rounded,
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.patient)
+              : _openUnifiedAuth(
+                  context, UserType.patient, AppColors.patientTeal),
+        ),
+        _WelcomeRoleOption(
+          title: UnifiedAuthCoordinator.roleLabel(UserType.medicalStore),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.medicalStore),
+          color: AppColors.pharmacyGreen,
+          icon: Icons.local_pharmacy_rounded,
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.medicalStore)
+              : _openUnifiedAuth(
+                  context,
+                  UserType.medicalStore,
+                  AppColors.pharmacyGreen,
+                ),
+        ),
+        _WelcomeRoleOption(
+          title: UnifiedAuthCoordinator.roleLabel(UserType.lab),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.lab),
+          color: AppColors.labPurple,
+          icon: Icons.biotech_rounded,
+          onTap: () => isNewUser
+              ? _onSelectRoleForNewUser(context, UserType.lab)
+              : _openUnifiedAuth(context, UserType.lab, AppColors.labPurple),
+        ),
+        _WelcomeRoleOption(
+          title: UnifiedAuthCoordinator.roleLabel(UserType.ambulance),
+          subtitle: UnifiedAuthCoordinator.roleSubtitle(UserType.ambulance),
+          color: const Color(0xFFDC2626),
+          icon: Icons.emergency_rounded,
+          onTap: () {
+            if (!isNewUser && PendingAmbulanceInviteStore.hasPending) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AmbulanceInviteSetupScreen(
+                    inviteId: PendingAmbulanceInviteStore.inviteId!,
+                    token: PendingAmbulanceInviteStore.token!,
+                  ),
+                ),
+              );
+              return;
+            }
+            if (isNewUser) {
+              _onSelectRoleForNewUser(context, UserType.ambulance);
+            } else {
+              _openUnifiedAuth(
+                context,
+                UserType.ambulance,
+                const Color(0xFFDC2626),
+              );
+            }
+          },
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {

@@ -27,7 +27,9 @@ void main() {
       expect(html, contains('scripts/splash-bootstrap.js'));
     });
 
-    test('web/scripts/splash-bootstrap.js initializes Flutter without splash DOM logic', () {
+    test(
+        'web/scripts/splash-bootstrap.js initializes Flutter without splash DOM logic',
+        () {
       final js = File('web/scripts/splash-bootstrap.js').readAsStringSync();
       expect(js, isNot(contains('app-loading-splash')));
       expect(js, contains('flutter_bootstrap.js'));
@@ -39,7 +41,10 @@ void main() {
       (tester) async {
         tester.view.physicalSize = const Size(390, 844);
         tester.view.devicePixelRatio = 1.0;
-        addTearDown(() => tester.view.resetPhysicalSize());
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
         final resolvedScreen = await SplashScreen.resolveInitialScreen(
           initializeFirebase: false,
@@ -63,6 +68,8 @@ void main() {
 
         expect(find.byType(SplashScreen), findsOneWidget);
         expect(find.text('Your Health, Our Priority'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
       },
     );
   });

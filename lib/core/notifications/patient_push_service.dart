@@ -50,10 +50,9 @@ abstract final class PatientPushService {
         onDidReceiveNotificationResponse: _onLocalNotificationTap,
       );
 
-      final androidPlugin = _localNotifications
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >();
+      final androidPlugin =
+          _localNotifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
 
       await androidPlugin?.createNotificationChannel(
         const AndroidNotificationChannel(

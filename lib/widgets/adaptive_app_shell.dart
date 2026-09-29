@@ -135,8 +135,7 @@ class AdaptiveAppShell extends StatelessWidget {
                   extended: extended,
                   accentColor: primary,
                   filledActiveTabs: filledActiveTabs,
-                  leadingHeader:
-                      leadingHeader ??
+                  leadingHeader: leadingHeader ??
                       SidebarDoctorNectLogo(extended: extended),
                   trailingFooter: trailingFooter,
                   requestDots: requestDots,
@@ -290,24 +289,24 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                     ),
                     decoration: widget.filledActiveTabs
                         ? (selected
-                              ? _FilledNavActiveStyle.decoration(
-                                  selected: true,
-                                  accent: widget.accentColor,
-                                )
-                              : BoxDecoration(
-                                  color: isHovered
-                                      ? AppColors.textSecondaryOf(context)
-                                            .withValues(alpha: 0.06)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                ))
+                            ? _FilledNavActiveStyle.decoration(
+                                selected: true,
+                                accent: widget.accentColor,
+                              )
+                            : BoxDecoration(
+                                color: isHovered
+                                    ? AppColors.textSecondaryOf(context)
+                                        .withValues(alpha: 0.06)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ))
                         : BoxDecoration(
                             color: selected
                                 ? widget.accentColor.withValues(alpha: 0.12)
                                 : isHovered
-                                ? AppColors.textSecondaryOf(context)
-                                      .withValues(alpha: 0.05)
-                                : Colors.transparent,
+                                    ? AppColors.textSecondaryOf(context)
+                                        .withValues(alpha: 0.05)
+                                    : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                     child: Row(
@@ -330,8 +329,8 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                                   color: widget.accentColor,
                                   borderColor:
                                       selected && widget.filledActiveTabs
-                                      ? widget.accentColor
-                                      : Colors.white,
+                                          ? widget.accentColor
+                                          : Colors.white,
                                 ),
                               ),
                           ],
@@ -506,14 +505,14 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                           final iconColor = selected
                               ? (isDark ? Colors.white : widget.accentColor)
                               : (isDark
-                                    ? Colors.white.withValues(alpha: 0.70)
-                                    : const Color(0xFF64748B));
+                                  ? Colors.white.withValues(alpha: 0.70)
+                                  : const Color(0xFF64748B));
 
                           final labelColor = selected
                               ? (isDark ? Colors.white : widget.accentColor)
                               : (isDark
-                                    ? Colors.white.withValues(alpha: 0.70)
-                                    : const Color(0xFF64748B));
+                                  ? Colors.white.withValues(alpha: 0.70)
+                                  : const Color(0xFF64748B));
 
                           return Expanded(
                             child: Material(
@@ -669,9 +668,8 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
             children: List.generate(widget.destinations.length, (i) {
               final selected = i == widget.selectedIndex;
               final dest = widget.destinations[i];
-              final iconWidget = selected
-                  ? (dest.selectedIcon ?? dest.icon)
-                  : dest.icon;
+              final iconWidget =
+                  selected ? (dest.selectedIcon ?? dest.icon) : dest.icon;
               final iconData = _iconData(iconWidget);
               final iconColor = _FilledNavActiveStyle.iconColor(
                 selected: selected,
@@ -681,10 +679,10 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
               final labelColor = widget.filledActiveTabs && selected
                   ? widget.accentColor
                   : selected
-                  ? widget.accentColor
-                  : Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.textSecondaryOf(context);
+                      ? widget.accentColor
+                      : Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.textSecondaryOf(context);
 
               return Expanded(
                 child: Material(
@@ -713,12 +711,10 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                                 padding: widget.filledActiveTabs && selected
                                     ? EdgeInsets.zero
                                     : EdgeInsets.symmetric(
-                                        horizontal: widget.filledActiveTabs
-                                            ? 14
-                                            : 12,
-                                        vertical: widget.filledActiveTabs
-                                            ? 5
-                                            : 4,
+                                        horizontal:
+                                            widget.filledActiveTabs ? 14 : 12,
+                                        vertical:
+                                            widget.filledActiveTabs ? 5 : 4,
                                       ),
                                 decoration: widget.filledActiveTabs
                                     ? _FilledNavActiveStyle.decoration(
@@ -738,18 +734,17 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                                         iconData,
                                         size:
                                             widget.filledActiveTabs && selected
-                                            ? 22
-                                            : _iconSize(
-                                                iconWidget,
-                                                selected: selected,
-                                              ),
+                                                ? 22
+                                                : _iconSize(
+                                                    iconWidget,
+                                                    selected: selected,
+                                                  ),
                                         color: iconColor,
                                       )
                                     : IconTheme(
                                         data: IconThemeData(
                                           color: iconColor,
-                                          size:
-                                              widget.filledActiveTabs &&
+                                          size: widget.filledActiveTabs &&
                                                   selected
                                               ? 22
                                               : _iconSize(
@@ -772,8 +767,8 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                                     color: widget.accentColor,
                                     borderColor:
                                         selected && widget.filledActiveTabs
-                                        ? widget.accentColor
-                                        : Colors.white,
+                                            ? widget.accentColor
+                                            : Colors.white,
                                   ),
                                 ),
                             ],
@@ -784,9 +779,8 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                             style: GoogleFonts.inter(
                               fontSize: 10,
                               height: 1.1,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
                               color: labelColor,
                             ),
                           ),

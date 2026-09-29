@@ -28,26 +28,25 @@ class SpecializationSelector extends FormField<String> {
     Color accentColor = AppColors.doctorBlue,
     FormFieldValidator<String>? validator,
   }) : super(
-         initialValue: initialValue?.trim().isEmpty == true
-             ? null
-             : initialValue?.trim(),
-         autovalidateMode: AutovalidateMode.onUserInteraction,
-         validator:
-             validator ??
-             (isRequired
-                 ? (v) => (v == null || v.trim().isEmpty)
-                       ? '$label is required'
-                       : null
-                 : null),
-         builder: (state) => _SelectorBody(
-           state: state,
-           onChanged: onChanged,
-           label: label,
-           placeholder: placeholder,
-           accentColor: accentColor,
-           isRequired: isRequired,
-         ),
-       );
+          initialValue: initialValue?.trim().isEmpty == true
+              ? null
+              : initialValue?.trim(),
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: validator ??
+              (isRequired
+                  ? (v) => (v == null || v.trim().isEmpty)
+                      ? '$label is required'
+                      : null
+                  : null),
+          builder: (state) => _SelectorBody(
+            state: state,
+            onChanged: onChanged,
+            label: label,
+            placeholder: placeholder,
+            accentColor: accentColor,
+            isRequired: isRequired,
+          ),
+        );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -305,9 +304,8 @@ class _ModeChip extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w500,
-            color: selected
-                ? AppColors.surfaceOf(context)
-                : Colors.grey.shade700,
+            color:
+                selected ? AppColors.surfaceOf(context) : Colors.grey.shade700,
           ),
         ),
       ),
@@ -352,9 +350,8 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
     final q = _query.toLowerCase();
     final result = <_ListEntry>[];
     for (final cat in cats.entries) {
-      final matches = cat.value
-          .where((s) => s.toLowerCase().contains(q))
-          .toList();
+      final matches =
+          cat.value.where((s) => s.toLowerCase().contains(q)).toList();
       if (matches.isNotEmpty) {
         result.add(_ListEntry.header(cat.key));
         result.addAll(matches.map(_ListEntry.item));

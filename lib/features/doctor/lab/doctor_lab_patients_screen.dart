@@ -20,18 +20,18 @@ class DoctorLabPatientsScreen extends StatelessWidget {
   static bool _isCompleted(DoctorLabOrder o) => o.status == 'completed';
 
   static String _statusLabel(DoctorLabOrder o) => switch (o.status) {
-    'completed' => 'Ready',
-    'in_progress' => 'Processing',
-    'cancelled' => 'Cancelled',
-    _ => 'Pending',
-  };
+        'completed' => 'Ready',
+        'in_progress' => 'Processing',
+        'cancelled' => 'Cancelled',
+        _ => 'Pending',
+      };
 
   static Color? _statusColor(DoctorLabOrder o) => switch (o.status) {
-    'completed' => AppColors.pharmacyGreen,
-    'in_progress' => const Color(0xFFEA580C),
-    'cancelled' => AppColors.error,
-    _ => AppColors.textSecondary,
-  };
+        'completed' => AppColors.pharmacyGreen,
+        'in_progress' => const Color(0xFFEA580C),
+        'cancelled' => AppColors.error,
+        _ => AppColors.textSecondary,
+      };
 
   @override
   Widget build(BuildContext context) {

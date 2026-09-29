@@ -49,22 +49,22 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
   Color get _accent => widget.accentColor ?? _defaultAccent;
 
   Color get _defaultAccent => switch (widget.role) {
-    UserType.doctor => AppColors.doctorBlue,
-    UserType.patient => AppColors.patientTeal,
-    UserType.medicalStore => AppColors.pharmacyGreen,
-    UserType.lab => AppColors.labPurple,
-    UserType.ambulance => const Color(0xFFDC2626),
-    _ => AppColors.doctorBlue,
-  };
+        UserType.doctor => AppColors.doctorBlue,
+        UserType.patient => AppColors.patientTeal,
+        UserType.medicalStore => AppColors.pharmacyGreen,
+        UserType.lab => AppColors.labPurple,
+        UserType.ambulance => const Color(0xFFDC2626),
+        _ => AppColors.doctorBlue,
+      };
 
   LegalAudience get _legalAudience => switch (widget.role) {
-    UserType.doctor => LegalAudience.doctor,
-    UserType.patient => LegalAudience.patient,
-    UserType.medicalStore => LegalAudience.pharmacy,
-    UserType.lab => LegalAudience.lab,
-    UserType.ambulance => LegalAudience.ambulance,
-    _ => LegalAudience.patient,
-  };
+        UserType.doctor => LegalAudience.doctor,
+        UserType.patient => LegalAudience.patient,
+        UserType.medicalStore => LegalAudience.pharmacy,
+        UserType.lab => LegalAudience.lab,
+        UserType.ambulance => LegalAudience.ambulance,
+        _ => LegalAudience.patient,
+      };
 
   bool get _mobileValid {
     final digits = FormValidators.registrationMobileDigits(
@@ -227,9 +227,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton(
-            onPressed: (_flow.busy || _flow.otpCountdown > 0)
-                ? null
-                : _resendOtp,
+            onPressed:
+                (_flow.busy || _flow.otpCountdown > 0) ? null : _resendOtp,
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
@@ -279,8 +278,7 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                 _AuthTopBar(
                   onBack: _handleBack,
                   onHelp: _openTroubleSigningInHelp,
-                  canPop:
-                      Navigator.of(context).canPop() ||
+                  canPop: Navigator.of(context).canPop() ||
                       _flow.step == UnifiedAuthStep.otp,
                 ),
                 Expanded(
@@ -325,12 +323,12 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                                       fit: BoxFit.cover,
                                       errorBuilder: (_, __, ___) =>
                                           const Center(
-                                            child: Icon(
-                                              Icons.medical_services_rounded,
-                                              size: 48,
-                                              color: Colors.white,
-                                            ),
-                                          ),
+                                        child: Icon(
+                                          Icons.medical_services_rounded,
+                                          size: 48,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   Positioned.fill(
@@ -385,9 +383,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                     accentColor: _accent,
                     enabled: canContinue,
                     loading: isLoading,
-                    loadingText: isMobileStep
-                        ? 'Sending OTP...'
-                        : 'Verifying...',
+                    loadingText:
+                        isMobileStep ? 'Sending OTP...' : 'Verifying...',
                     onPressed: isMobileStep
                         ? () {
                             _dismissKeyboard();

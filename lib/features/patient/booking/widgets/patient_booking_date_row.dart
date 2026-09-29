@@ -72,8 +72,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
   List<DateTime> get _daysInFocusedMonth {
     final count = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0).day;
     return List.generate(count, (i) {
-          return DateTime(_focusedMonth.year, _focusedMonth.month, i + 1);
-        })
+      return DateTime(_focusedMonth.year, _focusedMonth.month, i + 1);
+    })
         .where(
           (d) => widget.isDayEnabled(d) || (widget.isHoliday?.call(d) ?? false),
         )
@@ -214,8 +214,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                       children: List.generate(12, (index) {
                         final m = index + 1;
                         final isSelected = m == month;
-                        final label = DateFormat('MMM')
-                            .format(DateTime(2024, m));
+                        final label =
+                            DateFormat('MMM').format(DateTime(2024, m));
 
                         return Material(
                           color: Colors.transparent,
@@ -406,23 +406,23 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                         final bgColor = selected
                             ? AppColors.patientTeal
                             : isHoliday
-                            ? const Color(0xFFFFF7ED)
-                            : AppColors.cardBgOf(context);
+                                ? const Color(0xFFFFF7ED)
+                                : AppColors.cardBgOf(context);
                         final borderColor = selected
                             ? AppColors.patientTeal
                             : isHoliday
-                            ? const Color(0xFFFDBA74)
-                            : AppColors.borderOf(context);
+                                ? const Color(0xFFFDBA74)
+                                : AppColors.borderOf(context);
                         final dayColor = selected
                             ? AppColors.white
                             : isHoliday
-                            ? const Color(0xFFC2410C)
-                            : AppColors.textPrimaryOf(context);
+                                ? const Color(0xFFC2410C)
+                                : AppColors.textPrimaryOf(context);
                         final weekdayColor = selected
                             ? AppColors.white
                             : isHoliday
-                            ? const Color(0xFFEA580C)
-                            : AppColors.textSecondaryOf(context);
+                                ? const Color(0xFFEA580C)
+                                : AppColors.textSecondaryOf(context);
 
                         return GestureDetector(
                           onTap: () => _onDayTap(d),

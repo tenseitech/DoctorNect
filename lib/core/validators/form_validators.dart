@@ -130,7 +130,8 @@ class FormValidators {
   static String? registrationMobile(
     String? value, {
     String dialCode = CountryPhoneCodes.defaultDialCode,
-  }) => phoneLocal(value, dialCode: dialCode);
+  }) =>
+      phoneLocal(value, dialCode: dialCode);
 
   static String? password(String? value) {
     final str = value ?? '';
@@ -237,9 +238,8 @@ class FormValidators {
   static String? drivingLicense(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'License / permit number is required';
-    final normalized = trimmed
-        .replaceAll(RegExp(r'[\s\-\/]'), '')
-        .toUpperCase();
+    final normalized =
+        trimmed.replaceAll(RegExp(r'[\s\-\/]'), '').toUpperCase();
     if (!RegExp(r'^[A-Z]{2}\d{2}\d{4}\d{7}$').hasMatch(normalized) &&
         !RegExp(r'^(?:PERMIT|AMB|TAXI)[A-Z0-9]{5,16}$').hasMatch(normalized)) {
       return 'Enter a valid driving license or permit number, e.g. MH1220261234567';
@@ -251,9 +251,8 @@ class FormValidators {
   static String? ambulanceDrivingLicense(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) return 'Driving license number is required';
-    final normalized = trimmed
-        .replaceAll(RegExp(r'[\s\-\/]'), '')
-        .toUpperCase();
+    final normalized =
+        trimmed.replaceAll(RegExp(r'[\s\-\/]'), '').toUpperCase();
     if (!RegExp(r'^[A-Z]{2}\d{2}\d{4}\d{7}$').hasMatch(normalized)) {
       return 'Enter a valid driving license number, e.g. MH1220261234567';
     }
@@ -341,12 +340,13 @@ class FormValidators {
     String field = 'This field',
     int minLength = 1,
     int maxLength = InputSanitize.maxMessageLength,
-  }) => InputSanitize.validatePlainText(
-    value,
-    field: field,
-    minLength: minLength,
-    maxLength: maxLength,
-  );
+  }) =>
+      InputSanitize.validatePlainText(
+        value,
+        field: field,
+        minLength: minLength,
+        maxLength: maxLength,
+      );
 
   static String? reviewText(String? value) {
     final trimmed = value?.trim() ?? '';
@@ -360,18 +360,18 @@ class FormValidators {
   }
 
   static String? adTitle(String? value) => safeText(
-    value,
-    field: 'Title',
-    minLength: 3,
-    maxLength: InputSanitize.maxAdTitleLength,
-  );
+        value,
+        field: 'Title',
+        minLength: 3,
+        maxLength: InputSanitize.maxAdTitleLength,
+      );
 
   static String? adDescription(String? value) => safeText(
-    value,
-    field: 'Description',
-    minLength: 10,
-    maxLength: InputSanitize.maxAdDescriptionLength,
-  );
+        value,
+        field: 'Description',
+        minLength: 10,
+        maxLength: InputSanitize.maxAdDescriptionLength,
+      );
 
   static String? locationText(String? value, {String field = 'Location'}) =>
       safeText(
@@ -456,9 +456,10 @@ class FormValidators {
   static String? multiSelect(
     Set<String> selected, {
     String field = 'Options',
-  }) => ValidationEngine.validate(
-    'multiSelect',
-    null,
-    params: {'field': field, 'selected': selected},
-  );
+  }) =>
+      ValidationEngine.validate(
+        'multiSelect',
+        null,
+        params: {'field': field, 'selected': selected},
+      );
 }

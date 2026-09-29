@@ -114,12 +114,13 @@ class AuthSignInResult {
 
   factory AuthSignInResult.deactivatedCanReactivate({
     DateTime? reactivateBefore,
-  }) => AuthSignInResult._(
-    success: false,
-    canReactivateAccount: true,
-    reactivateBefore: reactivateBefore,
-    message: 'Your account is deactivated.',
-  );
+  }) =>
+      AuthSignInResult._(
+        success: false,
+        canReactivateAccount: true,
+        reactivateBefore: reactivateBefore,
+        message: 'Your account is deactivated.',
+      );
 
   factory AuthSignInResult.cancelled() =>
       const AuthSignInResult._(success: false, cancelled: true);
@@ -221,7 +222,8 @@ class FirebaseAuthService {
       return AuthSignInResult.fail(
         describeFirebaseError(
           e,
-          fallback: 'Could not load account data. Check your connection and try again.',
+          fallback:
+              'Could not load account data. Check your connection and try again.',
         ),
       );
     } catch (e) {
@@ -243,8 +245,7 @@ class FirebaseAuthService {
       );
     }
 
-    final digits =
-        FormValidators.registrationMobileDigits(mobile) ??
+    final digits = FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile);
     if (digits == null || digits.isEmpty) {
       return AuthSignInResult.fail('Enter a valid 10-digit mobile number.');
@@ -370,8 +371,7 @@ class FirebaseAuthService {
     Future<Map<String, dynamic>> Function(
       User user,
       Map<String, dynamic> roleData,
-    )?
-    prepareRoleDataAfterAuth,
+    )? prepareRoleDataAfterAuth,
   }) async {
     if (!FirebaseBootstrap.isReady) {
       return AuthSignInResult.fail(
@@ -381,9 +381,9 @@ class FirebaseAuthService {
 
     final abuseBlock =
         await AbuseProtectionService.assertAccountCreationAllowed(
-          email: email,
-          mobile: mobile,
-        );
+      email: email,
+      mobile: mobile,
+    );
     if (abuseBlock != null) {
       return AuthSignInResult.fail(abuseBlock);
     }
@@ -407,14 +407,14 @@ class FirebaseAuthService {
           ? null
           : (Map<String, dynamic>.from(roleData)..['ownerUid'] = user.uid);
 
-      final validationError = await FirestoreService.instance.user
-          .validateNewRegistration(
-            role: role,
-            email: email,
-            mobile: mobile,
-            profileId: profileId,
-            roleData: data,
-          );
+      final validationError =
+          await FirestoreService.instance.user.validateNewRegistration(
+        role: role,
+        email: email,
+        mobile: mobile,
+        profileId: profileId,
+        roleData: data,
+      );
       if (validationError != null) {
         await FirestoreService.instance.user.deletePendingAuthUser(user);
         await _auth.signOut();
@@ -458,12 +458,10 @@ class FirebaseAuthService {
           );
         }
 
-        final normalizedMobile = mobile == null
-            ? ''
-            : FormValidators.mobileDigits(mobile) ?? '';
+        final normalizedMobile =
+            mobile == null ? '' : FormValidators.mobileDigits(mobile) ?? '';
         if (normalizedMobile.isNotEmpty) {
-          final sessionId =
-              otpVerificationSessionId ??
+          final sessionId = otpVerificationSessionId ??
               RegistrationOtpService.verificationSessionId;
           if (sessionId == null || sessionId.isEmpty) {
             await user.delete();
@@ -474,8 +472,8 @@ class FirebaseAuthService {
           if (!RegistrationOtpService.isLocalVerificationSession(sessionId)) {
             final finalizeError =
                 await RegistrationOtpService.finalizeRegistrationVerification(
-                  sessionId,
-                );
+              sessionId,
+            );
             if (finalizeError != null) {
               await user.delete();
               return AuthSignInResult.fail(finalizeError);
@@ -514,7 +512,8 @@ class FirebaseAuthService {
       return AuthSignInResult.fail(
         describeFirebaseError(
           e,
-          fallback: 'Registration could not validate your account details. Please try again.',
+          fallback:
+              'Registration could not validate your account details. Please try again.',
         ),
       );
     } catch (e) {
@@ -534,8 +533,7 @@ class FirebaseAuthService {
 
   static GoogleSignIn _getGoogleSignIn() {
     return GoogleSignIn(
-      clientId:
-          (!kIsWeb &&
+      clientId: (!kIsWeb &&
               (defaultTargetPlatform == TargetPlatform.iOS ||
                   defaultTargetPlatform == TargetPlatform.macOS))
           ? _googleIosClientId
@@ -1137,13 +1135,13 @@ class FirebaseAuthService {
   }
 
   String _roleValue(UserType role) => switch (role) {
-    UserType.superAdmin => 'super_admin',
-    UserType.doctor => 'doctor',
-    UserType.patient => 'patient',
-    UserType.medicalStore => 'medicalStore',
-    UserType.lab => 'lab',
-    UserType.ambulance => 'ambulance',
-  };
+        UserType.superAdmin => 'super_admin',
+        UserType.doctor => 'doctor',
+        UserType.patient => 'patient',
+        UserType.medicalStore => 'medicalStore',
+        UserType.lab => 'lab',
+        UserType.ambulance => 'ambulance',
+      };
 
   Future<AuthSignInResult?> _roleApprovalBlock(
     DoctorNectUserProfile profile,
@@ -1187,11 +1185,11 @@ class FirebaseAuthService {
   }
 
   String _roleLabel(UserType role) => switch (role) {
-    UserType.superAdmin => 'Super Admin',
-    UserType.doctor => 'Doctor',
-    UserType.patient => 'Patient',
-    UserType.medicalStore => 'Medical Store',
-    UserType.lab => 'Diagnostic Lab',
-    UserType.ambulance => 'Ambulance',
-  };
+        UserType.superAdmin => 'Super Admin',
+        UserType.doctor => 'Doctor',
+        UserType.patient => 'Patient',
+        UserType.medicalStore => 'Medical Store',
+        UserType.lab => 'Diagnostic Lab',
+        UserType.ambulance => 'Ambulance',
+      };
 }

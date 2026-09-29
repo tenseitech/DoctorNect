@@ -168,12 +168,12 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
   }
 
   String get _providerLabel => switch (widget.providerType.toLowerCase()) {
-    'doctor' => 'Medical Practice & Clinic',
-    'lab' => 'Diagnostic Lab & Tests',
-    'pharmacy' => 'Medical Store & Pharmacy',
-    'ambulance' => 'Ambulance Service',
-    _ => 'Healthcare Service',
-  };
+        'doctor' => 'Medical Practice & Clinic',
+        'lab' => 'Diagnostic Lab & Tests',
+        'pharmacy' => 'Medical Store & Pharmacy',
+        'ambulance' => 'Ambulance Service',
+        _ => 'Healthcare Service',
+      };
 
   Future<void> _pickAdImage() async {
     try {
@@ -314,8 +314,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
           _currentStep == 0
               ? 'Promote'
               : _currentStep == 1
-              ? 'Banner Promotion'
-              : 'Banner Campaign Plan',
+                  ? 'Banner Promotion'
+                  : 'Banner Campaign Plan',
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w700,
             fontSize: AppTypography.headlineSmall,
@@ -379,9 +379,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   color: AppColors.surfaceOf(context),
                   alignment: Alignment.center,
                   padding: EdgeInsets.symmetric(
-                    horizontal: MediaQuery.of(context).size.width > 900
-                        ? 40
-                        : 16,
+                    horizontal:
+                        MediaQuery.of(context).size.width > 900 ? 40 : 16,
                     vertical: 14,
                   ),
                   child: ConstrainedBox(
@@ -438,8 +437,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
           backgroundColor: isDone
               ? const Color(0xFF7C3AED)
               : isActive
-              ? const Color(0xFF7C3AED)
-              : (isDark ? const Color(0xFF334155) : Colors.grey.shade200),
+                  ? const Color(0xFF7C3AED)
+                  : (isDark ? const Color(0xFF334155) : Colors.grey.shade200),
           child: isDone
               ? const Icon(Icons.check, size: 14, color: Colors.white)
               : Text(
@@ -450,8 +449,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     color: isActive
                         ? Colors.white
                         : (isDark
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600),
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600),
                   ),
                 ),
         ),
@@ -545,8 +544,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF7C3AED)
-                                .withValues(alpha: 0.3),
+                            color:
+                                const Color(0xFF7C3AED).withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -614,7 +613,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                           ? const Color(0xFFFDE047)
                           : const Color(0xFFD97706),
                       title: 'Instant Bookings',
-                      subtitle: 'Direct CTA button leads patients straight to booking',
+                      subtitle:
+                          'Direct CTA button leads patients straight to booking',
                     ),
                   ],
                 ),
@@ -635,9 +635,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 id: 'banner',
                 icon: TablerIcons.speakerphone,
                 iconColor: const Color(0xFF10B981),
-                iconBg: isDark
-                    ? const Color(0xFF064E3B)
-                    : const Color(0xFFD1FAE5),
+                iconBg:
+                    isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5),
                 title: 'Banner Promotion',
                 subtitle: 'Display banner on top of patient home app',
               ),
@@ -896,8 +895,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   boxShadow: isDark
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF7C3AED)
-                                .withValues(alpha: 0.18),
+                            color:
+                                const Color(0xFF7C3AED).withValues(alpha: 0.18),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
@@ -972,9 +971,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
           const SizedBox(height: 12),
           Divider(
             height: 1,
-            color: isDark
-                ? const Color(0xFF374151)
-                : AppColors.borderOf(context),
+            color:
+                isDark ? const Color(0xFF374151) : AppColors.borderOf(context),
           ),
           const SizedBox(height: 10),
 
@@ -1068,8 +1066,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   .toList();
             }
 
-            final isAllSelected =
-                availableCities.isNotEmpty &&
+            final isAllSelected = availableCities.isNotEmpty &&
                 availableCities.every((c) => tempSelected.contains(c));
 
             final currentDailyRate = tempSelected.fold<int>(
@@ -1143,8 +1140,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                           color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFF7C3AED)
-                                .withValues(alpha: 0.4),
+                            color:
+                                const Color(0xFF7C3AED).withValues(alpha: 0.4),
                           ),
                         ),
                         child: Text(
@@ -1299,11 +1296,11 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                         decoration: BoxDecoration(
                                           color: isMetro
                                               ? (isDark
-                                                    ? const Color(0xFF3B0764)
-                                                    : const Color(0xFFF3E8FF))
+                                                  ? const Color(0xFF3B0764)
+                                                  : const Color(0xFFF3E8FF))
                                               : (isDark
-                                                    ? const Color(0xFF064E3B)
-                                                    : const Color(0xFFD1FAE5)),
+                                                  ? const Color(0xFF064E3B)
+                                                  : const Color(0xFFD1FAE5)),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
@@ -1317,13 +1314,13 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                                             fontWeight: FontWeight.w800,
                                             color: isMetro
                                                 ? (isDark
-                                                      ? const Color(0xFFA78BFA)
-                                                      : const Color(0xFF6B21A8))
+                                                    ? const Color(0xFFA78BFA)
+                                                    : const Color(0xFF6B21A8))
                                                 : (isDark
-                                                      ? const Color(0xFF34D399)
-                                                      : const Color(
-                                                          0xFF065F46,
-                                                        )),
+                                                    ? const Color(0xFF34D399)
+                                                    : const Color(
+                                                        0xFF065F46,
+                                                      )),
                                           ),
                                         ),
                                       ),
@@ -1986,7 +1983,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     color: AppColors.textPrimaryOf(context),
                   ),
                   decoration: inputDecoration.copyWith(
-                    hintText: 'e.g., Book expert consultation with top specialists today.',
+                    hintText:
+                        'e.g., Book expert consultation with top specialists today.',
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'Please enter a description'
@@ -2317,9 +2315,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   TextButton.icon(
                     onPressed: _selectedPlanIndex > 0
                         ? () => _planPageController.previousPage(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeInOut,
-                          )
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                            )
                         : null,
                     icon: const Icon(Icons.arrow_back_rounded, size: 16),
                     label: const Text('Previous'),
@@ -2341,8 +2339,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                           color: _selectedPlanIndex == dIdx
                               ? const Color(0xFF0D9488)
                               : (isDark
-                                    ? const Color(0xFF475569)
-                                    : const Color(0xFFCBD5E1)),
+                                  ? const Color(0xFF475569)
+                                  : const Color(0xFFCBD5E1)),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -2352,9 +2350,9 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                   TextButton.icon(
                     onPressed: _selectedPlanIndex < _campaignPlans.length - 1
                         ? () => _planPageController.nextPage(
-                            duration: const Duration(milliseconds: 250),
-                            curve: Curves.easeInOut,
-                          )
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                            )
                         : null,
                     icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                     label: const Text('Next'),

@@ -35,24 +35,24 @@ class AmbulanceBookingSync {
         .where('driverId', isEqualTo: driverId)
         .snapshots()
         .listen(
-          (snapshot) {
-            for (final doc in snapshot.docs) {
-              final data = doc.data();
-              _mergeDriverRequest(doc.id, data);
-            }
-          },
-          onError: (e, st) {
-            if (kDebugMode) debugPrint('Ambulance driver sync error: $e\n$st');
-            // Retry after ensuring auth is ready
-            _driverSub?.cancel();
-            _driverSub = null;
-            _watchingDriverId = null;
-            Future.delayed(const Duration(seconds: 3), () async {
-              await AmbulanceAuthHelper.ensureSignedIn();
-              watchDriverRequests(driverId);
-            });
-          },
-        );
+      (snapshot) {
+        for (final doc in snapshot.docs) {
+          final data = doc.data();
+          _mergeDriverRequest(doc.id, data);
+        }
+      },
+      onError: (e, st) {
+        if (kDebugMode) debugPrint('Ambulance driver sync error: $e\n$st');
+        // Retry after ensuring auth is ready
+        _driverSub?.cancel();
+        _driverSub = null;
+        _watchingDriverId = null;
+        Future.delayed(const Duration(seconds: 3), () async {
+          await AmbulanceAuthHelper.ensureSignedIn();
+          watchDriverRequests(driverId);
+        });
+      },
+    );
   }
 
   void watchPatientBroadcast(String broadcastId) {
@@ -67,15 +67,15 @@ class AmbulanceBookingSync {
         .doc(broadcastId)
         .snapshots()
         .listen(
-          (snapshot) {
-            final data = snapshot.data();
-            if (data == null) return;
-            _mergePatientBroadcast(broadcastId, data);
-          },
-          onError: (e, st) {
-            if (kDebugMode) debugPrint('Ambulance patient sync error: $e\n$st');
-          },
-        );
+      (snapshot) {
+        final data = snapshot.data();
+        if (data == null) return;
+        _mergePatientBroadcast(broadcastId, data);
+      },
+      onError: (e, st) {
+        if (kDebugMode) debugPrint('Ambulance patient sync error: $e\n$st');
+      },
+    );
   }
 
   void watchPatientHistory(String patientId) {
@@ -90,16 +90,16 @@ class AmbulanceBookingSync {
         .where('patientId', isEqualTo: patientId)
         .snapshots()
         .listen(
-          (snapshot) {
-            for (final doc in snapshot.docs) {
-              _mergePatientBroadcast(doc.id, doc.data());
-            }
-          },
-          onError: (e, st) {
-            if (kDebugMode)
-              debugPrint('Ambulance patient history sync error: $e\n$st');
-          },
-        );
+      (snapshot) {
+        for (final doc in snapshot.docs) {
+          _mergePatientBroadcast(doc.id, doc.data());
+        }
+      },
+      onError: (e, st) {
+        if (kDebugMode)
+          debugPrint('Ambulance patient history sync error: $e\n$st');
+      },
+    );
   }
 
   void stopPatientWatch() {
@@ -164,8 +164,7 @@ class AmbulanceBookingSync {
       bookedByName:
           data['patientName'] as String? ?? existing?.bookedByName ?? 'Patient',
       bookedById: data['patientId'] as String? ?? existing?.bookedById ?? '',
-      createdAt:
-          _parseDate(data['createdAt']) ??
+      createdAt: _parseDate(data['createdAt']) ??
           existing?.createdAt ??
           DateTime.now(),
       status: _patientBookingStatus(statusRaw),
@@ -173,22 +172,19 @@ class AmbulanceBookingSync {
       acceptedAmbulanceName: data['acceptedAmbulanceName'] as String?,
       acceptedDriverName:
           data['acceptedDriverName'] as String? ?? existing?.acceptedDriverName,
-      acceptedDriverPhone:
-          data['acceptedDriverPhone'] as String? ??
+      acceptedDriverPhone: data['acceptedDriverPhone'] as String? ??
           existing?.acceptedDriverPhone,
-      acceptedVehicleNumber:
-          data['acceptedVehicleNumber'] as String? ??
+      acceptedVehicleNumber: data['acceptedVehicleNumber'] as String? ??
           existing?.acceptedVehicleNumber,
-      acceptedAmbulanceType:
-          data['acceptedAmbulanceType'] as String? ??
+      acceptedAmbulanceType: data['acceptedAmbulanceType'] as String? ??
           existing?.acceptedAmbulanceType,
       acceptedAt: _parseDate(data['acceptedAt']),
       rating: (data['rating'] as num?)?.toInt() ?? existing?.rating,
       review: data['review'] as String? ?? existing?.review,
       rawStatus:
           (statusRaw == 'cancelled' && data['cancelledByRole'] == 'driver')
-          ? 'rejected'
-          : statusRaw,
+              ? 'rejected'
+              : statusRaw,
     );
 
     store.upsertBooking(booking);
@@ -217,8 +213,7 @@ class AmbulanceBookingSync {
       bookedByName:
           data['patientName'] as String? ?? existing?.bookedByName ?? 'Patient',
       bookedById: data['patientId'] as String? ?? existing?.bookedById ?? '',
-      createdAt:
-          _parseDate(data['createdAt']) ??
+      createdAt: _parseDate(data['createdAt']) ??
           existing?.createdAt ??
           DateTime.now(),
       status: forceStatus,
@@ -227,8 +222,7 @@ class AmbulanceBookingSync {
         forceStatus,
         existing?.acceptedAmbulanceId,
       ),
-      acceptedAmbulanceName:
-          data['acceptedAmbulanceName'] as String? ??
+      acceptedAmbulanceName: data['acceptedAmbulanceName'] as String? ??
           existing?.acceptedAmbulanceName,
       acceptedAt: _parseDate(data['acceptedAt']) ?? existing?.acceptedAt,
       rating: (data['rating'] as num?)?.toInt() ?? existing?.rating,

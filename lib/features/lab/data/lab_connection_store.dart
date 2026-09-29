@@ -78,27 +78,27 @@ class LabConnectionStore extends ChangeNotifier {
       .toList();
 
   bool isConnected(String doctorId, String labId) => _connections.any(
-    (c) =>
-        c.doctorId == doctorId &&
-        c.labId == labId &&
-        c.status == ConnectionStatus.active,
-  );
+        (c) =>
+            c.doctorId == doctorId &&
+            c.labId == labId &&
+            c.status == ConnectionStatus.active,
+      );
 
   bool hasPendingFromDoctor(String doctorId, String labId) => _connections.any(
-    (c) =>
-        c.doctorId == doctorId &&
-        c.labId == labId &&
-        c.status == ConnectionStatus.pending &&
-        c.requestedBy == LabConnectionRequester.doctor,
-  );
+        (c) =>
+            c.doctorId == doctorId &&
+            c.labId == labId &&
+            c.status == ConnectionStatus.pending &&
+            c.requestedBy == LabConnectionRequester.doctor,
+      );
 
   bool hasPendingFromLab(String doctorId, String labId) => _connections.any(
-    (c) =>
-        c.doctorId == doctorId &&
-        c.labId == labId &&
-        c.status == ConnectionStatus.pending &&
-        c.requestedBy == LabConnectionRequester.lab,
-  );
+        (c) =>
+            c.doctorId == doctorId &&
+            c.labId == labId &&
+            c.status == ConnectionStatus.pending &&
+            c.requestedBy == LabConnectionRequester.lab,
+      );
 
   bool isPendingSentByLab({required String labId, required String doctorId}) =>
       hasPendingFromLab(doctorId, labId);
@@ -109,7 +109,8 @@ class LabConnectionStore extends ChangeNotifier {
   bool isPendingSentByDoctor({
     required String doctorId,
     required String labId,
-  }) => hasPendingFromDoctor(doctorId, labId);
+  }) =>
+      hasPendingFromDoctor(doctorId, labId);
 
   bool isPendingFromLab({required String doctorId, required String labId}) =>
       hasPendingFromLab(doctorId, labId);
@@ -374,9 +375,9 @@ class LabConnectionStore extends ChangeNotifier {
       case UserType.doctor:
         final doctorPage = await FirestoreService.instance.labConnection
             .fetchActiveConnectionsForDoctor(
-              profileId,
-              preferCache: preferCache,
-            );
+          profileId,
+          preferCache: preferCache,
+        );
         mergeFirestoreConnections(doctorPage.items);
         break;
       case UserType.lab:

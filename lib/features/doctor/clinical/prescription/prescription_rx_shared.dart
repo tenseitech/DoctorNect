@@ -318,24 +318,24 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
   }
 
   InputDecoration _fieldDecoration({String? label}) => InputDecoration(
-    labelText: label,
-    isDense: true,
-    filled: true,
-    fillColor: AppColors.surfaceOf(context),
-    labelStyle: GoogleFonts.inter(
-      fontSize: AppTypography.labelSmall,
-      color: AppColors.textSecondaryOf(context),
-    ),
-    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.borderOf(context)),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: BorderSide(color: AppColors.borderOf(context)),
-    ),
-  );
+        labelText: label,
+        isDense: true,
+        filled: true,
+        fillColor: AppColors.surfaceOf(context),
+        labelStyle: GoogleFonts.inter(
+          fontSize: AppTypography.labelSmall,
+          color: AppColors.textSecondaryOf(context),
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.borderOf(context)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: AppColors.borderOf(context)),
+        ),
+      );
 
   Widget _freqChip({
     required String label,
@@ -451,9 +451,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
-                    color: widget.isExpanded
-                        ? Colors.white
-                        : AppColors.doctorBlue,
+                    color:
+                        widget.isExpanded ? Colors.white : AppColors.doctorBlue,
                   ),
                 ),
               ),
@@ -669,10 +668,9 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                       Expanded(
                         flex: 2,
                         child: DropdownButtonFormField<String>(
-                          initialValue:
-                              ClinicalMockData.durationUnits.contains(
-                                entry.durationUnit,
-                              )
+                          initialValue: ClinicalMockData.durationUnits.contains(
+                            entry.durationUnit,
+                          )
                               ? entry.durationUnit
                               : ClinicalMockData.durationUnits.first,
                           isExpanded: true,
@@ -811,8 +809,7 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            initialValue:
-                                entry.instructions.isEmpty ||
+                            initialValue: entry.instructions.isEmpty ||
                                     !ClinicalMockData.instructionOptions
                                         .contains(entry.instructions)
                                 ? ''

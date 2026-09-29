@@ -106,15 +106,12 @@ class LocationDropdownFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveCountry = _effectiveCountry;
-    final selectedCountry = _countryOptions.contains(effectiveCountry)
-        ? effectiveCountry
-        : null;
-    final selectedState = state != null && _stateOptions.contains(state)
-        ? state
-        : null;
-    final selectedCity = city != null && _cityOptions.contains(city)
-        ? city
-        : null;
+    final selectedCountry =
+        _countryOptions.contains(effectiveCountry) ? effectiveCountry : null;
+    final selectedState =
+        state != null && _stateOptions.contains(state) ? state : null;
+    final selectedCity =
+        city != null && _cityOptions.contains(city) ? city : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -15,8 +15,8 @@ abstract final class PatientLabBookingWatcher {
     _sub = FirestoreService.instance.labBooking
         .watchForPatient(patientId)
         .listen((bookings) {
-          PatientLabBookingStore.instance.mergeFromFirestore(bookings);
-        }, onError: (_) {});
+      PatientLabBookingStore.instance.mergeFromFirestore(bookings);
+    }, onError: (_) {});
   }
 
   static void stop() {

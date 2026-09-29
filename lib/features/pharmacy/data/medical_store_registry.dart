@@ -99,8 +99,8 @@ class MedicalStoreRegistry extends ChangeNotifier {
   }) async {
     var index = instance._stores.indexWhere((s) => s.id == storeId);
     if (index < 0) {
-      final remote = await FirestoreService.instance.medicalStore
-          .fetchStoreById(storeId);
+      final remote =
+          await FirestoreService.instance.medicalStore.fetchStoreById(storeId);
       if (remote == null) return 'Store not found';
       instance._stores.add(remote);
       index = instance._stores.length - 1;

@@ -16,60 +16,59 @@ class SearchableDropdownFormField extends FormField<String> {
     super.validator,
     super.enabled = true,
   }) : super(
-         initialValue: value,
-         builder: (FormFieldState<String> state) {
-           final context = state.context;
-           final effectiveDecoration = (decoration ?? const InputDecoration())
-               .copyWith(errorText: state.errorText);
+          initialValue: value,
+          builder: (FormFieldState<String> state) {
+            final context = state.context;
+            final effectiveDecoration = (decoration ?? const InputDecoration())
+                .copyWith(errorText: state.errorText);
 
-           final displayValue = value != null && value.isNotEmpty
-               ? value
-               : null;
+            final displayValue =
+                value != null && value.isNotEmpty ? value : null;
 
-           return InkWell(
-             onTap: enabled
-                 ? () async {
-                     final selected = await SearchableDropdownModalSheet.show(
-                       context,
-                       title: title,
-                       initialValue: value,
-                       items: items,
-                     );
+            return InkWell(
+              onTap: enabled
+                  ? () async {
+                      final selected = await SearchableDropdownModalSheet.show(
+                        context,
+                        title: title,
+                        initialValue: value,
+                        items: items,
+                      );
 
-                     if (selected != null) {
-                       state.didChange(selected);
-                       onChanged?.call(selected);
-                     }
-                   }
-                 : null,
-             borderRadius: BorderRadius.circular(10),
-             child: InputDecorator(
-               decoration: effectiveDecoration.copyWith(
-                 suffixIcon: Icon(
-                   Icons.arrow_drop_down_rounded,
-                   color: enabled
-                       ? AppColors.textSecondaryOf(context)
-                       : AppColors.textSecondaryOf(context)
-                             .withValues(alpha: 0.4),
-                 ),
-               ),
-               isEmpty: false,
-               child: Text(
-                 displayValue ?? hintText ?? 'Select $title',
-                 maxLines: 1,
-                 overflow: TextOverflow.ellipsis,
-                 style: GoogleFonts.inter(
-                   fontSize: AppTypography.bodyMedium,
-                   color: displayValue != null
-                       ? AppColors.textPrimaryOf(context)
-                       : AppColors.textSecondaryOf(context)
-                             .withValues(alpha: enabled ? 0.75 : 0.4),
-                 ),
-               ),
-             ),
-           );
-         },
-       );
+                      if (selected != null) {
+                        state.didChange(selected);
+                        onChanged?.call(selected);
+                      }
+                    }
+                  : null,
+              borderRadius: BorderRadius.circular(10),
+              child: InputDecorator(
+                decoration: effectiveDecoration.copyWith(
+                  suffixIcon: Icon(
+                    Icons.arrow_drop_down_rounded,
+                    color: enabled
+                        ? AppColors.textSecondaryOf(context)
+                        : AppColors.textSecondaryOf(context)
+                            .withValues(alpha: 0.4),
+                  ),
+                ),
+                isEmpty: false,
+                child: Text(
+                  displayValue ?? hintText ?? 'Select $title',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodyMedium,
+                    color: displayValue != null
+                        ? AppColors.textPrimaryOf(context)
+                        : AppColors.textSecondaryOf(context)
+                            .withValues(alpha: enabled ? 0.75 : 0.4),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
 }
 
 class SearchableDropdownModalSheet extends StatefulWidget {
@@ -376,9 +375,8 @@ class _SearchableDropdownModalSheetState
                                 );
                               }
 
-                              final itemIndex = hasCustomTile
-                                  ? index - 1
-                                  : index;
+                              final itemIndex =
+                                  hasCustomTile ? index - 1 : index;
                               final item = _filteredItems[itemIndex];
                               final isSelected = item == widget.initialValue;
 
@@ -432,8 +430,8 @@ class _SearchableDropdownModalSheetState
                 color: isSelected
                     ? AppColors.patientTeal.withValues(alpha: 0.35)
                     : (isDark
-                          ? Colors.white.withValues(alpha: 0.04)
-                          : Colors.black.withValues(alpha: 0.035)),
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : Colors.black.withValues(alpha: 0.035)),
                 width: 1.0,
               ),
             ),
@@ -444,9 +442,8 @@ class _SearchableDropdownModalSheetState
                     text,
                     style: GoogleFonts.inter(
                       fontSize: 15,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
                       color: isSelected ? AppColors.patientTeal : textPrimary,
                       letterSpacing: -0.1,
                     ),

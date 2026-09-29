@@ -27,12 +27,14 @@ class AppointmentsSection extends StatelessWidget {
   static List<PatientAppointment> _homeAppointments(
     List<PatientAppointment> all,
   ) {
-    final upcoming =
-        all.where((a) => a.cancellationReason == null && a.isUpcoming).toList()
-          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-    final rest =
-        all.where((a) => a.cancellationReason != null || !a.isUpcoming).toList()
-          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final upcoming = all
+        .where((a) => a.cancellationReason == null && a.isUpcoming)
+        .toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    final rest = all
+        .where((a) => a.cancellationReason != null || !a.isUpcoming)
+        .toList()
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return [...upcoming, ...rest].take(3).toList();
   }
 
@@ -264,11 +266,10 @@ class _AppointmentCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(13),
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                (isUpcoming
-                                        ? AppColors.patientTeal
-                                        : status.color)
-                                    .withValues(alpha: 0.22),
+                            color: (isUpcoming
+                                    ? AppColors.patientTeal
+                                    : status.color)
+                                .withValues(alpha: 0.22),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),

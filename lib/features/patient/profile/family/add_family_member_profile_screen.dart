@@ -46,8 +46,7 @@ class _AddFamilyMemberProfileScreenState
     final now = DateTime.now();
     var age = now.year - _dob!.year;
     if (now.month < _dob!.month ||
-        (now.month == _dob!.month && now.day < _dob!.day))
-      age--;
+        (now.month == _dob!.month && now.day < _dob!.day)) age--;
     return age;
   }
 
@@ -169,13 +168,13 @@ class _AddFamilyMemberProfileScreenState
   }
 
   String _relationLabel(FamilyRelation relation) => switch (relation) {
-    FamilyRelation.spouse => 'Spouse',
-    FamilyRelation.child => 'Child',
-    FamilyRelation.parent => 'Parent',
-    FamilyRelation.sibling => 'Sibling',
-    FamilyRelation.friend => 'Friend',
-    FamilyRelation.other => 'Other',
-  };
+        FamilyRelation.spouse => 'Spouse',
+        FamilyRelation.child => 'Child',
+        FamilyRelation.parent => 'Parent',
+        FamilyRelation.sibling => 'Sibling',
+        FamilyRelation.friend => 'Friend',
+        FamilyRelation.other => 'Other',
+      };
 
   String get _heroName {
     final name = _nameController.text.trim();
@@ -224,7 +223,8 @@ class _AddFamilyMemberProfileScreenState
                         children: [
                           if (_isEditing) ...[
                             ProfileEditWidgets.lockedNote(
-                              message: 'Name, gender, and blood group are locked after adding a member.',
+                              message:
+                                  'Name, gender, and blood group are locked after adding a member.',
                             ),
                             const SizedBox(height: 14),
                             ProfileEditWidgets.lockedField(
@@ -237,10 +237,10 @@ class _AddFamilyMemberProfileScreenState
                               onChanged: (_) => setState(() {}),
                               decoration:
                                   PatientProfileFormStyles.fieldDecoration(
-                                    context,
-                                    labelText: 'Full name',
-                                    isRequired: true,
-                                  ),
+                                context,
+                                labelText: 'Full name',
+                                isRequired: true,
+                              ),
                               validator: FormValidators.fullName,
                             ),
                           const SizedBox(height: 12),
@@ -249,10 +249,10 @@ class _AddFamilyMemberProfileScreenState
                             isExpanded: true,
                             decoration:
                                 PatientProfileFormStyles.fieldDecoration(
-                                  context,
-                                  labelText: 'Relation',
-                                  isRequired: true,
-                                ),
+                              context,
+                              labelText: 'Relation',
+                              isRequired: true,
+                            ),
                             items: FamilyRelation.values
                                 .map(
                                   (r) => DropdownMenuItem(

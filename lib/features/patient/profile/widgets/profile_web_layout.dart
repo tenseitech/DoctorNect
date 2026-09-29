@@ -100,36 +100,36 @@ class ProfileWebLayout extends StatelessWidget {
   }
 
   List<Widget> _mainPanels({required int columns}) => [
-    _WebSectionPanel(
-      title: 'My Health',
-      subtitle: 'Conditions, allergies & vaccines',
-      child: _ActionGrid(
-        actions: healthActions,
-        minTileHeight: 118,
-        columns: columns,
-      ),
-    ),
-    const SizedBox(height: 20),
-    _WebSectionPanel(
-      title: 'Care',
-      subtitle: 'Prescriptions & medical documents',
-      child: _ActionGrid(
-        actions: careActions,
-        minTileHeight: 118,
-        columns: columns > 1 ? 2 : 1,
-      ),
-    ),
-    const SizedBox(height: 20),
-    _WebSectionPanel(
-      title: 'Settings',
-      subtitle: 'Notifications, security & support',
-      child: _ActionGrid(
-        actions: settingsActions,
-        minTileHeight: 118,
-        columns: 2,
-      ),
-    ),
-  ];
+        _WebSectionPanel(
+          title: 'My Health',
+          subtitle: 'Conditions, allergies & vaccines',
+          child: _ActionGrid(
+            actions: healthActions,
+            minTileHeight: 118,
+            columns: columns,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _WebSectionPanel(
+          title: 'Care',
+          subtitle: 'Prescriptions & medical documents',
+          child: _ActionGrid(
+            actions: careActions,
+            minTileHeight: 118,
+            columns: columns > 1 ? 2 : 1,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _WebSectionPanel(
+          title: 'Settings',
+          subtitle: 'Notifications, security & support',
+          child: _ActionGrid(
+            actions: settingsActions,
+            minTileHeight: 118,
+            columns: 2,
+          ),
+        ),
+      ];
 }
 
 class ProfileWebActionData {
@@ -662,8 +662,8 @@ class _WebFamilyRow extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: const Color(0xFF7C3AED)
-                    .withValues(alpha: 0.12),
+                backgroundColor:
+                    const Color(0xFF7C3AED).withValues(alpha: 0.12),
                 child: Text(
                   initial,
                   style: GoogleFonts.inter(
@@ -704,8 +704,8 @@ class _WebFamilyRow extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.75),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
               ),
             ],
           ),

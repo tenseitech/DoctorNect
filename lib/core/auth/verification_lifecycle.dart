@@ -41,7 +41,8 @@ enum VerificationStage {
     return switch (value.trim().toLowerCase()) {
       'verified' || 'approved' => VerificationStage.verified,
       'submitted_for_verification' ||
-      'pending_review' => VerificationStage.submittedForVerification,
+      'pending_review' =>
+        VerificationStage.submittedForVerification,
       'revision_requested' => VerificationStage.revisionRequested,
       'rejected' => VerificationStage.rejected,
       'profile_incomplete' => VerificationStage.profileIncomplete,
@@ -60,17 +61,17 @@ enum VerificationStage {
   /// Non-blocking toast message shown when tapping a locked navigation item or dashboard action.
   String get lockedToastMessage =>
       this == VerificationStage.submittedForVerification
-      ? 'Your profile is under verification'
-      : 'Complete your profile to unlock this';
+          ? 'Your profile is under verification'
+          : 'Complete your profile to unlock this';
 
   String get displayLabel => switch (this) {
-    VerificationStage.registered => 'Registration Complete',
-    VerificationStage.profileIncomplete => 'Profile Incomplete',
-    VerificationStage.submittedForVerification => 'Under Review',
-    VerificationStage.verified => 'Verified',
-    VerificationStage.revisionRequested => 'Action Required',
-    VerificationStage.rejected => 'Rejected',
-  };
+        VerificationStage.registered => 'Registration Complete',
+        VerificationStage.profileIncomplete => 'Profile Incomplete',
+        VerificationStage.submittedForVerification => 'Under Review',
+        VerificationStage.verified => 'Verified',
+        VerificationStage.revisionRequested => 'Action Required',
+        VerificationStage.rejected => 'Rejected',
+      };
 }
 
 /// Document or credential requirement definition.
@@ -109,261 +110,263 @@ abstract final class VerificationRequirementsConfig {
   static List<VerificationRequirementItem> requirementsForRole(UserType role) {
     return switch (role) {
       UserType.doctor => const [
-        VerificationRequirementItem(
-          key: 'name',
-          label: 'Full Name',
-          section: 'Personal Information',
-          description: "Doctor's full legal name",
-        ),
-        VerificationRequirementItem(
-          key: 'mobile',
-          label: 'Mobile Number',
-          section: 'Personal Information',
-          description: 'Registered mobile contact number',
-        ),
-        VerificationRequirementItem(
-          key: 'qualification',
-          label: 'Medical Degree / Qualification',
-          section: 'Professional Details',
-          description: 'Recognized medical degree (e.g., MBBS, MD, MS)',
-        ),
-        VerificationRequirementItem(
-          key: 'specialization',
-          label: 'Specialization',
-          section: 'Professional Details',
-          description: 'Primary medical area of expertise',
-        ),
-        VerificationRequirementItem(
-          key: 'councilNumber',
-          label: 'Medical Registration Number',
-          section: 'Professional Details',
-          description: 'State or National Medical Council registration number',
-        ),
-        VerificationRequirementItem(
-          key: 'stateCouncil',
-          label: 'Registration Authority',
-          section: 'Professional Details',
-          description: 'Issuing State / National Medical Council',
-        ),
-        VerificationRequirementItem(
-          key: 'registrationCertificate',
-          label: 'Registration Certificate',
-          section: 'Professional Details',
-          description: 'Official council registration document or certificate',
-          isDocument: true,
-        ),
-        VerificationRequirementItem(
-          key: 'idProof',
-          label: 'Identity Proof',
-          section: 'Professional Details',
-          description: 'Government-issued photo identification',
-          isDocument: true,
-        ),
-        VerificationRequirementItem(
-          key: 'country',
-          label: 'Clinic Country',
-          section: 'Clinic Information',
-          description: 'Country where the clinic is located',
-        ),
-        VerificationRequirementItem(
-          key: 'state',
-          label: 'Clinic State',
-          section: 'Clinic Information',
-          description: 'State or province of the clinic',
-        ),
-        VerificationRequirementItem(
-          key: 'city',
-          label: 'Clinic City',
-          section: 'Clinic Information',
-          description: 'City or town of the clinic',
-        ),
-        VerificationRequirementItem(
-          key: 'addressLine1',
-          label: 'Clinic Street Address',
-          section: 'Clinic Information',
-          description: 'Street address or building of the clinic',
-        ),
-        VerificationRequirementItem(
-          key: 'pinCode',
-          label: 'Clinic PIN Code',
-          section: 'Clinic Information',
-          description: 'Postal / PIN code of the clinic',
-        ),
-      ],
+          VerificationRequirementItem(
+            key: 'name',
+            label: 'Full Name',
+            section: 'Personal Information',
+            description: "Doctor's full legal name",
+          ),
+          VerificationRequirementItem(
+            key: 'mobile',
+            label: 'Mobile Number',
+            section: 'Personal Information',
+            description: 'Registered mobile contact number',
+          ),
+          VerificationRequirementItem(
+            key: 'qualification',
+            label: 'Medical Degree / Qualification',
+            section: 'Professional Details',
+            description: 'Recognized medical degree (e.g., MBBS, MD, MS)',
+          ),
+          VerificationRequirementItem(
+            key: 'specialization',
+            label: 'Specialization',
+            section: 'Professional Details',
+            description: 'Primary medical area of expertise',
+          ),
+          VerificationRequirementItem(
+            key: 'councilNumber',
+            label: 'Medical Registration Number',
+            section: 'Professional Details',
+            description:
+                'State or National Medical Council registration number',
+          ),
+          VerificationRequirementItem(
+            key: 'stateCouncil',
+            label: 'Registration Authority',
+            section: 'Professional Details',
+            description: 'Issuing State / National Medical Council',
+          ),
+          VerificationRequirementItem(
+            key: 'registrationCertificate',
+            label: 'Registration Certificate',
+            section: 'Professional Details',
+            description:
+                'Official council registration document or certificate',
+            isDocument: true,
+          ),
+          VerificationRequirementItem(
+            key: 'idProof',
+            label: 'Identity Proof',
+            section: 'Professional Details',
+            description: 'Government-issued photo identification',
+            isDocument: true,
+          ),
+          VerificationRequirementItem(
+            key: 'country',
+            label: 'Clinic Country',
+            section: 'Clinic Information',
+            description: 'Country where the clinic is located',
+          ),
+          VerificationRequirementItem(
+            key: 'state',
+            label: 'Clinic State',
+            section: 'Clinic Information',
+            description: 'State or province of the clinic',
+          ),
+          VerificationRequirementItem(
+            key: 'city',
+            label: 'Clinic City',
+            section: 'Clinic Information',
+            description: 'City or town of the clinic',
+          ),
+          VerificationRequirementItem(
+            key: 'addressLine1',
+            label: 'Clinic Street Address',
+            section: 'Clinic Information',
+            description: 'Street address or building of the clinic',
+          ),
+          VerificationRequirementItem(
+            key: 'pinCode',
+            label: 'Clinic PIN Code',
+            section: 'Clinic Information',
+            description: 'Postal / PIN code of the clinic',
+          ),
+        ],
       UserType.medicalStore => const [
-        VerificationRequirementItem(
-          key: 'storeName',
-          label: 'Pharmacy / Store Name',
-          section: 'Store Details',
-          description: 'Registered business name of the medical store',
-        ),
-        VerificationRequirementItem(
-          key: 'ownerName',
-          label: 'Owner / Pharmacist Name',
-          section: 'Store Details',
-          description: 'Name of the licensed pharmacist or owner',
-        ),
-        VerificationRequirementItem(
-          key: 'phone',
-          label: 'Phone Number',
-          section: 'Store Details',
-          description: 'Contact phone number for the store',
-        ),
-        VerificationRequirementItem(
-          key: 'drugLicenseNumber',
-          label: 'Drug License Number',
-          section: 'Store Details',
-          description: 'Valid Form 20/21 drug retail license number',
-        ),
-        VerificationRequirementItem(
-          key: 'country',
-          label: 'Country',
-          section: 'Address',
-          description: 'Country of the store location',
-        ),
-        VerificationRequirementItem(
-          key: 'state',
-          label: 'State',
-          section: 'Address',
-          description: 'State or province of the store',
-        ),
-        VerificationRequirementItem(
-          key: 'city',
-          label: 'City',
-          section: 'Address',
-          description: 'City of the store',
-        ),
-        VerificationRequirementItem(
-          key: 'addressLine1',
-          label: 'Address Line 1',
-          section: 'Address',
-          description: 'Street address or shop number',
-        ),
-        VerificationRequirementItem(
-          key: 'pincode',
-          label: 'PIN Code',
-          section: 'Address',
-          description: 'Postal / PIN code of the store',
-        ),
-      ],
+          VerificationRequirementItem(
+            key: 'storeName',
+            label: 'Pharmacy / Store Name',
+            section: 'Store Details',
+            description: 'Registered business name of the medical store',
+          ),
+          VerificationRequirementItem(
+            key: 'ownerName',
+            label: 'Owner / Pharmacist Name',
+            section: 'Store Details',
+            description: 'Name of the licensed pharmacist or owner',
+          ),
+          VerificationRequirementItem(
+            key: 'phone',
+            label: 'Phone Number',
+            section: 'Store Details',
+            description: 'Contact phone number for the store',
+          ),
+          VerificationRequirementItem(
+            key: 'drugLicenseNumber',
+            label: 'Drug License Number',
+            section: 'Store Details',
+            description: 'Valid Form 20/21 drug retail license number',
+          ),
+          VerificationRequirementItem(
+            key: 'country',
+            label: 'Country',
+            section: 'Address',
+            description: 'Country of the store location',
+          ),
+          VerificationRequirementItem(
+            key: 'state',
+            label: 'State',
+            section: 'Address',
+            description: 'State or province of the store',
+          ),
+          VerificationRequirementItem(
+            key: 'city',
+            label: 'City',
+            section: 'Address',
+            description: 'City of the store',
+          ),
+          VerificationRequirementItem(
+            key: 'addressLine1',
+            label: 'Address Line 1',
+            section: 'Address',
+            description: 'Street address or shop number',
+          ),
+          VerificationRequirementItem(
+            key: 'pincode',
+            label: 'PIN Code',
+            section: 'Address',
+            description: 'Postal / PIN code of the store',
+          ),
+        ],
       UserType.lab => const [
-        VerificationRequirementItem(
-          key: 'labName',
-          label: 'Diagnostic Lab Name',
-          section: 'Lab Details',
-          description: 'Registered diagnostic centre or laboratory name',
-        ),
-        VerificationRequirementItem(
-          key: 'phone',
-          label: 'Phone Number',
-          section: 'Lab Details',
-          description: 'Contact phone number for the diagnostic centre',
-        ),
-        VerificationRequirementItem(
-          key: 'licenseNumber',
-          label: 'Clinical Establishment License',
-          section: 'Lab Details',
-          description: 'Valid diagnostic/pathology registration number',
-        ),
-        VerificationRequirementItem(
-          key: 'country',
-          label: 'Country',
-          section: 'Address',
-          description: 'Country of the laboratory facility',
-        ),
-        VerificationRequirementItem(
-          key: 'state',
-          label: 'State',
-          section: 'Address',
-          description: 'State or province of the laboratory',
-        ),
-        VerificationRequirementItem(
-          key: 'city',
-          label: 'City',
-          section: 'Address',
-          description: 'City of the laboratory facility',
-        ),
-        VerificationRequirementItem(
-          key: 'addressLine1',
-          label: 'Address Line 1',
-          section: 'Address',
-          description: 'Street address of the laboratory',
-        ),
-        VerificationRequirementItem(
-          key: 'pincode',
-          label: 'PIN Code',
-          section: 'Address',
-          description: 'Postal / PIN code of the laboratory facility',
-        ),
-      ],
+          VerificationRequirementItem(
+            key: 'labName',
+            label: 'Diagnostic Lab Name',
+            section: 'Lab Details',
+            description: 'Registered diagnostic centre or laboratory name',
+          ),
+          VerificationRequirementItem(
+            key: 'phone',
+            label: 'Phone Number',
+            section: 'Lab Details',
+            description: 'Contact phone number for the diagnostic centre',
+          ),
+          VerificationRequirementItem(
+            key: 'licenseNumber',
+            label: 'Clinical Establishment License',
+            section: 'Lab Details',
+            description: 'Valid diagnostic/pathology registration number',
+          ),
+          VerificationRequirementItem(
+            key: 'country',
+            label: 'Country',
+            section: 'Address',
+            description: 'Country of the laboratory facility',
+          ),
+          VerificationRequirementItem(
+            key: 'state',
+            label: 'State',
+            section: 'Address',
+            description: 'State or province of the laboratory',
+          ),
+          VerificationRequirementItem(
+            key: 'city',
+            label: 'City',
+            section: 'Address',
+            description: 'City of the laboratory facility',
+          ),
+          VerificationRequirementItem(
+            key: 'addressLine1',
+            label: 'Address Line 1',
+            section: 'Address',
+            description: 'Street address of the laboratory',
+          ),
+          VerificationRequirementItem(
+            key: 'pincode',
+            label: 'PIN Code',
+            section: 'Address',
+            description: 'Postal / PIN code of the laboratory facility',
+          ),
+        ],
       UserType.ambulance => const [
-        VerificationRequirementItem(
-          key: 'serviceName',
-          label: 'Ambulance Service Name',
-          section: 'Service Details',
-          description: 'Fleet or emergency transport service name',
-        ),
-        VerificationRequirementItem(
-          key: 'driverName',
-          label: 'Driver / Operator Name',
-          section: 'Driver Details',
-          description: 'Name of the designated ambulance driver',
-        ),
-        VerificationRequirementItem(
-          key: 'phone',
-          label: 'Phone Number',
-          section: 'Driver Details',
-          description: 'Contact phone number for emergency dispatch',
-        ),
-        VerificationRequirementItem(
-          key: 'vehicleNumber',
-          label: 'Vehicle Registration Number',
-          section: 'Service Details',
-          description: 'Commercial motor vehicle registration number',
-        ),
-        VerificationRequirementItem(
-          key: 'licenseNumber',
-          label: 'Driver License Number',
-          section: 'Driver Details',
-          description: 'Commercial driving license number',
-        ),
-        VerificationRequirementItem(
-          key: 'city',
-          label: 'Operating City',
-          section: 'Service Coverage',
-          description: 'Primary operational city',
-        ),
-        VerificationRequirementItem(
-          key: 'serviceAreas',
-          label: 'Service Areas',
-          section: 'Service Coverage',
-          description: 'Specific coverage zones or neighborhoods (minimum 1)',
-        ),
-        VerificationRequirementItem(
-          key: 'country',
-          label: 'Country',
-          section: 'Base Address',
-          description: 'Country of vehicle base or dispatch station',
-        ),
-        VerificationRequirementItem(
-          key: 'state',
-          label: 'State',
-          section: 'Base Address',
-          description: 'State or province of vehicle base',
-        ),
-        VerificationRequirementItem(
-          key: 'addressLine1',
-          label: 'Base Address',
-          section: 'Base Address',
-          description: 'Physical garage or station address',
-        ),
-        VerificationRequirementItem(
-          key: 'pincode',
-          label: 'PIN Code',
-          section: 'Base Address',
-          description: 'Postal / PIN code of the station',
-        ),
-      ],
+          VerificationRequirementItem(
+            key: 'serviceName',
+            label: 'Ambulance Service Name',
+            section: 'Service Details',
+            description: 'Fleet or emergency transport service name',
+          ),
+          VerificationRequirementItem(
+            key: 'driverName',
+            label: 'Driver / Operator Name',
+            section: 'Driver Details',
+            description: 'Name of the designated ambulance driver',
+          ),
+          VerificationRequirementItem(
+            key: 'phone',
+            label: 'Phone Number',
+            section: 'Driver Details',
+            description: 'Contact phone number for emergency dispatch',
+          ),
+          VerificationRequirementItem(
+            key: 'vehicleNumber',
+            label: 'Vehicle Registration Number',
+            section: 'Service Details',
+            description: 'Commercial motor vehicle registration number',
+          ),
+          VerificationRequirementItem(
+            key: 'licenseNumber',
+            label: 'Driver License Number',
+            section: 'Driver Details',
+            description: 'Commercial driving license number',
+          ),
+          VerificationRequirementItem(
+            key: 'city',
+            label: 'Operating City',
+            section: 'Service Coverage',
+            description: 'Primary operational city',
+          ),
+          VerificationRequirementItem(
+            key: 'serviceAreas',
+            label: 'Service Areas',
+            section: 'Service Coverage',
+            description: 'Specific coverage zones or neighborhoods (minimum 1)',
+          ),
+          VerificationRequirementItem(
+            key: 'country',
+            label: 'Country',
+            section: 'Base Address',
+            description: 'Country of vehicle base or dispatch station',
+          ),
+          VerificationRequirementItem(
+            key: 'state',
+            label: 'State',
+            section: 'Base Address',
+            description: 'State or province of vehicle base',
+          ),
+          VerificationRequirementItem(
+            key: 'addressLine1',
+            label: 'Base Address',
+            section: 'Base Address',
+            description: 'Physical garage or station address',
+          ),
+          VerificationRequirementItem(
+            key: 'pincode',
+            label: 'PIN Code',
+            section: 'Base Address',
+            description: 'Postal / PIN code of the station',
+          ),
+        ],
       _ => const [],
     };
   }
@@ -439,7 +442,8 @@ abstract final class VerificationRequirementsConfig {
     if (role == UserType.doctor &&
         (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
             DemoAuthConfig.isDemoDoctorPhone(docId) ||
-            (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+            (docId != null &&
+                docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
       return true;
     }
 
@@ -464,7 +468,8 @@ abstract final class VerificationRequirementsConfig {
     if (role == UserType.doctor &&
         (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
             DemoAuthConfig.isDemoDoctorPhone(docId) ||
-            (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+            (docId != null &&
+                docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
       return 100;
     }
 
@@ -488,7 +493,8 @@ abstract final class VerificationRequirementsConfig {
       if (role == UserType.doctor &&
           (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
               DemoAuthConfig.isDemoDoctorPhone(docId) ||
-              (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+              (docId != null &&
+                  docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
         return const [];
       }
     }
@@ -553,36 +559,36 @@ class RoleVerificationController extends ChangeNotifier {
             ? VerificationStage.verified
             : VerificationStage.profileIncomplete,
       UserType.medicalStore => () {
-        final id = MedicalStoreSession.loggedInStoreId;
-        final store = id.isNotEmpty
-            ? MedicalStoreRegistry.findById(id)
-            : (MedicalStoreRegistry.all.isNotEmpty
+          final id = MedicalStoreSession.loggedInStoreId;
+          final store = id.isNotEmpty
+              ? MedicalStoreRegistry.findById(id)
+              : (MedicalStoreRegistry.all.isNotEmpty
                   ? MedicalStoreRegistry.all.first
                   : null);
-        return (store?.verified ?? false)
-            ? VerificationStage.verified
-            : VerificationStage.profileIncomplete;
-      }(),
+          return (store?.verified ?? false)
+              ? VerificationStage.verified
+              : VerificationStage.profileIncomplete;
+        }(),
       UserType.lab => () {
-        final id = LabSession.loggedInLabId;
-        final lab = id.isNotEmpty
-            ? LabRegistry.findById(id)
-            : (LabRegistry.all.isNotEmpty ? LabRegistry.all.first : null);
-        return (lab?.verified ?? false)
-            ? VerificationStage.verified
-            : VerificationStage.profileIncomplete;
-      }(),
+          final id = LabSession.loggedInLabId;
+          final lab = id.isNotEmpty
+              ? LabRegistry.findById(id)
+              : (LabRegistry.all.isNotEmpty ? LabRegistry.all.first : null);
+          return (lab?.verified ?? false)
+              ? VerificationStage.verified
+              : VerificationStage.profileIncomplete;
+        }(),
       UserType.ambulance => () {
-        final id = AmbulanceSession.loggedInAmbulanceId;
-        final amb = id.isNotEmpty
-            ? AmbulanceStore.instance.findAmbulance(id)
-            : (AmbulanceStore.instance.registeredAmbulances.isNotEmpty
+          final id = AmbulanceSession.loggedInAmbulanceId;
+          final amb = id.isNotEmpty
+              ? AmbulanceStore.instance.findAmbulance(id)
+              : (AmbulanceStore.instance.registeredAmbulances.isNotEmpty
                   ? AmbulanceStore.instance.registeredAmbulances.first
                   : null);
-        return (amb?.verified ?? false)
-            ? VerificationStage.verified
-            : VerificationStage.profileIncomplete;
-      }(),
+          return (amb?.verified ?? false)
+              ? VerificationStage.verified
+              : VerificationStage.profileIncomplete;
+        }(),
       _ => VerificationStage.verified,
     };
   }
@@ -610,9 +616,8 @@ class RoleVerificationController extends ChangeNotifier {
   }) {
     _stageOverrides[role] = stage;
     if (rejectionReason != null) {
-      _rejectionReasons[role] = rejectionReason.trim().isEmpty
-          ? null
-          : rejectionReason.trim();
+      _rejectionReasons[role] =
+          rejectionReason.trim().isEmpty ? null : rejectionReason.trim();
     } else if (stage == VerificationStage.verified ||
         stage == VerificationStage.submittedForVerification) {
       _rejectionReasons.remove(role);
@@ -624,9 +629,8 @@ class RoleVerificationController extends ChangeNotifier {
   void _syncStoreVerificationFlag(UserType role, bool verified) {
     switch (role) {
       case UserType.doctor:
-        DoctorProfileStore.instance.profile.verificationStatus = verified
-            ? VerificationStatus.verified
-            : VerificationStatus.pending;
+        DoctorProfileStore.instance.profile.verificationStatus =
+            verified ? VerificationStatus.verified : VerificationStatus.pending;
       case UserType.medicalStore:
         final id = MedicalStoreSession.loggedInStoreId;
         final store = id.isNotEmpty ? MedicalStoreRegistry.findById(id) : null;
@@ -660,9 +664,8 @@ class RoleVerificationController extends ChangeNotifier {
         }
       case UserType.ambulance:
         final id = AmbulanceSession.loggedInAmbulanceId;
-        final amb = id.isNotEmpty
-            ? AmbulanceStore.instance.findAmbulance(id)
-            : null;
+        final amb =
+            id.isNotEmpty ? AmbulanceStore.instance.findAmbulance(id) : null;
         if (amb != null && amb.verified != verified) {
           AmbulanceStore.instance.updateRegisteredAmbulance(
             amb.copyWith(verified: verified),
@@ -750,8 +753,8 @@ class RoleVerificationController extends ChangeNotifier {
         final store = id.isNotEmpty
             ? MedicalStoreRegistry.findById(id)
             : (MedicalStoreRegistry.all.isNotEmpty
-                  ? MedicalStoreRegistry.all.first
-                  : null);
+                ? MedicalStoreRegistry.all.first
+                : null);
         if (store != null) {
           if (store.storeName.trim().isNotEmpty) {
             result['storeName'] = store.storeName.trim();
@@ -839,8 +842,8 @@ class RoleVerificationController extends ChangeNotifier {
         final amb = id.isNotEmpty
             ? AmbulanceStore.instance.findAmbulance(id)
             : (AmbulanceStore.instance.registeredAmbulances.isNotEmpty
-                  ? AmbulanceStore.instance.registeredAmbulances.first
-                  : null);
+                ? AmbulanceStore.instance.registeredAmbulances.first
+                : null);
         if (amb != null) {
           if (amb.serviceName.trim().isNotEmpty) {
             result['serviceName'] = amb.serviceName.trim();

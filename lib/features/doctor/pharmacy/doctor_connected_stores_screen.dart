@@ -39,9 +39,9 @@ class _DoctorConnectedStoresScreenState
   StreamSubscription<List<PharmacyPrescriptionDelivery>>? _deliverySub;
 
   String? _doctorCity() => pharmacyCityFilter(
-    city: DoctorProfileStore.instance.profile.city,
-    address: DoctorProfileStore.instance.profile.addressLine1,
-  );
+        city: DoctorProfileStore.instance.profile.city,
+        address: DoctorProfileStore.instance.profile.addressLine1,
+      );
 
   List<DoctorPartnerProfileItem> _cityStores() {
     final stores = PharmacyConnectionStore.instance.searchStores(

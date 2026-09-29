@@ -72,10 +72,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   );
   final _focusNode = FocusNode();
   final _doctorsStore = RegisteredDoctorsStore.instance;
-  late final Future<LabCatalog> _catalogFuture = FirestoreService
-      .instance
-      .labCatalog
-      .fetchCatalog();
+  late final Future<LabCatalog> _catalogFuture =
+      FirestoreService.instance.labCatalog.fetchCatalog();
   SearchSort _sort = SearchSort.relevance;
   bool _searchFocused = false;
 
@@ -92,8 +90,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   @override
   void initState() {
     super.initState();
-    _specialityCategory =
-        widget.initialCategory ??
+    _specialityCategory = widget.initialCategory ??
         (widget.initialSpeciality != null &&
                 specialtyCategories.containsKey(widget.initialSpeciality)
             ? widget.initialSpeciality
@@ -215,9 +212,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     final q = _searchController.text.trim();
     if (q.isEmpty) return const [];
 
-    final list = catalog.tests
-        .where((t) => LabSearchMatcher.matchesTest(t, q))
-        .toList();
+    final list =
+        catalog.tests.where((t) => LabSearchMatcher.matchesTest(t, q)).toList();
     list.sort(
       (a, b) => LabSearchMatcher.relevanceScoreTest(
         b,
@@ -295,25 +291,23 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   }
 
   Future<void> _openFilters() async {
-    final allCities =
-        _doctorsStore.searchableDoctors
-            .map((d) => d.city)
-            .where((c) => c.isNotEmpty)
-            .toSet()
-            .toList()
-          ..sort();
+    final allCities = _doctorsStore.searchableDoctors
+        .map((d) => d.city)
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
 
     final specOptions = specialtyCategories.entries.map((e) {
       return (label: e.key, categoryKey: e.key);
     }).toList();
 
-    final langOptions =
-        _doctorsStore.searchableDoctors
-            .expand((d) => d.languages)
-            .where((l) => l.isNotEmpty)
-            .toSet()
-            .toList()
-          ..sort();
+    final langOptions = _doctorsStore.searchableDoctors
+        .expand((d) => d.languages)
+        .where((l) => l.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
 
     final result = await SearchFiltersSheet.show(
       context,
@@ -358,13 +352,12 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
     list.sort((a, b) {
       return switch (_sort) {
-        SearchSort.relevance =>
-          q.isEmpty
-              ? a.distanceKm.compareTo(b.distanceKm)
-              : DoctorSearchMatcher.relevanceScore(
-                  b,
-                  q,
-                ).compareTo(DoctorSearchMatcher.relevanceScore(a, q)),
+        SearchSort.relevance => q.isEmpty
+            ? a.distanceKm.compareTo(b.distanceKm)
+            : DoctorSearchMatcher.relevanceScore(
+                b,
+                q,
+              ).compareTo(DoctorSearchMatcher.relevanceScore(a, q)),
         SearchSort.rating => b.rating.compareTo(a.rating),
         SearchSort.experience => b.experienceYears.compareTo(a.experienceYears),
         SearchSort.distance => a.distanceKm.compareTo(b.distanceKm),
@@ -421,10 +414,10 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
     final hasActiveFilters =
         (_locationFilter != null && _locationFilter!.isNotEmpty) ||
-        _specialityCategory != null ||
-        _availableToday ||
-        _minRating != null ||
-        _language != null;
+            _specialityCategory != null ||
+            _availableToday ||
+            _minRating != null ||
+            _language != null;
 
     final searchBar = PatientDoctorSearchBar(
       controller: _searchController,
@@ -919,9 +912,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     // 1. Doctors near you: top 5-10
     final nearbyDoctors = <DoctorListing>[];
     if (userCity.isNotEmpty) {
-      final cityMatches = allDocs
-          .where((d) => doctorMatchesCity(d, userCity))
-          .toList();
+      final cityMatches =
+          allDocs.where((d) => doctorMatchesCity(d, userCity)).toList();
       cityMatches.sort((a, b) {
         final dist = a.distanceKm.compareTo(b.distanceKm);
         if (dist != 0) return dist;
@@ -930,9 +922,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       nearbyDoctors.addAll(cityMatches);
     }
     if (nearbyDoctors.length < 5) {
-      final remaining = allDocs
-          .where((d) => !nearbyDoctors.contains(d))
-          .toList();
+      final remaining =
+          allDocs.where((d) => !nearbyDoctors.contains(d)).toList();
       remaining.sort((a, b) {
         final dist = a.distanceKm.compareTo(b.distanceKm);
         if (dist != 0) return dist;
@@ -975,8 +966,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     // 3. Ambulances near you: top 5-10
     final sourceAmbulances =
         AmbulanceStore.instance.registeredAmbulances.isNotEmpty
-        ? AmbulanceStore.instance.registeredAmbulances
-        : _defaultAmbulances;
+            ? AmbulanceStore.instance.registeredAmbulances
+            : _defaultAmbulances;
     final nearbyAmbulances = <RegisteredAmbulance>[];
     if (userCity.isNotEmpty) {
       final cityMatches = sourceAmbulances
@@ -996,9 +987,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       nearbyAmbulances.addAll(cityMatches);
     }
     if (nearbyAmbulances.length < 5) {
-      final remaining = sourceAmbulances
-          .where((a) => !nearbyAmbulances.contains(a))
-          .toList();
+      final remaining =
+          sourceAmbulances.where((a) => !nearbyAmbulances.contains(a)).toList();
       remaining.sort((a, b) {
         if (a.available != b.available) return a.available ? -1 : 1;
         return b.averageRating.compareTo(a.averageRating);
@@ -1017,8 +1007,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     if (userCity.isNotEmpty) {
       final locationLabel =
           _resolvedCity.trim().isNotEmpty && _resolvedPincode.trim().isNotEmpty
-          ? '${_resolvedCity.trim()} (${_resolvedPincode.trim()})'
-          : userCity;
+              ? '${_resolvedCity.trim()} (${_resolvedPincode.trim()})'
+              : userCity;
       rows.add(
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1443,12 +1433,10 @@ class _NearbyFeedSkeletonState extends State<_NearbyFeedSkeleton>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark
-        ? Colors.white10
-        : Colors.black.withValues(alpha: 0.05);
-    final highlightColor = isDark
-        ? Colors.white24
-        : Colors.black.withValues(alpha: 0.12);
+    final baseColor =
+        isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05);
+    final highlightColor =
+        isDark ? Colors.white24 : Colors.black.withValues(alpha: 0.12);
 
     return AnimatedBuilder(
       animation: _anim,

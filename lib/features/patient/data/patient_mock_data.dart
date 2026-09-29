@@ -48,9 +48,9 @@ class PatientMockData {
   ];
 
   static List<SpecialityShortcut> get specialityShortcuts => [
-    for (final label in specialtyCategories.keys)
-      SpecialityShortcut(label: label, icon: _iconForCategory(label)),
-  ];
+        for (final label in specialtyCategories.keys)
+          SpecialityShortcut(label: label, icon: _iconForCategory(label)),
+      ];
 
   static IconData _iconForCategory(String label) {
     final l = label.toLowerCase();
@@ -188,16 +188,15 @@ class PatientMockData {
   }
 
   static List<RecentAppointment> get recentAppointments {
-    final completed =
-        SharedAppointmentsStore.instance
-            .patientAppointments()
-            .where(
-              (a) =>
-                  a.cancellationReason == null &&
-                  a.dateTime.isBefore(DateTime.now()),
-            )
-            .toList()
-          ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    final completed = SharedAppointmentsStore.instance
+        .patientAppointments()
+        .where(
+          (a) =>
+              a.cancellationReason == null &&
+              a.dateTime.isBefore(DateTime.now()),
+        )
+        .toList()
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
     return completed.take(3).map((a) {
       return RecentAppointment(
         doctorName: 'Dr. ${a.doctorName}',

@@ -12,17 +12,15 @@ abstract final class PharmacyDoctorInviteService {
   static String buildInviteLink(String storeId) {
     final id = storeId.trim().isEmpty ? 'store' : storeId.trim();
     return Uri.parse(appDownloadUrl)
-        .replace(queryParameters: {'store': id, 'role': 'doctor'})
-        .toString();
+        .replace(queryParameters: {'store': id, 'role': 'doctor'}).toString();
   }
 
   static String inviteMessage({
     required String storeName,
     required String link,
   }) {
-    final name = storeName.trim().isEmpty
-        ? 'A medical store'
-        : storeName.trim();
+    final name =
+        storeName.trim().isEmpty ? 'A medical store' : storeName.trim();
     return '$name invited you to download DoctorNect and register as a doctor to connect with their pharmacy. '
         'Download the app and sign up using this link:\n$link';
   }
@@ -34,9 +32,9 @@ abstract final class PharmacyDoctorInviteService {
         .collection(FirestorePaths.medicalStores)
         .doc(storeId)
         .set({
-          'doctorInviteLink': buildInviteLink(storeId),
-          'doctorInviteUpdatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      'doctorInviteLink': buildInviteLink(storeId),
+      'doctorInviteUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   static Future<String> linkForCurrentStore() async {

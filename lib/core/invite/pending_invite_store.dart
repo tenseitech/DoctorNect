@@ -35,8 +35,7 @@ abstract final class PendingInviteStore {
           s == 'super-admin-portal' ||
           s == '_admin',
     );
-    final hasAdminFragment =
-        uri.fragment.contains('_admin_portal') ||
+    final hasAdminFragment = uri.fragment.contains('_admin_portal') ||
         uri.fragment.contains('ops-portal') ||
         uri.fragment.contains('super-admin-portal') ||
         uri.fragment.contains('_admin');

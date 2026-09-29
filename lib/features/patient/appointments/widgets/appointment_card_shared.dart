@@ -25,9 +25,8 @@ const EdgeInsets appointmentFlatPadding = EdgeInsets.symmetric(
 );
 
 Widget appointmentDoctorAvatar(String doctorName) {
-  final initial = doctorName.trim().isNotEmpty
-      ? doctorName.trim()[0].toUpperCase()
-      : 'D';
+  final initial =
+      doctorName.trim().isNotEmpty ? doctorName.trim()[0].toUpperCase() : 'D';
   return CircleAvatar(
     radius: 20,
     backgroundColor: AppColors.patientTeal.withValues(alpha: 0.12),

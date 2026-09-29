@@ -21,8 +21,7 @@ abstract final class BookingFlowHelpers {
 
   /// Firestore auto-id — avoids legacy `APT${timestamp}` collisions (Issue #16).
   static String newAppointmentId() {
-    final collection =
-        debugAppointmentsCollection ??
+    final collection = debugAppointmentsCollection ??
         FirebaseFirestore.instance.collection('appointments');
     return collection.doc().id;
   }

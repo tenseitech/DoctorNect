@@ -163,7 +163,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     try {
       schedule =
           await _availabilityRepo.fetch(widget.doctorId, preferCache: true) ??
-          DoctorAvailability.defaults();
+              DoctorAvailability.defaults();
     } catch (_) {
       schedule = DoctorAvailability.defaults();
     }
@@ -207,13 +207,13 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   }
 
   String _relationLabel(FamilyRelation relation) => switch (relation) {
-    FamilyRelation.spouse => 'Spouse',
-    FamilyRelation.child => 'Child',
-    FamilyRelation.parent => 'Parent',
-    FamilyRelation.sibling => 'Sibling',
-    FamilyRelation.friend => 'Friend',
-    FamilyRelation.other => 'Other',
-  };
+        FamilyRelation.spouse => 'Spouse',
+        FamilyRelation.child => 'Child',
+        FamilyRelation.parent => 'Parent',
+        FamilyRelation.sibling => 'Sibling',
+        FamilyRelation.friend => 'Friend',
+        FamilyRelation.other => 'Other',
+      };
 
   Future<void> _loadSlotsForDate(DateTime date) async {
     setState(() => _loadingSlots = true);
@@ -317,8 +317,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           slot != null && !slot.isSelectable
               ? 'This time has already passed. Please choose a later slot.'
               : _existingSlotBookings() >= 1
-              ? 'Select Emergency or Other and provide a reason to share this slot'
-              : 'Please select a time slot',
+                  ? 'Select Emergency or Other and provide a reason to share this slot'
+                  : 'Please select a time slot',
         );
         return;
       }
@@ -405,10 +405,9 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
 
     return switch (_step) {
       0 => _slotStepValid(),
-      1 =>
-        (_draft.bookingForSelf || _draft.familyMemberIds.isNotEmpty) &&
-            _slotHasCapacityForPatients() &&
-            reasonsOk,
+      1 => (_draft.bookingForSelf || _draft.familyMemberIds.isNotEmpty) &&
+          _slotHasCapacityForPatients() &&
+          reasonsOk,
       2 => _slotHasCapacityForPatients(),
       _ => false,
     };
@@ -535,8 +534,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           ? '${DateFormat('dd MMM').format(old.dateTime)} · ${old.slotLabel}'
           : '';
       final newLabel = '${DateFormat('dd MMM').format(date)} · $slotLabel';
-      final sameDay =
-          old != null &&
+      final sameDay = old != null &&
           old.dateTime.year == date.year &&
           old.dateTime.month == date.month &&
           old.dateTime.day == date.day;
@@ -562,21 +560,19 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             context: context,
             appointmentId: old!.appointmentId,
             doctorId: widget.doctorId,
-            patientId:
-                old.patientId ??
+            patientId: old.patientId ??
                 (PatientSession.loggedInPatientId.isNotEmpty
                     ? PatientSession.loggedInPatientId
                     : 'pat-default'),
             doctorName: _draft.doctorName,
-            specialization:
-                listing?.specialization ??
+            specialization: listing?.specialization ??
                 _doctor?.specialization ??
                 'General Physician',
             patientName: combinedName,
             patientAge: profile.age,
             patientGender:
                 BookingFlowHelpers.resolvePatientGender(profile.gender) ??
-                'Other',
+                    'Other',
             dateTime: newSlotDateTime,
             slotLabel: slotLabel,
             visitType: 'followUp',
@@ -599,7 +595,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         _showBookingMessage(
           describeUserFacingError(
             e,
-            fallback: "Couldn't reschedule this appointment. Please check your connection and try again.",
+            fallback:
+                "Couldn't reschedule this appointment. Please check your connection and try again.",
           ),
         );
         return;
@@ -695,8 +692,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
               ? PatientSession.loggedInPatientId
               : 'pat-default',
           doctorName: _draft.doctorName,
-          specialization:
-              listing?.specialization ??
+          specialization: listing?.specialization ??
               _doctor?.specialization ??
               'General Physician',
           patientName: pName,
@@ -715,8 +711,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       final confirmed = await store.addBooking(
         doctorId: widget.doctorId,
         doctorName: _draft.doctorName,
-        specialization:
-            listing?.specialization ??
+        specialization: listing?.specialization ??
             _doctor?.specialization ??
             'General Physician',
         date: date,
@@ -782,7 +777,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       _showBookingMessage(
         describeUserFacingError(
           e,
-          fallback: "Couldn't confirm this booking. Please check your connection and try again.",
+          fallback:
+              "Couldn't confirm this booking. Please check your connection and try again.",
         ),
       );
       return;
@@ -1004,10 +1000,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                           child: Text(
                             _step == 2
                                 ? (DoctorProfileStore.autoAcceptForDoctor(
-                                        widget.doctorId,
-                                      )
-                                      ? 'Confirm booking'
-                                      : 'Submit request')
+                                    widget.doctorId,
+                                  )
+                                    ? 'Confirm booking'
+                                    : 'Submit request')
                                 : 'Continue',
                             style: GoogleFonts.inter(
                               fontWeight: FontWeight.w600,
@@ -1086,8 +1082,8 @@ class _SlotStep extends StatelessWidget {
     final clampedInitial = initial.isBefore(today)
         ? today
         : initial.isAfter(lastDay)
-        ? lastDay
-        : initial;
+            ? lastDay
+            : initial;
 
     final picked = await showDatePicker(
       context: context,
@@ -1099,7 +1095,8 @@ class _SlotStep extends StatelessWidget {
           _isDaySelectable(day) && !_isHoliday(day),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme
+          colorScheme: Theme.of(context)
+              .colorScheme
               .copyWith(primary: AppColors.patientTeal),
         ),
         child: child!,
@@ -1116,15 +1113,15 @@ class _SlotStep extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _holidayMessage(selected) ?? 'No appointment times on this date. Please choose another date.',
+            _holidayMessage(selected) ??
+                'No appointment times on this date. Please choose another date.',
           ),
         ),
       );
       return;
     }
 
-    var initial =
-        parseSlotTimeLabel(draft.selectedSlotLabel) ??
+    var initial = parseSlotTimeLabel(draft.selectedSlotLabel) ??
         parseSlotTimeLabel(
           slots
               .firstWhere((s) => s.isSelectable, orElse: () => slots.first)
@@ -1140,7 +1137,8 @@ class _SlotStep extends StatelessWidget {
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
         child: Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme
+            colorScheme: Theme.of(context)
+                .colorScheme
                 .copyWith(primary: AppColors.patientTeal),
           ),
           child: child!,
@@ -1278,8 +1276,7 @@ class _SlotStep extends StatelessWidget {
     final needsShareReason =
         selectedSlot != null && selectedSlot.requiresShareReason;
     final selectableCount = slots.where((s) => s.isSelectable).length;
-    final timeInPast =
-        draft.selectedSlotLabel != null &&
+    final timeInPast = draft.selectedSlotLabel != null &&
         isSlotTimeInPast(selected, draft.selectedSlotLabel!);
 
     return PatientProfileFormStyles.contentSurface(
@@ -1372,7 +1369,8 @@ class _SlotStep extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                _holidayMessage(selected) ?? 'No appointment times on this date. The doctor may be on leave or fully booked.',
+                _holidayMessage(selected) ??
+                    'No appointment times on this date. The doctor may be on leave or fully booked.',
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
@@ -1442,8 +1440,7 @@ class _SlotStep extends StatelessWidget {
                     controlAffinity: ListTileControlAffinity.leading,
                     activeColor: AppColors.patientTeal,
                     title: const Text('Emergency'),
-                    value:
-                        draft.slotShareReasonType ==
+                    value: draft.slotShareReasonType ==
                         SlotShareReasonType.emergency,
                     onChanged: (checked) => onShareReasonType(
                       checked == true ? SlotShareReasonType.emergency : null,

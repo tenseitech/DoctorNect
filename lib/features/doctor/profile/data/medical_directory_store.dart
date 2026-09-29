@@ -80,12 +80,12 @@ class MedicalDirectoryStore extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final page = await FirestoreService.instance.medicalDirectory
-          .fetchForDoctor(
-            DoctorSession.loggedInDoctorId,
-            startAfter: _lastPage,
-            preferCache: preferCache,
-          );
+      final page =
+          await FirestoreService.instance.medicalDirectory.fetchForDoctor(
+        DoctorSession.loggedInDoctorId,
+        startAfter: _lastPage,
+        preferCache: preferCache,
+      );
       mergeFromFirestore(page.items);
       _lastPage = page.lastDocument;
       _hasMore = page.hasMore;

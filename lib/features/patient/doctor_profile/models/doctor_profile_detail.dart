@@ -29,6 +29,8 @@ class DoctorProfileDetail {
     required this.clinicName,
     required this.area,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String id;
@@ -58,6 +60,8 @@ class DoctorProfileDetail {
   final String clinicName;
   final String area;
   final String? photoUrl;
+  final String? photoKey;
+  final String? photoStorage;
 }
 
 class ClinicTiming {

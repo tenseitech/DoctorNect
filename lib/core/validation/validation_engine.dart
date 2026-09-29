@@ -95,8 +95,7 @@ abstract final class ValidationEngine {
     final rules = ServerValidationService.rules;
     final ruleRaw = rules?[ruleName] ?? _defaultRules[ruleName];
 
-    final field =
-        (params?['field'] as String?) ??
+    final field = (params?['field'] as String?) ??
         (ruleRaw is Map ? ruleRaw['requiredField'] as String? : null) ??
         'This field';
     final str = value == null ? '' : value.toString().trim();
@@ -157,8 +156,7 @@ abstract final class ValidationEngine {
 
       case 'phoneLocal':
         if (str.isEmpty) return '$field is required';
-        final dialCode =
-            (params?['dialCode'] as String?) ??
+        final dialCode = (params?['dialCode'] as String?) ??
             (rule['defaultDialCode'] as String?) ??
             CountryPhoneCodes.defaultDialCode;
         final digits = str.replaceAll(RegExp(r'\D'), '');
@@ -202,8 +200,7 @@ abstract final class ValidationEngine {
         final min = (params?['min'] as int?) ?? (rule['min'] as int?) ?? 0;
         final max = (params?['max'] as int?) ?? (rule['max'] as int?) ?? 999;
         if (n == null || n < min || n > max) {
-          final template =
-              rule['rangeMessage'] as String? ??
+          final template = rule['rangeMessage'] as String? ??
               rule['invalidMessage'] as String? ??
               'Invalid value';
           return template
@@ -230,8 +227,7 @@ abstract final class ValidationEngine {
         if (str.isEmpty) return '$field is required';
         final normalized = str.replaceAll(RegExp(r'[\s\-]'), '').toUpperCase();
         final patternsRaw = rule['patterns'] as List?;
-        final patterns =
-            patternsRaw?.map((p) => '$p').toList() ??
+        final patterns = patternsRaw?.map((p) => '$p').toList() ??
             const [
               r'^[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{1,4}$',
               r'^[0-9]{2}BH[0-9]{4}[A-Z]{2}$',

@@ -376,9 +376,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               ),
                               checkmarkColor: AppColors.doctorBlue,
                               labelStyle: GoogleFonts.inter(
-                                fontWeight: active
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
+                                fontWeight:
+                                    active ? FontWeight.w600 : FontWeight.w400,
                                 color: active
                                     ? AppColors.doctorBlue
                                     : AppColors.textSecondaryOf(context),
@@ -482,8 +481,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                           value: _breakEnd,
                                           times:
                                               _timesAfter(_breakStart).isEmpty
-                                              ? [_breakEnd]
-                                              : _timesAfter(_breakStart),
+                                                  ? [_breakEnd]
+                                                  : _timesAfter(_breakStart),
                                           onChanged: _onBreakEndChanged,
                                           errorText: _breakTimeError,
                                         ),
@@ -576,8 +575,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 spacing: 6,
                                 runSpacing: 6,
                                 children: _blockedDates.map((d) {
-                                  final label = DateFormat('dd MMM yyyy')
-                                      .format(d);
+                                  final label =
+                                      DateFormat('dd MMM yyyy').format(d);
                                   return InputChip(
                                     label: Text(
                                       label,

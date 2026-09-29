@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../../firebase_options.dart';
 import '../constants/app_constants.dart';
 import '../security/app_check_service.dart';
+import '../storage/storage_feature_flag.dart';
 import '../validation/server_validation_service.dart';
 import 'firebase_error_messages.dart';
 
@@ -22,6 +23,11 @@ abstract final class FirebaseBootstrap {
     if (isReady) return true;
     try {
       lastInitError = null;
+      if (!DefaultFirebaseOptions.isConfigured) {
+        isReady = false;
+        lastInitError = 'Firebase API keys not configured.';
+        return false;
+      }
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
@@ -41,6 +47,8 @@ abstract final class FirebaseBootstrap {
       }
       // Load validation rules from Cloud Functions (non-blocking).
       unawaited(_loadValidationRules());
+      // Initialize Remote Config for storage feature flags (non-blocking).
+      unawaited(StorageFeatureFlag.initialize());
       return true;
     } catch (e, st) {
       isReady = false;
@@ -123,7 +131,9 @@ Future<void> _activateAppCheck() async {
     final ready = await AppCheckService.warmUp();
     if (kDebugMode) {
       debugPrint(
-        ready ? 'App Check activated on mobile.' : 'App Check activated on mobile but token fetch failed — see logs above.',
+        ready
+            ? 'App Check activated on mobile.'
+            : 'App Check activated on mobile but token fetch failed — see logs above.',
       );
     }
   } catch (e, st) {

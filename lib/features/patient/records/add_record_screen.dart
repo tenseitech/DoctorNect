@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/firebase/repositories/patient_profile_repository.dart';
 import '../../../core/media/gallery_image_picker.dart';
 
 import '../../../core/session/patient_session.dart';
@@ -15,6 +16,7 @@ import '../../../core/supabase/supabase_bootstrap.dart';
 import '../../../core/supabase/supabase_patient_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import 'data/health_record_file_store.dart';
+import 'data/health_records_mock.dart';
 import 'models/health_record_models.dart';
 
 class AddRecordScreen extends StatefulWidget {
@@ -192,13 +194,17 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
         return;
       }
 
-      // Firebase Storage hook — no-op until bucket is configured.
-      final storageUrl = await HealthRecordFileStore.uploadToFirebaseStorage(
+      // Upload via HealthRecordFileStore.uploadRecord (S3 when enabled, fallback to Firebase Storage)
+      final uploadResult = await HealthRecordFileStore.uploadRecord(
         patientId: patientId,
         recordId: recordId,
         fileName: fileName,
         bytes: bytes,
       );
+
+      final storageUrl = uploadResult?.downloadUrl;
+      final storageKey = uploadResult?.objectKey;
+      final storageProvider = uploadResult?.provider;
 
       // Persist to Supabase if available (guarded by PatientWriteGuard)
       if (SupabaseBootstrap.isReady) {
@@ -223,39 +229,54 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
                 ? null
                 : _notesController.text.trim(),
             sharedWithDoctors: _shareWithDoctors,
-            fileStorage: storageUrl != null ? 'cloudUploaded' : 'localOnly',
+            fileStorage: uploadResult != null ? 'cloudUploaded' : 'localOnly',
             storageUrl: storageUrl,
+            storageKey: storageKey,
+            storageProvider: storageProvider,
           );
         } catch (_) {}
       }
 
-      if (!mounted) return;
-      Navigator.pop(
-        context,
-        HealthRecord(
-          id: recordId,
-          title: _titleController.text.trim(),
-          type: _type,
-          date: _date,
-          source: RecordSource.selfUploaded,
-          fileName: fileName,
-          doctorName: _doctorController.text.trim().isEmpty
-              ? null
-              : _doctorController.text.trim(),
-          labName: _facilityController.text.trim().isEmpty
-              ? null
-              : _facilityController.text.trim(),
-          isImage: _isImageFile(fileName),
-          notes: _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
-          sharedWithDoctors: _shareWithDoctors,
-          fileStorage: storageUrl != null
-              ? HealthRecordFileStorage.firebase
-              : HealthRecordFileStorage.local,
-          storageUrl: storageUrl,
-        ),
+      final record = HealthRecord(
+        id: recordId,
+        title: _titleController.text.trim(),
+        type: _type,
+        date: _date,
+        source: RecordSource.selfUploaded,
+        fileName: fileName,
+        doctorName: _doctorController.text.trim().isEmpty
+            ? null
+            : _doctorController.text.trim(),
+        labName: _facilityController.text.trim().isEmpty
+            ? null
+            : _facilityController.text.trim(),
+        isImage: _isImageFile(fileName),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        sharedWithDoctors: _shareWithDoctors,
+        fileStorage: uploadResult != null
+            ? HealthRecordFileStorage.firebase
+            : HealthRecordFileStorage.local,
+        storageUrl: storageUrl,
+        storageKey: storageKey,
+        storageProvider: storageProvider,
       );
+
+      // Persist to Firestore if available
+      try {
+        await PatientProfileRepository.instance
+            .saveHealthRecord(patientId, record);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('add_record_screen: Firestore saveHealthRecord error: $e');
+        }
+      }
+
+      HealthRecordsMock.addRecord(record);
+
+      if (!mounted) return;
+      Navigator.pop(context, record);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

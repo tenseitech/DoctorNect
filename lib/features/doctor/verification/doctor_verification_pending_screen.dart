@@ -106,8 +106,8 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 52),
               side: BorderSide(
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.35),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.35),
               ),
               foregroundColor: AppColors.textSecondaryOf(context),
             ),

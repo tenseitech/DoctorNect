@@ -1,11 +1,9 @@
 import '../../../../core/firebase/firestore_service.dart';
 
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/constants/countries.dart';
@@ -21,6 +19,7 @@ import '../../../../core/session/doctor_session.dart';
 import '../../models/doctor_models.dart';
 import '../models/doctor_profile_data.dart';
 import 'doctor_photo_local_store.dart';
+import '../../../../core/storage/profile_photo_uploader.dart';
 
 class DoctorProfileStore extends ChangeNotifier {
   DoctorProfileStore._();
@@ -50,15 +49,29 @@ class DoctorProfileStore extends ChangeNotifier {
         .doc(doctorId)
         .snapshots()
         .listen((snap) {
-          if (!snap.exists || snap.data() == null) return;
-          final data = snap.data()!;
-          final url =
-              (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
-          if (url != null && url.isNotEmpty && url != profile.photoUrl) {
-            profile.photoUrl = url;
-            notifyListeners();
-          }
-        });
+      if (!snap.exists || snap.data() == null) return;
+      final data = snap.data()!;
+      final url =
+          (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
+      final key = data['photoKey'] as String?;
+      final storage = data['photoStorage'] as String?;
+      bool changed = false;
+      if (url != null && url.isNotEmpty && url != profile.photoUrl) {
+        profile.photoUrl = url;
+        changed = true;
+      }
+      if (key != null && key != profile.photoKey) {
+        profile.photoKey = key;
+        changed = true;
+      }
+      if (storage != null && storage != profile.photoStorage) {
+        profile.photoStorage = storage;
+        changed = true;
+      }
+      if (changed) {
+        notifyListeners();
+      }
+    });
   }
 
   static void resetNotificationPrefsSession() {
@@ -94,8 +107,7 @@ class DoctorProfileStore extends ChangeNotifier {
   void _applyNotificationPrefsFromMap(Map<String, dynamic> data) {
     profile.appointmentReminders =
         data['appointmentReminders'] as bool? ?? profile.appointmentReminders;
-    profile.remindHoursBefore =
-        (data['remindHoursBefore'] as num?)?.toInt() ??
+    profile.remindHoursBefore = (data['remindHoursBefore'] as num?)?.toInt() ??
         profile.remindHoursBefore;
     final channels = data['notificationChannels'] as List<dynamic>?;
     if (channels != null)
@@ -136,8 +148,8 @@ class DoctorProfileStore extends ChangeNotifier {
     final masked = parts.isEmpty
         ? 'Patient'
         : parts.length == 1
-        ? '${parts.first[0]}.'
-        : '${parts.first[0]}. ${parts.last[0]}.';
+            ? '${parts.first[0]}.'
+            : '${parts.first[0]}. ${parts.last[0]}.';
     profile.reviews.insert(
       0,
       PatientReview(
@@ -236,74 +248,46 @@ class DoctorProfileStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Uploads [bytes] to Firebase Storage and saves the download URL to
-  /// Firestore.  Returns the URL on success, `null` on failure.
+  /// Uploads [bytes] to S3 (when enabled) or Firebase Storage and saves to
+  /// Firestore. Returns the URL/key on success, `null` on failure.
   Future<String?> uploadPhotoToServer(String doctorId, Uint8List bytes) async {
     if (doctorId.isEmpty || bytes.isEmpty) return null;
     profile.photoBytes = bytes;
-    await DoctorPhotoLocalStore.save(doctorId, bytes);
-
-    final base64String = base64Encode(bytes);
-    final dataUrl = 'data:image/jpeg;base64,$base64String';
-    String? storageUrl;
-
-    if (FirebaseBootstrap.isReady) {
-      try {
-        final ref = FirebaseStorage.instance.ref(
-          'doctor_profiles/$doctorId/profile.jpg',
-        );
-        await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-        storageUrl = await ref.getDownloadURL();
-      } catch (e) {
-        if (kDebugMode)
-          debugPrint('[DoctorProfileStore] storage upload failed: $e');
+    final oldPhotoKey = profile.photoKey;
+    final res = await ProfilePhotoUploader.instance.uploadDoctorPhoto(
+      doctorId: doctorId,
+      bytes: bytes,
+      oldPhotoKey: oldPhotoKey,
+    );
+    if (res.success) {
+      if (res.photoKey != null) {
+        profile.photoKey = res.photoKey;
+        profile.photoStorage = res.photoStorage;
       }
-
-      final finalUrl = storageUrl ?? dataUrl;
-      profile.photoUrl = finalUrl;
-      try {
-        await FirebaseFirestore.instance
-            .collection(FirestorePaths.doctors)
-            .doc(doctorId)
-            .update({'photoUrl': finalUrl, 'photoURL': finalUrl});
-      } catch (e) {
-        if (kDebugMode)
-          debugPrint(
-            '[DoctorProfileStore] firestore doc photo update failed: $e',
-          );
+      if (res.photoUrl != null) {
+        profile.photoUrl = res.photoUrl;
       }
       notifyListeners();
-      return finalUrl;
+      return res.photoUrl ?? res.photoKey;
     }
-
-    profile.photoUrl = dataUrl;
-    notifyListeners();
-    return dataUrl;
+    return null;
   }
 
-  /// Removes profile photo locally and from Firestore.
+  /// Removes profile photo locally, from Firestore, and from S3.
   Future<void> removePhoto(String doctorId) async {
+    final oldKey = profile.photoKey;
     profile.photoPath = null;
     profile.photoBytes = null;
     profile.photoUrl = null;
-    if (doctorId.isNotEmpty) {
-      await DoctorPhotoLocalStore.clear(doctorId);
-    }
+    profile.photoKey = null;
+    profile.photoStorage = null;
     notifyListeners();
 
-    if (doctorId.isNotEmpty && FirebaseBootstrap.isReady) {
-      try {
-        await FirebaseFirestore.instance
-            .collection(FirestorePaths.doctors)
-            .doc(doctorId)
-            .update({
-              'photoUrl': FieldValue.delete(),
-              'photoURL': FieldValue.delete(),
-            });
-      } catch (e) {
-        if (kDebugMode)
-          debugPrint('[DoctorProfileStore] remove photo failed: $e');
-      }
+    if (doctorId.isNotEmpty) {
+      await ProfilePhotoUploader.instance.removeDoctorPhoto(
+        doctorId: doctorId,
+        currentPhotoKey: oldKey,
+      );
     }
   }
 
@@ -314,8 +298,8 @@ class DoctorProfileStore extends ChangeNotifier {
     final doctorId = (doctorIdInput != null && doctorIdInput.isNotEmpty)
         ? doctorIdInput
         : (DoctorSession.loggedInDoctorId.isNotEmpty
-              ? DoctorSession.loggedInDoctorId
-              : (FirebaseAuth.instance.currentUser?.uid ?? ''));
+            ? DoctorSession.loggedInDoctorId
+            : (FirebaseAuth.instance.currentUser?.uid ?? ''));
     if (doctorId.isEmpty) {
       throw StateError('Missing doctor id — profile cannot be saved.');
     }
@@ -416,15 +400,13 @@ class DoctorProfileStore extends ChangeNotifier {
             (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
       } else if (fetched.isNotEmpty) {
         profile.reviewCount = fetched.length;
-        profile.rating =
-            fetched.fold<double>(0, (acc, r) => acc + r.rating) /
+        profile.rating = fetched.fold<double>(0, (acc, r) => acc + r.rating) /
             fetched.length;
       }
     } catch (_) {
       if (fetched.isNotEmpty) {
         profile.reviewCount = fetched.length;
-        profile.rating =
-            fetched.fold<double>(0, (acc, r) => acc + r.rating) /
+        profile.rating = fetched.fold<double>(0, (acc, r) => acc + r.rating) /
             fetched.length;
       }
     }
@@ -446,8 +428,7 @@ class DoctorProfileStore extends ChangeNotifier {
   }
 
   Future<void> loadFromFirestore(String doctorId) async {
-    final isDemoDoc =
-        DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+    final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
         doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
         DemoAuthConfig.isDemoDoctorPhone(profile.mobile) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
@@ -482,10 +463,13 @@ class DoctorProfileStore extends ChangeNotifier {
       final url =
           (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
       if (url != null && url.isNotEmpty) profile.photoUrl = url;
+      final key = data['photoKey'] as String?;
+      if (key != null && key.isNotEmpty) profile.photoKey = key;
+      final storage = data['photoStorage'] as String?;
+      if (storage != null && storage.isNotEmpty) profile.photoStorage = storage;
       profile.yearsExperience =
           (data['experienceYears'] as num?)?.toInt() ?? profile.yearsExperience;
-      profile.registrationYear =
-          (data['registrationYear'] as num?)?.toInt() ??
+      profile.registrationYear = (data['registrationYear'] as num?)?.toInt() ??
           profile.registrationYear;
       profile.mobile = data['mobile'] as String? ?? profile.mobile;
       profile.email = data['email'] as String? ?? profile.email;
@@ -503,8 +487,8 @@ class DoctorProfileStore extends ChangeNotifier {
       profile.rating = (data['rating'] as num?)?.toDouble() ?? profile.rating;
       profile.reviewCount =
           (data['reviewCount'] as num?)?.toInt() ?? profile.reviewCount;
-      profile.verificationStatus =
-          isDemoDoc || DemoAuthConfig.isDemoDoctorPhone(profile.mobile)
+      profile.verificationStatus = isDemoDoc ||
+              DemoAuthConfig.isDemoDoctorPhone(profile.mobile)
           ? VerificationStatus.verified
           : _verificationStatusFromFirestore(data['verified'], profile.mobile);
       final langs = data['languages'] as List<dynamic>?;
@@ -554,13 +538,13 @@ class DoctorProfileStore extends ChangeNotifier {
           (data['avgDurationMins'] as num?)?.toInt() ?? profile.avgDurationMins;
       profile.maxPatientsPerDay =
           (data['maxPatientsPerDay'] as num?)?.toInt() ??
-          profile.maxPatientsPerDay;
+              profile.maxPatientsPerDay;
       profile.advanceBookingDays =
           (data['advanceBookingDays'] as num?)?.toInt() ??
-          profile.advanceBookingDays;
+              profile.advanceBookingDays;
       profile.autoAcceptAppointments =
           data['autoAcceptAppointments'] as bool? ??
-          profile.autoAcceptAppointments;
+              profile.autoAcceptAppointments;
       _applyNotificationPrefsFromMap(data);
       profile.newBookingAlert = true;
       profile.cancellationAlert = true;
@@ -570,7 +554,7 @@ class DoctorProfileStore extends ChangeNotifier {
           data['recoveryEmail'] as String? ?? profile.recoveryEmail;
       profile.registrationCertificate =
           data['registrationCertificate'] as String? ??
-          profile.registrationCertificate;
+              profile.registrationCertificate;
       profile.idProof = data['idProof'] as String? ?? profile.idProof;
     } finally {
       notifyListeners();

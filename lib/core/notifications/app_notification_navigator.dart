@@ -195,20 +195,21 @@ abstract final class AppNotificationNavigator {
   }) async {
     return switch (target) {
       AppNotificationTarget.appointmentDetail ||
-      AppNotificationTarget.appointments => _openAppointment(
-        context,
-        targetId: targetId,
-        audience: audience,
-      ),
+      AppNotificationTarget.appointments =>
+        _openAppointment(
+          context,
+          targetId: targetId,
+          audience: audience,
+        ),
       AppNotificationTarget.labBooking => _openLabBooking(
-        context,
-        bookingId: targetId,
-      ),
+          context,
+          bookingId: targetId,
+        ),
       AppNotificationTarget.labReports => _openLabReports(
-        context,
-        targetId: targetId,
-        notification: notification,
-      ),
+          context,
+          targetId: targetId,
+          notification: notification,
+        ),
       AppNotificationTarget.prescriptions
           when audience == NotificationAudience.patient =>
         _openPatientPrescription(context, prescriptionId: targetId),
@@ -219,11 +220,11 @@ abstract final class AppNotificationNavigator {
           when audience == NotificationAudience.doctor =>
         _openDoctorReferralConsult(context, referralId: targetId),
       _ => _openFromFallback(
-        context,
-        notification: notification,
-        audience: audience,
-        targetId: targetId,
-      ),
+          context,
+          notification: notification,
+          audience: audience,
+          targetId: targetId,
+        ),
     };
   }
 
@@ -350,8 +351,8 @@ abstract final class AppNotificationNavigator {
     }
 
     final patientId = PatientSession.loggedInPatientId;
-    var patientAppointment = SharedAppointmentsStore.instance
-        .patientAppointmentForTarget(targetId);
+    var patientAppointment =
+        SharedAppointmentsStore.instance.patientAppointmentForTarget(targetId);
     if (patientAppointment == null && patientId.isNotEmpty) {
       await SharedAppointmentsStore.instance.refreshForPatient(patientId);
       patientAppointment = SharedAppointmentsStore.instance

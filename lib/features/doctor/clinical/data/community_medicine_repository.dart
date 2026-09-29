@@ -178,13 +178,13 @@ class CommunityMedicineRepository {
     final doc = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityMedicines)
         .add({
-          'name': trimmed,
-          'nameLower': trimmed.toLowerCase(),
-          'dosageUnit': dosageUnit,
-          'form': form,
-          'addedByDoctorId': doctorId,
-          'addedAt': FieldValue.serverTimestamp(),
-        });
+      'name': trimmed,
+      'nameLower': trimmed.toLowerCase(),
+      'dosageUnit': dosageUnit,
+      'form': form,
+      'addedByDoctorId': doctorId,
+      'addedAt': FieldValue.serverTimestamp(),
+    });
 
     final medicine = CommunityMedicine(
       id: doc.id,

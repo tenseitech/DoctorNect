@@ -11,8 +11,7 @@ class RequiredFieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle =
-        style ??
+    final baseStyle = style ??
         Theme.of(context).inputDecorationTheme.labelStyle ??
         DefaultTextStyle.of(context).style;
 

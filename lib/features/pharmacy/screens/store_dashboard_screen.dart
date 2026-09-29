@@ -19,11 +19,11 @@ import 'store_prescription_detail_screen.dart';
 import '../../../core/theme/app_typography.dart';
 
 String pharmacyDeliveryStatusLabel(PharmacyDeliveryStatus s) => switch (s) {
-  PharmacyDeliveryStatus.sent => 'New',
-  PharmacyDeliveryStatus.viewed => 'Viewed',
-  PharmacyDeliveryStatus.partiallyDispensed => 'Partial',
-  PharmacyDeliveryStatus.dispensed => 'Dispensed',
-};
+      PharmacyDeliveryStatus.sent => 'New',
+      PharmacyDeliveryStatus.viewed => 'Viewed',
+      PharmacyDeliveryStatus.partiallyDispensed => 'Partial',
+      PharmacyDeliveryStatus.dispensed => 'Dispensed',
+    };
 
 /// One entry per doctor — duplicate active connections must not break dropdowns.
 List<PharmacyConnection> uniquePharmacyDoctors(
@@ -50,7 +50,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
   late final TabController _orderTabController;
   final _patientSearchController = TextEditingController();
   StreamSubscription<List<PharmacyPrescriptionDelivery>>?
-  _deliverySub; // FIXED: realtime delivery sync
+      _deliverySub; // FIXED: realtime delivery sync
 
   @override
   void initState() {
@@ -64,8 +64,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
     _deliverySub = FirestoreService.instance.pharmacyFirestore
         .watchDeliveriesForStore(storeId)
         .listen((deliveries) {
-          PharmacyPrescriptionStore.instance.mergeFromFirestore(deliveries);
-        });
+      PharmacyPrescriptionStore.instance.mergeFromFirestore(deliveries);
+    });
   }
 
   // FIXED: pull-to-refresh fallback when realtime sync is unavailable
@@ -112,8 +112,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
         final doctors = uniquePharmacyDoctors(
           PharmacyConnectionStore.instance.activeForStore(storeId),
         );
-        final grouped = PharmacyPrescriptionStore.instance
-            .groupedByDoctorForStore(storeId);
+        final grouped =
+            PharmacyPrescriptionStore.instance.groupedByDoctorForStore(storeId);
 
         if (doctors.isEmpty) {
           return Column(
@@ -130,20 +130,18 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
         }
 
         // FIXED: do not mutate state during build — compute the effective selection locally
-        final doctorId =
-            (_selectedDoctorId != null &&
+        final doctorId = (_selectedDoctorId != null &&
                 doctors.any((d) => d.doctorId == _selectedDoctorId))
             ? _selectedDoctorId!
             : doctors.first.doctorId;
         var prescriptions = PharmacyPrescriptionStore.instance
             .forStoreAndDoctor(storeId, doctorId);
         prescriptions = _filterPrescriptions(prescriptions);
-        final newOrders = prescriptions
-            .where((p) => !_isDispensedOrder(p))
-            .toList();
+        final newOrders =
+            prescriptions.where((p) => !_isDispensedOrder(p)).toList();
         final dispensedOrders = prescriptions.where(_isDispensedOrder).toList();
-        final allStorePrescriptions = PharmacyPrescriptionStore.instance
-            .forStore(storeId);
+        final allStorePrescriptions =
+            PharmacyPrescriptionStore.instance.forStore(storeId);
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -238,9 +236,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
     bool isWide,
   ) {
     final today = DateTime.now();
-    final pendingCount = allPrescriptions
-        .where((p) => !_isDispensedOrder(p))
-        .length;
+    final pendingCount =
+        allPrescriptions.where((p) => !_isDispensedOrder(p)).length;
     final dispensedCount = allPrescriptions.where(_isDispensedOrder).length;
     final badges = [
       _buildStatBadge(AppIcons.prescription, '$pendingCount New'),
@@ -468,8 +465,8 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
 
     final dropdownValue =
         uniqueDoctors.any((d) => d.doctorId == selectedDoctorId)
-        ? selectedDoctorId
-        : uniqueDoctors.first.doctorId;
+            ? selectedDoctorId
+            : uniqueDoctors.first.doctorId;
 
     return Container(
       height: compact ? 36 : 44,
@@ -974,17 +971,17 @@ class _CompactPrescriptionTile extends StatelessWidget {
   return switch (status) {
     PharmacyDeliveryStatus.sent => (label: 'New', color: AppColors.doctorBlue),
     PharmacyDeliveryStatus.viewed => (
-      label: 'Viewed',
-      color: const Color(0xFFD97706),
-    ),
+        label: 'Viewed',
+        color: const Color(0xFFD97706),
+      ),
     PharmacyDeliveryStatus.partiallyDispensed => (
-      label: 'Partial',
-      color: const Color(0xFFEA580C),
-    ),
+        label: 'Partial',
+        color: const Color(0xFFEA580C),
+      ),
     PharmacyDeliveryStatus.dispensed => (
-      label: 'Dispensed',
-      color: AppColors.pharmacyGreen,
-    ),
+        label: 'Dispensed',
+        color: AppColors.pharmacyGreen,
+      ),
   };
 }
 
@@ -1096,9 +1093,8 @@ class _PharmacySearchFieldState extends State<_PharmacySearchField> {
       duration: const Duration(milliseconds: 180),
       height: 44,
       decoration: BoxDecoration(
-        color: _focused
-            ? AppColors.surfaceOf(context)
-            : const Color(0xFFF1F5F9),
+        color:
+            _focused ? AppColors.surfaceOf(context) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: _focused
@@ -1244,9 +1240,8 @@ class _OrderTabPill extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: selected
-                    ? accentColor
-                    : AppColors.textSecondaryOf(context),
+                color:
+                    selected ? accentColor : AppColors.textSecondaryOf(context),
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -1270,7 +1265,7 @@ class _OrderTabPill extends StatelessWidget {
                   color: selected
                       ? accentColor.withValues(alpha: 0.1)
                       : AppColors.textSecondaryOf(context)
-                            .withValues(alpha: 0.1),
+                          .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(

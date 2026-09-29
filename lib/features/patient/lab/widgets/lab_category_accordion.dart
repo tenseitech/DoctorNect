@@ -142,9 +142,8 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
         ),
         AnimatedCrossFade(
           duration: Duration(milliseconds: 220),
-          crossFadeState: expanded
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
+          crossFadeState:
+              expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
           firstChild: SizedBox(width: double.infinity, height: 0),
           secondChild: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

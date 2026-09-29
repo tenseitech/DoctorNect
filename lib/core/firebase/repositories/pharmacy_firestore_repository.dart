@@ -20,17 +20,17 @@ class PharmacyFirestoreRepository {
         .collection(FirestorePaths.pharmacyConnections)
         .doc(connection.id)
         .set({
-          'doctorId': connection.doctorId,
-          'doctorName': connection.doctorName,
-          'medicalStoreId': connection.medicalStoreId,
-          'storeName': connection.storeName,
-          'status': connection.status.name,
-          'requestedBy': connection.requestedBy.name,
-          'requestedAt': Timestamp.fromDate(connection.requestedAt),
-          if (connection.respondedAt != null)
-            'respondedAt': Timestamp.fromDate(connection.respondedAt!),
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      'doctorId': connection.doctorId,
+      'doctorName': connection.doctorName,
+      'medicalStoreId': connection.medicalStoreId,
+      'storeName': connection.storeName,
+      'status': connection.status.name,
+      'requestedBy': connection.requestedBy.name,
+      'requestedAt': Timestamp.fromDate(connection.requestedAt),
+      if (connection.respondedAt != null)
+        'respondedAt': Timestamp.fromDate(connection.respondedAt!),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<void> saveDelivery(PharmacyPrescriptionDelivery delivery) async {
@@ -39,31 +39,31 @@ class PharmacyFirestoreRepository {
         .collection(FirestorePaths.pharmacyDeliveries)
         .doc(delivery.id)
         .set({
-          'prescriptionId': delivery.prescriptionId,
-          'doctorId': delivery.doctorId,
-          'doctorName': delivery.doctorName,
-          'storeId': delivery.storeId,
-          'storeName': delivery.storeName,
-          'patientId': delivery.draft.patientId,
-          'patientName': delivery.draft.patient.patientName,
-          'status': delivery.status.name,
-          'sentAt': Timestamp.fromDate(delivery.sentAt),
-          if (delivery.viewedAt != null)
-            'viewedAt': Timestamp.fromDate(delivery.viewedAt!),
-          if (delivery.dispensedAt != null)
-            'dispensedAt': Timestamp.fromDate(delivery.dispensedAt!),
-          if (delivery.dispensingNotes.isNotEmpty)
-            'dispensingNotes': delivery.dispensingNotes,
-          'medicineCount': delivery.medicineLines.length,
-          'medicineLines': _medicineLinesToMap(
-            delivery.medicineLines,
-          ), // FIXED: persist per-medicine availability/substitute
-          'draft': PrescriptionFirestoreMapper.toMap(
-            delivery.draft,
-            delivery.doctorId,
-          ),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      'prescriptionId': delivery.prescriptionId,
+      'doctorId': delivery.doctorId,
+      'doctorName': delivery.doctorName,
+      'storeId': delivery.storeId,
+      'storeName': delivery.storeName,
+      'patientId': delivery.draft.patientId,
+      'patientName': delivery.draft.patient.patientName,
+      'status': delivery.status.name,
+      'sentAt': Timestamp.fromDate(delivery.sentAt),
+      if (delivery.viewedAt != null)
+        'viewedAt': Timestamp.fromDate(delivery.viewedAt!),
+      if (delivery.dispensedAt != null)
+        'dispensedAt': Timestamp.fromDate(delivery.dispensedAt!),
+      if (delivery.dispensingNotes.isNotEmpty)
+        'dispensingNotes': delivery.dispensingNotes,
+      'medicineCount': delivery.medicineLines.length,
+      'medicineLines': _medicineLinesToMap(
+        delivery.medicineLines,
+      ), // FIXED: persist per-medicine availability/substitute
+      'draft': PrescriptionFirestoreMapper.toMap(
+        delivery.draft,
+        delivery.doctorId,
+      ),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> updateDelivery(PharmacyPrescriptionDelivery delivery) async {
@@ -72,17 +72,17 @@ class PharmacyFirestoreRepository {
         .collection(FirestorePaths.pharmacyDeliveries)
         .doc(delivery.id)
         .set({
-          'status': delivery.status.name,
-          if (delivery.viewedAt != null)
-            'viewedAt': Timestamp.fromDate(delivery.viewedAt!),
-          if (delivery.dispensedAt != null)
-            'dispensedAt': Timestamp.fromDate(delivery.dispensedAt!),
-          'dispensingNotes': delivery.dispensingNotes,
-          'medicineLines': _medicineLinesToMap(
-            delivery.medicineLines,
-          ), // FIXED: persist per-medicine availability/substitute
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      'status': delivery.status.name,
+      if (delivery.viewedAt != null)
+        'viewedAt': Timestamp.fromDate(delivery.viewedAt!),
+      if (delivery.dispensedAt != null)
+        'dispensedAt': Timestamp.fromDate(delivery.dispensedAt!),
+      'dispensingNotes': delivery.dispensingNotes,
+      'medicineLines': _medicineLinesToMap(
+        delivery.medicineLines,
+      ), // FIXED: persist per-medicine availability/substitute
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   // FIXED: serialize dispense-line state so OOS/substitute choices survive a reload
@@ -196,12 +196,11 @@ class PharmacyFirestoreRepository {
         .limit(FirestoreQueryLimits.connectionsPage)
         .snapshots()
         .map(
-          (snap) =>
-              snap.docs
-                  .map((doc) => _deliveryFromMap(doc.id, doc.data()))
-                  .whereType<PharmacyPrescriptionDelivery>()
-                  .toList()
-                ..sort((a, b) => b.sentAt.compareTo(a.sentAt)),
+          (snap) => snap.docs
+              .map((doc) => _deliveryFromMap(doc.id, doc.data()))
+              .whereType<PharmacyPrescriptionDelivery>()
+              .toList()
+            ..sort((a, b) => b.sentAt.compareTo(a.sentAt)),
         );
   }
 
@@ -217,12 +216,11 @@ class PharmacyFirestoreRepository {
         .limit(FirestoreQueryLimits.connectionsPage)
         .snapshots()
         .map(
-          (snap) =>
-              snap.docs
-                  .map((doc) => _deliveryFromMap(doc.id, doc.data()))
-                  .whereType<PharmacyPrescriptionDelivery>()
-                  .toList()
-                ..sort((a, b) => b.sentAt.compareTo(a.sentAt)),
+          (snap) => snap.docs
+              .map((doc) => _deliveryFromMap(doc.id, doc.data()))
+              .whereType<PharmacyPrescriptionDelivery>()
+              .toList()
+            ..sort((a, b) => b.sentAt.compareTo(a.sentAt)),
         );
   }
 

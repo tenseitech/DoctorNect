@@ -44,9 +44,8 @@ class _SendSheet extends StatefulWidget {
 }
 
 class _SendSheetState extends State<_SendSheet> {
-  late final Set<String> _selected = widget.connections
-      .map((c) => c.medicalStoreId)
-      .toSet();
+  late final Set<String> _selected =
+      widget.connections.map((c) => c.medicalStoreId).toSet();
   bool _sendToAll = true;
 
   @override
@@ -174,8 +173,8 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
             PharmacyDeliveryStatus.sent => AppColors.doctorBlue,
             PharmacyDeliveryStatus.viewed => const Color(0xFFCA8A04),
             PharmacyDeliveryStatus.partiallyDispensed => const Color(
-              0xFFEA580C,
-            ),
+                0xFFEA580C,
+              ),
             PharmacyDeliveryStatus.dispensed => AppColors.pharmacyGreen,
           };
           return Padding(
@@ -209,9 +208,9 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
   }
 
   static String _statusLabel(PharmacyDeliveryStatus s) => switch (s) {
-    PharmacyDeliveryStatus.sent => 'Sent',
-    PharmacyDeliveryStatus.viewed => 'Viewed',
-    PharmacyDeliveryStatus.partiallyDispensed => 'Partial',
-    PharmacyDeliveryStatus.dispensed => 'Dispensed',
-  };
+        PharmacyDeliveryStatus.sent => 'Sent',
+        PharmacyDeliveryStatus.viewed => 'Viewed',
+        PharmacyDeliveryStatus.partiallyDispensed => 'Partial',
+        PharmacyDeliveryStatus.dispensed => 'Dispensed',
+      };
 }

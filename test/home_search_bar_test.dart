@@ -47,7 +47,7 @@ void main() {
         const MaterialApp(home: Scaffold(body: HomeSearchBar())),
       );
 
-      expect(find.text('Search for doctor'), findsOneWidget);
+      expect(find.textContaining('Search for'), findsOneWidget);
 
       // Tap on TextField to focus
       final textField = find.byType(TextField);
@@ -56,26 +56,26 @@ void main() {
       await tester.pump();
 
       // Once focused, overlay should disappear
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(find.textContaining('Search for'), findsNothing);
 
       // Enter text
       await tester.enterText(textField, 'Cardiologist');
       await tester.pump();
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(find.textContaining('Search for'), findsNothing);
 
       // Clear text
       await tester.enterText(textField, '');
       await tester.pump();
 
       // Still focused -> overlay still hidden
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(find.textContaining('Search for'), findsNothing);
 
       // Unfocus
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
 
       // Unfocused and empty -> overlay reappears
-      expect(find.text('Search for doctor'), findsOneWidget);
+      expect(find.textContaining('Search for'), findsOneWidget);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());

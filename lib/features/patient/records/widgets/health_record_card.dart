@@ -46,20 +46,20 @@ class HealthRecordCard extends StatelessWidget {
   String get _provider => record.doctorName ?? record.labName ?? '—';
 
   String get _sourceLabel => switch (record.source) {
-    RecordSource.practo => 'Practo',
-    RecordSource.doctorSent => 'From doctor',
-    RecordSource.labSent => 'From lab',
-    RecordSource.selfUploaded => 'Self-uploaded',
-  };
+        RecordSource.practo => 'Practo',
+        RecordSource.doctorSent => 'From doctor',
+        RecordSource.labSent => 'From lab',
+        RecordSource.selfUploaded => 'Self-uploaded',
+      };
 
   String get _chipLabel => record.labBookedByLabel ?? _sourceLabel;
 
   Color get _sourceColor => switch (record.source) {
-    RecordSource.practo => AppColors.patientTeal,
-    RecordSource.doctorSent => AppColors.doctorBlue,
-    RecordSource.labSent => const Color(0xFFDC2626),
-    RecordSource.selfUploaded => AppColors.textSecondary,
-  };
+        RecordSource.practo => AppColors.patientTeal,
+        RecordSource.doctorSent => AppColors.doctorBlue,
+        RecordSource.labSent => const Color(0xFFDC2626),
+        RecordSource.selfUploaded => AppColors.textSecondary,
+      };
 
   @override
   Widget build(BuildContext context) {

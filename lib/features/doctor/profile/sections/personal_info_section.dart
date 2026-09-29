@@ -243,11 +243,10 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                                     _name.text.trim().isNotEmpty
                                         ? _name.text.trim()[0].toUpperCase()
                                         : DoctorProfileStore
-                                              .displayName
-                                              .isNotEmpty
-                                        ? DoctorProfileStore.displayName[0]
-                                              .toUpperCase()
-                                        : 'D',
+                                                .displayName.isNotEmpty
+                                            ? DoctorProfileStore.displayName[0]
+                                                .toUpperCase()
+                                            : 'D',
                                     style: GoogleFonts.inter(
                                       fontSize: AppTypography.headlineLarge,
                                       fontWeight: FontWeight.w600,
@@ -303,7 +302,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                               initialValue: _p.dateOfBirth == null
                                   ? 'Not set'
                                   : DateFormat('dd MMM yyyy')
-                                        .format(_p.dateOfBirth!),
+                                      .format(_p.dateOfBirth!),
                               decoration: InputDecoration(
                                 labelText: 'Date of birth',
                                 filled: true,
@@ -353,7 +352,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                                   ),
                                 ),
                               ),
-                              helperText: 'Doctor mobile number is locked for verification. Contact admin to request a change.',
+                              helperText:
+                                  'Doctor mobile number is locked for verification. Contact admin to request a change.',
                             ),
                             if (!RegistrationCredentials.isSyntheticEmail(_p.email)) ...[
                               const SizedBox(height: 12),

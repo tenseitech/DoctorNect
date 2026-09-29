@@ -9,8 +9,7 @@ abstract final class PrescriptionFirestoreMapper {
       final draft = PrescriptionDraft(
         patient: PatientClinicalContext(
           patientName: data['patientName'] as String? ?? 'Patient',
-          age:
-              (data['patientAge'] as num?)?.toInt() ??
+          age: (data['patientAge'] as num?)?.toInt() ??
               0, // FIXED: restore real age instead of hardcoded 0
           gender: data['patientGender'] as String?, // FIXED: restore gender
           patientId: data['patientId'] as String?,
@@ -19,7 +18,7 @@ abstract final class PrescriptionFirestoreMapper {
         prescriptionId: prescriptionId,
         prescriptionDate:
             DateTime.tryParse(data['prescriptionDate'] as String? ?? '') ??
-            DateTime.now(),
+                DateTime.now(),
       );
 
       // Doctor/clinic snapshot (written since v2 of the schema).
@@ -72,8 +71,7 @@ abstract final class PrescriptionFirestoreMapper {
         return entry;
       }).toList();
 
-      final investigations =
-          data['investigations'] as List<dynamic>? ??
+      final investigations = data['investigations'] as List<dynamic>? ??
           const []; // FIXED: restore investigations
       draft.investigations = investigations
           .map((raw) {
@@ -216,7 +214,8 @@ abstract final class PrescriptionFirestoreMapper {
       'medicines': draft.validMedicines
           .map(
             (m) => {
-              'id': m.id, // FIXED: persist medicine id so pharmacy dispense lines match after reload
+              'id': m
+                  .id, // FIXED: persist medicine id so pharmacy dispense lines match after reload
               'name': m.name,
               'dosage': m.dosageLabel,
               'form': m.form,

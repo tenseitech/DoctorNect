@@ -84,9 +84,8 @@ abstract final class MedicationTimeSlots {
     String? current,
   }) async {
     final parsed = parseFormattedTime(current);
-    var selected = parsed != null && isValid(slot, parsed)
-        ? parsed
-        : defaultTime(slot);
+    var selected =
+        parsed != null && isValid(slot, parsed) ? parsed : defaultTime(slot);
     final hours = hoursFor(slot);
 
     return showModalBottomSheet<String>(

@@ -38,7 +38,8 @@ abstract final class DoctorAppointmentActions {
                 content: Text(
                   describeUserFacingError(
                     e,
-                    fallback: "Couldn't reschedule this appointment. Please check your connection and try again.",
+                    fallback:
+                        "Couldn't reschedule this appointment. Please check your connection and try again.",
                   ),
                 ),
               ),
@@ -69,53 +70,54 @@ abstract final class DoctorAppointmentActions {
   }) {
     ProfileActionGuard.run(context, UserType.doctor, () {
       showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cancel appointment?'),
-        content: Text('Cancel ${appointment.patientName}\'s appointment?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                await SharedAppointmentsStore.instance.cancelByDoctor(
-                  appointment.id,
-                  reason: reason,
-                );
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      describeUserFacingError(
-                        e,
-                        fallback: "Couldn't cancel this appointment. Please check your connection and try again.",
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Cancel appointment?'),
+          content: Text('Cancel ${appointment.patientName}\'s appointment?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  await SharedAppointmentsStore.instance.cancelByDoctor(
+                    appointment.id,
+                    reason: reason,
+                  );
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        describeUserFacingError(
+                          e,
+                          fallback:
+                              "Couldn't cancel this appointment. Please check your connection and try again.",
+                        ),
                       ),
                     ),
-                  ),
+                  );
+                  return;
+                }
+                PatientNotificationEmitter.notifyDoctorCancelled(
+                  doctorName: DoctorSession.loggedInDoctorName,
+                  reason: reason,
                 );
-                return;
-              }
-              PatientNotificationEmitter.notifyDoctorCancelled(
-                doctorName: DoctorSession.loggedInDoctorName,
-                reason: reason,
-              );
-              onComplete?.call();
-              if (!context.mounted) return;
-              if (popAfter) Navigator.pop(context);
-            },
-            child: const Text(
-              'Yes, Cancel',
-              style: TextStyle(color: Color(0xFFDC2626)),
+                onComplete?.call();
+                if (!context.mounted) return;
+                if (popAfter) Navigator.pop(context);
+              },
+              child: const Text(
+                'Yes, Cancel',
+                style: TextStyle(color: Color(0xFFDC2626)),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
     });
   }
 }

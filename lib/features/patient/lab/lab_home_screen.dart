@@ -705,8 +705,8 @@ class _LabQuickAction extends StatelessWidget {
               Icon(
                 Icons.chevron_right_rounded,
                 size: 18,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.8),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.8),
               ),
             ],
           ),

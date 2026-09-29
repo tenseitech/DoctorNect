@@ -67,8 +67,7 @@ class _PatientBookingConfirmedBaseState
 
   @override
   Widget build(BuildContext context) {
-    final iconData =
-        widget.headerIcon ??
+    final iconData = widget.headerIcon ??
         (widget.isPending ? Icons.schedule_send_outlined : Icons.check);
 
     final content = Column(

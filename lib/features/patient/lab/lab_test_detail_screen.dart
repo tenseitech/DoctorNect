@@ -116,13 +116,11 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
       ..._favoritesStore.hiddenLabKeys,
     };
 
-    return widget.partnerLabs
-        .where((lab) {
-          final key = LabCityFilter.partnerLabKey(lab);
-          if (excludedKeys.contains(key)) return false;
-          return LabCityFilter.partnerLabInCity(lab, city, _registryById);
-        })
-        .toList(growable: false);
+    return widget.partnerLabs.where((lab) {
+      final key = LabCityFilter.partnerLabKey(lab);
+      if (excludedKeys.contains(key)) return false;
+      return LabCityFilter.partnerLabInCity(lab, city, _registryById);
+    }).toList(growable: false);
   }
 
   List<PartnerLab> _bookableLabs(
@@ -246,7 +244,8 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                   const SizedBox(height: 12),
                   if (myLabs.isEmpty)
                     _LabsEmptyNote(
-                      message: 'No labs added yet. Add labs from search or choose one below.',
+                      message:
+                          'No labs added yet. Add labs from search or choose one below.',
                     )
                   else
                     ...myLabs.map(
@@ -447,7 +446,7 @@ class _LabPartnerTile extends StatelessWidget {
                   color: selected
                       ? AppColors.labPurple
                       : AppColors.textSecondaryOf(context)
-                            .withValues(alpha: 0.7),
+                          .withValues(alpha: 0.7),
                   size: 22,
                 ),
               ],

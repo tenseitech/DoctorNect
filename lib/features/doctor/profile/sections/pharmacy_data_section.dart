@@ -45,10 +45,10 @@ class PharmacyDataSection extends StatelessWidget {
           ]),
           builder: (context, _) {
             final doctorId = DoctorSession.loggedInDoctorId;
-            final activeConns = PharmacyConnectionStore.instance
-                .activeForDoctor(doctorId);
-            final pendingConns = PharmacyConnectionStore.instance
-                .pendingForDoctor(doctorId);
+            final activeConns =
+                PharmacyConnectionStore.instance.activeForDoctor(doctorId);
+            final pendingConns =
+                PharmacyConnectionStore.instance.pendingForDoctor(doctorId);
             final deliveries = PharmacyPrescriptionStore.instance.forDoctor(
               doctorId,
             );
@@ -313,13 +313,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Text(
-    text,
-    style: GoogleFonts.inter(
-      fontSize: AppTypography.labelMedium,
-      fontWeight: FontWeight.w600,
-      color: color,
-    ),
-  );
+        text,
+        style: GoogleFonts.inter(
+          fontSize: AppTypography.labelMedium,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      );
 }
 
 class _EmptyState extends StatelessWidget {
@@ -334,19 +334,19 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 52, color: color.withValues(alpha: 0.3)),
-        const SizedBox(height: 12),
-        Text(
-          message,
-          style: GoogleFonts.inter(
-            fontSize: AppTypography.bodyMedium,
-            color: Colors.grey[500],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 52, color: color.withValues(alpha: 0.3)),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodyMedium,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 }

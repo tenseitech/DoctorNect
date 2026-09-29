@@ -32,19 +32,19 @@ class DoctorScheduleAvailability {
   final DateTime? leaveEnd;
 
   static DoctorScheduleAvailability defaults() => DoctorScheduleAvailability(
-    workingDays: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-    morningStart: '09:00 AM',
-    morningEnd: '01:00 PM',
-    eveningEnabled: true,
-    eveningStart: '04:00 PM',
-    eveningEnd: '08:00 PM',
-    slotDurationMins: 15,
-    maxPatientsPerDay: 20,
-    breakEnabled: false,
-    breakStart: '01:00 PM',
-    breakEnd: '02:00 PM',
-    blockedDates: const {},
-  );
+        workingDays: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        morningStart: '09:00 AM',
+        morningEnd: '01:00 PM',
+        eveningEnabled: true,
+        eveningStart: '04:00 PM',
+        eveningEnd: '08:00 PM',
+        slotDurationMins: 15,
+        maxPatientsPerDay: 20,
+        breakEnabled: false,
+        breakStart: '01:00 PM',
+        breakEnd: '02:00 PM',
+        blockedDates: const {},
+      );
 
   DoctorScheduleAvailability copyWith({
     List<String>? workingDays,

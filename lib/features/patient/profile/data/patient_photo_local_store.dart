@@ -27,10 +27,11 @@ abstract final class PatientPhotoLocalStore {
   static Future<String?> uploadToFirebaseStorage(
     String patientId, [
     Uint8List? bytes,
-  ]) => LocalAvatarStore.uploadToFirebaseStorage(
-    storagePath: 'patients/$patientId/profile_photo.jpg',
-    role: 'patient',
-    id: patientId,
-    bytes: bytes,
-  );
+  ]) =>
+      LocalAvatarStore.uploadToFirebaseStorage(
+        storagePath: 'patients/$patientId/profile_photo.jpg',
+        role: 'patient',
+        id: patientId,
+        bytes: bytes,
+      );
 }

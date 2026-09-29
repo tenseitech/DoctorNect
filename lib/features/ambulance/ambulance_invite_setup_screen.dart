@@ -73,7 +73,8 @@ class _AmbulanceInviteSetupScreenState
     if (!signedIn) {
       setState(() {
         _loading = false;
-        _error = 'Could not start a secure session. Sign out of other accounts and try again.';
+        _error =
+            'Could not start a secure session. Sign out of other accounts and try again.';
       });
       return;
     }
@@ -128,9 +129,8 @@ class _AmbulanceInviteSetupScreenState
   String _suggestedUsername(AmbulanceInvite invite) {
     final phone = invite.phone.replaceAll(RegExp(r'[^0-9]'), '');
     if (phone.length >= 4) return 'driver$phone';
-    final name = invite.driverName
-        .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')
-        .toLowerCase();
+    final name =
+        invite.driverName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toLowerCase();
     if (name.length >= 3) return name;
     return '';
   }
@@ -166,16 +166,13 @@ class _AmbulanceInviteSetupScreenState
     );
     await FirestoreService.instance.ambulance.fetchAmbulanceById(ambulanceId);
 
-    final fresh =
-        AmbulanceStore.instance.findAmbulance(ambulanceId) ??
+    final fresh = AmbulanceStore.instance.findAmbulance(ambulanceId) ??
         _invite!.toRegisteredAmbulance(username: username, pinHash: '');
 
     await AmbulanceLoginCache.save(fresh);
-    SharedPreferences.getInstance()
-        .then((prefs) {
-          prefs.setString('last_login_ambulance_username', username);
-        })
-        .catchError((_) {});
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('last_login_ambulance_username', username);
+    }).catchError((_) {});
 
     PendingAmbulanceInviteStore.clear();
 

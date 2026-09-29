@@ -164,18 +164,15 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
       draft,
       fallback: DoctorProfileStore.displayNameWithPrefix,
     );
-    final displaySpecialization = hasDoctorSnapshot
-        ? draft.doctorSpecialization
-        : profile.specialization;
+    final displaySpecialization =
+        hasDoctorSnapshot ? draft.doctorSpecialization : profile.specialization;
     final displayQualifications = hasDoctorSnapshot
         ? draft.doctorQualifications
         : PrescriptionHeaderHelper.qualificationsLine(profile);
-    final displayRegNumber = hasDoctorSnapshot
-        ? draft.doctorRegNumber
-        : profile.councilNumber;
-    final displayClinicName = hasDoctorSnapshot
-        ? draft.clinicName
-        : profile.clinicName;
+    final displayRegNumber =
+        hasDoctorSnapshot ? draft.doctorRegNumber : profile.councilNumber;
+    final displayClinicName =
+        hasDoctorSnapshot ? draft.clinicName : profile.clinicName;
     final displayAddress = hasDoctorSnapshot
         ? draft.clinicAddress
         : PrescriptionHeaderHelper.clinicAddressLine(profile);
@@ -207,9 +204,9 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
             onPressed: _busy
                 ? null
                 : () => _runAction(
-                    () => PrescriptionPdfService.downloadPdf(_draft),
-                    errorLabel: 'Download',
-                  ),
+                      () => PrescriptionPdfService.downloadPdf(_draft),
+                      errorLabel: 'Download',
+                    ),
           ),
           IconButton(
             icon: const Icon(Icons.print_outlined),
@@ -217,9 +214,9 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
             onPressed: _busy
                 ? null
                 : () => _runAction(
-                    () => PrescriptionPdfService.printPrescription(_draft),
-                    errorLabel: 'Print',
-                  ),
+                      () => PrescriptionPdfService.printPrescription(_draft),
+                      errorLabel: 'Print',
+                    ),
           ),
         ],
       ),
@@ -706,9 +703,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
             style: GoogleFonts.inter(
               fontSize: 9.5,
               height: 1.35,
-              fontWeight: (boldFirst && i == 1)
-                  ? FontWeight.w600
-                  : FontWeight.w400,
+              fontWeight:
+                  (boldFirst && i == 1) ? FontWeight.w600 : FontWeight.w400,
               color: AppColors.textPrimaryOf(context),
             ),
           ),

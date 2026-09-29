@@ -7,6 +7,7 @@ import '../../constants/app_constants.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
 import '../../../features/patient/lab/utils/patient_selected_investigations_mapper.dart';
 import '../lab_report_file_store.dart';
+import '../../storage/storage_service.dart';
 import '../../session/patient_session.dart'; // FIXED: scope slot queries to the current patient
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
@@ -30,6 +31,8 @@ class LabBookingRecord {
     this.labName,
     this.reportFileName,
     this.reportStorageUrl,
+    this.reportStorageKey,
+    this.reportStorageProvider,
     this.reportSubmittedAt,
     this.reportBookingId,
     this.createdAt,
@@ -50,6 +53,8 @@ class LabBookingRecord {
   final String status;
   final String? reportFileName;
   final String? reportStorageUrl;
+  final String? reportStorageKey;
+  final String? reportStorageProvider;
   final DateTime? reportSubmittedAt;
 
   /// Booking row that owns the uploaded report file (may differ in grouped checkouts).
@@ -59,8 +64,8 @@ class LabBookingRecord {
   bool get hasReport =>
       reportFileName != null &&
       reportFileName!.trim().isNotEmpty &&
-      reportStorageUrl != null &&
-      reportStorageUrl!.trim().isNotEmpty;
+      ((reportStorageKey != null && reportStorageKey!.trim().isNotEmpty) ||
+          (reportStorageUrl != null && reportStorageUrl!.trim().isNotEmpty));
 
   String get reportOwnerBookingId => reportBookingId?.trim().isNotEmpty == true
       ? reportBookingId!.trim()
@@ -84,6 +89,12 @@ class LabBookingRepository {
   LabBookingRepository._();
 
   static final LabBookingRepository instance = LabBookingRepository._();
+
+  @visibleForTesting
+  FirebaseFirestore? firestoreOverride;
+
+  FirebaseFirestore get firestore =>
+      firestoreOverride ?? FirebaseFirestore.instance;
 
   static String newBookingId({int suffix = 0}) {
     final stamp = DateTime.now().microsecondsSinceEpoch;
@@ -123,29 +134,29 @@ class LabBookingRepository {
         .collection(FirestorePaths.labBookings)
         .doc(bookingId)
         .set({
-          'bookingId': bookingId,
-          'patientId': patientId,
-          'testId': testIds.first,
-          'testIds': testIds,
-          'testName': summary,
-          'testNames': testNames,
-          'patientName': draft.patientName,
-          'patientAge': draft.patientAge,
-          'bookingForSelf': draft.bookingForSelf,
-          if (familyMemberId != null && familyMemberId.isNotEmpty)
-            'familyMemberId': familyMemberId,
-          'collectionType': draft.collectionType.name,
-          'partnerLab': draft.selectedLab?.name ?? '',
-          if (draft.selectedLab?.id != null &&
-              draft.selectedLab!.id!.isNotEmpty)
-            'labId': draft.selectedLab!.id, // FIXED: persist labId so the lab operator can query their bookings
-          'address': draft.address ?? '',
-          'dateTime': Timestamp.fromDate(dateTime),
-          'slotLabel': draft.selectedSlotLabel,
-          'status': status,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      'bookingId': bookingId,
+      'patientId': patientId,
+      'testId': testIds.first,
+      'testIds': testIds,
+      'testName': summary,
+      'testNames': testNames,
+      'patientName': draft.patientName,
+      'patientAge': draft.patientAge,
+      'bookingForSelf': draft.bookingForSelf,
+      if (familyMemberId != null && familyMemberId.isNotEmpty)
+        'familyMemberId': familyMemberId,
+      'collectionType': draft.collectionType.name,
+      'partnerLab': draft.selectedLab?.name ?? '',
+      if (draft.selectedLab?.id != null && draft.selectedLab!.id!.isNotEmpty)
+        'labId': draft.selectedLab!
+            .id, // FIXED: persist labId so the lab operator can query their bookings
+      'address': draft.address ?? '',
+      'dateTime': Timestamp.fromDate(dateTime),
+      'slotLabel': draft.selectedSlotLabel,
+      'status': status,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     return LabBookingRecord(
       bookingId: bookingId,
@@ -180,10 +191,8 @@ class LabBookingRepository {
     if (labId.isEmpty) {
       throw ArgumentError('Lab id is required');
     }
-    final trimmedTests = testNames
-        .map((t) => t.trim())
-        .where((t) => t.isNotEmpty)
-        .toList();
+    final trimmedTests =
+        testNames.map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
     if (trimmedTests.isEmpty) {
       throw ArgumentError('At least one test is required');
     }
@@ -201,33 +210,33 @@ class LabBookingRepository {
         .collection(FirestorePaths.labBookings)
         .doc(bookingId)
         .set({
-          'bookingId': bookingId,
-          'patientId': patientId,
-          'patientName': patientName.trim(),
-          'patientAge': patientAge,
-          'patientGender': AppConstants.normalizePatientGender(patientGender),
-          if (contactNumber != null && contactNumber.trim().isNotEmpty)
-            'contactNumber': contactNumber.trim(),
-          'testName': summary,
-          'testNames': trimmedTests,
-          'testId': trimmedTests.first.toLowerCase().replaceAll(
+      'bookingId': bookingId,
+      'patientId': patientId,
+      'patientName': patientName.trim(),
+      'patientAge': patientAge,
+      'patientGender': AppConstants.normalizePatientGender(patientGender),
+      if (contactNumber != null && contactNumber.trim().isNotEmpty)
+        'contactNumber': contactNumber.trim(),
+      'testName': summary,
+      'testNames': trimmedTests,
+      'testId': trimmedTests.first.toLowerCase().replaceAll(
             RegExp(r'\s+'),
             '_',
           ),
-          'testIds': trimmedTests
-              .map((t) => t.toLowerCase().replaceAll(RegExp(r'\s+'), '_'))
-              .toList(),
-          'collectionType': LabCollectionType.walkIn.name,
-          'partnerLab': labName,
-          'labId': labId,
-          'address': '',
-          'dateTime': Timestamp.fromDate(dateTime),
-          'slotLabel': slotLabel,
-          'status': 'confirmed',
-          'source': 'walkin',
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+      'testIds': trimmedTests
+          .map((t) => t.toLowerCase().replaceAll(RegExp(r'\s+'), '_'))
+          .toList(),
+      'collectionType': LabCollectionType.walkIn.name,
+      'partnerLab': labName,
+      'labId': labId,
+      'address': '',
+      'dateTime': Timestamp.fromDate(dateTime),
+      'slotLabel': slotLabel,
+      'status': 'confirmed',
+      'source': 'walkin',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     return LabBookingRecord(
       bookingId: bookingId,
@@ -367,29 +376,32 @@ class LabBookingRepository {
         .update({'status': status, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
-  Future<String> submitReport({
+  Future<StorageUploadResult> submitReport({
     required String bookingId,
     required String patientId,
     required String fileName,
     required Uint8List bytes,
     List<String> linkedBookingIds = const [],
+    String? existingReportStorageKey,
   }) async {
-    if (!FirebaseBootstrap.isReady || bookingId.isEmpty || patientId.isEmpty) {
+    if ((!FirebaseBootstrap.isReady && firestoreOverride == null) ||
+        bookingId.isEmpty ||
+        patientId.isEmpty) {
       throw StateError('Firebase is not ready');
     }
     if (bytes.isEmpty || bytes.length > LabReportFileStore.maxFileBytes) {
       throw ArgumentError('Invalid report file size');
     }
 
-    final storageUrl = await LabReportFileStore.uploadToStorage(
+    final uploadResult = await LabReportFileStore.uploadReport(
       patientId: patientId,
       bookingId: bookingId,
       fileName: fileName,
       bytes: bytes,
     );
-    if (storageUrl == null || storageUrl.isEmpty) {
+    if (uploadResult == null) {
       throw StateError(
-        'Could not upload report. Check Firebase Storage rules and your connection, then try again.',
+        'Could not upload report. Check storage rules and your connection, then try again.',
       );
     }
 
@@ -398,12 +410,16 @@ class LabBookingRepository {
       bookingId: bookingId,
       fileName: fileName,
       bytes: bytes,
+      storageKey: uploadResult.objectKey,
     );
 
-    final updatePayload = {
+    final updatePayload = <String, dynamic>{
       'status': 'completed',
       'reportFileName': fileName,
-      'reportStorageUrl': storageUrl,
+      if (uploadResult.downloadUrl != null)
+        'reportStorageUrl': uploadResult.downloadUrl,
+      'reportStorageKey': uploadResult.objectKey,
+      'reportStorageProvider': uploadResult.provider,
       'reportBookingId': bookingId,
       'reportSubmittedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
@@ -415,25 +431,30 @@ class LabBookingRepository {
     }.where((id) => id.trim().isNotEmpty).toList();
 
     if (bookingIds.length == 1) {
-      await FirebaseFirestore.instance
+      await firestore
           .collection(FirestorePaths.labBookings)
           .doc(bookingIds.first)
           .update(updatePayload)
           .timeout(const Duration(seconds: 20));
     } else {
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = firestore.batch();
       for (final id in bookingIds) {
         batch.update(
-          FirebaseFirestore.instance
-              .collection(FirestorePaths.labBookings)
-              .doc(id),
+          firestore.collection(FirestorePaths.labBookings).doc(id),
           updatePayload,
         );
       }
       await batch.commit().timeout(const Duration(seconds: 20));
     }
 
-    return storageUrl;
+    // Best-effort delete old S3 report ONLY after Firestore update succeeded
+    if (existingReportStorageKey != null &&
+        existingReportStorageKey.trim().isNotEmpty &&
+        existingReportStorageKey != uploadResult.objectKey) {
+      await LabReportFileStore.deleteS3Report(existingReportStorageKey);
+    }
+
+    return uploadResult;
   }
 
   LabBookingRecord? _fromMap(String docId, Map<String, dynamic> data) {
@@ -443,12 +464,11 @@ class LabBookingRepository {
       final testNamesRaw = data['testNames'];
       final testNames = testNamesRaw is List
           ? testNamesRaw
-                .map((item) => item.toString().trim())
-                .where((name) => name.isNotEmpty)
-                .toList()
+              .map((item) => item.toString().trim())
+              .where((name) => name.isNotEmpty)
+              .toList()
           : <String>[];
-      final testName =
-          data['testName'] as String? ??
+      final testName = data['testName'] as String? ??
           (testNames.isNotEmpty
               ? PatientSelectedInvestigationsMapper.summaryFromNames(testNames)
               : 'Lab test');
@@ -468,6 +488,8 @@ class LabBookingRepository {
         status: data['status'] as String? ?? 'confirmed',
         reportFileName: data['reportFileName'] as String?,
         reportStorageUrl: data['reportStorageUrl'] as String?,
+        reportStorageKey: data['reportStorageKey'] as String?,
+        reportStorageProvider: data['reportStorageProvider'] as String?,
         reportSubmittedAt: (data['reportSubmittedAt'] as Timestamp?)?.toDate(),
         reportBookingId: data['reportBookingId'] as String? ?? docId,
         createdAt: (data['createdAt'] as Timestamp?)?.toDate(),

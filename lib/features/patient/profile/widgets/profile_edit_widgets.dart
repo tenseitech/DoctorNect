@@ -285,9 +285,8 @@ abstract final class ProfileEditWidgets {
               return ChoiceChip(
                 label: Text(gender),
                 selected: isSelected,
-                onSelected: locked || select == null
-                    ? null
-                    : (_) => select(gender),
+                onSelected:
+                    locked || select == null ? null : (_) => select(gender),
                 selectedColor: AppColors.patientTeal.withValues(alpha: 0.2),
                 backgroundColor: AppColors.cardBgOf(context),
                 disabledColor: AppColors.cardBgOf(context),
@@ -296,8 +295,8 @@ abstract final class ProfileEditWidgets {
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
                       ? (locked
-                            ? AppColors.textPrimaryOf(context)
-                            : AppColors.patientTeal)
+                          ? AppColors.textPrimaryOf(context)
+                          : AppColors.patientTeal)
                       : AppColors.textSecondaryOf(context),
                 ),
                 side: BorderSide(
@@ -348,9 +347,8 @@ abstract final class ProfileEditWidgets {
               return FilterChip(
                 label: Text(group),
                 selected: isSelected,
-                onSelected: locked || select == null
-                    ? null
-                    : (_) => select(group),
+                onSelected:
+                    locked || select == null ? null : (_) => select(group),
                 selectedColor: AppColors.patientTeal.withValues(alpha: 0.2),
                 backgroundColor: AppColors.cardBgOf(context),
                 disabledColor: AppColors.cardBgOf(context),
@@ -359,8 +357,8 @@ abstract final class ProfileEditWidgets {
                   fontSize: AppTypography.bodySmall,
                   color: isSelected
                       ? (locked
-                            ? AppColors.textPrimaryOf(context)
-                            : AppColors.patientTeal)
+                          ? AppColors.textPrimaryOf(context)
+                          : AppColors.patientTeal)
                       : AppColors.textSecondaryOf(context),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
@@ -504,9 +502,8 @@ abstract final class ProfileEditWidgets {
       suffixIcon: suffixIcon,
       counterText: counterText,
     ).copyWith(
-      fillColor: editing
-          ? AppColors.surfaceOf(context)
-          : AppColors.cardBgOf(context),
+      fillColor:
+          editing ? AppColors.surfaceOf(context) : AppColors.cardBgOf(context),
     );
   }
 

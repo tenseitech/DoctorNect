@@ -28,6 +28,8 @@ class LabReportScreen extends StatefulWidget {
     this.patientId,
     this.reportFileName,
     this.storageUrl,
+    this.reportStorageKey,
+    this.reportStorageProvider,
   }) : assert(booking != null || (testName != null && bookingId != null));
 
   final LabBookingRecord? booking;
@@ -38,6 +40,8 @@ class LabReportScreen extends StatefulWidget {
   final String? patientId;
   final String? reportFileName;
   final String? storageUrl;
+  final String? reportStorageKey;
+  final String? reportStorageProvider;
 
   String get displayTestName => booking?.testName ?? testName ?? 'Lab test';
   String get displayBookingId => booking?.bookingId ?? bookingId ?? '';
@@ -64,14 +68,20 @@ class _LabReportScreenState extends State<LabReportScreen> {
     final String? bookingId = booking?.reportOwnerBookingId ?? widget.bookingId;
     final String? fileName = booking?.reportFileName ?? widget.reportFileName;
     final String? url = booking?.reportStorageUrl ?? widget.storageUrl;
+    final String? storageKey =
+        booking?.reportStorageKey ?? widget.reportStorageKey;
+    final String? storageProvider =
+        booking?.reportStorageProvider ?? widget.reportStorageProvider;
     final alternateBookingIds = booking?.linkedBookingIds ?? const <String>[];
+
+    final hasSource = (storageKey != null && storageKey.trim().isNotEmpty) ||
+        (url != null && url.trim().isNotEmpty);
 
     if (patientId == null ||
         bookingId == null ||
         fileName == null ||
         fileName.isEmpty ||
-        url == null ||
-        url.isEmpty) {
+        !hasSource) {
       setState(() {
         _loading = false;
         _error = 'Report preview is not available yet.';
@@ -85,6 +95,8 @@ class _LabReportScreenState extends State<LabReportScreen> {
         bookingId: bookingId,
         fileName: fileName,
         storageUrl: url,
+        storageKey: storageKey,
+        storageProvider: storageProvider,
         alternateBookingIds: alternateBookingIds,
       ).timeout(LabReportFileStore.downloadTimeout, onTimeout: () => null);
 
@@ -95,7 +107,8 @@ class _LabReportScreenState extends State<LabReportScreen> {
         error =
             'Could not load the report. Check your connection and try again.';
       } else if (!LabReportFileStore.matchesDeclaredType(bytes, fileName)) {
-        error = 'The linked report file looks invalid or mismatched. Ask your lab to re-upload the correct report.';
+        error =
+            'The linked report file looks invalid or mismatched. Ask your lab to re-upload the correct report.';
       }
 
       setState(() {
@@ -139,8 +152,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
     await lab_report_download.downloadLabReportBytes(
       bytes: bytes,
       fileName: fileName,
-      mimeType:
-          LabReportFileStore.mimeTypeFor(fileName) ??
+      mimeType: LabReportFileStore.mimeTypeFor(fileName) ??
           'application/octet-stream',
     );
   }

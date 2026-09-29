@@ -185,13 +185,12 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
     try {
       final records = await FirestoreService.instance.patientProfile
           .fetchHealthRecords(patientId);
-      final vaccinations =
-          records
-              .where((r) => r.type == HealthRecordType.vaccination)
-              .map(_entryFromHealthRecord)
-              .whereType<_VaccinationEntry>()
-              .toList()
-            ..sort((a, b) => b.date.compareTo(a.date));
+      final vaccinations = records
+          .where((r) => r.type == HealthRecordType.vaccination)
+          .map(_entryFromHealthRecord)
+          .whereType<_VaccinationEntry>()
+          .toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
 
       if (!mounted) return;
       setState(() {

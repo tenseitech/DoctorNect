@@ -45,9 +45,9 @@ abstract final class FirestoreDataPrefetch {
           ClinicalPrescriptionStore.instance
               .refreshForDoctor(preferCache: true)
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Doctor prescription prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Doctor prescription prefetch failed: $e\n$st');
+          }),
           FirestoreService.instance.pharmacyFirestore
               .fetchActiveConnectionsForDoctor(profileId, preferCache: true)
               .then(
@@ -55,9 +55,9 @@ abstract final class FirestoreDataPrefetch {
                     .mergeFirestoreConnections(r.items),
               )
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Doctor pharmacy prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Doctor pharmacy prefetch failed: $e\n$st');
+          }),
           FirestoreService.instance.labConnection
               .fetchActiveConnectionsForDoctor(profileId, preferCache: true)
               .then(
@@ -66,15 +66,15 @@ abstract final class FirestoreDataPrefetch {
                 ),
               )
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Doctor lab connections prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Doctor lab connections prefetch failed: $e\n$st');
+          }),
           SharedAppointmentsStore.instance
               .refreshForDoctor(profileId, preferCache: true)
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Doctor appointments prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Doctor appointments prefetch failed: $e\n$st');
+          }),
           DoctorProfileStore.instance.loadFromFirestore(profileId).catchError((
             e,
             st,
@@ -91,19 +91,19 @@ abstract final class FirestoreDataPrefetch {
           PharmacyPrescriptionStore.instance
               .refreshForDoctor(profileId, preferCache: true)
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint(
-                    'Doctor pharmacy deliveries prefetch failed: $e\n$st',
-                  );
-              }),
+            if (kDebugMode)
+              debugPrint(
+                'Doctor pharmacy deliveries prefetch failed: $e\n$st',
+              );
+          }),
           MedicalDirectoryStore.instance
               .refreshForDoctor(preferCache: true)
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint(
-                    'Doctor medical directory prefetch failed: $e\n$st',
-                  );
-              }),
+            if (kDebugMode)
+              debugPrint(
+                'Doctor medical directory prefetch failed: $e\n$st',
+              );
+          }),
         ]);
       case UserType.patient:
         await Future.wait([
@@ -115,9 +115,9 @@ abstract final class FirestoreDataPrefetch {
                 ),
               )
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Patient prescription prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Patient prescription prefetch failed: $e\n$st');
+          }),
           PatientProfileMock.loadFromFirestore(profileId).catchError((e, st) {
             if (kDebugMode)
               debugPrint('Patient profile prefetch failed: $e\n$st');
@@ -128,38 +128,38 @@ abstract final class FirestoreDataPrefetch {
                 (r) => SharedAppointmentsStore.instance.mergeFromFirestore(r),
               )
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Patient appointments prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Patient appointments prefetch failed: $e\n$st');
+          }),
           FirestoreService.instance.patientProfile
               .fetchHealthRecords(profileId)
               .then((r) => HealthRecordsMock.applyFromFirestore(r))
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Patient health records prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Patient health records prefetch failed: $e\n$st');
+          }),
           PharmacyPrescriptionStore.instance
               .refreshForPatient(profileId, preferCache: false)
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint(
-                    'Patient pharmacy deliveries prefetch failed: $e\n$st',
-                  );
-              }),
+            if (kDebugMode)
+              debugPrint(
+                'Patient pharmacy deliveries prefetch failed: $e\n$st',
+              );
+          }),
           LabOrderStore.instance
               .refreshForPatient(profileId, preferCache: false)
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Patient lab orders prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Patient lab orders prefetch failed: $e\n$st');
+          }),
           PatientLabBookingStore.instance
               .refreshForPatient(profileId, preferCache: false)
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint(
-                    'Patient blood test bookings prefetch failed: $e\n$st',
-                  );
-              }),
+            if (kDebugMode)
+              debugPrint(
+                'Patient blood test bookings prefetch failed: $e\n$st',
+              );
+          }),
         ]);
       case UserType.medicalStore:
         await Future.wait([
@@ -170,20 +170,20 @@ abstract final class FirestoreDataPrefetch {
                     .mergeFirestoreConnections(r.items),
               )
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint(
-                    'Store pharmacy connections prefetch failed: $e\n$st',
-                  );
-              }),
+            if (kDebugMode)
+              debugPrint(
+                'Store pharmacy connections prefetch failed: $e\n$st',
+              );
+          }),
           FirestoreService.instance.pharmacyFirestore
               .fetchDeliveriesForStore(profileId)
               .then(
                 (r) => PharmacyPrescriptionStore.instance.mergeFromFirestore(r),
               )
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Store deliveries prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Store deliveries prefetch failed: $e\n$st');
+          }),
         ]);
       case UserType.lab:
         await Future.wait([
@@ -195,25 +195,23 @@ abstract final class FirestoreDataPrefetch {
                 ),
               )
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Lab connections prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode)
+              debugPrint('Lab connections prefetch failed: $e\n$st');
+          }),
           FirestoreService.instance.labOrder
               .fetchForLab(profileId, preferCache: false)
               .then((page) => LabWorklistStore.instance.mergeOrders(page.items))
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Lab orders prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode) debugPrint('Lab orders prefetch failed: $e\n$st');
+          }),
           FirestoreService.instance.labBooking
               .fetchForLab(profileId)
               .then(
                 (bookings) => LabWorklistStore.instance.mergeBookings(bookings),
               )
               .catchError((e, st) {
-                if (kDebugMode)
-                  debugPrint('Lab bookings prefetch failed: $e\n$st');
-              }),
+            if (kDebugMode) debugPrint('Lab bookings prefetch failed: $e\n$st');
+          }),
         ]);
         break;
       case UserType.ambulance:

@@ -134,7 +134,7 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
                   color: widget.enabled
                       ? AppColors.textSecondaryOf(context)
                       : AppColors.textSecondaryOf(context)
-                            .withValues(alpha: 0.5),
+                          .withValues(alpha: 0.5),
                 ),
               ],
             ),
@@ -164,8 +164,7 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
         _PhoneNumberInputFormatter(dialCode: _dialCode, maxLength: _maxLength),
       ],
       decoration: mergedDecoration,
-      validator:
-          widget.validator ??
+      validator: widget.validator ??
           (value) => FormValidators.phoneLocal(value, dialCode: _dialCode),
       onChanged: (_) => widget.onChanged?.call(),
     );

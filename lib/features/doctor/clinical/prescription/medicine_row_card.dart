@@ -342,8 +342,7 @@ class MedicineRowCard extends StatelessWidget {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  initialValue:
-                      entry.instructions.isEmpty ||
+                  initialValue: entry.instructions.isEmpty ||
                           !ClinicalMockData.instructionOptions.contains(
                             entry.instructions,
                           )

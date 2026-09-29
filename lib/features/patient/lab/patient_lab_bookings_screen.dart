@@ -69,8 +69,8 @@ class _PatientLabBookingsScreenState extends State<PatientLabBookingsScreen>
     final upcoming = PatientLabBookingFilters.upcoming(all);
     final history = PatientLabBookingFilters.history(all);
     final compact = ResponsiveLayout.isCompact(context);
-    final maxWidth = ResponsiveLayout.contentMaxWidth(context)
-        .clamp(0.0, 720.0);
+    final maxWidth =
+        ResponsiveLayout.contentMaxWidth(context).clamp(0.0, 720.0);
 
     final tabBodies = [
       _LabBookingsTabBody(
@@ -80,7 +80,8 @@ class _PatientLabBookingsScreenState extends State<PatientLabBookingsScreen>
         empty: const PatientTabEmptyState(
           icon: Icons.biotech_outlined,
           title: 'No lab bookings',
-          message: 'Book a test from the Lab tab and your requests will appear here.',
+          message:
+              'Book a test from the Lab tab and your requests will appear here.',
           accentColor: AppColors.labPurple,
         ),
       ),

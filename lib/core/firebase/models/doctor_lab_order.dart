@@ -20,6 +20,8 @@ class DoctorLabOrder {
     this.status = 'ordered',
     this.reportFileName,
     this.reportStorageUrl,
+    this.reportStorageKey,
+    this.reportStorageProvider,
     this.reportSubmittedAt,
   });
 
@@ -32,7 +34,8 @@ class DoctorLabOrder {
   final String? appointmentId;
   final List<String> testIds;
   final List<String> testNames;
-  final String? labId; // FIXED: registered lab id (when selected from verified labs / directory)
+  final String?
+      labId; // FIXED: registered lab id (when selected from verified labs / directory)
   final String? labName;
   final String? indication;
   final String urgency;
@@ -43,11 +46,13 @@ class DoctorLabOrder {
   final DateTime createdAt;
   final String? reportFileName;
   final String? reportStorageUrl;
+  final String? reportStorageKey;
+  final String? reportStorageProvider;
   final DateTime? reportSubmittedAt;
 
   bool get hasReport =>
       reportFileName != null &&
       reportFileName!.trim().isNotEmpty &&
-      reportStorageUrl != null &&
-      reportStorageUrl!.trim().isNotEmpty;
+      ((reportStorageKey != null && reportStorageKey!.trim().isNotEmpty) ||
+          (reportStorageUrl != null && reportStorageUrl!.trim().isNotEmpty));
 }

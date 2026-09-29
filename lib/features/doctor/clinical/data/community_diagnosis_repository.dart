@@ -128,11 +128,11 @@ class CommunityDiagnosisRepository {
     final doc = await FirebaseFirestore.instance
         .collection(FirestorePaths.communityDiagnoses)
         .add({
-          'text': trimmed,
-          'textLower': trimmed.toLowerCase(),
-          'addedByDoctorId': doctorId,
-          'addedAt': FieldValue.serverTimestamp(),
-        });
+      'text': trimmed,
+      'textLower': trimmed.toLowerCase(),
+      'addedByDoctorId': doctorId,
+      'addedAt': FieldValue.serverTimestamp(),
+    });
 
     final diagnosis = CommunityDiagnosis(
       id: doc.id,

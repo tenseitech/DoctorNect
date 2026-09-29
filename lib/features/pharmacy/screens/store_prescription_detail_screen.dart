@@ -122,7 +122,7 @@ class _StorePrescriptionDetailScreenState
         final draft = delivery.draft;
         final isDispensed =
             delivery.status == PharmacyDeliveryStatus.dispensed ||
-            delivery.status == PharmacyDeliveryStatus.partiallyDispensed;
+                delivery.status == PharmacyDeliveryStatus.partiallyDispensed;
         final reviewed = delivery.medicineLines
             .where((l) => l.availability != MedicineAvailability.pending)
             .length;
@@ -178,34 +178,33 @@ class _StorePrescriptionDetailScreenState
                             readOnly: isDispensed,
                             onStatusChanged:
                                 (line, availability, substitute) async {
-                                  ProfileActionGuard.run(
+                              ProfileActionGuard.run(
+                                context,
+                                UserType.medicalStore,
+                                () async {
+                                  final messenger = ScaffoldMessenger.of(
                                     context,
-                                    UserType.medicalStore,
-                                    () async {
-                                      final messenger = ScaffoldMessenger.of(
-                                        context,
-                                      );
-                                      try {
-                                        await PharmacyPrescriptionStore.instance
-                                            .updateMedicineLine(
-                                              deliveryId: delivery.id,
-                                              medicineEntryId:
-                                                  line.medicineEntryId,
-                                              availability: availability,
-                                              substituteName: substitute,
-                                            );
-                                      } catch (_) {
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Failed to update medicine availability. Please retry.',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    },
                                   );
+                                  try {
+                                    await PharmacyPrescriptionStore.instance
+                                        .updateMedicineLine(
+                                      deliveryId: delivery.id,
+                                      medicineEntryId: line.medicineEntryId,
+                                      availability: availability,
+                                      substituteName: substitute,
+                                    );
+                                  } catch (_) {
+                                    messenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Failed to update medicine availability. Please retry.',
+                                        ),
+                                      ),
+                                    );
+                                  }
                                 },
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -375,21 +374,21 @@ class _DeliveryStatusStyle {
   static _DeliveryStatusStyle from(PharmacyDeliveryStatus status) =>
       switch (status) {
         PharmacyDeliveryStatus.sent => _DeliveryStatusStyle(
-          label: 'New',
-          color: AppColors.doctorBlue,
-        ),
+            label: 'New',
+            color: AppColors.doctorBlue,
+          ),
         PharmacyDeliveryStatus.viewed => _DeliveryStatusStyle(
-          label: 'Viewed',
-          color: const Color(0xFFCA8A04),
-        ),
+            label: 'Viewed',
+            color: const Color(0xFFCA8A04),
+          ),
         PharmacyDeliveryStatus.partiallyDispensed => _DeliveryStatusStyle(
-          label: 'Partially dispensed',
-          color: const Color(0xFFEA580C),
-        ),
+            label: 'Partially dispensed',
+            color: const Color(0xFFEA580C),
+          ),
         PharmacyDeliveryStatus.dispensed => _DeliveryStatusStyle(
-          label: 'Dispensed',
-          color: AppColors.pharmacyGreen,
-        ),
+            label: 'Dispensed',
+            color: AppColors.pharmacyGreen,
+          ),
       };
 }
 
@@ -558,8 +557,7 @@ class _MedicinesResponsiveSection extends StatelessWidget {
     MedicineDispenseLine line,
     MedicineAvailability availability,
     String substitute,
-  )
-  onStatusChanged;
+  ) onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -596,8 +594,7 @@ class _MedicinesListSection extends StatelessWidget {
     MedicineDispenseLine line,
     MedicineAvailability availability,
     String substitute,
-  )
-  onStatusChanged;
+  ) onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -617,8 +614,8 @@ class _MedicinesListSection extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.textPrimaryOf(context)
-                      .withValues(alpha: 0.03),
+                  color:
+                      AppColors.textPrimaryOf(context).withValues(alpha: 0.03),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -719,8 +716,7 @@ class _MedicinesTableSection extends StatelessWidget {
     MedicineDispenseLine line,
     MedicineAvailability availability,
     String substitute,
-  )
-  onStatusChanged;
+  ) onStatusChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -965,7 +961,7 @@ class _HeaderCell extends StatelessWidget {
 
 class _BodyCell extends StatelessWidget {
   const _BodyCell(this.text, {this.bold = false, this.align = TextAlign.left})
-    : muted = false;
+      : muted = false;
 
   final String text;
   final bool bold;
@@ -1002,7 +998,7 @@ class _MedicineStatusPicker extends StatelessWidget {
   final MedicineDispenseLine line;
   final bool readOnly;
   final void Function(MedicineAvailability availability, String substitute)
-  onChanged;
+      onChanged;
 
   Future<void> _showSubstituteDialog(BuildContext context) async {
     final ctrl = TextEditingController(text: line.substituteName);
@@ -1123,8 +1119,8 @@ class _StatusSegment extends StatelessWidget {
               color: selected
                   ? color
                   : (disabled
-                        ? AppColors.surfaceOf(context)
-                        : AppColors.cardBgOf(context)),
+                      ? AppColors.surfaceOf(context)
+                      : AppColors.cardBgOf(context)),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -1136,8 +1132,8 @@ class _StatusSegment extends StatelessWidget {
                 color: selected
                     ? AppColors.surfaceOf(context)
                     : (disabled
-                          ? AppColors.textPrimaryOf(context)
-                          : AppColors.textSecondaryOf(context)),
+                        ? AppColors.textPrimaryOf(context)
+                        : AppColors.textSecondaryOf(context)),
               ),
             ),
           ),

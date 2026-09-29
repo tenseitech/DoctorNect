@@ -93,7 +93,8 @@ class _DoctorTodaysAppointmentsScreenState
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't accept this appointment. Please check your connection and try again.",
             ),
           ),
         ),
@@ -114,7 +115,8 @@ class _DoctorTodaysAppointmentsScreenState
           content: Text(
             describeUserFacingError(
               e,
-              fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+              fallback:
+                  "Couldn't decline this appointment. Please check your connection and try again.",
             ),
           ),
         ),

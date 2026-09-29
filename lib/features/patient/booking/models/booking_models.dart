@@ -141,10 +141,10 @@ class BookingDraft {
     List<String>? reportFiles,
     this.slotShareReasonType,
     this.slotShareReasonText = '',
-  }) : familyMemberIds = List<String>.from(familyMemberIds ?? const []),
-       memberReasons = Map<String, String>.from(memberReasons ?? const {}),
-       symptoms = List<String>.from(symptoms ?? const []),
-       reportFiles = List<String>.from(reportFiles ?? const []);
+  })  : familyMemberIds = List<String>.from(familyMemberIds ?? const []),
+        memberReasons = Map<String, String>.from(memberReasons ?? const {}),
+        symptoms = List<String>.from(symptoms ?? const []),
+        reportFiles = List<String>.from(reportFiles ?? const []);
 
   final String doctorId;
   final String doctorName;

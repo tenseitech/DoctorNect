@@ -86,18 +86,18 @@ class PharmacyConnectionStore extends ChangeNotifier {
       .toList();
 
   bool isConnected(String doctorId, String storeId) => _connections.any(
-    (c) =>
-        c.doctorId == doctorId &&
-        c.medicalStoreId == storeId &&
-        c.status == ConnectionStatus.active,
-  );
+        (c) =>
+            c.doctorId == doctorId &&
+            c.medicalStoreId == storeId &&
+            c.status == ConnectionStatus.active,
+      );
 
   bool hasPendingRequest(String doctorId, String storeId) => _connections.any(
-    (c) =>
-        c.doctorId == doctorId &&
-        c.medicalStoreId == storeId &&
-        c.status == ConnectionStatus.pending,
-  );
+        (c) =>
+            c.doctorId == doctorId &&
+            c.medicalStoreId == storeId &&
+            c.status == ConnectionStatus.pending,
+      );
 
   bool hasPendingFromDoctor(String doctorId, String storeId) =>
       _connections.any(
@@ -109,32 +109,36 @@ class PharmacyConnectionStore extends ChangeNotifier {
       );
 
   bool hasPendingFromStore(String doctorId, String storeId) => _connections.any(
-    (c) =>
-        c.doctorId == doctorId &&
-        c.medicalStoreId == storeId &&
-        c.status == ConnectionStatus.pending &&
-        c.requestedBy == ConnectionRequester.store,
-  );
+        (c) =>
+            c.doctorId == doctorId &&
+            c.medicalStoreId == storeId &&
+            c.status == ConnectionStatus.pending &&
+            c.requestedBy == ConnectionRequester.store,
+      );
 
   bool isPendingSentByStore({
     required String storeId,
     required String doctorId,
-  }) => hasPendingFromStore(doctorId, storeId);
+  }) =>
+      hasPendingFromStore(doctorId, storeId);
 
   bool isPendingFromDoctor({
     required String storeId,
     required String doctorId,
-  }) => hasPendingFromDoctor(doctorId, storeId);
+  }) =>
+      hasPendingFromDoctor(doctorId, storeId);
 
   bool isPendingSentByDoctor({
     required String doctorId,
     required String storeId,
-  }) => hasPendingFromDoctor(doctorId, storeId);
+  }) =>
+      hasPendingFromDoctor(doctorId, storeId);
 
   bool isPendingFromStore({
     required String doctorId,
     required String storeId,
-  }) => hasPendingFromStore(doctorId, storeId);
+  }) =>
+      hasPendingFromStore(doctorId, storeId);
 
   List<MedicalStoreProfile> searchStores(String query, {String? cityFilter}) {
     final q = query.trim().toLowerCase();
@@ -320,9 +324,8 @@ class PharmacyConnectionStore extends ChangeNotifier {
 
     final store = MedicalStoreRegistry.findById(storeId);
     final storeName = store?.storeName ?? 'Medical Store';
-    final trimmedDoctorName = doctorName.trim().isEmpty
-        ? 'Doctor'
-        : doctorName.trim();
+    final trimmedDoctorName =
+        doctorName.trim().isEmpty ? 'Doctor' : doctorName.trim();
 
     final conn = PharmacyConnection(
       id: 'conn${DateTime.now().millisecondsSinceEpoch}',
@@ -452,17 +455,17 @@ class PharmacyConnectionStore extends ChangeNotifier {
       case UserType.doctor:
         final doctorPage = await FirestoreService.instance.pharmacyFirestore
             .fetchActiveConnectionsForDoctor(
-              profileId,
-              preferCache: preferCache,
-            );
+          profileId,
+          preferCache: preferCache,
+        );
         mergeFirestoreConnections(doctorPage.items);
         break;
       case UserType.medicalStore:
         final storePage = await FirestoreService.instance.pharmacyFirestore
             .fetchActiveConnectionsForStore(
-              profileId,
-              preferCache: preferCache,
-            );
+          profileId,
+          preferCache: preferCache,
+        );
         mergeFirestoreConnections(storePage.items);
       case UserType.patient:
         break;

@@ -42,8 +42,7 @@ class DoctorPartnerPatientsBaseView<T> extends StatefulWidget {
     BuildContext context,
     T item,
     DateFormat dateFormat,
-  )
-  rowBuilder;
+  ) rowBuilder;
 
   @override
   State<DoctorPartnerPatientsBaseView<T>> createState() =>
@@ -190,8 +189,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                               _showAllDates
                                   ? 'All records • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total'
                                   : _isToday
-                                  ? 'Today • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total'
-                                  : '${_dateFormat.format(_selectedDate)} • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total',
+                                      ? 'Today • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total'
+                                      : '${_dateFormat.format(_selectedDate)} • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total',
                               style: GoogleFonts.inter(
                                 fontSize: 12.5,
                                 color: AppColors.textSecondaryOf(context),
@@ -428,8 +427,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                           all.isEmpty
                               ? widget.emptyAllMessage
                               : !_showAllDates && forDate.isEmpty
-                              ? 'No records on ${_dateFormat.format(_selectedDate)}. Switch to "All" or pick another date.'
-                              : 'No records match your search.',
+                                  ? 'No records on ${_dateFormat.format(_selectedDate)}. Switch to "All" or pick another date.'
+                                  : 'No records match your search.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
                             fontSize: AppTypography.bodySmall,

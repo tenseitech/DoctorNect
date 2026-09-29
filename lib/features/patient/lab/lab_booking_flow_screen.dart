@@ -60,7 +60,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
   int _step = 0;
   late LabBookingDraft _draft;
   bool _loading = true;
-  String? _loadError; // FIXED: surface catalog-load failures instead of an infinite spinner
+  String?
+      _loadError; // FIXED: surface catalog-load failures instead of an infinite spinner
   final _addressController = TextEditingController();
 
   List<PartnerLab> _myLabsPartnerList() {
@@ -82,8 +83,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
     super.initState();
     _addressController.text =
         PatientProfileMock.profileAddress.fullLabel.isNotEmpty
-        ? PatientProfileMock.profileAddress.fullLabel
-        : PatientProfileMock.profileCity;
+            ? PatientProfileMock.profileAddress.fullLabel
+            : PatientProfileMock.profileCity;
     unawaited(_initDraft());
   }
 
@@ -94,7 +95,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
       if (!mounted) return; // FIXED: mounted check after await
       setState(() {
         _loading = false; // FIXED: stop the spinner on failure
-        _loadError = 'Could not load lab booking options. Please check your connection and try again.';
+        _loadError =
+            'Could not load lab booking options. Please check your connection and try again.';
       });
       return;
     }
@@ -186,40 +188,37 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
   }
 
   bool _canContinue() => switch (_step) {
-    0 =>
-      (_draft.bookingForSelf || _draft.familyMemberIds.isNotEmpty) &&
-          _selectedPatientsHaveValidAges(),
-    1 => switch (_draft.collectionType) {
-      LabCollectionType.walkIn =>
-        _requiresLabSelection
-            ? _hasSelectedWalkInLab()
-            : _draft.selectedLab != null,
-      LabCollectionType.home =>
-        _addressController.text.trim().isNotEmpty &&
-            (!_requiresLabSelection || _hasSelectedWalkInLab()),
-    },
-    2 =>
-      _draft.selectedDate != null &&
-          _draft.selectedSlotLabel != null &&
-          !LabSlotTime.isInPast(
-            _draft.selectedDate!,
-            _draft.selectedSlotLabel!,
-          ),
-    3 => true,
-    _ => false,
-  };
+        0 => (_draft.bookingForSelf || _draft.familyMemberIds.isNotEmpty) &&
+            _selectedPatientsHaveValidAges(),
+        1 => switch (_draft.collectionType) {
+            LabCollectionType.walkIn => _requiresLabSelection
+                ? _hasSelectedWalkInLab()
+                : _draft.selectedLab != null,
+            LabCollectionType.home =>
+              _addressController.text.trim().isNotEmpty &&
+                  (!_requiresLabSelection || _hasSelectedWalkInLab()),
+          },
+        2 => _draft.selectedDate != null &&
+            _draft.selectedSlotLabel != null &&
+            !LabSlotTime.isInPast(
+              _draft.selectedDate!,
+              _draft.selectedSlotLabel!,
+            ),
+        3 => true,
+        _ => false,
+      };
 
   String _relationLabel(FamilyRelation relation) => switch (relation) {
-    FamilyRelation.spouse => 'Spouse',
-    FamilyRelation.child => 'Child',
-    FamilyRelation.parent => 'Parent',
-    FamilyRelation.sibling => 'Sibling',
-    FamilyRelation.friend => 'Friend',
-    FamilyRelation.other => 'Other',
-  };
+        FamilyRelation.spouse => 'Spouse',
+        FamilyRelation.child => 'Child',
+        FamilyRelation.parent => 'Parent',
+        FamilyRelation.sibling => 'Sibling',
+        FamilyRelation.friend => 'Friend',
+        FamilyRelation.other => 'Other',
+      };
 
   List<({String name, int age, bool isSelf, String? familyMemberId})>
-  _selectedPatients() {
+      _selectedPatients() {
     final patients =
         <({String name, int age, bool isSelf, String? familyMemberId})>[];
     final profile = PatientProfileMock.profile;
@@ -475,8 +474,7 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
                               draft: _draft,
                               partnerLabs: _walkInLabOptions(),
                               addressController: _addressController,
-                              labPreselected:
-                                  widget.preselectedLab != null ||
+                              labPreselected: widget.preselectedLab != null ||
                                   widget.lockSelectedLab,
                               requiresLabSelection: _requiresLabSelection,
                               onUpdate: (d) => setState(() => _draft = d),
@@ -501,8 +499,8 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
                 LabPrimaryButton(
                   label: _step == 3
                       ? (widget.submitAsRequest
-                            ? 'Send request'
-                            : 'Confirm Booking')
+                          ? 'Send request'
+                          : 'Confirm Booking')
                       : 'Continue',
                   enabled: _canContinue(),
                   onPressed: _canContinue() ? _next : null,
@@ -839,9 +837,8 @@ class _TypeCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             border: Border.all(
-              color: selected
-                  ? AppColors.labPurple
-                  : AppColors.borderOf(context),
+              color:
+                  selected ? AppColors.labPurple : AppColors.borderOf(context),
               width: selected ? 2 : 1,
             ),
           ),
@@ -887,18 +884,19 @@ class _ScheduleStep extends StatelessWidget {
     DateTime? date,
     String? slot,
     bool clearSlot = false,
-  }) => LabBookingDraft(
-    test: draft.test,
-    patientName: draft.patientName,
-    patientAge: draft.patientAge,
-    bookingForSelf: draft.bookingForSelf,
-    familyMemberIds: draft.familyMemberIds,
-    collectionType: draft.collectionType,
-    selectedLab: draft.selectedLab,
-    address: draft.address,
-    selectedDate: date ?? draft.selectedDate,
-    selectedSlotLabel: clearSlot ? null : (slot ?? draft.selectedSlotLabel),
-  );
+  }) =>
+      LabBookingDraft(
+        test: draft.test,
+        patientName: draft.patientName,
+        patientAge: draft.patientAge,
+        bookingForSelf: draft.bookingForSelf,
+        familyMemberIds: draft.familyMemberIds,
+        collectionType: draft.collectionType,
+        selectedLab: draft.selectedLab,
+        address: draft.address,
+        selectedDate: date ?? draft.selectedDate,
+        selectedSlotLabel: clearSlot ? null : (slot ?? draft.selectedSlotLabel),
+      );
 
   Future<void> _pickDate(BuildContext context) async {
     final now = DateTime.now();
@@ -908,8 +906,8 @@ class _ScheduleStep extends StatelessWidget {
     final clampedInitial = initial.isBefore(today)
         ? today
         : initial.isAfter(lastDay)
-        ? lastDay
-        : initial;
+            ? lastDay
+            : initial;
 
     final picked = await showDatePicker(
       context: context,
@@ -919,7 +917,8 @@ class _ScheduleStep extends StatelessWidget {
       helpText: 'Select collection date',
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: Theme.of(context).colorScheme
+          colorScheme: Theme.of(context)
+              .colorScheme
               .copyWith(primary: AppColors.labPurple),
         ),
         child: child!,
@@ -933,8 +932,7 @@ class _ScheduleStep extends StatelessWidget {
   Future<void> _pickTime(BuildContext context) async {
     final now = DateTime.now();
     final date = draft.selectedDate ?? DateTime(now.year, now.month, now.day);
-    var initial =
-        LabSlotTime.parse(draft.selectedSlotLabel) ??
+    var initial = LabSlotTime.parse(draft.selectedSlotLabel) ??
         const TimeOfDay(hour: 9, minute: 0);
 
     final picked = await showTimePicker(
@@ -945,7 +943,8 @@ class _ScheduleStep extends StatelessWidget {
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
         child: Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme
+            colorScheme: Theme.of(context)
+                .colorScheme
                 .copyWith(primary: AppColors.labPurple),
           ),
           child: child!,

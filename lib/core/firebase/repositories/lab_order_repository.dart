@@ -2,8 +2,11 @@ import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:flutter/foundation.dart';
+
 import '../firebase_bootstrap.dart';
 import '../lab_report_file_store.dart';
+import '../../storage/storage_service.dart';
 import '../firestore_paths.dart';
 import '../firestore_query_limits.dart';
 import '../firestore_read_helper.dart';
@@ -17,6 +20,12 @@ class LabOrderRepository {
 
   static final LabOrderRepository instance = LabOrderRepository._();
 
+  @visibleForTesting
+  FirebaseFirestore? firestoreOverride;
+
+  FirebaseFirestore get firestore =>
+      firestoreOverride ?? FirebaseFirestore.instance;
+
   Future<void> save(DoctorLabOrder order) async {
     if (!FirebaseBootstrap.isReady) return;
 
@@ -24,10 +33,10 @@ class LabOrderRepository {
         .collection(FirestorePaths.labOrders)
         .doc(order.orderId)
         .set({
-          ...LabOrderFirestoreMapper.toMap(order),
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      ...LabOrderFirestoreMapper.toMap(order),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<FirestorePage<DoctorLabOrder>> fetchForDoctor(
@@ -54,12 +63,11 @@ class LabOrderRepository {
       preferCache: preferCache,
     );
 
-    final items =
-        snapshot.docs
-            .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-            .whereType<DoctorLabOrder>()
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final items = snapshot.docs
+        .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
+        .whereType<DoctorLabOrder>()
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return FirestorePage(
       items: items,
@@ -91,12 +99,11 @@ class LabOrderRepository {
       preferCache: preferCache,
     );
 
-    final items =
-        snapshot.docs
-            .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-            .whereType<DoctorLabOrder>()
-            .toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final items = snapshot.docs
+        .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
+        .whereType<DoctorLabOrder>()
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return FirestorePage(
       items: items,
@@ -117,9 +124,9 @@ class LabOrderRepository {
     }
     if (!await PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
-          patientId,
-          preferCache: preferCache,
-        )) {
+      patientId,
+      preferCache: preferCache,
+    )) {
       return const FirestorePage(items: [], hasMore: false);
     }
     return fetchForPatient(
@@ -198,14 +205,13 @@ class LabOrderRepository {
         .limit(FirestoreQueryLimits.labOrdersPage)
         .snapshots()
         .map((snap) {
-          final items =
-              snap.docs
-                  .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
-                  .whereType<DoctorLabOrder>()
-                  .toList()
-                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return items;
-        });
+      final items = snap.docs
+          .map((doc) => LabOrderFirestoreMapper.fromMap(doc.data()))
+          .whereType<DoctorLabOrder>()
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return items;
+    });
   }
 
   Stream<List<DoctorLabOrder>> watchOrdersForDoctor(String doctorId) =>
@@ -219,28 +225,31 @@ class LabOrderRepository {
         .update({'status': status, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
-  Future<String> submitReport({
+  Future<StorageUploadResult> submitReport({
     required String orderId,
     required String patientId,
     required String fileName,
     required Uint8List bytes,
+    String? existingReportStorageKey,
   }) async {
-    if (!FirebaseBootstrap.isReady || orderId.isEmpty || patientId.isEmpty) {
+    if ((!FirebaseBootstrap.isReady && firestoreOverride == null) ||
+        orderId.isEmpty ||
+        patientId.isEmpty) {
       throw StateError('Firebase is not ready');
     }
     if (bytes.isEmpty || bytes.length > LabReportFileStore.maxFileBytes) {
       throw ArgumentError('Invalid report file size');
     }
 
-    final storageUrl = await LabReportFileStore.uploadToStorage(
+    final uploadResult = await LabReportFileStore.uploadReport(
       patientId: patientId,
       bookingId: orderId, // We use orderId as the unique ID for storage
       fileName: fileName,
       bytes: bytes,
     );
-    if (storageUrl == null || storageUrl.isEmpty) {
+    if (uploadResult == null) {
       throw StateError(
-        'Could not upload report. Check Firebase Storage rules and your connection, then try again.',
+        'Could not upload report. Check storage rules and your connection, then try again.',
       );
     }
 
@@ -249,19 +258,33 @@ class LabOrderRepository {
       bookingId: orderId,
       fileName: fileName,
       bytes: bytes,
+      storageKey: uploadResult.objectKey,
     );
 
-    await FirebaseFirestore.instance
+    final updatePayload = <String, dynamic>{
+      'status': 'completed',
+      'reportFileName': fileName,
+      if (uploadResult.downloadUrl != null)
+        'reportStorageUrl': uploadResult.downloadUrl,
+      'reportStorageKey': uploadResult.objectKey,
+      'reportStorageProvider': uploadResult.provider,
+      'reportSubmittedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    await firestore
         .collection(FirestorePaths.labOrders)
         .doc(orderId)
-        .update({
-          'status': 'completed',
-          'reportFileName': fileName,
-          'reportStorageUrl': storageUrl,
-          'reportSubmittedAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        })
+        .update(updatePayload)
         .timeout(const Duration(seconds: 20));
-    return storageUrl;
+
+    // Best-effort delete old S3 report ONLY after Firestore update succeeded
+    if (existingReportStorageKey != null &&
+        existingReportStorageKey.trim().isNotEmpty &&
+        existingReportStorageKey != uploadResult.objectKey) {
+      await LabReportFileStore.deleteS3Report(existingReportStorageKey);
+    }
+
+    return uploadResult;
   }
 }

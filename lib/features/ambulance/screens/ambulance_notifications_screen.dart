@@ -53,8 +53,8 @@ class _AmbulanceNotificationsScreenState
       final label = day == today
           ? 'Today'
           : day == yesterday
-          ? 'Yesterday'
-          : DateFormat('dd MMM yyyy').format(item.createdAt);
+              ? 'Yesterday'
+              : DateFormat('dd MMM yyyy').format(item.createdAt);
       groups.putIfAbsent(label, () => []).add(item);
     }
     return groups;
@@ -310,9 +310,8 @@ class _AlertCard extends StatelessWidget {
             : const Color(0xFFFFF7ED),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: alert.isRead
-              ? const Color(0xFFE2E8F0)
-              : const Color(0xFFFDBA74),
+          color:
+              alert.isRead ? const Color(0xFFE2E8F0) : const Color(0xFFFDBA74),
         ),
       ),
       child: Material(

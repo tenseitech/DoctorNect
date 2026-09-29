@@ -25,12 +25,12 @@ class PromotedAdBannerCard extends StatelessWidget {
   final EdgeInsetsGeometry margin;
 
   String get _providerLabel => switch (providerType.toLowerCase()) {
-    'doctor' => 'Medical Practice & Clinic',
-    'lab' => 'Diagnostic Lab & Tests',
-    'pharmacy' => 'Medical Store & Pharmacy',
-    'ambulance' => 'Ambulance & Emergency Service',
-    _ => 'Healthcare Business',
-  };
+        'doctor' => 'Medical Practice & Clinic',
+        'lab' => 'Diagnostic Lab & Tests',
+        'pharmacy' => 'Medical Store & Pharmacy',
+        'ambulance' => 'Ambulance & Emergency Service',
+        _ => 'Healthcare Business',
+      };
 
   void _open(BuildContext context) {
     PromotedAdsManagementScreen.open(

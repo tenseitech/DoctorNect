@@ -27,13 +27,13 @@ class AuthLoginBranding {
       Color.lerp(accent, const Color(0xFF0A1628), gradientDarken)!;
 
   static AuthLoginBranding forUserType(UserType type) => switch (type) {
-    UserType.superAdmin => superAdmin,
-    UserType.doctor => doctor,
-    UserType.patient => patient,
-    UserType.medicalStore => pharmacy,
-    UserType.lab => lab,
-    UserType.ambulance => ambulance,
-  };
+        UserType.superAdmin => superAdmin,
+        UserType.doctor => doctor,
+        UserType.patient => patient,
+        UserType.medicalStore => pharmacy,
+        UserType.lab => lab,
+        UserType.ambulance => ambulance,
+      };
 
   static const superAdmin = AuthLoginBranding(
     features: [

@@ -189,23 +189,23 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                   },
                   fieldViewBuilder:
                       (context, controller, focusNode, onFieldSubmitted) {
-                        return TextFormField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          decoration: RequiredFieldLabels.decorate(
-                            const InputDecoration(
-                              hintText: 'Select or type',
-                              suffixIcon: Icon(Icons.arrow_drop_down),
-                            ),
-                            'Relation',
-                            isRequired: true,
-                          ),
-                          validator: (v) =>
-                              FormValidators.tagText(v, field: 'Relation'),
-                          onChanged: (v) => _relationController.text = v,
-                          onFieldSubmitted: (_) => onFieldSubmitted(),
-                        );
-                      },
+                    return TextFormField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: RequiredFieldLabels.decorate(
+                        const InputDecoration(
+                          hintText: 'Select or type',
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                        'Relation',
+                        isRequired: true,
+                      ),
+                      validator: (v) =>
+                          FormValidators.tagText(v, field: 'Relation'),
+                      onChanged: (v) => _relationController.text = v,
+                      onFieldSubmitted: (_) => onFieldSubmitted(),
+                    );
+                  },
                 ),
               ],
             ),

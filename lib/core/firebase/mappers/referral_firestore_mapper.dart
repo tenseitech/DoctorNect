@@ -4,21 +4,22 @@ import '../models/doctor_referral.dart';
 
 abstract final class ReferralFirestoreMapper {
   static Map<String, dynamic> toMap(DoctorReferral referral) => {
-    'referralId': referral.referralId,
-    'fromDoctorId': referral.fromDoctorId,
-    'fromDoctorName': referral.fromDoctorName,
-    'toDoctorId': referral.toDoctorId,
-    'toDoctorName': referral.toDoctorName,
-    'toSpecialization': referral.toSpecialization,
-    'patientId': referral.patientId,
-    'patientName': referral.patientName,
-    'patientAge': referral.patientAge,
-    if (referral.appointmentId != null) 'appointmentId': referral.appointmentId,
-    if (referral.reason != null && referral.reason!.isNotEmpty)
-      'reason': referral.reason,
-    'status': referral.status,
-    'createdAt': referral.createdAt,
-  };
+        'referralId': referral.referralId,
+        'fromDoctorId': referral.fromDoctorId,
+        'fromDoctorName': referral.fromDoctorName,
+        'toDoctorId': referral.toDoctorId,
+        'toDoctorName': referral.toDoctorName,
+        'toSpecialization': referral.toSpecialization,
+        'patientId': referral.patientId,
+        'patientName': referral.patientName,
+        'patientAge': referral.patientAge,
+        if (referral.appointmentId != null)
+          'appointmentId': referral.appointmentId,
+        if (referral.reason != null && referral.reason!.isNotEmpty)
+          'reason': referral.reason,
+        'status': referral.status,
+        'createdAt': referral.createdAt,
+      };
 
   static DoctorReferral? fromMap(Map<String, dynamic> data) {
     try {

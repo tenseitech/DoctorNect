@@ -42,8 +42,7 @@ class DashboardShell extends StatelessWidget {
       final ambId = AmbulanceSession.loggedInAmbulanceId.isNotEmpty
           ? AmbulanceSession.loggedInAmbulanceId
           : 'amb-new';
-      final amb =
-          AmbulanceStore.instance.findAmbulance(ambId) ??
+      final amb = AmbulanceStore.instance.findAmbulance(ambId) ??
           (AmbulanceStore.instance.registeredAmbulances.isNotEmpty
               ? AmbulanceStore.instance.registeredAmbulances.first
               : RegisteredAmbulance(

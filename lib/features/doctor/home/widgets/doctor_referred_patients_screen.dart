@@ -126,9 +126,9 @@ class _DoctorReferredPatientsScreenState
               incoming: incoming,
               onOpenConsult: incoming
                   ? () => ReferralConsultService.openIncomingConsult(
-                      context,
-                      referral,
-                    )
+                        context,
+                        referral,
+                      )
                   : null,
             );
           },
@@ -148,9 +148,8 @@ class _DoctorReferredPatientsScreenState
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: wide
-            ? AppColors.cardBgOf(context)
-            : AppColors.surfaceOf(context),
+        backgroundColor:
+            wide ? AppColors.cardBgOf(context) : AppColors.surfaceOf(context),
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

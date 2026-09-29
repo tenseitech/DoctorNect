@@ -218,14 +218,13 @@ class SharedSlotBadge extends StatelessWidget {
     if (reason == null || reason.isEmpty) return const SizedBox.shrink();
 
     final isEmergency = reason.toLowerCase() == 'emergency';
-    final color = isEmergency
-        ? const Color(0xFFDC2626)
-        : const Color(0xFFEA580C);
+    final color =
+        isEmergency ? const Color(0xFFDC2626) : const Color(0xFFEA580C);
     final label = isEmergency
         ? (compact ? 'Emergency' : 'Emergency slot')
         : (compact && reason.length > 18
-              ? '${reason.substring(0, 16)}…'
-              : reason);
+            ? '${reason.substring(0, 16)}…'
+            : reason);
 
     return StatusBadge(
       label: label,

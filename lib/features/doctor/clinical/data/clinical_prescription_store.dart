@@ -76,9 +76,9 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     if (patientId.isEmpty) return true;
     return FirestoreService.instance.patientProfile
         .isPatientSharingClinicalDataWithDoctors(
-          patientId,
-          preferCache: preferCache,
-        );
+      patientId,
+      preferCache: preferCache,
+    );
   }
 
   Future<List<PrescriptionDraft>> _filterPrescriptionsForDoctor(
@@ -133,11 +133,11 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     copy.doctorQualifications = p.qualification.trim().isNotEmpty
         ? p.qualification.trim()
         : (p.certifications.isNotEmpty
-              ? p.certifications.join(', ')
-              : [
-                  p.specialization,
-                  p.superSpecialization,
-                ].where((s) => s.trim().isNotEmpty).join(' · '));
+            ? p.certifications.join(', ')
+            : [
+                p.specialization,
+                p.superSpecialization,
+              ].where((s) => s.trim().isNotEmpty).join(' · '));
     copy.doctorRegNumber = p.councilNumber;
     copy.clinicName = p.clinicName;
     copy.doctorPhone = p.mobile;
@@ -282,11 +282,11 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
     try {
       final page = _isDoctorContext
           ? await FirestoreService.instance.prescription
-                .fetchForPatientForDoctor(
-                  patientId,
-                  startAfter: _lastPatientPage,
-                  preferCache: preferCache,
-                )
+              .fetchForPatientForDoctor(
+              patientId,
+              startAfter: _lastPatientPage,
+              preferCache: preferCache,
+            )
           : await FirestoreService.instance.prescription.fetchForPatient(
               patientId,
               startAfter: _lastPatientPage,

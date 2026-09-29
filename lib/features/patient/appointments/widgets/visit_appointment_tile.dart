@@ -211,9 +211,8 @@ class _DateBadge extends StatelessWidget {
       width: 48,
       height: 52,
       decoration: BoxDecoration(
-        color: highlight
-            ? const Color(0xFF0F766E)
-            : color.withValues(alpha: 0.85),
+        color:
+            highlight ? const Color(0xFF0F766E) : color.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(

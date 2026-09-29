@@ -168,8 +168,8 @@ class _RegistrationAddressSectionState
           textInputAction: TextInputAction.next,
           validator: widget.addressLine1Required
               ? (v) => (v == null || v.trim().isEmpty)
-                    ? 'Enter address line 1'
-                    : null
+                  ? 'Enter address line 1'
+                  : null
               : null,
         ),
         const SizedBox(height: 16),

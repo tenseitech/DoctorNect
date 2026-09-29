@@ -31,6 +31,8 @@ class PromoBanner {
     this.icon,
     this.badgeLabelOverride,
     this.imageUrl,
+    this.imageKey,
+    this.imageStorage,
   });
 
   final String title;
@@ -40,6 +42,8 @@ class PromoBanner {
   final IconData? icon;
   final String? badgeLabelOverride;
   final String? imageUrl;
+  final String? imageKey;
+  final String? imageStorage;
 
   String get badgeLabel =>
       badgeLabelOverride ??
@@ -81,6 +85,8 @@ class MyDoc {
     required this.city,
     this.photoUrl,
     this.photoPath,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String id;
@@ -91,6 +97,8 @@ class MyDoc {
   final String city;
   final String? photoUrl;
   final String? photoPath;
+  final String? photoKey;
+  final String? photoStorage;
 }
 
 class RecentAppointment {
@@ -136,6 +144,8 @@ class DoctorListing {
     this.city = '',
     this.photoPath,
     this.photoUrl,
+    this.photoKey,
+    this.photoStorage,
   });
 
   final String id;
@@ -158,6 +168,8 @@ class DoctorListing {
   final String city;
   final String? photoPath;
   final String? photoUrl;
+  final String? photoKey;
+  final String? photoStorage;
 
   String get locationLabel {
     final parts = <String>[];

@@ -28,13 +28,13 @@ class _PatientBloodTestSheet extends StatelessWidget {
   final LabBookingRecord booking;
 
   String _statusLabel(String status) => switch (status.toLowerCase()) {
-    'completed' => booking.hasReport ? 'Report ready' : 'Completed',
-    'processing' => 'Processing',
-    'requested' => 'Awaiting lab approval',
-    'declined' => 'Declined by lab',
-    'cancelled' => 'Cancelled',
-    _ => 'Confirmed',
-  };
+        'completed' => booking.hasReport ? 'Report ready' : 'Completed',
+        'processing' => 'Processing',
+        'requested' => 'Awaiting lab approval',
+        'declined' => 'Declined by lab',
+        'cancelled' => 'Cancelled',
+        _ => 'Confirmed',
+      };
 
   @override
   Widget build(BuildContext context) {

@@ -114,11 +114,11 @@ class LabCatalog {
   List<LabTestItem> get popularTests => tests.where((t) => t.popular).toList();
 
   Map<String, dynamic> toMap() => {
-    'tests': tests.map(_testToMap).toList(),
-    'packages': packages.map(_packageToMap).toList(),
-    'partnerLabs': partnerLabs.map(_labToMap).toList(),
-    'slotPeriods': slotPeriods,
-  };
+        'tests': tests.map(_testToMap).toList(),
+        'packages': packages.map(_packageToMap).toList(),
+        'partnerLabs': partnerLabs.map(_labToMap).toList(),
+        'slotPeriods': slotPeriods,
+      };
 
   static LabCatalog fromMap(Map<String, dynamic> data) {
     try {
@@ -132,11 +132,11 @@ class LabCatalog {
         partnerLabs: (data['partnerLabs'] as List<dynamic>? ?? const [])
             .map((item) => _labFromMap(item as Map<String, dynamic>))
             .toList(),
-        slotPeriods: (data['slotPeriods'] as Map<String, dynamic>? ?? const {})
-            .map(
-              (key, value) =>
-                  MapEntry(key, (value as List<dynamic>).cast<String>()),
-            ),
+        slotPeriods:
+            (data['slotPeriods'] as Map<String, dynamic>? ?? const {}).map(
+          (key, value) =>
+              MapEntry(key, (value as List<dynamic>).cast<String>()),
+        ),
       );
     } catch (_) {
       return LabCatalog.defaults();
@@ -144,50 +144,51 @@ class LabCatalog {
   }
 
   static LabCatalog defaults() => LabCatalog(
-    tests: PatientLabCatalogBuilder.allTests(),
-    packages: const [],
-    partnerLabs: const [
-      PartnerLab(name: 'Thyrocare', rating: 4.8, area: 'Bandra'),
-      PartnerLab(name: 'Metropolis Healthcare', rating: 4.7, area: 'Andheri'),
-      PartnerLab(name: 'Dr. Lal PathLabs', rating: 4.6, area: 'Powai'),
-    ],
-    slotPeriods: const {
-      'Morning': ['7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM'],
-      'Afternoon': ['12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM'],
-      'Evening': ['5:00 PM', '6:00 PM', '7:00 PM'],
-    },
-  );
+        tests: PatientLabCatalogBuilder.allTests(),
+        packages: const [],
+        partnerLabs: const [
+          PartnerLab(name: 'Thyrocare', rating: 4.8, area: 'Bandra'),
+          PartnerLab(
+              name: 'Metropolis Healthcare', rating: 4.7, area: 'Andheri'),
+          PartnerLab(name: 'Dr. Lal PathLabs', rating: 4.6, area: 'Powai'),
+        ],
+        slotPeriods: const {
+          'Morning': ['7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM'],
+          'Afternoon': ['12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM'],
+          'Evening': ['5:00 PM', '6:00 PM', '7:00 PM'],
+        },
+      );
 
   static Map<String, dynamic> _testToMap(LabTestItem t) => {
-    'id': t.id,
-    'name': t.name,
-    'parameters': t.parameters,
-    'fastingRequired': t.fastingRequired,
-    'sampleType': t.sampleType.name,
-    'reportHours': t.reportHours,
-    'popular': t.popular,
-    if (t.category != null) 'category': t.category,
-  };
+        'id': t.id,
+        'name': t.name,
+        'parameters': t.parameters,
+        'fastingRequired': t.fastingRequired,
+        'sampleType': t.sampleType.name,
+        'reportHours': t.reportHours,
+        'popular': t.popular,
+        if (t.category != null) 'category': t.category,
+      };
 
   static LabTestItem _testFromMap(Map<String, dynamic> data) => LabTestItem(
-    id: data['id'] as String,
-    name: data['name'] as String,
-    parameters: (data['parameters'] as List<dynamic>).cast<String>(),
-    fastingRequired: data['fastingRequired'] as bool? ?? false,
-    sampleType: SampleType.values.byName(
-      data['sampleType'] as String? ?? 'blood',
-    ),
-    reportHours: (data['reportHours'] as num?)?.toInt() ?? 24,
-    popular: data['popular'] as bool? ?? false,
-    category: data['category'] as String?,
-  );
+        id: data['id'] as String,
+        name: data['name'] as String,
+        parameters: (data['parameters'] as List<dynamic>).cast<String>(),
+        fastingRequired: data['fastingRequired'] as bool? ?? false,
+        sampleType: SampleType.values.byName(
+          data['sampleType'] as String? ?? 'blood',
+        ),
+        reportHours: (data['reportHours'] as num?)?.toInt() ?? 24,
+        popular: data['popular'] as bool? ?? false,
+        category: data['category'] as String?,
+      );
 
   static Map<String, dynamic> _packageToMap(LabHealthPackage p) => {
-    'id': p.id,
-    'name': p.name,
-    'testCount': p.testCount,
-    'description': p.description,
-  };
+        'id': p.id,
+        'name': p.name,
+        'testCount': p.testCount,
+        'description': p.description,
+      };
 
   static LabHealthPackage _packageFromMap(Map<String, dynamic> data) =>
       LabHealthPackage(
@@ -198,16 +199,17 @@ class LabCatalog {
       );
 
   static Map<String, dynamic> _labToMap(PartnerLab l) => {
-    'name': l.name,
-    'rating': l.rating,
-    'area': l.area,
-    if (l.id != null) 'id': l.id, // FIXED: round-trip registered lab id
-  };
+        'name': l.name,
+        'rating': l.rating,
+        'area': l.area,
+        if (l.id != null) 'id': l.id, // FIXED: round-trip registered lab id
+      };
 
   static PartnerLab _labFromMap(Map<String, dynamic> data) => PartnerLab(
-    id: data['id'] as String?, // FIXED: restore registered lab id when present
-    name: data['name'] as String,
-    rating: (data['rating'] as num?)?.toDouble() ?? 0,
-    area: data['area'] as String? ?? '',
-  );
+        id: data['id']
+            as String?, // FIXED: restore registered lab id when present
+        name: data['name'] as String,
+        rating: (data['rating'] as num?)?.toDouble() ?? 0,
+        area: data['area'] as String? ?? '',
+      );
 }

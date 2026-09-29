@@ -16,11 +16,11 @@ abstract final class PatientAppointmentWatcher {
     _sub = FirestoreService.instance.appointment
         .watchForPatient(patientId)
         .listen((records) {
-          SharedAppointmentsStore.instance.mergeFromFirestore(
-            records,
-            pruneMissing: false,
-          );
-        }, onError: (_) {});
+      SharedAppointmentsStore.instance.mergeFromFirestore(
+        records,
+        pruneMissing: false,
+      );
+    }, onError: (_) {});
   }
 
   static void stop() {

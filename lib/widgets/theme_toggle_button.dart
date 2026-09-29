@@ -21,8 +21,7 @@ class ThemeToggleButton extends StatelessWidget {
       listenable: AppThemeController.instance,
       builder: (context, _) {
         final isDark = AppThemeController.instance.isDarkMode;
-        final iconColor =
-            color ??
+        final iconColor = color ??
             (highlighted
                 ? AppColors.textPrimaryOf(context)
                 : (isDark ? const Color(0xFFFDE047) : const Color(0xFF0F172A)));

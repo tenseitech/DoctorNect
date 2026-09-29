@@ -83,10 +83,10 @@ abstract final class DoctorInviteService {
         .collection(FirestorePaths.doctors)
         .doc(doctorId)
         .set({
-          'inviteCode': doctorId,
-          'inviteLink': buildInviteLink(doctorId),
-          'inviteUpdatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      'inviteCode': doctorId,
+      'inviteLink': buildInviteLink(doctorId),
+      'inviteUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   static Future<String> linkForCurrentDoctor({

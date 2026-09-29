@@ -36,16 +36,15 @@ class _ProfessionalDetailsSectionState
   late final List<String> _superSpecs = _p.superSpecialization.trim().isEmpty
       ? []
       : _p.superSpecialization
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
   final _superSpecInput = TextEditingController();
   late final _councilNumber = TextEditingController(text: _p.councilNumber);
   late bool _councilEditable = _p.councilNumber.trim().isEmpty;
-  late String? _stateCouncil = _p.stateCouncil.trim().isEmpty
-      ? null
-      : _p.stateCouncil.trim();
+  late String? _stateCouncil =
+      _p.stateCouncil.trim().isEmpty ? null : _p.stateCouncil.trim();
   late bool _stateCouncilEditable = _p.stateCouncil.trim().isEmpty;
   late final _awards = TextEditingController(text: _p.awards);
   late final _regCertCtrl = TextEditingController(
@@ -200,36 +199,35 @@ class _ProfessionalDetailsSectionState
                                         return AppConstants.specializations;
                                       return AppConstants.specializations.where(
                                         (s) => s.toLowerCase().contains(
-                                          tv.text.toLowerCase(),
-                                        ),
+                                              tv.text.toLowerCase(),
+                                            ),
                                       );
                                     },
                                     onSelected: (String selection) {
                                       _superSpecInput.text = selection;
                                       _markDirty();
                                     },
-                                    fieldViewBuilder:
-                                        (
-                                          context,
-                                          controller,
-                                          focusNode,
-                                          onFieldSubmitted,
-                                        ) {
-                                          controller.addListener(() {
-                                            if (controller.text !=
-                                                _superSpecInput.text) {
-                                              _superSpecInput.text =
-                                                  controller.text;
-                                            }
-                                          });
-                                          return TextFormField(
-                                            controller: controller,
-                                            focusNode: focusNode,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Super-specialization',
-                                            ),
-                                          );
-                                        },
+                                    fieldViewBuilder: (
+                                      context,
+                                      controller,
+                                      focusNode,
+                                      onFieldSubmitted,
+                                    ) {
+                                      controller.addListener(() {
+                                        if (controller.text !=
+                                            _superSpecInput.text) {
+                                          _superSpecInput.text =
+                                              controller.text;
+                                        }
+                                      });
+                                      return TextFormField(
+                                        controller: controller,
+                                        focusNode: focusNode,
+                                        decoration: const InputDecoration(
+                                          labelText: 'Super-specialization',
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                                 LabeledAddButton(
@@ -275,7 +273,8 @@ class _ProfessionalDetailsSectionState
                                       : AppColors.cardBgOf(context),
                                   suffixIcon: !_councilEditable
                                       ? Tooltip(
-                                          message: 'Confidential credential — registration number cannot be modified',
+                                          message:
+                                              'Confidential credential — registration number cannot be modified',
                                           child: Icon(
                                             Icons.lock_outline,
                                             size: 18,
@@ -285,7 +284,8 @@ class _ProfessionalDetailsSectionState
                                           ),
                                         )
                                       : null,
-                                  helperText: 'Confidential detail — set once during registration / setup',
+                                  helperText:
+                                      'Confidential detail — set once during registration / setup',
                                 ),
                                 'Medical council reg. number',
                                 isRequired: true,
@@ -304,14 +304,16 @@ class _ProfessionalDetailsSectionState
                                   filled: true,
                                   fillColor: AppColors.cardBgOf(context),
                                   suffixIcon: Tooltip(
-                                    message: 'Registration year can only be updated by DoctorNect support',
+                                    message:
+                                        'Registration year can only be updated by DoctorNect support',
                                     child: Icon(
                                       Icons.lock_outline,
                                       size: 18,
                                       color: AppColors.textSecondaryOf(context),
                                     ),
                                   ),
-                                  helperText: 'Contact support if this needs to be corrected',
+                                  helperText:
+                                      'Contact support if this needs to be corrected',
                                 ),
                                 'Registration year',
                                 isRequired: false,
@@ -320,8 +322,7 @@ class _ProfessionalDetailsSectionState
                             SizedBox(height: 12),
                             TextFormField(
                               readOnly: true,
-                              initialValue:
-                                  _displayRegistrationYear <= 0 &&
+                              initialValue: _displayRegistrationYear <= 0 &&
                                       _p.yearsExperience <= 0
                                   ? '—'
                                   : '$_computedExperience year${_computedExperience == 1 ? '' : 's'}',
@@ -341,8 +342,7 @@ class _ProfessionalDetailsSectionState
                             ),
                             const SizedBox(height: 12),
                             DropdownButtonFormField<String>(
-                              initialValue:
-                                  _stateCouncil != null &&
+                              initialValue: _stateCouncil != null &&
                                       _stateOptions.contains(_stateCouncil)
                                   ? _stateCouncil
                                   : null,
@@ -354,7 +354,8 @@ class _ProfessionalDetailsSectionState
                                       : AppColors.cardBgOf(context),
                                   suffixIcon: !_stateCouncilEditable
                                       ? Tooltip(
-                                          message: 'Confidential credential — state medical council cannot be modified',
+                                          message:
+                                              'Confidential credential — state medical council cannot be modified',
                                           child: Icon(
                                             Icons.lock_outline,
                                             size: 18,
@@ -364,7 +365,8 @@ class _ProfessionalDetailsSectionState
                                           ),
                                         )
                                       : null,
-                                  helperText: 'Confidential detail — state medical council is unchanged once set',
+                                  helperText:
+                                      'Confidential detail — state medical council is unchanged once set',
                                 ),
                                 'State medical council',
                                 isRequired: true,
@@ -394,8 +396,10 @@ class _ProfessionalDetailsSectionState
                             TextFormField(
                               controller: _regCertCtrl,
                               decoration: const InputDecoration(
-                                labelText: 'Registration Certificate (Document / Ref ID)',
-                                hintText: 'Certificate document name or reference number',
+                                labelText:
+                                    'Registration Certificate (Document / Ref ID)',
+                                hintText:
+                                    'Certificate document name or reference number',
                               ),
                               onChanged: (_) => _markDirty(),
                             ),
@@ -404,7 +408,8 @@ class _ProfessionalDetailsSectionState
                               controller: _idProofCtrl,
                               decoration: const InputDecoration(
                                 labelText: 'Identity Proof (Document / ID)',
-                                hintText: 'Government ID document or reference number',
+                                hintText:
+                                    'Government ID document or reference number',
                               ),
                               onChanged: (_) => _markDirty(),
                             ),

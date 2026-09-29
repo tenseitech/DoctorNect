@@ -80,8 +80,7 @@ class DoctorAvailabilityRepository {
       if (!day.isBefore(start) && !day.isAfter(end)) return const [];
     }
 
-    final booked =
-        existingAppointments ??
+    final booked = existingAppointments ??
         SharedAppointmentsStore.instance.records.where((r) {
           return r.doctorId == doctorId &&
               !r.isCancelled &&
@@ -166,8 +165,7 @@ class DoctorAvailabilityRepository {
       final slotEnd = current.add(Duration(minutes: durationMins));
       if (slotEnd.isAfter(end)) break;
 
-      final inBreak =
-          breakStartTime != null &&
+      final inBreak = breakStartTime != null &&
           breakEndTime != null &&
           current.isBefore(breakEndTime) &&
           slotEnd.isAfter(breakStartTime);

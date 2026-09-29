@@ -41,8 +41,7 @@ class DoctorVerificationGate extends StatelessWidget {
         ? FirebaseAuth.instance.currentUser?.phoneNumber
         : null;
 
-    final isDemoDoc =
-        DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
+    final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
         doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
         DemoAuthConfig.isDemoDoctorPhone(
           DoctorProfileStore.instance.profile.mobile,
@@ -70,8 +69,8 @@ class DoctorVerificationGate extends StatelessWidget {
           ),
           builder: (context, snapshot) {
             final streamVerified = snapshot.data ?? false;
-            final controllerVerified = RoleVerificationController.instance
-                .isVerified(UserType.doctor);
+            final controllerVerified =
+                RoleVerificationController.instance.isVerified(UserType.doctor);
             final verified = streamVerified || controllerVerified;
             return verifiedChildOverride ??
                 DoctorShell(verificationPending: !verified);

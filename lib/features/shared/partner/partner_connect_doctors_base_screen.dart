@@ -113,7 +113,7 @@ class PartnerConnectDoctorsBaseView extends StatefulWidget {
   final List<PartnerConnectionItem> Function() sentByPartnerInvites;
   final String? Function() cityFilter;
   final List<RegisteredDoctorSearchResult> Function(String query)
-  searchDoctorsFn;
+      searchDoctorsFn;
   final String Function(String doctorId) activitySubtitleBuilder;
   final void Function(String id, String doctorName) onApproveConnection;
   final void Function(String id, String doctorName) onRejectConnection;
@@ -586,9 +586,8 @@ class _PartnerConnectDoctorsBaseViewState
     if (widget.showAppBar) {
       final compact = ResponsiveLayout.isCompact(context);
       return Scaffold(
-        backgroundColor: compact
-            ? const Color(0xFFF1F5F9)
-            : const Color(0xFFF8FAFC),
+        backgroundColor:
+            compact ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC),
         appBar: AppBar(
           title: Text(
             widget.appBarTitle ?? 'Connect Doctors',
@@ -622,9 +621,8 @@ class _PartnerConnectDoctorsBaseViewState
       return _buildAddDoctorMobileContent(partnerId, fromDoctor, sentByPartner);
     }
 
-    final connectedCount = _results
-        .where((d) => widget.isConnected(d.id))
-        .length;
+    final connectedCount =
+        _results.where((d) => widget.isConnected(d.id)).length;
     final cityLabel = widget.cityFilter();
 
     return SingleChildScrollView(
@@ -794,9 +792,8 @@ class _PartnerConnectDoctorsBaseViewState
     List<PartnerConnectionItem> fromDoctor,
     List<PartnerConnectionItem> sentByPartner,
   ) {
-    final connectedCount = _results
-        .where((d) => widget.isConnected(d.id))
-        .length;
+    final connectedCount =
+        _results.where((d) => widget.isConnected(d.id)).length;
     final cityLabel = widget.cityFilter();
 
     return ListView(

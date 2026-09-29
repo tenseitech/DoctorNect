@@ -44,7 +44,10 @@ class _IntroSlideContent {
   final IconData? placeholderIcon;
 }
 
-const _kIntroIllustrationAsset = 'assets/images/doctor_illustration.jpg';
+const _kIntroSlide1 = 'assets/images/intro_slide_1.png';
+const _kIntroSlide2 = 'assets/images/intro_slide_2.png';
+const _kIntroSlide3 = 'assets/images/intro_slide_3.png';
+const _kIntroSlide4 = 'assets/images/intro_slide_4.png';
 
 abstract final class _IntroTheme {
   static const sheetRadius = 28.0;
@@ -83,219 +86,248 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
   Color get _accent => widget.accentColor ?? _defaultAccent;
 
   Color get _defaultAccent => switch (widget.role) {
-    UserType.doctor => AppColors.doctorBlue,
-    UserType.patient => AppColors.patientTeal,
-    UserType.medicalStore => AppColors.pharmacyGreen,
-    UserType.lab => AppColors.labPurple,
-    UserType.ambulance => const Color(0xFFDC2626),
-    _ => AppColors.doctorBlue,
-  };
+        UserType.doctor => AppColors.doctorBlue,
+        UserType.patient => AppColors.patientTeal,
+        UserType.medicalStore => AppColors.pharmacyGreen,
+        UserType.lab => AppColors.labPurple,
+        UserType.ambulance => const Color(0xFFDC2626),
+        _ => AppColors.doctorBlue,
+      };
 
   IconData get _roleIcon => switch (widget.role) {
-    UserType.doctor => Icons.medical_services_outlined,
-    UserType.patient => Icons.person_outline,
-    UserType.medicalStore => Icons.local_pharmacy_outlined,
-    UserType.lab => Icons.biotech_outlined,
-    UserType.ambulance => Icons.emergency_outlined,
-    _ => Icons.local_hospital_outlined,
-  };
+        UserType.doctor => Icons.medical_services_outlined,
+        UserType.patient => Icons.person_outline,
+        UserType.medicalStore => Icons.local_pharmacy_outlined,
+        UserType.lab => Icons.biotech_outlined,
+        UserType.ambulance => Icons.emergency_outlined,
+        _ => Icons.local_hospital_outlined,
+      };
 
   List<_IntroSlideContent> get _slides => switch (widget.role) {
-    UserType.doctor => const [
-      _IntroSlideContent(
-        headline: 'Manage patients with ease',
-        supportingText: 'Appointments, prescriptions and clinical notes — all in one secure workspace built for doctors.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Write prescriptions digitally',
-        supportingText: 'Create, share and track prescriptions with patients and pharmacies in a few taps.',
-        placeholderIcon: Icons.medication_outlined,
-      ),
-      _IntroSlideContent(
-        headline: 'Your clinic, organized',
-        supportingText: 'Stay on top of schedules, follow-ups and patient records without the paperwork.',
-        placeholderIcon: Icons.calendar_month_outlined,
-      ),
-      _IntroSlideContent(
-        headline: 'Seamless consultations',
-        supportingText: 'Connect with patients through in-clinic visits and video consultations with instant follow-ups.',
-        placeholderIcon: Icons.videocam_outlined,
-      ),
-    ],
-    UserType.patient => const [
-      _IntroSlideContent(
-        headline: 'Your health, in your hands',
-        supportingText: 'Book doctors, track prescriptions, and manage lab reports from one secure app.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Book appointments easily',
-        supportingText:
-            'Find trusted doctors near you and schedule visits in minutes.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Care when you need it',
-        supportingText:
-            'Access prescriptions, reports, and emergency services anytime.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Book lab tests and ambulance when you need them',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-    ],
-    UserType.medicalStore => const [
-      _IntroSlideContent(
-        headline: 'Streamline your pharmacy',
-        supportingText: 'Receive digital prescriptions and serve patients faster from one workspace.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Manage orders digitally',
-        supportingText: 'Track dispensing, inventory, and patient requests without the paperwork.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Connect with care partners',
-        supportingText:
-            'Work seamlessly with doctors and patients on DoctorNect.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Grow your pharmacy with DoctorNect',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-    ],
-    UserType.lab => const [
-      _IntroSlideContent(
-        headline: 'Simplify lab operations',
-        supportingText: 'Manage test orders, samples, and results from one connected dashboard.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Digital test reports',
-        supportingText: 'Upload results and notify patients instantly — no manual follow-ups.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Manage sample requests',
-        supportingText:
-            'Track walk-ins, home collections, and doctor orders in real time.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Partner with doctors on DoctorNect',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-    ],
-    UserType.ambulance => const [
-      _IntroSlideContent(
-        headline: 'Respond faster, save lives',
-        supportingText: 'Accept emergency bookings and reach patients quickly when every minute counts.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Real-time dispatch alerts',
-        supportingText:
-            'Navigate, accept requests, and stay coordinated on every call.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Quick patient handoff',
-        supportingText: 'Share trip details and coordinate smoothly with hospitals and care teams.',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Keep your fleet available and responsive',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-    ],
-    _ => const [
-      _IntroSlideContent(
-        headline: 'Your health journey starts here with DoctorNect',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'One platform for every healthcare role',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Secure, simple and built for mobile',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-      _IntroSlideContent(
-        headline: 'Join thousands on DoctorNect today',
-        illustrationAsset: _kIntroIllustrationAsset,
-      ),
-    ],
-  };
+        UserType.doctor => const [
+            _IntroSlideContent(
+              headline: 'Manage patients with ease',
+              supportingText:
+                  'Appointments, prescriptions and clinical notes — all in one secure workspace built for doctors.',
+              illustrationAsset: _kIntroSlide1,
+            ),
+            _IntroSlideContent(
+              headline: 'Write prescriptions digitally',
+              supportingText:
+                  'Create, share and track prescriptions with patients and pharmacies in a few taps.',
+              placeholderIcon: Icons.medication_outlined,
+            ),
+            _IntroSlideContent(
+              headline: 'Your clinic, organized',
+              supportingText:
+                  'Stay on top of schedules, follow-ups and patient records without the paperwork.',
+              placeholderIcon: Icons.calendar_month_outlined,
+            ),
+            _IntroSlideContent(
+              headline: 'Seamless consultations',
+              supportingText:
+                  'Connect with patients through in-clinic visits and video consultations with instant follow-ups.',
+              placeholderIcon: Icons.videocam_outlined,
+            ),
+          ],
+        UserType.patient => const [
+            _IntroSlideContent(
+              headline: 'Your health, in your hands',
+              supportingText:
+                  'Book doctors, track prescriptions, and manage lab reports from one secure app.',
+              illustrationAsset: _kIntroSlide1,
+            ),
+            _IntroSlideContent(
+              headline: 'Book appointments easily',
+              supportingText:
+                  'Find trusted doctors near you and schedule visits in minutes.',
+              illustrationAsset: _kIntroSlide2,
+            ),
+            _IntroSlideContent(
+              headline: 'Care when you need it',
+              supportingText:
+                  'Access prescriptions, reports, and emergency services anytime.',
+              illustrationAsset: _kIntroSlide3,
+            ),
+            _IntroSlideContent(
+              headline: 'Book lab tests and ambulance when you need them',
+              illustrationAsset: _kIntroSlide4,
+            ),
+          ],
+        UserType.medicalStore => const [
+            _IntroSlideContent(
+              headline: 'Streamline your pharmacy',
+              supportingText:
+                  'Receive digital prescriptions and serve patients faster from one workspace.',
+              illustrationAsset: _kIntroSlide1,
+            ),
+            _IntroSlideContent(
+              headline: 'Manage orders digitally',
+              supportingText:
+                  'Track dispensing, inventory, and patient requests without the paperwork.',
+              illustrationAsset: _kIntroSlide2,
+            ),
+            _IntroSlideContent(
+              headline: 'Connect with care partners',
+              supportingText:
+                  'Work seamlessly with doctors and patients on DoctorNect.',
+              illustrationAsset: _kIntroSlide3,
+            ),
+            _IntroSlideContent(
+              headline: 'Grow your pharmacy with DoctorNect',
+              illustrationAsset: _kIntroSlide4,
+            ),
+          ],
+        UserType.lab => const [
+            _IntroSlideContent(
+              headline: 'Simplify lab operations',
+              supportingText:
+                  'Manage test orders, samples, and results from one connected dashboard.',
+              illustrationAsset: _kIntroSlide1,
+            ),
+            _IntroSlideContent(
+              headline: 'Digital test reports',
+              supportingText:
+                  'Upload results and notify patients instantly — no manual follow-ups.',
+              illustrationAsset: _kIntroSlide2,
+            ),
+            _IntroSlideContent(
+              headline: 'Manage sample requests',
+              supportingText:
+                  'Track walk-ins, home collections, and doctor orders in real time.',
+              illustrationAsset: _kIntroSlide3,
+            ),
+            _IntroSlideContent(
+              headline: 'Partner with doctors on DoctorNect',
+              illustrationAsset: _kIntroSlide4,
+            ),
+          ],
+        UserType.ambulance => const [
+            _IntroSlideContent(
+              headline: 'Respond faster, save lives',
+              supportingText:
+                  'Accept emergency bookings and reach patients quickly when every minute counts.',
+              illustrationAsset: _kIntroSlide1,
+            ),
+            _IntroSlideContent(
+              headline: 'Real-time dispatch alerts',
+              supportingText:
+                  'Navigate, accept requests, and stay coordinated on every call.',
+              illustrationAsset: _kIntroSlide2,
+            ),
+            _IntroSlideContent(
+              headline: 'Quick patient handoff',
+              supportingText:
+                  'Share trip details and coordinate smoothly with hospitals and care teams.',
+              illustrationAsset: _kIntroSlide3,
+            ),
+            _IntroSlideContent(
+              headline: 'Keep your fleet available and responsive',
+              illustrationAsset: _kIntroSlide4,
+            ),
+          ],
+        _ => const [
+            _IntroSlideContent(
+              headline: 'Your health journey starts here with DoctorNect',
+              illustrationAsset: _kIntroSlide1,
+            ),
+            _IntroSlideContent(
+              headline: 'One platform for every healthcare role',
+              illustrationAsset: _kIntroSlide2,
+            ),
+            _IntroSlideContent(
+              headline: 'Secure, simple and built for mobile',
+              illustrationAsset: _kIntroSlide3,
+            ),
+            _IntroSlideContent(
+              headline: 'Join thousands on DoctorNect today',
+              illustrationAsset: _kIntroSlide4,
+            ),
+          ],
+      };
 
   /// Role-specific value props on the desktop brand panel (same styling for all).
   List<_DesktopFeatureItem> get _desktopFeatureBullets => switch (widget.role) {
-    UserType.doctor => const [
-      (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
-      (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
-      (icon: Icons.bolt_outlined, label: 'Instant consultations'),
-    ],
-    UserType.patient => const [
-      (icon: Icons.event_available_outlined, label: 'Book appointments easily'),
-      (icon: Icons.medication_outlined, label: 'Access prescriptions anytime'),
-      (icon: Icons.video_call_outlined, label: 'Video consult top doctors'),
-    ],
-    UserType.medicalStore => const [
-      (icon: Icons.inventory_2_outlined, label: 'Manage orders digitally'),
-      (icon: Icons.receipt_long_outlined, label: 'Track prescriptions'),
-      (icon: Icons.hub_outlined, label: 'Connect with patients & doctors'),
-    ],
-    UserType.lab => const [
-      (icon: Icons.description_outlined, label: 'Digital test reports'),
-      (icon: Icons.biotech_outlined, label: 'Manage sample requests'),
-      (icon: Icons.speed_outlined, label: 'Faster patient turnaround'),
-    ],
-    UserType.ambulance => const [
-      (
-        icon: Icons.notifications_active_outlined,
-        label: 'Real-time dispatch alerts',
-      ),
-      (
-        icon: Icons.transfer_within_a_station_outlined,
-        label: 'Quick patient handoff',
-      ),
-      (icon: Icons.local_hospital_outlined, label: 'Coordinate with hospitals'),
-    ],
-    _ => const [
-      (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
-      (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
-      (icon: Icons.bolt_outlined, label: 'Instant consultations'),
-    ],
-  };
+        UserType.doctor => const [
+            (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
+            (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
+            (icon: Icons.bolt_outlined, label: 'Instant consultations'),
+          ],
+        UserType.patient => const [
+            (
+              icon: Icons.event_available_outlined,
+              label: 'Book appointments easily'
+            ),
+            (
+              icon: Icons.medication_outlined,
+              label: 'Access prescriptions anytime'
+            ),
+            (
+              icon: Icons.video_call_outlined,
+              label: 'Video consult top doctors'
+            ),
+          ],
+        UserType.medicalStore => const [
+            (
+              icon: Icons.inventory_2_outlined,
+              label: 'Manage orders digitally'
+            ),
+            (icon: Icons.receipt_long_outlined, label: 'Track prescriptions'),
+            (
+              icon: Icons.hub_outlined,
+              label: 'Connect with patients & doctors'
+            ),
+          ],
+        UserType.lab => const [
+            (icon: Icons.description_outlined, label: 'Digital test reports'),
+            (icon: Icons.biotech_outlined, label: 'Manage sample requests'),
+            (icon: Icons.speed_outlined, label: 'Faster patient turnaround'),
+          ],
+        UserType.ambulance => const [
+            (
+              icon: Icons.notifications_active_outlined,
+              label: 'Real-time dispatch alerts',
+            ),
+            (
+              icon: Icons.transfer_within_a_station_outlined,
+              label: 'Quick patient handoff',
+            ),
+            (
+              icon: Icons.local_hospital_outlined,
+              label: 'Coordinate with hospitals'
+            ),
+          ],
+        _ => const [
+            (icon: Icons.lock_outline_rounded, label: 'Secure patient records'),
+            (icon: Icons.receipt_long_outlined, label: 'Digital prescriptions'),
+            (icon: Icons.bolt_outlined, label: 'Instant consultations'),
+          ],
+      };
 
   List<Color> get _gradientColors {
     final base = _accent;
     return switch (widget.role) {
       UserType.doctor => [
-        const Color(0xFF0A2F6B),
-        const Color(0xFF123E8A),
-        base,
-      ],
+          const Color(0xFF0A2F6B),
+          const Color(0xFF123E8A),
+          base,
+        ],
       UserType.patient => [
-        const Color(0xFF064E3B),
-        const Color(0xFF0B6B58),
-        base,
-      ],
+          const Color(0xFF064E3B),
+          const Color(0xFF0B6B58),
+          base,
+        ],
       UserType.medicalStore => [
-        const Color(0xFF065F46),
-        const Color(0xFF047857),
-        base,
-      ],
+          const Color(0xFF065F46),
+          const Color(0xFF047857),
+          base,
+        ],
       UserType.lab => [const Color(0xFF312E81), const Color(0xFF4338CA), base],
       UserType.ambulance => [
-        const Color(0xFF7F1D1D),
-        const Color(0xFFB91C1C),
-        base,
-      ],
+          const Color(0xFF7F1D1D),
+          const Color(0xFFB91C1C),
+          base,
+        ],
       _ => [base.withValues(alpha: 0.95), base],
     };
   }
@@ -584,9 +616,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
   Widget _buildDesktopIntroLayout(BuildContext context) {
     final isDark = AppColors.isDark(context);
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.darkBackground
-          : _IntroTheme.desktopRightBg,
+      backgroundColor:
+          isDark ? AppColors.darkBackground : _IntroTheme.desktopRightBg,
       body: GestureDetector(
         onTap: _dismissKeyboard,
         behavior: HitTestBehavior.opaque,
@@ -2378,8 +2409,8 @@ class _DesktopPrimaryButtonState extends State<_DesktopPrimaryButton> {
 
     final fill = interactive
         ? (hovered
-              ? [lifted, base]
-              : [base, Color.lerp(base, Colors.black, 0.08) ?? base])
+            ? [lifted, base]
+            : [base, Color.lerp(base, Colors.black, 0.08) ?? base])
         : [
             Color.lerp(base, Colors.white, 0.62) ?? base,
             Color.lerp(base, Colors.white, 0.54) ?? base,
@@ -2395,9 +2426,8 @@ class _DesktopPrimaryButtonState extends State<_DesktopPrimaryButton> {
       child: GestureDetector(
         onTapDown: interactive ? (_) => setState(() => _pressed = true) : null,
         onTapUp: interactive ? (_) => setState(() => _pressed = false) : null,
-        onTapCancel: interactive
-            ? () => setState(() => _pressed = false)
-            : null,
+        onTapCancel:
+            interactive ? () => setState(() => _pressed = false) : null,
         onTap: interactive ? widget.onPressed : null,
         child: AnimatedScale(
           duration: const Duration(milliseconds: 130),
@@ -2673,9 +2703,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
               loadingLabel: isMobileStep ? 'Sending OTP...' : 'Verifying...',
               accent: widget.accent,
               enabled: isMobileStep ? _mobileValid : widget.flow.otpValid,
-              loading: isMobileStep
-                  ? widget.flow.sendingOtp
-                  : widget.flow.verifying,
+              loading:
+                  isMobileStep ? widget.flow.sendingOtp : widget.flow.verifying,
               onPressed: _submit,
             ),
             const SizedBox(height: 20),
@@ -2848,26 +2877,26 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
   }
 
   TextStyle _titleStyle(BuildContext context) => GoogleFonts.inter(
-    fontSize: 26,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textPrimaryOf(context),
-    letterSpacing: -0.6,
-    height: 1.2,
-  );
+        fontSize: 26,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimaryOf(context),
+        letterSpacing: -0.6,
+        height: 1.2,
+      );
 
   TextStyle _subtitleStyle(BuildContext context) => GoogleFonts.inter(
-    fontSize: 15,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textSecondaryOf(context),
-    height: 1.5,
-  );
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondaryOf(context),
+        height: 1.5,
+      );
 
   TextStyle _fieldLabelStyle(BuildContext context) => GoogleFonts.inter(
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimaryOf(context),
-    height: 1.2,
-  );
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimaryOf(context),
+        height: 1.2,
+      );
 }
 
 class _IntroIllustration extends StatelessWidget {

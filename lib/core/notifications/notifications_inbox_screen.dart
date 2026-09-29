@@ -472,53 +472,53 @@ class _NotificationPalette {
   static _NotificationPalette forType(AppNotificationType type, Color accent) {
     return switch (type) {
       AppNotificationType.appointment => _NotificationPalette(
-        gradient: [accent, accent.withValues(alpha: 0.75)],
-        icon: Icons.event_available_outlined,
-      ),
+          gradient: [accent, accent.withValues(alpha: 0.75)],
+          icon: Icons.event_available_outlined,
+        ),
       AppNotificationType.booking => _NotificationPalette(
-        gradient: [accent, accent.withValues(alpha: 0.75)],
-        icon: Icons.calendar_month_outlined,
-      ),
+          gradient: [accent, accent.withValues(alpha: 0.75)],
+          icon: Icons.calendar_month_outlined,
+        ),
       AppNotificationType.cancellation => const _NotificationPalette(
-        gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
-        icon: Icons.event_busy_outlined,
-      ),
+          gradient: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+          icon: Icons.event_busy_outlined,
+        ),
       AppNotificationType.labReport => const _NotificationPalette(
-        gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-        icon: Icons.biotech_outlined,
-      ),
+          gradient: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+          icon: Icons.biotech_outlined,
+        ),
       AppNotificationType.prescription => const _NotificationPalette(
-        gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-        icon: AppIcons.prescription,
-      ),
+          gradient: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+          icon: AppIcons.prescription,
+        ),
       AppNotificationType.reminder => const _NotificationPalette(
-        gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
-        icon: Icons.alarm_outlined,
-      ),
+          gradient: [Color(0xFFEA580C), Color(0xFFC2410C)],
+          icon: Icons.alarm_outlined,
+        ),
       AppNotificationType.review => const _NotificationPalette(
-        gradient: [Color(0xFFCA8A04), Color(0xFFA16207)],
-        icon: Icons.star_outline,
-      ),
+          gradient: [Color(0xFFCA8A04), Color(0xFFA16207)],
+          icon: Icons.star_outline,
+        ),
       AppNotificationType.payout => const _NotificationPalette(
-        gradient: [Color(0xFF059669), Color(0xFF047857)],
-        icon: Icons.payments_outlined,
-      ),
+          gradient: [Color(0xFF059669), Color(0xFF047857)],
+          icon: Icons.payments_outlined,
+        ),
       AppNotificationType.chat => _NotificationPalette(
-        gradient: [accent, accent.withValues(alpha: 0.75)],
-        icon: Icons.chat_bubble_outline,
-      ),
+          gradient: [accent, accent.withValues(alpha: 0.75)],
+          icon: Icons.chat_bubble_outline,
+        ),
       AppNotificationType.kyc => const _NotificationPalette(
-        gradient: [Color(0xFF0891B2), Color(0xFF0E7490)],
-        icon: Icons.verified_user_outlined,
-      ),
+          gradient: [Color(0xFF0891B2), Color(0xFF0E7490)],
+          icon: Icons.verified_user_outlined,
+        ),
       AppNotificationType.wellness => const _NotificationPalette(
-        gradient: [Color(0xFF16A34A), Color(0xFF15803D)],
-        icon: Icons.favorite_outline,
-      ),
+          gradient: [Color(0xFF16A34A), Color(0xFF15803D)],
+          icon: Icons.favorite_outline,
+        ),
       AppNotificationType.system => const _NotificationPalette(
-        gradient: [Color(0xFF64748B), Color(0xFF475569)],
-        icon: Icons.info_outline,
-      ),
+          gradient: [Color(0xFF64748B), Color(0xFF475569)],
+          icon: Icons.info_outline,
+        ),
     };
   }
 }

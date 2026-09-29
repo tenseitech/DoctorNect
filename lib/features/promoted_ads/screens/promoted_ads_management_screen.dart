@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/widgets/resampled_network_image.dart';
+import '../../../core/widgets/s3_aware_network_image.dart';
 import '../../../core/models/promoted_ad_model.dart';
 import '../../../core/services/promoted_ads_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -63,7 +63,9 @@ class PromotedAdsManagementScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                notice != null && notice.trim().isNotEmpty ? notice.trim() : 'Promotional ads and banner placements are currently paused by the Super Administrator. Please check back later or contact admin support.',
+                notice != null && notice.trim().isNotEmpty
+                    ? notice.trim()
+                    : 'Promotional ads and banner placements are currently paused by the Super Administrator. Please check back later or contact admin support.',
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(ctx),
@@ -238,7 +240,9 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          config.bannerNotice.isNotEmpty ? config.bannerNotice : 'Banner promotion system is currently paused by administrator.',
+                          config.bannerNotice.isNotEmpty
+                              ? config.bannerNotice
+                              : 'Banner promotion system is currently paused by administrator.',
                           style: GoogleFonts.inter(
                             fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
@@ -280,11 +284,10 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          (isDark
-                                                  ? const Color(0xFF6366F1)
-                                                  : AppColors.doctorBlue)
-                                              .withValues(alpha: 0.25),
+                                      color: (isDark
+                                              ? const Color(0xFF6366F1)
+                                              : AppColors.doctorBlue)
+                                          .withValues(alpha: 0.25),
                                       blurRadius: 16,
                                       offset: const Offset(0, 4),
                                     ),
@@ -406,9 +409,12 @@ class _PromotedAdCard extends StatelessWidget {
                 child: SizedBox(
                   height: 120,
                   width: double.infinity,
-                  child: ad.imageUrl.isNotEmpty
-                      ? ResampledNetworkImageWidget(
-                          url: ad.imageUrl,
+                  child: (ad.imageKey != null && ad.imageKey!.isNotEmpty) ||
+                          ad.imageUrl.isNotEmpty
+                      ? S3AwareNetworkImage(
+                          photoKey: ad.imageKey,
+                          photoStorage: ad.imageStorage,
+                          legacyUrl: ad.imageUrl,
                           width: double.infinity,
                           height: 120,
                           fit: BoxFit.cover,
@@ -570,10 +576,10 @@ class _PromotedAdCard extends StatelessWidget {
   }
 
   String _formatDuration(int hours) => switch (hours) {
-    24 => '1 Day',
-    72 => '3 Days',
-    168 => '1 Week',
-    720 => '1 Month',
-    _ => '$hours Hours',
-  };
+        24 => '1 Day',
+        72 => '3 Days',
+        168 => '1 Week',
+        720 => '1 Month',
+        _ => '$hours Hours',
+      };
 }

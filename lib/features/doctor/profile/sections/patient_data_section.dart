@@ -166,12 +166,10 @@ class _PatientDataSectionState extends State<PatientDataSection> {
       uniquePatients.add(key);
     }
 
-    final newVisits = records
-        .where((r) => r.visitType == AppointmentType.newVisit)
-        .length;
-    final followUps = records
-        .where((r) => r.visitType == AppointmentType.followUp)
-        .length;
+    final newVisits =
+        records.where((r) => r.visitType == AppointmentType.newVisit).length;
+    final followUps =
+        records.where((r) => r.visitType == AppointmentType.followUp).length;
 
     pdf.addPage(
       pw.MultiPage(
@@ -766,9 +764,8 @@ class _PeriodSelector extends StatelessWidget {
                         label,
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.labelMedium,
-                          fontWeight: isActive
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                          fontWeight:
+                              isActive ? FontWeight.w600 : FontWeight.w500,
                           color: isActive
                               ? AppColors.surfaceOf(context)
                               : Colors.grey[600],
@@ -1386,16 +1383,15 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                       '$day',
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
-                        fontWeight: isEndpoint
-                            ? FontWeight.w700
-                            : FontWeight.w400,
+                        fontWeight:
+                            isEndpoint ? FontWeight.w700 : FontWeight.w400,
                         color: isEndpoint
                             ? Colors.white
                             : disabled
-                            ? Colors.grey[300]
-                            : inRange
-                            ? AppColors.practoTeal
-                            : Colors.grey[800],
+                                ? Colors.grey[300]
+                                : inRange
+                                    ? AppColors.practoTeal
+                                    : Colors.grey[800],
                       ),
                     ),
                   ],

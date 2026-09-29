@@ -422,7 +422,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
   List<DoctorHomeServiceItem> _networkServices() {
     final isVerified =
         DoctorProfileStore.instance.dashboardVerificationStatus ==
-        VerificationStatus.verified;
+            VerificationStatus.verified;
 
     return [
       DoctorHomeServiceItem(
@@ -673,8 +673,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
                     subtitle:
                         'Patients scheduled for ${DateFormat('EEE, dd MMM').format(_selectedDate)}',
                     secondaryActionLabel: 'Calendar',
-                    secondaryActionSubtitle: DateFormat('d MMM yyyy')
-                        .format(_selectedDate),
+                    secondaryActionSubtitle:
+                        DateFormat('d MMM yyyy').format(_selectedDate),
                     onSecondaryAction: _openCalendarPopup,
                     actionLabel: 'View all',
                     actionFilled: true,
@@ -779,7 +779,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
             content: Text(
               describeUserFacingError(
                 e,
-                fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+                fallback:
+                    "Couldn't accept this appointment. Please check your connection and try again.",
               ),
             ),
           ),
@@ -806,7 +807,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
             content: Text(
               describeUserFacingError(
                 e,
-                fallback: "Couldn't accept these appointments. Please check your connection and try again.",
+                fallback:
+                    "Couldn't accept these appointments. Please check your connection and try again.",
               ),
             ),
           ),
@@ -827,7 +829,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
             content: Text(
               describeUserFacingError(
                 e,
-                fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+                fallback:
+                    "Couldn't decline this appointment. Please check your connection and try again.",
               ),
             ),
           ),
@@ -851,7 +854,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
             content: Text(
               describeUserFacingError(
                 e,
-                fallback: "Couldn't start consultation. Please check your connection and try again.",
+                fallback:
+                    "Couldn't start consultation. Please check your connection and try again.",
               ),
             ),
           ),

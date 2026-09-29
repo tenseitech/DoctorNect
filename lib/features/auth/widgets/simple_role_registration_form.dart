@@ -42,8 +42,7 @@ class SimpleRoleRegistrationForm extends StatefulWidget {
     required String name,
     required String qualification,
     required String mobile,
-  })
-  onSubmit;
+  }) onSubmit;
 
   /// When set, mobile OTP was already verified in [UnifiedMobileAuthScreen].
   final String? preVerifiedMobile;
@@ -74,7 +73,7 @@ class _SimpleRoleRegistrationFormState
     final digits = preMobile == null
         ? null
         : (FormValidators.registrationMobileDigits(preMobile) ??
-              FormValidators.mobileDigits(preMobile));
+            FormValidators.mobileDigits(preMobile));
     if (digits != null) {
       _mobileController.text = digits;
       _mobileVerified = true;
@@ -138,19 +137,19 @@ class _SimpleRoleRegistrationFormState
   }
 
   LegalAudience get _legalAudience => switch (widget.role) {
-    UserType.doctor => LegalAudience.doctor,
-    UserType.medicalStore => LegalAudience.pharmacy,
-    UserType.lab => LegalAudience.lab,
-    UserType.ambulance => LegalAudience.ambulance,
-    _ => LegalAudience.doctor,
-  };
+        UserType.doctor => LegalAudience.doctor,
+        UserType.medicalStore => LegalAudience.pharmacy,
+        UserType.lab => LegalAudience.lab,
+        UserType.ambulance => LegalAudience.ambulance,
+        _ => LegalAudience.doctor,
+      };
 
   @override
   Widget build(BuildContext context) {
     return Theme(
       data: Theme.of(context).copyWith(
-        colorScheme: Theme.of(context).colorScheme
-            .copyWith(primary: widget.accentColor),
+        colorScheme:
+            Theme.of(context).colorScheme.copyWith(primary: widget.accentColor),
       ),
       child: AuthLoginPageShell(
         appBarTitle: widget.appBarTitle,

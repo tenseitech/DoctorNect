@@ -239,11 +239,9 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          for (
-                                            var i = 0;
-                                            i < maxVisible;
-                                            i++
-                                          ) ...[
+                                          for (var i = 0;
+                                              i < maxVisible;
+                                              i++) ...[
                                             if (i > 0)
                                               const SizedBox(height: 8),
                                             _PatientRow(
@@ -315,8 +313,8 @@ class _PatientRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat('dd MMM yyyy')
-        .format(appointment.appointmentDate);
+    final dateLabel =
+        DateFormat('dd MMM yyyy').format(appointment.appointmentDate);
     final details = showAppointmentDate
         ? '$dateLabel · ${appointment.timeSlot}'
         : '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')} · ${appointment.timeSlot}';
@@ -369,8 +367,8 @@ class _PatientRow extends StatelessWidget {
               ),
               Icon(
                 Icons.chevron_right,
-                color: AppColors.textSecondaryOf(context)
-                    .withValues(alpha: 0.6),
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.6),
               ),
             ],
           ),

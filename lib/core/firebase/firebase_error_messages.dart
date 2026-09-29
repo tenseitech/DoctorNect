@@ -36,7 +36,8 @@ String describeFirebaseAuthError(
   final mapped = switch (error.code) {
     'user-not-found' ||
     'wrong-password' ||
-    'invalid-credential' => 'Invalid email or password',
+    'invalid-credential' =>
+      'Invalid email or password',
     'email-already-in-use' => 'An account already exists with this email',
     'weak-password' => 'Password is too weak',
     'invalid-email' => 'Invalid email address',
@@ -45,18 +46,19 @@ String describeFirebaseAuthError(
       'This email is registered with a different sign-in method',
     'popup-closed-by-user' ||
     'cancelled-popup-request' ||
-    'web-context-cancelled' => 'Sign-in cancelled',
+    'web-context-cancelled' =>
+      'Sign-in cancelled',
     'operation-not-allowed' =>
       'This sign-in method is not enabled in Firebase. Contact support.',
     'network-request-failed' =>
       'Network error. Check your internet connection and try again.',
-    'internal-error' =>
-      error.message != null &&
-              error.message!.isNotEmpty &&
-              !error.message!.toLowerCase().contains('internal-error')
-          ? error.message!.trim()
-          : 'Sign-in service error. Check Firebase Authentication settings.',
-    'invalid-api-key' || 'api-key-not-valid.-please-pass-a-valid-api-key.' =>
+    'internal-error' => error.message != null &&
+            error.message!.isNotEmpty &&
+            !error.message!.toLowerCase().contains('internal-error')
+        ? error.message!.trim()
+        : 'Sign-in service error. Check Firebase Authentication settings.',
+    'invalid-api-key' ||
+    'api-key-not-valid.-please-pass-a-valid-api-key.' =>
       'App configuration error. Redeploy the latest web build.',
     'app-not-authorized' =>
       'This app is not authorized for Firebase. Contact support.',
@@ -93,7 +95,8 @@ String describeFirebaseError(
     'cancelled' ||
     'network-request-failed' ||
     'aborted' ||
-    'internal' => true,
+    'internal' =>
+      true,
     _ => false,
   };
   if (useFallback) return fallback;
