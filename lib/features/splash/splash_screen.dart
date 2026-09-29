@@ -82,15 +82,26 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  Timer? _timer;
+  bool _disposed = false;
+
   @override
   void initState() {
     super.initState();
     unawaited(_goNext());
   }
 
+  @override
+  void dispose() {
+    _disposed = true;
+    _timer?.cancel();
+    _timer = null;
+    super.dispose();
+  }
+
   Future<void> _goNext() async {
     final target = await SplashScreen.resolveInitialScreen();
-    if (!mounted) return;
+    if (!mounted || _disposed) return;
     Navigator.of(context)
         .pushReplacement(MaterialPageRoute(builder: (_) => target));
   }

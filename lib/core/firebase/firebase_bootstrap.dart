@@ -23,6 +23,11 @@ abstract final class FirebaseBootstrap {
     if (isReady) return true;
     try {
       lastInitError = null;
+      if (!DefaultFirebaseOptions.isConfigured) {
+        isReady = false;
+        lastInitError = 'Firebase API keys not configured.';
+        return false;
+      }
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
