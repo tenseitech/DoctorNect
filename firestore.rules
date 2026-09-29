@@ -342,25 +342,25 @@ service cloud.firestore {
     }
 
     function validPatientProfileStorage(data, patientId) {
-      return data.get('photoStorage', '') != 's3'
+      return (data.get('photoStorage', '') != 's3' && data.get('photoKey', '') == '')
         || (data.get('photoKey', '') is string
-            && data.get('photoKey', '').matches('^patients/' + patientId + '/profile/.+'));
+            && data.get('photoKey', '').matches('^patients/' + patientId + '/profile/[a-zA-Z0-9._-]+$'));
     }
 
     function validDoctorProfileStorage(data, doctorId) {
-      return data.get('photoStorage', '') != 's3'
+      return (data.get('photoStorage', '') != 's3' && data.get('photoKey', '') == '')
         || (data.get('photoKey', '') is string
-            && data.get('photoKey', '').matches('^doctor_profiles/' + doctorId + '/profile/.+'));
+            && data.get('photoKey', '').matches('^doctor_profiles/' + doctorId + '/profile/[a-zA-Z0-9._-]+$'));
     }
 
     function validUserProfileStorage(data, uid) {
-      return data.get('photoStorage', '') != 's3'
+      return (data.get('photoStorage', '') != 's3' && data.get('photoKey', '') == '')
         || (data.get('photoKey', '') is string
-            && (data.get('photoKey', '').matches('^patients/' + uid + '/profile/.+')
-                || data.get('photoKey', '').matches('^doctor_profiles/' + uid + '/profile/.+')
+            && (data.get('photoKey', '').matches('^patients/' + uid + '/profile/[a-zA-Z0-9._-]+$')
+                || data.get('photoKey', '').matches('^doctor_profiles/' + uid + '/profile/[a-zA-Z0-9._-]+$')
                 || (data.get('profileId', '') != '' && (
-                    data.get('photoKey', '').matches('^patients/' + data.get('profileId', '') + '/profile/.+')
-                    || data.get('photoKey', '').matches('^doctor_profiles/' + data.get('profileId', '') + '/profile/.+')
+                    data.get('photoKey', '').matches('^patients/' + data.get('profileId', '') + '/profile/[a-zA-Z0-9._-]+$')
+                    || data.get('photoKey', '').matches('^doctor_profiles/' + data.get('profileId', '') + '/profile/[a-zA-Z0-9._-]+$')
                 ))));
     }
 

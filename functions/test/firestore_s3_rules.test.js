@@ -499,5 +499,87 @@ test('users: user can update own photo fields with matching prefix but not arbit
       photoStorage: 's3',
     }),
   );
+
+  // Cross-user prefix rejected
+  await assertFails(
+    patientCtx.firestore().collection('users').doc(PATIENT_UID).update({
+      photoKey: `patients/${OTHER_PATIENT_ID}/profile/avatar.jpg`,
+      photoStorage: 's3',
+    }),
+  );
+});
+
+test('patients: legacy update accepted without photoKey/photoStorage (e.g. only name changed)', async () => {
+  await seedUsers();
+  const patientCtx = testEnv.authenticatedContext(PATIENT_UID);
+  await assertSucceeds(
+    patientCtx.firestore().collection('patients').doc(PATIENT_ID).update({
+      name: 'John Updated Doe',
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+test('patients: legacy update accepted with photoStorage "firebase" and only photoUrl', async () => {
+  await seedUsers();
+  const patientCtx = testEnv.authenticatedContext(PATIENT_UID);
+  await assertSucceeds(
+    patientCtx.firestore().collection('patients').doc(PATIENT_ID).update({
+      photoStorage: 'firebase',
+      photoUrl: 'https://firebasestorage.googleapis.com/v0/b/app/o/profile.jpg?alt=media',
+      photoURL: 'https://firebasestorage.googleapis.com/v0/b/app/o/profile.jpg?alt=media',
+      hasLocalPhoto: true,
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+test('doctors: legacy update accepted without photoKey/photoStorage (e.g. only name/address changed)', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  await assertSucceeds(
+    doctorCtx.firestore().collection('doctors').doc(DOCTOR_ID).update({
+      name: 'Dr. Jane Updated',
+      address: '456 Medical Lane',
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+test('doctors: legacy update accepted with photoStorage "firebase" and only photoUrl', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  await assertSucceeds(
+    doctorCtx.firestore().collection('doctors').doc(DOCTOR_ID).update({
+      photoStorage: 'firebase',
+      photoUrl: 'https://firebasestorage.googleapis.com/v0/b/app/o/doc.jpg?alt=media',
+      photoURL: 'https://firebasestorage.googleapis.com/v0/b/app/o/doc.jpg?alt=media',
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+test('users: legacy update accepted without photoKey/photoStorage', async () => {
+  await seedUsers();
+  const patientCtx = testEnv.authenticatedContext(PATIENT_UID);
+  await assertSucceeds(
+    patientCtx.firestore().collection('users').doc(PATIENT_UID).update({
+      displayName: 'Patient Jane',
+      updatedAt: new Date(),
+    }),
+  );
+});
+
+test('users: legacy update accepted with photoStorage "firebase" and only photoUrl', async () => {
+  await seedUsers();
+  const patientCtx = testEnv.authenticatedContext(PATIENT_UID);
+  await assertSucceeds(
+    patientCtx.firestore().collection('users').doc(PATIENT_UID).update({
+      photoStorage: 'firebase',
+      photoUrl: 'https://firebasestorage.googleapis.com/v0/b/app/o/user.jpg?alt=media',
+      photoURL: 'https://firebasestorage.googleapis.com/v0/b/app/o/user.jpg?alt=media',
+      updatedAt: new Date(),
+    }),
+  );
 });
 
