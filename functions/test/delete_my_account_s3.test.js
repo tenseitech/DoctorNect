@@ -4,6 +4,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   deleteS3PrefixVersions,
+  deleteS3SpecificKeysVersions,
+  collectRoleSpecificS3ReportKeys,
   resolveUserS3Prefixes,
   cleanupUserS3Prefixes,
   setS3ClientForTesting,
@@ -80,7 +82,119 @@ test('deleteS3PrefixVersions: targets ALL versions and delete markers across pag
   ]);
 });
 
-test('resolveUserS3Prefixes: lab deletion deletes lab report prefix but NEVER touches health_records', async () => {
+test('deleteS3SpecificKeysVersions: deletes all versions of exact keys without touching prefix collisions', async () => {
+  const sentCommands = [];
+
+  const mockS3 = {
+    send: async (cmd) => {
+      sentCommands.push(cmd);
+      if (cmd instanceof ListObjectVersionsCommand) {
+        if (cmd.input.Prefix === 'lab_reports/pat_1/book_1/report.pdf') {
+          return {
+            IsTruncated: false,
+            Versions: [
+              { Key: 'lab_reports/pat_1/book_1/report.pdf', VersionId: 'v1' },
+              { Key: 'lab_reports/pat_1/book_1/report.pdf', VersionId: 'v2' },
+              // Prefix collision that does NOT exactly match should be ignored
+              { Key: 'lab_reports/pat_1/book_1/report.pdf.bak', VersionId: 'v_other' },
+            ],
+            DeleteMarkers: [
+              { Key: 'lab_reports/pat_1/book_1/report.pdf', VersionId: 'dm1' },
+            ],
+          };
+        }
+        if (cmd.input.Prefix === 'lab_reports/pat_2/order_1/report.pdf') {
+          return {
+            IsTruncated: false,
+            Versions: [
+              { Key: 'lab_reports/pat_2/order_1/report.pdf', VersionId: 'v_order1' },
+            ],
+            DeleteMarkers: [],
+          };
+        }
+      }
+
+      if (cmd instanceof DeleteObjectsCommand) {
+        return { Deleted: cmd.input.Delete.Objects };
+      }
+      return {};
+    },
+  };
+
+  const keys = [
+    'lab_reports/pat_1/book_1/report.pdf',
+    'lab_reports/pat_2/order_1/report.pdf',
+  ];
+
+  const result = await deleteS3SpecificKeysVersions(mockS3, 'test-bucket', keys);
+  assert.equal(result.success, true);
+  assert.equal(result.count, 4); // 2 versions + 1 delete marker for book_1, 1 version for order_1
+
+  const deleteCmd = sentCommands.find((c) => c instanceof DeleteObjectsCommand);
+  assert.ok(deleteCmd, 'Must send DeleteObjectsCommand');
+
+  const deletedObjects = deleteCmd.input.Delete.Objects;
+  assert.deepEqual(deletedObjects, [
+    { Key: 'lab_reports/pat_1/book_1/report.pdf', VersionId: 'v1' },
+    { Key: 'lab_reports/pat_1/book_1/report.pdf', VersionId: 'v2' },
+    { Key: 'lab_reports/pat_1/book_1/report.pdf', VersionId: 'dm1' },
+    { Key: 'lab_reports/pat_2/order_1/report.pdf', VersionId: 'v_order1' },
+  ]);
+
+  // Ensure prefix collision was NOT included
+  const collisionFound = deletedObjects.some((o) => o.Key.endsWith('.bak'));
+  assert.equal(collisionFound, false, 'Must not delete prefix collision keys');
+});
+
+test('collectRoleSpecificS3ReportKeys: queries lab_bookings and lab_orders for labId and collects reportStorageKey', async () => {
+  const bookingsData = [
+    { id: 'b1', labId: 'lab_target', reportStorageKey: 'lab_reports/pat_A/b1/uuid-a.pdf', reportStorageProvider: 's3' },
+    { id: 'b2', labId: 'lab_target', reportStorageKey: 'lab_reports/pat_B/b2/uuid-b.pdf', reportStorageProvider: 's3' },
+    { id: 'b3', labId: 'lab_OTHER', reportStorageKey: 'lab_reports/pat_C/b3/uuid-c.pdf', reportStorageProvider: 's3' },
+    { id: 'b4', labId: 'lab_target', reportStorageKey: 'legacy_url_no_s3', reportStorageProvider: 'firebase' },
+  ];
+
+  const ordersData = [
+    { id: 'o1', labId: 'lab_target', reportStorageKey: 'lab_reports/pat_D/o1/uuid-d.pdf', reportStorageProvider: 's3' },
+    { id: 'o2', labId: 'lab_OTHER', reportStorageKey: 'lab_reports/pat_E/o2/uuid-e.pdf', reportStorageProvider: 's3' },
+  ];
+
+  const mockDb = {
+    collection: (col) => ({
+      where: (field, op, val) => ({
+        get: async () => {
+          if (col === 'lab_bookings' && field === 'labId') {
+            const matches = bookingsData.filter((b) => b.labId === val);
+            return { docs: matches.map((m) => ({ id: m.id, data: () => m })) };
+          }
+          if (col === 'lab_orders' && field === 'labId') {
+            const matches = ordersData.filter((o) => o.labId === val);
+            return { docs: matches.map((m) => ({ id: m.id, data: () => m })) };
+          }
+          return { docs: [] };
+        },
+      }),
+    }),
+  };
+
+  const collected = await collectRoleSpecificS3ReportKeys(mockDb, {
+    role: 'lab',
+    profileId: 'lab_target',
+    uid: 'lab_user_uid',
+  });
+
+  // Must collect only target lab's s3 reportStorageKey values
+  assert.equal(collected.length, 3);
+  assert.ok(collected.includes('lab_reports/pat_A/b1/uuid-a.pdf'));
+  assert.ok(collected.includes('lab_reports/pat_B/b2/uuid-b.pdf'));
+  assert.ok(collected.includes('lab_reports/pat_D/o1/uuid-d.pdf'));
+
+  // Must NEVER collect reports belonging to other labs
+  assert.equal(collected.includes('lab_reports/pat_C/b3/uuid-c.pdf'), false);
+  assert.equal(collected.includes('lab_reports/pat_E/o2/uuid-e.pdf'), false);
+});
+
+test('resolveUserS3Prefixes: lab deletion deletes labs profile prefix and promoted ads prefix, but does NOT include lab_reports prefix', async () => {
   const mockDb = {
     collection: () => ({
       where: () => ({
@@ -95,10 +209,13 @@ test('resolveUserS3Prefixes: lab deletion deletes lab report prefix but NEVER to
     profileId: 'lab_profile_123',
   });
 
-  // Lab's own report prefix is targeted
-  assert.ok(labPrefixes.includes('lab_reports/lab_profile_123/'), 'Must include lab own report prefix');
+  // Lab profile and promoted ads prefixes are targeted
   assert.ok(labPrefixes.includes('labs/lab_profile_123/'), 'Must include labs profile prefix');
   assert.ok(labPrefixes.includes('promoted_ads/lab_uid_123/'), 'Must include promoted ads prefix');
+
+  // Crucial: lab_reports prefix must NOT be in prefix list (no lab_reports/{labId}/ exists!)
+  const touchesLabReports = labPrefixes.some((p) => p.startsWith('lab_reports/'));
+  assert.equal(touchesLabReports, false, 'Lab deletion must NOT include lab_reports prefix');
 
   // Crucial: patient health_records prefix must NOT be touched
   const touchesHealthRecords = labPrefixes.some((p) => p.startsWith('health_records/'));
@@ -166,4 +283,35 @@ test('cleanupUserS3Prefixes: failure in one prefix soft-fails and does not stop 
 
   // Only the failing prefix is reported
   assert.deepEqual(failedPrefixes, ['failing_prefix/doc_1/']);
+});
+
+test('deleteS3SpecificKeysVersions: failure in one key soft-fails and continues with others', async () => {
+  const attemptedKeys = [];
+
+  const mockS3 = {
+    send: async (cmd) => {
+      if (cmd instanceof ListObjectVersionsCommand) {
+        attemptedKeys.push(cmd.input.Prefix);
+        if (cmd.input.Prefix === 'failing_report_key.pdf') {
+          throw new Error('S3 500 error on listing');
+        }
+        return {
+          IsTruncated: false,
+          Versions: [{ Key: cmd.input.Prefix, VersionId: 'v1' }],
+        };
+      }
+      if (cmd instanceof DeleteObjectsCommand) {
+        return { Deleted: cmd.input.Delete.Objects };
+      }
+      return {};
+    },
+  };
+
+  const keys = ['good_report_1.pdf', 'failing_report_key.pdf', 'good_report_2.pdf'];
+  const res = await deleteS3SpecificKeysVersions(mockS3, 'test-bucket', keys);
+
+  assert.equal(res.success, false);
+  assert.deepEqual(res.failedKeys, ['failing_report_key.pdf']);
+  assert.equal(res.count, 2); // 2 successful deletions
+  assert.deepEqual(attemptedKeys, ['good_report_1.pdf', 'failing_report_key.pdf', 'good_report_2.pdf']);
 });

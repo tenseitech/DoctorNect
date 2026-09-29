@@ -172,6 +172,107 @@ async function deleteS3PrefixVersions(s3, bucketName, prefix) {
   }
 }
 
+/**
+ * Deletes all versions and delete markers for a specific list of exact S3 keys.
+ * Best-effort: catches errors per key/batch, logs warnings, and batches deletes up to 1000 items.
+ */
+async function deleteS3SpecificKeysVersions(s3, bucketName, keys) {
+  const normalizedKeys = Array.from(
+    new Set((keys || []).map((k) => String(k || '').trim()).filter(Boolean)),
+  );
+  if (normalizedKeys.length === 0) return { success: true, count: 0, failedKeys: [] };
+
+  const itemsToDelete = [];
+  const failedKeys = [];
+
+  for (const key of normalizedKeys) {
+    try {
+      let keyMarker = undefined;
+      let versionIdMarker = undefined;
+      let keyFound = false;
+
+      while (true) {
+        const listCmd = new ListObjectVersionsCommand({
+          Bucket: bucketName,
+          Prefix: key,
+          KeyMarker: keyMarker,
+          VersionIdMarker: versionIdMarker,
+        });
+
+        const res = await s3.send(listCmd);
+
+        if (res.Versions && Array.isArray(res.Versions)) {
+          for (const v of res.Versions) {
+            // Strictly match the exact key to prevent prefix collisions
+            if (v.Key === key) {
+              keyFound = true;
+              itemsToDelete.push({ Key: v.Key, VersionId: v.VersionId });
+            }
+          }
+        }
+
+        if (res.DeleteMarkers && Array.isArray(res.DeleteMarkers)) {
+          for (const dm of res.DeleteMarkers) {
+            if (dm.Key === key) {
+              keyFound = true;
+              itemsToDelete.push({ Key: dm.Key, VersionId: dm.VersionId });
+            }
+          }
+        }
+
+        if (!res.IsTruncated) {
+          break;
+        }
+        keyMarker = res.NextKeyMarker;
+        versionIdMarker = res.NextVersionIdMarker;
+      }
+
+      // If ListObjectVersions didn't return version entries (e.g. unversioned), still target key
+      if (!keyFound) {
+        itemsToDelete.push({ Key: key });
+      }
+    } catch (err) {
+      logger.warn('deleteS3SpecificKeysVersions list error', {
+        key,
+        message: err?.message || 'unknown',
+      });
+      failedKeys.push(key);
+    }
+  }
+
+  let totalDeleted = 0;
+  for (let i = 0; i < itemsToDelete.length; i += 1000) {
+    const batch = itemsToDelete.slice(i, i + 1000);
+    if (batch.length > 0) {
+      try {
+        const deleteCmd = new DeleteObjectsCommand({
+          Bucket: bucketName,
+          Delete: {
+            Objects: batch,
+            Quiet: true,
+          },
+        });
+        await s3.send(deleteCmd);
+        totalDeleted += batch.length;
+      } catch (err) {
+        logger.warn('deleteS3SpecificKeysVersions delete batch error', {
+          batchSize: batch.length,
+          message: err?.message || 'unknown',
+        });
+        for (const item of batch) {
+          failedKeys.push(item.Key);
+        }
+      }
+    }
+  }
+
+  return {
+    success: failedKeys.length === 0,
+    count: totalDeleted,
+    failedKeys: Array.from(new Set(failedKeys)),
+  };
+}
+
 async function getOwnedProfileIds(db, collection, field, uid) {
   const normalizedUid = String(uid || '').trim();
   if (!normalizedUid) return [];
@@ -234,8 +335,10 @@ async function resolveUserS3Prefixes(db, { uid, role, profileId }) {
     const labIds = new Set([profileId, uid, ...ownedLabIds].filter(Boolean));
     for (const lid of labIds) {
       prefixes.add(`labs/${lid}/`);
-      prefixes.add(`lab_reports/${lid}/`); // Lab's own report prefix
-      // NOTE: We do NOT delete health_records/ or other patients' lab_reports/{otherPatientId}/!
+      // NOTE: There is no lab_reports/{labId}/ prefix! Lab reports are stored as
+      // lab_reports/{patientId}/{bookingId}/{uuid}.ext.
+      // Specific report keys for this lab are collected via collectRoleSpecificS3ReportKeys()
+      // and deleted specifically without touching any other reports or prefix.
     }
   }
 
@@ -264,6 +367,65 @@ async function resolveUserS3Prefixes(db, { uid, role, profileId }) {
   }
 
   return Array.from(prefixes);
+}
+
+/**
+ * Collects exact S3 reportStorageKey values for roles that upload on behalf of another entity (e.g. lab uploading for patient).
+ * Queries lab_bookings and lab_orders where labId is in providerIds.
+ */
+async function collectRoleSpecificS3ReportKeys(db, { role, profileId, uid }) {
+  const keys = new Set();
+  const reportRoles = ['lab', 'pharmacy', 'medicalStore', 'ambulance'];
+  if (!reportRoles.includes(role)) {
+    return [];
+  }
+
+  let ownedIds = [];
+  try {
+    if (role === 'lab') {
+      ownedIds = await getOwnedProfileIds(db, 'labs', 'ownerUid', uid);
+    } else if (role === 'medicalStore' || role === 'pharmacy') {
+      ownedIds = await getOwnedProfileIds(db, 'medical_stores', 'ownerUid', uid);
+    } else if (role === 'ambulance') {
+      ownedIds = await getOwnedProfileIds(db, 'ambulances', 'authUid', uid);
+    }
+  } catch (_) {}
+
+  const providerIds = Array.from(new Set([profileId, uid, ...ownedIds].filter(Boolean)));
+
+  for (const pid of providerIds) {
+    try {
+      // 1. lab_bookings
+      const bookingsSnap = await db.collection('lab_bookings').where('labId', '==', pid).get();
+      for (const doc of bookingsSnap.docs) {
+        const data = doc.data() || {};
+        const key = data.reportStorageKey;
+        const provider = data.reportStorageProvider;
+        if (key && typeof key === 'string' && (provider === 's3' || key.startsWith('lab_reports/'))) {
+          keys.add(key.trim());
+        }
+      }
+
+      // 2. lab_orders
+      const ordersSnap = await db.collection('lab_orders').where('labId', '==', pid).get();
+      for (const doc of ordersSnap.docs) {
+        const data = doc.data() || {};
+        const key = data.reportStorageKey;
+        const provider = data.reportStorageProvider;
+        if (key && typeof key === 'string' && (provider === 's3' || key.startsWith('lab_reports/'))) {
+          keys.add(key.trim());
+        }
+      }
+    } catch (err) {
+      logger.warn('collectRoleSpecificS3ReportKeys query error', {
+        providerId: pid,
+        role,
+        message: err?.message || 'unknown',
+      });
+    }
+  }
+
+  return Array.from(keys);
 }
 
 /**
@@ -499,8 +661,9 @@ async function deleteMyAccountHandler(uid) {
 
     await deleteRoleOwnedProfiles(db, bucket, normalizedUid);
 
-    // S3 cleanup (best-effort, soft-fail per prefix)
+    // S3 cleanup (best-effort, soft-fail per prefix/key)
     let failedS3Prefixes = [];
+    let failedS3Keys = [];
     try {
       const s3 = getS3Client();
       const s3Prefixes = await resolveUserS3Prefixes(db, {
@@ -509,10 +672,26 @@ async function deleteMyAccountHandler(uid) {
         profileId,
       });
       failedS3Prefixes = await cleanupUserS3Prefixes(s3, S3_BUCKET, s3Prefixes);
-      if (failedS3Prefixes.length > 0) {
-        logger.warn('deleteMyAccount: Some S3 prefixes failed cleanup (soft-fail)', {
+
+      // Collect specific S3 object keys (e.g. lab reports uploaded by this lab for patients)
+      const specificReportKeys = await collectRoleSpecificS3ReportKeys(db, {
+        role,
+        profileId,
+        uid: normalizedUid,
+      });
+      if (specificReportKeys.length > 0) {
+        const keysRes = await deleteS3SpecificKeysVersions(s3, S3_BUCKET, specificReportKeys);
+        if (!keysRes.success && keysRes.failedKeys) {
+          failedS3Keys = keysRes.failedKeys;
+        }
+      }
+
+      const totalFailed = [...failedS3Prefixes, ...failedS3Keys];
+      if (totalFailed.length > 0) {
+        logger.warn('deleteMyAccount: Some S3 items failed cleanup (soft-fail)', {
           uid: normalizedUid,
           failedS3Prefixes,
+          failedS3Keys,
         });
       }
     } catch (s3Err) {
@@ -527,9 +706,10 @@ async function deleteMyAccountHandler(uid) {
     await getAuth().deleteUser(normalizedUid);
 
     logger.info('deleteMyAccount completed', { uid: normalizedUid, role });
+    const failedS3Total = [...failedS3Prefixes, ...failedS3Keys];
     return {
       ok: true,
-      ...(failedS3Prefixes.length > 0 ? { failedS3Prefixes } : {}),
+      ...(failedS3Total.length > 0 ? { failedS3Prefixes: failedS3Total } : {}),
     };
   } catch (err) {
     logger.error('deleteMyAccount failed', {
@@ -546,6 +726,8 @@ async function deleteMyAccountHandler(uid) {
 module.exports = {
   deleteMyAccountHandler,
   deleteS3PrefixVersions,
+  deleteS3SpecificKeysVersions,
+  collectRoleSpecificS3ReportKeys,
   resolveUserS3Prefixes,
   cleanupUserS3Prefixes,
   setS3ClientForTesting,
