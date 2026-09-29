@@ -48,7 +48,10 @@ class _IntroSlideContent {
   final IconData? placeholderIcon;
 }
 
-const _kIntroIllustrationAsset = 'assets/images/doctor_illustration.jpg';
+const _kIntroSlide1 = 'assets/images/intro_slide_1.png';
+const _kIntroSlide2 = 'assets/images/intro_slide_2.png';
+const _kIntroSlide3 = 'assets/images/intro_slide_3.png';
+const _kIntroSlide4 = 'assets/images/intro_slide_4.png';
 
 abstract final class _IntroTheme {
   static const sheetRadius = 28.0;
@@ -110,7 +113,7 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
               headline: 'Manage patients with ease',
               supportingText:
                   'Appointments, prescriptions and clinical notes — all in one secure workspace built for doctors.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide1,
             ),
             _IntroSlideContent(
               headline: 'Write prescriptions digitally',
@@ -136,23 +139,23 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
               headline: 'Your health, in your hands',
               supportingText:
                   'Book doctors, track prescriptions, and manage lab reports from one secure app.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide1,
             ),
             _IntroSlideContent(
               headline: 'Book appointments easily',
               supportingText:
                   'Find trusted doctors near you and schedule visits in minutes.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide2,
             ),
             _IntroSlideContent(
               headline: 'Care when you need it',
               supportingText:
                   'Access prescriptions, reports, and emergency services anytime.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide3,
             ),
             _IntroSlideContent(
               headline: 'Book lab tests and ambulance when you need them',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide4,
             ),
           ],
         UserType.medicalStore => const [
@@ -160,23 +163,23 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
               headline: 'Streamline your pharmacy',
               supportingText:
                   'Receive digital prescriptions and serve patients faster from one workspace.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide1,
             ),
             _IntroSlideContent(
               headline: 'Manage orders digitally',
               supportingText:
                   'Track dispensing, inventory, and patient requests without the paperwork.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide2,
             ),
             _IntroSlideContent(
               headline: 'Connect with care partners',
               supportingText:
                   'Work seamlessly with doctors and patients on DoctorNect.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide3,
             ),
             _IntroSlideContent(
               headline: 'Grow your pharmacy with DoctorNect',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide4,
             ),
           ],
         UserType.lab => const [
@@ -184,23 +187,23 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
               headline: 'Simplify lab operations',
               supportingText:
                   'Manage test orders, samples, and results from one connected dashboard.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide1,
             ),
             _IntroSlideContent(
               headline: 'Digital test reports',
               supportingText:
                   'Upload results and notify patients instantly — no manual follow-ups.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide2,
             ),
             _IntroSlideContent(
               headline: 'Manage sample requests',
               supportingText:
                   'Track walk-ins, home collections, and doctor orders in real time.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide3,
             ),
             _IntroSlideContent(
               headline: 'Partner with doctors on DoctorNect',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide4,
             ),
           ],
         UserType.ambulance => const [
@@ -208,41 +211,41 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
               headline: 'Respond faster, save lives',
               supportingText:
                   'Accept emergency bookings and reach patients quickly when every minute counts.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide1,
             ),
             _IntroSlideContent(
               headline: 'Real-time dispatch alerts',
               supportingText:
                   'Navigate, accept requests, and stay coordinated on every call.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide2,
             ),
             _IntroSlideContent(
               headline: 'Quick patient handoff',
               supportingText:
                   'Share trip details and coordinate smoothly with hospitals and care teams.',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide3,
             ),
             _IntroSlideContent(
               headline: 'Keep your fleet available and responsive',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide4,
             ),
           ],
         _ => const [
             _IntroSlideContent(
               headline: 'Your health journey starts here with DoctorNect',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide1,
             ),
             _IntroSlideContent(
               headline: 'One platform for every healthcare role',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide2,
             ),
             _IntroSlideContent(
               headline: 'Secure, simple and built for mobile',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide3,
             ),
             _IntroSlideContent(
               headline: 'Join thousands on DoctorNect today',
-              illustrationAsset: _kIntroIllustrationAsset,
+              illustrationAsset: _kIntroSlide4,
             ),
           ],
       };
