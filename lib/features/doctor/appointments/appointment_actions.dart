@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/data/shared_appointments_store.dart';
+import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/firebase_error_messages.dart';
 import '../../../core/notifications/patient_notification_emitter.dart';
 import '../../../core/session/doctor_session.dart';
@@ -14,46 +16,48 @@ abstract final class DoctorAppointmentActions {
     required Appointment appointment,
     VoidCallback? onComplete,
   }) {
-    RescheduleModal.show(
-      context,
-      appointment: appointment,
-      onConfirm: (newDate, newSlot, reason, notifyPatient) async {
-        final oldLabel =
-            '${DateFormat('dd MMM').format(appointment.appointmentDate)} · ${appointment.timeSlot}';
-        final newLabel = '${DateFormat('dd MMM').format(newDate)} · $newSlot';
+    ProfileActionGuard.run(context, UserType.doctor, () {
+      RescheduleModal.show(
+        context,
+        appointment: appointment,
+        onConfirm: (newDate, newSlot, reason, notifyPatient) async {
+          final oldLabel =
+              '${DateFormat('dd MMM').format(appointment.appointmentDate)} · ${appointment.timeSlot}';
+          final newLabel = '${DateFormat('dd MMM').format(newDate)} · $newSlot';
 
-        try {
-          await SharedAppointmentsStore.instance.rescheduleByDoctor(
-            recordId: appointment.id,
-            newDate: newDate,
-            newSlotLabel: newSlot,
-          );
-        } catch (e) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                describeUserFacingError(
-                  e,
-                  fallback: "Couldn't reschedule this appointment. Please check your connection and try again.",
+          try {
+            await SharedAppointmentsStore.instance.rescheduleByDoctor(
+              recordId: appointment.id,
+              newDate: newDate,
+              newSlotLabel: newSlot,
+            );
+          } catch (e) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  describeUserFacingError(
+                    e,
+                    fallback: "Couldn't reschedule this appointment. Please check your connection and try again.",
+                  ),
                 ),
               ),
-            ),
-          );
-          return;
-        }
+            );
+            return;
+          }
 
-        if (notifyPatient) {
-          PatientNotificationEmitter.notifyDoctorRescheduled(
-            doctorName: DoctorSession.loggedInDoctorName,
-            oldDateTime: oldLabel,
-            newDateTime: newLabel,
-          );
-        }
+          if (notifyPatient) {
+            PatientNotificationEmitter.notifyDoctorRescheduled(
+              doctorName: DoctorSession.loggedInDoctorName,
+              oldDateTime: oldLabel,
+              newDateTime: newLabel,
+            );
+          }
 
-        onComplete?.call();
-      },
-    );
+          onComplete?.call();
+        },
+      );
+    });
   }
 
   static void cancel(
@@ -63,7 +67,8 @@ abstract final class DoctorAppointmentActions {
     VoidCallback? onComplete,
     bool popAfter = false,
   }) {
-    showDialog<void>(
+    ProfileActionGuard.run(context, UserType.doctor, () {
+      showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Cancel appointment?'),
@@ -111,5 +116,6 @@ abstract final class DoctorAppointmentActions {
         ],
       ),
     );
+    });
   }
 }

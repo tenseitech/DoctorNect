@@ -12,6 +12,8 @@ import '../../../../core/validators/form_validators.dart';
 import '../../../../widgets/phone_number_field.dart';
 import '../../../../widgets/required_field_label.dart';
 import '../../../../widgets/multi_tag_input_field.dart';
+import '../../../../core/auth/profile_action_guard.dart';
+import '../../../../core/enums/user_type.dart';
 import '../../profile/data/doctor_profile_store.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -19,6 +21,10 @@ class WalkInPatientSheet extends StatefulWidget {
   const WalkInPatientSheet({super.key});
 
   static Future<bool> show(BuildContext context) {
+    if (!ProfileActionGuard.isAllowed(UserType.doctor)) {
+      ProfileActionGuard.showPopup(context, UserType.doctor);
+      return Future.value(false);
+    }
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -100,6 +106,10 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
   }
 
   Future<void> _submit() async {
+    if (!ProfileActionGuard.isAllowed(UserType.doctor)) {
+      ProfileActionGuard.showPopup(context, UserType.doctor);
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
 
     final name = _nameController.text.trim();

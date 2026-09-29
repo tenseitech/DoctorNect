@@ -366,6 +366,17 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     String digits,
     String otp,
   ) async {
+    // Sign out any stale Firebase Auth session so a previous login (e.g. a demo
+    // patient account) is not auto-restored via restoreSession() on the next
+    // app launch.  This is safe because we are about to create a new account.
+    if (FirebaseAuthService.instance.isSignedIn) {
+      try {
+        await FirebaseAuthService.instance.signOut();
+      } catch (_) {
+        // Non-fatal — proceed with registration even if sign-out fails.
+      }
+    }
+
     final targetRole = _matchedRole ?? role ?? UserType.patient;
     final verifyError = await RegistrationOtpService.verify(
       digits,

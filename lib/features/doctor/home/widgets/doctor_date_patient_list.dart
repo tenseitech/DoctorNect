@@ -740,7 +740,7 @@ class _UpcomingSingleBody extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)}',
+                    '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')}',
                     style: GoogleFonts.inter(
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
@@ -1088,7 +1088,9 @@ class _AgeGenderLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final genderLabel = AppConstants.patientGenderLabel(gender);
+    final ageLabel = age > 0 ? '$age yrs' : 'Not provided';
+    final genderLabel =
+        AppConstants.patientGenderLabel(gender, fallback: 'Not provided');
     final metaStyle = GoogleFonts.inter(
       fontSize: AppTypography.labelMedium,
       color: AppColors.textSecondaryOf(context),
@@ -1100,7 +1102,7 @@ class _AgeGenderLabel extends StatelessWidget {
       runSpacing: 2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text('$age yrs · ', style: metaStyle),
+        Text('$ageLabel · ', style: metaStyle),
         Text(genderLabel, style: metaStyle),
       ],
     );

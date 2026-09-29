@@ -170,7 +170,7 @@ class PrescriptionPdfService {
                     style: const pw.TextStyle(fontSize: 10),
                   ),
                   pw.Text(
-                    'Age: ${draft.patient.age} yrs · ${draft.patient.gender ?? '-'} · ID: ${draft.patientId}',
+                    'Age: ${draft.patient.age > 0 ? '${draft.patient.age} yrs' : 'Not provided'} · ${draft.patient.gender ?? '-'} · ID: ${draft.patientId}',
                     style: const pw.TextStyle(fontSize: 9),
                   ),
                   if (draft.vitals.weightKg.isNotEmpty)

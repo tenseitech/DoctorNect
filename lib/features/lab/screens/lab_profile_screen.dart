@@ -1,5 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../../core/firebase/firestore_service.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/notifications/app_toast.dart';
@@ -13,12 +11,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/auth/app_logout.dart';
 import '../../../core/auth/contact_change_otp_service.dart';
 import '../../../core/auth/contact_change_verification.dart';
-import '../../../core/firebase/firebase_auth_service.dart';
+import '../../../core/auth/registration_credentials.dart';
 import '../../../core/legal/medibond_legal_content.dart';
 import '../../../core/session/lab_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/validators/form_validators.dart';
-import '../../../widgets/overflow_safe_layout.dart';
 import '../../../widgets/phone_number_field.dart';
 import '../../patient/profile/about/about_screen.dart';
 import '../../auth/widgets/registration_address_section.dart';
@@ -77,9 +74,6 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
             .activeForLab(labId)
             .length;
         final compact = ResponsiveLayout.isCompact(context);
-        final user = FirebaseAuth.instance.currentUser;
-        final hasPasswordAuth =
-            user?.providerData.any((p) => p.providerId == 'password') ?? false;
 
         return LabPageLayout(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
@@ -168,14 +162,15 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                       currentValue: lab.phone,
                     ),
                   ),
-                  _LabInfoTile(
-                    icon: Icons.email_outlined,
-                    label: 'Email',
-                    value: lab.email,
-                    locked: true,
-                    supportMessage: 'Email address cannot be changed.',
-                    tooltipText: 'Cannot be changed after verification',
-                  ),
+                  if (!RegistrationCredentials.isSyntheticEmail(lab.email))
+                    _LabInfoTile(
+                      icon: Icons.email_outlined,
+                      label: 'Email',
+                      value: lab.email,
+                      locked: true,
+                      supportMessage: 'Email address cannot be changed.',
+                      tooltipText: 'Cannot be changed after verification',
+                    ),
                 ],
               ),
               StreamBuilder<BannerConfigModel>(
@@ -236,18 +231,6 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                       );
                     },
                   ),
-                  if (hasPasswordAuth)
-                    _LabActionTile(
-                      icon: Icons.lock_reset_outlined,
-                      label: 'Change password',
-                      subtitle: 'Update your login password',
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const _ChangePasswordDialog(),
-                        );
-                      },
-                    ),
                   if (compact)
                     _LabActionTile(
                       icon: Icons.logout,
@@ -861,119 +844,6 @@ class _LabActionTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ChangePasswordDialog extends StatefulWidget {
-  const _ChangePasswordDialog();
-
-  @override
-  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
-}
-
-class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
-  final _currentPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  bool _isLoading = false;
-  String? _error;
-
-  Future<void> _updatePassword() async {
-    final current = _currentPasswordController.text;
-    final newPass = _newPasswordController.text;
-    if (current.isEmpty || newPass.isEmpty) {
-      setState(() => _error = 'Please fill all fields');
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      await FirebaseAuthService.instance.updatePassword(current, newPass);
-      if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text(
-        'Change password',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-      ),
-      content: scrollableDialogContent(
-        context: context,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_error != null) ...[
-              Text(
-                _error!,
-                style: GoogleFonts.inter(
-                  color: AppColors.error,
-                  fontSize: AppTypography.bodySmall,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextField(
-              controller: _currentPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Current password',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New password',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _isLoading ? null : _updatePassword,
-          style: FilledButton.styleFrom(backgroundColor: _labPurple),
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Text('Update'),
-        ),
-      ],
     );
   }
 }

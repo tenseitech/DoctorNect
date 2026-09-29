@@ -122,7 +122,7 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
         ? (doctorProfile.stateCouncil.isEmpty
               ? 'State Medical Council'
               : doctorProfile.stateCouncil)
-        : 'Gender/Age: ${patientProfile.gender}, ${patientProfile.age} yrs';
+        : 'Gender/Age: ${patientProfile.gender.trim().isNotEmpty ? patientProfile.gender : 'Not provided'}, ${patientProfile.age > 0 ? '${patientProfile.age} yrs' : 'Not provided'}';
 
     final accent = isDoctor ? AppColors.doctorBlue : AppColors.patientTeal;
 

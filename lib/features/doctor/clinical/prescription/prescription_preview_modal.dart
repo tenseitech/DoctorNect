@@ -319,7 +319,7 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              'Age: ${draft.patient.age} yrs · ${draft.patient.gender ?? '—'} · ID: ${draft.patientId}',
+                              'Age: ${draft.patient.age > 0 ? '${draft.patient.age} yrs' : 'Not provided'} · ${draft.patient.gender ?? '—'} · ID: ${draft.patientId}',
                               style: GoogleFonts.inter(
                                 fontSize: AppTypography.labelSmall,
                               ),

@@ -12,6 +12,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/media/gallery_image_picker.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
+import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/lab_report_file_store.dart';
 import '../../../core/firebase/models/doctor_lab_order.dart';
 import '../../../core/theme/app_colors.dart';
@@ -25,6 +27,10 @@ abstract final class LabReportUploadSheet {
     LabBookingRecord? booking,
     DoctorLabOrder? order,
   }) {
+    if (!ProfileActionGuard.isAllowed(UserType.lab)) {
+      ProfileActionGuard.showPopup(context, UserType.lab);
+      return Future.value(false);
+    }
     assert(booking != null || order != null);
     return showModalBottomSheet<bool>(
       context: context,

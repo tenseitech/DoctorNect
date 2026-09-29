@@ -953,7 +953,7 @@ class _PatientRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '${record.patientAge} yrs · ${AppConstants.patientGenderLabel(record.patientGender)}',
+                  '${record.patientAge > 0 ? '${record.patientAge} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(record.patientGender, fallback: 'Not provided')}',
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelMedium,
                     color: Colors.grey[600],

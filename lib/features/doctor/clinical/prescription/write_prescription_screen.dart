@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/auth/profile_action_guard.dart';
 import '../../../../core/data/shared_appointments_store.dart';
+import '../../../../core/enums/user_type.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/notifications/patient_notification_emitter.dart';
 import '../lab/lab_order_service.dart';
@@ -411,6 +413,10 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
   }
 
   Future<void> _saveEmr() async {
+    if (!ProfileActionGuard.isAllowed(UserType.doctor)) {
+      ProfileActionGuard.showPopup(context, UserType.doctor);
+      return;
+    }
     _syncDraftFromControllers();
     if (_formKey.currentState?.validate() == false) return;
     final error = _draft.validateForSubmit();
@@ -586,7 +592,7 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
     final compact = ResponsiveLayout.isCompact(context);
     final doctorSummary = DoctorProfileStore.displayNameWithPrefix;
     final patientSummary =
-        '${widget.patient.patientName} · ${widget.patient.age} yrs';
+        '${widget.patient.patientName} · ${widget.patient.age > 0 ? '${widget.patient.age} yrs' : 'Not provided'}';
     final medCount = namedMedicineEntries(_draft.medicines).length;
     final medSummary = medCount == 0
         ? 'Add from catalog'
@@ -1038,6 +1044,10 @@ class _SendToSheetState extends State<_SendToSheet> {
   bool _sending = false;
 
   Future<void> _send() async {
+    if (!ProfileActionGuard.isAllowed(UserType.doctor)) {
+      ProfileActionGuard.showPopup(context, UserType.doctor);
+      return;
+    }
     if (!_toPatient && !_toLab && !_toMedical) {
       AppToast.info(context, 'Please select at least one recipient');
       return;

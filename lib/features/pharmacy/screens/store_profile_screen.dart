@@ -9,13 +9,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/auth/app_logout.dart';
 import '../../../core/auth/contact_change_otp_service.dart';
 import '../../../core/auth/contact_change_verification.dart';
-import '../../../core/firebase/firebase_auth_service.dart';
+import '../../../core/auth/registration_credentials.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/legal/medibond_legal_content.dart';
 import '../../../core/session/medical_store_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/validators/form_validators.dart';
-import '../../../widgets/overflow_safe_layout.dart';
 import '../../../widgets/phone_number_field.dart';
 import '../../patient/profile/about/about_screen.dart';
 import '../../auth/widgets/registration_address_section.dart';
@@ -157,7 +156,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                       currentValue: store.phone,
                     ),
                   ),
-                  _ProfileField(label: 'Email (immutable)', value: store.email),
+                  if (!RegistrationCredentials.isSyntheticEmail(store.email))
+                    _ProfileField(label: 'Email (immutable)', value: store.email),
                 ],
               ),
               StreamBuilder<BannerConfigModel>(
@@ -245,28 +245,6 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                       icon: const Icon(Icons.info_outline, size: 20),
                       label: Text(
                         'About',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimaryOf(context),
-                        side: const BorderSide(color: _lineColor),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const _ChangePasswordDialog(),
-                        );
-                      },
-                      icon: const Icon(Icons.lock_reset_outlined, size: 20),
-                      label: Text(
-                        'Change password',
                         style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
@@ -915,121 +893,6 @@ class _ProfileTableRow extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ChangePasswordDialog extends StatefulWidget {
-  const _ChangePasswordDialog();
-
-  @override
-  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
-}
-
-class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
-  final _currentPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  bool _isLoading = false;
-  String? _error;
-
-  Future<void> _updatePassword() async {
-    final current = _currentPasswordController.text;
-    final newPass = _newPasswordController.text;
-    if (current.isEmpty || newPass.isEmpty) {
-      setState(() => _error = 'Please fill all fields');
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      await FirebaseAuthService.instance.updatePassword(current, newPass);
-      if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        'Change Password',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-      ),
-      content: scrollableDialogContent(
-        context: context,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_error != null) ...[
-              Text(
-                _error!,
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: AppTypography.bodySmall,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextField(
-              controller: _currentPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Current Password',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New Password',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _updatePassword,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.pharmacyGreen,
-            foregroundColor: AppColors.white,
-          ),
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Text('Update'),
-        ),
-      ],
     );
   }
 }

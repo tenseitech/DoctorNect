@@ -380,10 +380,25 @@ class _PersonalInfoTab extends StatelessWidget {
         _InfoCard(
           title: 'Basic Details',
           rows: [
-            _Row('Age', '${s.age} years'),
-            _Row('Gender', AppConstants.patientGenderLabel(s.gender)),
-            _Row('DOB', DateFormat('dd MMM yyyy').format(profile.dateOfBirth)),
-            _Row('Blood group', profile.bloodGroup),
+            _Row('Age', s.age > 0 ? '${s.age} years' : 'Not provided'),
+            _Row(
+              'Gender',
+              s.gender.trim().isNotEmpty
+                  ? AppConstants.patientGenderLabel(s.gender, fallback: 'Not provided')
+                  : 'Not provided',
+            ),
+            _Row(
+              'DOB',
+              s.age > 0
+                  ? DateFormat('dd MMM yyyy').format(profile.dateOfBirth)
+                  : 'Not provided',
+            ),
+            _Row(
+              'Blood group',
+              profile.bloodGroup.trim().isNotEmpty
+                  ? profile.bloodGroup
+                  : 'Not provided',
+            ),
           ],
         ),
         _InfoCard(

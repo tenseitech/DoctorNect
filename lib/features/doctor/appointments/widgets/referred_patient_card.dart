@@ -97,7 +97,7 @@ class ReferredPatientCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                _detailRow(context, 'Age', '${referral.patientAge} yrs'),
+                _detailRow(context, 'Age', referral.patientAge > 0 ? '${referral.patientAge} yrs' : 'Not provided'),
                 if (referral.patientId.isNotEmpty)
                   _detailRow(context, 'Patient ID', referral.patientId),
                 _detailRow(

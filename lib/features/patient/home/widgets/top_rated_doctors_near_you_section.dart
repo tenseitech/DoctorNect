@@ -7,6 +7,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/profile_photo_image_io.dart'
     if (dart.library.html) '../../../../widgets/profile_photo_image_stub.dart';
+import '../../../../core/auth/patient_details_guard.dart';
 import '../../booking/booking_flow_screen.dart';
 import '../../data/registered_doctors_store.dart';
 import '../../doctor_profile/patient_doctor_profile_screen.dart';
@@ -148,10 +149,12 @@ class _TopRatedDoctorsNearYouSectionState
   }
 
   void _bookDoctor(DoctorListing doctor) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => BookingFlowScreen(doctorId: doctor.id)),
-    );
+    PatientDetailsGuard.run(context, () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => BookingFlowScreen(doctorId: doctor.id)),
+      );
+    });
   }
 
   @override

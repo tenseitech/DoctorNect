@@ -22,6 +22,7 @@ import '../../doctor/profile/data/doctor_photo_local_store.dart';
 import '../../doctor/profile/data/doctor_profile_store.dart';
 import '../appointments/models/patient_appointment_models.dart';
 import '../data/featured_doctors_service.dart';
+import '../../../core/auth/patient_details_guard.dart';
 import '../booking/booking_flow_screen.dart';
 import '../widgets/submit_doctor_review_sheet.dart';
 import 'widgets/doctor_profile_share_sheet.dart';
@@ -63,12 +64,14 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
   }
 
   void _openBooking() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BookingFlowScreen(doctorId: widget.doctorId),
-      ),
-    );
+    PatientDetailsGuard.run(context, () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BookingFlowScreen(doctorId: widget.doctorId),
+        ),
+      );
+    });
   }
 
   PatientAppointment? _reviewableVisit() {

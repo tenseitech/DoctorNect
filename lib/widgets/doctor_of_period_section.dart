@@ -7,6 +7,7 @@ import 'package:medibond/core/constants/app_constants.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/theme/app_colors.dart';
 import 'package:medibond/features/doctor/profile/data/doctor_profile_store.dart';
+import 'package:medibond/core/auth/patient_details_guard.dart';
 import 'package:medibond/features/patient/booking/booking_flow_screen.dart';
 import 'package:medibond/features/patient/data/featured_doctors_service.dart';
 import 'package:medibond/features/patient/doctor_profile/patient_doctor_profile_screen.dart';
@@ -309,11 +310,14 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                             children: [
                               if (_isPatient) ...[
                                 IconButton(
-                                  onPressed: () => Navigator.push(
+                                  onPressed: () => PatientDetailsGuard.run(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (_) => BookingFlowScreen(
-                                        doctorId: doctor.id,
+                                    () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => BookingFlowScreen(
+                                          doctorId: doctor.id,
+                                        ),
                                       ),
                                     ),
                                   ),

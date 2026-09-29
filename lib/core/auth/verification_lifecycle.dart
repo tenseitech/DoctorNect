@@ -78,109 +78,290 @@ class VerificationRequirementItem {
   const VerificationRequirementItem({
     required this.key,
     required this.label,
-    required this.description,
+    required this.section,
+    this.description = '',
     this.isDocument = false,
   });
 
   final String key;
   final String label;
+  final String section;
   final String description;
   final bool isDocument;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is VerificationRequirementItem &&
+          runtimeType == other.runtimeType &&
+          key == other.key;
+
+  @override
+  int get hashCode => key.hashCode;
+
+  @override
+  String toString() => key;
 }
 
 /// Configurable verification requirements per role.
-/// Additional requirements can be added here without rewriting authentication or verification flows.
+/// Single source of truth for profile completeness across professional/service roles.
 abstract final class VerificationRequirementsConfig {
   static List<VerificationRequirementItem> requirementsForRole(UserType role) {
     return switch (role) {
       UserType.doctor => const [
         VerificationRequirementItem(
+          key: 'name',
+          label: 'Full Name',
+          section: 'Personal Information',
+          description: "Doctor's full legal name",
+        ),
+        VerificationRequirementItem(
+          key: 'mobile',
+          label: 'Mobile Number',
+          section: 'Personal Information',
+          description: 'Registered mobile contact number',
+        ),
+        VerificationRequirementItem(
           key: 'qualification',
           label: 'Medical Degree / Qualification',
+          section: 'Professional Details',
           description: 'Recognized medical degree (e.g., MBBS, MD, MS)',
+        ),
+        VerificationRequirementItem(
+          key: 'specialization',
+          label: 'Specialization',
+          section: 'Professional Details',
+          description: 'Primary medical area of expertise',
         ),
         VerificationRequirementItem(
           key: 'councilNumber',
           label: 'Medical Registration Number',
+          section: 'Professional Details',
           description: 'State or National Medical Council registration number',
         ),
         VerificationRequirementItem(
           key: 'stateCouncil',
           label: 'Registration Authority',
+          section: 'Professional Details',
           description: 'Issuing State / National Medical Council',
         ),
         VerificationRequirementItem(
           key: 'registrationCertificate',
           label: 'Registration Certificate',
+          section: 'Professional Details',
           description: 'Official council registration document or certificate',
           isDocument: true,
         ),
         VerificationRequirementItem(
           key: 'idProof',
           label: 'Identity Proof',
+          section: 'Professional Details',
           description: 'Government-issued photo identification',
           isDocument: true,
+        ),
+        VerificationRequirementItem(
+          key: 'country',
+          label: 'Clinic Country',
+          section: 'Clinic Information',
+          description: 'Country where the clinic is located',
+        ),
+        VerificationRequirementItem(
+          key: 'state',
+          label: 'Clinic State',
+          section: 'Clinic Information',
+          description: 'State or province of the clinic',
+        ),
+        VerificationRequirementItem(
+          key: 'city',
+          label: 'Clinic City',
+          section: 'Clinic Information',
+          description: 'City or town of the clinic',
+        ),
+        VerificationRequirementItem(
+          key: 'addressLine1',
+          label: 'Clinic Street Address',
+          section: 'Clinic Information',
+          description: 'Street address or building of the clinic',
+        ),
+        VerificationRequirementItem(
+          key: 'pinCode',
+          label: 'Clinic PIN Code',
+          section: 'Clinic Information',
+          description: 'Postal / PIN code of the clinic',
         ),
       ],
       UserType.medicalStore => const [
         VerificationRequirementItem(
           key: 'storeName',
           label: 'Pharmacy / Store Name',
+          section: 'Store Details',
           description: 'Registered business name of the medical store',
-        ),
-        VerificationRequirementItem(
-          key: 'drugLicenseNumber',
-          label: 'Drug License Number',
-          description: 'Valid Form 20/21 drug retail license number',
         ),
         VerificationRequirementItem(
           key: 'ownerName',
           label: 'Owner / Pharmacist Name',
+          section: 'Store Details',
           description: 'Name of the licensed pharmacist or owner',
         ),
         VerificationRequirementItem(
-          key: 'address',
-          label: 'Physical Store Address',
-          description: 'Complete commercial address with PIN code',
+          key: 'phone',
+          label: 'Phone Number',
+          section: 'Store Details',
+          description: 'Contact phone number for the store',
+        ),
+        VerificationRequirementItem(
+          key: 'drugLicenseNumber',
+          label: 'Drug License Number',
+          section: 'Store Details',
+          description: 'Valid Form 20/21 drug retail license number',
+        ),
+        VerificationRequirementItem(
+          key: 'country',
+          label: 'Country',
+          section: 'Address',
+          description: 'Country of the store location',
+        ),
+        VerificationRequirementItem(
+          key: 'state',
+          label: 'State',
+          section: 'Address',
+          description: 'State or province of the store',
+        ),
+        VerificationRequirementItem(
+          key: 'city',
+          label: 'City',
+          section: 'Address',
+          description: 'City of the store',
+        ),
+        VerificationRequirementItem(
+          key: 'addressLine1',
+          label: 'Address Line 1',
+          section: 'Address',
+          description: 'Street address or shop number',
+        ),
+        VerificationRequirementItem(
+          key: 'pincode',
+          label: 'PIN Code',
+          section: 'Address',
+          description: 'Postal / PIN code of the store',
         ),
       ],
       UserType.lab => const [
         VerificationRequirementItem(
           key: 'labName',
           label: 'Diagnostic Lab Name',
+          section: 'Lab Details',
           description: 'Registered diagnostic centre or laboratory name',
+        ),
+        VerificationRequirementItem(
+          key: 'phone',
+          label: 'Phone Number',
+          section: 'Lab Details',
+          description: 'Contact phone number for the diagnostic centre',
         ),
         VerificationRequirementItem(
           key: 'licenseNumber',
           label: 'Clinical Establishment License',
+          section: 'Lab Details',
           description: 'Valid diagnostic/pathology registration number',
         ),
         VerificationRequirementItem(
-          key: 'address',
-          label: 'Lab Location & Address',
-          description: 'Complete laboratory facility address with PIN code',
+          key: 'country',
+          label: 'Country',
+          section: 'Address',
+          description: 'Country of the laboratory facility',
+        ),
+        VerificationRequirementItem(
+          key: 'state',
+          label: 'State',
+          section: 'Address',
+          description: 'State or province of the laboratory',
+        ),
+        VerificationRequirementItem(
+          key: 'city',
+          label: 'City',
+          section: 'Address',
+          description: 'City of the laboratory facility',
+        ),
+        VerificationRequirementItem(
+          key: 'addressLine1',
+          label: 'Address Line 1',
+          section: 'Address',
+          description: 'Street address of the laboratory',
+        ),
+        VerificationRequirementItem(
+          key: 'pincode',
+          label: 'PIN Code',
+          section: 'Address',
+          description: 'Postal / PIN code of the laboratory facility',
         ),
       ],
       UserType.ambulance => const [
         VerificationRequirementItem(
           key: 'serviceName',
           label: 'Ambulance Service Name',
+          section: 'Service Details',
           description: 'Fleet or emergency transport service name',
-        ),
-        VerificationRequirementItem(
-          key: 'vehicleNumber',
-          label: 'Vehicle Registration Number',
-          description: 'Commercial motor vehicle registration number',
         ),
         VerificationRequirementItem(
           key: 'driverName',
           label: 'Driver / Operator Name',
+          section: 'Driver Details',
           description: 'Name of the designated ambulance driver',
+        ),
+        VerificationRequirementItem(
+          key: 'phone',
+          label: 'Phone Number',
+          section: 'Driver Details',
+          description: 'Contact phone number for emergency dispatch',
+        ),
+        VerificationRequirementItem(
+          key: 'vehicleNumber',
+          label: 'Vehicle Registration Number',
+          section: 'Service Details',
+          description: 'Commercial motor vehicle registration number',
         ),
         VerificationRequirementItem(
           key: 'licenseNumber',
           label: 'Driver License Number',
+          section: 'Driver Details',
           description: 'Commercial driving license number',
+        ),
+        VerificationRequirementItem(
+          key: 'city',
+          label: 'Operating City',
+          section: 'Service Coverage',
+          description: 'Primary operational city',
+        ),
+        VerificationRequirementItem(
+          key: 'serviceAreas',
+          label: 'Service Areas',
+          section: 'Service Coverage',
+          description: 'Specific coverage zones or neighborhoods (minimum 1)',
+        ),
+        VerificationRequirementItem(
+          key: 'country',
+          label: 'Country',
+          section: 'Base Address',
+          description: 'Country of vehicle base or dispatch station',
+        ),
+        VerificationRequirementItem(
+          key: 'state',
+          label: 'State',
+          section: 'Base Address',
+          description: 'State or province of vehicle base',
+        ),
+        VerificationRequirementItem(
+          key: 'addressLine1',
+          label: 'Base Address',
+          section: 'Base Address',
+          description: 'Physical garage or station address',
+        ),
+        VerificationRequirementItem(
+          key: 'pincode',
+          label: 'PIN Code',
+          section: 'Base Address',
+          description: 'Postal / PIN code of the station',
         ),
       ],
       _ => const [],
@@ -189,41 +370,104 @@ abstract final class VerificationRequirementsConfig {
 
   static bool isFieldFilled(Map<String, dynamic>? data, String key) {
     if (data == null) return false;
-    final value = data[key];
+    dynamic value = data[key];
+
+    // Common aliases & fallbacks
+    if (value == null) {
+      if (key == 'name') {
+        value = data['fullName'] ?? data['displayName'];
+      } else if (key == 'mobile') {
+        value = data['phone'];
+      } else if (key == 'phone') {
+        value = data['mobile'];
+      } else if (key == 'labName') {
+        value = data['name'];
+      } else if (key == 'pinCode') {
+        value = data['pincode'];
+      } else if (key == 'pincode') {
+        value = data['pinCode'];
+      }
+    }
+
+    // Look inside nested 'address' or 'clinicAddress' map if needed
+    if (value == null) {
+      final address = data['address'];
+      if (address is Map) {
+        value = address[key];
+        if (value == null) {
+          if (key == 'pinCode') {
+            value = address['pincode'];
+          } else if (key == 'pincode') {
+            value = address['pinCode'];
+          }
+        }
+      }
+    }
+    if (value == null) {
+      final clinicAddress = data['clinicAddress'];
+      if (clinicAddress is Map) {
+        value = clinicAddress[key];
+        if (value == null) {
+          if (key == 'pinCode') {
+            value = clinicAddress['pincode'];
+          } else if (key == 'pincode') {
+            value = clinicAddress['pinCode'];
+          }
+        }
+      }
+    }
+
     if (value == null) return false;
     if (value is String) return value.trim().isNotEmpty;
+    if (value is List) return value.isNotEmpty;
     if (value is Map) {
       return value.values.any(
         (v) => v != null && v.toString().trim().isNotEmpty,
       );
     }
-    if (value is List) return value.isNotEmpty;
     return true;
   }
 
-  /// Evaluates whether the given profile document data meets all requirements for the role.
-  static bool isRequirementsMet(UserType role, Map<String, dynamic>? data) {
+  /// Evaluates whether the given profile data meets all requirements for the role.
+  static bool isComplete(UserType role, Map<String, dynamic>? data) {
+    final items = requirementsForRole(role);
+    if (items.isEmpty) return true;
     if (data == null) return false;
+
     final mobile = data['mobile'] as String? ?? data['phone'] as String?;
-    if (role == UserType.doctor && DemoAuthConfig.isDemoDoctorPhone(mobile)) {
+    final docId = data['doctorId'] as String? ?? data['id'] as String?;
+    if (role == UserType.doctor &&
+        (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
+            DemoAuthConfig.isDemoDoctorPhone(docId) ||
+            (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
       return true;
     }
-    final items = requirementsForRole(role);
+
     for (final item in items) {
       if (!isFieldFilled(data, item.key)) return false;
     }
     return true;
   }
 
+  /// Alias for backward compatibility with existing callers.
+  static bool isRequirementsMet(UserType role, Map<String, dynamic>? data) =>
+      isComplete(role, data);
+
   /// Calculates profile completion percentage (0..100) for the given role.
   static int completionPercentage(UserType role, Map<String, dynamic>? data) {
     final items = requirementsForRole(role);
     if (items.isEmpty) return 100;
     if (data == null) return 0;
+
     final mobile = data['mobile'] as String? ?? data['phone'] as String?;
-    if (role == UserType.doctor && DemoAuthConfig.isDemoDoctorPhone(mobile)) {
+    final docId = data['doctorId'] as String? ?? data['id'] as String?;
+    if (role == UserType.doctor &&
+        (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
+            DemoAuthConfig.isDemoDoctorPhone(docId) ||
+            (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
       return 100;
     }
+
     var met = 0;
     for (final item in items) {
       if (isFieldFilled(data, item.key)) {
@@ -231,6 +475,29 @@ abstract final class VerificationRequirementsConfig {
       }
     }
     return ((met * 100) / items.length).round().clamp(0, 100);
+  }
+
+  /// Returns the list of requirement items that are missing or incomplete.
+  static List<VerificationRequirementItem> missingFields(
+    UserType role,
+    Map<String, dynamic>? data,
+  ) {
+    if (data != null) {
+      final mobile = data['mobile'] as String? ?? data['phone'] as String?;
+      final docId = data['doctorId'] as String? ?? data['id'] as String?;
+      if (role == UserType.doctor &&
+          (DemoAuthConfig.isDemoDoctorPhone(mobile) ||
+              DemoAuthConfig.isDemoDoctorPhone(docId) ||
+              (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+        return const [];
+      }
+    }
+    final items = requirementsForRole(role);
+    if (data == null) return items;
+    return [
+      for (final item in items)
+        if (!isFieldFilled(data, item.key)) item,
+    ];
   }
 }
 
@@ -439,8 +706,14 @@ class RoleVerificationController extends ChangeNotifier {
     switch (role) {
       case UserType.doctor:
         final p = DoctorProfileStore.instance.profile;
+        if (p.fullName.trim().isNotEmpty) {
+          result['name'] = p.fullName.trim();
+        }
         if (p.qualification.trim().isNotEmpty) {
           result['qualification'] = p.qualification.trim();
+        }
+        if (p.specialization.trim().isNotEmpty) {
+          result['specialization'] = p.specialization.trim();
         }
         if (p.councilNumber.trim().isNotEmpty) {
           result['councilNumber'] = p.councilNumber.trim();
@@ -456,6 +729,21 @@ class RoleVerificationController extends ChangeNotifier {
         }
         if (p.mobile.trim().isNotEmpty) {
           result['mobile'] = p.mobile.trim();
+        }
+        if (p.country.trim().isNotEmpty) {
+          result['country'] = p.country.trim();
+        }
+        if (p.state.trim().isNotEmpty) {
+          result['state'] = p.state.trim();
+        }
+        if (p.city.trim().isNotEmpty) {
+          result['city'] = p.city.trim();
+        }
+        if (p.addressLine1.trim().isNotEmpty) {
+          result['addressLine1'] = p.addressLine1.trim();
+        }
+        if (p.pincode.trim().isNotEmpty) {
+          result['pinCode'] = p.pincode.trim();
         }
       case UserType.medicalStore:
         final id = MedicalStoreSession.loggedInStoreId;
@@ -473,6 +761,24 @@ class RoleVerificationController extends ChangeNotifier {
           }
           if (store.ownerName.trim().isNotEmpty) {
             result['ownerName'] = store.ownerName.trim();
+          }
+          if (store.phone.trim().isNotEmpty) {
+            result['phone'] = store.phone.trim();
+          }
+          if (store.country.trim().isNotEmpty) {
+            result['country'] = store.country.trim();
+          }
+          if (store.state.trim().isNotEmpty) {
+            result['state'] = store.state.trim();
+          }
+          if (store.city.trim().isNotEmpty) {
+            result['city'] = store.city.trim();
+          }
+          if (store.addressLine1.trim().isNotEmpty) {
+            result['addressLine1'] = store.addressLine1.trim();
+          }
+          if (store.pincode.trim().isNotEmpty) {
+            result['pincode'] = store.pincode.trim();
           }
           final addr = store.address.trim().isNotEmpty
               ? store.address.trim()
@@ -497,6 +803,24 @@ class RoleVerificationController extends ChangeNotifier {
           }
           if (lab.licenseNumber.trim().isNotEmpty) {
             result['licenseNumber'] = lab.licenseNumber.trim();
+          }
+          if (lab.phone.trim().isNotEmpty) {
+            result['phone'] = lab.phone.trim();
+          }
+          if (lab.country.trim().isNotEmpty) {
+            result['country'] = lab.country.trim();
+          }
+          if (lab.state.trim().isNotEmpty) {
+            result['state'] = lab.state.trim();
+          }
+          if (lab.city.trim().isNotEmpty) {
+            result['city'] = lab.city.trim();
+          }
+          if (lab.addressLine1.trim().isNotEmpty) {
+            result['addressLine1'] = lab.addressLine1.trim();
+          }
+          if (lab.pincode.trim().isNotEmpty) {
+            result['pincode'] = lab.pincode.trim();
           }
           final addr = lab.address.trim().isNotEmpty
               ? lab.address.trim()
@@ -534,6 +858,27 @@ class RoleVerificationController extends ChangeNotifier {
           if (amb.licenseNumber.trim().isNotEmpty) {
             result['licenseNumber'] = amb.licenseNumber.trim();
           }
+          if (amb.phone.trim().isNotEmpty) {
+            result['phone'] = amb.phone.trim();
+          }
+          if (amb.city.trim().isNotEmpty) {
+            result['city'] = amb.city.trim();
+          }
+          if (amb.serviceAreas.isNotEmpty) {
+            result['serviceAreas'] = amb.serviceAreas;
+          }
+          if (amb.country.trim().isNotEmpty) {
+            result['country'] = amb.country.trim();
+          }
+          if (amb.state.trim().isNotEmpty) {
+            result['state'] = amb.state.trim();
+          }
+          if (amb.addressLine1.trim().isNotEmpty) {
+            result['addressLine1'] = amb.addressLine1.trim();
+          }
+          if (amb.pincode.trim().isNotEmpty) {
+            result['pincode'] = amb.pincode.trim();
+          }
         }
       default:
         break;
@@ -555,7 +900,7 @@ class RoleVerificationController extends ChangeNotifier {
     Map<String, dynamic>? firestoreData,
   }) {
     final data = profileDataFor(role, firestoreData: firestoreData);
-    return VerificationRequirementsConfig.isRequirementsMet(role, data);
+    return VerificationRequirementsConfig.isComplete(role, data);
   }
 
   List<VerificationRequirementItem> missingRequirementsFor(
@@ -563,11 +908,7 @@ class RoleVerificationController extends ChangeNotifier {
     Map<String, dynamic>? firestoreData,
   }) {
     final data = profileDataFor(role, firestoreData: firestoreData);
-    final items = VerificationRequirementsConfig.requirementsForRole(role);
-    return [
-      for (final item in items)
-        if (!VerificationRequirementsConfig.isFieldFilled(data, item.key)) item,
-    ];
+    return VerificationRequirementsConfig.missingFields(role, data);
   }
 
   void markSubmittedForVerification(UserType role) {

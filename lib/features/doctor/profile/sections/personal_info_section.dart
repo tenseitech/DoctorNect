@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart';
 
+import '../../../../core/auth/registration_credentials.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -354,20 +355,22 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                               ),
                               helperText: 'Doctor mobile number is locked for verification. Contact admin to request a change.',
                             ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _email,
-                              focusNode: _emailFocus,
-                              readOnly: true,
-                              showCursor: false,
-                              enableInteractiveSelection: false,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: RequiredFieldLabels.decorate(
-                                const InputDecoration(suffixIcon: null),
-                                'Email address (immutable)',
-                                isRequired: true,
+                            if (!RegistrationCredentials.isSyntheticEmail(_p.email)) ...[
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _email,
+                                focusNode: _emailFocus,
+                                readOnly: true,
+                                showCursor: false,
+                                enableInteractiveSelection: false,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: RequiredFieldLabels.decorate(
+                                  const InputDecoration(suffixIcon: null),
+                                  'Email address (immutable)',
+                                  isRequired: true,
+                                ),
                               ),
-                            ),
+                            ],
                             const SizedBox(height: 16),
                             SearchableMultiSelectField(
                               label: 'Languages spoken',

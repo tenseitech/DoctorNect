@@ -15,6 +15,7 @@ import '../../../core/theme/app_colors.dart';
 import '../profile/data/patient_profile_mock.dart';
 import '../data/patient_favorites_store.dart';
 import '../records/data/patient_lab_booking_store.dart';
+import '../../../core/auth/patient_details_guard.dart';
 import '../profile/models/patient_profile_models.dart';
 import 'lab_booking_confirmed_screen.dart';
 import 'lab_city_filter.dart';
@@ -271,6 +272,11 @@ class _LabBookingFlowScreenState extends State<LabBookingFlowScreen> {
     final patients = _selectedPatients();
     if (patients.isEmpty) {
       AppToast.info(context, 'Select at least one patient to continue.');
+      return;
+    }
+
+    if (_draft.bookingForSelf && !PatientDetailsGuard.hasRequiredDetails()) {
+      await PatientDetailsGuard.run(context, () => _confirm());
       return;
     }
 

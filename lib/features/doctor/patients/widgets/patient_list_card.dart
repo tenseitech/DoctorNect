@@ -159,7 +159,7 @@ class _PatientDetails extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '${patient.age} yrs · ${AppConstants.patientGenderLabel(patient.gender)} · ${patient.mobile}',
+          '${patient.age > 0 ? '${patient.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(patient.gender, fallback: 'Not provided')} · ${patient.mobile}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.inter(

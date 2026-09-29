@@ -10,6 +10,7 @@ import 'package:medibond/features/shared/screens/appointment_detail_screen.dart'
 
 import '../../appointments/models/patient_appointment_models.dart';
 import '../../appointments/widgets/appointment_card_shared.dart';
+import '../../../../core/auth/patient_details_guard.dart';
 import '../../booking/booking_flow_screen.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -203,12 +204,14 @@ class _AppointmentCard extends StatelessWidget {
   }
 
   void _bookAgain(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BookingFlowScreen(doctorId: appointment.doctorId),
-      ),
-    );
+    PatientDetailsGuard.run(context, () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BookingFlowScreen(doctorId: appointment.doctorId),
+        ),
+      );
+    });
   }
 
   @override

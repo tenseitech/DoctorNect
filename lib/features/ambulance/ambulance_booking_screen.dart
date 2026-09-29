@@ -24,6 +24,7 @@ import '../../core/utils/external_launcher.dart';
 import '../../core/constants/country_phone_codes.dart';
 import '../../core/validators/form_validators.dart';
 import '../../widgets/phone_number_field.dart';
+import '../../core/auth/patient_details_guard.dart';
 import '../patient/profile/data/patient_profile_mock.dart';
 import 'data/ambulance_booking_sync.dart';
 import 'data/ambulance_store.dart';
@@ -279,6 +280,11 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
     if (_submitting || _activeBooking != null) return;
     if (!_formKey.currentState!.validate()) return;
     if (!_validateContactInfo()) return;
+
+    if (_isPatient && !PatientDetailsGuard.hasRequiredDetails()) {
+      await PatientDetailsGuard.run(context, () => _bookAmbulance());
+      return;
+    }
 
     final pickupLocation = _pickupController.text.trim();
     setState(() => _submitting = true);

@@ -319,7 +319,7 @@ class _PatientRow extends StatelessWidget {
         .format(appointment.appointmentDate);
     final details = showAppointmentDate
         ? '$dateLabel · ${appointment.timeSlot}'
-        : '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)} · ${appointment.timeSlot}';
+        : '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')} · ${appointment.timeSlot}';
 
     return Material(
       color: AppColors.cardBgOf(context),

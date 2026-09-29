@@ -1,22 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../core/auth/demo_auth_config.dart';
-import '../core/auth/profile_completion_service.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
-import '../core/firebase/firebase_bootstrap.dart';
-import '../core/firebase/firestore_paths.dart';
 import '../core/session/ambulance_session.dart';
-import '../core/session/doctor_session.dart';
-import '../core/session/lab_session.dart';
-import '../core/session/medical_store_session.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 import '../features/ambulance/ambulance_profile_screen.dart';
-import '../features/doctor/profile/data/doctor_profile_store.dart';
 import '../features/doctor/profile/doctor_profile_screen.dart';
 import '../features/lab/screens/lab_profile_screen.dart';
 import '../features/pharmacy/screens/store_profile_screen.dart';
@@ -192,145 +182,8 @@ class ProfileDataGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isProfileTab || role.isPatient) return child;
-
-    final authPhone = FirebaseBootstrap.isReady
-        ? FirebaseAuth.instance.currentUser?.phoneNumber
-        : null;
-
-    final isDemoAccount =
-        DemoAuthConfig.isDemoRolePhone(role, authPhone) ||
-        (role == UserType.doctor &&
-            (DemoAuthConfig.isDemoDoctorPhone(
-                  DoctorProfileStore.instance.profile.mobile,
-                ) ||
-                DemoAuthConfig.isDemoDoctorPhone(
-                  DoctorSession.loggedInDoctorId,
-                ) ||
-                DoctorSession.loggedInDoctorId.contains(
-                  DemoAuthConfig.demoDoctorPhone,
-                ))) ||
-        (role == UserType.medicalStore &&
-            (DemoAuthConfig.isDemoPharmacyPhone(
-                  MedicalStoreSession.loggedInStoreId,
-                ) ||
-                MedicalStoreSession.loggedInStoreId.contains(
-                  DemoAuthConfig.demoPharmacyPhone,
-                ))) ||
-        (role == UserType.lab &&
-            (DemoAuthConfig.isDemoLabPhone(LabSession.loggedInLabId) ||
-                LabSession.loggedInLabId.contains(
-                  DemoAuthConfig.demoLabPhone,
-                ))) ||
-        (role == UserType.ambulance &&
-            (DemoAuthConfig.isDemoAmbulancePhone(
-                  AmbulanceSession.loggedInAmbulanceId,
-                ) ||
-                AmbulanceSession.loggedInAmbulanceId.contains(
-                  DemoAuthConfig.demoAmbulancePhone,
-                )));
-    if (isDemoAccount) return child;
-
-    final uid = FirebaseBootstrap.isReady
-        ? FirebaseAuth.instance.currentUser?.uid
-        : null;
-    if (uid == null || uid.isEmpty) {
-      if (role.isAmbulance && AmbulanceSession.isLoggedIn) {
-        // Ambulance might use session login; check ambulance store / doc
-        return ListenableBuilder(
-          listenable: ProfileCompletionService.instance,
-          builder: (context, _) {
-            if (ProfileCompletionService.instance.isComplete) {
-              if (verificationPending) {
-                return CompleteProfilePrompt(
-                  role: role,
-                  verificationPending: true,
-                );
-              }
-              return child;
-            }
-            return CompleteProfilePrompt(role: role);
-          },
-        );
-      }
-      return CompleteProfilePrompt(role: role);
-    }
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection(FirestorePaths.users)
-          .doc(uid)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == null) {
-          if (isDemoAccount) return child;
-          if (verificationPending) {
-            return CompleteProfilePrompt(role: role, verificationPending: true);
-          }
-          return CompleteProfilePrompt(role: role);
-        }
-
-        final data = snapshot.data!.data();
-        if (data == null) {
-          if (isDemoAccount) return child;
-          return CompleteProfilePrompt(role: role);
-        }
-
-        final mobile =
-            data['mobile'] as String? ??
-            data['phone'] as String? ??
-            data['phoneNumber'] as String?;
-        final profileId = data['profileId'] as String? ?? '';
-        final email = data['email'] as String? ?? '';
-        final isDemo =
-            isDemoAccount ||
-            DemoAuthConfig.isDemoRolePhone(role, mobile) ||
-            DemoAuthConfig.isDemoRolePhone(role, profileId) ||
-            profileId.contains(DemoAuthConfig.demoDoctorPhone) ||
-            profileId.contains(DemoAuthConfig.demoPharmacyPhone) ||
-            profileId.contains(DemoAuthConfig.demoLabPhone) ||
-            profileId.contains(DemoAuthConfig.demoAmbulancePhone) ||
-            (email.toLowerCase().contains('demo') &&
-                (email.toLowerCase().contains(role.name.toLowerCase()) ||
-                    (role == UserType.medicalStore &&
-                        email.toLowerCase().contains('pharm'))));
-        if (isDemo) {
-          if (data['verified'] != true ||
-              data['verificationStatus'] != 'verified' ||
-              data['status'] != 'approved') {
-            FirebaseFirestore.instance
-                .collection(FirestorePaths.users)
-                .doc(uid)
-                .set({
-                  'verified': true,
-                  'verificationStatus': 'verified',
-                  'status': 'approved',
-                  'profileCompleted': true,
-                }, SetOptions(merge: true));
-          }
-          return child;
-        }
-
-        final isVerified =
-            data['verified'] == true ||
-            data['verificationStatus'] == 'verified' ||
-            data['status'] == 'approved';
-        if (isVerified) return child;
-
-        final statusStr =
-            data['verificationStatus'] as String? ??
-            data['status'] as String? ??
-            (verificationPending ? 'submitted_for_verification' : 'registered');
-        final stage = VerificationStage.fromString(statusStr);
-        final reason = data['rejectionReason'] as String?;
-
-        return CompleteProfilePrompt(
-          role: role,
-          stage: stage,
-          rejectionReason: reason,
-          verificationPending: stage.isPending,
-        );
-      },
-    );
+    // Tab-blocking has been replaced with view-only mode.
+    // Tabs render normally and mutating operations are guarded by ProfileActionGuard.
+    return child;
   }
 }

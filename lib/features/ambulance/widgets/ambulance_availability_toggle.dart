@@ -4,6 +4,8 @@ import '../../../core/notifications/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
+import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/ambulance_auth_helper.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/ambulance_store.dart';
@@ -25,6 +27,10 @@ class _AmbulanceAvailabilityToggleState
   bool? _localValue;
 
   Future<void> _onChanged(bool value) async {
+    if (!ProfileActionGuard.isAllowed(UserType.ambulance)) {
+      ProfileActionGuard.showPopup(context, UserType.ambulance);
+      return;
+    }
     setState(() {
       _localValue = value;
       _saving = true;

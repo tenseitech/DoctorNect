@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
+import '../../../core/enums/user_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../doctor/clinical/prescription/prescription_preview_modal.dart';
 import '../data/pharmacy_prescription_store.dart';
@@ -61,6 +63,10 @@ class _StorePrescriptionDetailScreenState
   }
 
   Future<void> _markDispensed(PharmacyPrescriptionDelivery delivery) async {
+    if (!ProfileActionGuard.isAllowed(UserType.medicalStore)) {
+      ProfileActionGuard.showPopup(context, UserType.medicalStore);
+      return;
+    }
     final hasPending = delivery.medicineLines.any(
       (l) => l.availability == MedicineAvailability.pending,
     );
@@ -172,26 +178,33 @@ class _StorePrescriptionDetailScreenState
                             readOnly: isDispensed,
                             onStatusChanged:
                                 (line, availability, substitute) async {
-                                  final messenger = ScaffoldMessenger.of(
+                                  ProfileActionGuard.run(
                                     context,
-                                  );
-                                  try {
-                                    await PharmacyPrescriptionStore.instance
-                                        .updateMedicineLine(
-                                          deliveryId: delivery.id,
-                                          medicineEntryId: line.medicineEntryId,
-                                          availability: availability,
-                                          substituteName: substitute,
+                                    UserType.medicalStore,
+                                    () async {
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
+                                      try {
+                                        await PharmacyPrescriptionStore.instance
+                                            .updateMedicineLine(
+                                              deliveryId: delivery.id,
+                                              medicineEntryId:
+                                                  line.medicineEntryId,
+                                              availability: availability,
+                                              substituteName: substitute,
+                                            );
+                                      } catch (_) {
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Failed to update medicine availability. Please retry.',
+                                            ),
+                                          ),
                                         );
-                                  } catch (_) {
-                                    messenger.showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Failed to update medicine availability. Please retry.',
-                                        ),
-                                      ),
-                                    );
-                                  }
+                                      }
+                                    },
+                                  );
                                 },
                           ),
                         ),
@@ -251,7 +264,7 @@ class _PrescriptionHeader extends StatelessWidget {
                 ),
                 SizedBox(height: 6),
                 Text(
-                  '${draft.patient.age} yrs · ${draft.patient.gender ?? '—'} · ${_pharmacyDoctorLabel(delivery.doctorName)}',
+                  '${draft.patient.age > 0 ? '${draft.patient.age} yrs' : 'Not provided'} · ${draft.patient.gender?.trim().isNotEmpty == true ? draft.patient.gender! : 'Not provided'} · ${_pharmacyDoctorLabel(delivery.doctorName)}',
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
@@ -466,7 +479,7 @@ class _PatientDetailsGrid extends StatelessWidget {
       ('Patient', draft.patient.patientName),
       (
         'Age / Gender',
-        '${draft.patient.age} yrs · ${draft.patient.gender ?? '—'}',
+        '${draft.patient.age > 0 ? '${draft.patient.age} yrs' : 'Not provided'} · ${draft.patient.gender?.trim().isNotEmpty == true ? draft.patient.gender! : 'Not provided'}',
       ),
       ('Doctor', _pharmacyDoctorLabel(delivery.doctorName)),
       ('Rx ID', draft.prescriptionId),

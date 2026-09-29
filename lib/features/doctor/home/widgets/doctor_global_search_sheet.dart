@@ -341,7 +341,7 @@ class _PatientRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details =
-        '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)} · Last visit: ${DateFormat('dd MMM').format(appointment.appointmentDate)}';
+        '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')} · Last visit: ${DateFormat('dd MMM').format(appointment.appointmentDate)}';
 
     return Material(
       color: AppColors.cardBgOf(context),

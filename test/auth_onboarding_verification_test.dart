@@ -98,12 +98,20 @@ void main() {
       );
 
       final completeProfile = <String, dynamic>{
+        'name': 'Dr. Sharma',
+        'mobile': '9876543210',
         'qualification': 'MBBS, MD (Medicine)',
+        'specialization': 'General Physician',
         'councilNumber': 'MED-12345',
         'stateCouncil': 'Delhi Medical Council',
         'registrationCertificate':
             'https://storage.googleapis.com/test/certificate.pdf',
         'idProof': 'https://storage.googleapis.com/test/aadhaar.pdf',
+        'country': 'India',
+        'state': 'Delhi',
+        'city': 'New Delhi',
+        'addressLine1': '123 Health Ave',
+        'pinCode': '110001',
       };
 
       expect(
@@ -134,9 +142,14 @@ void main() {
 
       final completeProfile = <String, dynamic>{
         'storeName': 'Apollo Pharmacy',
-        'drugLicenseNumber': 'DL-2026-9988',
         'ownerName': 'Ramesh Kumar',
-        'address': '123 Health Ave, City, PIN 110001',
+        'phone': '9876543210',
+        'drugLicenseNumber': 'DL-2026-9988',
+        'country': 'India',
+        'state': 'Delhi',
+        'city': 'New Delhi',
+        'addressLine1': '123 Health Ave',
+        'pincode': '110001',
       };
       expect(
         VerificationRequirementsConfig.isRequirementsMet(
@@ -155,8 +168,13 @@ void main() {
 
       final completeProfile = <String, dynamic>{
         'labName': 'PathKind Diagnostics',
+        'phone': '9876543210',
         'licenseNumber': 'LAB-REG-101',
-        'address': 'Sector 4, City, PIN 110001',
+        'country': 'India',
+        'state': 'Delhi',
+        'city': 'New Delhi',
+        'addressLine1': 'Sector 4',
+        'pincode': '110001',
       };
       expect(
         VerificationRequirementsConfig.isRequirementsMet(
@@ -175,9 +193,16 @@ void main() {
 
       final completeProfile = <String, dynamic>{
         'serviceName': 'Emergency Care Unit',
-        'vehicleNumber': 'DL-01-AB-1234',
         'driverName': 'Suresh Singh',
+        'phone': '9876543210',
+        'vehicleNumber': 'DL-01-AB-1234',
         'licenseNumber': 'DL-LIC-9988',
+        'city': 'New Delhi',
+        'serviceAreas': ['Central Delhi', 'South Delhi'],
+        'country': 'India',
+        'state': 'Delhi',
+        'addressLine1': 'Sector 4 Dispatch Hub',
+        'pincode': '110001',
       };
       expect(
         VerificationRequirementsConfig.isRequirementsMet(

@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/country_phone_codes.dart';
+import '../../../core/enums/user_type.dart';
 import '../../../core/session/lab_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/notifications/app_toast.dart';
@@ -66,6 +68,10 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
   }
 
   Future<void> _submit() async {
+    if (!ProfileActionGuard.isAllowed(UserType.lab)) {
+      ProfileActionGuard.showPopup(context, UserType.lab);
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     if (_tests.isEmpty) {
       _snack('Add at least one test');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
@@ -170,7 +171,33 @@ class _PartnerConnectDoctorsBaseViewState
   }
 
   void _openInviteDoctorSheet() {
-    InviteDoctorSheet.show(context);
+    ProfileActionGuard.run(context, widget.partnerRole, () {
+      InviteDoctorSheet.show(context);
+    });
+  }
+
+  void _approveConnection(String id, String doctorName) {
+    ProfileActionGuard.run(context, widget.partnerRole, () {
+      widget.onApproveConnection(id, doctorName);
+    });
+  }
+
+  void _rejectConnection(String id, String doctorName) {
+    ProfileActionGuard.run(context, widget.partnerRole, () {
+      widget.onRejectConnection(id, doctorName);
+    });
+  }
+
+  void _revokeConnection(String id, String doctorName) {
+    ProfileActionGuard.run(context, widget.partnerRole, () {
+      widget.onRevokeConnection(id, doctorName);
+    });
+  }
+
+  void _removeConnection(String id, String doctorName) {
+    ProfileActionGuard.run(context, widget.partnerRole, () {
+      widget.onRemoveConnection(id, doctorName);
+    });
   }
 
   Widget _buildInviteDoctorCard({bool compact = false}) {
@@ -328,10 +355,10 @@ class _PartnerConnectDoctorsBaseViewState
           cityFilter: widget.cityFilter,
           searchDoctorsFn: widget.searchDoctorsFn,
           activitySubtitleBuilder: widget.activitySubtitleBuilder,
-          onApproveConnection: widget.onApproveConnection,
-          onRejectConnection: widget.onRejectConnection,
-          onRevokeConnection: widget.onRevokeConnection,
-          onRemoveConnection: widget.onRemoveConnection,
+          onApproveConnection: _approveConnection,
+          onRejectConnection: _rejectConnection,
+          onRevokeConnection: _revokeConnection,
+          onRemoveConnection: _removeConnection,
           onSendRequest: widget.onSendRequest,
           isConnected: widget.isConnected,
           isPendingSent: widget.isPendingSent,
@@ -348,14 +375,16 @@ class _PartnerConnectDoctorsBaseViewState
   }
 
   void _sendRequest(RegisteredDoctorSearchResult doctor) {
-    final error = widget.onSendRequest(doctor);
-    if (!mounted) return;
-    if (error != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
-    } else {
-      _search();
-    }
+    ProfileActionGuard.run(context, widget.partnerRole, () {
+      final error = widget.onSendRequest(doctor);
+      if (!mounted) return;
+      if (error != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+      } else {
+        _search();
+      }
+    });
   }
 
   Widget _buildSearchBar({bool compact = false}) {
@@ -543,7 +572,7 @@ class _PartnerConnectDoctorsBaseViewState
                     subtitle: subtitle,
                     accentColor: widget.accentColor,
                     onRemove: () {
-                      widget.onRemoveConnection(c.id, c.doctorName);
+                      _removeConnection(c.id, c.doctorName);
                     },
                   );
                 }),
@@ -664,7 +693,7 @@ class _PartnerConnectDoctorsBaseViewState
                           children: [
                             OutlinedButton(
                               onPressed: () {
-                                widget.onRejectConnection(c.id, c.doctorName);
+                                _rejectConnection(c.id, c.doctorName);
                               },
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
@@ -678,7 +707,7 @@ class _PartnerConnectDoctorsBaseViewState
                             ),
                             FilledButton(
                               onPressed: () {
-                                widget.onApproveConnection(c.id, c.doctorName);
+                                _approveConnection(c.id, c.doctorName);
                               },
                               style: FilledButton.styleFrom(
                                 backgroundColor: widget.accentColor,
@@ -734,7 +763,7 @@ class _PartnerConnectDoctorsBaseViewState
                               confirmLabel: 'Revoke',
                             );
                             if (confirmed) {
-                              widget.onRevokeConnection(c.id, c.doctorName);
+                              _revokeConnection(c.id, c.doctorName);
                             }
                           },
                         ),
@@ -802,8 +831,8 @@ class _PartnerConnectDoctorsBaseViewState
               child: _PartnerConnectionRequestMobileCard(
                 connection: c,
                 accentColor: widget.accentColor,
-                onApprove: () => widget.onApproveConnection(c.id, c.doctorName),
-                onReject: () => widget.onRejectConnection(c.id, c.doctorName),
+                onApprove: () => _approveConnection(c.id, c.doctorName),
+                onReject: () => _rejectConnection(c.id, c.doctorName),
               ),
             ),
           ),
@@ -830,7 +859,7 @@ class _PartnerConnectDoctorsBaseViewState
                     confirmLabel: 'Revoke',
                   );
                   if (confirmed) {
-                    widget.onRevokeConnection(c.id, c.doctorName);
+                    _revokeConnection(c.id, c.doctorName);
                   }
                 },
               ),

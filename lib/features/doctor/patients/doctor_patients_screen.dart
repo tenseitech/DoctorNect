@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/data/shared_appointments_store.dart';
+import '../../../core/enums/user_type.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
@@ -98,12 +100,16 @@ class _DoctorPatientsScreenState extends State<DoctorPatientsScreen> {
 
   Future<void> _onAddWalkIn() async {
     _closeFabMenu();
-    await _openWalkInSheet();
+    ProfileActionGuard.run(context, UserType.doctor, () async {
+      await _openWalkInSheet();
+    });
   }
 
   Future<void> _onInviteViaLink() async {
     _closeFabMenu();
-    await InvitePatientSheet.show(context);
+    ProfileActionGuard.run(context, UserType.doctor, () async {
+      await InvitePatientSheet.show(context);
+    });
   }
 
   void _openProfile(DoctorPatientSummary patient) {

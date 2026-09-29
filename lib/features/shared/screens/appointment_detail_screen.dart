@@ -14,6 +14,7 @@ import 'package:medibond/core/notifications/app_toast.dart';
 import 'package:medibond/core/notifications/doctor_notification_emitter.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/session/patient_session.dart';
+import 'package:medibond/core/auth/patient_details_guard.dart';
 import 'package:medibond/core/theme/app_colors.dart';
 import 'package:medibond/features/ambulance/ambulance_booking_screen.dart';
 import 'package:medibond/features/ambulance/models/ambulance_models.dart';
@@ -479,7 +480,7 @@ class _PatientHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)}',
+                  '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')}',
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
@@ -941,15 +942,17 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BookingFlowScreen(
-                    doctorId: a.doctorId,
-                    rescheduleFromRecordId: a.id,
+              PatientDetailsGuard.run(context, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BookingFlowScreen(
+                      doctorId: a.doctorId,
+                      rescheduleFromRecordId: a.id,
+                    ),
                   ),
-                ),
-              );
+                );
+              });
             },
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.patientTeal,
@@ -1374,12 +1377,14 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BookingFlowScreen(doctorId: a.doctorId),
-                      ),
-                    );
+                    PatientDetailsGuard.run(context, () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BookingFlowScreen(doctorId: a.doctorId),
+                        ),
+                      );
+                    });
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.patientTeal,
@@ -1395,13 +1400,15 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                BookingFlowScreen(doctorId: a.doctorId),
-                          ),
-                        );
+                        PatientDetailsGuard.run(context, () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  BookingFlowScreen(doctorId: a.doctorId),
+                            ),
+                          );
+                        });
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.patientTeal,

@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/patient_favorites_store.dart';
 import '../profile/data/patient_profile_mock.dart';
+import '../../../core/auth/patient_details_guard.dart';
 import 'lab_booking_flow_screen.dart';
 import 'lab_city_filter.dart';
 import 'models/lab_models.dart';
@@ -297,17 +298,19 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
               onPressed: selectedLab == null
                   ? null
                   : () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LabBookingFlowScreen(
-                            tests: [widget.test],
-                            partnerLabs: bookableLabs,
-                            preselectedLab: selectedLab,
-                            lockSelectedLab: true,
+                      PatientDetailsGuard.run(context, () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LabBookingFlowScreen(
+                              tests: [widget.test],
+                              partnerLabs: bookableLabs,
+                              preselectedLab: selectedLab,
+                              lockSelectedLab: true,
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      });
                     },
             ),
           ],

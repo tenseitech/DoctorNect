@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import 'demo_auth_config.dart';
-import 'profile_completion_checker.dart';
+import 'verification_lifecycle.dart';
 import '../enums/user_type.dart';
 import '../firebase/firebase_bootstrap.dart';
 import '../firebase/firestore_paths.dart';
@@ -181,17 +181,7 @@ class ProfileCompletionService extends ChangeNotifier {
         preferCache: false,
       );
       final data = snap.data();
-      final complete = switch (role) {
-        UserType.doctor => ProfileCompletionChecker.isDoctorDocComplete(data),
-        UserType.medicalStore => ProfileCompletionChecker.isPharmacyDocComplete(
-          data,
-        ),
-        UserType.lab => ProfileCompletionChecker.isLabDocComplete(data),
-        UserType.ambulance => ProfileCompletionChecker.isAmbulanceDocComplete(
-          data,
-        ),
-        _ => false,
-      };
+      final complete = VerificationRequirementsConfig.isComplete(role, data);
       if (!complete) return;
 
       if (role.isAmbulance) {

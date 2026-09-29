@@ -17,6 +17,7 @@ import 'models/pharmacy_models.dart';
 import 'screens/connect_doctors_screen.dart';
 import 'screens/store_dashboard_screen.dart';
 import 'screens/store_notifications_screen.dart';
+import '../../core/auth/profile_action_guard.dart';
 import 'screens/store_profile_screen.dart';
 import '../../widgets/complete_profile_prompt.dart';
 import 'widgets/pharmacy_nav_shell.dart';
@@ -37,6 +38,10 @@ class _MedicalStoreShellState extends State<MedicalStoreShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       RoleSessionGuard.verifyRole(context, UserType.medicalStore);
       _syncFirestoreForTab(_index);
+      ProfileActionGuard.showOnFirstEntryIfNeeded(
+        context,
+        UserType.medicalStore,
+      );
     });
   }
 

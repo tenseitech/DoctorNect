@@ -8,6 +8,7 @@ import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/auth/profile_action_guard.dart';
 import '../../core/auth/profile_completion_service.dart';
 import '../../core/auth/role_session_guard.dart';
 import '../../core/enums/user_type.dart';
@@ -54,6 +55,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
     super.initState();
     AmbulanceStore.instance.registerAmbulance(widget.ambulance);
     unawaited(_initSession());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ProfileActionGuard.showOnFirstEntryIfNeeded(context, UserType.ambulance);
+    });
   }
 
   Future<void> _initSession() async {

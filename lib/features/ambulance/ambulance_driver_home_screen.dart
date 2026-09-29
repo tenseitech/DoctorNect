@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/auth/profile_action_guard.dart';
+import '../../core/enums/user_type.dart';
 import '../../core/firebase/ambulance_auth_helper.dart';
 import '../../core/firebase/firestore_paths.dart';
 import '../../core/notifications/ambulance_push_service.dart';
@@ -310,6 +312,10 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
   }
 
   Future<void> _completeTrip(BuildContext context, String bookingId) async {
+    if (!ProfileActionGuard.isAllowed(UserType.ambulance)) {
+      ProfileActionGuard.showPopup(context, UserType.ambulance);
+      return;
+    }
     final ok = await FirestoreService.instance.ambulance.completeBroadcast(
       broadcastId: bookingId,
       driverId: AmbulanceSession.loggedInAmbulanceId,
@@ -321,6 +327,10 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
   }
 
   Future<void> _cancelTrip(BuildContext context, String bookingId) async {
+    if (!ProfileActionGuard.isAllowed(UserType.ambulance)) {
+      ProfileActionGuard.showPopup(context, UserType.ambulance);
+      return;
+    }
     final ambulanceId = AmbulanceSession.loggedInAmbulanceId;
     if (ambulanceId.isEmpty) return;
 
@@ -342,6 +352,10 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
   }
 
   Future<void> _reject(BuildContext context, String bookingId) async {
+    if (!ProfileActionGuard.isAllowed(UserType.ambulance)) {
+      ProfileActionGuard.showPopup(context, UserType.ambulance);
+      return;
+    }
     final ambulanceId = AmbulanceSession.loggedInAmbulanceId;
     await FirestoreService.instance.ambulance.rejectBroadcast(
       broadcastId: bookingId,
@@ -350,6 +364,10 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
   }
 
   Future<void> _accept(BuildContext context, String bookingId) async {
+    if (!ProfileActionGuard.isAllowed(UserType.ambulance)) {
+      ProfileActionGuard.showPopup(context, UserType.ambulance);
+      return;
+    }
     final ambulanceId = AmbulanceSession.loggedInAmbulanceId;
     if (ambulanceId.isEmpty) return;
 

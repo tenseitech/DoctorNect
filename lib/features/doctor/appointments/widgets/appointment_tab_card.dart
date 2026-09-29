@@ -324,7 +324,7 @@ class _AppointmentDetails extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '${appointment.age} yrs · ${AppConstants.patientGenderLabel(appointment.gender)} · $typeLabel',
+          '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')} · $typeLabel',
           style: GoogleFonts.inter(
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),

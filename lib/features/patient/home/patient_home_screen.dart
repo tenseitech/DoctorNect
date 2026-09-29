@@ -22,6 +22,7 @@ import 'package:medibond/features/patient/models/patient_models.dart';
 
 import '../profile/data/patient_profile_mock.dart';
 import '../profile/models/patient_profile_models.dart';
+import '../../../core/auth/patient_details_guard.dart';
 import '../booking/booking_flow_screen.dart';
 import '../doctor_profile/patient_doctor_profile_screen.dart';
 import '../lab/my_labs_screen.dart';
@@ -338,12 +339,14 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       );
                     },
                     onBook: (d) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BookingFlowScreen(doctorId: d.id),
-                        ),
-                      );
+                      PatientDetailsGuard.run(context, () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BookingFlowScreen(doctorId: d.id),
+                          ),
+                        );
+                      });
                     },
                   ),
                   Divider(

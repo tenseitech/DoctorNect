@@ -24,6 +24,7 @@ import '../profile/data/patient_profile_mock.dart';
 
 import 'package:medibond/features/patient/models/patient_models.dart';
 
+import '../../../core/auth/patient_details_guard.dart';
 import '../booking/booking_flow_screen.dart';
 import '../doctor_profile/patient_doctor_profile_screen.dart';
 import '../widgets/doctor_listing_card.dart';
@@ -737,12 +738,14 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             flat: true,
             showDivider: i < doctors.length - 1,
             onBook: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BookingFlowScreen(doctorId: d.id),
-                ),
-              );
+              PatientDetailsGuard.run(context, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BookingFlowScreen(doctorId: d.id),
+                  ),
+                );
+              });
             },
             onViewProfile: () {
               Navigator.push(
@@ -799,12 +802,14 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                     ? null
                     : () => unawaited(_addDoctorToMyList(context, d)),
                 onBook: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => BookingFlowScreen(doctorId: d.id),
-                    ),
-                  );
+                  PatientDetailsGuard.run(context, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BookingFlowScreen(doctorId: d.id),
+                      ),
+                    );
+                  });
                 },
                 onViewProfile: () {
                   Navigator.push(
@@ -1105,13 +1110,15 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             flat: true,
             showDivider: i < nearbyDoctors.length - 1,
             onBook: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      BookingFlowScreen(doctorId: nearbyDoctors[i].id),
-                ),
-              );
+              PatientDetailsGuard.run(context, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        BookingFlowScreen(doctorId: nearbyDoctors[i].id),
+                  ),
+                );
+              });
             },
             onViewProfile: () {
               Navigator.push(
@@ -1213,12 +1220,14 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                     flat: true,
                     showDivider: index < doctors.length - 1,
                     onBook: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => BookingFlowScreen(doctorId: d.id),
-                        ),
-                      );
+                      PatientDetailsGuard.run(context, () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BookingFlowScreen(doctorId: d.id),
+                          ),
+                        );
+                      });
                     },
                     onViewProfile: () {
                       Navigator.push(

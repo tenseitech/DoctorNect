@@ -39,7 +39,6 @@ import '../shared/screens/patient_profile_screen.dart';
 import 'widgets/patient_app_shell.dart';
 import 'home/patient_home_screen.dart';
 import 'appointments/patient_appointments_screen.dart';
-import 'profile/widgets/profile_completion_dialog.dart';
 
 class PatientProfileTabAvatar extends StatefulWidget {
   const PatientProfileTabAvatar({
@@ -365,10 +364,6 @@ class _PatientShellState extends State<PatientShell> {
       PatientAppointmentWatcher.start(patientId);
     }
     _openFromPushIfNeeded();
-
-    if (mounted) {
-      ProfileCompletionDialog.showIfNeeded(context);
-    }
   }
 
   Future<void> _refreshSessionData() async {

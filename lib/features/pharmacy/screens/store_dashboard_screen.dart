@@ -808,7 +808,7 @@ class _WidePrescriptionTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${patient.age} yrs · ${patient.gender ?? '—'}',
+                    '${patient.age > 0 ? '${patient.age} yrs' : 'Not provided'} · ${patient.gender?.trim().isNotEmpty == true ? patient.gender! : 'Not provided'}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
@@ -935,7 +935,7 @@ class _CompactPrescriptionTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '${patient.age} yrs · ${patient.gender ?? '—'} · ${data.time}',
+                        '${patient.age > 0 ? '${patient.age} yrs' : 'Not provided'} · ${patient.gender?.trim().isNotEmpty == true ? patient.gender! : 'Not provided'} · ${data.time}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(

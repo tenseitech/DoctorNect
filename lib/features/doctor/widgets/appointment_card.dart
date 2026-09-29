@@ -68,7 +68,7 @@ class AppointmentCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${appointment.age} yrs Â· ${AppConstants.patientGenderLabel(appointment.gender)}',
+                      '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')}',
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),

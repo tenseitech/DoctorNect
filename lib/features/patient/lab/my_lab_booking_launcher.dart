@@ -13,6 +13,7 @@ import '../../doctor/clinical/models/clinical_models.dart' hide LabTestItem;
 import '../../doctor/clinical/prescription/widgets/prescription_form_sections.dart';
 import '../profile/data/patient_profile_mock.dart';
 import '../data/patient_favorites_store.dart';
+import '../../../core/auth/patient_details_guard.dart';
 import 'lab_booking_flow_screen.dart';
 import 'utils/patient_lab_age_guard.dart';
 import 'utils/patient_selected_investigations_mapper.dart';
@@ -80,24 +81,21 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
       return;
     }
 
-    if (!PatientLabAgeGuard.profileAgeValid()) {
-      AppToast.info(context, PatientLabAgeGuard.missingAgeSnackbarMessage);
-      return;
-    }
-
-    final partnerLab = widget.lab.toPartnerLab();
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LabBookingFlowScreen(
-          tests: tests,
-          partnerLabs: [partnerLab],
-          preselectedLab: partnerLab,
-          lockSelectedLab: true,
-          submitAsRequest: true,
+    PatientDetailsGuard.run(context, () {
+      final partnerLab = widget.lab.toPartnerLab();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LabBookingFlowScreen(
+            tests: tests,
+            partnerLabs: [partnerLab],
+            preselectedLab: partnerLab,
+            lockSelectedLab: true,
+            submitAsRequest: true,
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   @override

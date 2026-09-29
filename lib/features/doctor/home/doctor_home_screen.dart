@@ -7,9 +7,11 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/shared_appointments_store.dart';
 import '../../../core/constants/app_icons.dart';
+import '../../../core/enums/user_type.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../ambulance/ambulance_booking_screen.dart';
@@ -761,127 +763,142 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen>
   }
 
   Future<void> _openAddNewPatient() async {
-    await WalkInPatientSheet.show(context);
+    ProfileActionGuard.run(context, UserType.doctor, () async {
+      await WalkInPatientSheet.show(context);
+    });
   }
 
   Future<void> _acceptAppointment(Appointment appointment) async {
-    try {
-      await _store.acceptAppointment(appointment.id);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            describeUserFacingError(
-              e,
-              fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+    ProfileActionGuard.run(context, UserType.doctor, () async {
+      try {
+        await _store.acceptAppointment(appointment.id);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              describeUserFacingError(
+                e,
+                fallback: "Couldn't accept this appointment. Please check your connection and try again.",
+              ),
             ),
           ),
-        ),
-      );
-      return;
-    }
+        );
+        return;
+      }
+    });
   }
 
   Future<void> _acceptFamilyAppointments(List<Appointment> members) async {
-    final pending = members
-        .where((m) => m.status == AppointmentStatus.pendingRequest)
-        .map((m) => m.id)
-        .toList();
-    if (pending.isEmpty) return;
+    ProfileActionGuard.run(context, UserType.doctor, () async {
+      final pending = members
+          .where((m) => m.status == AppointmentStatus.pendingRequest)
+          .map((m) => m.id)
+          .toList();
+      if (pending.isEmpty) return;
 
-    try {
-      await _store.acceptAppointments(pending);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            describeUserFacingError(
-              e,
-              fallback: "Couldn't accept these appointments. Please check your connection and try again.",
+      try {
+        await _store.acceptAppointments(pending);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              describeUserFacingError(
+                e,
+                fallback: "Couldn't accept these appointments. Please check your connection and try again.",
+              ),
             ),
           ),
-        ),
-      );
-      return;
-    }
+        );
+        return;
+      }
+    });
   }
 
   Future<void> _declineAppointment(Appointment appointment) async {
-    try {
-      await _store.declineAppointment(appointment.id);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            describeUserFacingError(
-              e,
-              fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+    ProfileActionGuard.run(context, UserType.doctor, () async {
+      try {
+        await _store.declineAppointment(appointment.id);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              describeUserFacingError(
+                e,
+                fallback: "Couldn't decline this appointment. Please check your connection and try again.",
+              ),
             ),
           ),
-        ),
-      );
-      return;
-    }
+        );
+        return;
+      }
+    });
   }
 
   Future<void> _startConsultation(Appointment appointment) async {
-    try {
-      await _store.updateDoctorStatus(
-        appointment.id,
-        AppointmentStatus.inProgress,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            describeUserFacingError(
-              e,
-              fallback: "Couldn't start consultation. Please check your connection and try again.",
+    ProfileActionGuard.run(context, UserType.doctor, () async {
+      try {
+        await _store.updateDoctorStatus(
+          appointment.id,
+          AppointmentStatus.inProgress,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              describeUserFacingError(
+                e,
+                fallback: "Couldn't start consultation. Please check your connection and try again.",
+              ),
             ),
           ),
+        );
+        return;
+      }
+      if (!mounted) return;
+      final record = _store.findRecordById(appointment.id);
+      double? weight;
+      final w = appointment.lastVitals?.weight;
+      if (w != null) {
+        weight = double.tryParse(w.replaceAll(RegExp(r'[^\d.]'), ''));
+      }
+      String patientId = '';
+      if (record != null) {
+        final key = DoctorPatientsService.patientGroupKey(record);
+        patientId = DoctorPatientsService.resolveRealPatientId(key);
+      }
+      if (patientId.isEmpty) {
+        patientId = 'wi_${appointment.id}';
+      }
+      ClinicalToolsShell.open(
+        context,
+        patient: PatientClinicalContext(
+          patientName: appointment.patientName,
+          age: appointment.age,
+          gender: AppConstants.normalizePatientGender(appointment.gender),
+          weightKg: weight,
+          patientId: patientId,
+          appointmentId: appointment.id,
         ),
+        initialTab: 0,
       );
-      return;
-    }
-    if (!mounted) return;
-    final record = _store.findRecordById(appointment.id);
-    double? weight;
-    final w = appointment.lastVitals?.weight;
-    if (w != null) {
-      weight = double.tryParse(w.replaceAll(RegExp(r'[^\d.]'), ''));
-    }
-    String patientId = '';
-    if (record != null) {
-      final key = DoctorPatientsService.patientGroupKey(record);
-      patientId = DoctorPatientsService.resolveRealPatientId(key);
-    }
-    if (patientId.isEmpty) {
-      patientId = 'wi_${appointment.id}';
-    }
-    ClinicalToolsShell.open(
-      context,
-      patient: PatientClinicalContext(
-        patientName: appointment.patientName,
-        age: appointment.age,
-        gender: AppConstants.normalizePatientGender(appointment.gender),
-        weightKg: weight,
-        patientId: patientId,
-        appointmentId: appointment.id,
-      ),
-      initialTab: 0,
-    );
+    });
   }
 
   void _cancelAppointment(Appointment appointment) {
-    DoctorAppointmentActions.cancel(
-      context,
-      appointment: appointment,
-      reason: 'Cancelled from today\'s queue',
-    );
+    ProfileActionGuard.run(context, UserType.doctor, () {
+      DoctorAppointmentActions.cancel(
+        context,
+        appointment: appointment,
+        reason: 'Cancelled from today\'s queue',
+        onComplete: () {
+          if (mounted) setState(() {});
+        },
+      );
+    });
   }
 
   void _viewAppointment(Appointment appointment) {

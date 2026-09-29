@@ -4,6 +4,7 @@ import '../../../../core/notifications/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../../core/auth/profile_action_guard.dart';
 import '../../../../core/enums/user_type.dart';
 import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -110,6 +111,10 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
   }
 
   Future<void> _sendOrder() async {
+    if (!ProfileActionGuard.isAllowed(UserType.doctor)) {
+      ProfileActionGuard.showPopup(context, UserType.doctor);
+      return;
+    }
     if (_selectedTestIds.isEmpty) {
       AppToast.info(context, 'Select at least one lab test');
       return;
@@ -192,7 +197,7 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
         ClinicalSectionCard(
           title: 'Patient',
           child: Text(
-            '${widget.patient.patientName} · ${widget.patient.age} yrs',
+            '${widget.patient.patientName} · ${widget.patient.age > 0 ? '${widget.patient.age} yrs' : 'Not provided'}',
             style: GoogleFonts.inter(
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w500,

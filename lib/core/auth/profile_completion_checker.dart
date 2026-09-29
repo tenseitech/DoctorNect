@@ -1,103 +1,26 @@
-import 'demo_auth_config.dart';
+import '../enums/user_type.dart';
+import 'verification_lifecycle.dart';
 
-/// Mirrors the fields that were required on the legacy registration forms.
+/// Evaluates profile completion by delegating directly to [VerificationRequirementsConfig],
+/// which is the single source of truth across roles.
 abstract final class ProfileCompletionChecker {
   static bool isDoctorDocComplete(Map<String, dynamic>? data) {
-    if (data == null) return false;
-    final mobile = data['mobile'] as String? ?? data['phone'] as String?;
-    if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
-    final docId = data['doctorId'] as String? ?? data['id'] as String?;
-    if (DemoAuthConfig.isDemoDoctorPhone(docId) ||
-        (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone))) {
-      return true;
-    }
-    if (_empty(data['name'])) return false;
-    if (_empty(data['qualification'])) return false;
-    if (_empty(data['specialization'])) return false;
-    if (_empty(data['councilNumber'])) return false;
-    if (_empty(data['stateCouncil'])) return false;
-    if (_empty(data['mobile'])) return false;
-    if (_empty(data['gender'])) return false;
-    if (data['dateOfBirth'] == null) return false;
-    final langs = data['languages'];
-    if (langs is! List || langs.isEmpty) return false;
-
-    final address = data['address'];
-    if (address is! Map) return false;
-    if (_empty(address['country'])) return false;
-    if (_empty(address['state'])) return false;
-    if (_empty(address['city'])) return false;
-    if (_empty(address['addressLine1'])) return false;
-    if (_empty(address['pinCode'])) return false;
-
-    final kycSubmitted = data['kycSubmitted'] == true;
-    final hasCert = !_empty(data['registrationCertificate']);
-    final hasId = !_empty(data['idProof']);
-    return kycSubmitted || (hasCert && hasId);
+    return VerificationRequirementsConfig.isComplete(UserType.doctor, data);
   }
 
   static bool isPharmacyDocComplete(Map<String, dynamic>? data) {
-    if (data == null) return false;
-    if (_empty(data['storeName'])) return false;
-    if (_empty(data['ownerName'])) return false;
-    if (_empty(data['drugLicenseNumber'])) return false;
-    if (_empty(data['phone'])) return false;
-    if (_empty(data['email'])) return false;
-
-    final address = data['address'];
-    if (address is! Map) return false;
-    if (_empty(address['country'])) return false;
-    if (_empty(address['state'])) return false;
-    if (_empty(address['city'])) return false;
-    if (_empty(address['addressLine1'])) return false;
-    if (_empty(address['pinCode'])) return false;
-    return true;
+    return VerificationRequirementsConfig.isComplete(
+      UserType.medicalStore,
+      data,
+    );
   }
 
   static bool isLabDocComplete(Map<String, dynamic>? data) {
-    if (data == null) return false;
-    final labName = data['labName'] as String? ?? data['name'] as String? ?? '';
-    if (labName.trim().isEmpty) return false;
-    if (_empty(data['licenseNumber'])) return false;
-    if (_empty(data['phone'])) return false;
-    if (_empty(data['email'])) return false;
-
-    final address = data['address'];
-    if (address is! Map) return false;
-    if (_empty(address['country'])) return false;
-    if (_empty(address['state'])) return false;
-    if (_empty(address['city'])) return false;
-    if (_empty(address['addressLine1'])) return false;
-    if (_empty(address['pinCode'])) return false;
-    return true;
+    return VerificationRequirementsConfig.isComplete(UserType.lab, data);
   }
 
   static bool isAmbulanceDocComplete(Map<String, dynamic>? data) {
-    if (data == null) return false;
-    if (_empty(data['serviceName'])) return false;
-    if (_empty(data['ownerName'])) return false;
-    if (_empty(data['driverName'])) return false;
-    if (_empty(data['phone'])) return false;
-    if (_empty(data['vehicleNumber'])) return false;
-    if (_empty(data['city'])) return false;
-    if (_empty(data['licenseNumber'])) return false;
-    if (_empty(data['username'])) return false;
-
-    final areas = data['serviceAreas'];
-    if (areas is! List || areas.isEmpty) return false;
-
-    final address = data['address'];
-    if (address is! Map) return false;
-    if (_empty(address['country'])) return false;
-    if (_empty(address['state'])) return false;
-    if (_empty(address['addressLine1'])) return false;
-    if (_empty(address['pinCode'])) return false;
-    return true;
-  }
-
-  static bool _empty(Object? value) {
-    if (value == null) return true;
-    if (value is String) return value.trim().isEmpty;
-    return false;
+    return VerificationRequirementsConfig.isComplete(UserType.ambulance, data);
   }
 }
+

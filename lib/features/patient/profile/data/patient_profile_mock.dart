@@ -451,11 +451,11 @@ class PatientProfileMock {
   static void applyRegistration({
     required String id,
     required String name,
-    required int age,
-    required String gender,
+    int? age,
+    String? gender,
     required String mobile,
-    required String email,
-    required String city,
+    String? email,
+    String? city,
     String? bloodGroup,
     String? state,
     String? country,
@@ -465,19 +465,21 @@ class PatientProfileMock {
     String? invitedDoctorId,
   }) {
     profile.name = name;
-    profile.age = age;
-    profile.gender = gender;
+    profile.age = age ?? 0;
+    profile.gender = gender ?? '';
     if (bloodGroup != null && bloodGroup.isNotEmpty) {
       profile.bloodGroup = bloodGroup;
+    } else {
+      profile.bloodGroup = '';
     }
     profile.mobile = mobile;
-    profile.email = email;
+    profile.email = email ?? '';
     profile.photoInitial = name.isNotEmpty ? name[0].toUpperCase() : 'P';
-    profileCity = city;
+    profileCity = city ?? '';
     profileAddress = PatientAddress(
       addressLine1: addressLine1 ?? '',
       addressLine2: addressLine2 ?? '',
-      city: city,
+      city: city ?? '',
       state: state ?? '',
       country: country ?? '',
       pincode: pincode ?? '',

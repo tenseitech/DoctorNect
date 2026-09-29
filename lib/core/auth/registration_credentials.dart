@@ -5,6 +5,14 @@ abstract final class RegistrationCredentials {
   static String emailForMobile(String mobileDigits) =>
       '$mobileDigits@signup.doctornect.app';
 
+  static bool isSyntheticEmail(String? email) {
+    if (email == null) return false;
+    final lower = email.trim().toLowerCase();
+    return lower.endsWith('@signup.doctornect.app') ||
+        lower.endsWith('@patient.doctornect.com') ||
+        lower.endsWith('@doctornect.com');
+  }
+
   static String generatePassword() {
     const chars =
         'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#\$';

@@ -222,7 +222,8 @@ class PrescriptionPatientSection extends StatelessWidget {
       collapsible: collapsible,
       initiallyExpanded: initiallyExpanded,
       collapsedSummary:
-          collapsedSummary ?? '${patient.patientName} · ${patient.age} yrs',
+          collapsedSummary ??
+          '${patient.patientName} · ${patient.age > 0 ? '${patient.age} yrs' : 'Not provided'}',
       dense: dense,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -237,7 +238,7 @@ class PrescriptionPatientSection extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            '$gender · ${patient.age} yrs · $date',
+            '$gender · ${patient.age > 0 ? '${patient.age} yrs' : 'Not provided'} · $date',
             style: GoogleFonts.inter(
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),

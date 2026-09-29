@@ -17,6 +17,7 @@ import 'data/lab_notification_store.dart';
 import 'data/lab_registry.dart';
 import 'data/lab_worklist_store.dart';
 import 'screens/lab_connect_doctors_screen.dart';
+import '../../core/auth/profile_action_guard.dart';
 import 'screens/lab_dashboard_tabs.dart';
 import 'screens/lab_notifications_screen.dart';
 import 'screens/lab_profile_screen.dart';
@@ -41,6 +42,7 @@ class _LabShellState extends State<LabShell> {
         unawaited(LabRegistry.refreshFromFirestore());
       }
       _syncForTab(_index);
+      ProfileActionGuard.showOnFirstEntryIfNeeded(context, UserType.lab);
     });
   }
 

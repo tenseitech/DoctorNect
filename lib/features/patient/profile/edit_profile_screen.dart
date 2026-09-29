@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/auth/contact_change_otp_service.dart';
 import '../../../core/auth/contact_change_verification.dart';
+import '../../../core/auth/registration_credentials.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/countries.dart';
 import '../../../core/constants/country_phone_codes.dart';
@@ -59,7 +60,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   );
   late String _mobileDialCode = _mobileParsed.dialCode;
   late final _emailController = TextEditingController(
-    text: widget.profile.email,
+    text: RegistrationCredentials.isSyntheticEmail(widget.profile.email)
+        ? ''
+        : widget.profile.email,
   );
   late final _ageController = TextEditingController(
     text: widget.profile.age > 0 ? '${widget.profile.age}' : '',
@@ -819,21 +822,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                             onChanged: _onMobileInputChanged,
                           ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _emailController,
-                            focusNode: _emailFocus,
-                            readOnly: true,
-                            showCursor: false,
-                            enableInteractiveSelection: false,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: ProfileEditWidgets.contactDecoration(
-                              context: context,
-                              labelText: 'Email address (immutable)',
-                              editing: false,
-                              suffixIcon: null,
+                          if (!RegistrationCredentials.isSyntheticEmail(
+                            widget.profile.email,
+                          )) ...[
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _emailController,
+                              focusNode: _emailFocus,
+                              readOnly: true,
+                              showCursor: false,
+                              enableInteractiveSelection: false,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: ProfileEditWidgets.contactDecoration(
+                                context: context,
+                                labelText: 'Email address (immutable)',
+                                editing: false,
+                                suffixIcon: null,
+                              ),
                             ),
-                          ),
+                          ],
                           if (!_editingMobile)
                             Padding(
                               padding: const EdgeInsets.only(top: 10),

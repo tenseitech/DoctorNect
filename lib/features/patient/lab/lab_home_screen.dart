@@ -19,6 +19,7 @@ import '../widgets/patient_screen_title_bar.dart';
 import 'my_labs_screen.dart';
 import 'data/patient_lab_booking_filters.dart';
 import 'data/patient_lab_catalog_builder.dart';
+import '../../../core/auth/patient_details_guard.dart';
 import 'lab_booking_flow_screen.dart';
 import 'lab_test_detail_screen.dart';
 import 'models/lab_models.dart';
@@ -297,21 +298,18 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
       return;
     }
 
-    if (!PatientLabAgeGuard.profileAgeValid()) {
-      AppToast.info(context, PatientLabAgeGuard.missingAgeSnackbarMessage);
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => LabBookingFlowScreen(
-          tests: tests,
-          submitAsRequest: true,
-          onBookingCompleted: _clearSelectedInvestigations,
+    PatientDetailsGuard.run(context, () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LabBookingFlowScreen(
+            tests: tests,
+            submitAsRequest: true,
+            onBookingCompleted: _clearSelectedInvestigations,
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildQuickActions() {

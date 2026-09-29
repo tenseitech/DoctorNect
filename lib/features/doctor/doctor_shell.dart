@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 import '../../core/auth/demo_auth_config.dart';
+import '../../core/auth/profile_action_guard.dart';
 import '../../core/auth/profile_completion_service.dart';
 import '../../core/auth/role_session_guard.dart';
 import '../../core/enums/user_type.dart';
@@ -168,6 +169,7 @@ class _DoctorShellState extends State<DoctorShell> {
       RoleSessionGuard.verifyRole(context, UserType.doctor);
       unawaited(_startDoctorNotifications());
       _attachConnectionListeners();
+      ProfileActionGuard.showOnFirstEntryIfNeeded(context, UserType.doctor);
     });
   }
 

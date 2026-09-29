@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/layout/responsive_layout.dart';
@@ -193,14 +194,16 @@ class _DoctorConnectedPartnersBaseViewState
   }
 
   void _sendRequest(DoctorPartnerProfileItem partner) {
-    final error = widget.onSendRequest(partner);
-    if (!mounted) return;
-    if (error != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
-    } else {
-      _triggerSearch();
-    }
+    ProfileActionGuard.run(context, UserType.doctor, () {
+      final error = widget.onSendRequest(partner);
+      if (!mounted) return;
+      if (error != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+      } else {
+        _triggerSearch();
+      }
+    });
   }
 
   Widget _buildSearchBar() {
@@ -337,7 +340,11 @@ class _DoctorConnectedPartnersBaseViewState
                       ),
                     ),
                   OutlinedButton.icon(
-                    onPressed: widget.onOpenInviteSheet,
+                    onPressed: () => ProfileActionGuard.run(
+                      context,
+                      UserType.doctor,
+                      widget.onOpenInviteSheet,
+                    ),
                     icon: const Icon(Icons.link, size: 18),
                     label: Text(
                       'Invite',

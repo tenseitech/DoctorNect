@@ -297,7 +297,7 @@ class _LabOrderRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${order.patientAge} yrs · ${order.testNames.length} test(s)',
+                  '${order.patientAge > 0 ? '${order.patientAge} yrs' : 'Not provided'} · ${order.testNames.length} test(s)',
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.labelSmall,
                     color: Colors.grey[500],

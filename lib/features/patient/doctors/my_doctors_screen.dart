@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/auth/patient_details_guard.dart';
 import '../booking/booking_flow_screen.dart';
 import '../data/patient_favorites_store.dart';
 import '../data/registered_doctors_store.dart';
@@ -121,13 +122,15 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                         );
                       },
                       onBook: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                BookingFlowScreen(doctorId: doctor.id),
-                          ),
-                        );
+                        PatientDetailsGuard.run(context, () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  BookingFlowScreen(doctorId: doctor.id),
+                            ),
+                          );
+                        });
                       },
                     );
                   },

@@ -29,6 +29,7 @@ import 'widgets/booking_confirmed_view.dart';
 import 'widgets/booking_step_header.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/session/patient_session.dart';
+import '../../../core/auth/patient_details_guard.dart';
 import '../../../core/supabase/supabase_bootstrap.dart';
 import '../../../core/supabase/supabase_patient_repository.dart';
 import '../../../core/supabase/patient_write_guard.dart';
@@ -308,7 +309,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _next() {
+  Future<void> _next() async {
     if (_step == 0) {
       if (!_slotStepValid()) {
         final slot = _selectedSlot;
@@ -356,6 +357,16 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           return;
         }
       }
+    }
+
+    if (_step == 1 &&
+        _draft.bookingForSelf &&
+        !PatientDetailsGuard.hasRequiredDetails()) {
+      await PatientDetailsGuard.run(context, () {
+        if (!mounted) return;
+        setState(() => _step++);
+      });
+      return;
     }
 
     if (_step < 2) {
@@ -515,6 +526,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     }
 
     if (widget.rescheduleFromRecordId != null) {
+      if (!PatientDetailsGuard.hasRequiredDetails()) {
+        await PatientDetailsGuard.run(context, () => _confirmPay());
+        return;
+      }
       final old = store.findRecordById(widget.rescheduleFromRecordId!);
       final oldLabel = old != null
           ? '${DateFormat('dd MMM').format(old.dateTime)} · ${old.slotLabel}'
@@ -621,9 +636,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     String? firstAppointmentId;
     int? firstToken;
 
-    if (_draft.bookingForSelf &&
-        BookingFlowHelpers.resolvePatientGender(profile.gender) == null) {
-      _showBookingMessage('Please set your gender in Profile before booking.');
+    if (_draft.bookingForSelf && !PatientDetailsGuard.hasRequiredDetails()) {
+      await PatientDetailsGuard.run(context, () => _confirmPay());
       return;
     }
     for (final id in _draft.familyMemberIds) {

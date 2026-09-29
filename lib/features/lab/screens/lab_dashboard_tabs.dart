@@ -6,6 +6,8 @@ import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/auth/profile_action_guard.dart';
+import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/models/doctor_lab_order.dart';
 import '../../../core/session/lab_session.dart';
 import '../../../core/theme/app_colors.dart';
@@ -128,6 +130,10 @@ class _LabOrdersTabState extends State<LabOrdersTab>
     DoctorLabOrder order,
     String status,
   ) async {
+    if (!ProfileActionGuard.isAllowed(UserType.lab)) {
+      ProfileActionGuard.showPopup(context, UserType.lab);
+      return;
+    }
     try {
       final isBooking = order.source == 'walkin' || order.source == 'patient';
       if (isBooking) {
@@ -874,7 +880,9 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${order.patientAge} years old',
+                          order.patientAge > 0
+                              ? '${order.patientAge} years old'
+                              : 'Age: Not provided',
                           style: GoogleFonts.inter(
                             fontSize: AppTypography.bodyMedium,
                             color: AppColors.textSecondaryOf(context),
