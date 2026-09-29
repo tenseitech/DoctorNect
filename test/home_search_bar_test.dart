@@ -5,7 +5,7 @@ import 'package:medibond/features/patient/home/widgets/home_search_bar.dart';
 void main() {
   group('HomeSearchBar animated rotating placeholder tests', () {
     testWidgets(
-        'Renders initial placeholder and transitions through loop every 2.5s',
+        'Renders initial placeholder and transitions through typewriter loop',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -15,28 +15,17 @@ void main() {
         ),
       );
 
-      // Initial frame: "Search for doctor" must be visible
-      expect(find.text('Search for doctor'), findsOneWidget);
+      // Initial frame: "Search for " prefix must be visible
+      expect(find.textContaining('Search for'), findsOneWidget);
 
-      // Advance by 2.5s -> transitions to "Search for lab"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for lab'), findsOneWidget);
+      // Advance through typing "Doctors" (7 chars * 90ms = 630ms)
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(find.textContaining('Doctors'), findsOneWidget);
 
-      // Advance by 2.5s -> transitions to "Search for language or location"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for language or location'), findsOneWidget);
-
-      // Advance by 2.5s -> transitions to "Search for ambulance"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for ambulance'), findsOneWidget);
-
-      // Advance by 2.5s -> loops back to "Search for doctor"
-      await tester.pump(const Duration(milliseconds: 2500));
-      await tester.pump(const Duration(milliseconds: 400));
-      expect(find.text('Search for doctor'), findsOneWidget);
+      // Advance through pause + backspacing + pause + typing "Labs"
+      // Pause 1800ms + 7*45ms (315ms) + 250ms + 4*90ms (360ms) = ~2800ms
+      await tester.pump(const Duration(milliseconds: 3000));
+      expect(find.textContaining('Labs'), findsOneWidget);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());
@@ -53,7 +42,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Search for doctor'), findsOneWidget);
+      expect(find.textContaining('Search for'), findsOneWidget);
 
       // Tap on TextField to focus
       final textField = find.byType(TextField);
@@ -62,26 +51,26 @@ void main() {
       await tester.pump();
 
       // Once focused, overlay should disappear
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(find.textContaining('Search for'), findsNothing);
 
       // Enter text
       await tester.enterText(textField, 'Cardiologist');
       await tester.pump();
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(find.textContaining('Search for'), findsNothing);
 
       // Clear text
       await tester.enterText(textField, '');
       await tester.pump();
 
       // Still focused -> overlay still hidden
-      expect(find.text('Search for doctor'), findsNothing);
+      expect(find.textContaining('Search for'), findsNothing);
 
       // Unfocus
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pump();
 
       // Unfocused and empty -> overlay reappears
-      expect(find.text('Search for doctor'), findsOneWidget);
+      expect(find.textContaining('Search for'), findsOneWidget);
 
       // Dispose widget cleanly
       await tester.pumpWidget(const SizedBox.shrink());

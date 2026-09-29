@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
-import '../core/widgets/resampled_network_image.dart';
+import '../core/widgets/s3_aware_network_image.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 import '../core/theme/app_typography.dart';
 
@@ -302,16 +302,20 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
       children: [
         _gradientBackground(
             begin: Alignment.topLeft, end: Alignment.bottomRight),
-        if (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
+        if ((banner.imageKey != null && banner.imageKey!.isNotEmpty) ||
+            (banner.imageUrl != null && banner.imageUrl!.isNotEmpty))
           LayoutBuilder(
-            builder: (context, constraints) => ResampledNetworkImageWidget(
-              url: banner.imageUrl!,
+            builder: (context, constraints) => S3AwareNetworkImage(
+              photoKey: banner.imageKey,
+              photoStorage: banner.imageStorage,
+              legacyUrl: banner.imageUrl,
               width: constraints.maxWidth,
               height: constraints.maxHeight,
               fit: BoxFit.cover,
             ),
           ),
         if (banner.icon != null &&
+            (banner.imageKey == null || banner.imageKey!.isEmpty) &&
             (banner.imageUrl == null || banner.imageUrl!.isEmpty))
           Positioned(
             right: -8,
@@ -399,10 +403,13 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
         children: [
           _gradientBackground(
               begin: Alignment.centerLeft, end: Alignment.centerRight),
-          if (banner.imageUrl != null && banner.imageUrl!.isNotEmpty)
+          if ((banner.imageKey != null && banner.imageKey!.isNotEmpty) ||
+              (banner.imageUrl != null && banner.imageUrl!.isNotEmpty))
             LayoutBuilder(
-              builder: (context, constraints) => ResampledNetworkImageWidget(
-                url: banner.imageUrl!,
+              builder: (context, constraints) => S3AwareNetworkImage(
+                photoKey: banner.imageKey,
+                photoStorage: banner.imageStorage,
+                legacyUrl: banner.imageUrl,
                 width: constraints.maxWidth,
                 height: constraints.maxHeight,
                 fit: BoxFit.cover,

@@ -237,6 +237,8 @@ function normalizePurpose(raw) {
     case 'promoted_ads':
     case 'promotedAd':
     case 'promoted_ad':
+    case 'ad_banner':
+    case 'adBanner':
       return 'promoted_ads';
     default:
       return p;

@@ -21,6 +21,10 @@ test('firestore.rules contains validPatientProfileStorage, validDoctorProfileSto
     rulesContent.includes('function validUserProfileStorage'),
     'firestore.rules must contain validUserProfileStorage',
   );
+  assert.ok(
+    rulesContent.includes('function validPromotedAdStorage'),
+    'firestore.rules must contain validPromotedAdStorage',
+  );
 
   // Verify that the rules check photoStorage and disallow path traversal ([a-zA-Z0-9._-]+$)
   assert.ok(
@@ -30,6 +34,10 @@ test('firestore.rules contains validPatientProfileStorage, validDoctorProfileSto
   assert.ok(
     rulesContent.includes("photoKey', '').matches('^doctor_profiles/' + doctorId + '/profile/[a-zA-Z0-9._-]+$'"),
     'validDoctorProfileStorage must enforce exact prefix and alphanumeric filename without path traversal',
+  );
+  assert.ok(
+    rulesContent.includes("imageKey', '').matches('^promoted_ads/' + providerId + '/[a-zA-Z0-9_-]+/[a-zA-Z0-9._-]+$'"),
+    'validPromotedAdStorage must enforce promoted_ads/{providerId}/{adId}/{filename} format',
   );
 });
 
@@ -174,4 +182,59 @@ test('emulator-independent: user document storage validation logic', () => {
     photoStorage: 's3',
     photoKey: `health_records/${authUid}/record.pdf`,
   }, authUid, profileId), false);
+});
+
+function evalValidPromotedAdStorage(data, providerId) {
+  const imageStorage = data.imageStorage || '';
+  const imageKey = data.imageKey || '';
+
+  const isLegacy = imageStorage !== 's3' && imageKey === '';
+  const isS3RegexMatch = typeof imageKey === 'string' &&
+    new RegExp(`^promoted_ads/${providerId}/[a-zA-Z0-9_-]+/[a-zA-Z0-9._-]+$`).test(imageKey);
+
+  return isLegacy || isS3RegexMatch;
+}
+
+test('emulator-independent: promoted ad storage validation logic', () => {
+  const providerId = 'provider_123';
+  const adId = 'ad_abc456';
+
+  // 1. Legacy update without imageKey or imageStorage -> PASS
+  assert.equal(evalValidPromotedAdStorage({ title: 'Special Promo' }, providerId), true);
+
+  // 2. Legacy update with imageStorage 'firebase' and only imageUrl -> PASS
+  assert.equal(evalValidPromotedAdStorage({
+    imageStorage: 'firebase',
+    imageUrl: 'https://storage.googleapis.com/bucket/promoted_ads/banner.jpg',
+  }, providerId), true);
+
+  // 3. Valid S3 promoted ad banner update -> PASS
+  assert.equal(evalValidPromotedAdStorage({
+    imageStorage: 's3',
+    imageKey: `promoted_ads/${providerId}/${adId}/banner_01.jpg`,
+  }, providerId), true);
+
+  // 4. S3 with path traversal -> FAIL
+  assert.equal(evalValidPromotedAdStorage({
+    imageStorage: 's3',
+    imageKey: `promoted_ads/${providerId}/${adId}/../../secrets.txt`,
+  }, providerId), false);
+
+  // 5. S3 with another provider's prefix -> FAIL
+  assert.equal(evalValidPromotedAdStorage({
+    imageStorage: 's3',
+    imageKey: `promoted_ads/other_provider/${adId}/banner_01.jpg`,
+  }, providerId), false);
+
+  // 6. S3 with clinical health record prefix -> FAIL
+  assert.equal(evalValidPromotedAdStorage({
+    imageStorage: 's3',
+    imageKey: `health_records/${providerId}/${adId}/report.pdf`,
+  }, providerId), false);
+
+  // 7. S3 with double slash -> FAIL
+  assert.equal(evalValidPromotedAdStorage({
+    imageStorage: 's3',
+    imageKey: `promoted_ads/${providerId}//${adId}/banner.jpg`,
+  }, providerId), false);
 });

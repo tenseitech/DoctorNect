@@ -364,6 +364,12 @@ service cloud.firestore {
                 ))));
     }
 
+    function validPromotedAdStorage(data, providerId) {
+      return (data.get('imageStorage', '') != 's3' && data.get('imageKey', '') == '')
+        || (data.get('imageKey', '') is string
+            && data.get('imageKey', '').matches('^promoted_ads/' + providerId + '/[a-zA-Z0-9_-]+/[a-zA-Z0-9._-]+$'));
+    }
+
     // ─── users/{uid} ───────────────────────────────────────────────────────
     // Created on register; role: "doctor" | "patient"
 
@@ -1107,7 +1113,8 @@ service cloud.firestore {
         || (isSignedIn()
           && request.resource.data.providerId == request.auth.uid
           && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending_payment')
-          && request.resource.data.paymentStatus == 'pending');
+          && request.resource.data.paymentStatus == 'pending'
+          && validPromotedAdStorage(request.resource.data, request.auth.uid));
 
       // Update: Super Admin can update all fields; Provider can edit draft content
       allow update: if isSuperAdmin()
@@ -1115,7 +1122,8 @@ service cloud.firestore {
           && resource.data.providerId == request.auth.uid
           && request.resource.data.providerId == resource.data.providerId
           && request.resource.data.status != 'active'
-          && request.resource.data.paymentStatus != 'verified');
+          && request.resource.data.paymentStatus != 'verified'
+          && validPromotedAdStorage(request.resource.data, resource.data.providerId));
 
       // Deletion: Super Admin or owning provider
       allow delete: if isSuperAdmin()

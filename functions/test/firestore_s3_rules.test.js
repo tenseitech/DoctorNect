@@ -583,3 +583,134 @@ test('users: legacy update accepted with photoStorage "firebase" and only photoU
   );
 });
 
+test('promotedAds: owning provider can create and update ad with valid S3 banner key', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  const adId = 'ad_test_101';
+
+  // 1. Create with S3 banner
+  await assertSucceeds(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).set({
+      providerId: DOCTOR_UID,
+      providerType: 'doctor',
+      title: 'Doctor Clinic Promotion',
+      description: 'Visit our expert clinic',
+      imageUrl: 'https://s3.example.com/banner.jpg',
+      imageKey: `promoted_ads/${DOCTOR_UID}/${adId}/banner_01.jpg`,
+      imageStorage: 's3',
+      status: 'draft',
+      paymentStatus: 'pending',
+      amountPaid: 300,
+      durationHours: 24,
+      createdAt: new Date(),
+    }),
+  );
+
+  // 2. Update with new S3 banner
+  await assertSucceeds(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).update({
+      imageUrl: 'https://s3.example.com/banner_new.jpg',
+      imageKey: `promoted_ads/${DOCTOR_UID}/${adId}/banner_02.jpg`,
+      imageStorage: 's3',
+      title: 'Doctor Clinic Promotion Updated',
+    }),
+  );
+});
+
+test('promotedAds: provider cannot use wrong prefix or traversal in imageKey', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  const adId = 'ad_test_traversal';
+
+  // Wrong provider prefix
+  await assertFails(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).set({
+      providerId: DOCTOR_UID,
+      providerType: 'doctor',
+      title: 'Wrong Prefix Ad',
+      description: 'Should fail',
+      imageUrl: 'https://example.com/img.jpg',
+      imageKey: `promoted_ads/${OTHER_PATIENT_UID}/${adId}/banner.jpg`,
+      imageStorage: 's3',
+      status: 'draft',
+      paymentStatus: 'pending',
+    }),
+  );
+
+  // Traversal
+  await assertFails(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).set({
+      providerId: DOCTOR_UID,
+      providerType: 'doctor',
+      title: 'Traversal Ad',
+      description: 'Should fail',
+      imageUrl: 'https://example.com/img.jpg',
+      imageKey: `promoted_ads/${DOCTOR_UID}/${adId}/../../secrets.txt`,
+      imageStorage: 's3',
+      status: 'draft',
+      paymentStatus: 'pending',
+    }),
+  );
+});
+
+test('promotedAds: non-owner provider cannot update another provider ad', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  const otherCtx = testEnv.authenticatedContext(OTHER_PATIENT_UID);
+  const adId = 'ad_test_ownership';
+
+  await assertSucceeds(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).set({
+      providerId: DOCTOR_UID,
+      providerType: 'doctor',
+      title: 'Owner Ad',
+      description: 'Description',
+      imageUrl: 'https://s3.example.com/banner.jpg',
+      imageKey: `promoted_ads/${DOCTOR_UID}/${adId}/banner.jpg`,
+      imageStorage: 's3',
+      status: 'draft',
+      paymentStatus: 'pending',
+    }),
+  );
+
+  await assertFails(
+    otherCtx.firestore().collection('promotedAds').doc(adId).update({
+      title: 'Hacked title',
+    }),
+  );
+});
+
+test('promotedAds: legacy update accepted without imageKey/imageStorage or with imageStorage "firebase"', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  const adId = 'ad_test_legacy';
+
+  // Legacy create
+  await assertSucceeds(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).set({
+      providerId: DOCTOR_UID,
+      providerType: 'doctor',
+      title: 'Legacy Promo',
+      description: 'Legacy ad description',
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/app/o/ad.jpg?alt=media',
+      status: 'draft',
+      paymentStatus: 'pending',
+    }),
+  );
+
+  // Legacy update without imageKey/imageStorage
+  await assertSucceeds(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).update({
+      title: 'Legacy Promo Updated',
+    }),
+  );
+
+  // Legacy update with imageStorage 'firebase' and only imageUrl
+  await assertSucceeds(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).update({
+      imageStorage: 'firebase',
+      imageUrl: 'https://firebasestorage.googleapis.com/v0/b/app/o/ad2.jpg?alt=media',
+    }),
+  );
+});
+

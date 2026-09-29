@@ -14,6 +14,8 @@ class PromotedAdModel {
     required this.title,
     required this.description,
     required this.imageUrl,
+    this.imageKey,
+    this.imageStorage,
     required this.ctaLabel,
     required this.durationHours,
     required this.amountPaid,
@@ -33,6 +35,8 @@ class PromotedAdModel {
   final String title;
   final String description;
   final String imageUrl;
+  final String? imageKey;
+  final String? imageStorage; // 's3' or 'firebase'
   final String ctaLabel;
   final int durationHours;
   final num amountPaid;
@@ -87,6 +91,8 @@ class PromotedAdModel {
       title: data['title'] as String? ?? '',
       description: data['description'] as String? ?? '',
       imageUrl: data['imageUrl'] as String? ?? '',
+      imageKey: data['imageKey'] as String?,
+      imageStorage: data['imageStorage'] as String?,
       ctaLabel: data['ctaLabel'] as String? ?? 'View Details',
       durationHours: (data['durationHours'] as num?)?.toInt() ?? 24,
       amountPaid: (data['amountPaid'] as num?) ?? 300,
@@ -109,6 +115,8 @@ class PromotedAdModel {
       'title': title,
       'description': description,
       'imageUrl': imageUrl,
+      if (imageKey != null) 'imageKey': imageKey,
+      if (imageStorage != null) 'imageStorage': imageStorage,
       'ctaLabel': ctaLabel,
       'durationHours': durationHours,
       'amountPaid': amountPaid,

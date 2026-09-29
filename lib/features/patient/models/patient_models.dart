@@ -34,6 +34,8 @@ class PromoBanner {
     this.icon,
     this.badgeLabelOverride,
     this.imageUrl,
+    this.imageKey,
+    this.imageStorage,
   });
 
   final String title;
@@ -43,6 +45,8 @@ class PromoBanner {
   final IconData? icon;
   final String? badgeLabelOverride;
   final String? imageUrl;
+  final String? imageKey;
+  final String? imageStorage;
 
   String get badgeLabel =>
       badgeLabelOverride ??
