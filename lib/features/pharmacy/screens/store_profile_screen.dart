@@ -25,6 +25,7 @@ import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
 import '../../../widgets/verification_submission_card.dart';
+import '../../../widgets/verified_badge_icon.dart';
 import '../../../core/theme/app_typography.dart';
 
 const _lineColor = Color(0xFFE2E8F0);
@@ -230,10 +231,11 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                 subtitle: 'Security and session',
                 rows: const [],
                 footer: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
+                    _AccountActionRow(
+                      icon: Icons.info_outline,
+                      label: 'About',
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -244,45 +246,18 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.info_outline, size: 20),
-                      label: Text(
-                        'About',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimaryOf(context),
-                        side: const BorderSide(color: _lineColor),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: () => AppLogout.confirmAndSignOut(context),
-                      icon: const Icon(
-                        Icons.logout,
-                        size: 20,
-                        color: AppColors.error,
-                      ),
-                      label: Text(
-                        'Log out',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.error,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: BorderSide(
-                          color: AppColors.error.withValues(alpha: 0.45),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+                    Divider(
+                      height: 1,
+                      color: AppColors.isDark(context)
+                          ? AppColors.darkBorder
+                          : _lineColor,
+                    ),
+                    _AccountActionRow(
+                      icon: Icons.logout,
+                      label: 'Log out',
+                      color: AppColors.error,
+                      onTap: () => AppLogout.confirmAndSignOut(context),
                     ),
                   ],
                 ),
@@ -294,6 +269,7 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
         if (compact) {
           final bottomClearance = _mobileProfileBottomClearance(context);
           return ListView(
+            padding: EdgeInsets.zero,
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               _ProfileHeaderBand(
@@ -307,22 +283,33 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
           );
         }
 
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 32),
-              children: [
-                _ProfileHeaderBand(
-                  store: store,
-                  connectedDoctors: connectedDoctors,
-                ),
-                const VerificationSubmissionCard(role: UserType.medicalStore),
-                profileSections,
-              ],
+        return ListView(
+          padding: EdgeInsets.zero,
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            _ProfileHeaderBand(
+              store: store,
+              connectedDoctors: connectedDoctors,
             ),
-          ),
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const VerificationSubmissionCard(
+                        role: UserType.medicalStore,
+                      ),
+                      profileSections,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -583,10 +570,10 @@ class _ProfileHeaderBand extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceOf(context).withValues(alpha: 0.18),
+                  color: Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.surfaceOf(context).withValues(alpha: 0.28),
+                    color: Colors.white.withValues(alpha: 0.28),
                   ),
                 ),
                 alignment: Alignment.center,
@@ -595,7 +582,7 @@ class _ProfileHeaderBand extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.headlineLarge,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.surfaceOf(context),
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -604,22 +591,34 @@ class _ProfileHeaderBand extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      store.storeName,
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.headlineMedium,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.surfaceOf(context),
-                        height: 1.2,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            store.storeName,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineMedium,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                        if (store.verified) ...[
+                          const SizedBox(width: 6),
+                          const VerifiedBadgeIcon(
+                            color: Color(0xFF4ADE80),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       store.ownerName,
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodySmall,
-                        color: AppColors.surfaceOf(context)
-                            .withValues(alpha: 0.88),
+                        color: Colors.white.withValues(alpha: 0.88),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -629,8 +628,7 @@ class _ProfileHeaderBand extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceOf(context)
-                            .withValues(alpha: 0.16),
+                        color: Colors.white.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -638,7 +636,7 @@ class _ProfileHeaderBand extends StatelessWidget {
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.surfaceOf(context),
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -679,7 +677,7 @@ class _HeaderStatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context).withValues(alpha: 0.16),
+        color: Colors.white.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -694,7 +692,7 @@ class _HeaderStatPill extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w700,
-              color: AppColors.surfaceOf(context),
+              color: Colors.white,
             ),
           ),
         ],
@@ -718,6 +716,10 @@ class _ProfileSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    final borderColor = isDark ? AppColors.darkBorder : _lineColor;
+    final headerBgColor = isDark ? AppColors.darkSurface : _headerBg;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -748,14 +750,14 @@ class _ProfileSection extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surfaceOf(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _lineColor),
+              border: Border.all(color: borderColor),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Column(
                 children: [
                   DecoratedBox(
-                    decoration: const BoxDecoration(color: _headerBg),
+                    decoration: BoxDecoration(color: headerBgColor),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -812,11 +814,13 @@ class _ProfileTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    final borderColor = isDark ? AppColors.darkBorder : _lineColor;
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: showTopBorder
-            ? const Border(top: BorderSide(color: _lineColor))
-            : null,
+        border:
+            showTopBorder ? Border(top: BorderSide(color: borderColor)) : null,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -893,6 +897,57 @@ class _ProfileTableRow extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountActionRow extends StatelessWidget {
+  const _AccountActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = color ?? AppColors.textPrimaryOf(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: effectiveColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600,
+                    color: effectiveColor,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color:
+                    AppColors.textSecondaryOf(context).withValues(alpha: 0.6),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -25,6 +25,8 @@ class DoctorRegistrationScreen extends StatelessWidget {
     required String name,
     required String qualification,
     required String mobile,
+    List<String>? degrees,
+    List<String>? specializations,
   }) async {
     if (!FirebaseBootstrap.isReady) {
       AppToast.info(context, 'Firebase is not available. Please try again.');
@@ -38,10 +40,24 @@ class DoctorRegistrationScreen extends StatelessWidget {
     final doctorId = 'd${DateTime.now().millisecondsSinceEpoch}';
     final invitedStoreId = PendingPharmacyInviteStore.pendingStoreId;
 
+    final validDegrees = degrees != null && degrees.isNotEmpty
+        ? degrees
+        : (qualification.isNotEmpty ? [qualification] : <String>['MBBS']);
+    final validSpecializations =
+        specializations != null && specializations.isNotEmpty
+            ? specializations
+            : <String>['General Physician'];
+    final primarySpec = validSpecializations.first;
+    final primaryQual = validDegrees.join(', ');
+
     final roleData = {
       'doctorId': doctorId,
       'name': name,
-      'qualification': qualification,
+      'qualification': primaryQual,
+      'degree': validDegrees.first,
+      'degrees': validDegrees,
+      'specialization': primarySpec,
+      'specializations': validSpecializations,
       'mobile': mobile,
       'email': email,
       'verified': isDemoDoctor ? true : false,
@@ -107,12 +123,20 @@ class DoctorRegistrationScreen extends StatelessWidget {
       subtitle: 'Quick signup — complete your full profile after verification',
       icon: Icons.medical_services_outlined,
       preVerifiedMobile: preVerifiedMobile,
-      onSubmit: ({required name, required qualification, required mobile}) =>
+      onSubmit: ({
+        required name,
+        required qualification,
+        required mobile,
+        degrees,
+        specializations,
+      }) =>
           _register(
         context,
         name: name,
         qualification: qualification,
         mobile: mobile,
+        degrees: degrees,
+        specializations: specializations,
       ),
     );
   }

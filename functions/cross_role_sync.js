@@ -517,7 +517,7 @@ async function ensureDoctorExistsInPostgres(doctorId, { url, key, pool }) {
 /**
  * Sync Doctor Education degrees to doctor_education table
  */
-async function syncDoctorEducationToSupabase(doctorId, rawEducation, qualification, { url, key, pool }) {
+async function syncDoctorEducationToSupabase(doctorId, rawEducation, qualification, { url, key, pool } = {}, degrees) {
   const educationList = Array.isArray(rawEducation) ? rawEducation : [];
   let educationRows = educationList.map(item => ({
     doctor_id: doctorId,
@@ -525,6 +525,15 @@ async function syncDoctorEducationToSupabase(doctorId, rawEducation, qualificati
     college: item.college || item.university || item.institution || null,
     year: item.year ? parseInt(item.year, 10) || null : null,
   })).filter(e => e.degree);
+
+  if (educationRows.length === 0 && Array.isArray(degrees) && degrees.length > 0) {
+    educationRows = degrees.map(deg => ({
+      doctor_id: doctorId,
+      degree: String(deg).slice(0, 128),
+      college: null,
+      year: null,
+    })).filter(e => e.degree);
+  }
 
   if (educationRows.length === 0 && qualification) {
     educationRows = [{
@@ -705,9 +714,9 @@ async function syncFirestoreDoctorToSupabase(event) {
     name: after.name || after.fullName || 'Doctor',
     email: (after.email || `${doctorId}@doctornect.com`).toLowerCase(),
     mobile: after.mobile || after.phone || '0000000000',
-    specialization: after.specialization || 'General Physician',
+    specialization: after.specialization || (Array.isArray(after.specializations) && after.specializations.length > 0 ? after.specializations[0] : 'General Physician'),
     super_specialization: after.superSpecialization || null,
-    qualification: after.qualification || 'MBBS',
+    qualification: after.qualification || (Array.isArray(after.degrees) && after.degrees.length > 0 ? after.degrees.join(', ') : 'MBBS'),
     experience_years: parseInt(after.experienceYears ?? after.yearsExperience ?? 1, 10) || 1,
     consultation_fee: parseFloat(after.consultationFee ?? 0.0) || 0.0,
     clinic_name: after.clinicName || null,
@@ -839,7 +848,7 @@ async function syncFirestoreDoctorToSupabase(event) {
         }
 
         // 2. Sync Doctor Education
-        await syncDoctorEducationToSupabase(doctorId, after.education, after.qualification, { url, key, pool });
+        await syncDoctorEducationToSupabase(doctorId, after.education, after.qualification, { url, key, pool }, after.degrees);
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'doctor', entityId: doctorId } }
     );

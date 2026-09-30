@@ -133,6 +133,10 @@ class _VerificationSubmissionCardState
             : VerificationStage.fromString(statusStr);
         final reason = isDemoDoctor ? null : data['rejectionReason'] as String?;
 
+        if (stage == VerificationStage.verified) {
+          return const SizedBox.shrink();
+        }
+
         return _buildCard(context, uid, profileId, stage, reason);
       },
     );
@@ -156,6 +160,7 @@ class _VerificationSubmissionCardState
     final requirements = VerificationRequirementsConfig.requirementsForRole(
       widget.role,
     );
+    final isDark = AppColors.isDark(context);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -211,12 +216,21 @@ class _VerificationSubmissionCardState
                   ),
                   decoration: BoxDecoration(
                     color: stage.isVerified
-                        ? const Color(0xFFDCFCE7)
+                        ? (isDark
+                            ? const Color(0xFF14532D).withValues(alpha: 0.5)
+                            : const Color(0xFFDCFCE7))
                         : (stage.isPending
-                            ? const Color(0xFFDBEAFE)
+                            ? (isDark
+                                ? const Color(0xFF1E3A8A).withValues(alpha: 0.5)
+                                : const Color(0xFFDBEAFE))
                             : (stage.isRevisionRequested
-                                ? const Color(0xFFFEF3C7)
-                                : const Color(0xFFF1F5F9))),
+                                ? (isDark
+                                    ? const Color(0xFF78350F)
+                                        .withValues(alpha: 0.5)
+                                    : const Color(0xFFFEF3C7))
+                                : (isDark
+                                    ? AppColors.darkBackground
+                                    : const Color(0xFFF1F5F9)))),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -225,11 +239,17 @@ class _VerificationSubmissionCardState
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w600,
                       color: stage.isVerified
-                          ? const Color(0xFF15803D)
+                          ? (isDark
+                              ? const Color(0xFF4ADE80)
+                              : const Color(0xFF15803D))
                           : (stage.isPending
-                              ? const Color(0xFF1D4ED8)
+                              ? (isDark
+                                  ? const Color(0xFF60A5FA)
+                                  : const Color(0xFF1D4ED8))
                               : (stage.isRevisionRequested
-                                  ? const Color(0xFFB45309)
+                                  ? (isDark
+                                      ? const Color(0xFFFBBF24)
+                                      : const Color(0xFFB45309))
                                   : AppColors.textSecondaryOf(context))),
                     ),
                   ),
@@ -288,9 +308,15 @@ class _VerificationSubmissionCardState
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFFBEB),
+                        color: isDark
+                            ? const Color(0xFF451A03).withValues(alpha: 0.6)
+                            : const Color(0xFFFFFBEB),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFDE68A)),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF78350F)
+                              : const Color(0xFFFDE68A),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +326,9 @@ class _VerificationSubmissionCardState
                             style: GoogleFonts.inter(
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF92400E),
+                              color: isDark
+                                  ? const Color(0xFFFBBF24)
+                                  : const Color(0xFF92400E),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -308,7 +336,9 @@ class _VerificationSubmissionCardState
                             reason,
                             style: GoogleFonts.inter(
                               fontSize: AppTypography.bodySmall,
-                              color: const Color(0xFF78350F),
+                              color: isDark
+                                  ? const Color(0xFFFDE68A)
+                                  : const Color(0xFF78350F),
                             ),
                           ),
                         ],

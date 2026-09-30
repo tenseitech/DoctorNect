@@ -298,7 +298,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                         MultiTagInputField(
                           label: 'Tests',
                           hintText: 'e.g. CBC, Lipid profile',
-                          addButtonLabel: '+ Add test',
+                          showAddButton: false,
                           tags: _tests,
                           accentColor: _labPurple,
                           suggestionFetcher: LabWalkInTestSuggestions.matching,

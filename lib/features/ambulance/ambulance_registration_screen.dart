@@ -190,7 +190,13 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
       icon: Icons.local_hospital_outlined,
       nameLabel: 'Owner / manager name *',
       preVerifiedMobile: preVerifiedMobile,
-      onSubmit: ({required name, required qualification, required mobile}) =>
+      onSubmit: ({
+        required name,
+        required qualification,
+        required mobile,
+        degrees,
+        specializations,
+      }) =>
           _register(
         context,
         name: name,

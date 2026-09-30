@@ -101,6 +101,8 @@ class PartnerConnectDoctorsBaseView extends StatefulWidget {
     this.showAppBar = false,
     this.appBarTitle,
     this.inviteDownloadSubtitle,
+    this.inviteButtonLabel,
+    this.inviteTileTitle,
   });
 
   final UserType partnerRole;
@@ -129,6 +131,8 @@ class PartnerConnectDoctorsBaseView extends StatefulWidget {
   final bool showAppBar;
   final String? appBarTitle;
   final String? inviteDownloadSubtitle;
+  final String? inviteButtonLabel;
+  final String? inviteTileTitle;
 
   @override
   State<PartnerConnectDoctorsBaseView> createState() =>
@@ -172,7 +176,15 @@ class _PartnerConnectDoctorsBaseViewState
 
   void _openInviteDoctorSheet() {
     ProfileActionGuard.run(context, widget.partnerRole, () {
-      InviteDoctorSheet.show(context);
+      InviteDoctorSheet.show(
+        context,
+        role: widget.partnerRole == UserType.lab ? 'doctor' : null,
+        title: widget.partnerRole == UserType.lab
+            ? (widget.inviteTileTitle ??
+                widget.inviteButtonLabel ??
+                'Invite Doctor')
+            : null,
+      );
     });
   }
 
@@ -232,7 +244,10 @@ class _PartnerConnectDoctorsBaseViewState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Invite doctor to download app',
+                      widget.inviteTileTitle ??
+                          (widget.partnerRole == UserType.lab
+                              ? 'Invite Doctor'
+                              : 'Invite doctor to download app'),
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w700,
@@ -241,7 +256,9 @@ class _PartnerConnectDoctorsBaseViewState
                     const SizedBox(height: 3),
                     Text(
                       widget.inviteDownloadSubtitle ??
-                          'Share a download link — they install DoctorNect, register as a doctor, and connect with your ${widget.partnerTypeLabel}',
+                          (widget.partnerRole == UserType.lab
+                              ? 'Share an invite link with a doctor to join DoctorNect and connect with your lab.'
+                              : 'Share a download link — they install DoctorNect, register as a doctor, and connect with your ${widget.partnerTypeLabel}'),
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
@@ -306,7 +323,10 @@ class _PartnerConnectDoctorsBaseViewState
       onPressed: _openInviteDoctorSheet,
       icon: const Icon(Icons.link, size: 18),
       label: Text(
-        'Invite to download',
+        widget.inviteButtonLabel ??
+            (widget.partnerRole == UserType.lab
+                ? 'Invite Doctor'
+                : 'Invite to download'),
         style: GoogleFonts.inter(
           fontWeight: FontWeight.w600,
           fontSize: AppTypography.bodySmall,
@@ -369,6 +389,8 @@ class _PartnerConnectDoctorsBaseViewState
           showAppBar: true,
           appBarTitle: 'Add Doctor',
           inviteDownloadSubtitle: widget.inviteDownloadSubtitle,
+          inviteButtonLabel: widget.inviteButtonLabel,
+          inviteTileTitle: widget.inviteTileTitle,
         ),
       ),
     );
@@ -388,11 +410,13 @@ class _PartnerConnectDoctorsBaseViewState
   }
 
   Widget _buildSearchBar({bool compact = false}) {
+    final isDark = AppColors.isDark(context);
+    final borderColor = isDark ? AppColors.darkBorder : _lineColor;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(compact ? 14 : 12),
-        border: Border.all(color: _lineColor),
+        border: Border.all(color: borderColor),
         boxShadow: compact
             ? null
             : [
@@ -585,9 +609,11 @@ class _PartnerConnectDoctorsBaseViewState
 
     if (widget.showAppBar) {
       final compact = ResponsiveLayout.isCompact(context);
+      final isDark = AppColors.isDark(context);
       return Scaffold(
-        backgroundColor:
-            compact ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC),
+        backgroundColor: isDark
+            ? AppColors.darkBackground
+            : (compact ? const Color(0xFFF1F5F9) : const Color(0xFFF8FAFC)),
         appBar: AppBar(
           title: Text(
             widget.appBarTitle ?? 'Connect Doctors',
@@ -602,7 +628,10 @@ class _PartnerConnectDoctorsBaseViewState
           surfaceTintColor: Colors.transparent,
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
-            child: Container(height: 1, color: _lineColor),
+            child: Container(
+              height: 1,
+              color: isDark ? AppColors.darkBorder : _lineColor,
+            ),
           ),
         ),
         body: content,
@@ -649,8 +678,8 @@ class _PartnerConnectDoctorsBaseViewState
               const SizedBox(height: 6),
               Text(
                 cityLabel == null
-                    ? '${_results.length} registered Â· $connectedCount connected Â· ${fromDoctor.length} requests Â· ${sentByPartner.length} pending'
-                    : '${_results.length} in $cityLabel Â· $connectedCount connected Â· ${fromDoctor.length} requests Â· ${sentByPartner.length} pending',
+                    ? '${_results.length} registered · $connectedCount connected · ${fromDoctor.length} requests · ${sentByPartner.length} pending'
+                    : '${_results.length} in $cityLabel · $connectedCount connected · ${fromDoctor.length} requests · ${sentByPartner.length} pending',
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
@@ -880,6 +909,9 @@ class _PartnerConnectDoctorsBaseViewState
   Widget _buildRegisteredDoctorsList(String partnerId) {
     final cityLabel = widget.cityFilter();
 
+    final isDark = AppColors.isDark(context);
+    final borderColor = isDark ? AppColors.darkBorder : _lineColor;
+
     if (_results.isEmpty) {
       return Container(
         width: double.infinity,
@@ -887,7 +919,7 @@ class _PartnerConnectDoctorsBaseViewState
         decoration: BoxDecoration(
           color: AppColors.surfaceOf(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _lineColor),
+          border: Border.all(color: borderColor),
         ),
         child: Column(
           children: [
@@ -927,15 +959,14 @@ class _PartnerConnectDoctorsBaseViewState
         decoration: BoxDecoration(
           color: AppColors.surfaceOf(context),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _lineColor),
+          border: Border.all(color: borderColor),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
           child: Column(
             children: [
               for (var i = 0; i < _results.length; i++) ...[
-                if (i > 0)
-                  const Divider(height: 1, thickness: 1, color: _lineColor),
+                if (i > 0) Divider(height: 1, thickness: 1, color: borderColor),
                 _PartnerRegisteredDoctorMobileTile(
                   doctor: _results[i],
                   accentColor: widget.accentColor,
@@ -1016,6 +1047,7 @@ class _PartnerSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Row(
       children: [
         Text(
@@ -1029,15 +1061,18 @@ class _PartnerSectionHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: _headerBg,
+            color: isDark ? AppColors.darkSurface : _headerBg,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _lineColor),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : _lineColor,
+            ),
           ),
           child: Text(
             '$count',
             style: GoogleFonts.inter(
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w600,
+              color: AppColors.textPrimaryOf(context),
             ),
           ),
         ),
@@ -1067,7 +1102,9 @@ class _PartnerConnectionTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _lineColor),
+        border: Border.all(
+          color: AppColors.isDark(context) ? AppColors.darkBorder : _lineColor,
+        ),
       ),
       child: Row(
         children: [
@@ -1136,6 +1173,7 @@ class _PartnerAddDoctorSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1152,15 +1190,18 @@ class _PartnerAddDoctorSectionHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
               decoration: BoxDecoration(
-                color: _headerBg,
+                color: isDark ? AppColors.darkSurface : _headerBg,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _lineColor),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : _lineColor,
+                ),
               ),
               child: Text(
                 '$count',
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimaryOf(context),
                 ),
               ),
             ),
@@ -1194,11 +1235,13 @@ class _PartnerAddDoctorTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    final borderColor = isDark ? AppColors.darkBorder : _lineColor;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _lineColor),
+        border: Border.all(color: borderColor),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -1206,7 +1249,7 @@ class _PartnerAddDoctorTable extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: _headerBg,
+              color: isDark ? AppColors.darkSurface : _headerBg,
               child: Row(
                 children: [
                   for (var i = 0; i < headers.length; i++)
@@ -1224,7 +1267,7 @@ class _PartnerAddDoctorTable extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: _lineColor),
+            Divider(height: 1, thickness: 1, color: borderColor),
             if (children.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -1258,8 +1301,13 @@ class _PartnerAddDoctorTableRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _lineColor)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color:
+                AppColors.isDark(context) ? AppColors.darkBorder : _lineColor,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -1343,11 +1391,16 @@ class _PartnerAddDoctorMobileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
-        border: const Border(bottom: BorderSide(color: _lineColor)),
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? AppColors.darkBorder : _lineColor,
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1362,8 +1415,8 @@ class _PartnerAddDoctorMobileHeader extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             cityLabel == null
-                ? 'Doctors registered on DoctorNect â€” connect or invite'
-                : 'Doctors registered in $cityLabel â€” connect or invite',
+                ? 'Doctors registered on DoctorNect — connect or invite'
+                : 'Doctors registered in $cityLabel — connect or invite',
             style: GoogleFonts.inter(
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
@@ -1463,6 +1516,7 @@ class _PartnerMobileSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -1478,15 +1532,18 @@ class _PartnerMobileSectionLabel extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: _headerBg,
+              color: isDark ? AppColors.darkSurface : _headerBg,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: _lineColor),
+              border: Border.all(
+                color: isDark ? AppColors.darkBorder : _lineColor,
+              ),
             ),
             child: Text(
               '$count',
               style: GoogleFonts.inter(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
+                color: AppColors.textPrimaryOf(context),
               ),
             ),
           ),
@@ -1511,12 +1568,15 @@ class _PartnerConnectionRequestMobileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _lineColor),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : _lineColor,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1580,12 +1640,15 @@ class _PartnerPendingInviteMobileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _lineColor),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : _lineColor,
+        ),
       ),
       child: Row(
         children: [
@@ -1702,32 +1765,57 @@ class _PartnerDoctorAction extends StatelessWidget {
   final bool isPendingFromDoctor;
   final VoidCallback onSendRequest;
 
+  static const double _buttonWidth = 96.0;
+  static const double _buttonHeight = 32.0;
+
   @override
   Widget build(BuildContext context) {
     if (isConnected) {
-      return _PartnerStatusPill(label: 'Connected', color: accentColor);
+      return _PartnerStatusPill(
+        label: 'Connected',
+        color: accentColor,
+        icon: Icons.check_rounded,
+        width: _buttonWidth,
+        height: _buttonHeight,
+      );
     }
     if (isPendingSent) {
-      return const _PartnerStatusPill(label: 'Pending', color: Colors.amber);
+      return const _PartnerStatusPill(
+        label: 'Pending',
+        color: Colors.amber,
+        icon: Icons.hourglass_empty_rounded,
+        width: _buttonWidth,
+        height: _buttonHeight,
+      );
     }
     if (isPendingFromDoctor) {
-      return const _PartnerStatusPill(label: 'Requested', color: Colors.orange);
+      return const _PartnerStatusPill(
+        label: 'Requested',
+        color: Colors.orange,
+        icon: Icons.mail_outline_rounded,
+        width: _buttonWidth,
+        height: _buttonHeight,
+      );
     }
-    return FilledButton(
-      onPressed: onSendRequest,
-      style: FilledButton.styleFrom(
-        backgroundColor: accentColor,
-        foregroundColor: AppColors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      child: const Text(
-        'Connect',
-        style: TextStyle(
-          fontSize: AppTypography.labelMedium,
-          fontWeight: FontWeight.w600,
+    return SizedBox(
+      width: _buttonWidth,
+      height: _buttonHeight,
+      child: FilledButton(
+        onPressed: onSendRequest,
+        style: FilledButton.styleFrom(
+          backgroundColor: accentColor,
+          foregroundColor: AppColors.white,
+          padding: EdgeInsets.zero,
+          elevation: 0,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(
+          'Connect',
+          style: GoogleFonts.inter(
+            fontSize: AppTypography.labelMedium,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -1735,27 +1823,51 @@ class _PartnerDoctorAction extends StatelessWidget {
 }
 
 class _PartnerStatusPill extends StatelessWidget {
-  const _PartnerStatusPill({required this.label, required this.color});
+  const _PartnerStatusPill({
+    required this.label,
+    required this.color,
+    this.icon,
+    this.width = 96.0,
+    this.height = 32.0,
+  });
 
   final String label;
   final Color color;
+  final IconData? icon;
+  final double width;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      width: width,
+      height: height,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          fontSize: AppTypography.labelSmall,
-          fontWeight: FontWeight.w600,
-          color: color,
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withValues(alpha: 0.35),
+          width: 1,
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: AppTypography.labelSmall,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

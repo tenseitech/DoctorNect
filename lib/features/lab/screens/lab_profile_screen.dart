@@ -26,6 +26,7 @@ import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
 import '../../../widgets/verification_submission_card.dart';
+import '../../../widgets/verified_badge_icon.dart';
 import '../../../core/theme/app_typography.dart';
 
 const _lineColor = Color(0xFFE2E8F0);
@@ -491,10 +492,10 @@ class _LabHeroCard extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceOf(context).withValues(alpha: 0.18),
+                  color: Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.surfaceOf(context).withValues(alpha: 0.28),
+                    color: Colors.white.withValues(alpha: 0.28),
                   ),
                 ),
                 alignment: Alignment.center,
@@ -503,7 +504,7 @@ class _LabHeroCard extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: AppTypography.headlineLarge,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.surfaceOf(context),
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -512,14 +513,27 @@ class _LabHeroCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      lab.labName,
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.headlineMedium,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.surfaceOf(context),
-                        height: 1.2,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            lab.labName,
+                            style: GoogleFonts.inter(
+                              fontSize: AppTypography.headlineMedium,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                        if (lab.verified) ...[
+                          const SizedBox(width: 6),
+                          const VerifiedBadgeIcon(
+                            color: Color(0xFF4ADE80),
+                          ),
+                        ],
+                      ],
                     ),
                     if (lab.area.trim().isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -527,8 +541,7 @@ class _LabHeroCard extends StatelessWidget {
                         lab.area,
                         style: GoogleFonts.inter(
                           fontSize: AppTypography.bodySmall,
-                          color: AppColors.surfaceOf(context)
-                              .withValues(alpha: 0.88),
+                          color: Colors.white.withValues(alpha: 0.88),
                         ),
                       ),
                     ],
@@ -560,7 +573,7 @@ class _LabHeroCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.surfaceOf(context).withValues(alpha: 0.12),
+                color: Colors.white.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -577,8 +590,7 @@ class _LabHeroCard extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.surfaceOf(context)
-                            .withValues(alpha: 0.95),
+                        color: Colors.white.withValues(alpha: 0.95),
                       ),
                     ),
                   ),
@@ -603,7 +615,7 @@ class _HeroChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.surfaceOf(context).withValues(alpha: 0.16),
+        color: Colors.white.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -616,7 +628,7 @@ class _HeroChip extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
-              color: AppColors.surfaceOf(context),
+              color: Colors.white,
             ),
           ),
         ],
@@ -638,6 +650,8 @@ class _LabProfileSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -646,6 +660,7 @@ class _LabProfileSection extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w700,
+            color: AppColors.textPrimaryOf(context),
           ),
         ),
         const SizedBox(height: 3),
@@ -661,12 +676,23 @@ class _LabProfileSection extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.surfaceOf(context),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _lineColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
               for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) const Divider(height: 1, color: _lineColor),
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.borderOf(context).withValues(alpha: 0.5),
+                  ),
                 children[i],
               ],
             ],
@@ -700,6 +726,8 @@ class _LabInfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = isDark ? const Color(0xFFA78BFA) : _labPurple;
     final display = value.trim().isEmpty ? placeholder : value;
     final isPlaceholder = value.trim().isEmpty;
 
@@ -712,10 +740,10 @@ class _LabInfoTile extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: _labPurple.withValues(alpha: 0.1),
+              color: accentColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 18, color: _labPurple),
+            child: Icon(icon, size: 18, color: accentColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -749,7 +777,7 @@ class _LabInfoTile extends StatelessWidget {
             IconButton(
               onPressed: onEdit,
               icon: const Icon(Icons.edit_outlined, size: 18),
-              color: _labPurple,
+              color: accentColor,
               tooltip: 'Edit',
               visualDensity: VisualDensity.compact,
             )
@@ -788,7 +816,10 @@ class _LabActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = destructive ? AppColors.error : _labPurple;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = destructive
+        ? AppColors.error
+        : (isDark ? const Color(0xFFA78BFA) : _labPurple);
 
     return Material(
       color: Colors.transparent,
@@ -802,7 +833,7 @@ class _LabActionTile extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, size: 18, color: color),

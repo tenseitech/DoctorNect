@@ -44,6 +44,10 @@ class LabConnectDoctorsScreen extends StatelessWidget {
       accentColor: AppColors.labPurple,
       showAppBar: showAppBar,
       appBarTitle: appBarTitle,
+      inviteButtonLabel: 'Invite Doctor',
+      inviteTileTitle: 'Invite Doctor',
+      inviteDownloadSubtitle:
+          'Share an invite link with a doctor to join DoctorNect and connect with your lab.',
       listenables: [connStore, worklistStore],
       activeConnections: () => connStore
           .activeForLab(labId)

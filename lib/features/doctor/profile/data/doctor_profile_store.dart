@@ -307,6 +307,7 @@ class DoctorProfileStore extends ChangeNotifier {
     final data = <String, dynamic>{
       'name': p.fullName,
       'specialization': p.specialization,
+      'specializations': p.specializations,
       'superSpecialization': p.superSpecialization,
       'experienceYears': p.yearsExperience,
       'registrationYear': p.registrationYear,
@@ -317,6 +318,8 @@ class DoctorProfileStore extends ChangeNotifier {
         'dateOfBirth': Timestamp.fromDate(p.dateOfBirth!),
       'languages': p.languages,
       'qualification': p.qualification,
+      'degrees': p.degrees,
+      'degree': p.degrees.isNotEmpty ? p.degrees.first : p.qualification,
       'councilNumber': p.councilNumber,
       'stateCouncil': p.stateCouncil,
       'certifications': p.certifications,
@@ -458,8 +461,23 @@ class DoctorProfileStore extends ChangeNotifier {
       if (data == null) return;
 
       profile.fullName = data['name'] as String? ?? profile.fullName;
-      profile.specialization =
-          data['specialization'] as String? ?? profile.specialization;
+      final specializationsList = data['specializations'] as List<dynamic>?;
+      if (specializationsList != null && specializationsList.isNotEmpty) {
+        profile.specializations = specializationsList
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+        if (profile.specializations.isNotEmpty) {
+          profile.specialization = profile.specializations.first;
+        }
+      } else if (data['specialization'] is String &&
+          (data['specialization'] as String).trim().isNotEmpty) {
+        profile.specialization = (data['specialization'] as String).trim();
+        profile.specializations = [profile.specialization];
+      } else {
+        profile.specialization =
+            data['specialization'] as String? ?? profile.specialization;
+      }
       final url =
           (data['photoUrl'] as String?) ?? (data['photoURL'] as String?);
       if (url != null && url.isNotEmpty) profile.photoUrl = url;
@@ -495,8 +513,26 @@ class DoctorProfileStore extends ChangeNotifier {
       if (langs != null) {
         profile.languages = langs.cast<String>();
       }
-      profile.qualification =
-          data['qualification'] as String? ?? profile.qualification;
+      final degreesList =
+          (data['degrees'] ?? data['qualifications']) as List<dynamic>?;
+      if (degreesList != null && degreesList.isNotEmpty) {
+        profile.degrees = degreesList
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
+        if (profile.degrees.isNotEmpty) {
+          profile.qualification = profile.degrees.join(', ');
+        }
+      } else {
+        final singleQual = (data['qualification'] ?? data['degree']) as String?;
+        if (singleQual != null && singleQual.trim().isNotEmpty) {
+          profile.qualification = singleQual.trim();
+          profile.degrees = [profile.qualification];
+        } else {
+          profile.qualification =
+              data['qualification'] as String? ?? profile.qualification;
+        }
+      }
 
       // FIXED: map the remaining editable fields so saved edits survive reload.
       profile.gender = data['gender'] as String? ?? profile.gender;

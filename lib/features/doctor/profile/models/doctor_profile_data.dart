@@ -7,6 +7,7 @@ class DoctorProfileData {
   DoctorProfileData({
     required this.fullName,
     required this.specialization,
+    List<String>? specializations,
     required this.verificationStatus,
     required this.rating,
     required this.reviewCount,
@@ -21,6 +22,7 @@ class DoctorProfileData {
     this.email = '',
     this.languages = const ['English', 'Hindi'],
     this.qualification = '',
+    List<String>? degrees,
     this.superSpecialization = '',
     this.yearsExperience = 0,
     this.registrationYear = 0,
@@ -55,10 +57,20 @@ class DoctorProfileData {
     this.registrationCertificate = '',
     this.idProof = '',
     this.reviews = const [],
-  });
+  })  : specializations = specializations != null && specializations.isNotEmpty
+            ? List<String>.from(specializations)
+            : (specialization.trim().isNotEmpty
+                ? [specialization.trim()]
+                : <String>[]),
+        degrees = degrees != null && degrees.isNotEmpty
+            ? List<String>.from(degrees)
+            : (qualification.trim().isNotEmpty
+                ? [qualification.trim()]
+                : <String>[]);
 
   String fullName;
   String specialization;
+  List<String> specializations;
   VerificationStatus verificationStatus;
   double rating;
   int reviewCount;
@@ -73,6 +85,7 @@ class DoctorProfileData {
   String email;
   List<String> languages;
   String qualification;
+  List<String> degrees;
   String superSpecialization;
   int yearsExperience;
   int registrationYear;
@@ -112,6 +125,7 @@ class DoctorProfileData {
     return DoctorProfileData(
       fullName: fullName,
       specialization: specialization,
+      specializations: List<String>.from(specializations),
       verificationStatus: verificationStatus,
       rating: rating,
       reviewCount: reviewCount,
@@ -126,6 +140,7 @@ class DoctorProfileData {
       email: email,
       languages: List<String>.from(languages),
       qualification: qualification,
+      degrees: List<String>.from(degrees),
       superSpecialization: superSpecialization,
       yearsExperience: yearsExperience,
       registrationYear: registrationYear,

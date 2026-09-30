@@ -49,11 +49,16 @@ abstract final class LabDoctorInviteService {
 typedef InviteDoctorSheet = LabInviteDoctorSheet;
 
 class LabInviteDoctorSheet extends StatefulWidget {
-  const LabInviteDoctorSheet({super.key, this.role});
+  const LabInviteDoctorSheet({super.key, this.role, this.title});
 
   final String? role;
+  final String? title;
 
-  static Future<void> show(BuildContext context, {String? role}) {
+  static Future<void> show(
+    BuildContext context, {
+    String? role,
+    String? title,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surfaceOf(context),
@@ -61,7 +66,7 @@ class LabInviteDoctorSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => LabInviteDoctorSheet(role: role),
+      builder: (_) => LabInviteDoctorSheet(role: role, title: title),
     );
   }
 
@@ -119,7 +124,10 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Invite to download app',
+              widget.title ??
+                  (widget.role == 'doctor'
+                      ? 'Invite Doctor'
+                      : 'Invite to download app'),
               style: GoogleFonts.inter(
                 fontSize: AppTypography.headlineMedium,
                 fontWeight: FontWeight.w700,

@@ -1076,14 +1076,17 @@ class _LabOrderTile extends StatelessWidget {
         order.status != 'declined' &&
         order.status != 'requested';
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBorder = isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0);
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: cardBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -1191,10 +1194,18 @@ class _LabOrderTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Color(0xFFF8FAFC),
+                    color: isDark
+                        ? AppColors.darkBackground
+                        : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.darkBorder
+                          : const Color(0xFFE2E8F0).withValues(alpha: 0.6),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -1212,6 +1223,7 @@ class _LabOrderTile extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimaryOf(context),
                           ),
                         ),
                       ),
@@ -1267,13 +1279,18 @@ class _DateBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor =
+        isDark ? AppColors.darkBackground : const Color(0xFFF8FAFC);
+    final borderColor = isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0);
+
     return Container(
       width: 50,
       height: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: borderColor),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -1290,7 +1307,7 @@ class _DateBadge extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
-                color: AppColors.surfaceOf(context),
+                color: Colors.white,
                 letterSpacing: 0.4,
               ),
             ),
@@ -1302,6 +1319,7 @@ class _DateBadge extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimaryOf(context),
                   height: 1,
                 ),
               ),

@@ -95,7 +95,13 @@ class LabRegistrationScreen extends StatelessWidget {
       icon: Icons.biotech_outlined,
       nameLabel: 'Contact person name *',
       preVerifiedMobile: preVerifiedMobile,
-      onSubmit: ({required name, required qualification, required mobile}) =>
+      onSubmit: ({
+        required name,
+        required qualification,
+        required mobile,
+        degrees,
+        specializations,
+      }) =>
           _register(
         context,
         name: name,

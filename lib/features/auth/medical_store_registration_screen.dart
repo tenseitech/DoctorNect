@@ -95,7 +95,13 @@ class MedicalStoreRegistrationScreen extends StatelessWidget {
       icon: Icons.local_pharmacy_outlined,
       nameLabel: 'Owner name *',
       preVerifiedMobile: preVerifiedMobile,
-      onSubmit: ({required name, required qualification, required mobile}) =>
+      onSubmit: ({
+        required name,
+        required qualification,
+        required mobile,
+        degrees,
+        specializations,
+      }) =>
           _register(
         context,
         name: name,

@@ -10,7 +10,6 @@ import '../../../core/constants/app_icons.dart';
 // FIXED: realtime delivery stream
 import '../../../core/session/medical_store_session.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../widgets/theme_toggle_button.dart';
 import '../../../widgets/verification_status_banner.dart';
 import '../data/pharmacy_connection_store.dart';
 import '../data/pharmacy_prescription_store.dart';
@@ -47,6 +46,7 @@ class StoreDashboardScreen extends StatefulWidget {
 class _StoreDashboardScreenState extends State<StoreDashboardScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedDoctorId;
+  DateTimeRange? _selectedDateRange;
   late final TabController _orderTabController;
   final _patientSearchController = TextEditingController();
   StreamSubscription<List<PharmacyPrescriptionDelivery>>?
@@ -88,16 +88,159 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
       delivery.status == PharmacyDeliveryStatus.dispensed ||
       delivery.status == PharmacyDeliveryStatus.partiallyDispensed;
 
+  static bool _isDateInRange(DateTime date, DateTimeRange range) {
+    final d = DateTime(date.year, date.month, date.day);
+    final start =
+        DateTime(range.start.year, range.start.month, range.start.day);
+    final end = DateTime(range.end.year, range.end.month, range.end.day);
+    return !d.isBefore(start) && !d.isAfter(end);
+  }
+
+  bool _matchesDateFilter(PharmacyPrescriptionDelivery delivery) {
+    final range = _selectedDateRange;
+    if (range == null) return true;
+    final isDispensed = _isDispensedOrder(delivery);
+    final targetDate = isDispensed
+        ? (delivery.dispensedAt ?? delivery.draft.prescriptionDate)
+        : delivery.draft.prescriptionDate;
+    return _isDateInRange(targetDate, range);
+  }
+
   List<PharmacyPrescriptionDelivery> _filterPrescriptions(
     List<PharmacyPrescriptionDelivery> prescriptions,
   ) {
     final search = _patientSearchController.text.trim().toLowerCase();
-    if (search.isEmpty) return prescriptions;
-    return prescriptions
-        .where(
-          (p) => p.draft.patient.patientName.toLowerCase().contains(search),
-        )
-        .toList();
+    return prescriptions.where((p) {
+      if (search.isNotEmpty &&
+          !p.draft.patient.patientName.toLowerCase().contains(search)) {
+        return false;
+      }
+      if (!_matchesDateFilter(p)) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  Future<void> _pickDateRange() async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year - 3);
+    final lastDate = DateTime(now.year + 1);
+
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange:
+          _selectedDateRange ?? DateTimeRange(start: now, end: now),
+      firstDate: firstDate,
+      lastDate: lastDate,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: AppColors.pharmacyGreen,
+                  onPrimary: Colors.white,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() => _selectedDateRange = picked);
+    }
+  }
+
+  Widget _buildDateRangeChip() {
+    if (_selectedDateRange == null) return const SizedBox.shrink();
+    final range = _selectedDateRange!;
+    final isSameDay = range.start.year == range.end.year &&
+        range.start.month == range.end.month &&
+        range.start.day == range.end.day;
+    final label = isSameDay
+        ? DateFormat('dd MMM').format(range.start)
+        : '${DateFormat('dd MMM').format(range.start)} - ${DateFormat('dd MMM').format(range.end)}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.pharmacyGreen.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.pharmacyGreen.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.calendar_today_rounded,
+            size: 13,
+            color: AppColors.pharmacyGreen,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: AppTypography.labelMedium,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimaryOf(context),
+            ),
+          ),
+          const SizedBox(width: 4),
+          InkWell(
+            onTap: () => setState(() => _selectedDateRange = null),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: AppColors.textSecondaryOf(context),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarButton() {
+    final active = _selectedDateRange != null;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _pickDateRange,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 44,
+          width: 44,
+          decoration: BoxDecoration(
+            color: active
+                ? AppColors.pharmacyGreen.withValues(alpha: 0.12)
+                : (AppColors.isDark(context)
+                    ? AppColors.darkBackground
+                    : const Color(0xFFF1F5F9)),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: active
+                  ? AppColors.pharmacyGreen.withValues(alpha: 0.4)
+                  : (AppColors.isDark(context)
+                      ? AppColors.darkBorder
+                      : Colors.transparent),
+              width: 1.5,
+            ),
+          ),
+          child: Icon(
+            Icons.calendar_month_outlined,
+            size: 20,
+            color: active
+                ? AppColors.pharmacyGreen
+                : AppColors.textSecondaryOf(context),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -142,12 +285,15 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
         final dispensedOrders = prescriptions.where(_isDispensedOrder).toList();
         final allStorePrescriptions =
             PharmacyPrescriptionStore.instance.forStore(storeId);
+        final statsPrescriptions = _selectedDateRange == null
+            ? allStorePrescriptions
+            : allStorePrescriptions.where(_matchesDateFilter).toList();
 
         return LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 900;
             final statsHeader = _buildStatsHeader(
-              allStorePrescriptions,
+              statsPrescriptions,
               doctors.length,
               wide,
             );
@@ -270,26 +416,18 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
                     .expand((badge) => [badge, const SizedBox(width: 8)])
                     .toList()
                   ..removeLast(),
-                const Spacer(),
-                const ThemeToggleButton(highlighted: true),
               ],
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      DateFormat('EEE, dd MMM').format(today),
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.bodySmall,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const ThemeToggleButton(highlighted: true),
-                  ],
+                Text(
+                  DateFormat('EEE, dd MMM').format(today),
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Wrap(spacing: 8, runSpacing: 8, children: badges),
@@ -373,6 +511,12 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
                     onChanged: () => setState(() {}),
                   ),
                 ),
+                if (_selectedDateRange != null) ...[
+                  const SizedBox(width: 8),
+                  _buildDateRangeChip(),
+                ],
+                const SizedBox(width: 8),
+                _buildCalendarButton(),
               ],
             )
           : Column(
@@ -398,25 +542,42 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
                         onChanged: () => setState(() {}),
                       ),
                     ),
+                    const SizedBox(width: 6),
+                    _buildCalendarButton(),
                   ],
                 ),
+                if (_selectedDateRange != null) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: _buildDateRangeChip(),
+                  ),
+                ],
               ],
             ),
     );
 
+    final hasDateFilter = _selectedDateRange != null;
     final tabViews = [
       _prescriptionList(
         newOrders,
         isNewTab: true,
-        emptyMessage: 'No new prescriptions',
-        emptySubtitle:
-            'Incoming orders from ${_pharmacyDoctorLabel(doctor.doctorName)} will appear here.',
+        emptyMessage: hasDateFilter
+            ? 'No prescriptions for selected date'
+            : 'No new prescriptions',
+        emptySubtitle: hasDateFilter
+            ? 'Try selecting a different date range or clearing the filter.'
+            : 'Incoming orders from ${_pharmacyDoctorLabel(doctor.doctorName)} will appear here.',
       ),
       _prescriptionList(
         dispensedOrders,
         isNewTab: false,
-        emptyMessage: 'No dispensed prescriptions',
-        emptySubtitle: 'Completed orders will be listed here for your records.',
+        emptyMessage: hasDateFilter
+            ? 'No prescriptions for selected date'
+            : 'No dispensed prescriptions',
+        emptySubtitle: hasDateFilter
+            ? 'Try selecting a different date range or clearing the filter.'
+            : 'Completed orders will be listed here for your records.',
       ),
     ];
 
@@ -487,7 +648,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
               size: 20,
             ),
           ),
-          dropdownColor: AppColors.white,
+          dropdownColor: AppColors.surfaceOf(context),
           borderRadius: BorderRadius.circular(12),
           items: uniqueDoctors.map((d) {
             final unread = PharmacyPrescriptionStore.instance
@@ -523,7 +684,7 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.surfaceOf(context),
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -1055,12 +1216,16 @@ class _PharmacySearchFieldState extends State<_PharmacySearchField> {
           decoration: BoxDecoration(
             color: _focused
                 ? AppColors.surfaceOf(context)
-                : const Color(0xFFF1F5F9),
+                : (AppColors.isDark(context)
+                    ? AppColors.darkBackground
+                    : const Color(0xFFF1F5F9)),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: _focused
                   ? AppColors.pharmacyGreen.withValues(alpha: 0.5)
-                  : AppColors.borderOf(context),
+                  : (AppColors.isDark(context)
+                      ? AppColors.darkBorder
+                      : AppColors.borderOf(context)),
             ),
           ),
           child: Stack(
@@ -1089,17 +1254,19 @@ class _PharmacySearchFieldState extends State<_PharmacySearchField> {
         ),
       );
     }
+    final isDark = AppColors.isDark(context);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       height: 44,
       decoration: BoxDecoration(
-        color:
-            _focused ? AppColors.surfaceOf(context) : const Color(0xFFF1F5F9),
+        color: _focused
+            ? AppColors.surfaceOf(context)
+            : (isDark ? AppColors.darkBackground : const Color(0xFFF1F5F9)),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: _focused
               ? AppColors.pharmacyGreen.withValues(alpha: 0.4)
-              : Colors.transparent,
+              : (isDark ? AppColors.darkBorder : Colors.transparent),
           width: 1.5,
         ),
         boxShadow: [

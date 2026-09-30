@@ -116,10 +116,14 @@ class _MedicalStoreShellState extends State<MedicalStoreShell> {
           PharmacyNotificationStore.instance,
         ]),
         builder: (context, _) {
+          final liveStore = MedicalStoreRegistry.findById(storeId) ?? store;
+          final liveStoreName = liveStore?.storeName ?? storeName;
+          final isVerified = liveStore?.verified ?? false;
           return PharmacyNavShell(
             selectedIndex: _index,
             onDestinationSelected: _onTabSelected,
-            storeName: storeName,
+            storeName: liveStoreName,
+            isVerified: isVerified,
             badges: _navBadges(storeId),
             child: IndexedStack(
               index: _index,

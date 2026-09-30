@@ -6,7 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../patient/profile/widgets/profile_web_action_card.dart';
 import '../../../patient/profile/widgets/profile_web_layout.dart';
 import '../../models/doctor_models.dart';
-import '../../widgets/doctor_ui_widgets.dart';
+import '../../../../widgets/verified_badge_icon.dart';
 import '../models/doctor_profile_data.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -240,8 +240,10 @@ class _DoctorIdentityPanel extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                VerificationBadge(status: verificationStatus),
+                if (verificationStatus == VerificationStatus.verified) ...[
+                  const SizedBox(width: 8),
+                  const VerifiedBadgeIcon(),
+                ],
               ],
             ),
             if (profile.specialization.trim().isNotEmpty) ...[

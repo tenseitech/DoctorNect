@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../models/doctor_models.dart';
-import '../../widgets/doctor_ui_widgets.dart';
+import '../../../../widgets/verified_badge_icon.dart';
 import '../models/doctor_profile_data.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -111,8 +111,10 @@ class _DoctorProfileMeta extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(width: isWide ? 10 : 8),
-            VerificationBadge(status: verificationStatus),
+            if (verificationStatus == VerificationStatus.verified) ...[
+              SizedBox(width: isWide ? 10 : 8),
+              const VerifiedBadgeIcon(),
+            ],
           ],
         ),
         if (profile.specialization.trim().isNotEmpty) ...[
