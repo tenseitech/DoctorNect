@@ -20,6 +20,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/adaptive_app_shell.dart';
 import '../../widgets/complete_profile_prompt.dart';
+import '../../widgets/verified_badge_icon.dart';
 import '../welcome/welcome_screen.dart';
 import 'data/ambulance_login_cache.dart';
 import 'ambulance_driver_home_screen.dart';
@@ -228,14 +229,24 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                ambulance.serviceName,
-                                style: GoogleFonts.inter(
-                                  fontSize: AppTypography.headlineSmall,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      ambulance.serviceName,
+                                      style: GoogleFonts.inter(
+                                        fontSize: AppTypography.headlineSmall,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (ambulance.verified) ...[
+                                    const SizedBox(width: 6),
+                                    const VerifiedBadgeIcon(),
+                                  ],
+                                ],
                               ),
                               Row(
                                 children: [

@@ -28,6 +28,7 @@ import '../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
 import '../../widgets/verification_submission_card.dart';
+import '../../widgets/verified_badge_icon.dart';
 import '../../core/theme/app_typography.dart';
 
 class AmbulanceProfileScreen extends StatefulWidget {
@@ -817,12 +818,23 @@ class _ProfileHeaderCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    ambulance.serviceName,
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.headlineSmall,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          ambulance.serviceName,
+                          style: GoogleFonts.inter(
+                            fontSize: AppTypography.headlineSmall,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (ambulance.verified) ...[
+                        const SizedBox(width: 6),
+                        const VerifiedBadgeIcon(),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(

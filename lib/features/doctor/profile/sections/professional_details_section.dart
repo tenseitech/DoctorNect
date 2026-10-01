@@ -3,9 +3,8 @@ import '../../../../core/notifications/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart';
 
+import '../../../../widgets/doctor_credentials_editor.dart';
 import '../../../../widgets/labeled_add_button.dart';
-import '../../../../widgets/qualification_selector.dart';
-import '../../../../widgets/specialization_selector.dart';
 import '../../../../widgets/required_field_label.dart';
 
 import '../../../../core/constants/indian_states.dart';
@@ -29,10 +28,8 @@ class _ProfessionalDetailsSectionState
     extends State<ProfessionalDetailsSection> {
   final _formKey = GlobalKey<FormState>();
 
-  late String _specialization = AppConstants.normalizeSpecialization(
-    _p.specialization,
-  );
-  late String _qualification = _p.qualification.trim();
+  late List<String> _specializations = List<String>.from(_p.specializations);
+  late List<String> _degrees = List<String>.from(_p.degrees);
   late final List<String> _superSpecs = _p.superSpecialization.trim().isEmpty
       ? []
       : _p.superSpecialization
@@ -93,8 +90,27 @@ class _ProfessionalDetailsSectionState
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    _p.specialization = _specialization;
-    _p.qualification = _qualification.trim();
+    final cleanDegrees =
+        _degrees.map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
+    final cleanSpecializations = _specializations
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    if (cleanSpecializations.isEmpty) {
+      AppToast.info(
+          context, 'Please select or enter at least one specialization');
+      return;
+    }
+    if (cleanDegrees.isEmpty) {
+      AppToast.info(context, 'Please select or enter at least one degree');
+      return;
+    }
+
+    _p.specializations = cleanSpecializations;
+    _p.specialization = cleanSpecializations.first;
+    _p.degrees = cleanDegrees;
+    _p.qualification = cleanDegrees.join(', ');
     _p.superSpecialization = _superSpecs.join(', ');
     final councilWasEditable = _councilEditable;
     _p.councilNumber = _councilNumber.text.trim();
@@ -169,23 +185,21 @@ class _ProfessionalDetailsSectionState
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SpecializationSelector(
-                              initialValue: _specialization,
+                            DoctorSpecializationsEditor(
+                              initialSpecializations: _specializations,
                               onChanged: (v) {
-                                _specialization = v ?? '';
+                                _specializations = v;
                                 _markDirty();
                               },
-                              isRequired: true,
                               accentColor: AppColors.doctorBlue,
                             ),
                             const SizedBox(height: 12),
-                            QualificationSelector(
-                              initialValue: _qualification,
+                            DoctorDegreesEditor(
+                              initialDegrees: _degrees,
                               onChanged: (v) {
-                                _qualification = v ?? '';
+                                _degrees = v;
                                 _markDirty();
                               },
-                              isRequired: true,
                               accentColor: AppColors.doctorBlue,
                             ),
                             const SizedBox(height: 12),

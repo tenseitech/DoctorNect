@@ -3,13 +3,11 @@ import '../../../../core/notifications/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/session/doctor_session.dart'; // FIXED: doctor id for Firestore persist
 import '../../../../core/theme/app_colors.dart';
+import '../../../../widgets/doctor_credentials_editor.dart';
 import '../../../../widgets/image_viewer_dialog.dart';
 import '../../../../widgets/profile_photo_avatar.dart';
-import '../../../../widgets/qualification_selector.dart';
-import '../../../../widgets/specialization_selector.dart';
 import '../data/doctor_photo_local_store.dart';
 import '../data/doctor_profile_store.dart';
 import '../widgets/section_save_bar.dart';
@@ -26,10 +24,8 @@ class EditProfileSection extends StatefulWidget {
 
 class _EditProfileSectionState extends State<EditProfileSection> {
   late final _name = TextEditingController(text: _p.fullName);
-  late String _specialization = AppConstants.normalizeSpecialization(
-    _p.specialization,
-  );
-  late String _qualification = _p.qualification.trim();
+  late List<String> _specializations = List<String>.from(_p.specializations);
+  late List<String> _degrees = List<String>.from(_p.degrees);
   bool _dirty = false;
 
   DoctorProfileData get _p => DoctorProfileStore.instance.profile;
@@ -104,13 +100,26 @@ class _EditProfileSectionState extends State<EditProfileSection> {
   }
 
   Future<void> _save() async {
-    if (_qualification.trim().isEmpty) {
-      AppToast.info(context, 'Please select your qualification');
+    final cleanDegrees =
+        _degrees.map((d) => d.trim()).where((d) => d.isNotEmpty).toList();
+    final cleanSpecializations = _specializations
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    if (cleanDegrees.isEmpty) {
+      AppToast.info(context, 'Please enter at least one degree');
+      return;
+    }
+    if (cleanSpecializations.isEmpty) {
+      AppToast.info(context, 'Please enter at least one specialization');
       return;
     }
 
-    _p.specialization = _specialization;
-    _p.qualification = _qualification.trim();
+    _p.degrees = cleanDegrees;
+    _p.qualification = cleanDegrees.join(', ');
+    _p.specializations = cleanSpecializations;
+    _p.specialization = cleanSpecializations.first;
 
     try {
       await DoctorProfileStore.instance.persist(DoctorSession.loggedInDoctorId);
@@ -219,22 +228,17 @@ class _EditProfileSectionState extends State<EditProfileSection> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          SpecializationSelector(
-                            initialValue: _specialization,
-                            onChanged: (v) {
-                              _specialization = v ?? '';
+                          DoctorCredentialsEditor(
+                            initialDegrees: _degrees,
+                            initialSpecializations: _specializations,
+                            onDegreesChanged: (v) {
+                              _degrees = v;
                               _markDirty();
                             },
-                            accentColor: AppColors.doctorBlue,
-                          ),
-                          const SizedBox(height: 12),
-                          QualificationSelector(
-                            initialValue: _qualification,
-                            onChanged: (v) {
-                              _qualification = v ?? '';
+                            onSpecializationsChanged: (v) {
+                              _specializations = v;
                               _markDirty();
                             },
-                            isRequired: true,
                             accentColor: AppColors.doctorBlue,
                           ),
                         ],

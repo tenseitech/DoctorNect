@@ -95,7 +95,7 @@ class ConnectDoctorsScreen extends StatelessWidget {
         final count = prescStore.forStoreAndDoctor(storeId, doctorId).length;
         final last =
             prescStore.forStoreAndDoctor(storeId, doctorId).firstOrNull?.sentAt;
-        return '$count prescriptions${last != null ? ' Â· Last: ${DateFormat('dd MMM').format(last)}' : ''}';
+        return '$count prescriptions${last != null ? ' · Last: ${DateFormat('dd MMM').format(last)}' : ''}';
       },
       onApproveConnection: (id, doctorName) => connStore.approveByStore(id),
       onRejectConnection: (id, doctorName) => connStore.rejectByStore(id),

@@ -20,6 +20,7 @@ class MultiTagInputField extends StatefulWidget {
     this.accentColor = AppColors.doctorBlue,
     this.addButtonLabel = 'Add',
     this.maxInputWidth = 260,
+    this.showAddButton = true,
     this.suggestionFetcher,
     this.maxSuggestions = 8,
     this.maxSuggestionsHeight = 200,
@@ -35,6 +36,7 @@ class MultiTagInputField extends StatefulWidget {
   final Color accentColor;
   final String addButtonLabel;
   final double maxInputWidth;
+  final bool showAddButton;
   final TagSuggestionFetcher? suggestionFetcher;
   final int maxSuggestions;
   final double maxSuggestionsHeight;
@@ -133,6 +135,102 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
     return label;
   }
 
+  Widget _buildInputArea(BuildContext context) {
+    return TapRegion(
+      onTapOutside: (_) => _closeSuggestions(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _controller,
+            focusNode: _focusNode,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: widget.hintText,
+              isDense: true,
+              filled: true,
+              fillColor: AppColors.surfaceOf(context),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: AppColors.borderOf(context),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: AppColors.borderOf(context),
+                ),
+              ),
+            ),
+            onTap: _hasAutocomplete ? _refreshSuggestions : null,
+            onSubmitted: _add,
+          ),
+          if (_hasAutocomplete &&
+              _showSuggestions &&
+              _filteredSuggestions.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              constraints: BoxConstraints(
+                maxHeight: widget.maxSuggestionsHeight,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceOf(context),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.borderOf(context),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.textPrimaryOf(context)
+                        .withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: _filteredSuggestions.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColors.borderOf(context),
+                ),
+                itemBuilder: (context, index) {
+                  final suggestion = _filteredSuggestions[index];
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _selectSuggestion(suggestion),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        child: Text(
+                          suggestion,
+                          style: GoogleFonts.inter(
+                            fontSize: AppTypography.bodySmall,
+                            color: AppColors.textPrimaryOf(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -149,132 +247,43 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
           ),
           const SizedBox(height: 8),
         ],
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Flexible(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: widget.maxInputWidth),
-                child: TapRegion(
-                  onTapOutside: (_) => _closeSuggestions(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextField(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          hintText: widget.hintText,
-                          isDense: true,
-                          filled: true,
-                          fillColor: AppColors.surfaceOf(context),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: AppColors.borderOf(context),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: AppColors.borderOf(context),
-                            ),
-                          ),
-                        ),
-                        onTap: _hasAutocomplete ? _refreshSuggestions : null,
-                        onSubmitted: _add,
-                      ),
-                      if (_hasAutocomplete &&
-                          _showSuggestions &&
-                          _filteredSuggestions.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          constraints: BoxConstraints(
-                            maxHeight: widget.maxSuggestionsHeight,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceOf(context),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.borderOf(context),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.textPrimaryOf(context)
-                                    .withValues(alpha: 0.06),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            padding: EdgeInsets.zero,
-                            itemCount: _filteredSuggestions.length,
-                            separatorBuilder: (_, __) => Divider(
-                              height: 1,
-                              thickness: 1,
-                              color: AppColors.borderOf(context),
-                            ),
-                            itemBuilder: (context, index) {
-                              final suggestion = _filteredSuggestions[index];
-                              return Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () => _selectSuggestion(suggestion),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    child: Text(
-                                      suggestion,
-                                      style: GoogleFonts.inter(
-                                        fontSize: AppTypography.bodySmall,
-                                        color: AppColors.textPrimaryOf(context),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                    ],
+        if (widget.showAddButton)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: widget.maxInputWidth),
+                  child: _buildInputArea(context),
+                ),
+              ),
+              const SizedBox(width: 10),
+              FilledButton.icon(
+                onPressed: () => _add(_controller.text),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(
+                  _addLabel,
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.bodySmall,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: widget.accentColor,
+                  foregroundColor: AppColors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 10),
-            FilledButton.icon(
-              onPressed: () => _add(_controller.text),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text(
-                _addLabel,
-                style: GoogleFonts.inter(
-                  fontSize: AppTypography.bodySmall,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: widget.accentColor,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-          ],
-        ),
+            ],
+          )
+        else
+          _buildInputArea(context),
         if (widget.quickAddLabels.isNotEmpty) ...[
           const SizedBox(height: 12),
           Text(

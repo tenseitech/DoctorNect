@@ -12,6 +12,7 @@ import '../mobile_scaffold.dart';
 import '../nav_request_dot.dart';
 import '../overflow_safe_layout.dart';
 import '../theme_toggle_button.dart';
+import '../verified_badge_icon.dart';
 
 const double roleMobileBottomNavBarHeight = 64.0;
 
@@ -50,6 +51,7 @@ class RoleShell extends StatelessWidget {
     this.headerTrailing,
     this.sidebarWidth = 268.0,
     this.contentMaxWidth,
+    this.isVerified = false,
   });
 
   final int selectedIndex;
@@ -66,6 +68,7 @@ class RoleShell extends StatelessWidget {
   final Widget? headerTrailing;
   final double sidebarWidth;
   final double? contentMaxWidth;
+  final bool isVerified;
 
   void _handleDestinationSelected(BuildContext context, int index) {
     final navigator = Navigator.of(context);
@@ -117,6 +120,7 @@ class RoleShell extends StatelessWidget {
                 accentColor: accentColor,
                 accentGradientEnd: accentGradientEnd,
                 headerTrailing: headerTrailing,
+                isVerified: isVerified,
               ),
               Expanded(child: child),
             ],
@@ -158,6 +162,7 @@ class RoleShell extends StatelessWidget {
                       _handleDestinationSelected(context, index),
                   navItems: navItems,
                   onLogout: onLogout,
+                  isVerified: isVerified,
                 ),
               ),
               VerticalDivider(width: 1, color: AppColors.borderOf(context)),
@@ -179,6 +184,7 @@ class _RoleMobileHeader extends StatelessWidget {
     required this.accentColor,
     required this.accentGradientEnd,
     this.headerTrailing,
+    this.isVerified = false,
   });
 
   final String entityName;
@@ -188,6 +194,7 @@ class _RoleMobileHeader extends StatelessWidget {
   final Color accentColor;
   final Color accentGradientEnd;
   final Widget? headerTrailing;
+  final bool isVerified;
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +215,7 @@ class _RoleMobileHeader extends StatelessWidget {
                   accentColor: accentColor,
                   accentGradientEnd: accentGradientEnd,
                   compact: true,
+                  isVerified: isVerified,
                 ),
               ),
               if (headerTrailing != null) ...[
@@ -236,6 +244,7 @@ class _RoleSidebar extends StatelessWidget {
     required this.onDestinationSelected,
     required this.navItems,
     this.onLogout,
+    this.isVerified = false,
   });
 
   final String entityName;
@@ -248,6 +257,7 @@ class _RoleSidebar extends StatelessWidget {
   final ValueChanged<int> onDestinationSelected;
   final List<RoleNavItem> navItems;
   final VoidCallback? onLogout;
+  final bool isVerified;
 
   @override
   Widget build(BuildContext context) {
@@ -276,6 +286,7 @@ class _RoleSidebar extends StatelessWidget {
               accentColor: accentColor,
               accentGradientEnd: accentGradientEnd,
               compact: false,
+              isVerified: isVerified,
             ),
           ),
           Padding(
@@ -359,6 +370,7 @@ class _RoleBrandBlock extends StatelessWidget {
     required this.accentColor,
     required this.accentGradientEnd,
     required this.compact,
+    this.isVerified = false,
   });
 
   final String entityName;
@@ -368,6 +380,7 @@ class _RoleBrandBlock extends StatelessWidget {
   final Color accentColor;
   final Color accentGradientEnd;
   final bool compact;
+  final bool isVerified;
 
   @override
   Widget build(BuildContext context) {
@@ -403,17 +416,28 @@ class _RoleBrandBlock extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                entityName.isNotEmpty ? entityName : roleTitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  fontSize: compact ? 18 : 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                  color: AppColors.textPrimaryOf(context),
-                  height: 1.15,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      entityName.isNotEmpty ? entityName : roleTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: compact ? 18 : 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                        color: AppColors.textPrimaryOf(context),
+                        height: 1.15,
+                      ),
+                    ),
+                  ),
+                  if (isVerified) ...[
+                    const SizedBox(width: 6),
+                    VerifiedBadgeIcon(size: compact ? 16 : 18),
+                  ],
+                ],
               ),
               const SizedBox(height: 4),
               Row(

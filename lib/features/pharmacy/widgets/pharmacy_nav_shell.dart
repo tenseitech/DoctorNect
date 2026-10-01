@@ -70,6 +70,7 @@ class PharmacyNavShell extends StatelessWidget {
     required this.child,
     required this.storeName,
     this.badges = const [],
+    this.isVerified = false,
   });
 
   final int selectedIndex;
@@ -77,6 +78,7 @@ class PharmacyNavShell extends StatelessWidget {
   final Widget child;
   final String storeName;
   final List<int?> badges;
+  final bool isVerified;
 
   int? _badgeFor(int index) => index < badges.length ? badges[index] : null;
 
@@ -87,6 +89,7 @@ class PharmacyNavShell extends StatelessWidget {
       onDestinationSelected: onDestinationSelected,
       roleTitle: 'Medical Store',
       entityName: storeName,
+      isVerified: isVerified,
       entityIcon: AppIcons.prescription,
       accentColor: AppColors.pharmacyGreen,
       accentGradientEnd: const Color(0xFF047857),

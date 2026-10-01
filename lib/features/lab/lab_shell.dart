@@ -88,15 +88,21 @@ class _LabShellState extends State<LabShell> {
     );
   }
 
+  static bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   int _ordersBadgeCount(String labId) {
     // If not verified, prevent badge leakage on gated operational tab
     if (!ProfileCompletionService.instance.isComplete) return 0;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final orders = LabWorklistStore.instance.orders;
     final bookings = LabWorklistStore.instance.bookings;
     final newOrders = orders
         .where(
           (o) =>
               (labId.isEmpty || o.labId == labId) &&
+              _isSameDay(o.createdAt, today) &&
               o.status != 'completed' &&
               o.status != 'declined',
         )
@@ -105,6 +111,7 @@ class _LabShellState extends State<LabShell> {
         .where(
           (b) =>
               (labId.isEmpty || b.labId == labId) &&
+              _isSameDay(b.dateTime, today) &&
               b.status != 'completed' &&
               b.status != 'cancelled',
         )
@@ -188,6 +195,7 @@ class _LabShellState extends State<LabShell> {
             onDestinationSelected: _onTabSelected,
             roleTitle: 'Diagnostic Lab',
             entityName: displayName,
+            isVerified: lab?.verified ?? false,
             entityIcon: TablerIcons.flask,
             accentColor: AppColors.labPurple,
             accentGradientEnd: const Color(0xFF7C3AED),

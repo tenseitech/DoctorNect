@@ -7,6 +7,7 @@ import '../../../core/legal/medibond_legal_content.dart';
 import '../../../core/legal/registration_legal_consent_checkbox.dart';
 import '../../../core/notifications/app_toast.dart';
 import '../../../core/validators/form_validators.dart';
+import '../../../widgets/doctor_credentials_editor.dart';
 import '../../../widgets/form_scroll_helper.dart';
 import '../../../widgets/qualification_selector.dart';
 import '../../../widgets/registration_mobile_otp_section.dart';
@@ -42,6 +43,8 @@ class SimpleRoleRegistrationForm extends StatefulWidget {
     required String name,
     required String qualification,
     required String mobile,
+    List<String>? degrees,
+    List<String>? specializations,
   }) onSubmit;
 
   /// When set, mobile OTP was already verified in [UnifiedMobileAuthScreen].
@@ -59,6 +62,8 @@ class _SimpleRoleRegistrationFormState
   final _mobileController = TextEditingController();
 
   String? _qualification;
+  List<String> _doctorDegrees = const ['MBBS'];
+  List<String> _doctorSpecializations = const ['General Physician'];
   late bool _mobileVerified;
   bool _legalAccepted = false;
   bool _submitting = false;
@@ -104,9 +109,30 @@ class _SimpleRoleRegistrationFormState
       FormScrollHelper.scrollToFirstError(context);
       return;
     }
-    if (_qualification == null || _qualification!.trim().isEmpty) {
-      AppToast.info(context, 'Please select your degree / qualification');
-      return;
+    if (widget.role == UserType.doctor) {
+      final cleanDegrees = _doctorDegrees
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      final cleanSpecializations = _doctorSpecializations
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      if (cleanDegrees.isEmpty) {
+        AppToast.info(context, 'Please select or enter at least one degree');
+        return;
+      }
+      if (cleanSpecializations.isEmpty) {
+        AppToast.info(
+            context, 'Please select or enter at least one specialization');
+        return;
+      }
+    } else {
+      if (_qualification == null || _qualification!.trim().isEmpty) {
+        AppToast.info(context, 'Please select your degree / qualification');
+        return;
+      }
     }
     if (!_mobileVerified) {
       AppToast.info(context, 'Please verify your mobile number with OTP');
@@ -126,10 +152,24 @@ class _SimpleRoleRegistrationFormState
         _mobileDialCode,
         _mobileController.text.trim(),
       );
+      final cleanDegrees = _doctorDegrees
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      final cleanSpecializations = _doctorSpecializations
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
       await widget.onSubmit(
         name: _nameController.text.trim(),
-        qualification: _qualification!.trim(),
+        qualification: widget.role == UserType.doctor
+            ? cleanDegrees.join(', ')
+            : _qualification!.trim(),
         mobile: mobile,
+        degrees: widget.role == UserType.doctor ? cleanDegrees : null,
+        specializations:
+            widget.role == UserType.doctor ? cleanSpecializations : null,
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -186,12 +226,25 @@ class _SimpleRoleRegistrationFormState
                       ),
                     ),
                     const SizedBox(height: 14),
-                    QualificationSelector(
-                      initialValue: _qualification,
-                      onChanged: (v) => setState(() => _qualification = v),
-                      accentColor: widget.accentColor,
-                      registrationStyle: true,
-                    ),
+                    if (widget.role == UserType.doctor) ...[
+                      DoctorCredentialsEditor(
+                        initialDegrees: _doctorDegrees,
+                        initialSpecializations: _doctorSpecializations,
+                        onDegreesChanged: (d) =>
+                            setState(() => _doctorDegrees = d),
+                        onSpecializationsChanged: (s) =>
+                            setState(() => _doctorSpecializations = s),
+                        accentColor: widget.accentColor,
+                        registrationStyle: true,
+                      ),
+                    ] else ...[
+                      QualificationSelector(
+                        initialValue: _qualification,
+                        onChanged: (v) => setState(() => _qualification = v),
+                        accentColor: widget.accentColor,
+                        registrationStyle: true,
+                      ),
+                    ],
                     const SizedBox(height: 14),
                     if (_otpAlreadyVerified)
                       _VerifiedMobileField(

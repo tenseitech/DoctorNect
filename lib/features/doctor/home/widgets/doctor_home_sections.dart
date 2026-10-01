@@ -10,6 +10,7 @@ import '../../profile/data/doctor_profile_store.dart';
 import '../../widgets/doctor_profile_avatar_button.dart';
 import '../../../../widgets/rotating_search_placeholder.dart';
 import '../../../../widgets/theme_toggle_button.dart';
+import '../../../../widgets/verified_badge_icon.dart';
 import '../../../../core/theme/app_typography.dart';
 
 class DoctorHomeTopBar extends StatelessWidget {
@@ -65,11 +66,10 @@ class DoctorHomeTopBar extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    _DoctorVerificationBadge(
-                      verified: verified,
-                      compact: compact,
-                    ),
+                    if (verified) ...[
+                      const SizedBox(width: 6),
+                      VerifiedBadgeIcon(size: compact ? 18 : 20),
+                    ],
                   ],
                 ),
               ),
