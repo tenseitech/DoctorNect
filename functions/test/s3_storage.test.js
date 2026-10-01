@@ -474,11 +474,27 @@ test('super admin bypass allows downloading any file', async () => {
     },
   });
 
-  const auth = { uid: 'uid_admin', token: { email: 'admin@doctornect.com' } };
+  const auth = { uid: 'uid_admin', token: { email: 'admin@doctornect.com', email_verified: true } };
   const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
   assert.ok(res.url);
+});
+
+test('super admin allowlisted email with email_verified=false is denied admin bypass', async () => {
+  const db = createMockDb({
+    users: {
+      uid_unverified: { role: 'patient', profileId: 'p_unverified' },
+    },
+  });
+
+  const auth = { uid: 'uid_unverified', token: { email: 'admin@doctornect.com', email_verified: false } };
+  const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
 });
 
 // ----------------------------------------------------------------------------

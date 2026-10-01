@@ -90,7 +90,8 @@ function requireAuth(request) {
 
 function isSuperAdmin(auth, userDoc) {
   const email = String(auth?.token?.email || '').trim().toLowerCase();
-  if (email && SUPER_ADMIN_EMAILS.includes(email)) return true;
+  const emailVerified = auth?.token?.email_verified === true;
+  if (email && emailVerified && SUPER_ADMIN_EMAILS.includes(email)) return true;
   const role = userDoc?.role || '';
   return role === 'super_admin' || role === 'superAdmin' || role === 'admin';
 }

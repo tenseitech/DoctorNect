@@ -714,3 +714,33 @@ test('promotedAds: legacy update accepted without imageKey/imageStorage or with 
   );
 });
 
+// ----------------------------------------------------------------------------
+// ADMIN PERMISSION TESTS (isAccountAdmin email_verified gate)
+// ----------------------------------------------------------------------------
+test('admin: allowlisted admin email with email_verified: true can list users', async () => {
+  await seedUsers();
+  const adminCtx = testEnv.authenticatedContext('admin_uid_verified', {
+    email: 'admin@doctornect.com',
+    email_verified: true,
+  });
+  await assertSucceeds(adminCtx.firestore().collection('users').get());
+});
+
+test('admin: allowlisted admin email with email_verified: false CANNOT list users', async () => {
+  await seedUsers();
+  const spoofedCtx = testEnv.authenticatedContext('admin_uid_unverified', {
+    email: 'admin@doctornect.com',
+    email_verified: false,
+  });
+  await assertFails(spoofedCtx.firestore().collection('users').get());
+});
+
+test('admin: allowlisted admin email with email_verified: false CANNOT read arbitrary user doc', async () => {
+  await seedUsers();
+  const spoofedCtx = testEnv.authenticatedContext('admin_uid_unverified', {
+    email: 'admin@doctornect.com',
+    email_verified: false,
+  });
+  await assertFails(spoofedCtx.firestore().collection('users').doc(PATIENT_UID).get());
+});
+

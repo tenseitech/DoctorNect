@@ -123,7 +123,7 @@ void main() {
                             // Simulate hard 42501 permission denied from PostgREST freeze
                             throw const PostgrestException(
                               message:
-                                  'permission denied for table appointments',
+                                  'permission denied for table appointments: database freeze active',
                               code: '42501',
                             );
                           },
@@ -247,7 +247,8 @@ void main() {
                             profileWriteAttempted = true;
                             // Simulate hard 42501 permission denied from PostgREST freeze on patients table
                             throw const PostgrestException(
-                              message: 'permission denied for table patients',
+                              message:
+                                  'permission denied for table patients: database freeze active',
                               code: '42501',
                             );
                           },
@@ -295,6 +296,142 @@ void main() {
 
         // Verify that the maintenance state was cached immediately
         PatientWriteGuard.debugMaintenanceOverride = null;
+        expect(await PatientWriteGuard.isMaintenanceActive(), isTrue);
+
+        // Dismiss the bottom sheet
+        await tester.tap(find.text('Understand & Close'));
+        await tester.pumpAndSettle();
+        expect(find.text('Scheduled System Maintenance'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'TEST 3E: Ordinary 42501 permission error does NOT trigger maintenance when freeze flag is inactive',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        // Soft check says system is NOT in maintenance
+        PatientWriteGuard.debugMaintenanceOverride = false;
+
+        bool writeAttempted = false;
+        Object? thrownError;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  return ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await PatientWriteGuard.run(
+                          context: context,
+                          action: () async {
+                            writeAttempted = true;
+                            // Ordinary application RLS violation (e.g. invalid patient_id or missing claim)
+                            throw const PostgrestException(
+                              message:
+                                  'new row violates row-level security policy for table patients',
+                              code: '42501',
+                            );
+                          },
+                        );
+                      } catch (e) {
+                        thrownError = e;
+                      }
+                    },
+                    child: const Text('Attempt Unauthorized Write'),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Attempt Unauthorized Write'));
+        await tester.pumpAndSettle();
+
+        expect(writeAttempted, isTrue);
+
+        // Guard must rethrow raw PostgrestException instead of PatientMaintenanceException
+        expect(thrownError, isA<PostgrestException>());
+        expect(thrownError is PatientMaintenanceException, isFalse);
+
+        // Friendly UI Bottom Sheet must NOT render
+        expect(find.text('Scheduled System Maintenance'), findsNothing);
+
+        // Maintenance state must NOT be cached as active
+        expect(await PatientWriteGuard.isMaintenanceActive(), isFalse);
+      },
+    );
+
+    testWidgets(
+      'TEST 3F: Plain 42501 message with live freeze flag active shows the maintenance sheet',
+      (WidgetTester tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        // Soft switch timing gap: initial cached check was false
+        PatientWriteGuard.debugMaintenanceOverride = false;
+
+        bool writeAttempted = false;
+        Object? thrownError;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  return ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        await PatientWriteGuard.run(
+                          context: context,
+                          action: () async {
+                            writeAttempted = true;
+                            // Live freeze flag activates in database
+                            PatientWriteGuard.debugMaintenanceOverride = true;
+                            // Plain 42501 permission denied without "freeze" or "maintenance" in message
+                            throw const PostgrestException(
+                              message: 'permission denied for table appointments',
+                              code: '42501',
+                            );
+                          },
+                        );
+                      } catch (e) {
+                        thrownError = e;
+                      }
+                    },
+                    child: const Text('Attempt Write During Live Freeze'),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Attempt Write During Live Freeze'));
+        await tester.pumpAndSettle();
+
+        expect(writeAttempted, isTrue);
+
+        // Guard must catch plain 42501 and map it to PatientMaintenanceException
+        expect(thrownError, isA<PatientMaintenanceException>());
+
+        // Friendly UI Bottom Sheet must render
+        expect(find.text('Scheduled System Maintenance'), findsOneWidget);
+        expect(find.text('Understand & Close'), findsOneWidget);
+
+        // Maintenance state must now be cached as active
         expect(await PatientWriteGuard.isMaintenanceActive(), isTrue);
 
         // Dismiss the bottom sheet

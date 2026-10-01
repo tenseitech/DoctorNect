@@ -1720,8 +1720,9 @@ exports.backfillPatientCareTeams = onCall(
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   const callerEmail = String(request.auth.token.email || '').trim().toLowerCase();
+  const emailVerified = request.auth.token.email_verified === true;
   // Fail closed: empty allow-list must not grant access to every authenticated user.
-  if (allowedEmails.length === 0 || !allowedEmails.includes(callerEmail)) {
+  if (allowedEmails.length === 0 || !emailVerified || !allowedEmails.includes(callerEmail)) {
     throw new HttpsError('permission-denied', 'Not authorized to run migration.');
   }
   if (request.data?.confirm !== true) {
@@ -1865,7 +1866,8 @@ exports.sendMsg91EmailCallable = onCall(
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   const callerEmail = String(request.auth.token.email || '').trim().toLowerCase();
-  if (allowedEmails.length === 0 || !allowedEmails.includes(callerEmail)) {
+  const emailVerified = request.auth.token.email_verified === true;
+  if (allowedEmails.length === 0 || !emailVerified || !allowedEmails.includes(callerEmail)) {
     throw new HttpsError('permission-denied', 'Not authorized to send email.');
   }
 

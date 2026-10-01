@@ -426,13 +426,14 @@ async function approveUserAccount(db, data, auth) {
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   const callerEmail = String(auth?.token?.email || '').trim().toLowerCase();
+  const emailVerified = auth?.token?.email_verified === true;
   if (allowedEmails.length === 0) {
     throw new HttpsError(
       'permission-denied',
       'Account approval is not configured. Set ACCOUNT_APPROVAL_ADMIN_EMAILS.',
     );
   }
-  if (!allowedEmails.includes(callerEmail)) {
+  if (!emailVerified || !allowedEmails.includes(callerEmail)) {
     throw new HttpsError('permission-denied', 'Not authorized to approve accounts.');
   }
 

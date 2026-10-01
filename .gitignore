@@ -77,3 +77,9 @@ functions/secrets/
 *.p12
 key.properties
 .qpanda/
+
+# Generated audit reports and script outputs
+scripts/*_audit_results.json
+scripts/backfill_profile_claims_report.json
+scripts/*_report.json
+scripts/*_report.csv

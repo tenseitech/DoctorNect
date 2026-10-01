@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../session/patient_session.dart';
 import 'supabase_bootstrap.dart';
 
 enum AuthPath { login, register, blockedWrongRole, unknown }
@@ -47,17 +48,85 @@ class SupabaseAuthResult {
   });
 }
 
+class SupabaseUserProfile {
+  final String profileId;
+  final String role;
+  const SupabaseUserProfile({required this.profileId, required this.role});
+}
+
 /// Service managing phone OTP authentication via the auth-otp Edge Function
 /// and establishing native Supabase sessions.
 class SupabaseAuthService {
   static final SupabaseAuthService instance = SupabaseAuthService._();
-  SupabaseAuthService._();
+  SupabaseAuthService._() {
+    _initAuthStateListener();
+  }
 
   SupabaseClient get _client => SupabaseBootstrap.client;
 
   User? get currentUser => _client.auth.currentUser;
   Session? get currentSession => _client.auth.currentSession;
   Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
+
+  String? _cachedUid;
+  String? _cachedProfileId;
+  String? _cachedRole;
+
+  void _invalidateProfileCache() {
+    _cachedUid = null;
+    _cachedProfileId = null;
+    _cachedRole = null;
+  }
+
+  void _initAuthStateListener() {
+    try {
+      if (SupabaseBootstrap.isReady) {
+        _client.auth.onAuthStateChange.listen((_) => _invalidateProfileCache());
+      }
+    } catch (_) {}
+  }
+
+  /// Fetches authoritative profile_id and role from public.users for the logged-in user.
+  /// Cached once per session (keyed by uid) and invalidated on sign-out, uid mismatch, or auth state change.
+  Future<SupabaseUserProfile?> fetchCurrentUserProfile({bool forceRefresh = false}) async {
+    try {
+      if (!SupabaseBootstrap.isReady) return null;
+      final uid = currentUser?.id;
+      if (uid == null) {
+        _invalidateProfileCache();
+        return null;
+      }
+      if (!forceRefresh && _cachedUid == uid && _cachedProfileId != null && _cachedRole != null) {
+        return SupabaseUserProfile(profileId: _cachedProfileId!, role: _cachedRole!);
+      }
+      final res = await _client
+          .from('users')
+          .select('profile_id, role')
+          .eq('id', uid)
+          .maybeSingle();
+      if (res == null) {
+        _invalidateProfileCache();
+        return null;
+      }
+      _cachedUid = uid;
+      _cachedProfileId = res['profile_id'] as String?;
+      _cachedRole = res['role'] as String?;
+      if (_cachedProfileId != null && _cachedRole != null) {
+        return SupabaseUserProfile(profileId: _cachedProfileId!, role: _cachedRole!);
+      }
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('[SupabaseAuthService] fetchCurrentUserProfile error: $e');
+      return null;
+    }
+  }
+
+  /// Fetches the authoritative profile_id from public.users for the logged-in user.
+  /// Cached once per session and invalidated on sign-out.
+  Future<String?> fetchCurrentProfileId({bool forceRefresh = false}) async {
+    final profile = await fetchCurrentUserProfile(forceRefresh: forceRefresh);
+    return profile?.profileId;
+  }
 
   Uri _edgeFunctionUri(String functionName) {
     final baseUrl = SupabaseBootstrap.resolvedUrl.replaceAll(
@@ -186,6 +255,15 @@ class SupabaseAuthService {
         type: OtpType.magiclink,
       );
 
+      if (authResponse.session != null) {
+        final profileId = await fetchCurrentProfileId(forceRefresh: true);
+        if (profileId != null && profileId.isNotEmpty) {
+          if (data['role'] == 'patient') {
+            PatientSession.loggedInPatientId = profileId;
+          }
+        }
+      }
+
       return SupabaseAuthResult(
         success: authResponse.session != null,
         user: authResponse.user,
@@ -202,6 +280,7 @@ class SupabaseAuthService {
   /// Sign out from Supabase
   Future<void> signOut() async {
     try {
+      _invalidateProfileCache();
       await _client.auth.signOut();
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseAuthService] signOut error: $e');

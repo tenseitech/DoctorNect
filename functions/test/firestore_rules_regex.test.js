@@ -238,3 +238,41 @@ test('emulator-independent: promoted ad storage validation logic', () => {
     imageKey: `promoted_ads/${providerId}//${adId}/banner.jpg`,
   }, providerId), false);
 });
+
+test('firestore.rules isAccountAdmin requires request.auth.token.email_verified == true', () => {
+  const rulesContent = fs.readFileSync(path.join(__dirname, '../../firestore.rules'), 'utf8');
+
+  assert.ok(
+    rulesContent.includes("request.auth.token.get('email_verified', false) == true"),
+    'firestore.rules isAccountAdmin must check request.auth.token email_verified safely',
+  );
+
+  const SUPER_ADMIN_EMAILS = [
+    'sharmasd2@gmail.com',
+    'tenseitechpvtltd@gmail.com',
+    'admin@doctornect.com',
+    'superadmin@doctornect.com',
+    'support@doctornect.com',
+  ];
+
+  function evalIsAccountAdmin(auth) {
+    if (!auth || !auth.token) return false;
+    const emailVerified = auth.token.email_verified === true;
+    const email = String(auth.token.email || '').trim().toLowerCase();
+    return emailVerified && email !== '' && SUPER_ADMIN_EMAILS.includes(email);
+  }
+
+  // Allowlisted with email_verified: true -> PASS
+  assert.equal(evalIsAccountAdmin({ token: { email: 'admin@doctornect.com', email_verified: true } }), true);
+  assert.equal(evalIsAccountAdmin({ token: { email: 'sharmasd2@gmail.com', email_verified: true } }), true);
+
+  // Allowlisted with email_verified: false -> FAIL (spoofing blocked)
+  assert.equal(evalIsAccountAdmin({ token: { email: 'admin@doctornect.com', email_verified: false } }), false);
+  assert.equal(evalIsAccountAdmin({ token: { email: 'admin@doctornect.com' } }), false);
+
+  // Non-allowlisted with email_verified: true -> FAIL
+  assert.equal(evalIsAccountAdmin({ token: { email: 'hacker@example.com', email_verified: true } }), false);
+
+  // Unauthenticated -> FAIL
+  assert.equal(evalIsAccountAdmin(null), false);
+});

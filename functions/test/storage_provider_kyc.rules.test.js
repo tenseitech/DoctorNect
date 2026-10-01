@@ -88,8 +88,19 @@ for (const caseConfig of PROVIDER_CASES) {
     await seedOwner(caseConfig);
     await seedExistingKyc(caseConfig.kycPath);
 
-    const adminCtx = testEnv.authenticatedContext(ADMIN_UID, { email: ADMIN_EMAIL });
+    const adminCtx = testEnv.authenticatedContext(ADMIN_UID, { email: ADMIN_EMAIL, email_verified: true });
     await assertSucceeds(adminCtx.storage().ref(caseConfig.kycPath).getMetadata());
+  });
+
+  test(`allowlisted admin email with email_verified=false cannot read ${caseConfig.label} KYC documents`, async () => {
+    await seedOwner(caseConfig);
+    await seedExistingKyc(caseConfig.kycPath);
+
+    const unverifiedAdminCtx = testEnv.authenticatedContext(ADMIN_UID, {
+      email: ADMIN_EMAIL,
+      email_verified: false,
+    });
+    await assertFails(unverifiedAdminCtx.storage().ref(caseConfig.kycPath).getMetadata());
   });
 
   test(`${caseConfig.label} owner can upload KYC but cannot read it back`, async () => {

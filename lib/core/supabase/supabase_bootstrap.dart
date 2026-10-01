@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'supabase_auth_service.dart';
 
 /// Bootstrap and lifecycle management for Supabase in DoctorNect.
 /// Allows parallel execution alongside Firebase during the staged migration window.
@@ -18,6 +21,21 @@ abstract final class SupabaseBootstrap {
   static String get resolvedUrl => _envUrl.isNotEmpty ? _envUrl : defaultUrl;
   static String get resolvedAnonKey =>
       _envAnonKey.isNotEmpty ? _envAnonKey : defaultAnonKey;
+
+  /// Explicit check for whether registration should proceed in Supabase mode:
+  /// - SupabaseBootstrap is ready
+  /// - An authenticated Supabase user is logged in
+  /// - No active Firebase user is logged in (FirebaseAuth.instance.currentUser == null)
+  /// - The user's role in public.users matches [targetRole]
+  static Future<bool> isSupabaseModeForRole(String targetRole) async {
+    if (!isReady) return false;
+    if (client.auth.currentUser == null) return false;
+    if (FirebaseAuth.instance.currentUser != null) return false;
+
+    final profile =
+        await SupabaseAuthService.instance.fetchCurrentUserProfile();
+    return profile != null && profile.role == targetRole;
+  }
 
   /// Global accessor to the Supabase client instance
   static SupabaseClient get client {

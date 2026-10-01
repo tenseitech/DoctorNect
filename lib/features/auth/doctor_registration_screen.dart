@@ -11,7 +11,8 @@ import '../../core/invite/pending_pharmacy_invite_store.dart';
 import '../../core/notifications/app_toast.dart';
 import '../../core/session/doctor_session.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/validators/form_validators.dart';
+import '../../core/supabase/supabase_auth_service.dart';
+import '../../core/supabase/supabase_bootstrap.dart';
 import '../dashboard/dashboard_shell.dart';
 import 'widgets/simple_role_registration_form.dart';
 
@@ -35,7 +36,14 @@ class DoctorRegistrationScreen extends StatelessWidget {
     final isDemoDoctor = DemoAuthConfig.isDemoDoctorPhone(mobileDigits);
     final email = RegistrationCredentials.emailForMobile(mobileDigits);
     final password = RegistrationCredentials.generatePassword();
-    final doctorId = 'd${DateTime.now().millisecondsSinceEpoch}';
+    String doctorId = 'd${DateTime.now().millisecondsSinceEpoch}';
+    if (await SupabaseBootstrap.isSupabaseModeForRole('doctor')) {
+      final serverId =
+          await SupabaseAuthService.instance.fetchCurrentProfileId();
+      if (serverId != null && serverId.isNotEmpty) {
+        doctorId = serverId;
+      }
+    }
     final invitedStoreId = PendingPharmacyInviteStore.pendingStoreId;
 
     final roleData = {

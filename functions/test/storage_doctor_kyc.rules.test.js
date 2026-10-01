@@ -63,8 +63,19 @@ test('super admin can read doctor KYC documents', async () => {
   await seedDoctorOwner();
   await seedExistingKyc();
 
-  const adminCtx = testEnv.authenticatedContext(ADMIN_UID, { email: ADMIN_EMAIL });
+  const adminCtx = testEnv.authenticatedContext(ADMIN_UID, { email: ADMIN_EMAIL, email_verified: true });
   await assertSucceeds(adminCtx.storage().ref(KYC_PATH).getMetadata());
+});
+
+test('allowlisted admin email with email_verified=false cannot read doctor KYC documents', async () => {
+  await seedDoctorOwner();
+  await seedExistingKyc();
+
+  const unverifiedAdminCtx = testEnv.authenticatedContext(ADMIN_UID, {
+    email: ADMIN_EMAIL,
+    email_verified: false,
+  });
+  await assertFails(unverifiedAdminCtx.storage().ref(KYC_PATH).getMetadata());
 });
 
 test('owner doctor can upload KYC but cannot read it back', async () => {

@@ -242,6 +242,10 @@ async function migrateUsers() {
           role: role,
           profile_id: data.profileId,
         },
+        app_metadata: {
+          role: role,
+          skip_provision: true,
+        },
       });
 
       if (authErr && !authErr.message.includes('already exists') && !authErr.message.includes('duplicate')) {
@@ -452,6 +456,10 @@ async function migratePatients() {
             firebase_uid: data.ownerUid,
             role: 'patient',
             profile_id: patientId,
+          },
+          app_metadata: {
+            role: 'patient',
+            skip_provision: true,
           },
         }).catch(() => {});
 
@@ -768,6 +776,10 @@ async function migrateAmbulances() {
             firebase_uid: data.authUid,
             role: 'ambulance',
             profile_id: ambulanceId,
+          },
+          app_metadata: {
+            role: 'ambulance',
+            skip_provision: true,
           },
         }).catch(() => {});
 

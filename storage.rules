@@ -17,13 +17,16 @@ service firebase.storage {
 
     function isSuperAdminStorageUser() {
       return isSignedIn() && (
-        authEmail() in [
-          'sharmasd2@gmail.com',
-          'tenseitechpvtltd@gmail.com',
-          'admin@doctornect.com',
-          'superadmin@doctornect.com',
-          'support@doctornect.com'
-        ]
+        (
+          request.auth.token.get('email_verified', false) == true
+          && authEmail() in [
+            'sharmasd2@gmail.com',
+            'tenseitechpvtltd@gmail.com',
+            'admin@doctornect.com',
+            'superadmin@doctornect.com',
+            'support@doctornect.com'
+          ]
+        )
         || (
           firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
           && (

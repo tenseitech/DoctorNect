@@ -136,19 +136,30 @@ serve(async (req) => {
         });
       }
 
-      const { data: user, error } = await supabaseAdmin
+      const { data: userRows, error } = await supabaseAdmin
         .from("users")
         .select("role, deactivated")
         .eq("mobile", digits)
-        .eq("deactivated", false)
-        .maybeSingle();
+        .order("deactivated", { ascending: true })
+        .limit(1);
 
       if (error) throw error;
+
+      const user = userRows && userRows.length > 0 ? userRows[0] : null;
 
       if (!user) {
         return new Response(JSON.stringify({ path: "register" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      if (user.deactivated) {
+        return new Response(
+          JSON.stringify({
+            error: "Your account has been deactivated. Please contact support.",
+          }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       if (user.role !== role) {
@@ -327,39 +338,141 @@ serve(async (req) => {
       }
 
       // Check or create Supabase Auth User
-      const email = `${role}_${digits}@doctornect.com`;
-      const { data: existingUser } = await supabaseAdmin
+      const fallbackEmail = `${role}_${digits}@doctornect.com`;
+      const { data: userRows, error: lookupErr } = await supabaseAdmin
         .from("users")
-        .select("id, uid, role, profile_id, display_name")
+        .select("id, role, profile_id, display_name, deactivated")
         .eq("mobile", digits)
-        .eq("deactivated", false)
-        .maybeSingle();
+        .order("deactivated", { ascending: true })
+        .limit(1);
+
+      if (lookupErr) {
+        console.error("[auth-otp] Database error querying user by mobile:", lookupErr);
+        return new Response(JSON.stringify({ error: "Failed to verify account status" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const existingUser = userRows && userRows.length > 0 ? userRows[0] : null;
+
+      if (existingUser?.deactivated) {
+        return new Response(
+          JSON.stringify({ error: "Your account has been deactivated. Please contact support." }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
 
       let targetUserId: string;
+      let targetAuthEmail: string;
 
       if (existingUser) {
         targetUserId = existingUser.id;
+        const { data: authUserData, error: authUserErr } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+        if (authUserErr || !authUserData?.user?.email) {
+          throw (authUserErr || new Error(`Auth user email could not be found for user ID ${targetUserId}`));
+        }
+        targetAuthEmail = authUserData.user.email;
       } else {
-        // Register new user via Supabase Auth Admin
+        // Register new user via Supabase Auth Admin (pass role in app_metadata for DB trigger)
         const { data: authCreated, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-          email,
+          email: fallbackEmail,
           phone: `+91${digits}`,
           email_confirm: true,
           phone_confirm: true,
+          app_metadata: { role },
           user_metadata: { role, mobile: digits },
         });
 
-        if (createErr && !createErr.message.includes("already registered")) {
+        const isAlreadyRegistered =
+          createErr &&
+          (createErr.status === 422 ||
+            createErr.code === "email_exists" ||
+            createErr.code === "phone_exists" ||
+            createErr.message?.toLowerCase().includes("already registered"));
+
+        if (createErr && !isAlreadyRegistered) {
           throw createErr;
         }
 
-        targetUserId = authCreated?.user?.id || (await supabaseAdmin.auth.admin.listUsers()).data.users.find(u => u.email === email)?.id!;
+        if (authCreated?.user?.id) {
+          targetUserId = authCreated.user.id;
+          targetAuthEmail = authCreated.user.email || fallbackEmail;
+        } else {
+          // Resolve existing auth user ID and email via listUsers without calling generateLink
+          const { data: listRes, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+            page: 1,
+            perPage: 50,
+          });
+          const matchedUser = listRes?.users?.find(
+            (u) => u.email?.toLowerCase() === fallbackEmail.toLowerCase() || u.phone === `+91${digits}`
+          );
+          if (!matchedUser?.id || !matchedUser?.email) {
+            throw (listErr || new Error(`Existing auth user could not be resolved for phone +91${digits}`));
+          }
+          targetUserId = matchedUser.id;
+          targetAuthEmail = matchedUser.email;
+        }
+
+        // Self-heal check: if user was already registered or trigger was skipped/failed, ensure public.users row exists
+        const { data: userProfile } = await supabaseAdmin
+          .from("users")
+          .select("id, role, profile_id, deactivated")
+          .eq("id", targetUserId)
+          .maybeSingle();
+
+        if (userProfile?.deactivated) {
+          return new Response(
+            JSON.stringify({ error: "Your account has been deactivated. Please contact support." }),
+            {
+              status: 403,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        if (!userProfile) {
+          const validRole = ["patient", "doctor", "medicalStore", "lab", "ambulance"].includes(role) ? role : "patient";
+          const prefix = {
+            doctor: "d_",
+            patient: "p_",
+            medicalStore: "m_",
+            lab: "l_",
+            ambulance: "a_",
+          }[validRole] || "p_";
+          const randomSuffix = crypto.randomUUID().replace(/-/g, "");
+          const profileId = `${prefix}${randomSuffix}`;
+          const initialStatus = validRole === "patient" ? "approved" : "pending_review";
+
+          const { error: insertErr } = await supabaseAdmin.from("users").upsert(
+            {
+              id: targetUserId,
+              role: validRole,
+              profile_id: profileId,
+              display_name: "",
+              email: targetAuthEmail,
+              mobile: digits,
+              profile_completed: false,
+              verified: false,
+              deactivated: false,
+              status: initialStatus,
+            },
+            { onConflict: "id", ignoreDuplicates: true }
+          );
+
+          if (insertErr) {
+            console.error("[auth-otp] Failed to self-heal public.users row:", insertErr);
+          }
+        }
       }
 
-      // Generate native Supabase magiclink token hash
+      // Generate native Supabase magiclink token hash using the real auth email
       const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
-        email,
+        email: targetAuthEmail,
       });
 
       if (linkErr) throw linkErr;

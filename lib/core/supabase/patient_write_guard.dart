@@ -94,11 +94,18 @@ abstract final class PatientWriteGuard {
     try {
       return await action();
     } on PostgrestException catch (e) {
+      final isFreezeMessage = e.message.toLowerCase().contains('freeze') ||
+          e.message.toLowerCase().contains('maintenance');
       final isPermissionDenied = e.code == '42501' ||
           e.message.toLowerCase().contains('permission denied') ||
           e.message.toLowerCase().contains('insufficient_privilege');
 
-      if (isPermissionDenied) {
+      // Narrow rule: Treat 42501 as maintenance ONLY when the freeze flag is actually
+      // active in system_config (or the exception explicitly conveys maintenance/freeze).
+      // Standard RLS permission denials (e.g. wrong role, unverified, ID mismatch)
+      // must NOT trigger system maintenance sheets.
+      if (isFreezeMessage ||
+          (isPermissionDenied && await isMaintenanceActive(forceRefresh: true))) {
         _cachedMaintenanceActive =
             true; // Cache the maintenance state immediately
         _lastCheckTime = DateTime.now();

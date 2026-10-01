@@ -48,15 +48,28 @@ class UserRepository {
             role == UserType.lab ||
             role == UserType.ambulance) &&
         !isDemoDoctor;
-    await userRef.set({
-      'role': switch (role) {
-        UserType.superAdmin => 'super_admin',
-        UserType.doctor => 'doctor',
-        UserType.medicalStore => 'medicalStore',
-        UserType.patient => 'patient',
-        UserType.lab => 'lab',
-        UserType.ambulance => 'ambulance',
-      },
+    final batch = _db.batch();
+
+    final roleString = switch (role) {
+      UserType.superAdmin => 'super_admin',
+      UserType.doctor => 'doctor',
+      UserType.medicalStore => 'medicalStore',
+      UserType.patient => 'patient',
+      UserType.lab => 'lab',
+      UserType.ambulance => 'ambulance',
+    };
+
+    // 1. Claim profileId atomically in same batch
+    final claimRef = _db.collection('profile_claims').doc(profileId);
+    batch.set(claimRef, {
+      'uid': user.uid,
+      'role': roleString,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // 2. Provision users/{uid}
+    batch.set(userRef, {
+      'role': roleString,
       'profileId': profileId,
       'displayName': displayName,
       'email': _normalizeEmail(
@@ -78,6 +91,7 @@ class UserRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
+    // 3. Provision domain profile doc
     if (roleData != null) {
       final collection = switch (role) {
         UserType.superAdmin => FirestorePaths.users,
@@ -87,11 +101,14 @@ class UserRepository {
         UserType.lab => FirestorePaths.labs,
         UserType.ambulance => FirestorePaths.ambulances,
       };
-      await _db.collection(collection).doc(profileId).set({
+      final profileRef = _db.collection(collection).doc(profileId);
+      batch.set(profileRef, {
         ...roleData,
         'profileCompleted': roleData['profileCompleted'] ?? false,
       });
     }
+
+    await batch.commit();
   }
 
   /// Repairs auth accounts where Firebase Auth exists but users/{uid} was never saved.
@@ -138,15 +155,28 @@ class UserRepository {
           'Ambulance',
     };
 
-    await _db.collection(FirestorePaths.users).doc(user.uid).set({
-      'role': switch (expectedRole) {
-        UserType.superAdmin => 'super_admin',
-        UserType.doctor => 'doctor',
-        UserType.medicalStore => 'medicalStore',
-        UserType.patient => 'patient',
-        UserType.lab => 'lab',
-        UserType.ambulance => 'ambulance',
-      },
+    final roleString = switch (expectedRole) {
+      UserType.superAdmin => 'super_admin',
+      UserType.doctor => 'doctor',
+      UserType.medicalStore => 'medicalStore',
+      UserType.patient => 'patient',
+      UserType.lab => 'lab',
+      UserType.ambulance => 'ambulance',
+    };
+
+    final batch = _db.batch();
+    if (roleString != 'super_admin') {
+      final claimRef = _db.collection('profile_claims').doc(profileId);
+      batch.set(claimRef, {
+        'uid': user.uid,
+        'role': roleString,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
+    final userRef = _db.collection(FirestorePaths.users).doc(user.uid);
+    batch.set(userRef, {
+      'role': roleString,
       'profileId': profileId,
       'displayName': displayName,
       'email': _normalizeEmail(
@@ -168,6 +198,8 @@ class UserRepository {
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+
+    await batch.commit();
 
     return fetchProfile(user.uid, preferCache: false);
   }
@@ -286,12 +318,20 @@ class UserRepository {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      await _db
-          .collection(FirestorePaths.patients)
-          .doc(patientId)
-          .set(patientData);
+      final batch = _db.batch();
+      final claimRef = _db.collection('profile_claims').doc(patientId);
+      batch.set(claimRef, {
+        'uid': user.uid,
+        'role': 'patient',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
-      await _db.collection(FirestorePaths.users).doc(user.uid).set({
+      batch.set(
+        _db.collection(FirestorePaths.patients).doc(patientId),
+        patientData,
+      );
+
+      batch.set(_db.collection(FirestorePaths.users).doc(user.uid), {
         'role': 'patient',
         'profileId': patientId,
         'displayName': displayName,
@@ -304,6 +344,8 @@ class UserRepository {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      await batch.commit();
 
       return await fetchProfile(user.uid, preferCache: false);
     } catch (_) {

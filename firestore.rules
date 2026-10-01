@@ -20,7 +20,9 @@ service cloud.firestore {
 
     // OAuth login: match doctor doc saved email to signed-in Google/Apple email.
     function authEmail() {
-      return isSignedIn() && request.auth.token.email != null
+      return isSignedIn()
+        && request.auth.token.get('email_verified', false) == true
+        && request.auth.token.email != null
         ? request.auth.token.email
         : '';
     }
@@ -105,7 +107,8 @@ service cloud.firestore {
     // Account admins (keep in sync with ACCOUNT_APPROVAL_ADMIN_EMAILS in functions/.env).
     // Explicit allow-list only — never match on email substrings (e.g. .*admin.*).
     function isAccountAdmin() {
-      return authEmail() != '' && (
+      return request.auth.token.get('email_verified', false) == true
+        && authEmail() != '' && (
         authEmail().lower() in [
           'sharmasd2@gmail.com',
           'tenseitechpvtltd@gmail.com',
@@ -370,6 +373,58 @@ service cloud.firestore {
             && data.get('imageKey', '').matches('^promoted_ads/' + providerId + '/[a-zA-Z0-9_-]+/[a-zA-Z0-9._-]+$'));
     }
 
+    function anyProfileDocExists(profileId) {
+      return exists(/databases/$(database)/documents/doctors/$(profileId))
+        || exists(/databases/$(database)/documents/patients/$(profileId))
+        || exists(/databases/$(database)/documents/medical_stores/$(profileId))
+        || exists(/databases/$(database)/documents/labs/$(profileId))
+        || exists(/databases/$(database)/documents/ambulances/$(profileId));
+    }
+
+    function profileDocExistsForRole(targetRole, profileId) {
+      return (targetRole == 'doctor' && exists(/databases/$(database)/documents/doctors/$(profileId)))
+        || (targetRole == 'patient' && exists(/databases/$(database)/documents/patients/$(profileId)))
+        || (targetRole == 'medicalStore' && exists(/databases/$(database)/documents/medical_stores/$(profileId)))
+        || (targetRole == 'lab' && exists(/databases/$(database)/documents/labs/$(profileId)))
+        || (targetRole == 'ambulance' && exists(/databases/$(database)/documents/ambulances/$(profileId)));
+    }
+
+    function isProfileDocOwner(targetRole, profileId) {
+      return (targetRole == 'doctor' && exists(/databases/$(database)/documents/doctors/$(profileId))
+              && get(/databases/$(database)/documents/doctors/$(profileId)).data.get('ownerUid', '') == request.auth.uid)
+        || (targetRole == 'patient' && exists(/databases/$(database)/documents/patients/$(profileId))
+              && get(/databases/$(database)/documents/patients/$(profileId)).data.get('ownerUid', '') == request.auth.uid)
+        || (targetRole == 'medicalStore' && exists(/databases/$(database)/documents/medical_stores/$(profileId))
+              && get(/databases/$(database)/documents/medical_stores/$(profileId)).data.get('ownerUid', '') == request.auth.uid)
+        || (targetRole == 'lab' && exists(/databases/$(database)/documents/labs/$(profileId))
+              && get(/databases/$(database)/documents/labs/$(profileId)).data.get('ownerUid', '') == request.auth.uid)
+        || (targetRole == 'ambulance' && exists(/databases/$(database)/documents/ambulances/$(profileId))
+              && get(/databases/$(database)/documents/ambulances/$(profileId)).data.get('authUid', '') == request.auth.uid);
+    }
+
+    // ─── profile_claims/{profileId} ──────────────────────────────────────────
+    // Uniqueness reservation claim for profileId. Created atomically in same batch as users/{uid}.
+    match /profile_claims/{profileId} {
+      allow read: if isSignedIn() && (resource.data.uid == request.auth.uid || isSuperAdmin());
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role in ['doctor', 'patient', 'medicalStore', 'lab', 'ambulance']
+        && !exists(/databases/$(database)/documents/profile_claims/$(profileId))
+        && (!anyProfileDocExists(profileId)
+            || isProfileDocOwner(request.resource.data.role, profileId))
+        && request.resource.data.keys().hasAll(['uid', 'createdAt', 'role'])
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt', 'role']);
+      allow update: if isSuperAdmin()
+        || (isSignedIn()
+          && resource.data.uid == request.auth.uid
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.keys().hasAll(['uid', 'createdAt', 'role'])
+          && request.resource.data.keys().hasOnly(['uid', 'createdAt', 'role']));
+      allow delete: if isSuperAdmin();
+    }
+
     // ─── users/{uid} ───────────────────────────────────────────────────────
     // Created on register; role: "doctor" | "patient"
 
@@ -379,8 +434,14 @@ service cloud.firestore {
       allow list: if isSuperAdmin();
       allow create: if (isSignedIn()
         && request.auth.uid == uid
-        && request.resource.data.keys().hasAll(['role', 'createdAt'])
+        && request.resource.data.keys().hasAll(['role', 'createdAt', 'profileId'])
         && request.resource.data.role in ['doctor', 'patient', 'medicalStore', 'lab', 'ambulance']
+        && request.resource.data.profileId is string
+        && request.resource.data.profileId.size() >= 2
+        && request.resource.data.profileId.size() <= 64
+        && request.resource.data.profileId.matches('^[a-zA-Z0-9_-]+$')
+        && getAfter(/databases/$(database)/documents/profile_claims/$(request.resource.data.profileId)).data.uid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/profile_claims/$(request.resource.data.profileId)).data.role == request.resource.data.role
         && registrationVerifiedFieldsValid()
         && validUserProfileStorage(request.resource.data, uid))
         || isSuperAdmin();
