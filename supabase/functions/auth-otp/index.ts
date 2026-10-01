@@ -370,8 +370,19 @@ serve(async (req) => {
           });
         }
 
-        // Consume challenge
-        await supabaseAdmin.from("otp_challenges").delete().eq("challenge_id", challengeId);
+        // Consume challenge atomically; require a returned row before minting the link
+        const { data: consumedRows, error: deleteErr } = await supabaseAdmin
+          .from("otp_challenges")
+          .delete()
+          .eq("challenge_id", challengeId)
+          .select("challenge_id");
+
+        if (deleteErr || !consumedRows || consumedRows.length === 0) {
+          return new Response(
+            JSON.stringify({ error: "Invalid or expired OTP session" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
 
       // Check or create Supabase Auth User
@@ -443,7 +454,7 @@ serve(async (req) => {
           targetAuthEmail = preMatch.email;
         } else {
           // --- Step 2: no existing auth user matching phone — try to create one ---
-          const syntheticEmail = `${crypto.randomUUID()}@users.doctornect.invalid`;
+          const syntheticEmail = `${crypto.randomUUID()}@signup.doctornect.app`;
           const { data: authCreated, error: createErr } = await supabaseAdmin.auth.admin.createUser({
             email: syntheticEmail,
             phone: `+91${digits}`,

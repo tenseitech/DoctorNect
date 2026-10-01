@@ -35,6 +35,12 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'labs') THEN
         v_missing := v_missing || ' table:public.labs';
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'medical_stores') THEN
+        v_missing := v_missing || ' table:public.medical_stores';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'promoted_ads') THEN
+        v_missing := v_missing || ' table:public.promoted_ads';
+    END IF;
     IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'ambulances') THEN
         v_missing := v_missing || ' table:public.ambulances';
     END IF;
@@ -1462,18 +1468,18 @@ BEGIN
 
     INSERT INTO public.prescriptions (
         prescription_id, doctor_id, patient_id, appointment_id,
-        doctor_name, specialization, patient_name, patient_age, patient_gender,
-        diagnosis, symptoms, date, status
+        doctor_name, doctor_specialization, patient_name, patient_age, patient_gender,
+        primary_diagnosis, symptoms, prescription_date
     ) VALUES (
         v_other_rx_id, v_other_doc_id, v_other_pat_id, v_other_appt_id,
         'Dr. Other Doctor', 'Cardiology', 'Unlinked Patient', 40, 'Male',
-        'Hypertension', 'Headache', NOW(), 'active'
+        'Hypertension', 'Headache', NOW()
     );
 
     INSERT INTO public.patient_doctor_links (
-        id, patient_id, doctor_id, source
+        patient_id, doctor_id, source
     ) VALUES (
-        v_other_link_id, v_other_pat_id, v_other_doc_id, 'appointment'
+        v_other_pat_id, v_other_doc_id, 'appointment'
     );
 
     -- 3. Switch session to the demo doctor (v_demo_doc_uid)
@@ -1510,7 +1516,7 @@ BEGIN
     RAISE NOTICE '[PASS] I4 - demo doctor cannot read unlinked prescriptions (count=0)';
 
     -- Test I5: patient_doctor_links not owned/linked must return 0
-    SELECT count(*) INTO v_cnt FROM public.patient_doctor_links WHERE id = v_other_link_id;
+    SELECT count(*) INTO v_cnt FROM public.patient_doctor_links WHERE patient_id = v_other_pat_id AND doctor_id = v_other_doc_id;
     IF v_cnt <> 0 THEN
         RAISE EXCEPTION '[FAIL] I5 - demo doctor read unlinked patient_doctor_links row (count=%)', v_cnt;
     END IF;
@@ -1520,7 +1526,7 @@ BEGIN
     PERFORM set_config('request.jwt.claims', '', TRUE);
 
     -- Cleanup
-    DELETE FROM public.patient_doctor_links WHERE id = v_other_link_id;
+    DELETE FROM public.patient_doctor_links WHERE patient_id = v_other_pat_id AND doctor_id = v_other_doc_id;
     DELETE FROM public.prescriptions WHERE prescription_id = v_other_rx_id;
     DELETE FROM public.health_records WHERE record_id = v_other_rec_id;
     DELETE FROM public.appointments WHERE appointment_id = v_other_appt_id;
@@ -1580,32 +1586,36 @@ BEGIN
         (v_fix_pat_uid, 'patient', v_fix_pat_id, 'Fixture Patient', 'fix_pat@doctornect.invalid', '9870000001', 'approved'),
         (v_fix_doc_uid, 'doctor', v_fix_doc_id, 'Dr Fixture', 'fix_doc@doctornect.invalid', '9870000002', 'approved');
 
-    INSERT INTO public.patients (patient_id, owner_uid, name, phone)
+    INSERT INTO public.patients (patient_id, owner_uid, name, mobile)
     VALUES (v_fix_pat_id, v_fix_pat_uid, 'Fixture Patient', '9870000001');
 
-    INSERT INTO public.doctors (doctor_id, owner_uid, name, email, phone, specialization, verified)
-    VALUES (v_fix_doc_id, v_fix_doc_uid, 'Dr Fixture', 'fix_doc@doctornect.invalid', '9870000002', 'General', TRUE);
+    INSERT INTO public.doctors (doctor_id, owner_uid, name, email, mobile, specialization, qualification, experience_years, verified)
+    VALUES (v_fix_doc_id, v_fix_doc_uid, 'Dr Fixture', 'fix_doc@signup.doctornect.app', '9870000002', 'General', 'MBBS', 5, TRUE);
 
     INSERT INTO public.appointments (
-        appointment_id, doctor_id, patient_id, appointment_date, time_slot, status, consultation_type, source
+        appointment_id, doctor_id, patient_id, doctor_name, specialization,
+        patient_name, patient_age, patient_gender, date_time, slot_label,
+        visit_type, patient_status, doctor_status, source
     ) VALUES (
-        v_fix_appt_id, v_fix_doc_id, v_fix_pat_id, CURRENT_DATE + 1, '10:00 AM', 'confirmed', 'inPerson', 'app'
+        v_fix_appt_id, v_fix_doc_id, v_fix_pat_id, 'Dr Fixture', 'General',
+        'Fixture Patient', 35, 'Male', NOW() + INTERVAL '1 day', '10:00 AM',
+        'newVisit', 'confirmed', 'confirmed', 'app'
     );
 
     INSERT INTO public.health_records (
-        record_id, patient_id, title, category, record_date, file_storage, storage_url
+        record_id, patient_id, title, type, date, source, file_name, file_storage, storage_url
     ) VALUES (
-        v_fix_rec_id, v_fix_pat_id, 'Fixture Record', 'Prescription', CURRENT_DATE, 'none', 'http://none'
+        v_fix_rec_id, v_fix_pat_id, 'Fixture Record', 'prescription', NOW(), 'selfUploaded', 'record.pdf', 'none', 'http://none'
     );
 
     INSERT INTO public.prescriptions (
         prescription_id, doctor_id, patient_id, appointment_id,
-        doctor_name, specialization, patient_name, patient_age, patient_gender,
-        diagnosis, symptoms, date, status
+        doctor_name, doctor_specialization, patient_name, patient_age, patient_gender,
+        primary_diagnosis, symptoms, prescription_date
     ) VALUES (
         v_fix_rx_id, v_fix_doc_id, v_fix_pat_id, v_fix_appt_id,
         'Dr Fixture', 'General', 'Fixture Patient', 35, 'Male',
-        'Fever', 'Chills', NOW(), 'active'
+        'Fever', 'Chills', NOW()
     );
 
     INSERT INTO public.reviews (
@@ -1615,9 +1625,9 @@ BEGIN
     );
 
     INSERT INTO public.patient_doctor_links (
-        id, patient_id, doctor_id, source
+        patient_id, doctor_id, source
     ) VALUES (
-        v_fix_link_id, v_fix_pat_id, v_fix_doc_id, 'appointment'
+        v_fix_pat_id, v_fix_doc_id, 'appointment'
     );
 
     INSERT INTO public.lab_bookings (
@@ -1657,7 +1667,7 @@ BEGIN
 
     v_blocked := false;
     BEGIN
-        INSERT INTO public.patients (patient_id, owner_uid, name, phone)
+        INSERT INTO public.patients (patient_id, owner_uid, name, mobile)
         VALUES ('p_noprf', v_noprofile_uid, 'No Profile Hacker', '9999999991');
     EXCEPTION WHEN sqlstate '42501' THEN v_blocked := true;
     END;
@@ -1683,9 +1693,13 @@ BEGIN
     v_blocked := false;
     BEGIN
         INSERT INTO public.appointments (
-            appointment_id, doctor_id, patient_id, appointment_date, time_slot, status, consultation_type, source
+            appointment_id, doctor_id, patient_id, doctor_name, specialization,
+            patient_name, patient_age, patient_gender, date_time, slot_label,
+            visit_type, patient_status, doctor_status, source
         ) VALUES (
-            'apt_noprf', v_fix_doc_id, v_fix_pat_id, CURRENT_DATE + 2, '11:00 AM', 'confirmed', 'inPerson', 'app'
+            'apt_noprf', v_fix_doc_id, v_fix_pat_id, 'Dr Fixture', 'General',
+            'Fixture Patient', 35, 'Male', NOW() + INTERVAL '2 days', '11:00 AM',
+            'newVisit', 'confirmed', 'confirmed', 'app'
         );
     EXCEPTION WHEN sqlstate '42501' THEN v_blocked := true;
     END;
@@ -1693,7 +1707,7 @@ BEGIN
         RAISE EXCEPTION '[FAIL] J2_appointments_insert: no-profile user inserted appointment row';
     END IF;
 
-    UPDATE public.appointments SET status = 'cancelled' WHERE appointment_id = v_fix_appt_id;
+    UPDATE public.appointments SET patient_status = 'cancelled' WHERE appointment_id = v_fix_appt_id;
     GET DIAGNOSTICS v_rowcount = ROW_COUNT;
     IF v_rowcount <> 0 THEN
         RAISE EXCEPTION '[FAIL] J2_appointments_update: no-profile user updated appointment row (rowcount=%)', v_rowcount;
@@ -1711,9 +1725,9 @@ BEGIN
     v_blocked := false;
     BEGIN
         INSERT INTO public.health_records (
-            record_id, patient_id, title, category, record_date, file_storage, storage_url
+            record_id, patient_id, title, type, date, source, file_name, file_storage, storage_url
         ) VALUES (
-            'hr_noprf', v_fix_pat_id, 'Hacked HR', 'Prescription', CURRENT_DATE, 'none', 'http://none'
+            'hr_noprf', v_fix_pat_id, 'Hacked HR', 'prescription', NOW(), 'selfUploaded', 'record.pdf', 'none', 'http://none'
         );
     EXCEPTION WHEN sqlstate '42501' THEN v_blocked := true;
     END;
@@ -1740,12 +1754,12 @@ BEGIN
     BEGIN
         INSERT INTO public.prescriptions (
             prescription_id, doctor_id, patient_id, appointment_id,
-            doctor_name, specialization, patient_name, patient_age, patient_gender,
-            diagnosis, symptoms, date, status
+            doctor_name, doctor_specialization, patient_name, patient_age, patient_gender,
+            primary_diagnosis, symptoms, prescription_date
         ) VALUES (
             'rx_noprf', v_fix_doc_id, v_fix_pat_id, v_fix_appt_id,
             'Dr Hack', 'General', 'Fixture Patient', 35, 'Male',
-            'Hacked Dx', 'Hacked Sx', NOW(), 'active'
+            'Hacked Dx', 'Hacked Sx', NOW()
         );
     EXCEPTION WHEN sqlstate '42501' THEN v_blocked := true;
     END;
@@ -1753,7 +1767,7 @@ BEGIN
         RAISE EXCEPTION '[FAIL] J4_prescriptions_insert: no-profile user inserted prescription row';
     END IF;
 
-    UPDATE public.prescriptions SET status = 'cancelled' WHERE prescription_id = v_fix_rx_id;
+    UPDATE public.prescriptions SET primary_diagnosis = 'cancelled' WHERE prescription_id = v_fix_rx_id;
     GET DIAGNOSTICS v_rowcount = ROW_COUNT;
     IF v_rowcount <> 0 THEN
         RAISE EXCEPTION '[FAIL] J4_prescriptions_update: no-profile user updated prescription row (rowcount=%)', v_rowcount;
@@ -1791,15 +1805,15 @@ BEGIN
     -- ========================================================================
     -- Table 6: patient_doctor_links
     -- ========================================================================
-    SELECT count(*) INTO v_cnt FROM public.patient_doctor_links WHERE id = v_fix_link_id;
+    SELECT count(*) INTO v_cnt FROM public.patient_doctor_links WHERE patient_id = v_fix_pat_id AND doctor_id = v_fix_doc_id;
     IF v_cnt <> 0 THEN
         RAISE EXCEPTION '[FAIL] J6_links_select: no-profile user read patient_doctor_links row (count=%)', v_cnt;
     END IF;
 
     v_blocked := false;
     BEGIN
-        INSERT INTO public.patient_doctor_links (id, patient_id, doctor_id, source)
-        VALUES ('link_noprf', v_fix_pat_id, v_fix_doc_id, 'manual');
+        INSERT INTO public.patient_doctor_links (patient_id, doctor_id, source)
+        VALUES (v_fix_pat_id, v_fix_doc_id, 'manual');
     EXCEPTION WHEN sqlstate '42501' THEN v_blocked := true;
     END;
     IF NOT v_blocked THEN
@@ -1808,7 +1822,7 @@ BEGIN
 
     v_blocked := false;
     BEGIN
-        UPDATE public.patient_doctor_links SET source = 'referral' WHERE id = v_fix_link_id;
+        UPDATE public.patient_doctor_links SET source = 'referral' WHERE patient_id = v_fix_pat_id AND doctor_id = v_fix_doc_id;
         GET DIAGNOSTICS v_rowcount = ROW_COUNT;
         IF v_rowcount = 0 THEN v_blocked := true; END IF;
     EXCEPTION WHEN sqlstate '42501' THEN v_blocked := true;
@@ -1930,7 +1944,7 @@ BEGIN
     DELETE FROM public.in_app_notifications WHERE notification_id = v_fix_notif_id;
     DELETE FROM public.lab_orders WHERE order_id = v_fix_order_id;
     DELETE FROM public.lab_bookings WHERE booking_id = v_fix_booking_id;
-    DELETE FROM public.patient_doctor_links WHERE id = v_fix_link_id;
+    DELETE FROM public.patient_doctor_links WHERE patient_id = v_fix_pat_id AND doctor_id = v_fix_doc_id;
     DELETE FROM public.reviews WHERE review_id = v_fix_rev_id;
     DELETE FROM public.prescriptions WHERE prescription_id = v_fix_rx_id;
     DELETE FROM public.health_records WHERE record_id = v_fix_rec_id;
@@ -2013,7 +2027,7 @@ BEGIN
         is_sso_user, is_anonymous, created_at, updated_at
     ) VALUES (
         v_test_uid, 'authenticated', 'authenticated',
-        v_test_uid::text || '@users.doctornect.invalid',
+        v_test_uid::text || '@signup.doctornect.app',
         jsonb_build_object('role', 'patient', 'mobile', v_expected_mobile),
         jsonb_build_object('role', 'patient'),
         FALSE, FALSE, NOW(), NOW()
@@ -2043,4 +2057,49 @@ BEGIN
 END $$;
 
 
-DO $$ BEGIN RAISE NOTICE '=== verification_script.sql complete: ALL TESTS PASSED ==='; END $$;
+
+
+-- ============================================================================
+-- SECTION M: SECURITY AUDIT REPORT QUERIES (NO FIXES)
+-- 1. Public tables with RLS disabled
+-- 2. Views without security_invoker in public/private
+-- 3. SECURITY DEFINER functions in public/private with EXECUTE for anon/authenticated
+-- ============================================================================
+
+-- M1: Public tables with RLS disabled
+SELECT
+    schemaname,
+    tablename
+FROM pg_tables
+WHERE schemaname = 'public'
+  AND rowsecurity = FALSE
+ORDER BY tablename;
+
+-- M2: Views without security_invoker in public/private
+SELECT
+    v.schemaname,
+    v.viewname,
+    COALESCE(array_to_string(c.reloptions, ', '), 'none') AS reloptions
+FROM pg_views v
+JOIN pg_class c ON c.relname = v.viewname
+JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = v.schemaname
+WHERE v.schemaname IN ('public', 'private')
+  AND (c.reloptions IS NULL OR NOT ('security_invoker=true' = ANY(c.reloptions)))
+ORDER BY v.schemaname, v.viewname;
+
+-- M3: SECURITY DEFINER functions in public/private with EXECUTE for anon or authenticated
+SELECT
+    n.nspname AS schema_name,
+    p.proname AS function_name,
+    pg_get_function_identity_arguments(p.oid) AS arguments,
+    r.rolname AS granted_role
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+CROSS JOIN (VALUES ('anon'), ('authenticated')) AS roles(rolname)
+JOIN pg_roles r ON r.rolname = roles.rolname
+WHERE n.nspname IN ('public', 'private')
+  AND p.prosecdef = TRUE
+  AND has_function_privilege(r.oid, p.oid, 'EXECUTE')
+ORDER BY schema_name, function_name, granted_role;
+
+DO $ BEGIN RAISE NOTICE '=== verification_script.sql complete: ALL TESTS PASSED ==='; END $;

@@ -77,7 +77,7 @@ BEGIN
     IF NEW.email IS NOT NULL AND btrim(NEW.email) != '' THEN
         v_email := btrim(NEW.email);
     ELSE
-        v_email := NEW.id::text || '@users.doctornect.invalid';
+        v_email := NEW.id::text || '@signup.doctornect.app';
     END IF;
 
     -- 5. Extract and normalize mobile to exactly 10 digits
@@ -143,7 +143,7 @@ BEGIN
             EXCEPTION WHEN OTHERS THEN NULL;
             END;
 
-            v_email := NEW.id::text || '@users.doctornect.invalid';
+            v_email := NEW.id::text || '@signup.doctornect.app';
             BEGIN
                 INSERT INTO public.users (
                     id, role, profile_id, display_name, email, mobile,

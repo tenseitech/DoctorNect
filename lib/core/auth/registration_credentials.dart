@@ -9,6 +9,7 @@ abstract final class RegistrationCredentials {
     if (email == null) return false;
     final lower = email.trim().toLowerCase();
     return lower.endsWith('@signup.doctornect.app') ||
+        lower.endsWith('@users.doctornect.invalid') ||
         lower.endsWith('@patient.doctornect.com') ||
         lower.endsWith('@doctornect.com');
   }
