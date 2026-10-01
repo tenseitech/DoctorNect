@@ -20,8 +20,10 @@ async function seedDemoAccounts() {
       doctor: ["7666892394"],
       medicalStore: ["9359503874"],
       lab: ["9409858233"],
-      ambulance: ["9307583929"]
+      ambulance: ["9307583929"],
+      superAdmin: ["9999988888"]
     },
+    enableDemoSuperAdmin: false,
     updatedAt: FieldValue.serverTimestamp()
   };
 
@@ -241,6 +243,39 @@ async function seedDemoAccounts() {
     await db.collection('users').doc(ambulanceAuthUid).set(ambulanceUserData, { merge: true });
     await db.collection('users').doc(ambulanceProfileId).set(ambulanceUserData, { merge: true });
     console.log(`Successfully seeded fully verified demo ambulance (${ambulanceProfileId} / ${ambulanceAuthUid}).`);
+
+    // Seed fully verified demo Super Admin account (9999988888)
+    const adminPhone = "9999988888";
+    const adminProfileId = "demo_super_admin_9999988888";
+    const adminDisplayName = "Demo Super Admin";
+    const adminEmail = "superadmin.demo@doctornect.com";
+
+    let adminUid = "demo_user_superAdmin_9999988888";
+    const adminUserSnapshot = await db.collection('users').where('mobile', 'in', [adminPhone, `+91${adminPhone}`]).limit(1).get();
+    if (!adminUserSnapshot.empty) {
+      adminUid = adminUserSnapshot.docs[0].id;
+    }
+
+    const adminUserData = {
+      role: "super_admin",
+      profileId: adminProfileId,
+      displayName: adminDisplayName,
+      email: adminEmail,
+      mobile: adminPhone,
+      phone: adminPhone,
+      verified: true,
+      verificationStatus: "verified",
+      status: "approved",
+      profileCompleted: true,
+      mobileVerified: true,
+      updatedAt: FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+    };
+
+    console.log(`Seeding fully verified demo super admin (${adminPhone}) to Firestore...`);
+    await db.collection('users').doc(adminUid).set(adminUserData, { merge: true });
+    await db.collection('users').doc(adminProfileId).set(adminUserData, { merge: true });
+    console.log(`Successfully seeded fully verified demo super admin (${adminProfileId} / ${adminUid}).`);
   } catch (error) {
     console.error('Error writing to Firestore:', error);
     process.exit(1);

@@ -178,12 +178,14 @@ class _PartnerConnectDoctorsBaseViewState
     ProfileActionGuard.run(context, widget.partnerRole, () {
       InviteDoctorSheet.show(
         context,
-        role: widget.partnerRole == UserType.lab ? 'doctor' : null,
-        title: widget.partnerRole == UserType.lab
-            ? (widget.inviteTileTitle ??
-                widget.inviteButtonLabel ??
-                'Invite Doctor')
-            : null,
+        role: 'doctor',
+        title: widget.inviteTileTitle ??
+            widget.inviteButtonLabel ??
+            'Invite Doctor',
+        partnerRole: widget.partnerRole,
+        partnerId: widget.partnerId,
+        partnerTypeLabel: widget.partnerTypeLabel,
+        accentColor: widget.accentColor,
       );
     });
   }
@@ -244,21 +246,17 @@ class _PartnerConnectDoctorsBaseViewState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.inviteTileTitle ??
-                          (widget.partnerRole == UserType.lab
-                              ? 'Invite Doctor'
-                              : 'Invite doctor to download app'),
+                      widget.inviteTileTitle ?? 'Invite Doctor',
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimaryOf(context),
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       widget.inviteDownloadSubtitle ??
-                          (widget.partnerRole == UserType.lab
-                              ? 'Share an invite link with a doctor to join DoctorNect and connect with your lab.'
-                              : 'Share a download link — they install DoctorNect, register as a doctor, and connect with your ${widget.partnerTypeLabel}'),
+                          'Share an invite link with a doctor to join DoctorNect and connect with your ${widget.partnerTypeLabel}.',
                       style: GoogleFonts.inter(
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
@@ -319,24 +317,25 @@ class _PartnerConnectDoctorsBaseViewState
       ),
     );
 
-    final inviteDoctorButton = OutlinedButton.icon(
-      onPressed: _openInviteDoctorSheet,
-      icon: const Icon(Icons.link, size: 18),
-      label: Text(
-        widget.inviteButtonLabel ??
-            (widget.partnerRole == UserType.lab
-                ? 'Invite Doctor'
-                : 'Invite to download'),
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w600,
-          fontSize: AppTypography.bodySmall,
+    final inviteDoctorButton = Tooltip(
+      message: widget.inviteButtonLabel ?? 'Invite Doctor',
+      child: OutlinedButton.icon(
+        onPressed: _openInviteDoctorSheet,
+        icon: const Icon(Icons.link, size: 18),
+        label: Text(
+          widget.inviteButtonLabel ?? 'Invite Doctor',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: AppTypography.bodySmall,
+          ),
         ),
-      ),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: widget.accentColor,
-        side: BorderSide(color: widget.accentColor),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: widget.accentColor,
+          side: BorderSide(color: widget.accentColor),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       ),
     );
 

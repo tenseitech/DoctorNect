@@ -12,6 +12,7 @@ const DEMO_PHONE_ENV_KEYS = [
   'DEMO_PHONE_PHARMACY',
   'DEMO_PHONE_LAB',
   'DEMO_PHONE_AMBULANCE',
+  'DEMO_PHONE_SUPER_ADMIN',
 ];
 
 function resolveFirebaseProjectId(env = process.env) {

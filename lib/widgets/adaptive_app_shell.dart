@@ -28,7 +28,10 @@ class AdaptiveAppShell extends StatelessWidget {
     this.showMobileLogout = true,
     this.showMobileTopBar = true,
     this.requestDots = const [],
+    this.showSidebarDivider = true,
   });
+
+  final bool showSidebarDivider;
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -141,7 +144,7 @@ class AdaptiveAppShell extends StatelessWidget {
                   requestDots: requestDots,
                 ),
               ),
-              const VerticalDivider(width: 1),
+              if (showSidebarDivider) const VerticalDivider(width: 1),
               Expanded(child: child),
             ],
           ),

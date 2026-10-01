@@ -283,13 +283,13 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                   ),
                 ),
               ),
-              const Divider(height: 1),
               Expanded(
                 child: AdaptiveAppShell(
                   selectedIndex: _index,
                   onDestinationSelected: _onTabSelected,
                   accentColor: _accent,
                   showMobileLogout: false,
+                  showSidebarDivider: false,
                   requestDots: [hasPendingRequests, false, false],
                   destinations: [
                     NavigationDestination(

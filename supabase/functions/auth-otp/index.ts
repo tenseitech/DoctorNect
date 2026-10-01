@@ -10,6 +10,7 @@ const DEMO_ACCOUNTS: Record<string, string[]> = {
   medicalStore: ["9359503874"],
   lab: ["9409858233"],
   ambulance: ["9307583929"],
+  superAdmin: ["9999988888"],
 };
 
 function normalizeMobile(raw: string): string {

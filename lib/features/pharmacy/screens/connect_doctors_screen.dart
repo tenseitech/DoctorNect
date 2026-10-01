@@ -46,6 +46,10 @@ class ConnectDoctorsScreen extends StatelessWidget {
       accentColor: AppColors.pharmacyGreen,
       showAppBar: showAppBar,
       appBarTitle: appBarTitle,
+      inviteButtonLabel: 'Invite Doctor',
+      inviteTileTitle: 'Invite Doctor',
+      inviteDownloadSubtitle:
+          'Share an invite link with a doctor to join DoctorNect and connect with your store.',
       listenables: [connStore, prescStore],
       activeConnections: () => connStore
           .activeForStore(storeId)

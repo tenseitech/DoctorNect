@@ -404,7 +404,12 @@ class _ProfileVerificationDialog extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.cardBgOf(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.borderOf(context)),
+                    border: role == UserType.ambulance
+                        ? Border.all(
+                            color: AppColors.borderOf(context)
+                                .withValues(alpha: 0.15),
+                          )
+                        : Border.all(color: AppColors.borderOf(context)),
                   ),
                   child: ListView.separated(
                     shrinkWrap: true,

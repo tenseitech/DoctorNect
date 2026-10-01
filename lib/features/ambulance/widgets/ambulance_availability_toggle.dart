@@ -75,6 +75,7 @@ class _AmbulanceAvailabilityToggleState
       builder: (context, _) {
         final live = AmbulanceStore.instance.findAmbulance(widget.ambulanceId);
         final isOnline = _localValue ?? live?.available ?? true;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Card(
           elevation: 0,
@@ -82,12 +83,17 @@ class _AmbulanceAvailabilityToggleState
             borderRadius: BorderRadius.circular(14),
             side: BorderSide(
               color: isOnline
-                  ? const Color(0xFF16A34A).withValues(alpha: 0.45)
-                  : AppColors.borderOf(context),
+                  ? const Color(0xFF16A34A)
+                      .withValues(alpha: isDark ? 0.25 : 0.45)
+                  : AppColors.borderOf(context)
+                      .withValues(alpha: isDark ? 0.2 : 0.6),
             ),
           ),
-          color:
-              isOnline ? const Color(0xFFF0FDF4) : AppColors.surfaceOf(context),
+          color: isOnline
+              ? (isDark
+                  ? const Color(0xFF16A34A).withValues(alpha: 0.12)
+                  : const Color(0xFFF0FDF4))
+              : AppColors.surfaceOf(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -95,7 +101,11 @@ class _AmbulanceAvailabilityToggleState
                 Icon(
                   isOnline ? Icons.circle : Icons.circle_outlined,
                   size: 12,
-                  color: isOnline ? const Color(0xFF16A34A) : Colors.grey,
+                  color: isOnline
+                      ? (isDark
+                          ? const Color(0xFF4ADE80)
+                          : const Color(0xFF16A34A))
+                      : Colors.grey,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -108,7 +118,9 @@ class _AmbulanceAvailabilityToggleState
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                           color: isOnline
-                              ? const Color(0xFF16A34A)
+                              ? (isDark
+                                  ? const Color(0xFF4ADE80)
+                                  : const Color(0xFF16A34A))
                               : AppColors.textSecondaryOf(context),
                         ),
                       ),

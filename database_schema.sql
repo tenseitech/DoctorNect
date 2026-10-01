@@ -1090,7 +1090,8 @@ VALUES (
             "doctor": ["7666892394"],
             "medicalStore": ["9359503874"],
             "lab": ["9409858233"],
-            "ambulance": ["9307583929"]
+            "ambulance": ["9307583929"],
+            "superAdmin": ["9999988888"]
         }
     }'::jsonb
 ) ON CONFLICT (config_key) DO NOTHING;

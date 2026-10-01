@@ -30,6 +30,8 @@ const DEMO_PHONE_ENV_BY_ROLE = {
   medicalStore: ['DEMO_PHONE_MEDICAL_STORE', 'DEMO_PHONE_PHARMACY'],
   lab: ['DEMO_PHONE_LAB'],
   ambulance: ['DEMO_PHONE_AMBULANCE'],
+  superAdmin: ['DEMO_PHONE_SUPER_ADMIN'],
+  super_admin: ['DEMO_PHONE_SUPER_ADMIN'],
 };
 
 const DEFAULT_DEMO_CONFIG = {
@@ -40,7 +42,9 @@ const DEFAULT_DEMO_CONFIG = {
     medicalStore: ['9359503874'],
     lab: ['9409858233'],
     ambulance: ['9307583929'],
+    superAdmin: ['9999988888'],
   },
+  enableDemoSuperAdmin: false,
 };
 
 // Cache for demo config to reduce Firestore reads (lives for the life of the Cloud Function instance)
@@ -83,13 +87,29 @@ function demoPhoneDigitsForRole(role) {
 /** True when [digits] is the env-configured demo number for [role] only. */
 async function isDemoPhone(digits, role) {
   const r = String(role || '').trim();
-  
-  // 1. Check remote config (Firestore) - bypasses production blocks
+  const isSuperAdminRole = r === 'superAdmin' || r === 'super_admin';
   const config = await getDemoConfig();
-  if (config && config.demoPhones && Array.isArray(config.demoPhones[r]) && config.demoOtp) {
-    for (const remoteNumber of config.demoPhones[r]) {
-      if (normalizeMobileDigits(remoteNumber) === digits) {
-        return true;
+
+  // Safety gate: demo Super Admin is enabled ONLY when dev/demo flag is on
+  // In production with flag off, behaves like a normal number!
+  if (isSuperAdminRole) {
+    const isProd = isProductionFirebaseProject();
+    const isExplicitlyEnabled = Boolean(
+      config && (config.enableDemoSuperAdmin === true || config.demoSuperAdminEnabled === true)
+    );
+    if (isProd && !isExplicitlyEnabled) {
+      return false;
+    }
+  }
+  
+  // 1. Check remote config (Firestore)
+  if (config && config.demoPhones && config.demoOtp) {
+    const remoteList = config.demoPhones[r] || (isSuperAdminRole ? (config.demoPhones.superAdmin || config.demoPhones.super_admin) : null);
+    if (Array.isArray(remoteList)) {
+      for (const remoteNumber of remoteList) {
+        if (normalizeMobileDigits(remoteNumber) === digits) {
+          return true;
+        }
       }
     }
   }
@@ -252,16 +272,17 @@ function normalizeRole(role) {
   if (lower === 'medicalstore' || lower === 'medical_store' || lower === 'pharmacy') return 'medicalStore';
   if (lower === 'lab') return 'lab';
   if (lower === 'ambulance') return 'ambulance';
+  if (lower === 'superadmin' || lower === 'super_admin') return 'superAdmin';
   return raw;
 }
 
 function assertSupportedRole(role) {
   const normalized = normalizeRole(role);
-  const supported = new Set(['patient', 'doctor', 'lab', 'medicalStore', 'ambulance']);
+  const supported = new Set(['patient', 'doctor', 'lab', 'medicalStore', 'ambulance', 'superAdmin']);
   if (!supported.has(normalized)) {
     throw new HttpsError(
       'invalid-argument',
-      'Unsupported role. Use patient, doctor, lab, medicalStore, or ambulance.',
+      'Unsupported role. Use patient, doctor, lab, medicalStore, ambulance, or superAdmin.',
     );
   }
 }
@@ -2200,16 +2221,20 @@ async function ensureRoleFullVerified(db, uid, role, profileId, overrides = {}) 
     '9359503874': 'ms1784184914244',
     '9409858233': 'l1784185011933',
     '9307583929': 'amb-reg-1787919627226',
+    '9999988888': 'demo_super_admin_9999988888',
   };
   const knownDisplayNames = {
     '9359503874': 'KD Rx Pharma',
     '9409858233': 'KD Labs',
     '9307583929': 'Demo Ambulance',
+    '9999988888': 'Demo Super Admin',
   };
   const roleMeta = {
     medicalStore: { collection: 'medical_stores', idField: 'storeId', defaultName: 'Demo Medical Store' },
     lab: { collection: 'labs', idField: 'labId', defaultName: 'Demo Diagnostic Lab' },
     ambulance: { collection: 'ambulances', idField: 'ambulanceId', defaultName: 'Demo Ambulance Service' },
+    superAdmin: { collection: 'super_admins', idField: 'adminId', defaultName: 'Demo Super Admin' },
+    super_admin: { collection: 'super_admins', idField: 'adminId', defaultName: 'Demo Super Admin' },
   };
   const meta = roleMeta[r];
   if (!meta) return;
@@ -2219,8 +2244,9 @@ async function ensureRoleFullVerified(db, uid, role, profileId, overrides = {}) 
 
   const batch = db.batch();
   const userRef = db.collection('users').doc(uid);
+  const dbRole = (r === 'superAdmin' || r === 'super_admin') ? 'super_admin' : r;
   batch.set(userRef, {
-    role: r,
+    role: dbRole,
     profileId: effProfileId,
     displayName,
     verified: true,
@@ -2327,6 +2353,20 @@ async function ensureDemoAccount(db, mobileDigits, role) {
       emailPrefix: 'ambulance',
       displayName: 'Demo Ambulance Service',
     },
+    superAdmin: {
+      collection: 'super_admins',
+      idPrefix: 'demo_admin_',
+      idField: 'adminId',
+      emailPrefix: 'superadmin',
+      displayName: 'Demo Super Admin',
+    },
+    super_admin: {
+      collection: 'super_admins',
+      idPrefix: 'demo_admin_',
+      idField: 'adminId',
+      emailPrefix: 'superadmin',
+      displayName: 'Demo Super Admin',
+    },
   };
 
   const knownProfileIds = {
@@ -2334,12 +2374,14 @@ async function ensureDemoAccount(db, mobileDigits, role) {
     '9409858233': 'l1784185011933',
     '9307583929': 'amb-reg-1787919627226',
     '7666892394': 'demo_doctor_7666892394',
+    '9999988888': 'demo_super_admin_9999988888',
   };
   const knownDisplayNames = {
     '9359503874': 'KD Rx Pharma',
     '9409858233': 'KD Labs',
     '9307583929': 'Demo Ambulance',
     '7666892394': 'Dr. Demo Doctor',
+    '9999988888': 'Demo Super Admin',
   };
 
   const meta = roleMeta[r] || roleMeta.patient;
@@ -2374,8 +2416,9 @@ async function ensureDemoAccount(db, mobileDigits, role) {
   const uid = authUser.uid;
   const batch = db.batch();
   const userRef = db.collection('users').doc(uid);
+  const dbRole = (r === 'superAdmin' || r === 'super_admin') ? 'super_admin' : r;
   batch.set(userRef, {
-    role: r,
+    role: dbRole,
     profileId,
     displayName,
     email,
@@ -2507,7 +2550,8 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     }
   }
 
-  const customToken = await getAuth().createCustomToken(authUid, { role, loginMethod: 'mobile_otp' });
+  const roleClaim = (role === 'superAdmin' || role === 'super_admin') ? 'super_admin' : role;
+  const customToken = await getAuth().createCustomToken(authUid, { role: roleClaim, loginMethod: 'mobile_otp' });
   return { ok: true, customToken, uid: authUid };
 }
 

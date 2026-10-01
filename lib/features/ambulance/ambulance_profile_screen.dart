@@ -27,7 +27,10 @@ import 'widgets/ambulance_service_form_fields.dart';
 import '../promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../../../core/models/banner_config_model.dart';
 import '../../../core/services/banner_config_service.dart';
-import '../../widgets/verification_submission_card.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/auth/verification_lifecycle.dart';
+import '../../core/firebase/firestore_paths.dart';
 import '../../widgets/verified_badge_icon.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -150,27 +153,48 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
     _city = amb.city.isNotEmpty ? amb.city : null;
   }
 
+  void _onTapMissingDetail(VerificationRequirementItem item) {
+    if (!_editing) {
+      setState(() => _editing = true);
+    }
+  }
+
+  String _formatAddress(RegisteredAmbulance live) {
+    final streetParts = [
+      if (live.addressLine1.trim().isNotEmpty) live.addressLine1.trim(),
+      if (live.addressLine2.trim().isNotEmpty) live.addressLine2.trim(),
+    ].join(', ');
+
+    final localityParts = [
+      if (live.city.trim().isNotEmpty) live.city.trim(),
+      if (live.state.trim().isNotEmpty) live.state.trim(),
+    ].join(', ');
+
+    final cityStatePin = [
+      if (localityParts.isNotEmpty) localityParts,
+      if (live.pincode.trim().isNotEmpty) live.pincode.trim(),
+    ].join(' - ');
+
+    final allParts = [
+      if (streetParts.isNotEmpty) streetParts,
+      if (cityStatePin.isNotEmpty) cityStatePin,
+      if (live.country.trim().isNotEmpty &&
+          live.country.trim().toLowerCase() != 'india')
+        live.country.trim(),
+    ];
+
+    return allParts.isEmpty ? '' : allParts.join('\n');
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
     final current = _ambulance;
     if (current == null) return;
 
-    if (_city == null ||
-        _state == null ||
-        _country == null ||
-        _address1Ctrl.text.trim().isEmpty ||
-        _pincodeCtrl.text.trim().isEmpty) {
-      AppToast.info(context, 'Please fill all required address fields');
-      return;
-    }
-
-    final newPhone = FormValidators.formatFullPhone(
-      _phoneDialCode,
-      _phoneCtrl.text.trim(),
-    );
-    if (!ContactChangeVerification.mobilesEqual(newPhone, current.phone)) {
+    final phoneRaw = _phoneCtrl.text.trim();
+    if (phoneRaw.isNotEmpty) {
       final phoneErr = FormValidators.phoneLocal(
-        _phoneCtrl.text.trim(),
+        phoneRaw,
         dialCode: _phoneDialCode,
       );
       if (phoneErr != null) {
@@ -178,21 +202,27 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
         return;
       }
 
-      final verified = await ContactChangeVerification.verifyIfNeeded(
-        context: context,
-        channel: ContactVerificationChannel.mobile,
-        destination: newPhone,
-        purpose: 'verify your new driver mobile number',
-        verifiedCanonical: null,
-        accentColor: const Color(0xFFDC2626),
+      final newPhone = FormValidators.formatFullPhone(
+        _phoneDialCode,
+        phoneRaw,
       );
-      if (!mounted) return;
-      if (!verified) {
-        AppToast.info(
-          context,
-          'Verify your new mobile number with OTP before saving.',
+      if (!ContactChangeVerification.mobilesEqual(newPhone, current.phone)) {
+        final verified = await ContactChangeVerification.verifyIfNeeded(
+          context: context,
+          channel: ContactVerificationChannel.mobile,
+          destination: newPhone,
+          purpose: 'verify your new driver mobile number',
+          verifiedCanonical: null,
+          accentColor: const Color(0xFFDC2626),
         );
-        return;
+        if (!mounted) return;
+        if (!verified) {
+          AppToast.info(
+            context,
+            'Verify your new mobile number with OTP before saving.',
+          );
+          return;
+        }
       }
     }
 
@@ -204,18 +234,20 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    final formattedPhone = phoneRaw.isNotEmpty
+        ? FormValidators.formatFullPhone(_phoneDialCode, phoneRaw)
+        : '';
+
     final updated = current.copyWith(
       serviceName: _serviceNameCtrl.text.trim(),
       ownerName: _ownerNameCtrl.text.trim(),
       driverName: _driverNameCtrl.text.trim(),
-      phone: FormValidators.formatFullPhone(
-        _phoneDialCode,
-        _phoneCtrl.text.trim(),
-      ),
+      phone: formattedPhone,
       vehicleNumber: FormValidators.normalizeVehicleNumber(_vehicleCtrl.text),
       ambulanceType: _ambulanceType,
-      city: _city!,
+      city: _city ?? '',
       serviceAreas: areas,
+      baseAddress: _address1Ctrl.text.trim(),
       licenseNumber: _licenseCtrl.text.trim(),
       insuranceNumber: _insuranceCtrl.text.trim(),
       hasOxygen: _hasOxygen,
@@ -225,8 +257,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       ratePerKm: double.tryParse(_rateCtrl.text.trim()),
       addressLine1: _address1Ctrl.text.trim(),
       addressLine2: _address2Ctrl.text.trim(),
-      country: _country!,
-      state: _state!,
+      country: _country ?? '',
+      state: _state ?? '',
       pincode: _pincodeCtrl.text.trim(),
     );
 
@@ -245,6 +277,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
     });
 
     if (ok) {
+      AmbulanceStore.instance.updateRegisteredAmbulance(updated);
       await AmbulanceSession.setAmbulance(
         id: updated.id,
         serviceName: updated.serviceName,
@@ -257,6 +290,38 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
           profileId: updated.id,
         ),
       );
+
+      final data = RoleVerificationController.instance.profileDataFor(
+        UserType.ambulance,
+        firestoreData: updated.toMap(),
+      );
+      if (updated.addressLine1.isNotEmpty) {
+        data['baseAddress'] = updated.addressLine1;
+      }
+      final isComplete =
+          VerificationRequirementsConfig.isComplete(UserType.ambulance, data);
+      final stage =
+          RoleVerificationController.instance.stageFor(UserType.ambulance);
+      final isVerified = updated.verified ||
+          RoleVerificationController.instance.isVerified(UserType.ambulance);
+
+      if (isComplete &&
+          !isVerified &&
+          (stage == VerificationStage.profileIncomplete ||
+              stage == VerificationStage.revisionRequested ||
+              stage == VerificationStage.rejected)) {
+        final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+        await submitAmbulanceVerificationBatch(
+          uid: uid,
+          ambulanceId: updated.id,
+        );
+        if (mounted) {
+          AppToast.info(
+            context,
+            'Profile complete. Submitted for verification.',
+          );
+        }
+      }
     }
 
     messenger.showSnackBar(
@@ -347,8 +412,11 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                           const SizedBox(height: 16),
                         ],
                         _ProfileHeaderCard(ambulance: live),
-                        const VerificationSubmissionCard(
-                            role: UserType.ambulance),
+                        const SizedBox(height: 16),
+                        _AmbulanceProfileCompletionCard(
+                          ambulance: live,
+                          onTapMissingDetail: _onTapMissingDetail,
+                        ),
                         const SizedBox(height: 16),
                         if (_editing) ...[
                           _buildEditForm(live),
@@ -381,6 +449,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                         ] else ...[
                           _ProfileSection(
                             title: 'Service',
+                            withDividers: true,
                             children: [
                               _InfoRow('Service name', live.serviceName),
                               _InfoRow('Owner', live.ownerName),
@@ -389,6 +458,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                           ),
                           _ProfileSection(
                             title: 'Driver & contact',
+                            withDividers: true,
                             children: [
                               _InfoRow('Driver name', live.driverName),
                               _InfoRow('Phone', live.phone),
@@ -396,6 +466,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                           ),
                           _ProfileSection(
                             title: 'Vehicle',
+                            withDividers: true,
                             children: [
                               _InfoRow('Vehicle number', live.vehicleNumber),
                               _InfoRow(
@@ -404,6 +475,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                           ),
                           _ProfileSection(
                             title: 'Location',
+                            withDividers: true,
                             children: [
                               _InfoRow('City', live.city),
                               if (live.serviceAreas.isNotEmpty)
@@ -413,12 +485,13 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                 ),
                               _InfoRow(
                                 'Address',
-                                '${live.addressLine1}${live.addressLine2.isNotEmpty ? ', ${live.addressLine2}' : ''}\n${live.city}, ${live.state} - ${live.pincode}',
+                                _formatAddress(live),
                               ),
                             ],
                           ),
                           _ProfileSection(
                             title: 'Licensing',
+                            withDividers: true,
                             children: [
                               _InfoRow('License', live.licenseNumber),
                               _InfoRow('Insurance', live.insuranceNumber),
@@ -426,12 +499,13 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                           ),
                           _ProfileSection(
                             title: 'Operations',
+                            withDividers: true,
                             children: [
                               _InfoRow(
                                 'Rate per km',
                                 live.ratePerKm != null
                                     ? '₹${live.ratePerKm!.toStringAsFixed(0)}'
-                                    : '—',
+                                    : '',
                               ),
                               _InfoRow(
                                 'Equipment',
@@ -440,7 +514,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                   if (live.hasVentilator) 'Ventilator',
                                   if (live.hasStretcher) 'Stretcher',
                                   if (live.is24x7) '24×7',
-                                ].join(' · ').ifEmpty('—'),
+                                ].join(' · '),
                               ),
                               _InfoRow(
                                 'Status',
@@ -661,6 +735,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
               address2Controller: _address2Ctrl,
               pinCodeController: _pincodeCtrl,
               accentColor: const Color(0xFFDC2626),
+              pinCodeRequired: false,
+              addressLine1Required: false,
             ),
             const SizedBox(height: 12),
             _editField(
@@ -696,6 +772,12 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
               'Rate per km (₹)',
               Icons.payments_outlined,
               keyboard: TextInputType.number,
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return null;
+                final n = double.tryParse(v.trim());
+                if (n == null || n < 0) return 'Enter a valid rate';
+                return null;
+              },
             ),
             _EquipmentToggles(
               hasOxygen: _hasOxygen,
@@ -739,8 +821,9 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
         inputFormatters: inputFormatters,
         maxLines: maxLines,
         textCapitalization: capitalization,
-        validator: validator ??
-            (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+        validator: validator != null
+            ? (v) => (v == null || v.trim().isEmpty) ? null : validator(v)
+            : null,
         decoration: _inputDecoration(label, icon),
       ),
     );
@@ -780,6 +863,445 @@ extension on String {
   String ifEmpty(String fallback) => isEmpty ? fallback : this;
 }
 
+Future<void> submitAmbulanceVerificationBatch({
+  required String uid,
+  required String ambulanceId,
+}) async {
+  try {
+    final batch = FirebaseFirestore.instance.batch();
+    if (uid.isNotEmpty) {
+      final userRef =
+          FirebaseFirestore.instance.collection(FirestorePaths.users).doc(uid);
+      batch.set(
+        userRef,
+        {
+          'verificationStatus': 'submitted_for_verification',
+          'status': 'pending_review',
+          'submittedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    }
+    if (ambulanceId.isNotEmpty) {
+      final ambRef = FirebaseFirestore.instance
+          .collection(FirestorePaths.ambulances)
+          .doc(ambulanceId);
+      batch.set(
+        ambRef,
+        {
+          'verificationStatus': 'submitted_for_verification',
+          'status': 'pending_review',
+          'submittedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    }
+    await batch.commit();
+  } catch (_) {
+    // Graceful fallback for test or offline environments
+  }
+  RoleVerificationController.instance.setRoleState(
+    UserType.ambulance,
+    stage: VerificationStage.submittedForVerification,
+  );
+}
+
+class _AmbulanceProfileCompletionCard extends StatefulWidget {
+  const _AmbulanceProfileCompletionCard({
+    required this.ambulance,
+    required this.onTapMissingDetail,
+  });
+
+  final RegisteredAmbulance ambulance;
+  final ValueChanged<VerificationRequirementItem> onTapMissingDetail;
+
+  @override
+  State<_AmbulanceProfileCompletionCard> createState() =>
+      _AmbulanceProfileCompletionCardState();
+}
+
+class _AmbulanceProfileCompletionCardState
+    extends State<_AmbulanceProfileCompletionCard> {
+  bool _showAll = false;
+  bool _hasAutoSubmitted = false;
+
+  void _triggerAutoSubmitIfNeeded({
+    required BuildContext context,
+    required String uid,
+    required String ambulanceId,
+    required bool isComplete,
+    required VerificationStage stage,
+    required bool isVerified,
+  }) {
+    if (_hasAutoSubmitted) return;
+    if (isComplete &&
+        !isVerified &&
+        (stage == VerificationStage.profileIncomplete ||
+            stage == VerificationStage.revisionRequested ||
+            stage == VerificationStage.rejected)) {
+      _hasAutoSubmitted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await submitAmbulanceVerificationBatch(
+          uid: uid,
+          ambulanceId: ambulanceId,
+        );
+        if (context.mounted) {
+          AppToast.info(
+            context,
+            'Profile complete. Submitted for verification.',
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        AmbulanceStore.instance,
+        RoleVerificationController.instance,
+      ]),
+      builder: (context, _) {
+        final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+        final live =
+            AmbulanceStore.instance.findAmbulance(widget.ambulance.id) ??
+                widget.ambulance;
+
+        if (uid.isEmpty) {
+          return _buildContent(context, uid, live, null);
+        }
+
+        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance
+              .collection(FirestorePaths.users)
+              .doc(uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            final userData = snapshot.data?.data();
+            return _buildContent(context, uid, live, userData);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    String uid,
+    RegisteredAmbulance live,
+    Map<String, dynamic>? userData,
+  ) {
+    final isDark = AppColors.isDark(context);
+    final firestoreStatus = userData?['verificationStatus'] as String? ??
+        userData?['status'] as String?;
+
+    final isVerified = live.verified ||
+        (userData?['verified'] == true) ||
+        RoleVerificationController.instance.isVerified(UserType.ambulance);
+
+    final stage = isVerified
+        ? VerificationStage.verified
+        : (firestoreStatus != null
+            ? VerificationStage.fromString(firestoreStatus)
+            : RoleVerificationController.instance.stageFor(UserType.ambulance));
+
+    final reason = userData?['rejectionReason'] as String? ??
+        RoleVerificationController.instance
+            .rejectionReasonFor(UserType.ambulance);
+
+    if (stage == VerificationStage.verified) {
+      return const SizedBox.shrink();
+    }
+
+    final data = RoleVerificationController.instance.profileDataFor(
+      UserType.ambulance,
+      firestoreData: userData,
+    );
+    data.addAll(live.toMap());
+    if (live.addressLine1.isNotEmpty) {
+      data['baseAddress'] = live.addressLine1;
+    }
+
+    final requirements =
+        VerificationRequirementsConfig.requirementsForRole(UserType.ambulance);
+    final total = requirements.length;
+    final missing =
+        VerificationRequirementsConfig.missingFields(UserType.ambulance, data);
+    final filled = total - missing.length;
+    final percentage = VerificationRequirementsConfig.completionPercentage(
+      UserType.ambulance,
+      data,
+    );
+    final isComplete = percentage >= 100;
+
+    _triggerAutoSubmitIfNeeded(
+      context: context,
+      uid: uid,
+      ambulanceId: live.id,
+      isComplete: isComplete,
+      stage: stage,
+      isVerified: isVerified,
+    );
+
+    final itemsToShow = _showAll ? missing : missing.take(4).toList();
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 16),
+      color: AppColors.surfaceOf(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark
+              ? AppColors.borderOf(context).withValues(alpha: 0.15)
+              : AppColors.borderOf(context).withValues(alpha: 0.4),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Profile completion',
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.titleMedium,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimaryOf(context),
+                  ),
+                ),
+                _buildStatusChip(stage, isDark),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: percentage / 100.0,
+                minHeight: 8,
+                backgroundColor:
+                    isDark ? const Color(0xFF27272A) : const Color(0xFFE4E4E7),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isComplete
+                      ? const Color(0xFF16A34A)
+                      : const Color(0xFFDC2626),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$percentage% complete · $filled of $total details filled',
+              style: GoogleFonts.inter(
+                fontSize: AppTypography.bodySmall,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondaryOf(context),
+              ),
+            ),
+            if (stage == VerificationStage.submittedForVerification &&
+                isComplete) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0284C7)
+                      .withValues(alpha: isDark ? 0.12 : 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: Color(0xFF0284C7),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Submitted for verification. We will review your details shortly.',
+                        style: GoogleFonts.inter(
+                          fontSize: AppTypography.bodySmall,
+                          color: isDark
+                              ? const Color(0xFF7DD3FC)
+                              : const Color(0xFF0369A1),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if ((stage == VerificationStage.rejected ||
+                    stage == VerificationStage.revisionRequested) &&
+                reason != null &&
+                reason.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDC2626)
+                      .withValues(alpha: isDark ? 0.12 : 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 18,
+                          color: Color(0xFFDC2626),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Revision note from admin',
+                          style: GoogleFonts.inter(
+                            fontSize: AppTypography.labelMedium,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? const Color(0xFFF87171)
+                                : const Color(0xFFDC2626),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      reason.trim(),
+                      style: GoogleFonts.inter(
+                        fontSize: AppTypography.bodySmall,
+                        color: isDark
+                            ? const Color(0xFFFCA5A5)
+                            : const Color(0xFFB91C1C),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (missing.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                'Missing details (${missing.length})',
+                style: GoogleFonts.inter(
+                  fontSize: AppTypography.labelMedium,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimaryOf(context),
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...itemsToShow.map(
+                (item) => _buildMissingItemRow(context, item, isDark),
+              ),
+              if (missing.length > 4)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => _showAll = !_showAll),
+                    icon: Icon(
+                      _showAll ? Icons.expand_less : Icons.expand_more,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _showAll ? 'Show less' : 'Show all (${missing.length})',
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMissingItemRow(
+    BuildContext context,
+    VerificationRequirementItem item,
+    bool isDark,
+  ) {
+    return InkWell(
+      onTap: () => widget.onTapMissingDetail(item),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(
+              Icons.radio_button_unchecked,
+              size: 14,
+              color: isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${item.label} · ${item.section}',
+                style: GoogleFonts.inter(
+                  fontSize: AppTypography.bodySmall,
+                  color: AppColors.textPrimaryOf(context),
+                ),
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: AppColors.textSecondaryOf(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(VerificationStage stage, bool isDark) {
+    String label;
+    Color bg;
+    Color fg;
+
+    if (stage == VerificationStage.submittedForVerification) {
+      label = 'Under review';
+      bg = const Color(0xFF0284C7).withValues(alpha: isDark ? 0.2 : 0.1);
+      fg = isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1);
+    } else if (stage == VerificationStage.rejected ||
+        stage == VerificationStage.revisionRequested) {
+      label = 'Revision needed';
+      bg = const Color(0xFFDC2626).withValues(alpha: isDark ? 0.2 : 0.1);
+      fg = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+    } else {
+      label = 'Profile incomplete';
+      bg = isDark
+          ? const Color(0xFF3F3F46).withValues(alpha: 0.5)
+          : const Color(0xFFF4F4F5);
+      fg = isDark ? const Color(0xFFA1A1AA) : const Color(0xFF71717A);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: fg.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: AppTypography.labelSmall,
+          fontWeight: FontWeight.w600,
+          color: fg,
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileHeaderCard extends StatelessWidget {
   const _ProfileHeaderCard({required this.ambulance});
 
@@ -792,7 +1314,6 @@ class _ProfileHeaderCard extends StatelessWidget {
       color: AppColors.surfaceOf(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFFECACA)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -870,11 +1391,10 @@ class _AboutSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      margin: EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 12),
       color: AppColors.surfaceOf(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: AppColors.borderOf(context)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -923,23 +1443,28 @@ class _AboutSection extends StatelessWidget {
 }
 
 class _ProfileSection extends StatelessWidget {
-  const _ProfileSection({required this.title, required this.children});
+  const _ProfileSection({
+    required this.title,
+    required this.children,
+    this.withDividers = false,
+  });
 
   final String title;
   final List<Widget> children;
+  final bool withDividers;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Card(
       elevation: 0,
-      margin: EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 12),
       color: AppColors.surfaceOf(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: AppColors.borderOf(context)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -948,11 +1473,24 @@ class _ProfileSection extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFDC2626),
+                color:
+                    isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626),
               ),
             ),
-            const SizedBox(height: 8),
-            ...children,
+            const SizedBox(height: 10),
+            if (withDividers) ...[
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 14,
+                    thickness: 0.6,
+                    color: AppColors.borderOf(context)
+                        .withValues(alpha: isDark ? 0.12 : 0.2),
+                  ),
+                children[i],
+              ],
+            ] else
+              ...children,
           ],
         ),
       ),
@@ -968,8 +1506,9 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isEmpty = value.trim().isEmpty;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -985,10 +1524,13 @@ class _InfoRow extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              value.isEmpty ? '—' : value,
+              isEmpty ? 'Not provided' : value,
               style: GoogleFonts.inter(
                 fontSize: AppTypography.bodySmall,
-                fontWeight: FontWeight.w600,
+                fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
+                color: isEmpty
+                    ? AppColors.textSecondaryOf(context).withValues(alpha: 0.6)
+                    : null,
               ),
             ),
           ),

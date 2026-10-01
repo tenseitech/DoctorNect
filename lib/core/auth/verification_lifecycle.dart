@@ -389,6 +389,10 @@ abstract final class VerificationRequirementsConfig {
         value = data['pincode'];
       } else if (key == 'pincode') {
         value = data['pinCode'];
+      } else if (key == 'addressLine1') {
+        value = data['baseAddress'];
+      } else if (key == 'baseAddress') {
+        value = data['addressLine1'];
       }
     }
 
@@ -402,6 +406,10 @@ abstract final class VerificationRequirementsConfig {
             value = address['pincode'];
           } else if (key == 'pincode') {
             value = address['pinCode'];
+          } else if (key == 'addressLine1') {
+            value = address['baseAddress'];
+          } else if (key == 'baseAddress') {
+            value = address['addressLine1'];
           }
         }
       }

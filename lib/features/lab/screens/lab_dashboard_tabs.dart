@@ -668,8 +668,11 @@ class _DoctorOrdersPanel extends StatelessWidget {
   }
 }
 
-class _LabOrderTabSwitcher extends StatelessWidget {
-  const _LabOrderTabSwitcher({
+typedef _LabOrderTabSwitcher = LabOrderTabSwitcher;
+
+class LabOrderTabSwitcher extends StatelessWidget {
+  const LabOrderTabSwitcher({
+    super.key,
     required this.controller,
     required this.newCount,
     required this.completedCount,
@@ -681,14 +684,29 @@ class _LabOrderTabSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    final trackColor = isDark
+        ? AppColors.darkSurface
+        : const Color(0xFFE2E8F0).withValues(alpha: 0.5);
+    final trackBorder = isDark
+        ? Border.all(
+            color: AppColors.darkBorder.withValues(alpha: 0.6),
+            width: 1,
+          )
+        : Border.all(
+            color: const Color(0xFFCBD5E1).withValues(alpha: 0.5),
+            width: 1,
+          );
+
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
         return Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: const Color(0xFFE2E8F0).withValues(alpha: 0.45),
+            color: trackColor,
             borderRadius: BorderRadius.circular(12),
+            border: trackBorder,
           ),
           child: Row(
             children: [
@@ -707,7 +725,7 @@ class _LabOrderTabSwitcher extends StatelessWidget {
                   label: 'Done',
                   count: completedCount,
                   selected: controller.index == 1,
-                  accentColor: AppColors.pharmacyGreen,
+                  accentColor: AppColors.labPurple,
                   onTap: () => controller.animateTo(1),
                 ),
               ),
@@ -736,6 +754,32 @@ class _OrderTabPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+
+    // Active pill background: Lab accent at ~22% alpha in dark mode, white in light mode
+    final activeBg = isDark
+        ? accentColor.withValues(alpha: 0.22)
+        : AppColors.surfaceOf(context);
+
+    // Active label color: High contrast white in dark mode, accentColor in light mode
+    final labelColor = selected
+        ? (isDark ? Colors.white : accentColor)
+        : AppColors.textSecondaryOf(context);
+
+    // Badge background
+    final badgeBg = selected
+        ? (isDark
+            ? accentColor.withValues(alpha: 0.35)
+            : accentColor.withValues(alpha: 0.12))
+        : (isDark
+            ? AppColors.darkTextSecondary.withValues(alpha: 0.15)
+            : AppColors.textSecondaryOf(context).withValues(alpha: 0.12));
+
+    // Badge text color
+    final badgeTextColor = selected
+        ? (isDark ? Colors.white : accentColor)
+        : AppColors.textSecondaryOf(context);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -743,15 +787,23 @@ class _OrderTabPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          padding: const EdgeInsets.symmetric(vertical: 9),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? AppColors.surfaceOf(context) : Colors.transparent,
+            color: selected ? activeBg : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
+            border: selected && isDark
+                ? Border.all(
+                    color: accentColor.withValues(alpha: 0.35),
+                    width: 1,
+                  )
+                : null,
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 8,
+                      color: isDark
+                          ? Colors.black.withValues(alpha: 0.25)
+                          : Colors.black.withValues(alpha: 0.06),
+                      blurRadius: isDark ? 6 : 8,
                       offset: const Offset(0, 2),
                     ),
                   ]
@@ -759,43 +811,35 @@ class _OrderTabPill extends StatelessWidget {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 label,
                 style: GoogleFonts.inter(
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w700,
-                  color: selected
-                      ? accentColor
-                      : AppColors.textSecondaryOf(context),
+                  color: labelColor,
                 ),
               ),
-              if (count > 0) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? accentColor.withValues(alpha: 0.12)
-                        : AppColors.textSecondaryOf(context)
-                            .withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$count',
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelSmall,
-                      fontWeight: FontWeight.w700,
-                      color: selected
-                          ? accentColor
-                          : AppColors.textSecondaryOf(context),
-                    ),
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$count',
+                  style: GoogleFonts.inter(
+                    fontSize: AppTypography.labelSmall,
+                    fontWeight: FontWeight.w700,
+                    color: badgeTextColor,
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -1008,19 +1052,36 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
   );
 }
 
-class _LabSearchField extends StatelessWidget {
-  const _LabSearchField({required this.controller, required this.onChanged});
+typedef _LabSearchField = LabSearchField;
+
+class LabSearchField extends StatelessWidget {
+  const LabSearchField({
+    super.key,
+    required this.controller,
+    required this.onChanged,
+  });
 
   final TextEditingController controller;
   final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    final borderColor = isDark ? AppColors.darkBorder : const Color(0xFFE2E8F0);
+
     return TextField(
       controller: controller,
       onChanged: (_) => onChanged(),
+      style: GoogleFonts.inter(
+        fontSize: AppTypography.bodySmall,
+        color: AppColors.textPrimaryOf(context),
+      ),
       decoration: InputDecoration(
         hintText: 'Search',
+        hintStyle: GoogleFonts.inter(
+          fontSize: AppTypography.bodySmall,
+          color: AppColors.textSecondaryOf(context),
+        ),
         isDense: true,
         prefixIcon: Icon(
           Icons.search,
@@ -1035,11 +1096,11 @@ class _LabSearchField extends StatelessWidget {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+          borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
