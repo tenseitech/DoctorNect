@@ -17,7 +17,6 @@ import '../../core/theme/app_typography.dart';
 import '../../core/validators/form_validators.dart';
 import '../../widgets/form_scroll_helper.dart';
 import '../../widgets/registration_mobile_otp_section.dart';
-import '../../core/supabase/supabase_auth_service.dart';
 import '../../core/supabase/supabase_bootstrap.dart';
 import '../dashboard/dashboard_shell.dart';
 import '../patient/profile/data/patient_profile_mock.dart';
@@ -118,14 +117,10 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     setState(() => _submitting = true);
 
     try {
-      String patientId = 'p${DateTime.now().millisecondsSinceEpoch}';
-      if (await SupabaseBootstrap.isSupabaseModeForRole('patient')) {
-        final serverProfileId =
-            await SupabaseAuthService.instance.fetchCurrentProfileId();
-        if (serverProfileId != null && serverProfileId.isNotEmpty) {
-          patientId = serverProfileId;
-        }
-      }
+      final patientId = await SupabaseBootstrap.resolveRegistrationProfileId(
+        role: 'patient',
+        defaultClientId: 'p${DateTime.now().millisecondsSinceEpoch}',
+      );
       final name = _nameController.text.trim();
 
       final invitedDoctorId = PendingDoctorInviteStore.pendingDoctorId;

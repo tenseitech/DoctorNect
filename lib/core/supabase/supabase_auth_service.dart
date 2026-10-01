@@ -72,6 +72,14 @@ class SupabaseAuthService {
   String? _cachedProfileId;
   String? _cachedRole;
 
+  /// Test override for fetchCurrentUserProfile — do not use outside test/
+  @visibleForTesting
+  SupabaseUserProfile? debugUserProfileOverride;
+
+  /// Test flag tracking signOut invocations — do not use outside test/
+  @visibleForTesting
+  bool debugSignOutCalled = false;
+
   void _invalidateProfileCache() {
     _cachedUid = null;
     _cachedProfileId = null;
@@ -90,6 +98,9 @@ class SupabaseAuthService {
   /// Cached once per session (keyed by uid) and invalidated on sign-out, uid mismatch, or auth state change.
   Future<SupabaseUserProfile?> fetchCurrentUserProfile({bool forceRefresh = false}) async {
     try {
+      if (debugUserProfileOverride != null) {
+        return debugUserProfileOverride;
+      }
       if (!SupabaseBootstrap.isReady) return null;
       final uid = currentUser?.id;
       if (uid == null) {
@@ -279,9 +290,12 @@ class SupabaseAuthService {
 
   /// Sign out from Supabase
   Future<void> signOut() async {
+    debugSignOutCalled = true;
+    _invalidateProfileCache();
     try {
-      _invalidateProfileCache();
-      await _client.auth.signOut();
+      if (SupabaseBootstrap.isReady) {
+        await _client.auth.signOut();
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseAuthService] signOut error: $e');
     }

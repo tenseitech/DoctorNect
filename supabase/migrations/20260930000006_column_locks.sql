@@ -1,8 +1,8 @@
 -- ============================================================================
 -- Migration: 20260930000006_column_locks.sql
 -- Description: Comprehensive column locks, RLS subquery elimination,
---              walk-in least-privilege enforcement, appointment status filtering,
---              and automated doctor rating synchronization with bypass flag.
+--              walk-in least-privilege enforcement, and appointment status
+--              filtering for doctor patient-access checks.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------

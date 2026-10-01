@@ -1,0 +1,1 @@
+﻿not run (supabase db reset failed: Docker daemon is not running)

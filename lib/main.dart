@@ -12,6 +12,8 @@ import 'core/invite/pending_invite_store.dart';
 import 'core/media/gallery_image_picker.dart';
 import 'core/notifications/ambulance_push_background.dart';
 import 'core/performance/app_scroll_behavior.dart';
+import 'core/supabase/supabase_auth_service.dart';
+import 'core/supabase/supabase_bootstrap.dart';
 import 'core/system/edge_to_edge_bootstrap.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
@@ -34,8 +36,25 @@ Future<void> main() async {
   // Essential startup only — parallelize initialization.
   await Future.wait<void>([
     FirebaseBootstrap.initialize(),
+    () async {
+      try {
+        await SupabaseBootstrap.initialize();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[main] SupabaseBootstrap initialization caught: $e');
+        }
+      }
+    }(),
     AppThemeController.instance.init(),
   ]);
+
+  // Wire up the auth-state listener now that Supabase is ready.
+  // SupabaseAuthService._() calls _initAuthStateListener() but silently
+  // no-ops when isReady is false — touching the singleton here guarantees
+  // it runs after SupabaseBootstrap.initialize() has set isReady = true.
+  if (SupabaseBootstrap.isReady) {
+    SupabaseAuthService.instance; // ignore: unnecessary_statements
+  }
 
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(ambulancePushBackgroundHandler);

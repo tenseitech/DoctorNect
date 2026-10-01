@@ -19,6 +19,7 @@ import '../security/app_check_service.dart';
 import '../security/abuse_protection_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
+import '../supabase/supabase_bootstrap.dart';
 import '../auth/profile_completion_service.dart';
 import '../auth/verification_lifecycle.dart';
 import '../enums/user_type.dart';
@@ -162,6 +163,8 @@ class FirebaseAuthService {
       );
     }
 
+    await SupabaseBootstrap.ensureSupabaseSignedOutIfFirebaseFlow();
+
     final cleanEmail = email.trim();
     final rateLimitMsg = AuthRateLimiter.check('email_login', cleanEmail);
     if (rateLimitMsg != null) {
@@ -244,6 +247,8 @@ class FirebaseAuthService {
         'Firebase is not available. Use Chrome, Android, or iOS to sign in.',
       );
     }
+
+    await SupabaseBootstrap.ensureSupabaseSignedOutIfFirebaseFlow();
 
     final digits = FormValidators.registrationMobileDigits(mobile) ??
         FormValidators.mobileDigits(mobile);
@@ -378,6 +383,8 @@ class FirebaseAuthService {
         'Firebase is not available on this platform yet.',
       );
     }
+
+    await SupabaseBootstrap.ensureSupabaseSignedOutIfFirebaseFlow();
 
     final abuseBlock =
         await AbuseProtectionService.assertAccountCreationAllowed(

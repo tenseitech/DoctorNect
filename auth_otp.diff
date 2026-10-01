@@ -1,0 +1,413 @@
+﻿diff --git a/supabase/functions/auth-otp/index.ts b/supabase/functions/auth-otp/index.ts
+index 431a59a..86a3107 100644
+--- a/supabase/functions/auth-otp/index.ts
++++ b/supabase/functions/auth-otp/index.ts
+@@ -17,6 +17,18 @@ function normalizeMobile(raw: string): string {
+   return digits.length > 10 ? digits.slice(-10) : digits;
+ }
+ 
++// Generate unbiased 6-digit OTP code using crypto.getRandomValues and rejection sampling
++function generateSecureOtp(): string {
++  const buf = new Uint32Array(1);
++  const limit = 4294000000; // largest multiple of 1,000,000 <= 2^32
++  let val: number;
++  do {
++    crypto.getRandomValues(buf);
++    val = buf[0];
++  } while (val >= limit);
++  return (val % 1000000).toString().padStart(6, "0");
++}
++
+ async function sha256Hex(text: string): Promise<string> {
+   const encoder = new TextEncoder();
+   const data = encoder.encode(text);
+@@ -121,6 +133,13 @@ serve(async (req) => {
+     auth: { autoRefreshToken: false, persistSession: false },
+   });
+ 
++  const rawIp = req.headers.get("cf-connecting-ip") ||
++    req.headers.get("x-real-ip") ||
++    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
++    null;
++  const clientIp = rawIp && rawIp.length > 0 ? rawIp : null;
++  const enableDemoAccounts = Deno.env.get("ENABLE_DEMO_ACCOUNTS") === "true";
++
+   try {
+     const { action, mobile, role, otp, intent, sessionId } = await req.json();
+     const digits = normalizeMobile(mobile);
+@@ -143,7 +162,7 @@ serve(async (req) => {
+         .order("deactivated", { ascending: true })
+         .limit(1);
+ 
+-      if (error) throw error;
++      if (error) throw new Error(error.message || "Failed to query user by mobile");
+ 
+       const user = userRows && userRows.length > 0 ? userRows[0] : null;
+ 
+@@ -189,57 +208,63 @@ serve(async (req) => {
+         });
+       }
+ 
+-      const isDemo = DEMO_ACCOUNTS[role]?.includes(digits) ?? false;
+-      const rateLimitBucket = `otp_rate_${digits}`;
++      const isDemo = enableDemoAccounts && (DEMO_ACCOUNTS[role]?.includes(digits) ?? false);
+ 
+-      // Rate limit check (max 5 requests per hour)
++      // Rate limit check via atomic SQL function (max 5 per mobile / 20 per IP per hour)
+       if (!isDemo) {
+-        const { data: bucketData } = await supabaseAdmin
+-          .from("abuse_rate_limits")
+-          .select("count, window_start")
+-          .eq("bucket", rateLimitBucket)
+-          .maybeSingle();
++        const mobileBucket = `otp_rate_mobile_${digits}`;
++
++        // Check mobile rate limit (max 5 requests per 3600 seconds)
++        const { data: mobileAllowed, error: rateErr1 } = await supabaseAdmin.rpc(
++          "check_and_increment_rate_limit",
++          {
++            p_bucket: mobileBucket,
++            p_max_count: 5,
++            p_window_seconds: 3600,
++            p_category: "otp_mobile",
++          }
++        );
+ 
+-        const now = new Date();
+-        if (bucketData) {
+-          const windowStart = new Date(bucketData.window_start);
+-          const diffMinutes = (now.getTime() - windowStart.getTime()) / 60000;
+-          if (diffMinutes < 60 && bucketData.count >= 5) {
++        if (rateErr1 || mobileAllowed === false) {
++          return new Response(
++            JSON.stringify({ error: "Too many OTP requests for this mobile. Please wait a few minutes." }),
++            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
++          );
++        }
++
++        // Check IP rate limit if client IP header is present (max 20 requests per 3600 seconds)
++        // If no trusted client IP header is present, skip the IP bucket (never share an "unknown_ip" bucket)
++        if (clientIp) {
++          const ipBucket = `otp_rate_ip_${clientIp}`;
++          const { data: ipAllowed, error: rateErr2 } = await supabaseAdmin.rpc(
++            "check_and_increment_rate_limit",
++            {
++              p_bucket: ipBucket,
++              p_max_count: 20,
++              p_window_seconds: 3600,
++              p_category: "otp_ip",
++            }
++          );
++
++          if (rateErr2 || ipAllowed === false) {
+             return new Response(
+-              JSON.stringify({ error: "Too many OTP requests. Please wait a few minutes." }),
++              JSON.stringify({ error: "Too many OTP requests from this IP. Please wait a few minutes." }),
+               { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+             );
+           }
+-          await supabaseAdmin
+-            .from("abuse_rate_limits")
+-            .update({
+-              count: diffMinutes < 60 ? bucketData.count + 1 : 1,
+-              window_start: diffMinutes < 60 ? bucketData.window_start : now.toISOString(),
+-              updated_at: now.toISOString(),
+-            })
+-            .eq("bucket", rateLimitBucket);
+-        } else {
+-          await supabaseAdmin.from("abuse_rate_limits").insert({
+-            bucket: rateLimitBucket,
+-            count: 1,
+-            category: "otp",
+-            window_start: now.toISOString(),
+-            updated_at: now.toISOString(),
+-          });
+         }
+       }
+ 
+-      // Generate OTP code
+-      const generatedCode = isDemo
+-        ? "000000"
+-        : Math.floor(100000 + Math.random() * 900000).toString();
+-
+-      const challengeId = await sha256Hex(`${digits}_${role}_${Date.now()}_${Math.random()}`);
+-      const otpHash = await sha256Hex(generatedCode);
++      // Generate unbiased 6-digit OTP code and UUID challengeId
++      const generatedCode = isDemo ? "000000" : generateSecureOtp();
++      const challengeId = crypto.randomUUID();
++      const otpHash = await sha256Hex(`${challengeId}:${digits}:${generatedCode}`);
+       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+ 
+       await supabaseAdmin.from("otp_challenges").insert({
+         challenge_id: challengeId,
++        mobile: digits,
++        role: role,
+         otp_hash: otpHash,
+         attempts: 0,
+         is_demo: isDemo,
+@@ -283,7 +308,7 @@ serve(async (req) => {
+         });
+       }
+ 
+-      const isDemo = DEMO_ACCOUNTS[role]?.includes(digits) && submittedOtp === "000000";
++      const isDemo = enableDemoAccounts && (DEMO_ACCOUNTS[role]?.includes(digits) ?? false) && submittedOtp === "000000";
+ 
+       if (!isDemo) {
+         if (!challengeId) {
+@@ -293,6 +318,20 @@ serve(async (req) => {
+           });
+         }
+ 
++        // 1. Consume attempt atomically BEFORE comparing hash
++        const { data: attemptRows, error: attemptErr } = await supabaseAdmin.rpc("consume_otp_attempt", {
++          p_challenge_id: challengeId,
++        });
++
++        const attemptCount = Array.isArray(attemptRows) && attemptRows.length > 0 ? attemptRows[0]?.attempts : null;
++        if (attemptErr || attemptCount === null) {
++          return new Response(JSON.stringify({ error: "Maximum attempts exceeded or invalid session" }), {
++            status: 429,
++            headers: { ...corsHeaders, "Content-Type": "application/json" },
++          });
++        }
++
++        // 2. Fetch challenge row
+         const { data: challenge, error: chalErr } = await supabaseAdmin
+           .from("otp_challenges")
+           .select("*")
+@@ -306,27 +345,24 @@ serve(async (req) => {
+           });
+         }
+ 
+-        if (new Date(challenge.expires_at).getTime() < Date.now()) {
+-          return new Response(JSON.stringify({ error: "OTP expired" }), {
++        // Tightly bind challenge to mobile and role; reject mismatch with generic session error
++        if (challenge.mobile !== digits || challenge.role !== role) {
++          return new Response(JSON.stringify({ error: "Invalid or expired OTP session" }), {
+             status: 400,
+             headers: { ...corsHeaders, "Content-Type": "application/json" },
+           });
+         }
+ 
+-        if (challenge.attempts >= 5) {
+-          return new Response(JSON.stringify({ error: "Maximum attempts exceeded" }), {
+-            status: 429,
++        if (new Date(challenge.expires_at).getTime() < Date.now()) {
++          return new Response(JSON.stringify({ error: "OTP expired" }), {
++            status: 400,
+             headers: { ...corsHeaders, "Content-Type": "application/json" },
+           });
+         }
+ 
+-        const submittedHash = await sha256Hex(submittedOtp);
++        // 3. Compare hash
++        const submittedHash = await sha256Hex(`${challengeId}:${digits}:${submittedOtp}`);
+         if (submittedHash !== challenge.otp_hash) {
+-          await supabaseAdmin
+-            .from("otp_challenges")
+-            .update({ attempts: challenge.attempts + 1 })
+-            .eq("challenge_id", challengeId);
+-
+           return new Response(JSON.stringify({ error: "Incorrect OTP code" }), {
+             status: 401,
+             headers: { ...corsHeaders, "Content-Type": "application/json" },
+@@ -338,7 +374,6 @@ serve(async (req) => {
+       }
+ 
+       // Check or create Supabase Auth User
+-      const fallbackEmail = `${role}_${digits}@doctornect.com`;
+       const { data: userRows, error: lookupErr } = await supabaseAdmin
+         .from("users")
+         .select("id, role, profile_id, display_name, deactivated")
+@@ -366,6 +401,16 @@ serve(async (req) => {
+         );
+       }
+ 
++      if (existingUser && existingUser.role !== role) {
++        return new Response(
++          JSON.stringify({
++            error:
++              "This mobile number is registered under a different account type. Please select the correct role or contact support.",
++          }),
++          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
++        );
++      }
++
+       let targetUserId: string;
+       let targetAuthEmail: string;
+ 
+@@ -373,99 +418,96 @@ serve(async (req) => {
+         targetUserId = existingUser.id;
+         const { data: authUserData, error: authUserErr } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+         if (authUserErr || !authUserData?.user?.email) {
+-          throw (authUserErr || new Error(`Auth user email could not be found for user ID ${targetUserId}`));
++          throw new Error(authUserErr?.message || `Auth user email could not be found for user ID ${targetUserId}`);
+         }
+         targetAuthEmail = authUserData.user.email;
+       } else {
+-        // Register new user via Supabase Auth Admin (pass role in app_metadata for DB trigger)
+-        const { data: authCreated, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+-          email: fallbackEmail,
+-          phone: `+91${digits}`,
+-          email_confirm: true,
+-          phone_confirm: true,
+-          app_metadata: { role },
+-          user_metadata: { role, mobile: digits },
++        // --- Step 1: match auth user by phone only (right 10 digits) ---
++        const { data: existingAuthUsers, error: preLookupErr } = await supabaseAdmin.rpc("find_auth_user", {
++          p_phone: `+91${digits}`,
+         });
++        const preMatch = Array.isArray(existingAuthUsers) && existingAuthUsers.length > 0
++          ? existingAuthUsers[0]
++          : null;
+ 
+-        const isAlreadyRegistered =
+-          createErr &&
+-          (createErr.status === 422 ||
+-            createErr.code === "email_exists" ||
+-            createErr.code === "phone_exists" ||
+-            createErr.message?.toLowerCase().includes("already registered"));
+-
+-        if (createErr && !isAlreadyRegistered) {
+-          throw createErr;
++        if (preLookupErr) {
++          console.warn("[auth-otp] pre-check find_auth_user failed, attempting createUser:", preLookupErr);
+         }
+ 
+-        if (authCreated?.user?.id) {
+-          targetUserId = authCreated.user.id;
+-          targetAuthEmail = authCreated.user.email || fallbackEmail;
++        const preDigits = normalizeMobile(preMatch?.phone || "");
++
++        if (preMatch?.id && preMatch?.email && preDigits === digits) {
++          // Auth user already exists matching this exact phone — use directly
++          targetUserId = preMatch.id;
++          targetAuthEmail = preMatch.email;
+         } else {
+-          // Resolve existing auth user ID and email via listUsers without calling generateLink
+-          const { data: listRes, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+-            page: 1,
+-            perPage: 50,
++          // --- Step 2: no existing auth user matching phone — try to create one ---
++          const syntheticEmail = `${crypto.randomUUID()}@users.doctornect.invalid`;
++          const { data: authCreated, error: createErr } = await supabaseAdmin.auth.admin.createUser({
++            email: syntheticEmail,
++            phone: `+91${digits}`,
++            email_confirm: true,
++            phone_confirm: true,
++            app_metadata: { role, mobile: digits },
++            user_metadata: { role, mobile: digits },
+           });
+-          const matchedUser = listRes?.users?.find(
+-            (u) => u.email?.toLowerCase() === fallbackEmail.toLowerCase() || u.phone === `+91${digits}`
+-          );
+-          if (!matchedUser?.id || !matchedUser?.email) {
+-            throw (listErr || new Error(`Existing auth user could not be resolved for phone +91${digits}`));
++
++          if (authCreated?.user?.id) {
++            targetUserId = authCreated.user.id;
++            targetAuthEmail = authCreated.user.email || syntheticEmail;
++          } else {
++            // If createUser fails (e.g. email exists with different phone), retry find_auth_user by phone only
++            console.warn("[auth-otp] createUser failed, retrying find_auth_user by phone. Error:",
++              createErr?.message || createErr);
++            const { data: retryUsers, error: retryErr } = await supabaseAdmin.rpc("find_auth_user", {
++              p_phone: `+91${digits}`,
++            });
++            const retryMatch = Array.isArray(retryUsers) && retryUsers.length > 0 ? retryUsers[0] : null;
++            const retryDigits = normalizeMobile(retryMatch?.phone || "");
++
++            if (!retryErr && retryMatch?.id && retryMatch?.email && retryDigits === digits) {
++              targetUserId = retryMatch.id;
++              targetAuthEmail = retryMatch.email;
++            } else {
++              // If email exists with a different phone or no phone match: throw immediately (no fallback to that user)
++              console.error("[auth-otp] retry find_auth_user by phone failed:", retryErr);
++              const errMsg = createErr?.message || "User creation failed: email collision with different phone number";
++              throw new Error(errMsg);
++            }
+           }
+-          targetUserId = matchedUser.id;
+-          targetAuthEmail = matchedUser.email;
+         }
+ 
+-        // Self-heal check: if user was already registered or trigger was skipped/failed, ensure public.users row exists
+-        const { data: userProfile } = await supabaseAdmin
++        // Require a public.users row with id=targetUserId and role===role; otherwise fail closed
++        const { data: userProfile, error: profileErr } = await supabaseAdmin
+           .from("users")
+           .select("id, role, profile_id, deactivated")
+           .eq("id", targetUserId)
+           .maybeSingle();
+ 
+-        if (userProfile?.deactivated) {
++        if (profileErr || !userProfile || userProfile.role !== role) {
++          console.error("[auth-otp] Fail-closed: missing public.users row or role mismatch:", {
++            targetUserId,
++            expectedRole: role,
++            foundRole: userProfile?.role,
++            error: profileErr,
++          });
+           return new Response(
+-            JSON.stringify({ error: "Your account has been deactivated. Please contact support." }),
++            JSON.stringify({ error: "User profile provisioning failed or role mismatch" }),
+             {
+-              status: 403,
++              status: 500,
+               headers: { ...corsHeaders, "Content-Type": "application/json" },
+             }
+           );
+         }
+ 
+-        if (!userProfile) {
+-          const validRole = ["patient", "doctor", "medicalStore", "lab", "ambulance"].includes(role) ? role : "patient";
+-          const prefix = {
+-            doctor: "d_",
+-            patient: "p_",
+-            medicalStore: "m_",
+-            lab: "l_",
+-            ambulance: "a_",
+-          }[validRole] || "p_";
+-          const randomSuffix = crypto.randomUUID().replace(/-/g, "");
+-          const profileId = `${prefix}${randomSuffix}`;
+-          const initialStatus = validRole === "patient" ? "approved" : "pending_review";
+-
+-          const { error: insertErr } = await supabaseAdmin.from("users").upsert(
++        if (userProfile.deactivated) {
++          return new Response(
++            JSON.stringify({ error: "Your account has been deactivated. Please contact support." }),
+             {
+-              id: targetUserId,
+-              role: validRole,
+-              profile_id: profileId,
+-              display_name: "",
+-              email: targetAuthEmail,
+-              mobile: digits,
+-              profile_completed: false,
+-              verified: false,
+-              deactivated: false,
+-              status: initialStatus,
+-            },
+-            { onConflict: "id", ignoreDuplicates: true }
++              status: 403,
++              headers: { ...corsHeaders, "Content-Type": "application/json" },
++            }
+           );
+-
+-          if (insertErr) {
+-            console.error("[auth-otp] Failed to self-heal public.users row:", insertErr);
+-          }
+         }
+       }
+ 
+@@ -475,7 +517,9 @@ serve(async (req) => {
+         email: targetAuthEmail,
+       });
+ 
+-      if (linkErr) throw linkErr;
++      if (linkErr || !linkData?.properties?.hashed_token) {
++        throw new Error(linkErr?.message || "Failed to generate authentication link token");
++      }
+ 
+       return new Response(
+         JSON.stringify({
