@@ -158,6 +158,20 @@ DECLARE
     v_doctor_id TEXT := 'd_svc_' || replace(gen_random_uuid()::TEXT, '-', '');
     v_uid       UUID := gen_random_uuid();
 BEGIN
+    -- Setup auth.users + public.users for doctor
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'svc@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'doctor', v_doctor_id, 'Svc Doctor', 'svc@test.com', '9000000001',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
     INSERT INTO public.doctors (
         doctor_id, owner_uid, name, email, mobile, specialization, qualification,
         experience_years, rating, review_count, deactivated, profile_completed, verified
@@ -185,6 +199,8 @@ BEGIN
     RAISE NOTICE '[PASS] A1 - service_role can UPDATE verified/rating/review_count on doctors';
 
     DELETE FROM public.doctors WHERE doctor_id = v_doctor_id;
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
 END $$;
 
 
@@ -289,6 +305,20 @@ DECLARE
     v_amb_id TEXT := 'a_svc_' || replace(gen_random_uuid()::TEXT, '-', '');
     v_uid    UUID := gen_random_uuid();
 BEGIN
+    -- Setup auth.users + public.users for ambulance
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'amb_c@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'ambulance', v_amb_id, 'Svc Amb User', 'amb_c@test.com', '9000000003',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
     INSERT INTO public.ambulances (
         ambulance_id, auth_uid, service_name, driver_name, phone,
         vehicle_number, ambulance_type, city, is_available,
@@ -318,6 +348,8 @@ BEGIN
     RAISE NOTICE '[PASS] C1 - service_role can UPDATE verified/ratings on ambulances';
 
     DELETE FROM public.ambulances WHERE ambulance_id = v_amb_id;
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
 END $$;
 
 
@@ -717,9 +749,10 @@ DECLARE
     v_patient_id   TEXT := 'p_rev_'  || replace(gen_random_uuid()::TEXT, '-', '');
     v_doctor_id    TEXT := 'd_rev_'  || replace(gen_random_uuid()::TEXT, '-', '');
     v_appt_id      TEXT := 'ap_rev_' || replace(gen_random_uuid()::TEXT, '-', '');
-    v_review_id    TEXT := 'r_rev_'  || replace(gen_random_uuid()::TEXT, '-', '');
+    v_review_id    TEXT := v_patient_id || '_' || v_doctor_id;
     v_uid2         UUID := gen_random_uuid();
     v_patient_id2  TEXT := 'p_rev2_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_uid_doc      UUID := gen_random_uuid();
     v_blocked      BOOLEAN;
 BEGIN
     -- Superuser setup for patient 1 (auth, users, doctor, appointment)
@@ -740,10 +773,23 @@ BEGIN
     VALUES (v_patient_id, v_uid, 'Reviewer Patient', '9000000020');
 
     -- Setup target doctor
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid_doc, 'authenticated', 'authenticated', 'doc_target@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid_doc, 'doctor', v_doctor_id, 'Dr. Review Target', 'doc_target@test.com', '9000000021',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
     INSERT INTO public.doctors (
         doctor_id, owner_uid, name, email, mobile, specialization, qualification, experience_years
     ) VALUES (
-        v_doctor_id, gen_random_uuid(), 'Dr. Review Target', 'doc_target@test.com',
+        v_doctor_id, v_uid_doc, 'Dr. Review Target', 'doc_target@test.com',
         '9000000021', 'Cardiologist', 'MD', 5
     );
 
@@ -848,8 +894,8 @@ BEGIN
     DELETE FROM public.appointments WHERE appointment_id = v_appt_id;
     DELETE FROM public.doctors WHERE doctor_id = v_doctor_id;
     DELETE FROM public.patients WHERE patient_id IN (v_patient_id, v_patient_id2);
-    DELETE FROM public.users WHERE id IN (v_uid, v_uid2);
-    DELETE FROM auth.users WHERE id IN (v_uid, v_uid2);
+    DELETE FROM public.users WHERE id IN (v_uid, v_uid2, v_uid_doc);
+    DELETE FROM auth.users WHERE id IN (v_uid, v_uid2, v_uid_doc);
 END $$;
 
 
@@ -1039,6 +1085,7 @@ DECLARE
     v_uid2             UUID := gen_random_uuid();
     v_patient_id2      TEXT := 'p_apt2_' || replace(gen_random_uuid()::TEXT, '-', '');
     v_uid_doc          UUID := gen_random_uuid();
+    v_uid_doc_booked   UUID := gen_random_uuid();
     v_doc_unrelated    TEXT := 'd_unrel_' || replace(gen_random_uuid()::TEXT, '-', '');
     v_blocked          BOOLEAN;
 BEGIN
@@ -1060,10 +1107,23 @@ BEGIN
     VALUES (v_patient_id, v_uid, 'Apt Patient', '9000000040', TRUE);
 
     -- Setup booked doctor
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid_doc_booked, 'authenticated', 'authenticated', 'apt_doc@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid_doc_booked, 'doctor', v_doctor_id, 'Dr. Appointment Doctor', 'apt_doc@test.com', '9000000041',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
     INSERT INTO public.doctors (
         doctor_id, owner_uid, name, email, mobile, specialization, qualification, experience_years, verified
     ) VALUES (
-        v_doctor_id, gen_random_uuid(), 'Dr. Appointment Doctor', 'apt_doc@test.com',
+        v_doctor_id, v_uid_doc_booked, 'Dr. Appointment Doctor', 'apt_doc@test.com',
         '9000000041', 'Orthopedic', 'MS', 8, TRUE
     );
 
@@ -1269,8 +1329,8 @@ BEGIN
     DELETE FROM public.appointments WHERE appointment_id = v_appt_id;
     DELETE FROM public.doctors WHERE doctor_id IN (v_doctor_id, v_doc_unrelated);
     DELETE FROM public.patients WHERE patient_id IN (v_patient_id, v_patient_id2);
-    DELETE FROM public.users WHERE id IN (v_uid, v_uid2, v_uid_doc);
-    DELETE FROM auth.users WHERE id IN (v_uid, v_uid2, v_uid_doc);
+    DELETE FROM public.users WHERE id IN (v_uid, v_uid2, v_uid_doc, v_uid_doc_booked);
+    DELETE FROM auth.users WHERE id IN (v_uid, v_uid2, v_uid_doc, v_uid_doc_booked);
 END $$;
 
 
@@ -1401,6 +1461,7 @@ DECLARE
     v_other_rec_id  TEXT := 'rec_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
     v_other_rx_id   TEXT := 'rx_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
     v_other_link_id TEXT := 'pdl_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_other_doc_uid UUID := gen_random_uuid();
     v_cnt           INT;
 BEGIN
     -- 1. Setup Demo Doctor (verified = true, status = 'approved', NO patient links)
@@ -1444,10 +1505,23 @@ BEGIN
         v_other_pat_id, v_other_uid, 'Unlinked Patient', '9998887776', TRUE
     );
 
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_other_doc_uid, 'authenticated', 'authenticated', 'other_doc@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_other_doc_uid, 'doctor', v_other_doc_id, 'Dr. Other Doctor', 'other_doc@test.com', '9998887777',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
     INSERT INTO public.doctors (
         doctor_id, owner_uid, name, email, mobile, specialization, qualification, experience_years, verified
     ) VALUES (
-        v_other_doc_id, gen_random_uuid(), 'Dr. Other Doctor', 'other_doc@test.com',
+        v_other_doc_id, v_other_doc_uid, 'Dr. Other Doctor', 'other_doc@test.com',
         '9998887777', 'Cardiology', 'MD', 8, TRUE
     );
 
@@ -1532,8 +1606,8 @@ BEGIN
     DELETE FROM public.appointments WHERE appointment_id = v_other_appt_id;
     DELETE FROM public.doctors WHERE doctor_id IN (v_demo_doc_id, v_other_doc_id);
     DELETE FROM public.patients WHERE patient_id = v_other_pat_id;
-    DELETE FROM public.users WHERE id IN (v_demo_doc_uid, v_other_uid);
-    DELETE FROM auth.users WHERE id IN (v_demo_doc_uid, v_other_uid);
+    DELETE FROM public.users WHERE id IN (v_demo_doc_uid, v_other_uid, v_other_doc_uid);
+    DELETE FROM auth.users WHERE id IN (v_demo_doc_uid, v_other_uid, v_other_doc_uid);
 END $$;
 
 
@@ -2102,4 +2176,4 @@ WHERE n.nspname IN ('public', 'private')
   AND has_function_privilege(r.oid, p.oid, 'EXECUTE')
 ORDER BY schema_name, function_name, granted_role;
 
-DO $ BEGIN RAISE NOTICE '=== verification_script.sql complete: ALL TESTS PASSED ==='; END $;
+DO $$ BEGIN RAISE NOTICE 'verification_script.sql finished; check [FAIL] lines above'; END $$;
