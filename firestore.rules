@@ -1166,25 +1166,37 @@ service cloud.firestore {
       allow read: if true;
 
       // Creation: Logged-in provider can create draft/pending_payment ads OR Super Admin
+      // Disallows server-controlled payment/activation fields on creation (razorpay IDs, start/end times)
       allow create: if isSuperAdmin()
         || (isSignedIn()
           && request.resource.data.providerId == request.auth.uid
           && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending_payment')
           && request.resource.data.paymentStatus == 'pending'
+          && !request.resource.data.keys().hasAny(['razorpayOrderId', 'razorpayPaymentId', 'startTime', 'endTime'])
           && validPromotedAdStorage(request.resource.data, request.auth.uid));
 
       // Update: Super Admin can update all fields; Provider can edit draft content
+      // Forbids client writes to payment IDs, pricing/duration, activation times, and payment status other than pending
       allow update: if isSuperAdmin()
         || (isSignedIn()
           && resource.data.providerId == request.auth.uid
           && request.resource.data.providerId == resource.data.providerId
           && request.resource.data.status != 'active'
-          && request.resource.data.paymentStatus != 'verified'
+          && request.resource.data.paymentStatus == 'pending'
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'razorpayOrderId', 'razorpayPaymentId', 'amountPaid', 'durationHours', 'startTime', 'endTime'
+            ])
           && validPromotedAdStorage(request.resource.data, resource.data.providerId));
 
       // Deletion: Super Admin or owning provider
       allow delete: if isSuperAdmin()
         || (isSignedIn() && resource.data.providerId == request.auth.uid);
+    }
+
+    // ─── Razorpay Payment Ledger (Server-only transaction record) ───────────
+
+    match /razorpayPayments/{paymentId} {
+      allow read, write: if false;
     }
 
     // ─── Trigger Email Extension (mail queue) ──────────────────────────────

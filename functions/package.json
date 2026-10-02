@@ -26,7 +26,8 @@
     "test": "node --test test/**/*.test.js",
     "test:storage-rules": "firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test test/storage_doctor_kyc.rules.test.js test/storage_provider_kyc.rules.test.js\"",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-doctornect-reviews \"node --test test/firestore_reviews.rules.test.js\"",
-    "test:firestore-s3-rules": "firebase emulators:exec --only firestore --project demo-doctornect-s3-rules \"node --test test/firestore_s3_rules.test.js\""
+    "test:firestore-s3-rules": "firebase emulators:exec --only firestore --project demo-doctornect-s3-rules \"node --test test/firestore_s3_rules.test.js\"",
+    "test:promoted-ads": "firebase emulators:exec --only firestore --project demo-doctornect-promoted-rules \"node --test test/promoted_ads_verification.test.js\""
   },
   "private": true
 }

@@ -617,6 +617,68 @@ test('promotedAds: owning provider can create and update ad with valid S3 banner
   );
 });
 
+test('promotedAds: owner cannot change durationHours or razorpayOrderId on update, client cannot access razorpayPayments', async () => {
+  await seedUsers();
+  const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);
+  const adId = 'ad_test_protected_fields';
+
+  await assertSucceeds(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).set({
+      providerId: DOCTOR_UID,
+      providerType: 'doctor',
+      title: 'Valid Initial Ad',
+      description: 'Initial ad description',
+      imageUrl: 'https://s3.example.com/banner.jpg',
+      imageKey: `promoted_ads/${DOCTOR_UID}/${adId}/banner_01.jpg`,
+      imageStorage: 's3',
+      status: 'draft',
+      paymentStatus: 'pending',
+      amountPaid: 300,
+      durationHours: 24,
+      createdAt: new Date(),
+    }),
+  );
+
+  // 1. Owner changing durationHours must fail
+  await assertFails(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).update({
+      durationHours: 168,
+    }),
+  );
+
+  // 2. Owner changing razorpayOrderId must fail
+  await assertFails(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).update({
+      razorpayOrderId: 'order_hacked_123',
+    }),
+  );
+
+  // 3. Owner changing amountPaid must fail
+  await assertFails(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).update({
+      amountPaid: 100,
+    }),
+  );
+
+  // 4. Owner changing paymentStatus to verified must fail
+  await assertFails(
+    doctorCtx.firestore().collection('promotedAds').doc(adId).update({
+      paymentStatus: 'verified',
+    }),
+  );
+
+  // 5. Client read/write to razorpayPayments ledger must fail
+  await assertFails(
+    doctorCtx.firestore().collection('razorpayPayments').doc('pay_fake_123').set({
+      adId,
+      orderId: 'order_123',
+    }),
+  );
+  await assertFails(
+    doctorCtx.firestore().collection('razorpayPayments').doc('pay_fake_123').get(),
+  );
+});
+
 test('promotedAds: provider cannot use wrong prefix or traversal in imageKey', async () => {
   await seedUsers();
   const doctorCtx = testEnv.authenticatedContext(DOCTOR_UID);

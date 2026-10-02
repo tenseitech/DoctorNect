@@ -123,55 +123,64 @@ serve(async (req) => {
             });
           }
 
-          let durationHours = ad.duration_hours || 24;
-          let amountPaid = AD_PRICING_TABLE[durationHours] || 300;
-
-          // If Razorpay API credentials are configured, verify payment and order details
-          if (razorpayKeyId && razorpayKeySecret) {
-            const basicAuth = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
-            const [pRes, oRes] = await Promise.all([
-              fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
-                headers: { Authorization: `Basic ${basicAuth}` },
-              }),
-              fetch(`https://api.razorpay.com/v1/orders/${orderId}`, {
-                headers: { Authorization: `Basic ${basicAuth}` },
-              }),
-            ]);
-
-            if (pRes.ok && oRes.ok) {
-              const rzPayment = await pRes.json();
-              const rzOrder = await oRes.json();
-
-              if (rzPayment.status !== "captured" || rzPayment.order_id !== orderId) {
-                console.error("[razorpay-payments webhook] Payment not captured or order mismatch");
-                return new Response(JSON.stringify({ error: "Payment verification failed" }), {
-                  status: 400,
-                  headers: { ...corsHeaders, "Content-Type": "application/json" },
-                });
-              }
-
-              if (rzOrder.notes?.adId !== ad.ad_id) {
-                console.error("[razorpay-payments webhook] Order notes adId mismatch");
-                return new Response(JSON.stringify({ error: "Order notes adId mismatch" }), {
-                  status: 400,
-                  headers: { ...corsHeaders, "Content-Type": "application/json" },
-                });
-              }
-
-              const durFromNotes = parseInt(rzOrder.notes?.durationHours, 10);
-              const priceFromNotes = AD_PRICING_TABLE[durFromNotes];
-              if (!priceFromNotes || rzPayment.amount !== priceFromNotes * 100) {
-                console.error("[razorpay-payments webhook] Price or duration mismatch");
-                return new Response(JSON.stringify({ error: "Price or duration mismatch" }), {
-                  status: 400,
-                  headers: { ...corsHeaders, "Content-Type": "application/json" },
-                });
-              }
-
-              durationHours = durFromNotes;
-              amountPaid = priceFromNotes;
-            }
+          // Fail closed: require Razorpay API credentials
+          if (!razorpayKeyId || !razorpayKeySecret) {
+            console.error("[razorpay-payments webhook] Razorpay API credentials not configured");
+            return new Response(JSON.stringify({ error: "Razorpay credentials not configured" }), {
+              status: 503,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
           }
+
+          const basicAuth = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
+          const [pRes, oRes] = await Promise.all([
+            fetch(`https://api.razorpay.com/v1/payments/${paymentId}`, {
+              headers: { Authorization: `Basic ${basicAuth}` },
+            }),
+            fetch(`https://api.razorpay.com/v1/orders/${orderId}`, {
+              headers: { Authorization: `Basic ${basicAuth}` },
+            }),
+          ]);
+
+          if (!pRes.ok || !oRes.ok) {
+            console.error("[razorpay-payments webhook] Razorpay API response not ok");
+            return new Response(JSON.stringify({ error: "Failed to verify with Razorpay API" }), {
+              status: 503,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          const rzPayment = await pRes.json();
+          const rzOrder = await oRes.json();
+
+          if (rzPayment.status !== "captured" || rzPayment.order_id !== orderId) {
+            console.error("[razorpay-payments webhook] Payment not captured or order mismatch");
+            return new Response(JSON.stringify({ error: "Payment verification failed" }), {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          if (rzOrder.notes?.adId !== ad.ad_id) {
+            console.error("[razorpay-payments webhook] Order notes adId mismatch");
+            return new Response(JSON.stringify({ error: "Order notes adId mismatch" }), {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          const durFromNotes = parseInt(rzOrder.notes?.durationHours, 10);
+          const priceFromNotes = AD_PRICING_TABLE[durFromNotes];
+          if (!priceFromNotes || rzPayment.amount !== priceFromNotes * 100) {
+            console.error("[razorpay-payments webhook] Price or duration mismatch");
+            return new Response(JSON.stringify({ error: "Price or duration mismatch" }), {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          const durationHours = durFromNotes;
+          const amountPaid = priceFromNotes;
 
           const now = new Date();
           const endsAt = new Date(now.getTime() + durationHours * 3600 * 1000);
@@ -374,16 +383,9 @@ serve(async (req) => {
         });
       }
 
-      // Require ad.razorpay_order_id === orderId and status pending_payment
+      // Require ad.razorpay_order_id === orderId
       if (ad.razorpay_order_id !== orderId) {
         return new Response(JSON.stringify({ error: "Order ID does not match ad record" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      if (ad.status !== "pending_payment") {
-        return new Response(JSON.stringify({ error: `Ad is not in pending_payment state (status: ${ad.status})` }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -399,6 +401,29 @@ serve(async (req) => {
           JSON.stringify({ error: "Razorpay payment signature verification failed" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      // Idempotency: if already active with same payment id, return 200 success
+      if (ad.status === "active" && ad.razorpay_payment_id === paymentId) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Payment already verified and banner ad is active (idempotent)",
+            ad_id: adId,
+            idempotent: true,
+            start_time: ad.start_time,
+            end_time: ad.end_time,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Otherwise require pending_payment
+      if (ad.status !== "pending_payment") {
+        return new Response(JSON.stringify({ error: `Ad is not in pending_payment state (status: ${ad.status})` }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       // Fetch payment and order from Razorpay REST API

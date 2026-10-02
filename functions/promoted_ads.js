@@ -31,21 +31,25 @@ function getRazorpayCredentials() {
 }
 
 /** Helper: Send HTTPS Request to Razorpay REST API */
-function makeRazorpayRequest(path, method, payload, keyId, keySecret) {
+function makeRazorpayRequest(path, method = 'GET', payload = null, keyId, keySecret) {
   return new Promise((resolve, reject) => {
     const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
-    const postData = JSON.stringify(payload);
+    const postData = payload ? JSON.stringify(payload) : null;
+
+    const headers = {
+      Authorization: authHeader,
+    };
+    if (postData) {
+      headers['Content-Type'] = 'application/json';
+      headers['Content-Length'] = Buffer.byteLength(postData);
+    }
 
     const options = {
       hostname: 'api.razorpay.com',
       port: 443,
       path: path,
       method: method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-        'Content-Length': Buffer.byteLength(postData),
-      },
+      headers: headers,
     };
 
     const req = https.request(options, (res) => {
@@ -66,7 +70,9 @@ function makeRazorpayRequest(path, method, payload, keyId, keySecret) {
     });
 
     req.on('error', (e) => reject(e));
-    req.write(postData);
+    if (postData) {
+      req.write(postData);
+    }
     req.end();
   });
 }
@@ -105,8 +111,53 @@ const createRazorpayOrder = onCall({ region: 'asia-south1' }, async (request) =>
     throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
   }
 
+  if (adData.status !== 'draft' && adData.status !== 'pending_payment') {
+    throw new HttpsError(
+      'failed-precondition',
+      `Cannot create payment order for ad with status '${adData.status}'.`
+    );
+  }
+
   const { keyId, keySecret } = getRazorpayCredentials();
   const amountPaise = amountINR * 100;
+
+  // If pending_payment with existing razorpayOrderId for same durationHours, reuse verified existing order
+  if (
+    adData.status === 'pending_payment' &&
+    adData.razorpayOrderId &&
+    Number(adData.durationHours) === hours
+  ) {
+    const existingOrderId = String(adData.razorpayOrderId).trim();
+    try {
+      const existingOrder = await makeRazorpayRequest(
+        `/v1/orders/${existingOrderId}`,
+        'GET',
+        null,
+        keyId,
+        keySecret
+      );
+
+      const notes = existingOrder.notes || {};
+      const orderDuration = parseInt(notes.durationHours, 10);
+
+      if (
+        existingOrder.id === existingOrderId &&
+        existingOrder.amount === amountPaise &&
+        notes.adId === safeAdId &&
+        notes.providerUid === request.auth.uid &&
+        orderDuration === hours
+      ) {
+        return {
+          orderId: existingOrder.id,
+          keyId: keyId,
+          amount: amountINR,
+          currency: 'INR',
+        };
+      }
+    } catch (err) {
+      console.warn(`[createRazorpayOrder] Failed to reuse existing order ${existingOrderId}, creating new:`, err.message);
+    }
+  }
 
   try {
     const razorpayOrder = await makeRazorpayRequest(
@@ -186,7 +237,7 @@ const verifyRazorpayPayment = onCall({ region: 'asia-south1' }, async (request) 
     throw new HttpsError('invalid-argument', 'Order does not match this advertisement.');
   }
 
-  const { keySecret } = getRazorpayCredentials();
+  const { keyId, keySecret } = getRazorpayCredentials();
 
   // Server-side HMAC SHA256 signature verification per Razorpay spec
   const payload = `${safeOrderId}|${safePaymentId}`;
@@ -195,40 +246,122 @@ const verifyRazorpayPayment = onCall({ region: 'asia-south1' }, async (request) 
     .update(payload)
     .digest('hex');
 
-  const isVerified = generatedSignature.toLowerCase() === safeSignature.toLowerCase();
+  const bufExpected = Buffer.from(generatedSignature.toLowerCase(), 'utf8');
+  const bufReceived = Buffer.from(safeSignature.toLowerCase(), 'utf8');
 
-  if (!isVerified) {
+  // Constant-time compare with length check; on mismatch write NOTHING
+  if (bufExpected.length !== bufReceived.length || !crypto.timingSafeEqual(bufExpected, bufReceived)) {
     console.warn(`[verifyRazorpayPayment] Signature mismatch for ad ${safeAdId}`);
-    await adRef.update({
-      paymentStatus: 'failed',
-      status: 'rejected',
-      razorpayPaymentId: safePaymentId,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
     throw new HttpsError('invalid-argument', 'Razorpay payment signature verification failed.');
   }
 
-  const durationHours = parseInt(adData.durationHours || 24, 10);
-  const now = Timestamp.now();
-  const endTime = Timestamp.fromMillis(now.toMillis() + durationHours * 3600 * 1000);
+  // GET the Razorpay payment and order (reuse makeRazorpayRequest)
+  let payment, order;
+  try {
+    [payment, order] = await Promise.all([
+      makeRazorpayRequest(`/v1/payments/${safePaymentId}`, 'GET', null, keyId, keySecret),
+      makeRazorpayRequest(`/v1/orders/${safeOrderId}`, 'GET', null, keyId, keySecret),
+    ]);
+  } catch (err) {
+    console.error('[verifyRazorpayPayment] Error fetching payment/order from Razorpay:', err);
+    throw new HttpsError('internal', 'Failed to verify payment with payment gateway.');
+  }
 
-  // Update via Admin SDK: set status to active and paymentStatus to verified
-  await adRef.update({
-    paymentStatus: 'verified',
-    status: 'active',
-    razorpayOrderId: safeOrderId,
-    razorpayPaymentId: safePaymentId,
-    startTime: now,
-    endTime: endTime,
-    updatedAt: FieldValue.serverTimestamp(),
+  if (payment.status !== 'captured' || payment.order_id !== safeOrderId) {
+    throw new HttpsError('failed-precondition', 'Payment not captured or order mismatch.');
+  }
+
+  if (payment.currency !== 'INR') {
+    throw new HttpsError('failed-precondition', 'Payment currency must be INR.');
+  }
+
+  if (order.notes?.adId !== safeAdId || order.notes?.providerUid !== request.auth.uid) {
+    throw new HttpsError('failed-precondition', 'Order notes mismatch.');
+  }
+
+  // Duration and price derived ONLY from order.notes, never from the Firestore row
+  const noteDurationHours = parseInt(order.notes?.durationHours, 10);
+  const expectedPriceINR = AD_PRICING_TABLE[noteDurationHours];
+  if (!expectedPriceINR || payment.amount !== expectedPriceINR * 100) {
+    throw new HttpsError('failed-precondition', 'Payment amount or duration mismatch.');
+  }
+
+  const paymentLedgerRef = db.collection('razorpayPayments').doc(safePaymentId);
+  const now = Timestamp.now();
+  const endTime = Timestamp.fromMillis(now.toMillis() + noteDurationHours * 3600 * 1000);
+
+  let isIdempotentSuccess = false;
+  let resStartTime = now;
+  let resEndTime = endTime;
+
+  // Activation inside a Firestore transaction
+  await db.runTransaction(async (tx) => {
+    const [currentAdDoc, ledgerDoc] = await Promise.all([
+      tx.get(adRef),
+      tx.get(paymentLedgerRef),
+    ]);
+
+    if (!currentAdDoc.exists) {
+      throw new HttpsError('not-found', 'Promoted ad document not found.');
+    }
+
+    const currentAd = currentAdDoc.data();
+    if (currentAd.providerId !== request.auth.uid) {
+      throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+    }
+
+    // Ledger check: if it exists for the same adId and the ad is already active, return idempotent success; if for a different ad, reject.
+    if (ledgerDoc.exists) {
+      const ledgerData = ledgerDoc.data();
+      if (ledgerData.adId === safeAdId && currentAd.status === 'active' && currentAd.razorpayPaymentId === safePaymentId) {
+        isIdempotentSuccess = true;
+        resStartTime = currentAd.startTime || now;
+        resEndTime = currentAd.endTime || endTime;
+        return;
+      }
+      throw new HttpsError('already-exists', 'This payment has already been used.');
+    }
+
+    // Require ad.status === 'pending_payment' and ad.razorpayOrderId === orderId
+    if (currentAd.status !== 'pending_payment' || currentAd.razorpayOrderId !== safeOrderId) {
+      throw new HttpsError(
+        'failed-precondition',
+        `Ad is not in pending_payment state or order ID mismatch (status: ${currentAd.status}).`
+      );
+    }
+
+    // Create ledger doc in same transaction
+    tx.set(paymentLedgerRef, {
+      adId: safeAdId,
+      orderId: safeOrderId,
+      providerUid: request.auth.uid,
+      paymentId: safePaymentId,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    // Write durationHours, amountPaid, startTime, endTime from notes-derived values
+    tx.update(adRef, {
+      paymentStatus: 'verified',
+      status: 'active',
+      razorpayOrderId: safeOrderId,
+      razorpayPaymentId: safePaymentId,
+      durationHours: noteDurationHours,
+      amountPaid: expectedPriceINR,
+      startTime: now,
+      endTime: endTime,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
   });
 
   return {
     success: true,
-    message: 'Payment verified and banner ad activated successfully!',
+    idempotent: isIdempotentSuccess,
+    message: isIdempotentSuccess
+      ? 'Payment already verified and banner ad is active (idempotent)'
+      : 'Payment verified and banner ad activated successfully!',
     adId: safeAdId,
-    startTime: now.toDate().toISOString(),
-    endTime: endTime.toDate().toISOString(),
+    startTime: resStartTime.toDate ? resStartTime.toDate().toISOString() : new Date(resStartTime).toISOString(),
+    endTime: resEndTime.toDate ? resEndTime.toDate().toISOString() : new Date(resEndTime).toISOString(),
   };
 });
 
@@ -268,6 +401,9 @@ const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-sout
 });
 
 module.exports = {
+  AD_PRICING_TABLE,
+  getRazorpayCredentials,
+  makeRazorpayRequest,
   createRazorpayOrder,
   verifyRazorpayPayment,
   expirePromotedAds,

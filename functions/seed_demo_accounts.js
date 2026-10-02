@@ -1,8 +1,18 @@
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
+if (process.env.ALLOW_DEMO_SEED !== '1') {
+  console.error('Refusing to run seed_demo_accounts: ALLOW_DEMO_SEED=1 is required in environment.');
+  process.exit(1);
+}
+
 // Initialize admin SDK using default credentials
 const projectId = 'medibond-45fad';
+
+if (projectId === 'medibond-45fad' && process.env.CONFIRM_PROD_SEED !== 'medibond-45fad') {
+  console.error("Refusing to seed production project 'medibond-45fad': CONFIRM_PROD_SEED=medibond-45fad is required in environment.");
+  process.exit(1);
+}
 
 admin.initializeApp({
   projectId: projectId
@@ -243,39 +253,6 @@ async function seedDemoAccounts() {
     await db.collection('users').doc(ambulanceAuthUid).set(ambulanceUserData, { merge: true });
     await db.collection('users').doc(ambulanceProfileId).set(ambulanceUserData, { merge: true });
     console.log(`Successfully seeded fully verified demo ambulance (${ambulanceProfileId} / ${ambulanceAuthUid}).`);
-
-    // Seed fully verified demo Super Admin account (9999988888)
-    const adminPhone = "9999988888";
-    const adminProfileId = "demo_super_admin_9999988888";
-    const adminDisplayName = "Demo Super Admin";
-    const adminEmail = "superadmin.demo@doctornect.com";
-
-    let adminUid = "demo_user_superAdmin_9999988888";
-    const adminUserSnapshot = await db.collection('users').where('mobile', 'in', [adminPhone, `+91${adminPhone}`]).limit(1).get();
-    if (!adminUserSnapshot.empty) {
-      adminUid = adminUserSnapshot.docs[0].id;
-    }
-
-    const adminUserData = {
-      role: "super_admin",
-      profileId: adminProfileId,
-      displayName: adminDisplayName,
-      email: adminEmail,
-      mobile: adminPhone,
-      phone: adminPhone,
-      verified: true,
-      verificationStatus: "verified",
-      status: "approved",
-      profileCompleted: true,
-      mobileVerified: true,
-      updatedAt: FieldValue.serverTimestamp(),
-      createdAt: FieldValue.serverTimestamp(),
-    };
-
-    console.log(`Seeding fully verified demo super admin (${adminPhone}) to Firestore...`);
-    await db.collection('users').doc(adminUid).set(adminUserData, { merge: true });
-    await db.collection('users').doc(adminProfileId).set(adminUserData, { merge: true });
-    console.log(`Successfully seeded fully verified demo super admin (${adminProfileId} / ${adminUid}).`);
   } catch (error) {
     console.error('Error writing to Firestore:', error);
     process.exit(1);

@@ -89,3 +89,11 @@ scripts/*_report.csv
 # Temporary and scratch folders
 scratch/
 supabase/.temp/
+
+# Debug and output files
+*.diff
+*.out
+auth_otp.diff
+reset.out
+verify.out
+firestore-debug.log
