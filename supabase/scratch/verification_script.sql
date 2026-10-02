@@ -2808,7 +2808,6 @@ END $$;
 -- ----------------------------------------------------------------------------
 -- N6e: Auth signup with raw_user_meta_data role='admin' (never trusted)
 -- (Must NOT create admin in public.users; report observed behavior with [INFO])
--- KNOWN: is_super_admin() returns NULL (not FALSE) for users with no public.users row; deny-safe in RLS but should be COALESCE'd in a future migration
 -- ----------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -2850,12 +2849,12 @@ BEGIN
         RAISE EXCEPTION '[FAIL] N6e - unprivileged signup created public.users row with admin role (%)!', v_actual_role;
     END IF;
 
-    IF v_is_admin IS TRUE THEN
-        RAISE EXCEPTION '[FAIL] N6e - is_super_admin() returned TRUE for unprivileged signup with user_metadata role spoof!';
+    IF v_is_admin IS NOT FALSE THEN
+        RAISE EXCEPTION '[FAIL] N6e - is_super_admin() is % for unprivileged signup with user_metadata role spoof!', v_is_admin;
     END IF;
 
-    RAISE NOTICE '[PASS] N6e - raw_user_meta_data role=''admin'' ignored (row_exists=%, role=%, is_super_admin=%)',
-        v_row_exists, COALESCE(v_actual_role, '<none>'), COALESCE(v_is_admin::TEXT, 'NULL');
+    RAISE NOTICE '[PASS] N6e - raw_user_meta_data role=''admin'' ignored (row_exists=%, role=%, is_super_admin=FALSE)',
+        v_row_exists, COALESCE(v_actual_role, '<none>');
 
     DELETE FROM public.users WHERE id = v_uid;
     DELETE FROM auth.users WHERE id = v_uid;
