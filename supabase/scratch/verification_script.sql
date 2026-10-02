@@ -2529,6 +2529,338 @@ BEGIN
 END $$;
 
 
+-- ----------------------------------------------------------------------------
+-- N6a: Authenticated patient attempting UPDATE role='admin' on public.users
+-- (Must be blocked by column grants / trigger / RLS; role must stay 'patient')
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid      UUID := gen_random_uuid();
+    v_pat_id   TEXT := 'p_n6a_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_blocked  BOOLEAN := FALSE;
+    v_role     TEXT;
+    v_is_admin BOOLEAN;
+BEGIN
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'patient_n6a@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'patient', v_pat_id, 'Patient N6a', 'patient_n6a@test.com', '9000000091',
+        TRUE, FALSE, FALSE, 'pending'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    -- Switch to authenticated patient session
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    BEGIN
+        UPDATE public.users SET role = 'admin' WHERE id = v_uid;
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked := TRUE;
+    END;
+
+    -- Reset to superuser to verify DB state
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    SELECT role INTO v_role FROM public.users WHERE id = v_uid;
+
+    -- Also check is_super_admin() under patient session
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+    v_is_admin := public.is_super_admin();
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    IF NOT v_blocked AND v_role = 'admin' THEN
+        RAISE EXCEPTION '[FAIL] N6a - authenticated patient successfully escalated role to admin!';
+    END IF;
+
+    IF v_role IS DISTINCT FROM 'patient' THEN
+        RAISE EXCEPTION '[FAIL] N6a - public.users.role was modified (current: %, expected: patient)', v_role;
+    END IF;
+
+    IF v_is_admin IS NOT FALSE THEN
+        RAISE EXCEPTION '[FAIL] N6a - is_super_admin() returned % after failed escalation (expected FALSE)', v_is_admin;
+    END IF;
+
+    RAISE NOTICE '[PASS] N6a - authenticated patient blocked from UPDATE role=''admin'' (role=%, is_super_admin=FALSE)',
+        v_role;
+
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
+-- ----------------------------------------------------------------------------
+-- N6b: Authenticated patient attempting UPDATE role='super_admin' or 'superAdmin'
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid      UUID := gen_random_uuid();
+    v_pat_id   TEXT := 'p_n6b_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_blocked1 BOOLEAN := FALSE;
+    v_blocked2 BOOLEAN := FALSE;
+    v_role     TEXT;
+    v_is_admin BOOLEAN;
+BEGIN
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'patient_n6b@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'patient', v_pat_id, 'Patient N6b', 'patient_n6b@test.com', '9000000092',
+        TRUE, FALSE, FALSE, 'pending'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    -- Switch to authenticated patient session
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    -- Try UPDATE role = 'super_admin'
+    BEGIN
+        UPDATE public.users SET role = 'super_admin' WHERE id = v_uid;
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked1 := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked1 := TRUE;
+    END;
+
+    -- Try UPDATE role = 'superAdmin'
+    BEGIN
+        UPDATE public.users SET role = 'superAdmin' WHERE id = v_uid;
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked2 := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked2 := TRUE;
+    END;
+
+    -- Reset to superuser to verify DB state
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    SELECT role INTO v_role FROM public.users WHERE id = v_uid;
+
+    -- Verify is_super_admin() under patient session
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+    v_is_admin := public.is_super_admin();
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    IF (NOT v_blocked1 OR NOT v_blocked2) AND v_role IN ('super_admin', 'superAdmin') THEN
+        RAISE EXCEPTION '[FAIL] N6b - authenticated patient escalated role to %!', v_role;
+    END IF;
+
+    IF v_role IS DISTINCT FROM 'patient' THEN
+        RAISE EXCEPTION '[FAIL] N6b - public.users.role was modified (current: %, expected: patient)', v_role;
+    END IF;
+
+    IF v_is_admin IS NOT FALSE THEN
+        RAISE EXCEPTION '[FAIL] N6b - is_super_admin() returned % (expected FALSE)', v_is_admin;
+    END IF;
+
+    RAISE NOTICE '[PASS] N6b - authenticated patient blocked from UPDATE role to super_admin/superAdmin (role=%, is_super_admin=FALSE)',
+        v_role;
+
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
+-- ----------------------------------------------------------------------------
+-- N6c: Authenticated user without public.users row attempting INSERT role='admin'
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid     UUID := gen_random_uuid();
+    v_pat_id  TEXT := 'p_n6c_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_blocked BOOLEAN := FALSE;
+    v_exists  BOOLEAN;
+BEGIN
+    -- Auth user exists in auth.users, but NO row in public.users
+    INSERT INTO auth.users (id, aud, role, email, raw_app_meta_data)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'noprofile_n6c@test.com', '{"skip_provision":"true"}'::jsonb)
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Switch to authenticated session
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    BEGIN
+        INSERT INTO public.users (
+            id, role, profile_id, display_name, email, mobile,
+            profile_completed, verified, deactivated, status
+        ) VALUES (
+            v_uid, 'admin', v_pat_id, 'Attacker N6c', 'noprofile_n6c@test.com', '9000000093',
+            TRUE, TRUE, FALSE, 'approved'
+        );
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked := TRUE;
+    END;
+
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    SELECT EXISTS (SELECT 1 FROM public.users WHERE id = v_uid) INTO v_exists;
+
+    IF NOT v_blocked AND v_exists THEN
+        RAISE EXCEPTION '[FAIL] N6c - authenticated user without profile was able to INSERT public.users row with role=''admin''!';
+    END IF;
+
+    IF v_exists THEN
+        RAISE EXCEPTION '[FAIL] N6c - public.users row exists for unprivileged INSERT attempt';
+    END IF;
+
+    RAISE NOTICE '[PASS] N6c - authenticated user without profile blocked from direct INSERT into public.users (42501)';
+
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
+-- ----------------------------------------------------------------------------
+-- N6d: Authenticated patient attempting UPDATE verified=true and status='approved'
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid              UUID := gen_random_uuid();
+    v_pat_id           TEXT := 'p_n6d_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_blocked_verified BOOLEAN := FALSE;
+    v_blocked_status   BOOLEAN := FALSE;
+    v_verified         BOOLEAN;
+    v_status           TEXT;
+BEGIN
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'patient_n6d@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Setup patient with verified = FALSE and status = 'pending'
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'patient', v_pat_id, 'Patient N6d', 'patient_n6d@test.com', '9000000094',
+        TRUE, FALSE, FALSE, 'pending'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    -- Switch to authenticated session
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    -- 1. Attempt UPDATE verified = TRUE
+    BEGIN
+        UPDATE public.users SET verified = TRUE WHERE id = v_uid;
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked_verified := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked_verified := TRUE;
+    END;
+
+    -- 2. Attempt UPDATE status = 'approved'
+    BEGIN
+        UPDATE public.users SET status = 'approved' WHERE id = v_uid;
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked_status := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked_status := TRUE;
+    END;
+
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    SELECT verified, status INTO v_verified, v_status FROM public.users WHERE id = v_uid;
+
+    IF NOT v_blocked_verified AND v_verified = TRUE THEN
+        RAISE EXCEPTION '[FAIL] N6d - authenticated patient was able to UPDATE verified=true!';
+    END IF;
+
+    IF NOT v_blocked_status AND v_status = 'approved' THEN
+        RAISE EXCEPTION '[FAIL] N6d - authenticated patient was able to UPDATE status=''approved''!';
+    END IF;
+
+    IF v_verified IS DISTINCT FROM FALSE OR v_status IS DISTINCT FROM 'pending' THEN
+        RAISE EXCEPTION '[FAIL] N6d - verified or status was altered (verified=%, status=%)', v_verified, v_status;
+    END IF;
+
+    RAISE NOTICE '[PASS] N6d - authenticated patient blocked from updating verified/status (verified=%, status=%)',
+        v_verified, v_status;
+
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
+-- ----------------------------------------------------------------------------
+-- N6e: Auth signup with raw_user_meta_data role='admin' (never trusted)
+-- (Must NOT create admin in public.users; report observed behavior with [INFO])
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid         UUID := gen_random_uuid();
+    v_actual_role TEXT;
+    v_row_exists  BOOLEAN;
+    v_is_admin    BOOLEAN;
+BEGIN
+    -- Insert auth.users row with role='admin' in raw_user_meta_data only
+    INSERT INTO auth.users (
+        id, aud, role, email,
+        raw_app_meta_data,
+        raw_user_meta_data,
+        is_sso_user, is_anonymous, created_at, updated_at
+    ) VALUES (
+        v_uid, 'authenticated', 'authenticated', 'spoof_admin_n6e@test.com',
+        '{}'::jsonb, -- raw_app_meta_data does NOT have role
+        jsonb_build_object('role', 'admin', 'name', 'Attacker Admin'),
+        FALSE, FALSE, NOW(), NOW()
+    );
+
+    SELECT EXISTS (SELECT 1 FROM public.users WHERE id = v_uid) INTO v_row_exists;
+    IF v_row_exists THEN
+        SELECT role INTO v_actual_role FROM public.users WHERE id = v_uid;
+    END IF;
+
+    -- Check is_super_admin() under this user session
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+    v_is_admin := public.is_super_admin();
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    RAISE NOTICE '[INFO] N6e - auth signup with role=''admin'' in raw_user_meta_data: public.users row_exists=%, role=%, is_super_admin=%',
+        v_row_exists, COALESCE(v_actual_role, '<none>'), v_is_admin;
+
+    IF v_actual_role IN ('admin', 'super_admin', 'superAdmin') THEN
+        RAISE EXCEPTION '[FAIL] N6e - unprivileged signup created public.users row with admin role (%)!', v_actual_role;
+    END IF;
+
+    IF v_is_admin IS NOT FALSE THEN
+        RAISE EXCEPTION '[FAIL] N6e - is_super_admin() is % for unprivileged signup with user_metadata role spoof!', v_is_admin;
+    END IF;
+
+    RAISE NOTICE '[PASS] N6e - raw_user_meta_data role=''admin'' ignored (row_exists=%, role=%, is_super_admin=FALSE)',
+        v_row_exists, COALESCE(v_actual_role, '<none>');
+
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
 
 
 -- ============================================================================
