@@ -1452,17 +1452,19 @@ END $$;
 -- ============================================================================
 DO $$
 DECLARE
-    v_demo_doc_uid  UUID := gen_random_uuid();
-    v_demo_doc_id   TEXT := 'd_demo_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
-    v_other_uid     UUID := gen_random_uuid();
-    v_other_pat_id  TEXT := 'p_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
-    v_other_doc_id  TEXT := 'd_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
-    v_other_appt_id TEXT := 'ap_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
-    v_other_rec_id  TEXT := 'rec_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
-    v_other_rx_id   TEXT := 'rx_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
-    v_other_link_id TEXT := 'pdl_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
-    v_other_doc_uid UUID := gen_random_uuid();
-    v_cnt           INT;
+    v_demo_doc_uid   UUID := gen_random_uuid();
+    v_demo_doc_id    TEXT := 'd_demo_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_other_uid      UUID := gen_random_uuid();
+    v_other_pat_id   TEXT := 'p_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_other_doc_id   TEXT := 'd_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_other_appt_id  TEXT := 'ap_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_other_rec_id   TEXT := 'rec_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_other_rx_id    TEXT := 'rx_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_other_link_id  TEXT := 'pdl_other_isolate_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_other_doc_uid  UUID := gen_random_uuid();
+    v_linked_pat_uid UUID := gen_random_uuid();
+    v_linked_pat_id  TEXT := 'p_linked_iso_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_cnt            INT;
 BEGIN
     -- 1. Setup Demo Doctor (verified = true, status = 'approved', NO patient links)
     INSERT INTO auth.users (id, aud, role, email)
@@ -1556,10 +1558,43 @@ BEGIN
         v_other_pat_id, v_other_doc_id, 'appointment'
     );
 
-    -- 3. Switch session to the demo doctor (v_demo_doc_uid)
+    -- 3. Setup linked patient for demo doctor (Positive Control)
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_linked_pat_uid, 'authenticated', 'authenticated', 'linked_pat@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_linked_pat_uid, 'patient', v_linked_pat_id, 'Linked Patient', 'linked_pat@test.com', '9998887775',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    INSERT INTO public.patients (
+        patient_id, owner_uid, name, mobile, share_records_with_doctors
+    ) VALUES (
+        v_linked_pat_id, v_linked_pat_uid, 'Linked Patient', '9998887775', TRUE
+    );
+
+    INSERT INTO public.patient_doctor_links (
+        patient_id, doctor_id, source
+    ) VALUES (
+        v_linked_pat_id, v_demo_doc_id, 'appointment'
+    );
+
+    -- 4. Switch session to the demo doctor (v_demo_doc_uid)
     PERFORM set_config('request.jwt.claims',
         json_build_object('sub', v_demo_doc_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
     SET LOCAL ROLE authenticated;
+
+    -- Positive control I_ctrl: demo doctor CAN read linked patient (count >= 1)
+    SELECT count(*) INTO v_cnt FROM public.patients WHERE patient_id = v_linked_pat_id;
+    IF v_cnt < 1 THEN
+        RAISE EXCEPTION '[FAIL] I_ctrl - demo doctor cannot read linked patient (count=%)', v_cnt;
+    END IF;
+    RAISE NOTICE '[PASS] I_ctrl - positive control: demo doctor CAN read linked patient (count=%)', v_cnt;
 
     -- Test I1: patients not owned/linked must return 0
     SELECT count(*) INTO v_cnt FROM public.patients WHERE patient_id = v_other_pat_id;
@@ -1600,14 +1635,14 @@ BEGIN
     PERFORM set_config('request.jwt.claims', '', TRUE);
 
     -- Cleanup
-    DELETE FROM public.patient_doctor_links WHERE patient_id = v_other_pat_id AND doctor_id = v_other_doc_id;
+    DELETE FROM public.patient_doctor_links WHERE patient_id IN (v_other_pat_id, v_linked_pat_id);
     DELETE FROM public.prescriptions WHERE prescription_id = v_other_rx_id;
     DELETE FROM public.health_records WHERE record_id = v_other_rec_id;
     DELETE FROM public.appointments WHERE appointment_id = v_other_appt_id;
     DELETE FROM public.doctors WHERE doctor_id IN (v_demo_doc_id, v_other_doc_id);
-    DELETE FROM public.patients WHERE patient_id = v_other_pat_id;
-    DELETE FROM public.users WHERE id IN (v_demo_doc_uid, v_other_uid, v_other_doc_uid);
-    DELETE FROM auth.users WHERE id IN (v_demo_doc_uid, v_other_uid, v_other_doc_uid);
+    DELETE FROM public.patients WHERE patient_id IN (v_other_pat_id, v_linked_pat_id);
+    DELETE FROM public.users WHERE id IN (v_demo_doc_uid, v_other_uid, v_other_doc_uid, v_linked_pat_uid);
+    DELETE FROM auth.users WHERE id IN (v_demo_doc_uid, v_other_uid, v_other_doc_uid, v_linked_pat_uid);
 END $$;
 
 
@@ -2128,6 +2163,369 @@ BEGIN
     -- Cleanup
     DELETE FROM public.users WHERE id = v_test_uid;
     DELETE FROM auth.users WHERE id = v_test_uid;
+END $$;
+
+
+-- ============================================================================
+-- SECTION N: ADMIN GATE & IS_SUPER_ADMIN() VERIFICATION
+-- Tests private.admin_users RLS lockdown and is_super_admin() security gate.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- N1: Normal authenticated user (not in private.admin_users) has is_super_admin() = FALSE
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid      UUID := gen_random_uuid();
+    v_pat_id   TEXT := 'p_n1_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_is_admin BOOLEAN;
+BEGIN
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'user_n1@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'patient', v_pat_id, 'Normal User N1', 'user_n1@test.com', '9000000081',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    v_is_admin := public.is_super_admin();
+
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    IF v_is_admin IS NOT FALSE THEN
+        RAISE EXCEPTION '[FAIL] N1 - normal user without admin_users row returned is_super_admin() = % (expected FALSE)', v_is_admin;
+    END IF;
+    RAISE NOTICE '[PASS] N1 - normal authenticated user without admin_users row has is_super_admin() = FALSE';
+
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
+-- ----------------------------------------------------------------------------
+-- N2: User with row in private.admin_users has is_super_admin() = TRUE
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid      UUID := gen_random_uuid();
+    v_pat_id   TEXT := 'p_n2_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_is_admin BOOLEAN;
+BEGIN
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'admin_n2@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'patient', v_pat_id, 'Admin User N2', 'admin_n2@test.com', '9000000082',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    -- Superuser inserts row into private.admin_users
+    INSERT INTO private.admin_users (user_id)
+    VALUES (v_uid)
+    ON CONFLICT (user_id) DO NOTHING;
+
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    v_is_admin := public.is_super_admin();
+
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    IF v_is_admin IS NOT TRUE THEN
+        RAISE EXCEPTION '[FAIL] N2 - user with private.admin_users row returned is_super_admin() = % (expected TRUE)', v_is_admin;
+    END IF;
+    RAISE NOTICE '[PASS] N2 - user with private.admin_users row has is_super_admin() = TRUE';
+
+    DELETE FROM private.admin_users WHERE user_id = v_uid;
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
+-- ----------------------------------------------------------------------------
+-- N3: Authenticated user cannot SELECT/INSERT/UPDATE/DELETE on private.admin_users
+-- (Self-promotion blocked via 42501 / insufficient_privilege)
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid     UUID := gen_random_uuid();
+    v_pat_id  TEXT := 'p_n3_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_blocked BOOLEAN;
+BEGIN
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'user_n3@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'patient', v_pat_id, 'User N3', 'user_n3@test.com', '9000000083',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    -- 1. Attempt self-promotion INSERT into private.admin_users
+    v_blocked := FALSE;
+    BEGIN
+        INSERT INTO private.admin_users (user_id) VALUES (v_uid);
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked := TRUE;
+    END;
+
+    IF NOT v_blocked THEN
+        RAISE EXCEPTION '[FAIL] N3 - authenticated user was able to INSERT into private.admin_users (self-promotion)';
+    END IF;
+
+    -- 2. Attempt SELECT on private.admin_users
+    v_blocked := FALSE;
+    BEGIN
+        PERFORM 1 FROM private.admin_users;
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked := TRUE;
+    END;
+
+    IF NOT v_blocked THEN
+        RAISE EXCEPTION '[FAIL] N3 - authenticated user was able to SELECT from private.admin_users';
+    END IF;
+
+    -- 3. Attempt UPDATE on private.admin_users
+    v_blocked := FALSE;
+    BEGIN
+        UPDATE private.admin_users SET granted_at = NOW();
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked := TRUE;
+    END;
+
+    IF NOT v_blocked THEN
+        RAISE EXCEPTION '[FAIL] N3 - authenticated user was able to UPDATE private.admin_users';
+    END IF;
+
+    -- 4. Attempt DELETE on private.admin_users
+    v_blocked := FALSE;
+    BEGIN
+        DELETE FROM private.admin_users WHERE user_id = v_uid;
+    EXCEPTION
+        WHEN insufficient_privilege THEN v_blocked := TRUE;
+        WHEN sqlstate '42501' THEN v_blocked := TRUE;
+    END;
+
+    IF NOT v_blocked THEN
+        RAISE EXCEPTION '[FAIL] N3 - authenticated user was able to DELETE from private.admin_users';
+    END IF;
+
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    RAISE NOTICE '[PASS] N3 - authenticated user denied SELECT/INSERT/UPDATE/DELETE on private.admin_users (42501)';
+
+    DELETE FROM private.admin_users WHERE user_id = v_uid;
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
+-- ----------------------------------------------------------------------------
+-- N4: public.users.role = 'super_admin' / 'admin' without private.admin_users row
+-- (Informational only: report observed behavior with [INFO])
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_uid      UUID := gen_random_uuid();
+    v_pat_id   TEXT := 'p_n4_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_is_admin BOOLEAN;
+BEGIN
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_uid, 'authenticated', 'authenticated', 'role_admin_n4@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_uid, 'super_admin', v_pat_id, 'Role SuperAdmin N4', 'role_admin_n4@test.com', '9000000084',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    v_is_admin := public.is_super_admin();
+
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    RAISE NOTICE '[INFO] N4 - public.users.role=''super_admin'' without private.admin_users row returned is_super_admin() = %',
+        v_is_admin;
+
+    DELETE FROM public.users WHERE id = v_uid;
+    DELETE FROM auth.users WHERE id = v_uid;
+END $$;
+
+
+-- ----------------------------------------------------------------------------
+-- N5: Admin can read another patient's appointments (positive control); non-admin cannot
+-- Verifies appointments_select policy is_super_admin() branch.
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_target_pat_uid   UUID := gen_random_uuid();
+    v_target_pat_id    TEXT := 'p_n5_tgt_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_target_doc_uid   UUID := gen_random_uuid();
+    v_target_doc_id    TEXT := 'd_n5_tgt_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_target_appt_id   TEXT := 'ap_n5_tgt_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_non_admin_uid    UUID := gen_random_uuid();
+    v_non_admin_pat_id TEXT := 'p_n5_norm_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_admin_uid        UUID := gen_random_uuid();
+    v_admin_pat_id     TEXT := 'p_n5_adm_' || replace(gen_random_uuid()::TEXT, '-', '');
+    v_cnt              INT;
+BEGIN
+    -- 1. Setup target patient
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_target_pat_uid, 'authenticated', 'authenticated', 'tgt_pat_n5@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_target_pat_uid, 'patient', v_target_pat_id, 'Target Patient N5', 'tgt_pat_n5@test.com', '9000000085',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    INSERT INTO public.patients (patient_id, owner_uid, name, mobile)
+    VALUES (v_target_pat_id, v_target_pat_uid, 'Target Patient N5', '9000000085');
+
+    -- 2. Setup target doctor
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_target_doc_uid, 'authenticated', 'authenticated', 'tgt_doc_n5@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_target_doc_uid, 'doctor', v_target_doc_id, 'Dr. Target N5', 'tgt_doc_n5@test.com', '9000000086',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    INSERT INTO public.doctors (
+        doctor_id, owner_uid, name, email, mobile, specialization, qualification, experience_years, verified
+    ) VALUES (
+        v_target_doc_id, v_target_doc_uid, 'Dr. Target N5', 'tgt_doc_n5@test.com',
+        '9000000086', 'General', 'MBBS', 5, TRUE
+    );
+
+    -- 3. Setup appointment between target patient and doctor
+    INSERT INTO public.appointments (
+        appointment_id, doctor_id, patient_id, doctor_name, specialization,
+        patient_name, patient_age, patient_gender, date_time, slot_label,
+        visit_type, patient_status, doctor_status, source
+    ) VALUES (
+        v_target_appt_id, v_target_doc_id, v_target_pat_id, 'Dr. Target N5', 'General',
+        'Target Patient N5', 28, 'Female', NOW(), '02:00 PM',
+        'newVisit', 'confirmed', 'confirmed', 'app'
+    );
+
+    -- 4. Setup non-admin user
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_non_admin_uid, 'authenticated', 'authenticated', 'norm_user_n5@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_non_admin_uid, 'patient', v_non_admin_pat_id, 'Normal User N5', 'norm_user_n5@test.com', '9000000087',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    INSERT INTO public.patients (patient_id, owner_uid, name, mobile)
+    VALUES (v_non_admin_pat_id, v_non_admin_uid, 'Normal User N5', '9000000087');
+
+    -- 5. Setup admin user (has row in private.admin_users)
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES (v_admin_uid, 'authenticated', 'authenticated', 'admin_user_n5@test.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.users (
+        id, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, deactivated, status
+    ) VALUES (
+        v_admin_uid, 'patient', v_admin_pat_id, 'Admin User N5', 'admin_user_n5@test.com', '9000000088',
+        TRUE, TRUE, FALSE, 'approved'
+    )
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
+
+    INSERT INTO public.patients (patient_id, owner_uid, name, mobile)
+    VALUES (v_admin_pat_id, v_admin_uid, 'Admin User N5', '9000000088');
+
+    INSERT INTO private.admin_users (user_id)
+    VALUES (v_admin_uid)
+    ON CONFLICT (user_id) DO NOTHING;
+
+    -- Test 5a: non-admin session cannot read target appointment
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_non_admin_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    SELECT count(*) INTO v_cnt FROM public.appointments WHERE appointment_id = v_target_appt_id;
+    IF v_cnt <> 0 THEN
+        RAISE EXCEPTION '[FAIL] N5 - non-admin user read unrelated appointment (count=%)', v_cnt;
+    END IF;
+    RAISE NOTICE '[PASS] N5_ctrl - non-admin cannot read unrelated appointment (count=0)';
+
+    -- Test 5b: admin session CAN read target appointment
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims',
+        json_build_object('sub', v_admin_uid::TEXT, 'role', 'authenticated')::TEXT, TRUE);
+    SET LOCAL ROLE authenticated;
+
+    SELECT count(*) INTO v_cnt FROM public.appointments WHERE appointment_id = v_target_appt_id;
+    IF v_cnt < 1 THEN
+        RAISE EXCEPTION '[FAIL] N5 - admin user cannot read unrelated appointment (count=%)', v_cnt;
+    END IF;
+    RAISE NOTICE '[PASS] N5 - admin CAN read unrelated appointment (count=%) via is_super_admin()', v_cnt;
+
+    -- Cleanup
+    RESET ROLE;
+    PERFORM set_config('request.jwt.claims', '', TRUE);
+
+    DELETE FROM private.admin_users WHERE user_id = v_admin_uid;
+    DELETE FROM public.appointments WHERE appointment_id = v_target_appt_id;
+    DELETE FROM public.doctors WHERE doctor_id = v_target_doc_id;
+    DELETE FROM public.patients WHERE patient_id IN (v_target_pat_id, v_non_admin_pat_id, v_admin_pat_id);
+    DELETE FROM public.users WHERE id IN (v_target_pat_uid, v_target_doc_uid, v_non_admin_uid, v_admin_uid);
+    DELETE FROM auth.users WHERE id IN (v_target_pat_uid, v_target_doc_uid, v_non_admin_uid, v_admin_uid);
 END $$;
 
 
