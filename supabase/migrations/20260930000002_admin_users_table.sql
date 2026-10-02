@@ -51,10 +51,15 @@ BEGIN
     RAISE NOTICE 'Admin users seed: % row(s) newly inserted. Total admin(s) in private.admin_users: %', 
         v_inserted, v_total_admins;
 
-    -- Safety Guard: Abort only if private.admin_users is empty AND no row in public.users has role IN ('super_admin','superAdmin','admin')
-    IF v_total_admins = 0 AND NOT EXISTS (
-        SELECT 1 FROM public.users WHERE role IN ('super_admin', 'superAdmin', 'admin')
-    ) THEN
+    -- Safety Guard: Abort only if private.admin_users is empty AND auth.users is populated AND no admin in public.users
+    IF NOT EXISTS (SELECT 1 FROM auth.users) THEN
+        RAISE NOTICE 'Fresh database detected (auth.users is empty). Lockout guard skipped.';
+    ELSIF v_total_admins = 0
+        AND EXISTS (SELECT 1 FROM auth.users)
+        AND NOT EXISTS (
+            SELECT 1 FROM public.users WHERE role IN ('super_admin', 'superAdmin', 'admin')
+        )
+    THEN
         RAISE EXCEPTION 'MIGRATION ABORTED: No confirmed admin users exist in private.admin_users and no admin roles found in public.users. Cannot proceed without at least one admin to prevent lockout.'
             USING ERRCODE = 'P0001';
     END IF;
