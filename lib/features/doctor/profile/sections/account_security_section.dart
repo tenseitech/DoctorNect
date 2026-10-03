@@ -2,7 +2,6 @@ import '../../../../core/notifications/app_toast.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/doctor_profile_data.dart';
 
 import '../../../../core/session/doctor_session.dart';
@@ -209,7 +208,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             child: Text(
               'Change Password',
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontWeight: FontWeight.w700,
                 fontSize: AppTypography.headlineSmall,
               ),
@@ -237,7 +236,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   ),
                   child: Text(
                     _errorMsg!,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: const Color(0xFFDC2626),
                     ),

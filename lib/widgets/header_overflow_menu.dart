@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/enums/user_type.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme_controller.dart';
@@ -77,7 +75,7 @@ class HeaderOverflowMenu extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       'Health Pass ID',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -106,7 +104,7 @@ class HeaderOverflowMenu extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       'Emergency SOS',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFFDC2626),

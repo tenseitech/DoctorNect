@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -502,11 +501,15 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                 ),
                 child: Row(
                   children: [
-                    Text(
-                      _dateRangeLabel(),
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelMedium,
-                        color: Colors.grey[600],
+                    Expanded(
+                      child: Text(
+                        _dateRangeLabel(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: 'Inter', 
+                          fontSize: AppTypography.labelMedium,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ),
                     if (_period == _Period.custom) ...[
@@ -515,7 +518,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                         onTap: _pickCustomRange,
                         child: Text(
                           'Change',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.practoTeal,
                             fontWeight: FontWeight.w600,
@@ -594,16 +597,20 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                         size: 20,
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        'All-time total visits: ',
-                        style: GoogleFonts.inter(
-                          fontSize: AppTypography.bodySmall,
-                          color: Colors.grey[700],
+                      Expanded(
+                        child: Text(
+                          'All-time total visits: ',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontFamily: 'Inter', 
+                            fontSize: AppTypography.bodySmall,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ),
                       Text(
                         '$total',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                           color: AppColors.practoTeal,
@@ -628,24 +635,28 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                         color: Colors.grey[500],
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'Showing: ${switch (_cardFilter) {
-                          _CardFilter.newVisit => 'New Visits',
-                          _CardFilter.followUp => 'Follow-ups',
-                          _CardFilter.all => '',
-                        }} (${displayRecords.length})',
-                        style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelMedium,
-                          color: Colors.grey[600],
+                      Expanded(
+                        child: Text(
+                          'Showing: ${switch (_cardFilter) {
+                            _CardFilter.newVisit => 'New Visits',
+                            _CardFilter.followUp => 'Follow-ups',
+                            _CardFilter.all => '',
+                          }} (${displayRecords.length})',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontFamily: 'Inter', 
+                            fontSize: AppTypography.labelMedium,
+                            color: Colors.grey[600],
+                          ),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       GestureDetector(
                         onTap: () =>
                             setState(() => _cardFilter = _CardFilter.all),
                         child: Text(
                           'Clear',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.practoTeal,
                             fontWeight: FontWeight.w600,
@@ -671,7 +682,7 @@ class _PatientDataSectionState extends State<PatientDataSection> {
                             const SizedBox(height: 12),
                             Text(
                               'No patient records for this filter',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodyMedium,
                                 color: Colors.grey[500],
                               ),
@@ -762,7 +773,7 @@ class _PeriodSelector extends StatelessWidget {
                       ],
                       Text(
                         label,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           fontWeight:
                               isActive ? FontWeight.w600 : FontWeight.w500,
@@ -834,7 +845,7 @@ class _StatCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 value,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                   color: color,
@@ -842,7 +853,7 @@ class _StatCard extends StatelessWidget {
               ),
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 9.5,
                   color: Colors.grey[600],
                 ),
@@ -886,7 +897,7 @@ class _PatientRow extends StatelessWidget {
             width: 28,
             child: Text(
               '${index + 1}.',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: Colors.grey[500],
               ),
@@ -900,7 +911,7 @@ class _PatientRow extends StatelessWidget {
               record.patientName.isNotEmpty
                   ? record.patientName[0].toUpperCase()
                   : '?',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w600,
                 color: AppColors.practoTeal,
@@ -918,7 +929,7 @@ class _PatientRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         record.patientName,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                         ),
@@ -937,7 +948,7 @@ class _PatientRow extends StatelessWidget {
                       ),
                       child: Text(
                         isFollowUp ? 'Follow-up' : 'New Visit',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: isFollowUp
@@ -951,7 +962,7 @@ class _PatientRow extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   '${record.patientAge > 0 ? '${record.patientAge} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(record.patientGender, fallback: 'Not provided')}',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: Colors.grey[600],
                   ),
@@ -965,11 +976,15 @@ class _PatientRow extends StatelessWidget {
                       color: Colors.grey[500],
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      '${df.format(record.dateTime)}  ${tf.format(record.dateTime)}',
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelSmall,
-                        color: Colors.grey[500],
+                    Expanded(
+                      child: Text(
+                        '${df.format(record.dateTime)}  ${tf.format(record.dateTime)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: 'Inter', 
+                          fontSize: AppTypography.labelSmall,
+                          color: Colors.grey[500],
+                        ),
                       ),
                     ),
                   ],
@@ -989,7 +1004,7 @@ class _PatientRow extends StatelessWidget {
                       Expanded(
                         child: Text(
                           record.diagnosis!,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelSmall,
                             color: Colors.grey[500],
                           ),
@@ -1067,7 +1082,7 @@ class _CustomRangeDialogState extends State<_CustomRangeDialog> {
                   const SizedBox(width: 8),
                   Text(
                     'Select Date Range',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.surfaceOf(context),
@@ -1146,7 +1161,7 @@ class _CustomRangeDialogState extends State<_CustomRangeDialog> {
                     onPressed: () => Navigator.pop(context),
                     child: Text(
                       'Cancel',
-                      style: GoogleFonts.inter(color: Colors.grey[600]),
+                      style: TextStyle(fontFamily: 'Inter', color: Colors.grey[600]),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1165,7 +1180,7 @@ class _CustomRangeDialogState extends State<_CustomRangeDialog> {
                     ),
                     child: Text(
                       'Apply',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                       ),
                     ),
@@ -1274,7 +1289,7 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                 child: Text(
                   monthLabel,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1297,7 +1312,7 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                     child: Center(
                       child: Text(
                         d,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w600,
                           color: Colors.grey[500],
@@ -1381,7 +1396,7 @@ class _RangeCalendarState extends State<_RangeCalendar> {
                     // Day text
                     Text(
                       '$day',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         fontWeight:
                             isEndpoint ? FontWeight.w700 : FontWeight.w400,
@@ -1441,7 +1456,7 @@ class _DateChip extends StatelessWidget {
           children: [
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 10,
                 color: isActive ? AppColors.practoTeal : Colors.grey[500],
                 fontWeight: FontWeight.w600,
@@ -1450,7 +1465,7 @@ class _DateChip extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               date,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: isActive ? AppColors.practoTeal : Colors.grey[800],

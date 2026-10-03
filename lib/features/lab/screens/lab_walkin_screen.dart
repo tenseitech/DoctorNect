@@ -2,7 +2,6 @@ import '../../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/auth/profile_action_guard.dart';
@@ -158,7 +157,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       Expanded(
                         child: Text(
                           'Walk-in Patient',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineLarge,
                             fontWeight: FontWeight.w700,
                           ),
@@ -179,7 +178,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                         ),
                         child: Text(
                           'View all patients',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
                           ),
@@ -190,7 +189,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Register a patient at the lab counter without an app booking.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -248,7 +247,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                 initialValue: _gender,
                                 hint: Text(
                                   'Select gender',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     color: AppColors.textSecondaryOf(context),
                                   ),
                                 ),
@@ -346,7 +345,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       const SizedBox(width: 8),
                       Text(
                         "Today's walk-ins",
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                         ),
@@ -354,7 +353,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '(${walkIns.length})',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -391,7 +390,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                           children: [
                             Text(
                               booking.patientName,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodyLarge,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -399,7 +398,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                             const SizedBox(height: 4),
                             Text(
                               booking.displayTestName,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodySmall,
                                 color: AppColors.textPrimaryOf(context),
                               ),
@@ -407,7 +406,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                             const SizedBox(height: 4),
                             Text(
                               '${DateFormat('hh:mm a').format(booking.dateTime)} · ${booking.status}',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelMedium,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -424,7 +423,7 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                   const SizedBox(width: 6),
                                   Text(
                                     'Report sent',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.labelMedium,
                                       color: AppColors.pharmacyGreen,
                                       fontWeight: FontWeight.w600,

@@ -1,8 +1,6 @@
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -106,7 +104,7 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
             widget.isEdit
                 ? 'Edit your review'
                 : 'Rate Dr. ${widget.doctorName}',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.headlineMedium,
               fontWeight: FontWeight.w700,
             ),
@@ -116,7 +114,7 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
             widget.isEdit
                 ? 'You can edit this review within 48 hours of posting.'
                 : 'How was your visit?',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -149,7 +147,7 @@ class _SubmitDoctorReviewBodyState extends State<_SubmitDoctorReviewBody> {
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText: 'Share your experience (optional)',
-              hintStyle: GoogleFonts.inter(
+              hintStyle: TextStyle(fontFamily: 'Inter', 
                 color: AppColors.textSecondaryOf(context),
               ),
               border: const OutlineInputBorder(),

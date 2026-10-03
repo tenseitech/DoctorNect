@@ -20,6 +20,9 @@ analyzer:
     - linux/**
     - fix_theme.dart
     - tool/**
+    - functions/**
+    - scratch/**
+    - .agents/**
   errors:
     avoid_print: ignore
     curly_braces_in_flow_control_structures: ignore

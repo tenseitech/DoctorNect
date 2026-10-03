@@ -1,7 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/session/lab_session.dart';
@@ -136,7 +135,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
       appBar: AppBar(
         title: Text(
           'All Patients',
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w600,
           ),
@@ -167,7 +166,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                 children: [
                   Text(
                     'Patient bookings',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w700,
                     ),
@@ -175,7 +174,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '${all.length} total · ${patients.length} shown${pendingReports > 0 ? ' · $pendingReports need report' : ''}',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -186,7 +185,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       hintText: 'Search patient or test...',
-                      hintStyle: GoogleFonts.inter(
+                      hintStyle: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -239,7 +238,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                               setState(() => _typeFilter = entry.$1),
                           selectedColor: _labPurple.withValues(alpha: 0.14),
                           checkmarkColor: _labPurple,
-                          labelStyle: GoogleFonts.inter(
+                          labelStyle: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: _typeFilter == entry.$1
@@ -271,7 +270,7 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                               ? 'No patient bookings yet. Walk-ins and app bookings will appear here.'
                               : 'No patients match your filters.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                             height: 1.4,
@@ -342,7 +341,7 @@ class _DateFilterRow extends StatelessWidget {
                   Expanded(
                     child: Text(
                       label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -364,7 +363,7 @@ class _DateFilterRow extends StatelessWidget {
             style: TextButton.styleFrom(foregroundColor: AppColors.labPurple),
             child: Text(
               'Clear',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontWeight: FontWeight.w600,
                 fontSize: AppTypography.bodySmall,
               ),
@@ -412,7 +411,7 @@ class _PatientBookingCard extends StatelessWidget {
                   booking.patientName.trim().isNotEmpty
                       ? booking.patientName.trim()[0].toUpperCase()
                       : 'P',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontWeight: FontWeight.w700,
                     color: AppColors.labPurple,
                   ),
@@ -425,7 +424,7 @@ class _PatientBookingCard extends StatelessWidget {
                   children: [
                     Text(
                       booking.patientName,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w700,
                       ),
@@ -433,7 +432,7 @@ class _PatientBookingCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       isWalkIn ? 'Walk-in' : 'Home collection',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -473,7 +472,7 @@ class _PatientBookingCard extends StatelessWidget {
                     children: [
                       Text(
                         labOrderStatusLabel(booking.status),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: statusColor,
@@ -522,7 +521,7 @@ class _PatientBookingCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             testName,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w600,
                               height: 1.35,
@@ -538,7 +537,7 @@ class _PatientBookingCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '${DateFormat('dd MMM yyyy').format(booking.dateTime)} · ${booking.slotLabel}',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -547,7 +546,7 @@ class _PatientBookingCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               booking.address,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -565,7 +564,7 @@ class _PatientBookingCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   'Report sent',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.pharmacyGreen,
                     fontWeight: FontWeight.w600,

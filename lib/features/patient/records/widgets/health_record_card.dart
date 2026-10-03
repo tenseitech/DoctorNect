@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_icons.dart';
@@ -133,7 +132,7 @@ class HealthRecordCard extends StatelessWidget {
                 record.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w700,
                 ),
@@ -143,7 +142,7 @@ class HealthRecordCard extends StatelessWidget {
                 _provider,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -157,7 +156,7 @@ class HealthRecordCard extends StatelessWidget {
                 ),
                 child: Text(
                   _chipLabel,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: _sourceColor,
@@ -199,21 +198,21 @@ class HealthRecordCard extends StatelessWidget {
                 children: [
                   Text(
                     record.title,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     _provider,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
                   Text(
                     DateFormat('dd MMM yyyy').format(record.date),
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -221,7 +220,7 @@ class HealthRecordCard extends StatelessWidget {
                   if (record.notes != null && record.notes!.trim().isNotEmpty)
                     Text(
                       record.notes!,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -237,7 +236,7 @@ class HealthRecordCard extends StatelessWidget {
               ),
               child: Text(
                 _chipLabel,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: _sourceColor,
@@ -257,7 +256,7 @@ class HealthRecordCard extends StatelessWidget {
                 onPressed: onDelete,
                 child: Text(
                   'Delete',
-                  style: GoogleFonts.inter(color: AppColors.error),
+                  style: TextStyle(fontFamily: 'Inter', color: AppColors.error),
                 ),
               ),
           ],
@@ -293,7 +292,7 @@ class _RecordDateBadge extends StatelessWidget {
         children: [
           Text(
             day,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w800,
               color: color,
@@ -303,7 +302,7 @@ class _RecordDateBadge extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             month,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: 9,
               fontWeight: FontWeight.w700,
               color: color.withValues(alpha: 0.85),

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 
 Future<bool> showConfirmDeleteDialog(
@@ -12,8 +10,8 @@ Future<bool> showConfirmDeleteDialog(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-      content: Text(message, style: GoogleFonts.inter()),
+      title: Text(title, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+      content: Text(message, style: TextStyle(fontFamily: 'Inter')),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),

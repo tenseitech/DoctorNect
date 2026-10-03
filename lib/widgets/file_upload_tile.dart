@@ -2,8 +2,6 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/constants/app_constants.dart';
 import '../core/security/input_sanitize.dart';
 import '../core/theme/app_colors.dart';
@@ -39,7 +37,7 @@ class FileUploadTile extends StatelessWidget {
         RequiredFieldLabels.text(
           label,
           isRequired: isRequired,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimaryOf(context),
@@ -87,7 +85,7 @@ class FileUploadTile extends StatelessWidget {
                     isUploading
                         ? 'Uploading...'
                         : (hasFile ? fileName! : 'Tap to upload PDF file'),
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       color: hasFile
                           ? AppColors.textPrimaryOf(context)
@@ -109,7 +107,7 @@ class FileUploadTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             errorText!,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.error,
             ),

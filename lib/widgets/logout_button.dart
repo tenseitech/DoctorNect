@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/auth/app_logout.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
@@ -30,7 +28,7 @@ class LogoutIconButton extends StatelessWidget {
               'Logout',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
                 color: c,
@@ -52,7 +50,7 @@ class LogoutTextButton extends StatelessWidget {
       onPressed: () => AppLogout.confirmAndSignOut(context),
       child: Text(
         'Log out',
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.headlineSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.error,
@@ -85,7 +83,7 @@ class LogoutRailTile extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 'Log out',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.error,

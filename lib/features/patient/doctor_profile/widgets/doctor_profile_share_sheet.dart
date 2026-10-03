@@ -2,8 +2,6 @@ import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/external_launcher.dart';
 import '../models/doctor_profile_detail.dart';
@@ -86,7 +84,7 @@ abstract final class DoctorProfileShareSheet {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'Share doctor profile',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -96,11 +94,11 @@ abstract final class DoctorProfileShareSheet {
                   leading: const Icon(Icons.image, color: AppColors.doctorBlue),
                   title: Text(
                     'Share as Image Poster',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Generate a beautiful image card',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -109,6 +107,7 @@ abstract final class DoctorProfileShareSheet {
                     Navigator.pop(ctx);
 
                     try {
+                      await WidgetsBinding.instance.endOfFrame;
                       final screenshotController = ScreenshotController();
                       final bytes =
                           await screenshotController.captureFromWidget(
@@ -138,11 +137,11 @@ abstract final class DoctorProfileShareSheet {
                   ),
                   title: Text(
                     'WhatsApp',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Share via WhatsApp',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -164,11 +163,11 @@ abstract final class DoctorProfileShareSheet {
                   ),
                   title: Text(
                     'SMS',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Share via text message',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -190,11 +189,11 @@ abstract final class DoctorProfileShareSheet {
                   ),
                   title: Text(
                     'Telegram',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Share via Telegram',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -217,11 +216,11 @@ abstract final class DoctorProfileShareSheet {
                   ),
                   title: Text(
                     'More options...',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Share using other apps',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),

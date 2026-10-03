@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -60,7 +59,7 @@ class CancelledAppointmentCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       reason,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         fontStyle: FontStyle.italic,
                         color: AppColors.textSecondaryOf(context),
@@ -81,7 +80,7 @@ class CancelledAppointmentCard extends StatelessWidget {
               ),
               child: Text(
                 'Cancelled',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                   color: _cancelledBadgeText,

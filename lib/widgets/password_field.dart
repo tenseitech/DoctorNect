@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../features/auth/widgets/auth_login_page_shell.dart';
 import 'required_field_label.dart';
 import '../core/theme/app_typography.dart';
@@ -92,7 +90,7 @@ class _PasswordFieldState extends State<PasswordField> {
           textInputAction: widget.textInputAction,
           onFieldSubmitted: widget.onFieldSubmitted,
           style: widget.accentColor != null
-              ? GoogleFonts.inter(
+              ? TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                 )
@@ -187,7 +185,7 @@ class _RequirementPill extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelSmall,
               fontWeight: met ? FontWeight.w600 : FontWeight.w400,
               color: met ? activeColor : inactiveColor,

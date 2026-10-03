@@ -1,8 +1,6 @@
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/shared_appointments_store.dart';
 import '../../../core/layout/responsive_layout.dart';
@@ -168,7 +166,7 @@ class _DoctorTodaysAppointmentsScreenState
       appBar: AppBar(
         title: Text(
           "Today's Appointments",
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
         ),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),

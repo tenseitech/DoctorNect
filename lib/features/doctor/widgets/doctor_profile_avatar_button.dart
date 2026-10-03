@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../profile/data/doctor_photo_local_store.dart';
@@ -121,7 +119,7 @@ class _DoctorProfileAvatarButtonState extends State<DoctorProfileAvatarButton> {
             child: avatarImage == null
                 ? Text(
                     initial,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: widget.radius * 0.82,
                       fontWeight: FontWeight.w800,
                       color: AppColors.patientTeal,

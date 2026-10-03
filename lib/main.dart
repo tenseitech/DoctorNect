@@ -23,6 +23,7 @@ import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   // Native splash is Android/iOS only (`web: false` in pubspec).
   if (!kIsWeb) {
     FlutterNativeSplash.preserve(widgetsBinding: WidgetsBinding.instance);
@@ -91,10 +92,20 @@ class DoctorNectApp extends StatelessWidget {
           theme: AppTheme.light(AppColors.doctorBlue),
           darkTheme: AppTheme.dark(AppColors.doctorBlue),
           builder: (context, child) {
+            final mediaQuery = MediaQuery.of(context);
+            final clampedMediaQuery = mediaQuery.copyWith(
+              textScaler: mediaQuery.textScaler.clamp(
+                minScaleFactor: 0.9,
+                maxScaleFactor: 1.3,
+              ),
+            );
             final brightness = Theme.of(context).brightness;
-            return AnnotatedRegion<SystemUiOverlayStyle>(
-              value: EdgeToEdgeBootstrap.overlayStyleFor(brightness),
-              child: child ?? const SizedBox.shrink(),
+            return MediaQuery(
+              data: clampedMediaQuery,
+              child: AnnotatedRegion<SystemUiOverlayStyle>(
+                value: EdgeToEdgeBootstrap.overlayStyleFor(brightness),
+                child: child ?? const SizedBox.shrink(),
+              ),
             );
           },
           localizationsDelegates: const [

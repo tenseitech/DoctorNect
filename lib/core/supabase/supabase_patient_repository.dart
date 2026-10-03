@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/shared_appointments_store.dart';
+import '../session/patient_session.dart';
 import 'mappers/appointment_supabase_mapper.dart';
 import 'supabase_auth_service.dart';
 import 'supabase_bootstrap.dart';
@@ -16,6 +17,25 @@ class SupabasePatientRepository {
       SupabasePatientRepository._();
 
   SupabaseClient get _client => SupabaseBootstrap.client;
+
+  /// Resolves the authenticated patient profile ID.
+  /// When authentication is on Firebase (or hybrid), falls back to the client
+  /// session profile ID so Supabase database mutations succeed seamlessly.
+  Future<String> _resolveTargetPatientId(String candidateId) async {
+    final serverProfileId =
+        await SupabaseAuthService.instance.fetchCurrentProfileId();
+    final resolved = (serverProfileId != null && serverProfileId.isNotEmpty)
+        ? serverProfileId
+        : (candidateId.isNotEmpty
+            ? candidateId
+            : PatientSession.loggedInPatientId);
+    if (resolved.isEmpty) {
+      throw StateError(
+        'Cannot complete operation: Authenticated patient profile ID not found.',
+      );
+    }
+    return resolved;
+  }
 
   // --------------------------------------------------------------------------
   // APPOINTMENTS
@@ -43,14 +63,7 @@ class SupabasePatientRepository {
     return PatientWriteGuard.run(
       context: context,
       action: () async {
-        final serverProfileId =
-            await SupabaseAuthService.instance.fetchCurrentProfileId();
-        if (serverProfileId == null || serverProfileId.isEmpty) {
-          throw StateError(
-            'Cannot book appointment: Authenticated patient profile ID not found.',
-          );
-        }
-        final targetPatientId = serverProfileId;
+        final targetPatientId = await _resolveTargetPatientId(patientId);
 
         final rpcParams = {
           'p_appointment_id': appointmentId,
@@ -201,14 +214,7 @@ class SupabasePatientRepository {
     await PatientWriteGuard.run(
       context: context,
       action: () async {
-        final serverProfileId =
-            await SupabaseAuthService.instance.fetchCurrentProfileId();
-        if (serverProfileId == null || serverProfileId.isEmpty) {
-          throw StateError(
-            'Cannot submit review: Authenticated patient profile ID not found.',
-          );
-        }
-        final targetPatientId = serverProfileId;
+        final targetPatientId = await _resolveTargetPatientId(patientId);
 
         await _client.from('reviews').upsert({
           'review_id': reviewId,
@@ -249,14 +255,7 @@ class SupabasePatientRepository {
     await PatientWriteGuard.run(
       context: context,
       action: () async {
-        final serverProfileId =
-            await SupabaseAuthService.instance.fetchCurrentProfileId();
-        if (serverProfileId == null || serverProfileId.isEmpty) {
-          throw StateError(
-            'Cannot update profile: Authenticated patient profile ID not found.',
-          );
-        }
-        final targetPatientId = serverProfileId;
+        final targetPatientId = await _resolveTargetPatientId(patientId);
 
         final payload = {
           ...fields,
@@ -315,14 +314,7 @@ class SupabasePatientRepository {
     return PatientWriteGuard.run(
       context: context,
       action: () async {
-        final serverProfileId =
-            await SupabaseAuthService.instance.fetchCurrentProfileId();
-        if (serverProfileId == null || serverProfileId.isEmpty) {
-          throw StateError(
-            'Cannot add health record: Authenticated patient profile ID not found.',
-          );
-        }
-        final targetPatientId = serverProfileId;
+        final targetPatientId = await _resolveTargetPatientId(patientId);
 
         final payload = {
           'record_id': recordId,

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/firebase/firebase_bootstrap.dart';
 import '../../../../core/invite/ambulance_invite_service.dart';
 import '../../../../core/constants/country_phone_codes.dart';
@@ -134,7 +132,7 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
         elevation: 0,
         title: Text(
           'Add Ambulance',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
       ),
       body: Center(
@@ -159,7 +157,7 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                     ),
                     child: Text(
                       'Fill the ambulance service details. An invite link will be created for the driver to download the app, set a PIN, and login.',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                         height: 1.4,
@@ -366,7 +364,7 @@ class _DoctorAddAmbulanceScreenState extends State<DoctorAddAmbulanceScreen> {
                           )
                         : Text(
                             'Create Invite Link',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w700,
                             ),

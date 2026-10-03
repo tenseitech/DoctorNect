@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/auth/patient_details_guard.dart';
@@ -192,7 +190,7 @@ class _TopRatedDoctorsNearYouSectionState
                 const SizedBox(width: 6),
                 Text(
                   'Top Rated Doctors Near You',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.onSurface,
@@ -201,7 +199,7 @@ class _TopRatedDoctorsNearYouSectionState
                 const Spacer(),
                 Text(
                   '${doctors.length} Verified',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w500,
                     color: Theme.of(context)
@@ -393,7 +391,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   'TOP RATED NEAR YOU',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: 9,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.surfaceOf(context),
@@ -407,7 +405,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               '${doctor.distanceKm.toStringAsFixed(1)} km away',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.surfaceOf(context)
@@ -422,7 +420,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                         _displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.surfaceOf(context),
@@ -432,7 +430,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                         '${doctor.specialization}${doctor.experienceYears > 0 ? " · ${doctor.experienceYears} yrs exp" : ""}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.surfaceOf(context)
                               .withValues(alpha: 0.92),
@@ -454,7 +452,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                                 _locationText,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.labelSmall,
                                   color: AppColors.surfaceOf(context)
                                       .withValues(alpha: 0.88),
@@ -476,7 +474,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                             const SizedBox(width: 3),
                             Text(
                               '${doctor.rating.toStringAsFixed(1)} · ${doctor.reviewCount} ${doctor.reviewCount == 1 ? "review" : "reviews"}',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelSmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.surfaceOf(context)
@@ -509,7 +507,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                       ),
                       child: Text(
                         'Book',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w700,
                         ),
@@ -529,7 +527,7 @@ class _TopRatedDoctorCard extends StatelessWidget {
                           children: [
                             Text(
                               'Profile',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelSmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.surfaceOf(context)
@@ -629,7 +627,7 @@ class _DoctorPhotoAvatar extends StatelessWidget {
                 ),
                 Text(
                   initial,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.surfaceOf(context),

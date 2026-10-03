@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 
 class LabeledRemoveButton extends StatelessWidget {
@@ -35,7 +33,7 @@ class LabeledRemoveButton extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(compact ? 8 : 12),
       ),
-      textStyle: GoogleFonts.inter(
+      textStyle: TextStyle(fontFamily: 'Inter', 
         fontSize: compact ? 12 : 15,
         fontWeight: FontWeight.w600,
       ),

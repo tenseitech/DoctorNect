@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -46,7 +44,7 @@ class SymptomChipsPreview extends StatelessWidget {
           Chip(
             label: Text(
               s,
-              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
+              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelSmall),
             ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -54,7 +52,7 @@ class SymptomChipsPreview extends StatelessWidget {
             side: BorderSide(
               color: AppColors.doctorBlue.withValues(alpha: 0.25),
             ),
-            labelStyle: GoogleFonts.inter(
+            labelStyle: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w500,
               color: AppColors.doctorBlue,
@@ -64,7 +62,7 @@ class SymptomChipsPreview extends StatelessWidget {
           Chip(
             label: Text(
               '+$extra',
-              style: GoogleFonts.inter(fontSize: AppTypography.labelSmall),
+              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelSmall),
             ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -148,7 +146,7 @@ class _AppointmentSymptomsSectionState
         children: [
           Text(
             'Symptoms',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -184,7 +182,7 @@ class _AppointmentSymptomsSectionState
                     )
                   : Text(
                       'Save Symptoms',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
                     ),
             ),
           ),

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/labeled_remove_button.dart';
 import '../../../../widgets/required_field_label.dart';
@@ -53,7 +51,7 @@ abstract final class PatientProfileFormStyles {
   static Widget changeSuffixLabel({VoidCallback? onPressed}) {
     final label = Text(
       'Change',
-      style: GoogleFonts.inter(
+      style: TextStyle(fontFamily: 'Inter', 
         fontSize: AppTypography.bodyMedium,
         fontWeight: FontWeight.w600,
         color: AppColors.patientTeal,
@@ -80,7 +78,7 @@ abstract final class PatientProfileFormStyles {
         alignment: Alignment.centerLeft,
         child: Text(
           text,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w500,
             color: AppColors.textSecondaryOf(context),
@@ -234,7 +232,7 @@ abstract final class PatientProfileFormStyles {
 
   static AppBar profileAppBar(String title, {BuildContext? context}) {
     return AppBar(
-      title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+      title: Text(title, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
       backgroundColor:
           context != null ? AppColors.surfaceOf(context) : Colors.white,
       foregroundColor: context != null
@@ -273,7 +271,7 @@ abstract final class PatientProfileFormStyles {
                     RequiredFieldLabels.text(
                       label,
                       isRequired: isRequired,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -281,7 +279,7 @@ abstract final class PatientProfileFormStyles {
                     SizedBox(height: 2),
                     Text(
                       valueText,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyLarge,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -320,7 +318,7 @@ abstract final class PatientProfileFormStyles {
             backgroundColor: AppColors.cardBgOf(context),
             disabledColor: AppColors.cardBgOf(context),
             checkmarkColor: AppColors.patientTeal,
-            labelStyle: GoogleFonts.inter(
+            labelStyle: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               color: isSelected
                   ? AppColors.patientTeal
@@ -352,7 +350,7 @@ abstract final class PatientProfileFormStyles {
         icon: const Icon(Icons.add, size: 20),
         label: Text(
           label,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.patientTeal,

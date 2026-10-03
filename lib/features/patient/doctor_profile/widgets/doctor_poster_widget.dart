@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/widgets/s3_aware_network_image.dart';
 import '../models/doctor_profile_detail.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -79,7 +77,7 @@ class DoctorPosterWidget extends StatelessWidget {
             Text(
               'Dr. ${doctor.name}',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineLarge,
                 fontWeight: FontWeight.w800,
                 color: const Color(0xFF0F172A),
@@ -98,7 +96,7 @@ class DoctorPosterWidget extends StatelessWidget {
                 children: [
                   Text(
                     doctor.specialization,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFF0F766E),
@@ -115,7 +113,7 @@ class DoctorPosterWidget extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     doctor.rating.toStringAsFixed(1),
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF0F172A),
@@ -128,7 +126,7 @@ class DoctorPosterWidget extends StatelessWidget {
             // About
             Text(
               'About',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF0F172A),
@@ -140,7 +138,7 @@ class DoctorPosterWidget extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyLarge,
                 height: 1.5,
                 color: const Color(0xFF475569),
@@ -150,7 +148,7 @@ class DoctorPosterWidget extends StatelessWidget {
             // Achievements
             Text(
               'Achievements',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF0F172A),
@@ -172,7 +170,7 @@ class DoctorPosterWidget extends StatelessWidget {
                         Expanded(
                           child: Text(
                             a,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodyLarge,
                               color: const Color(0xFF334155),
                               fontWeight: FontWeight.w500,
@@ -201,7 +199,7 @@ class DoctorPosterWidget extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     'DoctorNect',
-                    style: GoogleFonts.outfit(
+                    style: TextStyle(fontFamily: 'Outfit', 
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF0F766E),

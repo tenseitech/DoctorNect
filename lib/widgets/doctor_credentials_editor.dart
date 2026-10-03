@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 import 'qualification_selector.dart';
@@ -160,7 +158,7 @@ class _DoctorDegreesEditorState extends State<DoctorDegreesEditor> {
                   Icon(Icons.add_rounded, size: 18, color: widget.accentColor),
               label: Text(
                 '+ Add another degree',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: widget.accentColor,
@@ -321,7 +319,7 @@ class _DoctorSpecializationsEditorState
                   Icon(Icons.add_rounded, size: 18, color: widget.accentColor),
               label: Text(
                 '+ Add another specialization',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: widget.accentColor,

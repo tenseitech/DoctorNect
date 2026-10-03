@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/notifications/app_toast.dart';
@@ -41,20 +40,20 @@ class BookingConfirmedView extends StatelessWidget {
         children: [
           Text(
             'Dr. ${booking.doctorName}',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w600,
             ),
           ),
           Text(
             '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
-            style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+            style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
           ),
           if (!pending) ...[
             const SizedBox(height: 16),
             Text(
               '#${booking.tokenNumber}',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 48,
                 fontWeight: FontWeight.w800,
                 color: AppColors.patientTeal,
@@ -62,7 +61,7 @@ class BookingConfirmedView extends StatelessWidget {
             ),
             Text(
               'Token Number',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -73,7 +72,7 @@ class BookingConfirmedView extends StatelessWidget {
             Text(
               booking.clinicAddress!,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
             ),
           ],
         ],

@@ -4,7 +4,6 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/session/patient_session.dart';
@@ -140,14 +139,14 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
           children: [
             Text(
               'Ticket #$formattedTicketId',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontWeight: FontWeight.w600,
                 fontSize: AppTypography.headlineSmall,
               ),
             ),
             Text(
               widget.issueType,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -165,7 +164,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
               ),
               child: Text(
                 widget.status.toUpperCase(),
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: statusColor,
@@ -179,6 +178,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
         elevation: 0,
         centerTitle: true,
       ),
+      resizeToAvoidBottomInset: true,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final contentWidth = PatientProfileFormStyles.resolveContentWidth(
@@ -213,7 +213,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                           children: [
                             Text(
                               'Original Request',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodySmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
@@ -222,7 +222,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                             Text(
                               DateFormat('dd MMM yyyy, hh:mm a')
                                   .format(widget.createdAt),
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelSmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -232,7 +232,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                         const SizedBox(height: 6),
                         Text(
                           widget.message,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                             height: 1.4,
@@ -251,7 +251,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                               Expanded(
                                 child: Text(
                                   widget.screenshot!,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                     fontStyle: FontStyle.italic,
@@ -309,7 +309,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                 child: Center(
                                   child: Text(
                                     'No messages yet. Send a message to start conversation.',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.bodySmall,
                                       color: AppColors.textSecondaryOf(context),
                                     ),
@@ -370,7 +370,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                     if (!isMe) ...[
                                       Text(
                                         senderName,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(fontFamily: 'Inter', 
                                           fontSize: AppTypography.labelSmall,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.patientTeal,
@@ -380,7 +380,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                     ],
                                     Text(
                                       text,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: AppTypography.bodyMedium,
                                         color: isMe
                                             ? AppColors.surfaceOf(context)
@@ -393,7 +393,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                       alignment: Alignment.bottomRight,
                                       child: Text(
                                         timeLabel,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(fontFamily: 'Inter', 
                                           fontSize: 9,
                                           color: isMe
                                               ? AppColors.surfaceOf(context)
@@ -415,25 +415,27 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                   ),
 
                   // Message Input Field
-                  Container(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceOf(context),
-                      border: Border(
-                        top: BorderSide(
-                          color: AppColors.borderOf(context),
-                          width: 0.5,
+                  SafeArea(
+                    top: false,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceOf(context),
+                        border: Border(
+                          top: BorderSide(
+                            color: AppColors.borderOf(context),
+                            width: 0.5,
+                          ),
                         ),
                       ),
-                    ),
-                    child: Row(
+                      child: Row(
                       children: [
                         Expanded(
                           child: TextField(
                             controller: _controller,
                             decoration: InputDecoration(
                               hintText: 'Type a message...',
-                              hintStyle: GoogleFonts.inter(
+                              hintStyle: TextStyle(fontFamily: 'Inter', 
                                 color: AppColors.textSecondaryOf(context),
                                 fontSize: AppTypography.bodyMedium,
                               ),
@@ -470,6 +472,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                       ],
                     ),
                   ),
+                ),
                 ],
               ),
             ),

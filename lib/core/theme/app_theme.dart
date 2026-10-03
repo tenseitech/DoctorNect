@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 import 'app_typography.dart';
@@ -9,6 +8,8 @@ abstract final class AppTheme {
   static ThemeData light(Color accent) {
     final base = ThemeData(
       useMaterial3: true,
+      fontFamily: 'Inter',
+      fontFamilyFallback: const ['NotoSansDevanagari'],
       brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.white,
       colorScheme: ColorScheme.light(
@@ -26,13 +27,15 @@ abstract final class AppTheme {
       textTheme: inter.apply(
         bodyColor: AppColors.textPrimary,
         displayColor: AppColors.textPrimary,
+        fontFamilyFallback: const ['NotoSansDevanagari'],
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.titleMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
@@ -41,14 +44,14 @@ abstract final class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
-          borderSide: BorderSide(color: AppColors.border),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
-          borderSide: BorderSide(color: AppColors.border),
+          borderSide: const BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
@@ -58,15 +61,18 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        labelStyle: GoogleFonts.inter(
+        labelStyle: const TextStyle(
+          fontFamily: 'Inter',
           color: AppColors.textSecondary,
           fontSize: AppTypography.bodyMedium,
         ),
-        hintStyle: GoogleFonts.inter(
+        hintStyle: const TextStyle(
+          fontFamily: 'Inter',
           color: AppColors.textSecondary,
           fontSize: AppTypography.bodyMedium,
         ),
-        errorStyle: GoogleFonts.inter(
+        errorStyle: const TextStyle(
+          fontFamily: 'Inter',
           color: AppColors.error,
           fontSize: AppTypography.labelMedium,
         ),
@@ -79,7 +85,8 @@ abstract final class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.inputRadius),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelLarge,
             fontWeight: FontWeight.w600,
           ),
@@ -91,11 +98,12 @@ abstract final class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-          side: BorderSide(color: AppColors.border),
+          side: const BorderSide(color: AppColors.border),
         ),
       ),
-      dropdownMenuTheme: DropdownMenuThemeData(
-        textStyle: GoogleFonts.inter(
+      dropdownMenuTheme: const DropdownMenuThemeData(
+        textStyle: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodyMedium,
           color: AppColors.textPrimary,
         ),
@@ -106,6 +114,8 @@ abstract final class AppTheme {
   static ThemeData dark(Color accent) {
     final base = ThemeData(
       useMaterial3: true,
+      fontFamily: 'Inter',
+      fontFamilyFallback: const ['NotoSansDevanagari'],
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.darkBackground,
       colorScheme: ColorScheme.dark(
@@ -123,13 +133,15 @@ abstract final class AppTheme {
       textTheme: inter.apply(
         bodyColor: AppColors.darkTextPrimary,
         displayColor: AppColors.darkTextPrimary,
+        fontFamilyFallback: const ['NotoSansDevanagari'],
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.darkSurface,
         foregroundColor: AppColors.darkTextPrimary,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.titleMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.darkTextPrimary,
@@ -158,15 +170,18 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.inputRadius),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        labelStyle: GoogleFonts.inter(
+        labelStyle: const TextStyle(
+          fontFamily: 'Inter',
           color: AppColors.darkTextSecondary,
           fontSize: AppTypography.bodyMedium,
         ),
-        hintStyle: GoogleFonts.inter(
+        hintStyle: const TextStyle(
+          fontFamily: 'Inter',
           color: AppColors.darkTextSecondary,
           fontSize: AppTypography.bodyMedium,
         ),
-        errorStyle: GoogleFonts.inter(
+        errorStyle: const TextStyle(
+          fontFamily: 'Inter',
           color: AppColors.error,
           fontSize: AppTypography.labelMedium,
         ),
@@ -179,7 +194,8 @@ abstract final class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.inputRadius),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: const TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelLarge,
             fontWeight: FontWeight.w600,
           ),
@@ -206,8 +222,9 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
       ),
-      dropdownMenuTheme: DropdownMenuThemeData(
-        textStyle: GoogleFonts.inter(
+      dropdownMenuTheme: const DropdownMenuThemeData(
+        textStyle: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodyMedium,
           color: AppColors.darkTextPrimary,
         ),

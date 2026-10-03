@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/auth/contact_change_otp_service.dart';
 import '../core/theme/app_colors.dart';
 import 'otp_input.dart';
@@ -108,7 +106,7 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         'Verify $_channelLabel',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
       ),
       content: scrollableDialogContent(
         context: context,
@@ -120,7 +118,7 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
               widget.channel == ContactVerificationChannel.email
                   ? 'To ${widget.purpose}, enter the 6-digit verification code sent to your new email ($masked).'
                   : 'To ${widget.purpose}, enter the 6-digit OTP sent to your new mobile number ($masked).',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.45,
@@ -148,7 +146,7 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
                 children: [
                   Text(
                     'Enter $_codeTypeLabel',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -175,7 +173,7 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
               const SizedBox(height: 8),
               Text(
                 _error!,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.error,
                 ),

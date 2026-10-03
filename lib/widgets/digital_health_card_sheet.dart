@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../core/enums/user_type.dart';
@@ -159,7 +158,7 @@ class _DigitalHealthCardSheetState extends State<DigitalHealthCardSheet> {
                         : 'Digital Health Card ID',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -334,7 +333,7 @@ class _DoctorNectPassCard extends StatelessWidget {
                               'DoctorNect PASS',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
@@ -366,7 +365,7 @@ class _DoctorNectPassCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Text(
                             'VERIFIED',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -380,7 +379,7 @@ class _DoctorNectPassCard extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   name,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -389,7 +388,7 @@ class _DoctorNectPassCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 13,
                     color: Colors.white.withValues(alpha: 0.85),
                   ),
@@ -407,7 +406,7 @@ class _DoctorNectPassCard extends StatelessWidget {
                             isDoctor ? 'REGISTRATION NO.' : 'DETAILS',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: Colors.white.withValues(alpha: 0.65),
@@ -419,7 +418,7 @@ class _DoctorNectPassCard extends StatelessWidget {
                             regNumber,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -437,7 +436,7 @@ class _DoctorNectPassCard extends StatelessWidget {
                             isDoctor ? 'COUNCIL' : 'GENDER/AGE',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: Colors.white.withValues(alpha: 0.65),
@@ -450,7 +449,7 @@ class _DoctorNectPassCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.end,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../constants/app_icons.dart';
@@ -101,7 +100,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                     'Notifications',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: compact ? 17 : AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                     ),
@@ -123,7 +122,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                       '$unreadCount unread',
                       maxLines: 1,
                       softWrap: false,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: compact ? 11.5 : AppTypography.labelMedium,
                         fontWeight: FontWeight.w700,
                         color: _accent,
@@ -153,7 +152,7 @@ class _NotificationsInboxScreenState extends State<NotificationsInboxScreen> {
                     'Mark all read',
                     maxLines: 1,
                     softWrap: false,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: compact ? 12.5 : AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -266,7 +265,7 @@ class _FilterPill extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               color: selected ? AppColors.white : unselectedTextColor,
@@ -381,7 +380,7 @@ class _NotificationTile extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   n.title,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontWeight: n.isRead
                                         ? FontWeight.w600
                                         : FontWeight.w700,
@@ -419,7 +418,7 @@ class _NotificationTile extends StatelessWidget {
                                       const SizedBox(width: 4),
                                       Text(
                                         'UNREAD',
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(fontFamily: 'Inter', 
                                           fontSize: 9.5,
                                           fontWeight: FontWeight.w800,
                                           color: accent,
@@ -435,7 +434,7 @@ class _NotificationTile extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             n.body,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodySmall,
                               color: AppColors.textSecondaryOf(context),
                               height: 1.4,
@@ -444,7 +443,7 @@ class _NotificationTile extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             time,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -569,7 +568,7 @@ class _EmptyInbox extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                   ),
@@ -578,7 +577,7 @@ class _EmptyInbox extends StatelessWidget {
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                     height: 1.45,

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 
 import 'package:medibond/features/patient/models/patient_models.dart';
@@ -110,7 +108,7 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                             ? null
                             : Text(
                                 initial,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.headlineSmall,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.patientTeal,
@@ -125,7 +123,7 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -138,7 +136,7 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 10,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.15,
@@ -159,7 +157,7 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         const SizedBox(width: 2),
                         Text(
                           doctor.rating.toStringAsFixed(1),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -168,7 +166,7 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         if (doctor.reviewCount > 0) ...[
                           Text(
                             ' · ${doctor.reviewCount}',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 9.5,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -197,7 +195,7 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         'Book',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -289,7 +287,7 @@ class HomeDoctorInlineMessage extends StatelessWidget {
             child: Text(
               text,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.35,

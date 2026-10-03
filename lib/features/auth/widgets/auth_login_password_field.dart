@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/theme/app_colors.dart';
 import '../../../core/validators/form_validators.dart';
 import 'auth_login_form_field.dart';
@@ -93,7 +91,7 @@ class _AuthLoginPasswordFieldState extends State<AuthLoginPasswordField> {
           autocorrect: false,
           enableSuggestions: false,
           enableInteractiveSelection: true,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimaryOf(context),

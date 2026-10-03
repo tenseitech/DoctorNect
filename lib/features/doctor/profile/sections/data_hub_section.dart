@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import 'ambulance_data_section.dart';
 import 'lab_data_section.dart';
@@ -24,7 +22,7 @@ class DataHubSection extends StatelessWidget {
             children: [
               Text(
                 'Reports & Analytics',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[500],
@@ -136,7 +134,7 @@ class _HubCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),
@@ -144,7 +142,7 @@ class _HubCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: Colors.grey[500],
                       ),

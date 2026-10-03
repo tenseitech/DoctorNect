@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../constants/app_constants.dart';
 import '../layout/responsive_layout.dart';
 import '../theme/app_colors.dart';
@@ -212,7 +210,7 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                       children: [
                         Text(
                           'Patient Details',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: textPrimary,
@@ -221,7 +219,7 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                         const SizedBox(height: 4),
                         Text(
                           'Please provide your age and gender to continue booking. Doctors need this for proper clinical diagnosis.',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: textSecondary,
                             height: 1.35,
@@ -247,7 +245,7 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
               // AGE INPUT
               Text(
                 'Age (in years) *',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                   color: textPrimary,
@@ -262,13 +260,13 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(3),
                 ],
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   color: textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: 'e.g. 28',
-                  hintStyle: GoogleFonts.inter(
+                  hintStyle: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyMedium,
                     color: textSecondary.withValues(alpha: 0.6),
                   ),
@@ -328,7 +326,7 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
               // GENDER INPUT
               Text(
                 'Gender *',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                   color: textPrimary,
@@ -352,7 +350,7 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                     selectedColor:
                         AppColors.patientTeal.withValues(alpha: 0.18),
                     backgroundColor: AppColors.cardBgOf(context),
-                    labelStyle: GoogleFonts.inter(
+                    labelStyle: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -378,7 +376,7 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                 const SizedBox(height: 6),
                 Text(
                   _genderError!,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     color: AppColors.error,
                     fontSize: AppTypography.labelSmall,
                   ),
@@ -410,7 +408,7 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                       )
                     : Text(
                         'Save & Continue',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w600,
                         ),
@@ -426,7 +424,7 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                 ),
                 child: Text(
                   'Cancel',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                   ),

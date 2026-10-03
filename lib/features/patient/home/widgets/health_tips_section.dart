@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../data/patient_mock_data.dart';
 
@@ -27,7 +25,7 @@ class HealthTipsSection extends StatelessWidget {
             children: [
               Text(
                 'Health tips',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: isWide ? 17 : 15,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -36,7 +34,7 @@ class HealthTipsSection extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 'Quick reads for daily wellness',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -95,7 +93,7 @@ class _HealthTipTile extends StatelessWidget {
               tip.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 height: 1.25,
@@ -124,7 +122,7 @@ class _HealthTipTile extends StatelessWidget {
               tip.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
                 height: 1.25,
@@ -186,7 +184,7 @@ class _CategoryChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: color,

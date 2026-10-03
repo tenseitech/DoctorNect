@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../patient/profile/widgets/profile_web_action_card.dart';
@@ -164,7 +162,7 @@ class _WebPageHeader extends StatelessWidget {
             children: [
               Text(
                 'Profile',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimaryOf(context),
@@ -174,7 +172,7 @@ class _WebPageHeader extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Manage your practice, network & account',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -232,7 +230,7 @@ class _DoctorIdentityPanel extends StatelessWidget {
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimaryOf(context),
@@ -287,7 +285,7 @@ class _DoctorIdentityPanel extends StatelessWidget {
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: Text(
                 'Edit Profile',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.doctorBlue,
@@ -304,7 +302,7 @@ class _DoctorIdentityPanel extends StatelessWidget {
               const SizedBox(height: 18),
               Text(
                 'Quick access',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -313,7 +311,7 @@ class _DoctorIdentityPanel extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Account, reviews & reports',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -402,7 +400,7 @@ class _SidebarQuickLinkState extends State<_SidebarQuickLink> {
                         widget.action.label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimaryOf(context),
@@ -414,7 +412,7 @@ class _SidebarQuickLinkState extends State<_SidebarQuickLink> {
                           widget.action.subtitle!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelSmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -464,7 +462,7 @@ class _WebSectionPanel extends StatelessWidget {
           children: [
             Text(
               title,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
@@ -473,7 +471,7 @@ class _WebSectionPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -625,7 +623,7 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
                         widget.action.label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
@@ -637,7 +635,7 @@ class _WebActionRowCardState extends State<_WebActionRowCard> {
                           widget.action.subtitle!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -679,7 +677,7 @@ class _MetaChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
@@ -706,7 +704,7 @@ class _ContactRow extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -747,7 +745,7 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondaryOf(context),
@@ -756,7 +754,7 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w800,
               color: highlight

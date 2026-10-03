@@ -3,8 +3,6 @@ import '../../../core/notifications/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/notifications/app_notification.dart';
 import '../../../core/notifications/widgets/notification_bell_button.dart';
 import '../../../core/session/patient_session.dart';
@@ -249,7 +247,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                                 'Hi, ${p.name.trim().isEmpty ? "Patient" : p.name.trim()}',
                                 maxLines: compact ? 2 : 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: compact ? 18 : 22,
                                   fontWeight: FontWeight.w700,
                                   height: 1.15,
@@ -421,7 +419,7 @@ class _PatientLocationRow extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       fontWeight:
                           hasLocation ? FontWeight.w500 : FontWeight.w600,

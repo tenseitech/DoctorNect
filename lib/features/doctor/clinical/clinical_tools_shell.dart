@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import 'models/clinical_models.dart';
@@ -84,7 +82,7 @@ class _ClinicalToolsShellState extends State<ClinicalToolsShell>
           labelColor: AppColors.doctorBlue,
           unselectedLabelColor: AppColors.textSecondaryOf(context),
           indicatorColor: AppColors.doctorBlue,
-          labelStyle: GoogleFonts.inter(
+          labelStyle: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodySmall,
             fontWeight: FontWeight.w600,
           ),

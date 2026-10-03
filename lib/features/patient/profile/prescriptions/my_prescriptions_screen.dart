@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_icons.dart';
@@ -173,14 +172,14 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                             draft.primaryDiagnosis.isEmpty
                                 ? 'Prescription'
                                 : draft.primaryDiagnosis,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           if (draft.doctorName.isNotEmpty)
                             Text(
                               draft.doctorName,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelMedium,
                                 color: AppColors.patientTeal,
                                 fontWeight: FontWeight.w500,
@@ -189,7 +188,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                           if (draft.clinicName.isNotEmpty)
                             Text(
                               draft.clinicName,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelSmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -197,7 +196,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                           Text(
                             DateFormat('dd MMM yyyy')
                                 .format(draft.prescriptionDate),
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -270,7 +269,7 @@ class _PrescriptionsMessageState extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
@@ -281,7 +280,7 @@ class _PrescriptionsMessageState extends StatelessWidget {
                     Text(
                       subtitle!,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),

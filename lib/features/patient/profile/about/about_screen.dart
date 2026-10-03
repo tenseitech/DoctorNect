@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/legal/legal_document_screen.dart';
 import '../../../../core/legal/medibond_legal_content.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -60,14 +58,14 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     'DoctorNect',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
                     'Version ${PatientProfileMock.appVersion}',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),

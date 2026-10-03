@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -135,7 +133,7 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final placeholderStyle = GoogleFonts.inter(
+    final placeholderStyle = TextStyle(fontFamily: 'Inter', 
       fontSize: compact ? 14 : 15,
       fontWeight: FontWeight.w400,
       color: AppColors.textSecondaryOf(context),
@@ -203,7 +201,7 @@ class _SearchField extends StatelessWidget {
                       onSubmitted: onSubmitted,
                       textAlignVertical: TextAlignVertical.center,
                       cursorColor: AppColors.patientTeal,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: compact ? 14 : 15,
                         fontWeight: FontWeight.w400,
                         color: AppColors.textPrimaryOf(context),
@@ -314,7 +312,7 @@ class _DesktopSearchActionState extends State<_DesktopSearchAction> {
           alignment: Alignment.center,
           child: Text(
             'Search',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.surfaceOf(context),

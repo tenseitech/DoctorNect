@@ -3,8 +3,6 @@ import '../../../core/notifications/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/app_constants.dart';
 import '../../../core/data/shared_appointments_store.dart';
 import '../../../core/layout/responsive_layout.dart';
@@ -245,11 +243,11 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                           context,
                         ),
                         indicatorColor: AppColors.doctorBlue,
-                        labelStyle: GoogleFonts.inter(
+                        labelStyle: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                         ),
-                        unselectedLabelStyle: GoogleFonts.inter(
+                        unselectedLabelStyle: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                         ),
                         tabs: _tabLabels.map((l) => Tab(text: l)).toList(),

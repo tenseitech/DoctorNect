@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -47,7 +45,7 @@ class BookingStepHeader extends StatelessWidget {
                     ),
                     child: Text(
                       '${i + 1}',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: active
@@ -86,7 +84,7 @@ class BookingStepHeader extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           title,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w700,
           ),

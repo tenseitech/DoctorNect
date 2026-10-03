@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../models/doctor_models.dart';
 import '../appointment_utils.dart';
 
@@ -134,7 +132,7 @@ class AppointmentActionButtons extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_radius),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: TextStyle(fontFamily: 'Inter', 
             fontSize: fontSize,
             fontWeight: FontWeight.w600,
           ),
@@ -165,7 +163,7 @@ class AppointmentActionButtons extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_radius),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: TextStyle(fontFamily: 'Inter', 
             fontSize: fontSize,
             fontWeight: FontWeight.w600,
           ),

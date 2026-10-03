@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
@@ -30,7 +28,7 @@ class DoctorScreenTitleBar extends StatelessWidget {
 
           final titleWidget = Text(
             title,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: isNarrow
                   ? AppTypography.headlineMedium
                   : AppTypography.headlineLarge,
@@ -44,7 +42,7 @@ class DoctorScreenTitleBar extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     subtitle!,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),

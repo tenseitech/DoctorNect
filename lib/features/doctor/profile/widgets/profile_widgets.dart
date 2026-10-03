@@ -1,8 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/profile_photo_avatar.dart';
 import '../../widgets/doctor_ui_widgets.dart';
@@ -20,7 +18,7 @@ class ProfileSectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 20, 4, 10),
       child: Text(
         title.toUpperCase(),
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondaryOf(context),
@@ -119,7 +117,7 @@ class _ProfileSettingsRow extends StatelessWidget {
                   children: [
                     Text(
                       item.title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -130,7 +128,7 @@ class _ProfileSettingsRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         item.subtitle!,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                           height: 1.35,
@@ -291,7 +289,7 @@ class ProfileHeroHeader extends StatelessWidget {
                 Text(
                   displayName,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineMedium,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -303,7 +301,7 @@ class ProfileHeroHeader extends StatelessWidget {
                   Text(
                     specialization.trim(),
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -339,7 +337,7 @@ class ProfileHeroHeader extends StatelessWidget {
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     label: Text(
                       'Edit Profile',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontWeight: FontWeight.w600,
                         fontSize: AppTypography.bodyMedium,
                       ),
@@ -395,7 +393,7 @@ class _HeroStatChip extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -404,7 +402,7 @@ class _HeroStatChip extends StatelessWidget {
                 ),
                 Text(
                   caption,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -470,7 +468,7 @@ class _EditableSectionScaffoldState extends State<EditableSectionScaffold> {
       appBar: AppBar(
         title: Text(
           widget.title,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
         ),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
@@ -533,7 +531,7 @@ class _EditableSectionScaffoldState extends State<EditableSectionScaffold> {
                       ),
                       child: Text(
                         'Save Changes',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),

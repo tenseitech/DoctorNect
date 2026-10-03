@@ -1,8 +1,6 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/logout_button.dart';
@@ -313,7 +311,7 @@ class _PatientSideTabTile extends StatelessWidget {
                     item.label,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                       color: labelColor,
@@ -514,7 +512,7 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                                         child: SafeBottomNavLabel(
                                           label: compactBottomNavLabel(label),
                                           maxLines: 1,
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(fontFamily: 'Inter', 
                                             fontSize: 10,
                                             height: 1.0,
                                             fontWeight: selected

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../models/lab_models.dart';
 import 'lab_test_row.dart';
@@ -29,7 +27,7 @@ class LabCategoryAccordionSection extends StatelessWidget {
     if (categoryOrder.isEmpty) {
       return Text(
         emptyMessage,
-        style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+        style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
       );
     }
 
@@ -98,7 +96,7 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -116,7 +114,7 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
                     ),
                     child: Text(
                       '${tests.length}',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.labPurple,

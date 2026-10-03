@@ -3,7 +3,6 @@ import '../../../../core/notifications/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart';
 
@@ -65,7 +64,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
             Expanded(
               child: Text(
                 'Admin Verification Required',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontWeight: FontWeight.w700,
                   fontSize: AppTypography.headlineSmall,
                 ),
@@ -82,7 +81,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
             children: [
               Text(
                 'Doctor mobile numbers are verified for medical licensing and regulatory compliance. To update your registered phone number, please contact administration with your medical registration details.',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.45,
@@ -112,7 +111,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                         Flexible(
                           child: Text(
                             'support@doctornect.com',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w600,
                               color: AppColors.doctorBlue,
@@ -134,7 +133,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                         Flexible(
                           child: Text(
                             '+91 80000 00000 (Admin Desk)',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimaryOf(context),
@@ -247,7 +246,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                                             ? DoctorProfileStore.displayName[0]
                                                 .toUpperCase()
                                             : 'D',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.headlineLarge,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.doctorBlue,
@@ -280,7 +279,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                             const SizedBox(height: 10),
                             Text(
                               DoctorProfileStore.displayNameWithPrefix,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),

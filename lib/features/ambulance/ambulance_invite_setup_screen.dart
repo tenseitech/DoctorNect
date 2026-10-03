@@ -2,7 +2,6 @@ import '../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/firebase/ambulance_auth_helper.dart';
@@ -197,7 +196,7 @@ class _AmbulanceInviteSetupScreenState
             child: Text(
               _error!,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -236,7 +235,7 @@ class _AmbulanceInviteSetupScreenState
                       children: [
                         Text(
                           invite.serviceName,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontWeight: FontWeight.w700,
                             fontSize: AppTypography.bodyLarge,
                           ),
@@ -244,7 +243,7 @@ class _AmbulanceInviteSetupScreenState
                         const SizedBox(height: 4),
                         Text(
                           'Driver: ${invite.driverName} · ${invite.city}',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -253,7 +252,7 @@ class _AmbulanceInviteSetupScreenState
                           const SizedBox(height: 4),
                           Text(
                             'Invited by Dr. ${invite.doctorName}',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -265,7 +264,7 @@ class _AmbulanceInviteSetupScreenState
                   const SizedBox(height: 20),
                   TextFormField(
                     controller: _usernameCtrl,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w600,
                     ),

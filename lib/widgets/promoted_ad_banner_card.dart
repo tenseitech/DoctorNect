@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../features/promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../core/theme/app_typography.dart';
 
@@ -106,7 +104,7 @@ class PromotedAdBannerCard extends StatelessWidget {
                       ),
                       child: Text(
                         'FEATURED PROMOTION',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
@@ -125,7 +123,7 @@ class PromotedAdBannerCard extends StatelessWidget {
 
                 final titleText = Text(
                   'Promote Your $_providerLabel 🚀',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -135,7 +133,7 @@ class PromotedAdBannerCard extends StatelessWidget {
 
                 final subText = Text(
                   'Showcase your service on the Patient Home screen banner carousel to reach thousands of patients.',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: Colors.white.withValues(alpha: 0.92),
                     height: 1.3,
@@ -158,7 +156,7 @@ class PromotedAdBannerCard extends StatelessWidget {
                   ),
                   child: Text(
                     'Book Ad',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w800,
                     ),
@@ -219,7 +217,7 @@ class PromotedAdBannerCard extends StatelessWidget {
                             ),
                             child: Text(
                               'FEATURED PROMOTION',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
                                 color: const Color(0xFF0F172A),

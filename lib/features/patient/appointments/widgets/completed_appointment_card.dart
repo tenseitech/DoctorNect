@@ -1,7 +1,6 @@
 import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -74,7 +73,7 @@ class CompletedAppointmentCard extends StatelessWidget {
             a.diagnosis!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),

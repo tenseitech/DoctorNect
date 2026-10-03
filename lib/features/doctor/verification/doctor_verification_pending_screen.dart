@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/auth/app_logout.dart';
 import '../../../core/session/doctor_session.dart';
 import '../../../core/theme/app_colors.dart';
@@ -21,6 +19,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
     final greeting = doctorName.isEmpty ? 'Doctor' : doctorName;
 
     return MobileScaffold(
+      scrollable: true,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -39,7 +38,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
           const SizedBox(height: 28),
           Text(
             'Verification pending',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.headlineLarge,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
@@ -49,7 +48,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Hello, $greeting',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -61,7 +60,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
             'Your doctor account is under review. Our team is verifying your '
             'credentials — full dashboard access unlocks after approval, '
             'usually within 24–48 hours.',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyLarge,
               height: 1.5,
               color: AppColors.textSecondaryOf(context),
@@ -71,7 +70,7 @@ class DoctorVerificationPendingScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Aapko approve hote hi app automatically update ho jayegi.',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyMedium,
               height: 1.5,
               color: AppColors.textSecondaryOf(context),

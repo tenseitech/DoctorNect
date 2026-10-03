@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../constants/ambulance_icons.dart';
 import '../../../features/ambulance/ambulance_booking_screen.dart';
 import '../../../features/ambulance/models/ambulance_models.dart';
@@ -82,7 +80,7 @@ class _AmbulanceActionButtonState extends State<AmbulanceActionButton> {
                     const SizedBox(width: 7),
                     Text(
                       'Ambulance',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,

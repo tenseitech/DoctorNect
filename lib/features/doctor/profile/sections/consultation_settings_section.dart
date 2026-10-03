@@ -2,7 +2,6 @@ import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart';
 
 import '../../../../core/session/doctor_session.dart'; // FIXED: doctor id for Firestore persist
@@ -115,7 +114,7 @@ class _ConsultationSettingsSectionState
                                 _autoAccept
                                     ? 'New patient requests are confirmed instantly.'
                                     : 'You review each request and tap Accept or Decline.',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.bodySmall,
                                 ),
                               ),
@@ -194,7 +193,7 @@ class _ConsultationSettingsSectionState
                                 _apptReminders
                                     ? 'Patients receive automated reminder alerts before their appointment.'
                                     : 'No reminders will be sent.',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.bodySmall,
                                 ),
                               ),

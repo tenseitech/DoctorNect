@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../core/auth/registration_credentials.dart';
 import '../../core/auth/registration_otp_service.dart';
 import '../../core/constants/country_phone_codes.dart';
@@ -232,7 +230,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                   controller: _nameController,
                   validator: FormValidators.fullName,
                   textInputAction: TextInputAction.done,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),
@@ -273,7 +271,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                                   _mobileDialCode,
                                   _mobileController.text.trim(),
                                 ),
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.bodyMedium,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -312,7 +310,7 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                         padding: const EdgeInsets.only(top: 6, left: 4),
                         child: Text(
                           _mobileError!,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: Colors.red.shade700,
                             fontWeight: FontWeight.w500,

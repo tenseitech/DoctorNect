@@ -1,7 +1,6 @@
 import '../../../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -86,7 +85,7 @@ class _PatientBloodTestSheet extends StatelessWidget {
                       children: [
                         Text(
                           booking.displayTestName,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                           ),
@@ -95,7 +94,7 @@ class _PatientBloodTestSheet extends StatelessWidget {
                         Text(
                           DateFormat('dd MMM yyyy · hh:mm a')
                               .format(booking.dateTime),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -109,7 +108,7 @@ class _PatientBloodTestSheet extends StatelessWidget {
               if (tests.length > 1) ...[
                 Text(
                   '${tests.length} tests in this booking',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.labPurple,
@@ -131,7 +130,7 @@ class _PatientBloodTestSheet extends StatelessWidget {
                         Expanded(
                           child: Text(
                             name,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodySmall,
                               color: AppColors.textPrimaryOf(context),
                               height: 1.35,
@@ -181,7 +180,7 @@ class _PatientBloodTestSheet extends StatelessWidget {
               else
                 Text(
                   'Your lab will share the report here once it is ready.',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -219,7 +218,7 @@ class _InfoRow extends StatelessWidget {
             width: 96,
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -228,7 +227,7 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
               ),

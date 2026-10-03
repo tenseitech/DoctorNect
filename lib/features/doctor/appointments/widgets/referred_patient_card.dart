@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -63,7 +62,7 @@ class ReferredPatientCard extends StatelessWidget {
                       ),
                       child: Text(
                         'Referred',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.isDark(context)
@@ -79,7 +78,7 @@ class ReferredPatientCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.end,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelSmall,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -90,7 +89,7 @@ class ReferredPatientCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   referral.patientName,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -146,7 +145,7 @@ class ReferredPatientCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: RichText(
         text: TextSpan(
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodySmall,
             color: AppColors.textPrimaryOf(context),
             height: 1.35,

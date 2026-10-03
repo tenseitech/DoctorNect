@@ -1,8 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/session/patient_session.dart';
 import '../../../core/theme/app_colors.dart';
@@ -182,7 +180,7 @@ class _LabBookingsHeader extends StatelessWidget {
                 children: [
                   Text(
                     'Bookings & History',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: compact ? 20 : 24,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -191,7 +189,7 @@ class _LabBookingsHeader extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Upcoming tests and past lab bookings',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: compact ? 12 : 13,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.35,

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../data/patient_profile_mock.dart';
 import '../edit_profile_screen.dart';
@@ -42,7 +40,7 @@ class ProfileCompletionDialog extends StatelessWidget {
                       'Complete Your Profile',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -83,7 +81,7 @@ class ProfileCompletionDialog extends StatelessWidget {
                     ),
                     Text(
                       '$percentage%',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.patientTeal,
@@ -96,7 +94,7 @@ class ProfileCompletionDialog extends StatelessWidget {
               Text(
                 'Your profile is $percentage% complete. Please complete your profile to book appointments and receive accurate medical care.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -125,7 +123,7 @@ class ProfileCompletionDialog extends StatelessWidget {
                 ),
                 child: Text(
                   'Complete Profile',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
@@ -142,7 +140,7 @@ class ProfileCompletionDialog extends StatelessWidget {
                 ),
                 child: Text(
                   'Later',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),

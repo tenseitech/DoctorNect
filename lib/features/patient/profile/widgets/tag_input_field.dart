@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validators/form_validators.dart';
 import 'patient_profile_form_styles.dart';
@@ -95,7 +93,7 @@ class _TagInputFieldState extends State<TagInputField> {
                     const SizedBox(width: 4),
                     Text(
                       t,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.patientTeal,

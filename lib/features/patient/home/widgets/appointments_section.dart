@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/data/shared_appointments_store.dart';
@@ -67,7 +66,7 @@ class AppointmentsSection extends StatelessWidget {
                       children: [
                         Text(
                           'Appointments',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: compact ? 15 : 17,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -76,7 +75,7 @@ class AppointmentsSection extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Your upcoming & recent visits',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -94,7 +93,7 @@ class AppointmentsSection extends StatelessWidget {
                     ),
                     child: Text(
                       'View all',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -154,7 +153,7 @@ class _EmptyAppointments extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'No appointments yet',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w700,
             ),
@@ -163,7 +162,7 @@ class _EmptyAppointments extends StatelessWidget {
           Text(
             'Book your first consultation to see upcoming visits here.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
               height: 1.4,
@@ -182,7 +181,7 @@ class _EmptyAppointments extends StatelessWidget {
             ),
             child: Text(
               'Find a doctor',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -280,7 +279,7 @@ class _AppointmentCard extends StatelessWidget {
                         children: [
                           Text(
                             day,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
@@ -290,7 +289,7 @@ class _AppointmentCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             month,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: Colors.white.withValues(alpha: 0.92),
@@ -312,7 +311,7 @@ class _AppointmentCard extends StatelessWidget {
                                   _formatDoctorName(appointment.doctorName),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodyMedium,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -330,7 +329,7 @@ class _AppointmentCard extends StatelessWidget {
                             appointment.specialization,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -347,7 +346,7 @@ class _AppointmentCard extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 time,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.labelMedium,
                                   color: AppColors.textSecondaryOf(context),
                                 ),
@@ -359,7 +358,7 @@ class _AppointmentCard extends StatelessWidget {
                                     appointment.countdownLabel,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.labelSmall,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.patientTeal,
@@ -419,7 +418,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: color,

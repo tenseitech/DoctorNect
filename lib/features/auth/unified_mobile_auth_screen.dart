@@ -1,7 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../core/auth/unified_auth_flow_controller.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/legal/legal_document_modal.dart';
@@ -238,7 +236,7 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
               _flow.otpCountdown > 0
                   ? 'Resend OTP in ${_flow.otpCountdown}s'
                   : 'Resend OTP',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w600,
                 color: _flow.otpCountdown > 0
@@ -353,7 +351,7 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                           ),
                           Text(
                             _heading,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.headlineLarge,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimaryOf(context),
@@ -441,7 +439,7 @@ class _AuthTopBar extends StatelessWidget {
             ),
             label: Text(
               'Help',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondaryOf(context),
@@ -465,7 +463,7 @@ class _TermsDisclaimer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bodyStyle = GoogleFonts.inter(
+    final bodyStyle = TextStyle(fontFamily: 'Inter', 
       fontSize: AppTypography.bodySmall,
       height: 1.5,
       color: AppColors.textSecondaryOf(context),
@@ -548,7 +546,7 @@ class _PinnedPrimaryButton extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(
                       loadingText!,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelLarge,
                         fontWeight: FontWeight.w600,
                       ),
@@ -558,7 +556,7 @@ class _PinnedPrimaryButton extends StatelessWidget {
               )
             : Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelLarge,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.1,

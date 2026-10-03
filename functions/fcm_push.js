@@ -1,4 +1,10 @@
-const { getMessaging } = require('firebase-admin/messaging');
+let _getMessaging;
+function resolveMessaging() {
+  if (!_getMessaging) {
+    _getMessaging = require('firebase-admin/messaging').getMessaging;
+  }
+  return _getMessaging();
+}
 const { FieldValue } = require('firebase-admin/firestore');
 
 const INVALID_TOKEN_CODES = new Set([
@@ -61,7 +67,7 @@ async function sendFcmIfTokenExists(db, {
   if (!token) return false;
 
   try {
-    await getMessaging().send({
+    await resolveMessaging().send({
       token,
       notification: { title, body },
       data: stringifyData(data),

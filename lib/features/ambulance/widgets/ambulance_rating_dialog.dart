@@ -1,8 +1,6 @@
 import '../../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/overflow_safe_layout.dart';
 import '../../../core/theme/app_typography.dart';
@@ -50,7 +48,7 @@ Future<bool> showAmbulanceRatingDialog({
                   const SizedBox(height: 14),
                   Text(
                     'Rate your experience',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -59,7 +57,7 @@ Future<bool> showAmbulanceRatingDialog({
                   const SizedBox(height: 4),
                   Text(
                     ambulanceName,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -98,7 +96,7 @@ Future<bool> showAmbulanceRatingDialog({
                   if (selectedStars > 0)
                     Text(
                       _ratingLabel(selectedStars),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFFF59E0B),
@@ -112,12 +110,12 @@ Future<bool> showAmbulanceRatingDialog({
                     controller: reviewCtrl,
                     maxLines: 2,
                     maxLength: 200,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Write a short review (optional)',
-                      hintStyle: GoogleFonts.inter(
+                      hintStyle: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),

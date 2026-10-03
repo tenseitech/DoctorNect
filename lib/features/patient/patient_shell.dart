@@ -18,8 +18,6 @@ import '../../core/notifications/patient_notification_prefs_sync.dart';
 import '../../core/notifications/patient_appointment_watcher.dart';
 import '../../core/notifications/patient_lab_booking_watcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../core/firebase/firebase_bootstrap.dart';
 import '../../core/session/app_session.dart';
 import '../../core/widgets/s3_aware_network_image.dart';
@@ -159,7 +157,7 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
       alignment: Alignment.center,
       child: Text(
         initial,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: size * 0.46,
           fontWeight: FontWeight.w700,
           color: Colors.white,

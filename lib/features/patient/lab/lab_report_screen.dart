@@ -3,7 +3,6 @@ import '../../../core/firebase/firestore_service.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/firebase/lab_report_file_store.dart';
@@ -204,7 +203,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
               ),
               child: Text(
                 fileName,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -238,7 +237,7 @@ class _LabReportScreenState extends State<LabReportScreen> {
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),

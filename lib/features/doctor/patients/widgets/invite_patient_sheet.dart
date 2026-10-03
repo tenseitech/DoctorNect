@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/invite/doctor_invite_service.dart';
 import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -88,7 +86,7 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
             const SizedBox(height: 16),
             Text(
               'Invite Patient',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineMedium,
                 fontWeight: FontWeight.w700,
               ),
@@ -96,7 +94,7 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
             const SizedBox(height: 8),
             Text(
               'Share your personal DoctorNect link. When patients register with it, they are linked to $doctorName.',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
@@ -132,7 +130,7 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
                                 DoctorInviteService.buildInviteLink(
                                   DoctorSession.loggedInDoctorId,
                                 ),
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodyMedium,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimaryOf(context),
@@ -152,7 +150,7 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
               icon: const Icon(Icons.copy_outlined),
               label: Text(
                 'Copy Link',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(height: 10),
@@ -166,7 +164,7 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
               icon: const Icon(Icons.share_outlined),
               label: Text(
                 'Share',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
               ),
             ),
           ],

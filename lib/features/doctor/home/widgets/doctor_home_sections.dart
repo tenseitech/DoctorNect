@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'dart:math' as math;
 
+import 'package:flutter/material.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/notifications/app_notification.dart';
 import '../../../../core/notifications/widgets/notification_bell_button.dart';
@@ -59,7 +59,7 @@ class DoctorHomeTopBar extends StatelessWidget {
                         greetingText,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: compact ? 16 : 20,
                           fontWeight: FontWeight.w700,
                           color: Theme.of(context).colorScheme.onSurface,
@@ -125,12 +125,13 @@ class _DoctorVerificationBadge extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: AppColors.surfaceOf(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -171,7 +172,7 @@ class _DoctorVerificationBadge extends StatelessWidget {
                         verified
                             ? 'Verified Doctor Account'
                             : 'Verification Under Review',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
@@ -182,7 +183,7 @@ class _DoctorVerificationBadge extends StatelessWidget {
                         verified
                             ? 'Medical Council Credentials Confirmed'
                             : 'KYC Verification Pending Admin Approval',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: 12.5,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -241,7 +242,7 @@ class _DoctorVerificationBadge extends StatelessWidget {
                       verified
                           ? 'Your medical registration & credentials are fully verified. All clinical features & prescription signing are active.'
                           : 'Your registration credentials are currently being cross-referenced with State Medical Council records.',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                         height: 1.35,
@@ -283,7 +284,7 @@ class _KycInfoRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodySmall,
             color: AppColors.textSecondaryOf(context),
             fontWeight: FontWeight.w500,
@@ -295,7 +296,7 @@ class _KycInfoRow extends StatelessWidget {
             textAlign: TextAlign.end,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               color: AppColors.textPrimaryOf(context),
               fontWeight: FontWeight.w600,
@@ -558,7 +559,7 @@ class _DoctorStatTile extends StatelessWidget {
                   child: Text(
                     item.value,
                     maxLines: 1,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimaryOf(context),
@@ -574,7 +575,7 @@ class _DoctorStatTile extends StatelessWidget {
                     _label,
                     maxLines: 1,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 10.5,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondaryOf(context),
@@ -667,7 +668,7 @@ class _DoctorStatTile extends StatelessWidget {
                 child: Text(
                   item.value,
                   maxLines: 1,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: compact ? 20 : 26,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimaryOf(context),
@@ -683,7 +684,7 @@ class _DoctorStatTile extends StatelessWidget {
                   _label,
                   maxLines: 1,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: compact ? 10.5 : 11.5,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondaryOf(context),
@@ -721,7 +722,7 @@ class _DoctorMobileInlineSearchState extends State<_DoctorMobileInlineSearch> {
   Widget build(BuildContext context) {
     final compact = widget.compact;
     final active = _active;
-    final placeholderStyle = GoogleFonts.inter(
+    final placeholderStyle = TextStyle(fontFamily: 'Inter', 
       fontSize: compact ? AppTypography.bodySmall : 15,
       fontWeight: FontWeight.w400,
       color: AppColors.textSecondaryOf(context),
@@ -915,7 +916,7 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
                     widget.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: isWide ? 17 : 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -936,7 +937,7 @@ class _DoctorHomeServicesSectionState extends State<DoctorHomeServicesSection> {
                         children: [
                           Text(
                             'View all (${widget.services.length})',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
                               color: AppColors.doctorBlue,
@@ -1039,7 +1040,7 @@ class _DoctorServiceTile extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     height: 1.15,
@@ -1078,7 +1079,7 @@ class _DoctorServiceTile extends StatelessWidget {
                       _label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -1089,7 +1090,7 @@ class _DoctorServiceTile extends StatelessWidget {
                       service.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -1222,7 +1223,7 @@ class DoctorHomeSectionHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: compact ? 16 : 17,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -1232,7 +1233,7 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   subtitle!,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -1290,7 +1291,7 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                         children: [
                           Text(
                             secondaryActionLabel!,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w700,
                               color: AppColors.doctorBlue,
@@ -1303,7 +1304,7 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                               secondaryActionSubtitle!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelSmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textSecondaryOf(context),
@@ -1334,7 +1335,7 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    textStyle: GoogleFonts.inter(
+                    textStyle: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1354,7 +1355,7 @@ class DoctorHomeSectionHeader extends StatelessWidget {
                   ),
                   child: Text(
                     actionLabel!,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1484,8 +1485,9 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
     return Container(
-      width: 440,
+      width: math.min(440.0, screenWidth * 0.9),
       height: MediaQuery.of(context).size.height,
       decoration: BoxDecoration(
         color: AppColors.surfaceOf(context),
@@ -1534,12 +1536,16 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              title,
-                              style: GoogleFonts.inter(
-                                fontSize: AppTypography.headlineSmall,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimaryOf(context),
+                            Flexible(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontFamily: 'Inter', 
+                                  fontSize: AppTypography.headlineSmall,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimaryOf(context),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -1556,7 +1562,7 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
                               ),
                               child: Text(
                                 '${services.length} tools',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.labelSmall,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.doctorBlue,
@@ -1568,7 +1574,7 @@ class _ClinicalToolsSideDrawer extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           'Select a clinical management feature',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -1675,7 +1681,7 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
                               title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimaryOf(context),
@@ -1696,7 +1702,7 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
                             ),
                             child: Text(
                               '${services.length} tools',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelSmall,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.doctorBlue,
@@ -1708,7 +1714,7 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         'Select a tool to open',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -1726,7 +1732,12 @@ class _ClinicalToolsBottomSheet extends StatelessWidget {
           Divider(height: 1, color: AppColors.borderOf(context)),
           Flexible(
             child: ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                16 + MediaQuery.viewPaddingOf(context).bottom,
+              ),
               itemCount: services.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
@@ -1804,7 +1815,7 @@ class _DrawerToolTileState extends State<_DrawerToolTile> {
                   children: [
                     Text(
                       widget.service.label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -1814,7 +1825,7 @@ class _DrawerToolTileState extends State<_DrawerToolTile> {
                       const SizedBox(height: 3),
                       Text(
                         widget.service.subtitle,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),

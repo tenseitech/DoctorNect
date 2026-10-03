@@ -1,8 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/layout/responsive_layout.dart';
 import '../core/theme/app_colors.dart';
 import 'logout_button.dart';
@@ -343,7 +341,7 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                           Expanded(
                             child: Text(
                               d.label,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodyLarge,
                                 fontWeight: selected
                                     ? FontWeight.w600
@@ -598,7 +596,7 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                                           child: SafeBottomNavLabel(
                                             label: _navLabel(dest.label),
                                             maxLines: 1,
-                                            style: GoogleFonts.inter(
+                                            style: TextStyle(fontFamily: 'Inter', 
                                               fontSize: 10,
                                               height: 1.0,
                                               fontWeight: selected
@@ -779,7 +777,7 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                           const SizedBox(height: 2),
                           SafeBottomNavLabel(
                             label: _navLabel(dest.label),
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 10,
                               height: 1.1,
                               fontWeight:

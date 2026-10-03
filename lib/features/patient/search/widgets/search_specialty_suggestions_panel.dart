@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../specialty_search_suggestions.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -47,7 +45,7 @@ class SearchSpecialtySuggestionsPanel extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
                 child: Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textSecondaryOf(context),
@@ -129,7 +127,7 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                         s.label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimaryOf(context),
@@ -141,7 +139,7 @@ class _SuggestionTileState extends State<_SuggestionTile> {
                           s.subtitle!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelSmall,
                             color: AppColors.textSecondaryOf(context),
                           ),

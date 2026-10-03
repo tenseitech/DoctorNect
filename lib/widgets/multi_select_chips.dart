@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 
@@ -44,7 +42,7 @@ class MultiSelectChips extends StatelessWidget {
               },
               selectedColor: accentColor.withValues(alpha: 0.15),
               checkmarkColor: accentColor,
-              labelStyle: GoogleFonts.inter(
+              labelStyle: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: isSelected
                     ? accentColor
@@ -64,7 +62,7 @@ class MultiSelectChips extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             errorText!,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.error,
             ),

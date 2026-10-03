@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validators/form_validators.dart';
 import '../../../../widgets/confirm_delete_dialog.dart';
@@ -104,7 +102,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           Expanded(
             child: Text(
               'List all known allergies including medicines and food. Doctors use this for safer prescriptions.',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 height: 1.4,
                 color: AppColors.textPrimaryOf(context),
@@ -164,7 +162,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           const SizedBox(height: 12),
           Text(
             'Quick add',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -183,7 +181,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
                     onPressed: () => _add(s),
                     backgroundColor: AppColors.surfaceOf(context),
                     side: BorderSide(color: AppColors.borderOf(context)),
-                    labelStyle: GoogleFonts.inter(
+                    labelStyle: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -209,7 +207,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           const SizedBox(height: 12),
           Text(
             'No allergies added yet',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -219,7 +217,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           Text(
             'Add any medicine or food allergies above',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -253,7 +251,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
             Expanded(
               child: Text(
                 allergy,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),

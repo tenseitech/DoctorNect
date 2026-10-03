@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -134,7 +133,7 @@ class _PatientDetails extends StatelessWidget {
                 patient.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),
@@ -161,7 +160,7 @@ class _PatientDetails extends StatelessWidget {
           '${patient.age > 0 ? '${patient.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(patient.gender, fallback: 'Not provided')} · ${patient.mobile}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -169,7 +168,7 @@ class _PatientDetails extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Last visit: ${DateFormat('dd MMM yyyy').format(patient.lastVisitDate)}',
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -194,7 +193,7 @@ class _VisitsBadge extends StatelessWidget {
       ),
       child: Text(
         '$count visits',
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.doctorBlue,
@@ -226,7 +225,7 @@ class _ConditionChips extends StatelessWidget {
         if (hidden > 0)
           Text(
             '+$hidden more',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelSmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -257,7 +256,7 @@ class _ViewProfileButton extends StatelessWidget {
         ),
         child: Text(
           'View Profile',
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w600,
           ),

@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../theme/app_colors.dart';
 import '../app_notification.dart';
 import '../app_notification_navigator.dart';
@@ -107,7 +105,7 @@ class _Banner extends StatelessWidget {
                     children: [
                       Text(
                         notification.title,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontWeight: FontWeight.w700,
                           fontSize: AppTypography.bodyMedium,
                         ),
@@ -117,7 +115,7 @@ class _Banner extends StatelessWidget {
                         notification.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -125,7 +123,7 @@ class _Banner extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'In-app alert · Tap to open',
-                        style: GoogleFonts.inter(fontSize: 10, color: accent),
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: accent),
                       ),
                     ],
                   ),

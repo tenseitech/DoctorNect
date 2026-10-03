@@ -3,7 +3,6 @@ import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/auth/profile_action_guard.dart';
@@ -314,7 +313,7 @@ class _LabDayStatsHeader extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             text,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -345,7 +344,7 @@ class _LabDayStatsHeader extends StatelessWidget {
               children: [
                 Text(
                   'Test Orders',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -369,7 +368,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                     ),
                     child: Text(
                       'Today',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontWeight: FontWeight.w600,
                         fontSize: AppTypography.labelMedium,
                       ),
@@ -429,7 +428,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                     Expanded(
                       child: Text(
                         dateLabel,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                           color: Colors.white.withValues(alpha: 0.95),
@@ -449,7 +448,7 @@ class _LabDayStatsHeader extends StatelessWidget {
                         ),
                         child: Text(
                           'Today',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontWeight: FontWeight.w600,
                             fontSize: AppTypography.labelSmall,
                           ),
@@ -815,7 +814,7 @@ class _OrderTabPill extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w700,
                   color: labelColor,
@@ -833,7 +832,7 @@ class _OrderTabPill extends StatelessWidget {
                 ),
                 child: Text(
                   '$count',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: badgeTextColor,
@@ -872,7 +871,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                       Expanded(
                         child: Text(
                           'Order Details',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -906,7 +905,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                       children: [
                         Text(
                           'Patient Info',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textSecondaryOf(context),
@@ -915,7 +914,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                         const SizedBox(height: 8),
                         Text(
                           order.patientName,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -926,7 +925,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                           order.patientAge > 0
                               ? '${order.patientAge} years old'
                               : 'Age: Not provided',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodyMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -950,7 +949,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                         children: [
                           Text(
                             'Referred By',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
                               color: AppColors.labPurple,
@@ -968,7 +967,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                               Expanded(
                                 child: Text(
                                   'Dr. ${order.doctorName}',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodyLarge,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimaryOf(context),
@@ -984,7 +983,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                   const SizedBox(height: 16),
                   Text(
                     'Tests Ordered (${order.testNames.length})',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -1009,7 +1008,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                           Expanded(
                             child: Text(
                               test,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodyMedium,
                                 fontWeight: FontWeight.w500,
                                 color: AppColors.textPrimaryOf(context),
@@ -1026,7 +1025,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                     children: [
                       Text(
                         'Order Time:',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -1034,7 +1033,7 @@ void _showOrderDetails(BuildContext context, DoctorLabOrder order) {
                       Text(
                         DateFormat('dd MMM yyyy, hh:mm a')
                             .format(order.createdAt),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimaryOf(context),
@@ -1072,13 +1071,13 @@ class LabSearchField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: (_) => onChanged(),
-      style: GoogleFonts.inter(
+      style: TextStyle(fontFamily: 'Inter', 
         fontSize: AppTypography.bodySmall,
         color: AppColors.textPrimaryOf(context),
       ),
       decoration: InputDecoration(
         hintText: 'Search',
-        hintStyle: GoogleFonts.inter(
+        hintStyle: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.bodySmall,
           color: AppColors.textSecondaryOf(context),
         ),
@@ -1179,7 +1178,7 @@ class _LabOrderTile extends StatelessWidget {
                                   order.patientName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodyMedium,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -1205,7 +1204,7 @@ class _LabOrderTile extends StatelessWidget {
                                     children: [
                                       Text(
                                         labOrderStatusLabel(order.status),
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(fontFamily: 'Inter', 
                                           fontSize: AppTypography.labelSmall,
                                           fontWeight: FontWeight.w700,
                                           color: statusColor,
@@ -1243,7 +1242,7 @@ class _LabOrderTile extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             _orderSubtitle(order),
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -1281,7 +1280,7 @@ class _LabOrderTile extends StatelessWidget {
                           order.testNames.join(', '),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w500,
                             color: AppColors.textPrimaryOf(context),
@@ -1303,7 +1302,7 @@ class _LabOrderTile extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         'Report sent',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.pharmacyGreen,
                           fontWeight: FontWeight.w600,
@@ -1365,7 +1364,7 @@ class _DateBadge extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               DateFormat('MMM').format(date).toUpperCase(),
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -1377,7 +1376,7 @@ class _DateBadge extends StatelessWidget {
             child: Center(
               child: Text(
                 DateFormat('dd').format(date),
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimaryOf(context),
@@ -1410,7 +1409,7 @@ class _SourceBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: 9,
           fontWeight: FontWeight.w700,
           color: color,

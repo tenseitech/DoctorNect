@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../core/theme/app_colors.dart';
 import '../../widgets/mobile_scaffold.dart';
 
@@ -40,7 +38,7 @@ class AccountUnderReviewScreen extends StatelessWidget {
               const SizedBox(height: 28),
               Text(
                 'Account under review',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -50,7 +48,7 @@ class AccountUnderReviewScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 reviewMessage,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyLarge,
                   height: 1.5,
                   color: AppColors.textSecondaryOf(context),

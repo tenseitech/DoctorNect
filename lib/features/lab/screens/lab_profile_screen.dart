@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 
 import 'dart:async';
 
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/auth/app_logout.dart';
 import '../../../core/auth/contact_change_otp_service.dart';
 import '../../../core/auth/contact_change_verification.dart';
@@ -81,7 +79,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
             children: [
               Text(
                 'Profile',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w700,
                 ),
@@ -89,7 +87,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
               const SizedBox(height: 4),
               Text(
                 'Lab details, contact info & account settings',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -373,7 +371,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
               ),
               title: Text(
                 'Edit $field',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -383,7 +381,7 @@ class _LabProfileScreenState extends State<LabProfileScreen> {
                     if (errorText != null) ...[
                       Text(
                         errorText!,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           color: AppColors.error,
                         ),
@@ -501,7 +499,7 @@ class _LabHeroCard extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   _labInitial(lab.labName),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineLarge,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -519,7 +517,7 @@ class _LabHeroCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             lab.labName,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.headlineMedium,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
@@ -539,7 +537,7 @@ class _LabHeroCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         lab.area,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           color: Colors.white.withValues(alpha: 0.88),
                         ),
@@ -587,7 +585,7 @@ class _LabHeroCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'License · ${lab.licenseNumber}',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: Colors.white.withValues(alpha: 0.95),
@@ -625,7 +623,7 @@ class _HeroChip extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -657,7 +655,7 @@ class _LabProfileSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimaryOf(context),
@@ -666,7 +664,7 @@ class _LabProfileSection extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           subtitle,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -752,7 +750,7 @@ class _LabInfoTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondaryOf(context),
@@ -761,7 +759,7 @@ class _LabInfoTile extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   display,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: isPlaceholder
@@ -845,7 +843,7 @@ class _LabActionTile extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: destructive
@@ -855,7 +853,7 @@ class _LabActionTile extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -958,7 +956,7 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
     return AlertDialog(
       title: Text(
         'Edit Address',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
       ),
       content: SingleChildScrollView(
         child: Column(
@@ -968,7 +966,7 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
             if (_errorText != null) ...[
               Text(
                 _errorText!,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.error,
                 ),

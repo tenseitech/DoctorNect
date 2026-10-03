@@ -2,7 +2,6 @@ import '../../core/firebase/firestore_service.dart';
 
 // ignore_for_file: unused_element_parameter
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/auth/profile_action_guard.dart';
@@ -427,7 +426,7 @@ class _RequestsHeader extends StatelessWidget {
               children: [
                 Text(
                   'Trip Requests',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineMedium,
                     fontWeight: FontWeight.w700,
                     color: AppColors.surfaceOf(context),
@@ -436,7 +435,7 @@ class _RequestsHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '$pendingCount new · $acceptedCount active · $completedCount completed',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.surfaceOf(context).withValues(alpha: 0.9),
@@ -592,7 +591,7 @@ class _TripTabPill extends StatelessWidget {
               children: [
                 Text(
                   '$count',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w800,
                     color:
@@ -601,7 +600,7 @@ class _TripTabPill extends StatelessWidget {
                 ),
                 Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color:
@@ -640,11 +639,15 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: color),
           const SizedBox(width: 6),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: AppTypography.bodyLarge,
-              fontWeight: FontWeight.w700,
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontFamily: 'Inter', 
+                fontSize: AppTypography.bodyLarge,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -656,7 +659,7 @@ class _SectionHeader extends StatelessWidget {
             ),
             child: Text(
               '$count',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w700,
                 color: color,
@@ -692,7 +695,7 @@ class _EmptyHint extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -809,14 +812,14 @@ class _RequestCard extends StatelessWidget {
                     children: [
                       Text(
                         booking.patientName,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         booking.pickupLocation,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -836,7 +839,7 @@ class _RequestCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Taken',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textSecondaryOf(context),
@@ -856,7 +859,7 @@ class _RequestCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   booking.contactPhone,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -871,7 +874,7 @@ class _RequestCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'by ${booking.bookedByName}',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -894,7 +897,7 @@ class _RequestCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       booking.notes!,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -914,12 +917,16 @@ class _RequestCard extends StatelessWidget {
                     color: Color(0xFF2563EB),
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    'Assigned: ${booking.acceptedAmbulanceName}',
-                    style: GoogleFonts.inter(
-                      fontSize: AppTypography.labelMedium,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF2563EB),
+                  Expanded(
+                    child: Text(
+                      'Assigned: ${booking.acceptedAmbulanceName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontFamily: 'Inter', 
+                        fontSize: AppTypography.labelMedium,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2563EB),
+                      ),
                     ),
                   ),
                 ],
@@ -937,7 +944,7 @@ class _RequestCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   DateFormat('dd MMM · hh:mm a').format(booking.createdAt),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -964,7 +971,7 @@ class _RequestCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       _getCancelledByText(),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFFDC2626),
@@ -1064,7 +1071,7 @@ class _RequestCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '${booking.rating}/5',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFFF59E0B),
@@ -1075,7 +1082,7 @@ class _RequestCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '"${booking.review}"',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelSmall,
                           fontStyle: FontStyle.italic,
                           color: AppColors.textSecondaryOf(context),

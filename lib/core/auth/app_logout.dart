@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../firebase/firebase_auth_service.dart';
 import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
@@ -28,7 +26,7 @@ abstract final class AppLogout {
             ),
             child: Text(
               'Log out',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
             ),
           ),
         ],

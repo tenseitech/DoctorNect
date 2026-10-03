@@ -2,8 +2,6 @@ import '../../../core/firebase/firestore_service.dart';
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/firebase/ambulance_auth_helper.dart';
@@ -114,7 +112,7 @@ class _AmbulanceAvailabilityToggleState
                     children: [
                       Text(
                         isOnline ? 'Online for patient requests' : 'Offline',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                           color: isOnline
@@ -127,7 +125,7 @@ class _AmbulanceAvailabilityToggleState
                       const SizedBox(height: 2),
                       Text(
                         'Stays on even after logout or closing the app',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelSmall,
                           color: AppColors.textSecondaryOf(context),
                         ),

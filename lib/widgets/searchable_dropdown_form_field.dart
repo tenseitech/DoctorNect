@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 
@@ -57,7 +55,7 @@ class SearchableDropdownFormField extends FormField<String> {
                   displayValue ?? hintText ?? 'Select $title',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyMedium,
                     color: displayValue != null
                         ? AppColors.textPrimaryOf(context)
@@ -231,7 +229,7 @@ class _SearchableDropdownModalSheetState
                         Expanded(
                           child: Text(
                             'Select ${widget.title}',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: textPrimary,
@@ -257,14 +255,14 @@ class _SearchableDropdownModalSheetState
                       controller: _searchController,
                       autofocus: true,
                       onChanged: _onSearchChanged,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyMedium,
                         color: textPrimary,
                       ),
                       decoration: InputDecoration(
                         hintText:
                             'Type to search ${widget.title.toLowerCase()}... (e.g. maha)',
-                        hintStyle: GoogleFonts.inter(
+                        hintStyle: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           color: AppColors.textSecondaryOf(context)
                               .withValues(alpha: 0.7),
@@ -342,7 +340,7 @@ class _SearchableDropdownModalSheetState
                                   const SizedBox(height: 12),
                                   Text(
                                     'No results found',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.bodyMedium,
                                       fontWeight: FontWeight.w600,
                                       color: textPrimary,
@@ -351,7 +349,7 @@ class _SearchableDropdownModalSheetState
                                   const SizedBox(height: 4),
                                   Text(
                                     'Try searching with a different keyword',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.labelMedium,
                                       color: AppColors.textSecondaryOf(context),
                                     ),
@@ -440,7 +438,7 @@ class _SearchableDropdownModalSheetState
                 Expanded(
                   child: Text(
                     text,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 15,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -514,7 +512,7 @@ class _SearchableDropdownModalSheetState
                     children: [
                       Text(
                         'Use "$query"',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           color: AppColors.patientTeal,
@@ -523,7 +521,7 @@ class _SearchableDropdownModalSheetState
                       const SizedBox(height: 2),
                       Text(
                         'Select custom ${widget.title.toLowerCase()} entry',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),

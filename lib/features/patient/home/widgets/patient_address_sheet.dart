@@ -2,8 +2,6 @@ import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/countries.dart';
 import '../../../../core/constants/indian_cities.dart';
@@ -159,7 +157,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                   Expanded(
                     child: Text(
                       'Change location',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -175,7 +173,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
               ),
               Text(
                 'Enter your full address for home visits, lab collection, and nearby doctor search.',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -280,7 +278,7 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                         )
                       : Text(
                           'Save location',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodyLarge,
                             fontWeight: FontWeight.w600,
                           ),

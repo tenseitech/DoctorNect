@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../core/auth/profile_completion_service.dart';
 import '../../core/auth/registration_credentials.dart';
 import '../../core/auth/verification_lifecycle.dart';
@@ -43,22 +41,22 @@ class AmbulanceRegistrationScreen extends StatelessWidget {
           children: [
             Text(
               'Use these to sign in to your ambulance dashboard:',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
             ),
             const SizedBox(height: 16),
             Text(
               'Username',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
             ),
             SelectableText(
               username,
-              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall),
+              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.headlineSmall),
             ),
             const SizedBox(height: 12),
-            Text('PIN', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            Text('PIN', style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
             SelectableText(
               pin,
-              style: GoogleFonts.inter(fontSize: AppTypography.headlineSmall),
+              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.headlineSmall),
             ),
           ],
         ),

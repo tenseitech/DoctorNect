@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/app_constants.dart';
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/session/patient_session.dart';
@@ -65,7 +63,7 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
         automaticallyImplyLeading: !widget.embeddedInShell,
         title: Text(
           'My Lab',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
         backgroundColor: AppColors.cardBgOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
@@ -98,7 +96,7 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
                   child: Text(
                     'No labs in your list yet. Tap Add to search registered labs or book a lab test.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: AppColors.textSecondaryOf(context),
                       fontSize: AppTypography.bodyMedium,
                     ),
@@ -142,7 +140,7 @@ class _MyLabManageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(10);
-    final buttonTextStyle = GoogleFonts.inter(
+    final buttonTextStyle = TextStyle(fontFamily: 'Inter', 
       fontSize: AppTypography.bodySmall,
       fontWeight: FontWeight.w600,
     );
@@ -202,7 +200,7 @@ class _MyLabManageTile extends StatelessWidget {
                   lab.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -214,7 +212,7 @@ class _MyLabManageTile extends StatelessWidget {
                     lab.area,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:medibond/core/constants/app_constants.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/theme/app_colors.dart';
@@ -169,7 +168,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
       children: [
         Text(
           'Featured Doctors',
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w600,
           ),
@@ -232,7 +231,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   ),
                                   child: Text(
                                     entry.title.toUpperCase(),
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
@@ -246,7 +245,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                       : 'Dr. ${doctor.name}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: isCompact ? 15 : 16,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -256,7 +255,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   doctor.specialization,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.labelMedium,
                                     color: Colors.white.withValues(alpha: 0.92),
                                   ),
@@ -291,7 +290,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                         ' ${doctor.rating} · ${entry.subtitle}',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(fontFamily: 'Inter', 
                                           fontSize: AppTypography.labelSmall,
                                           color: Colors.white.withValues(
                                             alpha: 0.9,
@@ -358,7 +357,7 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   children: [
                                     Text(
                                       isCompact ? 'Profile' : 'View profile',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
@@ -535,7 +534,7 @@ class _FeaturedDoctorPhoto extends StatelessWidget {
                 ),
                 Text(
                   initial,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -564,7 +563,7 @@ class _InfoRow extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelSmall,
               color: Colors.white.withValues(alpha: 0.88),
             ),

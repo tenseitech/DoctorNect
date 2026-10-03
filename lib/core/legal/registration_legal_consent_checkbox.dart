@@ -1,7 +1,5 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../theme/app_colors.dart';
 import 'legal_document_modal.dart';
 import 'medibond_legal_content.dart';
@@ -32,7 +30,7 @@ class RegistrationLegalConsentCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final linkStyle = GoogleFonts.inter(
+    final linkStyle = TextStyle(fontFamily: 'Inter', 
       fontSize: AppTypography.bodySmall,
       height: 1.45,
       color: accentColor,
@@ -40,7 +38,7 @@ class RegistrationLegalConsentCheckbox extends StatelessWidget {
       decoration: TextDecoration.underline,
       decorationColor: accentColor,
     );
-    final bodyStyle = GoogleFonts.inter(
+    final bodyStyle = TextStyle(fontFamily: 'Inter', 
       fontSize: AppTypography.bodySmall,
       height: 1.45,
       color: AppColors.textSecondaryOf(context),

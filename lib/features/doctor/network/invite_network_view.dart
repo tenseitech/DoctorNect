@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/app_constants.dart';
 import '../../../core/invite/doctor_invite_service.dart';
 import '../../../core/session/doctor_session.dart';
@@ -129,7 +127,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                       children: [
                         Text(
                           'Invite and Connect',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -137,7 +135,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                         ),
                         Text(
                           'Share your DoctorNect invite link',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -154,7 +152,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
               const SizedBox(height: 16),
               Text(
                 'Choose who you are inviting, then copy or share your personal link from $doctorName.',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -203,7 +201,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                             )
                           : SelectableText(
                               _link ?? fallbackLink,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodyMedium,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
@@ -219,7 +217,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                 icon: const Icon(Icons.copy_outlined),
                 label: Text(
                   'Copy Link',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.doctorBlue,
@@ -238,7 +236,7 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                 icon: const Icon(Icons.share_outlined),
                 label: Text(
                   'Share Link',
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.doctorBlue,

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/country_phone_codes.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/theme/app_colors.dart';
@@ -68,7 +66,7 @@ class UnifiedAuthMobileField extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   CountryPhoneCodes.defaultDialCode,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -100,14 +98,14 @@ class UnifiedAuthMobileField extends StatelessWidget {
               onFieldSubmitted: onSubmitted,
               onChanged: onChanged,
               onTap: onTap,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimaryOf(context),
               ),
               decoration: InputDecoration(
                 hintText: 'Mobile number',
-                hintStyle: GoogleFonts.inter(
+                hintStyle: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w400,
                   color: AppColors.textSecondaryOf(context),

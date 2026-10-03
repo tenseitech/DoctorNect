@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 
 /// Invite control: Invite → Invite Sent (brief) → Revoke Invite.
@@ -121,7 +119,7 @@ class _DoctorInviteActionButtonState extends State<DoctorInviteActionButton> {
         style: _buttonStyle(disabled: true),
         child: Text(
           'Invite Sent',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
       );
     }

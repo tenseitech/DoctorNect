@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/theme/app_colors.dart';
 import '../../../core/validators/form_validators.dart';
 import '../../../widgets/required_field_label.dart';
@@ -24,12 +22,16 @@ class AmbulanceFormSectionTitle extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: const Color(0xFFDC2626)),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: AppTypography.bodyLarge,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimaryOf(context),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontFamily: 'Inter', 
+              fontSize: AppTypography.bodyLarge,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimaryOf(context),
+            ),
           ),
         ),
       ],
@@ -70,7 +72,7 @@ class AmbulanceFormField extends StatelessWidget {
       inputFormatters: formatters,
       maxLines: maxLines,
       textCapitalization: capitalization,
-      style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+      style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
       decoration: RequiredFieldLabels.decorate(
         InputDecoration(
           hintText: hint,
@@ -184,7 +186,7 @@ class AmbulanceFormToggleRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w500,
               ),

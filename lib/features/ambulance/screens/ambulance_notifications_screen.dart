@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/session/ambulance_session.dart';
@@ -86,7 +85,7 @@ class _AmbulanceNotificationsScreenState
                       children: [
                         Text(
                           'Notifications',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineLarge,
                             fontWeight: FontWeight.w700,
                           ),
@@ -96,7 +95,7 @@ class _AmbulanceNotificationsScreenState
                           unreadCount > 0
                               ? '$unreadCount unread · new requests & trip updates'
                               : 'New requests, acceptances, and trip alerts',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -124,7 +123,7 @@ class _AmbulanceNotificationsScreenState
                         'Mark all read',
                         maxLines: 1,
                         softWrap: false,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                         ),
@@ -186,7 +185,7 @@ class _AmbulanceNotificationsScreenState
                               ? 'No notifications yet. New trip requests will appear here.'
                               : 'No ${_filter.name} notifications.',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                             height: 1.4,
@@ -200,7 +199,7 @@ class _AmbulanceNotificationsScreenState
                               padding: const EdgeInsets.only(bottom: 8, top: 4),
                               child: Text(
                                 entry.key,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.labelMedium,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textSecondaryOf(context),
@@ -268,7 +267,7 @@ class _FilterPill extends StatelessWidget {
             children: [
               Text(
                 '$count',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w800,
                   color: selected
@@ -278,7 +277,7 @@ class _FilterPill extends StatelessWidget {
               ),
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w600,
                   color: selected
@@ -344,7 +343,7 @@ class _AlertCard extends StatelessWidget {
                     children: [
                       Text(
                         alert.title,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                         ),
@@ -352,7 +351,7 @@ class _AlertCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         alert.body,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           color: AppColors.textSecondaryOf(context),
                           height: 1.35,
@@ -361,7 +360,7 @@ class _AlertCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         DateFormat('hh:mm a').format(alert.createdAt),
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelSmall,
                           color: AppColors.textSecondaryOf(context),
                         ),

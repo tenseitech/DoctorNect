@@ -1,7 +1,6 @@
 import '../../../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -78,7 +77,7 @@ class LabBookingTile extends StatelessWidget {
                         children: [
                           Text(
                             day,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w800,
                               color: AppColors.surfaceOf(context),
@@ -88,7 +87,7 @@ class LabBookingTile extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             month,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: AppColors.surfaceOf(context)
@@ -111,7 +110,7 @@ class LabBookingTile extends StatelessWidget {
                                   booking.displayTestName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodyMedium,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -129,7 +128,7 @@ class LabBookingTile extends StatelessWidget {
                               patientName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelMedium,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
@@ -139,7 +138,7 @@ class LabBookingTile extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${booking.allTestNames.length} tests booked',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelSmall,
                                 color: AppColors.labPurple,
                               ),
@@ -150,7 +149,7 @@ class LabBookingTile extends StatelessWidget {
                             labName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -170,7 +169,7 @@ class LabBookingTile extends StatelessWidget {
                                   booking.slotLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.labelMedium,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -216,7 +215,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: color,

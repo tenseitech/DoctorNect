@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_icons.dart';
@@ -86,7 +85,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
                     a.specialization,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -99,7 +98,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
                             .format(a.dateTime),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w700,
                     ),
@@ -115,7 +114,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               ),
               child: Text(
                 '#${a.tokenNumber}',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.patientTeal,
@@ -135,7 +134,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
             const SizedBox(width: 4),
             Text(
               'In-Clinic',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: AppColors.patientTeal,
@@ -150,7 +149,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               ),
               child: Text(
                 statusLabel,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w600,
                   color: statusColor,
@@ -165,7 +164,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
             a.clinicName!,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w500,
             ),
@@ -175,7 +174,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               a.clinicAddress!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelSmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -184,7 +183,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
         const SizedBox(height: 8),
         Text(
           _countdown,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w600,
             color: AppColors.patientTeal,
@@ -204,7 +203,7 @@ class _UpcomingAppointmentCardState extends State<UpcomingAppointmentCard> {
               onPressed: widget.onCancel,
               child: Text(
                 'Cancel',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: AppColors.error,
                   fontWeight: FontWeight.w600,
                 ),

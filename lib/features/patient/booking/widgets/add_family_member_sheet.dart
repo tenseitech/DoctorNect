@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/validators/form_validators.dart';
 import '../../../../widgets/overflow_safe_layout.dart';
@@ -116,7 +114,7 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
               children: [
                 Text(
                   'Add family member',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                   ),
@@ -175,7 +173,7 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                                 dense: true,
                                 title: Text(
                                   option,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodyMedium,
                                   ),
                                 ),

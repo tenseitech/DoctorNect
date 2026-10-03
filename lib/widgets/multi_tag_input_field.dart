@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 
@@ -215,7 +213,7 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
                         ),
                         child: Text(
                           suggestion,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -239,7 +237,7 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
         if (widget.label != null) ...[
           Text(
             widget.label!,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -263,7 +261,7 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: Text(
                   _addLabel,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                   ),
@@ -288,7 +286,7 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
           const SizedBox(height: 12),
           Text(
             widget.quickAddTitle,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -302,7 +300,7 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
               return ActionChip(
                 label: Text(
                   label,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
+                  style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
                 ),
                 onPressed: selected ? null : () => _add(label),
                 backgroundColor: selected
@@ -326,7 +324,7 @@ class _MultiTagInputFieldState extends State<MultiTagInputField> {
               return InputChip(
                 label: Text(
                   tag,
-                  style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
+                  style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
                 ),
                 deleteIcon: const Icon(Icons.close, size: 16),
                 onDeleted: () => widget.onRemove(tag),

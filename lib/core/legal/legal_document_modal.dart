@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../theme/app_colors.dart';
 import 'medibond_legal_content.dart';
 import '../../core/theme/app_typography.dart';
@@ -91,7 +89,7 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                   Expanded(
                     child: Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -128,7 +126,7 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                       children: [
                         Text(
                           'DoctorNect',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: widget.accentColor,
@@ -137,7 +135,7 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                         const SizedBox(height: 4),
                         Text(
                           DoctorNectLegalContent.lastUpdated,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -149,7 +147,7 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                   for (final section in sections) ...[
                     Text(
                       section.title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -160,7 +158,7 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                     for (final paragraph in section.paragraphs) ...[
                       Text(
                         paragraph,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           height: 1.55,
                           color: AppColors.textSecondaryOf(context),
@@ -188,7 +186,7 @@ class _LegalDocumentModalState extends State<_LegalDocumentModal> {
                     Text(
                       'Scroll to the bottom to continue',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),

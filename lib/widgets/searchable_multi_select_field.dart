@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 import 'required_field_label.dart';
 import '../core/theme/app_typography.dart';
@@ -75,7 +73,7 @@ class SearchableMultiSelectField extends StatelessWidget {
                 suffixIcon: const Icon(Icons.arrow_drop_down),
                 border: const OutlineInputBorder(),
                 hintText: placeholder,
-                hintStyle: GoogleFonts.inter(
+                hintStyle: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -88,7 +86,7 @@ class SearchableMultiSelectField extends StatelessWidget {
             child: hasSelection
                 ? Text(
                     _summary,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -107,7 +105,7 @@ class SearchableMultiSelectField extends StatelessWidget {
               return Chip(
                 label: Text(
                   item,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: accentColor,
                   ),
@@ -219,7 +217,7 @@ class _SearchableMultiSelectSheetState
                       children: [
                         Text(
                           widget.title,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -228,7 +226,7 @@ class _SearchableMultiSelectSheetState
                         if (_selected.isNotEmpty)
                           Text(
                             '${_selected.length} selected',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               color: widget.accentColor,
                               fontWeight: FontWeight.w600,
@@ -271,7 +269,7 @@ class _SearchableMultiSelectSheetState
                   ? Center(
                       child: Text(
                         'No results for "${_searchController.text.trim()}"',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           color: AppColors.textSecondaryOf(context),
                         ),
                       ),
@@ -302,7 +300,7 @@ class _SearchableMultiSelectSheetState
                                 Expanded(
                                   child: Text(
                                     item,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.bodyMedium,
                                       color: AppColors.textPrimaryOf(context),
                                       fontWeight: isSelected

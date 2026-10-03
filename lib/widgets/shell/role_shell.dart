@@ -1,8 +1,6 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../core/layout/responsive_layout.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -337,7 +335,7 @@ class _RoleSidebar extends StatelessWidget {
                     ),
                     label: Text(
                       'Log out',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.error,
@@ -424,7 +422,7 @@ class _RoleBrandBlock extends StatelessWidget {
                       entityName.isNotEmpty ? entityName : roleTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: compact ? 18 : 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -457,7 +455,7 @@ class _RoleBrandBlock extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: compact ? 11 : 12,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondaryOf(context),
@@ -555,7 +553,7 @@ class _RoleNavTileState extends State<_RoleNavTile> {
                 Expanded(
                   child: Text(
                     widget.label,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       fontWeight:
                           widget.selected ? FontWeight.w700 : FontWeight.w500,
@@ -605,7 +603,7 @@ class _BadgePill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
           color: selected ? accentColor : Colors.white,
@@ -716,7 +714,7 @@ class _RoleBottomNav extends StatelessWidget {
                                       item.badgeCount! > 9
                                           ? '9+'
                                           : '${item.badgeCount}',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
@@ -736,7 +734,7 @@ class _RoleBottomNav extends StatelessWidget {
                           SafeBottomNavLabel(
                             label: item.mobileLabel ??
                                 compactBottomNavLabel(item.label),
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: 10,
                               fontWeight:
                                   selected ? FontWeight.w700 : FontWeight.w500,

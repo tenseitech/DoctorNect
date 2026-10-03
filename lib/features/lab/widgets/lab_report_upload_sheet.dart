@@ -8,8 +8,6 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/media/gallery_image_picker.dart';
 
 import '../../../core/auth/profile_action_guard.dart';
@@ -84,7 +82,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
       builder: (dialogContext) => AlertDialog(
         title: Text(
           'Confirm send report',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
         ),
         content: scrollableDialogContent(
           context: dialogContext,
@@ -94,7 +92,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             children: [
               Text(
                 "You're about to send ${file.name} ($sizeLabel) to $_patientName for $_testNames.",
-                style: GoogleFonts.inter(height: 1.45),
+                style: TextStyle(fontFamily: 'Inter', height: 1.45),
               ),
               if (isLarge) ...[
                 const SizedBox(height: 12),
@@ -118,7 +116,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                       Expanded(
                         child: Text(
                           'This file is larger than typical lab reports — please confirm this is the correct report.',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: Color(0xFF9A3412),
                             height: 1.4,
@@ -363,7 +361,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             const SizedBox(height: 16),
             Text(
               'Upload lab report',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
               ),
@@ -371,7 +369,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             const SizedBox(height: 6),
             Text(
               '$_patientName · $_testNames',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -408,7 +406,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                         children: [
                           Text(
                             _file!.name,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontWeight: FontWeight.w600,
                               fontSize: AppTypography.bodySmall,
                             ),
@@ -416,7 +414,7 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                           ),
                           Text(
                             _formatFileSize(_file!.size),
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),

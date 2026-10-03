@@ -2,9 +2,15 @@ import java.util.Properties
 import java.io.FileInputStream
 
 val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
+val keystorePropertiesFile = rootProject.file("key.properties").let {
+    if (it.exists()) it else project.file("key.properties")
+}
+val hasKeyProperties = keystorePropertiesFile.exists()
+
+if (hasKeyProperties) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+} else {
+    println("WARNING: release build debug key se sign hua hai, Play Store par upload nahi hoga")
 }
 
 plugins {
@@ -44,19 +50,23 @@ android {
     }
 
     signingConfigs {
-        if (keystorePropertiesFile.exists()) {
-            create("release") {
+        create("release") {
+            if (hasKeyProperties) {
+                val storeFilePath = keystoreProperties.getProperty("storeFile")
+                storeFile = if (storeFilePath != null) {
+                    val f = file(storeFilePath)
+                    if (f.exists()) f else rootProject.file(storeFilePath)
+                } else null
+                storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
-                storePassword = keystoreProperties.getProperty("storePassword")
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfig = if (hasKeyProperties) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")

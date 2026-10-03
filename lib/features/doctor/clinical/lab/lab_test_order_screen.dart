@@ -2,8 +2,6 @@ import '../../../../core/firebase/firestore_service.dart';
 import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/auth/profile_action_guard.dart';
 import '../../../../core/enums/user_type.dart';
 import '../../../../core/session/doctor_session.dart';
@@ -196,7 +194,7 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
           title: 'Patient',
           child: Text(
             '${widget.patient.patientName} · ${widget.patient.age > 0 ? '${widget.patient.age} yrs' : 'Not provided'}',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w500,
             ),
@@ -227,7 +225,7 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                         child: FilterChip(
                           label: Text(
                             cat,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelSmall,
                             ),
                           ),
@@ -247,7 +245,7 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
               if (_filteredTests.isEmpty)
                 Text(
                   'No tests found in catalog',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -261,13 +259,13 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                     value: selected,
                     title: Text(
                       test.name,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                       ),
                     ),
                     subtitle: Text(
                       _categoryFor(test),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -285,7 +283,7 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
               if (_selectedTestIds.isNotEmpty)
                 Text(
                   '${_selectedTestIds.length} test(s) selected',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.doctorBlue,
@@ -373,12 +371,12 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                     children: [
                       Text(
                         'No connected labs yet',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Connect a diagnostic lab to send test orders.',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -440,9 +438,11 @@ class _LabOrderSentSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.75;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: ConstrainedBox(
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
         child: SingleChildScrollView(
           child: Padding(
@@ -469,7 +469,7 @@ class _LabOrderSentSheet extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Lab order sent successfully',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                         ),
@@ -498,7 +498,7 @@ class _LabOrderSentSheet extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   'Tests ordered (${testNames.length})',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondaryOf(context),
@@ -519,7 +519,7 @@ class _LabOrderSentSheet extends StatelessWidget {
                         Expanded(
                           child: Text(
                             t,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodySmall,
                             ),
                             maxLines: 2,
@@ -545,6 +545,7 @@ class _LabOrderSentSheet extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -575,14 +576,14 @@ class _SentTo extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
               Text(
                 name,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: color,

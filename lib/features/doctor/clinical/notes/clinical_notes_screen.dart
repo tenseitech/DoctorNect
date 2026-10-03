@@ -1,7 +1,6 @@
 import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/data/shared_appointments_store.dart';
@@ -185,7 +184,7 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
                     return InputChip(
                       label: Text('${a.name} (${a.severity})'),
                       deleteIconColor: color,
-                      labelStyle: GoogleFonts.inter(
+                      labelStyle: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: color,
                       ),
@@ -220,19 +219,24 @@ class _InfoLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '$label: ',
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodySmall,
             color: AppColors.textSecondaryOf(context),
           ),
         ),
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            fontSize: AppTypography.bodySmall,
-            fontWeight: FontWeight.w600,
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontFamily: 'Inter', 
+              fontSize: AppTypography.bodySmall,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

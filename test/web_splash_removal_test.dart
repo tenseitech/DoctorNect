@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:medibond/features/auth/unified_auth_intro_screen.dart';
 import 'package:medibond/features/splash/splash_screen.dart';
 import 'package:medibond/main.dart';
@@ -10,9 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  GoogleFonts.config.allowRuntimeFetching = false;
-
-  setUp(() {
+setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/theme/app_colors.dart';
@@ -15,6 +14,7 @@ class EmergencySosSheet extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const EmergencySosSheet(),
     );
@@ -72,7 +72,7 @@ class EmergencySosSheet extends StatelessWidget {
                     children: [
                       Text(
                         'Emergency SOS Assistance',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF991B1B),
@@ -80,7 +80,7 @@ class EmergencySosSheet extends StatelessWidget {
                       ),
                       Text(
                         '24/7 Rapid Emergency Response',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -137,7 +137,7 @@ class EmergencySosSheet extends StatelessWidget {
                           children: [
                             Text(
                               'Call 108 Emergency Hotline',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
@@ -146,7 +146,7 @@ class EmergencySosSheet extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               'Toll-free immediate trauma & cardiac response',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelMedium,
                                 color: Colors.white.withValues(alpha: 0.9),
                               ),
@@ -189,7 +189,7 @@ class EmergencySosSheet extends StatelessWidget {
               icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
               label: Text(
                 'Book Nearby ICU Ambulance Dispatcher',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w700,
                 ),
@@ -198,7 +198,7 @@ class EmergencySosSheet extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               'Emergency Trauma Services',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
@@ -262,7 +262,7 @@ class _SosOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -270,7 +270,7 @@ class _SosOptionTile extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),

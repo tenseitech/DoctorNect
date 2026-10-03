@@ -5,7 +5,6 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/auth/profile_action_guard.dart';
@@ -123,11 +122,11 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Logout',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
         ),
         content: Text(
           'Are you sure you want to logout from ${widget.ambulance.serviceName}?',
-          style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+          style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
         ),
         actions: [
           TextButton(
@@ -154,7 +153,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                     content: Text(
                       'Signed out, but session data may not have cleared fully. '
                       'If you still auto-login after refresh, clear site data for this browser.',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                       ),
                     ),
@@ -234,7 +233,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                                   Flexible(
                                     child: Text(
                                       ambulance.serviceName,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: AppTypography.headlineSmall,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -263,7 +262,7 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                                   Expanded(
                                     child: Text(
                                       '${ambulance.driverName} · ${isOnline ? 'Online' : 'Offline'}',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: AppTypography.labelMedium,
                                         color: AppColors.textSecondaryOf(
                                           context,

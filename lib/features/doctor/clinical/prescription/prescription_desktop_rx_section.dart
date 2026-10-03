@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../data/community_medicine_repository.dart';
 import '../data/prescription_clinical_assets.dart';
@@ -196,7 +194,7 @@ class _PrescriptionDesktopRxSectionState
           ),
           child: Text(
             _namedCount == 0 ? '0 medicines' : '$_namedCount in Rx',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: _namedCount > 0

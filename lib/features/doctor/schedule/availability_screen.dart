@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -375,7 +374,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 alpha: 0.15,
                               ),
                               checkmarkColor: AppColors.doctorBlue,
-                              labelStyle: GoogleFonts.inter(
+                              labelStyle: TextStyle(fontFamily: 'Inter', 
                                 fontWeight:
                                     active ? FontWeight.w600 : FontWeight.w400,
                                 color: active
@@ -493,7 +492,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               )
                             : Text(
                                 'No break scheduled',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   color: AppColors.textSecondaryOf(context),
                                   fontSize: AppTypography.bodyMedium,
                                 ),
@@ -515,7 +514,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               selectedColor: AppColors.doctorBlue.withValues(
                                 alpha: 0.15,
                               ),
-                              labelStyle: GoogleFonts.inter(
+                              labelStyle: TextStyle(fontFamily: 'Inter', 
                                 color: selected
                                     ? AppColors.doctorBlue
                                     : AppColors.textSecondaryOf(context),
@@ -580,7 +579,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                   return InputChip(
                                     label: Text(
                                       label,
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: AppTypography.labelMedium,
                                       ),
                                     ),
@@ -674,7 +673,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -716,7 +715,7 @@ class _TimeDropdown extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -740,7 +739,7 @@ class _TimeDropdown extends StatelessWidget {
                   value: t,
                   child: Text(
                     t,
-                    style: GoogleFonts.inter(fontSize: AppTypography.bodySmall),
+                    style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
                   ),
                 ),
               )

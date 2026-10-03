@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_typography.dart';
 
 void showImageViewerDialog(
@@ -35,7 +33,7 @@ void showImageViewerDialog(
             left: 60,
             child: Text(
               title,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 color: Colors.white,
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,

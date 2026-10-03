@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/specialty_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/stomach_icon.dart';
@@ -32,7 +30,7 @@ class ExploreSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Specialities',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -65,7 +63,7 @@ class ExploreSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Specialities',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -82,7 +80,7 @@ class ExploreSection extends StatelessWidget {
                   ),
                   child: Text(
                     'View all',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -434,7 +432,7 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                       Expanded(
                         child: Text(
                           'All specialities',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                           ),
@@ -472,7 +470,7 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                       ? Center(
                           child: Text(
                             'No specialities found',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -566,7 +564,7 @@ class _ExploreCategoryTile extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: fontSize,
               fontWeight: FontWeight.w600,
               height: 1.2,

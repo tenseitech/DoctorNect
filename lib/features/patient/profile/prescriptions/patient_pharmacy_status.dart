@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../pharmacy/models/pharmacy_models.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -60,7 +58,7 @@ class PatientPharmacyStatusChip extends StatelessWidget {
           Expanded(
             child: Text(
               status.label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: status.color,

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -127,7 +125,7 @@ abstract final class MedicationTimeSlots {
                     const SizedBox(height: 14),
                     Text(
                       '${label(slot)} time',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                       ),
@@ -135,7 +133,7 @@ abstract final class MedicationTimeSlots {
                     const SizedBox(height: 4),
                     Text(
                       'Select between ${rangeLabel(slot)}',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),

@@ -5,8 +5,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../core/auth/contact_change_otp_service.dart';
 import '../../core/auth/contact_change_verification.dart';
 import '../../core/constants/country_phone_codes.dart';
@@ -344,7 +342,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
             ? Center(
                 child: Text(
                   'Profile not found',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     color: AppColors.textSecondaryOf(context),
                   ),
                 ),
@@ -368,7 +366,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                   children: [
                                     Text(
                                       'Profile',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: AppTypography.headlineLarge,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -376,7 +374,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       'Service details, availability & account',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: AppTypography.bodySmall,
                                         color:
                                             AppColors.textSecondaryOf(context),
@@ -397,7 +395,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                         },
                                   child: Text(
                                     _editing ? 'Cancel' : 'Edit',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontWeight: FontWeight.w600,
                                       color: const Color(0xFFDC2626),
                                     ),
@@ -441,7 +439,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                   )
                                 : Text(
                                     'Save Profile',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -550,14 +548,14 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                     ),
                                     title: Text(
                                       'Promote Banner Ad',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontWeight: FontWeight.w700,
                                         fontSize: AppTypography.bodyMedium,
                                       ),
                                     ),
                                     subtitle: Text(
                                       'Advertise ambulance service on Patient Home',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Inter', 
                                         fontSize: AppTypography.labelMedium,
                                         color: Colors.grey,
                                       ),
@@ -625,7 +623,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
         elevation: 0,
         title: Text(
           'My Profile',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
         actions: [
           if (!_loading && amb != null)
@@ -640,7 +638,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                     },
               child: Text(
                 _editing ? 'Cancel' : 'Edit',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFDC2626),
                 ),
@@ -792,7 +790,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
             const SizedBox(height: 8),
             Text(
               'Username: ${amb.username}',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1068,7 +1066,7 @@ class _AmbulanceProfileCompletionCardState
               children: [
                 Text(
                   'Profile completion',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.titleMedium,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -1095,7 +1093,7 @@ class _AmbulanceProfileCompletionCardState
             const SizedBox(height: 8),
             Text(
               '$percentage% complete · $filled of $total details filled',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondaryOf(context),
@@ -1122,7 +1120,7 @@ class _AmbulanceProfileCompletionCardState
                     Expanded(
                       child: Text(
                         'Submitted for verification. We will review your details shortly.',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           color: isDark
                               ? const Color(0xFF7DD3FC)
@@ -1157,14 +1155,18 @@ class _AmbulanceProfileCompletionCardState
                           color: Color(0xFFDC2626),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Revision note from admin',
-                          style: GoogleFonts.inter(
-                            fontSize: AppTypography.labelMedium,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? const Color(0xFFF87171)
-                                : const Color(0xFFDC2626),
+                        Expanded(
+                          child: Text(
+                            'Revision note from admin',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontFamily: 'Inter', 
+                              fontSize: AppTypography.labelMedium,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? const Color(0xFFF87171)
+                                  : const Color(0xFFDC2626),
+                            ),
                           ),
                         ),
                       ],
@@ -1172,7 +1174,7 @@ class _AmbulanceProfileCompletionCardState
                     const SizedBox(height: 4),
                     Text(
                       reason.trim(),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         color: isDark
                             ? const Color(0xFFFCA5A5)
@@ -1187,7 +1189,7 @@ class _AmbulanceProfileCompletionCardState
               const SizedBox(height: 14),
               Text(
                 'Missing details (${missing.length})',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -1244,7 +1246,7 @@ class _AmbulanceProfileCompletionCardState
             Expanded(
               child: Text(
                 '${item.label} · ${item.section}',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -1292,7 +1294,7 @@ class _AmbulanceProfileCompletionCardState
       ),
       child: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w600,
           color: fg,
@@ -1345,7 +1347,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                       Flexible(
                         child: Text(
                           ambulance.serviceName,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1360,14 +1362,14 @@ class _ProfileHeaderCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     ambulance.driverName,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
                   Text(
                     ambulance.vehicleNumber,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -1415,14 +1417,14 @@ class _AboutSection extends StatelessWidget {
                   children: [
                     Text(
                       'About',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       'Rate the app, share link & legal',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -1470,7 +1472,7 @@ class _ProfileSection extends StatelessWidget {
           children: [
             Text(
               title,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
                 color:
@@ -1516,7 +1518,7 @@ class _InfoRow extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1525,7 +1527,7 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               isEmpty ? 'Not provided' : value,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
                 color: isEmpty
@@ -1569,7 +1571,7 @@ class _EquipmentToggles extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             'Oxygen',
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
           ),
           value: hasOxygen,
           activeThumbColor: const Color(0xFFDC2626),
@@ -1579,7 +1581,7 @@ class _EquipmentToggles extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             'Ventilator',
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
           ),
           value: hasVentilator,
           activeThumbColor: const Color(0xFFDC2626),
@@ -1589,7 +1591,7 @@ class _EquipmentToggles extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             'Stretcher',
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
           ),
           value: hasStretcher,
           activeThumbColor: const Color(0xFFDC2626),
@@ -1599,7 +1601,7 @@ class _EquipmentToggles extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             '24×7 service',
-            style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
           ),
           value: is24x7,
           activeThumbColor: const Color(0xFFDC2626),

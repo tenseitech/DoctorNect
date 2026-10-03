@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -66,7 +64,7 @@ class MyDoctorSection extends StatelessWidget {
                       children: [
                         Text(
                           'My Doctor',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: compact ? 14 : 15,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -77,7 +75,7 @@ class MyDoctorSection extends StatelessWidget {
                           subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -134,7 +132,7 @@ class MyDoctorSection extends StatelessWidget {
       ),
       child: Text(
         'Add',
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w600,
         ),

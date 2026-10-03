@@ -2,8 +2,6 @@ import '../../../../core/notifications/app_toast.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart'; // FIXED: persist support tickets
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/media/gallery_image_picker.dart';
 
 import '../../../../core/session/patient_session.dart'; // FIXED: attach patient id to ticket
@@ -100,7 +98,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                           ),
                           title: Text(
                             e.value.question,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontWeight: FontWeight.w500,
                               fontSize: AppTypography.bodyMedium,
                             ),
@@ -112,7 +110,7 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   e.value.answer,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodySmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),

@@ -1,8 +1,6 @@
 import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../patient/data/registered_doctors_store.dart';
@@ -195,7 +193,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                 Expanded(
                   child: Text(
                     'Refer to Specialist',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                     ),
@@ -211,7 +209,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
             const SizedBox(height: 4),
             Text(
               'Refer ${widget.patient.patientName} to a verified DoctorNect doctor',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -238,7 +236,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
               const SizedBox(height: 10),
               Text(
                 'Added referrals',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                 ),
@@ -252,7 +250,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                     InputChip(
                       label: Text(
                         _pendingReferrals[i].displayTitle,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelSmall,
                         ),
                       ),
@@ -295,7 +293,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                               ? 'No verified doctors available yet.'
                               : 'No doctors match "$query".',
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             color: AppColors.textSecondaryOf(context),
                             fontSize: AppTypography.bodySmall,
                           ),
@@ -327,7 +325,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                                 doctor.name.isNotEmpty
                                     ? doctor.name[0].toUpperCase()
                                     : 'D',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.doctorBlue,
                                   fontSize: AppTypography.bodySmall,
@@ -341,7 +339,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                                 children: [
                                   Text(
                                     'Dr. ${doctor.name}',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.bodyMedium,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -350,7 +348,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                                   ),
                                   Text(
                                     doctor.specialization,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.labelMedium,
                                       color: AppColors.textSecondaryOf(context),
                                     ),
@@ -381,7 +379,7 @@ class _ReferSpecialistDialogState extends State<ReferSpecialistDialog> {
                                 ),
                                 minimumSize: const Size(0, 32),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                textStyle: GoogleFonts.inter(
+                                textStyle: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.labelMedium,
                                   fontWeight: FontWeight.w600,
                                 ),

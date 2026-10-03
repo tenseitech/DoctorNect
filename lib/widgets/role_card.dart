@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
 
@@ -203,7 +201,7 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                                     widget.title,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: isMobile
                                           ? AppTypography.headlineSmall
                                           : AppTypography.bodyLarge,
@@ -217,7 +215,7 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                                     widget.subtitle,
                                     maxLines: isMobile ? 2 : 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.labelMedium,
                                       height: 1.35,
                                       color: AppColors.textSecondaryOf(context),

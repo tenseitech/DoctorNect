@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import 'patient_screen_title_bar.dart';
@@ -169,7 +167,7 @@ class _SegmentTabState extends State<_SegmentTab> {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: selected
@@ -268,7 +266,7 @@ class PatientTabEmptyState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
               ),
@@ -277,7 +275,7 @@ class PatientTabEmptyState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.45,
@@ -300,7 +298,7 @@ class PatientTabEmptyState extends StatelessWidget {
                 ),
                 child: Text(
                   actionLabel!,
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
                 ),
               ),
             ],

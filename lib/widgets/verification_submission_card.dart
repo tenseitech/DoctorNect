@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/auth/demo_auth_config.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
@@ -202,7 +200,7 @@ class _VerificationSubmissionCardState
                 Expanded(
                   child: Text(
                     'Super Admin Verification',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.titleMedium,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -235,7 +233,7 @@ class _VerificationSubmissionCardState
                   ),
                   child: Text(
                     stage.displayLabel,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w600,
                       color: stage.isVerified
@@ -274,7 +272,7 @@ class _VerificationSubmissionCardState
                       Expanded(
                         child: Text(
                           'Your professional account is verified. All operational features are active.',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodyMedium,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -294,7 +292,7 @@ class _VerificationSubmissionCardState
                       Expanded(
                         child: Text(
                           'Your profile has been submitted and is currently being reviewed by Super Admin. You will receive an update once approved.',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodyMedium,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -323,7 +321,7 @@ class _VerificationSubmissionCardState
                         children: [
                           Text(
                             'Revision requested by Super Admin:',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w700,
                               color: isDark
@@ -334,7 +332,7 @@ class _VerificationSubmissionCardState
                           const SizedBox(height: 4),
                           Text(
                             reason,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodySmall,
                               color: isDark
                                   ? const Color(0xFFFDE68A)
@@ -347,7 +345,7 @@ class _VerificationSubmissionCardState
                   ],
                   Text(
                     'Required for Verification:',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.titleSmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
@@ -374,7 +372,7 @@ class _VerificationSubmissionCardState
                               children: [
                                 Text(
                                   item.label,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodySmall,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimaryOf(context),
@@ -382,7 +380,7 @@ class _VerificationSubmissionCardState
                                 ),
                                 Text(
                                   item.description,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -421,7 +419,7 @@ class _VerificationSubmissionCardState
                         backgroundColor: accent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 13),
-                        textStyle: GoogleFonts.inter(
+                        textStyle: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelLarge,
                           fontWeight: FontWeight.w600,
                         ),

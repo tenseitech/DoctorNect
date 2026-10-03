@@ -1,8 +1,6 @@
 import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/firebase/firebase_bootstrap.dart';
 import '../../../../core/session/doctor_session.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -91,7 +89,7 @@ class _AddCommunityMedicineDialogState
     return AlertDialog(
       title: Text(
         'Add Medicine to Database?',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
       ),
       content: SingleChildScrollView(
         child: Column(

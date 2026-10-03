@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/auth/profile_action_guard.dart';
@@ -634,7 +633,7 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
                         Expanded(
                           child: Text(
                             'Editing · ${DateFormat('dd MMM yyyy, hh:mm a').format(_draft.prescriptionDate)} · ${_draft.prescriptionId}',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
                               color: AppColors.doctorBlue,
@@ -905,7 +904,7 @@ class _PrevRxCard extends StatelessWidget {
               children: [
                 Text(
                   DateFormat('dd MMM yyyy').format(draft.prescriptionDate),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontWeight: FontWeight.w600,
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textPrimaryOf(context),
@@ -917,7 +916,7 @@ class _PrevRxCard extends StatelessWidget {
                     dx,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -933,7 +932,7 @@ class _PrevRxCard extends StatelessWidget {
                     }).join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -948,7 +947,7 @@ class _PrevRxCard extends StatelessWidget {
                         .join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -966,7 +965,7 @@ class _PrevRxCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 2),
                   child: Text(
                     'Editing',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: AppColors.doctorBlue,
@@ -989,7 +988,7 @@ class _PrevRxCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Edit',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1009,7 +1008,7 @@ class _PrevRxCard extends StatelessWidget {
                     ),
                     child: Text(
                       'View',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1195,96 +1194,103 @@ class _SendToSheetState extends State<_SendToSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(Icons.send_outlined, color: AppColors.doctorBlue),
-              const SizedBox(width: 10),
-              Text(
-                'Send Prescription to',
-                style: GoogleFonts.inter(
-                  fontSize: AppTypography.headlineSmall,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Select all recipients for ${widget.patient.patientName}\'s prescription',
-            style: GoogleFonts.inter(
-              fontSize: AppTypography.bodySmall,
-              color: AppColors.textSecondaryOf(context),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Divider(),
-          _RecipientTile(
-            icon: Icons.person_outline,
-            label: 'Patient',
-            subtitle: 'Full prescription report (medicines, tests, advice)',
-            value: _toPatient,
-            onChanged: (v) => setState(() => _toPatient = v),
-          ),
-          _RecipientTile(
-            icon: Icons.biotech_outlined,
-            label: 'Lab',
-            subtitle: 'Lab test orders only (no medicines)',
-            value: _toLab,
-            onChanged: (v) => setState(() => _toLab = v),
-          ),
-          _RecipientTile(
-            icon: Icons.local_pharmacy_outlined,
-            label: 'Medical Store',
-            subtitle: 'Medicines list for dispensing only',
-            value: _toMedical,
-            onChanged: (v) => setState(() => _toMedical = v),
-          ),
-          const Divider(),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _sending ? null : _send,
-              icon: _sending
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.send_rounded, size: 18),
-              label: Text(_sending ? 'Sending…' : 'Send Now'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.doctorBlue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                textStyle: GoogleFonts.inter(
-                  fontSize: AppTypography.bodyLarge,
-                  fontWeight: FontWeight.w600,
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.send_outlined, color: AppColors.doctorBlue),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Send Prescription to',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontFamily: 'Inter', 
+                      fontSize: AppTypography.headlineSmall,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Select all recipients for ${widget.patient.patientName}\'s prescription',
+              style: TextStyle(fontFamily: 'Inter', 
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            _RecipientTile(
+              icon: Icons.person_outline,
+              label: 'Patient',
+              subtitle: 'Full prescription report (medicines, tests, advice)',
+              value: _toPatient,
+              onChanged: (v) => setState(() => _toPatient = v),
+            ),
+            _RecipientTile(
+              icon: Icons.biotech_outlined,
+              label: 'Lab',
+              subtitle: 'Lab test orders only (no medicines)',
+              value: _toLab,
+              onChanged: (v) => setState(() => _toLab = v),
+            ),
+            _RecipientTile(
+              icon: Icons.local_pharmacy_outlined,
+              label: 'Medical Store',
+              subtitle: 'Medicines list for dispensing only',
+              value: _toMedical,
+              onChanged: (v) => setState(() => _toMedical = v),
+            ),
+            const Divider(),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _sending ? null : _send,
+                icon: _sending
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.send_rounded, size: 18),
+                label: Text(_sending ? 'Sending…' : 'Send Now'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.doctorBlue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  textStyle: TextStyle(fontFamily: 'Inter', 
+                    fontSize: AppTypography.bodyLarge,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1317,11 +1323,15 @@ class _RecipientTile extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: AppColors.doctorBlue),
           const SizedBox(width: 10),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-              fontSize: AppTypography.bodyMedium,
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontFamily: 'Inter', 
+                fontWeight: FontWeight.w600,
+                fontSize: AppTypography.bodyMedium,
+              ),
             ),
           ),
         ],
@@ -1330,7 +1340,7 @@ class _RecipientTile extends StatelessWidget {
         padding: const EdgeInsets.only(left: 28),
         child: Text(
           subtitle,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),

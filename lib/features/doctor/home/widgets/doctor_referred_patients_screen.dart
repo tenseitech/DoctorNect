@@ -1,8 +1,6 @@
 import '../../../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/firebase/models/doctor_referral.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/session/doctor_session.dart';
@@ -103,7 +101,7 @@ class _DoctorReferredPatientsScreenState
           child: Text(
             emptyMessage,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyLarge,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -166,11 +164,11 @@ class _DoctorReferredPatientsScreenState
                 labelColor: AppColors.doctorBlue,
                 unselectedLabelColor: AppColors.textSecondaryOf(context),
                 indicatorColor: AppColors.doctorBlue,
-                labelStyle: GoogleFonts.inter(
+                labelStyle: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                 ),
-                unselectedLabelStyle: GoogleFonts.inter(
+                unselectedLabelStyle: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                 ),
                 tabs: _tabLabels.map((l) => Tab(text: l)).toList(),

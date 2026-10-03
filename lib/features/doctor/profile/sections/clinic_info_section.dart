@@ -2,7 +2,6 @@ import '../../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart';
 
 import '../../../../core/media/gallery_image_picker.dart';
@@ -404,7 +403,7 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                     _fetchingLocation
                                         ? 'Detecting...'
                                         : 'Use current location',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.doctorBlue,
@@ -565,11 +564,15 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                             const SizedBox(height: 16),
                             Row(
                               children: [
-                                Text(
-                                  'Clinic photos (${_photos.length}/5) — optional',
-                                  style: Theme.of(context).textTheme.titleSmall,
+                                Expanded(
+                                  child: Text(
+                                    'Clinic photos (${_photos.length}/5) — optional',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.titleSmall,
+                                  ),
                                 ),
-                                const Spacer(),
+                                const SizedBox(width: 8),
                                 FilledButton.icon(
                                   onPressed:
                                       _photos.length < 5 ? _addPhoto : null,

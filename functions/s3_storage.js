@@ -28,11 +28,7 @@ const ENFORCE_ABUSE_APP_CHECK = String(
   .toLowerCase() !== 'false';
 
 const SUPER_ADMIN_EMAILS = [
-  'sharmasd2@gmail.com',
-  'tenseitechpvtltd@gmail.com',
   'admin@doctornect.com',
-  'superadmin@doctornect.com',
-  'support@doctornect.com',
 ];
 
 const ALLOWED_CONTENT_TYPES = new Set([

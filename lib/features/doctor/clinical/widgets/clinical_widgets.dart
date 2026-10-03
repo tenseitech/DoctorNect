@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../data/community_medicine_repository.dart';
@@ -90,7 +88,7 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
                         children: [
                           Text(
                             widget.title,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: widget.dense ? 13.5 : 14,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimaryOf(context),
@@ -104,7 +102,7 @@ class _ClinicalSectionCardState extends State<ClinicalSectionCard> {
                               widget.collapsedSummary!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.labelSmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -311,14 +309,14 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
                         dense: true,
                         title: Text(
                           item.name,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                           ),
                         ),
                         trailing: item.isCommunity
                             ? Text(
                                 'Community',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textSecondaryOf(context),
@@ -336,7 +334,7 @@ class _SearchSuggestionsFieldState extends State<SearchSuggestionsField> {
                       dense: true,
                       title: Text(
                         item,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                         ),
                       ),

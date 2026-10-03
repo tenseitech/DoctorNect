@@ -3,8 +3,6 @@ import '../../../core/firebase/firestore_service.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/speciality_mapper.dart';
 import '../../../core/constants/specialty_categories.dart';
 import '../../../core/layout/responsive_layout.dart';
@@ -461,7 +459,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                     const SizedBox(width: 6),
                     Text(
                       'Filter',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: hasActiveFilters
@@ -514,7 +512,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           onDeleted: () =>
                               setState(() => _locationFilter = null),
                           deleteIconColor: AppColors.patientTeal,
-                          labelStyle: GoogleFonts.inter(
+                          labelStyle: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
@@ -538,7 +536,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           onDeleted: () =>
                               setState(() => _specialityCategory = null),
                           deleteIconColor: AppColors.patientTeal,
-                          labelStyle: GoogleFonts.inter(
+                          labelStyle: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
@@ -557,7 +555,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           onDeleted: () =>
                               setState(() => _availableToday = false),
                           deleteIconColor: AppColors.patientTeal,
-                          labelStyle: GoogleFonts.inter(
+                          labelStyle: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
@@ -582,7 +580,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           ),
                           onDeleted: () => setState(() => _minRating = null),
                           deleteIconColor: AppColors.patientTeal,
-                          labelStyle: GoogleFonts.inter(
+                          labelStyle: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
@@ -605,7 +603,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           ),
                           onDeleted: () => setState(() => _language = null),
                           deleteIconColor: AppColors.patientTeal,
-                          labelStyle: GoogleFonts.inter(
+                          labelStyle: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: AppColors.patientTeal,
@@ -1024,7 +1022,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
               Expanded(
                 child: Text(
                   'Showing nearby services in $locationLabel',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.patientTeal,
@@ -1061,7 +1059,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Text(
               'Nothing nearby yet',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
                 fontStyle: FontStyle.italic,
@@ -1326,11 +1324,11 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
               children: [
                 Text(
                   appBarTitle,
-                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
                 ),
                 Text(
                   appBarSubtitle,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -1380,7 +1378,7 @@ class _CitywideEmptyState extends StatelessWidget {
               Text(
                 'No doctors in $locationLabel yet',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: isWide ? 20 : 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -1390,7 +1388,7 @@ class _CitywideEmptyState extends StatelessWidget {
               Text(
                 'We could not find any doctors listed in $locationLabel right now. Try again later or update your city in profile.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: isWide ? 15 : 14,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.5,
@@ -1540,7 +1538,7 @@ class _NoResultsState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No results found',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
               ),
@@ -1549,7 +1547,7 @@ class _NoResultsState extends StatelessWidget {
             Text(
               'Try a different keyword for doctors or lab tests.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,

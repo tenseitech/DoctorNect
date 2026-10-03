@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../data/registered_doctors_store.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -32,7 +30,7 @@ Widget appointmentDoctorAvatar(String doctorName) {
     backgroundColor: AppColors.patientTeal.withValues(alpha: 0.12),
     child: Text(
       initial,
-      style: GoogleFonts.inter(
+      style: TextStyle(fontFamily: 'Inter', 
         fontSize: AppTypography.bodyLarge,
         fontWeight: FontWeight.w700,
         color: AppColors.patientTeal,
@@ -51,7 +49,7 @@ Widget? appointmentDoctorRatingBadge(String doctorId) {
       const SizedBox(width: 2),
       Text(
         rating.toStringAsFixed(1),
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: _starColor,
@@ -70,7 +68,7 @@ Widget appointmentCardRating(double rating) {
         const SizedBox(width: 2),
         Text(
           rating.toStringAsFixed(1),
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimaryOf(context),
@@ -90,7 +88,7 @@ ButtonStyle compactTealOutlinedButtonStyle() {
     minimumSize: const Size(0, 32),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    textStyle: GoogleFonts.inter(
+    textStyle: TextStyle(fontFamily: 'Inter', 
       fontSize: AppTypography.bodyMedium,
       fontWeight: FontWeight.w500,
     ),
@@ -112,7 +110,7 @@ ButtonStyle compactGhostButtonStyle() {
     minimumSize: const Size(0, 32),
     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    textStyle: GoogleFonts.inter(
+    textStyle: TextStyle(fontFamily: 'Inter', 
       fontSize: AppTypography.bodyMedium,
       fontWeight: FontWeight.w500,
     ),
@@ -133,7 +131,7 @@ Widget appointmentReviewStars(int rating, {double iconSize = 16}) {
 }
 
 TextStyle appointmentCardDoctorNameStyle([BuildContext? context]) {
-  return GoogleFonts.inter(
+  return TextStyle(fontFamily: 'Inter', 
     fontSize: AppTypography.bodyMedium,
     fontWeight: FontWeight.w700,
     color: context != null
@@ -143,7 +141,7 @@ TextStyle appointmentCardDoctorNameStyle([BuildContext? context]) {
 }
 
 TextStyle appointmentCardDateStyle() {
-  return GoogleFonts.inter(
+  return TextStyle(fontFamily: 'Inter', 
     fontSize: AppTypography.labelMedium,
     color: _textGray400,
     height: 1.35,

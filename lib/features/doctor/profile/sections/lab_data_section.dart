@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/firebase/models/doctor_lab_order.dart';
@@ -110,7 +109,7 @@ class _LabDataSectionState extends State<LabDataSection> {
                     Expanded(
                       child: Text(
                         '$total orders · $totalTests tests',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                           color: AppColors.labPurple,
@@ -139,7 +138,7 @@ class _LabDataSectionState extends State<LabDataSection> {
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search by patient, test, or lab',
-                    hintStyle: GoogleFonts.inter(
+                    hintStyle: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: Colors.grey[400],
                     ),
@@ -181,7 +180,7 @@ class _LabDataSectionState extends State<LabDataSection> {
                                       ? 'No lab orders yet'
                                       : 'No visible lab orders')
                                   : 'No results for "$_search"',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodyMedium,
                                 color: Colors.grey[500],
                               ),
@@ -192,7 +191,7 @@ class _LabDataSectionState extends State<LabDataSection> {
                               const SizedBox(height: 6),
                               Text(
                                 'Some orders are hidden because those patients turned off sharing.',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.labelMedium,
                                   color: Colors.grey[400],
                                 ),
@@ -202,7 +201,7 @@ class _LabDataSectionState extends State<LabDataSection> {
                               const SizedBox(height: 6),
                               Text(
                                 'Orders from prescriptions or connected labs appear here',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.labelMedium,
                                   color: Colors.grey[400],
                                 ),
@@ -264,7 +263,7 @@ class _LabOrderRow extends StatelessWidget {
             width: 26,
             child: Text(
               '${index + 1}.',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: Colors.grey[400],
               ),
@@ -290,14 +289,14 @@ class _LabOrderRow extends StatelessWidget {
               children: [
                 Text(
                   order.patientName,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   '${order.patientAge > 0 ? '${order.patientAge} yrs' : 'Not provided'} · ${order.testNames.length} test(s)',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     color: Colors.grey[500],
                   ),
@@ -311,11 +310,15 @@ class _LabOrderRow extends StatelessWidget {
                       color: Colors.grey[400],
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      '${df.format(order.createdAt)}  ${tf.format(order.createdAt)}',
-                      style: GoogleFonts.inter(
-                        fontSize: AppTypography.labelSmall,
-                        color: Colors.grey[500],
+                    Expanded(
+                      child: Text(
+                        '${df.format(order.createdAt)}  ${tf.format(order.createdAt)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: 'Inter', 
+                          fontSize: AppTypography.labelSmall,
+                          color: Colors.grey[500],
+                        ),
                       ),
                     ),
                   ],
@@ -330,11 +333,15 @@ class _LabOrderRow extends StatelessWidget {
                         color: Colors.grey[400],
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        order.labName!,
-                        style: GoogleFonts.inter(
-                          fontSize: AppTypography.labelSmall,
-                          color: Colors.grey[500],
+                      Expanded(
+                        child: Text(
+                          order.labName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontFamily: 'Inter', 
+                            fontSize: AppTypography.labelSmall,
+                            color: Colors.grey[500],
+                          ),
                         ),
                       ),
                     ],
@@ -345,7 +352,7 @@ class _LabOrderRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     order.indication!,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelSmall,
                       color: Colors.grey[500],
                     ),
@@ -362,7 +369,7 @@ class _LabOrderRow extends StatelessWidget {
                         (name) => Chip(
                           label: Text(
                             name,
-                            style: GoogleFonts.inter(fontSize: 10),
+                            style: TextStyle(fontFamily: 'Inter', fontSize: 10),
                           ),
                           visualDensity: VisualDensity.compact,
                           backgroundColor: AppColors.labPurple.withValues(
@@ -391,7 +398,7 @@ class _LabOrderRow extends StatelessWidget {
                 ),
                 child: Text(
                   order.status,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: AppColors.labPurple,
@@ -401,7 +408,7 @@ class _LabOrderRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 order.urgency,
-                style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[500]),
+                style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: Colors.grey[500]),
               ),
             ],
           ),

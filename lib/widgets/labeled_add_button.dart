@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/theme/app_colors.dart';
 
 /// Compact filled add control.
@@ -25,7 +23,7 @@ class LabeledAddButton extends StatelessWidget {
       icon: Icon(Icons.add, size: compact ? 16 : 18),
       label: Text(
         label,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: compact ? 12 : 13,
           fontWeight: FontWeight.w600,
         ),

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import 'required_field_label.dart';
@@ -153,7 +151,7 @@ class _QualificationSelectorBodyState
         ? widget.label
         : (widget.isRequired ? '${widget.label} *' : widget.label);
     final textStyle = widget.registrationStyle
-        ? GoogleFonts.inter(
+        ? TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w600,
           )
@@ -176,7 +174,7 @@ class _QualificationSelectorBodyState
                   value: q,
                   child: Text(
                     q,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w500,
                       color: isDark ? Colors.white : Colors.black87,

@@ -1,7 +1,6 @@
 import '../../../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -211,7 +210,7 @@ class _FilteredAppointmentsScreenState
         centerTitle: true,
         title: Text(
           widget.title,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
         ),
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),

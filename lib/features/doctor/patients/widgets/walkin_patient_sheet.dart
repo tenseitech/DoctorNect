@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -186,7 +185,7 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
               const SizedBox(height: 16),
               Text(
                 'Add Walk-in Patient',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                 ),
@@ -194,7 +193,7 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
               const SizedBox(height: 4),
               Text(
                 'Register a patient who is at the clinic without an app booking.',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                 ),

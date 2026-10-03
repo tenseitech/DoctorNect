@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/theme/app_colors.dart';
 import '../data/patient_favorites_store.dart';
 import '../data/registered_doctors_store.dart';
@@ -130,7 +128,7 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
           const SizedBox(height: 12),
           Text(
             'Add to My Doctor',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w700,
             ),
@@ -138,7 +136,7 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
           const SizedBox(height: 4),
           Text(
             'Search registered doctors to add to your list.',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -169,7 +167,7 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
                     child: Text(
                       'No registered doctors found.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -186,14 +184,14 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
                         contentPadding: EdgeInsets.zero,
                         title: Text(
                           'Dr. ${doctor.name}',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontWeight: FontWeight.w600,
                             fontSize: AppTypography.bodyMedium,
                           ),
                         ),
                         subtitle: Text(
                           '${doctor.specialization}${doctor.area.trim().isNotEmpty ? ' · ${doctor.area}' : ''}',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -209,7 +207,7 @@ class _AddDoctorSheetState extends State<_AddDoctorSheet> {
                             ),
                             minimumSize: const Size(64, 32),
                             padding: const EdgeInsets.symmetric(horizontal: 12),
-                            textStyle: GoogleFonts.inter(
+                            textStyle: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
                             ),
@@ -288,7 +286,7 @@ class _AddLabSheetState extends State<_AddLabSheet> {
           const SizedBox(height: 12),
           Text(
             'Add to My Lab',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w700,
             ),
@@ -296,7 +294,7 @@ class _AddLabSheetState extends State<_AddLabSheet> {
           const SizedBox(height: 4),
           Text(
             'Search registered labs to add to your list.',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -342,7 +340,7 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                     child: Text(
                       'No registered labs found.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -361,7 +359,7 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         lab.name,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontWeight: FontWeight.w600,
                           fontSize: AppTypography.bodyMedium,
                         ),
@@ -370,7 +368,7 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                         lab.area.trim().isNotEmpty
                             ? lab.area
                             : 'Registered lab',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -382,7 +380,7 @@ class _AddLabSheetState extends State<_AddLabSheet> {
                           disabledBackgroundColor: AppColors.borderOf(context),
                           minimumSize: const Size(64, 32),
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          textStyle: GoogleFonts.inter(
+                          textStyle: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                           ),

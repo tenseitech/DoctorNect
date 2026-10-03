@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -56,7 +54,7 @@ class PatientFiltersBar extends StatelessWidget {
                       icon: const Icon(Icons.person_add_outlined, size: 18),
                       label: Text(
                         'Add Walk-in',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.doctorBlue,
@@ -77,7 +75,7 @@ class PatientFiltersBar extends StatelessWidget {
                       icon: const Icon(Icons.link, size: 18),
                       label: Text(
                         'Invite via Link',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.doctorBlue,
@@ -180,7 +178,7 @@ class PatientFiltersBar extends StatelessWidget {
             child: FilterChip(
               label: Text(
                 label,
-                style: GoogleFonts.inter(fontSize: AppTypography.labelMedium),
+                style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
               ),
               selected: selected,
               onSelected: (_) => onFilterChanged(f),
@@ -207,7 +205,7 @@ class PatientFiltersBar extends StatelessWidget {
         if (!compact)
           Text(
             'Sort:',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),

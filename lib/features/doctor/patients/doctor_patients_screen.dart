@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/auth/profile_action_guard.dart';
 import '../../../core/data/shared_appointments_store.dart';
 import '../../../core/enums/user_type.dart';
@@ -254,7 +252,7 @@ class _EmptyPatientsState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No patients found',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -264,7 +262,7 @@ class _EmptyPatientsState extends StatelessWidget {
             Text(
               'Patients with appointments will appear here.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -366,7 +364,7 @@ class _SpeedDialOption extends StatelessWidget {
               ),
               child: Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: enabled

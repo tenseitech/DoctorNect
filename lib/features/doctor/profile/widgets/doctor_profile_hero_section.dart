@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../models/doctor_models.dart';
@@ -103,7 +101,7 @@ class _DoctorProfileMeta extends StatelessWidget {
                 displayName,
                 maxLines: isWide ? 2 : 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: isWide ? 24 : 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -156,7 +154,7 @@ class _MetaChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
@@ -187,7 +185,7 @@ class _MetaLine extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -268,7 +266,7 @@ class _StatTile extends StatelessWidget {
           children: [
             Text(
               value,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
@@ -278,7 +276,7 @@ class _StatTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondaryOf(context),
@@ -304,7 +302,7 @@ class _EditProfileButton extends StatelessWidget {
       icon: const Icon(Icons.edit_outlined, size: 18),
       label: Text(
         'Edit Profile',
-        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
       ),
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.doctorBlue,

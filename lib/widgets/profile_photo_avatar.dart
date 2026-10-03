@@ -1,8 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/media/gallery_image_picker.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_typography.dart';
@@ -39,7 +37,7 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             child: Text(
               'Upload Profile Photo',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -54,7 +52,7 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
               ),
               title: Text(
                 'View photo',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
               ),
               onTap: () {
                 Navigator.pop(ctx, 'view');
@@ -67,7 +65,7 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
             ),
             title: Text(
               'Choose from gallery',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
             ),
             onTap: () async {
               try {
@@ -86,7 +84,7 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
               ),
               title: Text(
                 'Remove photo',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontWeight: FontWeight.w500,
                   color: Colors.red,
                 ),
@@ -178,7 +176,7 @@ class ProfilePhotoAvatar extends StatelessWidget {
       child: image == null
           ? Text(
               initial,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: radius * 0.72,
                 fontWeight: FontWeight.w700,
                 color: fg,

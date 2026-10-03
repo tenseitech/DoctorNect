@@ -248,11 +248,7 @@ test('firestore.rules isAccountAdmin requires request.auth.token.email_verified 
   );
 
   const SUPER_ADMIN_EMAILS = [
-    'sharmasd2@gmail.com',
-    'tenseitechpvtltd@gmail.com',
     'admin@doctornect.com',
-    'superadmin@doctornect.com',
-    'support@doctornect.com',
   ];
 
   function evalIsAccountAdmin(auth) {
@@ -264,7 +260,8 @@ test('firestore.rules isAccountAdmin requires request.auth.token.email_verified 
 
   // Allowlisted with email_verified: true -> PASS
   assert.equal(evalIsAccountAdmin({ token: { email: 'admin@doctornect.com', email_verified: true } }), true);
-  assert.equal(evalIsAccountAdmin({ token: { email: 'sharmasd2@gmail.com', email_verified: true } }), true);
+  // Removed from allowlist -> FAIL
+  assert.equal(evalIsAccountAdmin({ token: { email: 'sharmasd2@gmail.com', email_verified: true } }), false);
 
   // Allowlisted with email_verified: false -> FAIL (spoofing blocked)
   assert.equal(evalIsAccountAdmin({ token: { email: 'admin@doctornect.com', email_verified: false } }), false);

@@ -20,11 +20,7 @@ service firebase.storage {
         (
           request.auth.token.get('email_verified', false) == true
           && authEmail() in [
-            'sharmasd2@gmail.com',
-            'tenseitechpvtltd@gmail.com',
-            'admin@doctornect.com',
-            'superadmin@doctornect.com',
-            'support@doctornect.com'
+            'admin@doctornect.com'
           ]
         )
         || (

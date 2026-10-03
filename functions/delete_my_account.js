@@ -6,11 +6,13 @@ const { getAuth } = require('firebase-admin/auth');
 const { getStorage } = require('firebase-admin/storage');
 const { logger } = require('firebase-functions');
 const { HttpsError } = require('firebase-functions/v2/https');
-const {
-  S3Client,
-  ListObjectVersionsCommand,
-  DeleteObjectsCommand,
-} = require('@aws-sdk/client-s3');
+let _s3Sdk;
+function getS3Sdk() {
+  if (!_s3Sdk) {
+    _s3Sdk = require('@aws-sdk/client-s3');
+  }
+  return _s3Sdk;
+}
 
 const S3_BUCKET = process.env.S3_BUCKET || 'doctornect';
 let _testingS3Client = null;
@@ -21,6 +23,7 @@ function setS3ClientForTesting(client) {
 
 function getS3Client() {
   if (_testingS3Client) return _testingS3Client;
+  const { S3Client } = getS3Sdk();
   const region = process.env.AWS_REGION || 'ap-south-1';
   return new S3Client({
     region,
@@ -112,6 +115,7 @@ async function deleteS3PrefixVersions(s3, bucketName, prefix) {
   let keyMarker = undefined;
   let versionIdMarker = undefined;
 
+  const { ListObjectVersionsCommand, DeleteObjectsCommand } = getS3Sdk();
   try {
     while (true) {
       const listCmd = new ListObjectVersionsCommand({
@@ -185,6 +189,7 @@ async function deleteS3SpecificKeysVersions(s3, bucketName, keys) {
   const itemsToDelete = [];
   const failedKeys = [];
 
+  const { ListObjectVersionsCommand, DeleteObjectsCommand } = getS3Sdk();
   for (const key of normalizedKeys) {
     try {
       let keyMarker = undefined;

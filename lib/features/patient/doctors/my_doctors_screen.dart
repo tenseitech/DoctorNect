@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
@@ -55,7 +53,7 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
         centerTitle: true,
         title: Text(
           'My Doctor',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
         backgroundColor: AppColors.cardBgOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
@@ -89,7 +87,7 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                   child: Text(
                     'No doctors in your list yet. Tap Add to search registered doctors or book a visit.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       color: AppColors.textSecondaryOf(context),
                       fontSize: AppTypography.bodyMedium,
                     ),
@@ -176,7 +174,7 @@ class _MyDoctorManageTile extends StatelessWidget {
                   children: [
                     Text(
                       'Dr. ${doctor.name}',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),
@@ -184,7 +182,7 @@ class _MyDoctorManageTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       doctor.specialization,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -193,7 +191,7 @@ class _MyDoctorManageTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         doctor.city,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),

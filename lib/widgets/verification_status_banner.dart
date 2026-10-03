@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/auth/demo_auth_config.dart';
 import '../core/auth/verification_lifecycle.dart';
 import '../core/enums/user_type.dart';
@@ -194,7 +192,7 @@ class VerificationStatusBanner extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.titleSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -203,7 +201,7 @@ class VerificationStatusBanner extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                         height: 1.4,
@@ -229,7 +227,7 @@ class VerificationStatusBanner extends StatelessWidget {
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  textStyle: GoogleFonts.inter(
+                  textStyle: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                   ),

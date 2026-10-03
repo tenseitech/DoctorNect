@@ -3,8 +3,6 @@ import 'dart:async';
 import '../core/notifications/app_toast.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../core/enums/user_type.dart';
 import '../core/auth/registration_otp_service.dart';
 import '../core/auth/mobile_registration_lookup.dart';
@@ -219,7 +217,7 @@ class _RegistrationMobileOtpSectionState
   Widget _buildFingerprint() {
     return Text(
       'Build ${AppConstants.registrationBuildFingerprint}',
-      style: GoogleFonts.inter(
+      style: TextStyle(fontFamily: 'Inter', 
         fontSize: 10,
         color: AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
       ),
@@ -259,7 +257,7 @@ class _RegistrationMobileOtpSectionState
                     children: [
                       Text(
                         'Mobile verified ($_dialCode ${_maskedDigits(digits)})',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                           color: AppColors.pharmacyGreen,
@@ -331,7 +329,7 @@ class _RegistrationMobileOtpSectionState
         ] else ...[
           Text(
             'Enter the 6-digit code sent to $_dialCode ${_maskedDigits(sentDigits)}',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),

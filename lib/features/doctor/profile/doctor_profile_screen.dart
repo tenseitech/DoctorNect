@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -200,7 +199,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             child: avatarImage == null
                 ? Text(
                     initial,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: fontSize,
                       fontWeight: FontWeight.w800,
                       color: AppColors.patientTeal,
@@ -462,7 +461,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                 children: [
                   Text(
                     'Profile',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -471,7 +470,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Your practice & account',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.3,

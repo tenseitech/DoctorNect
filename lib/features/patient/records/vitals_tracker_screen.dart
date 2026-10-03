@@ -6,7 +6,6 @@ import 'dart:convert';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/session/patient_session.dart';
@@ -227,7 +226,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                 children: [
                   Text(
                     'Track your health metrics',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -288,7 +287,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                           alpha: 0.15,
                         ),
                         checkmarkColor: AppColors.patientTeal,
-                        labelStyle: GoogleFonts.inter(
+                        labelStyle: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           color: selected
                               ? AppColors.patientTeal
@@ -323,7 +322,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                         ? Center(
                             child: Text(
                               'No data yet',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 color: AppColors.textSecondaryOf(context),
                               ),
                             ),
@@ -395,7 +394,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                             const SizedBox(height: 12),
                             Text(
                               'No vitals logged yet',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 color: AppColors.textSecondaryOf(context),
                               ),
                             ),
@@ -545,7 +544,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               'BMI: ${_bmi!.toStringAsFixed(1)}',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontWeight: FontWeight.w600,
                 color: AppColors.patientTeal,
               ),
@@ -624,7 +623,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
               children: [
                 Text(
                   DateFormat('dd MMM yyyy, hh:mm a').format(log.dateTime),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                   ),
@@ -638,7 +637,7 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                     if (log.weightKg != null) 'Weight ${log.weightKg} kg',
                     if (log.pulse != null) 'Pulse ${log.pulse}',
                   ].join(' · '),
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),

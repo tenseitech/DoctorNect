@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -58,7 +56,7 @@ class _ReadOnlyTagList extends StatelessWidget {
     if (items.isEmpty) {
       return Text(
         emptyLabel,
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.bodySmall,
           color: AppColors.textSecondaryOf(context),
           fontStyle: FontStyle.italic,
@@ -79,7 +77,7 @@ class _ReadOnlyTagList extends StatelessWidget {
           ),
           child: Text(
             item,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimaryOf(context),
@@ -109,7 +107,7 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           title,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w600,
             color: color,

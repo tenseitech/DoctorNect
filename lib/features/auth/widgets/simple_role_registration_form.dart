@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/country_phone_codes.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/legal/medibond_legal_content.dart';
@@ -216,7 +214,7 @@ class _SimpleRoleRegistrationFormState
                           FormValidators.required(v, field: 'Name'),
                       textInputAction: TextInputAction.next,
                       textCapitalization: TextCapitalization.words,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -319,7 +317,7 @@ class _VerifiedMobileField extends StatelessWidget {
           Expanded(
             child: Text(
               mobile,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w600,
               ),

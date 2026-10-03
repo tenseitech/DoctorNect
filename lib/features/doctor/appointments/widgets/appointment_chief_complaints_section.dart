@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/data/shared_appointments_store.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -90,7 +88,7 @@ class _AppointmentChiefComplaintsSectionState
         children: [
           Text(
             'Chief Complaints',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -126,7 +124,7 @@ class _AppointmentChiefComplaintsSectionState
                     )
                   : Text(
                       'Save Complaints',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
                     ),
             ),
           ),

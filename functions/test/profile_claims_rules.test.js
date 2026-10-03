@@ -383,7 +383,7 @@ test('CONTROL: users doc created with valid claim in batch succeeds', async () =
 test('profile_claims read permissions: owner and superadmin succeed, third party fails', async () => {
   const ownerUid = 'uid_claim_owner_1';
   const otherUid = 'uid_claim_snooper_2';
-  const adminEmail = 'sharmasd2@gmail.com';
+  const adminEmail = 'admin@doctornect.com';
   const profileId = 'p_claim_read_test_1';
 
   // Seed claim doc

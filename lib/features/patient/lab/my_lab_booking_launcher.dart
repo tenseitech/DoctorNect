@@ -3,8 +3,6 @@ import '../../../core/notifications/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/layout/responsive_layout.dart';
 import '../../../core/session/patient_session.dart';
 import '../../../core/theme/app_colors.dart';
@@ -128,7 +126,7 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
             children: [
               Text(
                 labName.isEmpty ? 'Book lab tests' : 'Book at $labName',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                 ),
@@ -136,7 +134,7 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
               const SizedBox(height: 4),
               Text(
                 'Choose tests below, then continue to complete your booking request.',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -157,7 +155,7 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
                     if (!profileAgeValid) ...[
                       Text(
                         'Booking for ${PatientLabAgeGuard.selfAgeLabel()}',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodySmall,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -165,7 +163,7 @@ class _MyLabBookTestsScreenState extends State<MyLabBookTestsScreen> {
                       const SizedBox(height: 8),
                       Text(
                         PatientLabAgeGuard.missingAgeHint,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.error,
                           height: 1.4,

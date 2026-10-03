@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/labeled_add_button.dart';
@@ -97,7 +95,7 @@ class MedicineRowCard extends StatelessWidget {
                   '℞ Medicine ${index + 1}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.doctorBlue,
@@ -117,7 +115,7 @@ class MedicineRowCard extends StatelessWidget {
                   ),
                   child: Text(
                     'SOS',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFEA580C),
@@ -192,7 +190,7 @@ class MedicineRowCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Medicine not found in database',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                           fontWeight: FontWeight.w600,
@@ -283,7 +281,7 @@ class MedicineRowCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             'Frequency (M · A · N)',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -462,7 +460,7 @@ class MedicineRowCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                   textAlign: TextAlign.end,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.doctorBlue,
@@ -510,7 +508,7 @@ class _MealToggle extends StatelessWidget {
             child: Text(
               label[0],
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
                 color: selected

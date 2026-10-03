@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/notifications/app_notification.dart';
 import 'package:medibond/core/notifications/in_app_notification_service.dart';
@@ -38,9 +37,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  GoogleFonts.config.allowRuntimeFetching = false;
-
-  setUp(() {
+setUp(() {
     SharedPreferences.setMockInitialValues({});
     DoctorSession.setDoctor(id: 'doc-test-001', name: 'Aarav Sharma');
     DoctorProfileStore.instance.profile = DoctorProfileData(

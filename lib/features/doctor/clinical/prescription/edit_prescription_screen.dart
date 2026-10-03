@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/layout/responsive_layout.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../models/clinical_models.dart';
@@ -40,7 +38,7 @@ class EditPrescriptionScreen extends StatelessWidget {
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.headlineSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),

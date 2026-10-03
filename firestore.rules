@@ -110,11 +110,7 @@ service cloud.firestore {
       return request.auth.token.get('email_verified', false) == true
         && authEmail() != '' && (
         authEmail().lower() in [
-          'sharmasd2@gmail.com',
-          'tenseitechpvtltd@gmail.com',
-          'admin@doctornect.com',
-          'superadmin@doctornect.com',
-          'support@doctornect.com'
+          'admin@doctornect.com'
         ]
       );
     }

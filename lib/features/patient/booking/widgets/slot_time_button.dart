@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../models/booking_models.dart';
 
@@ -78,7 +76,7 @@ class SlotTimeButton extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: compact ? TextAlign.center : null,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: compact ? 12 : 13,
                   fontWeight: FontWeight.w600,
                   color: fg,
@@ -93,7 +91,7 @@ class SlotTimeButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: compact ? TextAlign.center : null,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFFB45309),

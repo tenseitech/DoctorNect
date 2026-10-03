@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/patient_sharing_messages.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -41,7 +39,7 @@ class PatientSharingBlockedNotice extends StatelessWidget {
               children: [
                 Text(
                   PatientSharingMessages.dataNotSharedWithDoctors,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: compact ? 12.5 : 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -52,7 +50,7 @@ class PatientSharingBlockedNotice extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     PatientSharingMessages.dataNotSharedSubtitle,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: compact ? 11.5 : 12,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.35,
@@ -89,7 +87,7 @@ class PatientSharingBlockedEmptyState extends StatelessWidget {
             Text(
               PatientSharingMessages.dataNotSharedWithDoctors,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -99,7 +97,7 @@ class PatientSharingBlockedEmptyState extends StatelessWidget {
             Text(
               PatientSharingMessages.dataNotSharedSubtitle,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),

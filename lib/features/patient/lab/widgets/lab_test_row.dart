@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../models/lab_models.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -82,7 +80,7 @@ class LabTestRow extends StatelessWidget {
                       children: [
                         Text(
                           test.name,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontWeight: FontWeight.w600,
                             fontSize: AppTypography.bodyMedium,
                             height: 1.25,
@@ -91,7 +89,7 @@ class LabTestRow extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           _metaLine(test),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),

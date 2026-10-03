@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/doctor_models.dart';
@@ -37,7 +35,7 @@ class VerificationBadge extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               verified ? 'Verified' : 'Pending',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: color,
@@ -120,7 +118,7 @@ class _StatMetricCardState extends State<StatMetricCard> {
                         widget.value,
                         maxLines: 1,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: valueSize,
                           fontWeight: FontWeight.w700,
                           color: widget.accent,
@@ -136,7 +134,7 @@ class _StatMetricCardState extends State<StatMetricCard> {
                       label,
                       maxLines: 1,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w500,
                         color: _hovered
@@ -188,7 +186,7 @@ class StatusBadge extends StatelessWidget {
             ],
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: color,
@@ -252,7 +250,7 @@ class PatientAvatar extends StatelessWidget {
       backgroundColor: color.withValues(alpha: 0.15),
       child: Text(
         initial,
-        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: color),
+        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700, color: color),
       ),
     );
   }

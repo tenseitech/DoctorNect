@@ -1,7 +1,6 @@
 import '../../../../core/firebase/firestore_service.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -139,13 +138,13 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
           controller: _searchController,
           autofocus: true,
           onChanged: (v) => setState(() => _query = v),
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodyMedium,
             color: AppColors.textPrimaryOf(context),
           ),
           decoration: InputDecoration(
             hintText: 'Search for patient, medical, lab...',
-            hintStyle: GoogleFonts.inter(
+            hintStyle: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -183,7 +182,7 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Type to start searching',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textSecondaryOf(context),
@@ -206,7 +205,7 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'No results found for "$_query"',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -311,17 +310,21 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Container(width: 3, height: 14, color: color),
           const SizedBox(width: 8),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: AppTypography.bodyMedium,
-              fontWeight: FontWeight.w700,
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontFamily: 'Inter', 
+                fontSize: AppTypography.bodyMedium,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           const SizedBox(width: 8),
           Text(
             '($count)',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -368,7 +371,7 @@ class _PatientRow extends StatelessWidget {
                   children: [
                     Text(
                       appointment.patientName,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -379,7 +382,7 @@ class _PatientRow extends StatelessWidget {
                       details,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -437,7 +440,7 @@ class _MedicalStoreRow extends StatelessWidget {
               children: [
                 Text(
                   store.storeName,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontWeight: FontWeight.w600,
                     fontSize: AppTypography.bodyMedium,
                   ),
@@ -445,7 +448,7 @@ class _MedicalStoreRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   store.address,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -498,7 +501,7 @@ class _LabRow extends StatelessWidget {
               children: [
                 Text(
                   lab.labName,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontWeight: FontWeight.w600,
                     fontSize: AppTypography.bodyMedium,
                   ),
@@ -506,7 +509,7 @@ class _LabRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   lab.address,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -562,7 +565,7 @@ class _AmbulanceRow extends StatelessWidget {
                   children: [
                     Text(
                       'Ambulance Service',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontWeight: FontWeight.w600,
                         fontSize: AppTypography.bodyMedium,
                       ),
@@ -570,7 +573,7 @@ class _AmbulanceRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Book an emergency ambulance',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),

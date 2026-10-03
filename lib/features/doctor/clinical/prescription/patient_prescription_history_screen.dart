@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/layout/responsive_layout.dart';
@@ -60,7 +59,7 @@ class _PatientPrescriptionHistoryScreenState
         appBar: AppBar(
           title: Text(
             'Prescription History',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontWeight: FontWeight.w600,
               fontSize: AppTypography.headlineSmall,
             ),
@@ -80,7 +79,7 @@ class _PatientPrescriptionHistoryScreenState
         appBar: AppBar(
           title: Text(
             'Prescription History',
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontWeight: FontWeight.w600,
               fontSize: AppTypography.headlineSmall,
             ),
@@ -113,7 +112,7 @@ class _PatientPrescriptionHistoryScreenState
           appBar: AppBar(
             title: Text(
               'Prescription History',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontWeight: FontWeight.w600,
                 fontSize: AppTypography.headlineSmall,
               ),
@@ -137,7 +136,7 @@ class _PatientPrescriptionHistoryScreenState
                           children: [
                             Text(
                               '${records.length} visit${records.length == 1 ? '' : 's'}',
-                              style: GoogleFonts.inter(
+                              style: TextStyle(fontFamily: 'Inter', 
                                 fontSize: AppTypography.bodySmall,
                                 fontWeight: FontWeight.w500,
                                 color: AppColors.textSecondaryOf(context),
@@ -175,7 +174,7 @@ class _PatientPrescriptionHistoryScreenState
                                   ),
                                   child: Text(
                                     'Load older prescriptions',
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontWeight: FontWeight.w600,
                                       fontSize: AppTypography.bodySmall,
                                     ),
@@ -214,7 +213,7 @@ class _EmptyHistoryState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'No saved prescriptions yet',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -224,7 +223,7 @@ class _EmptyHistoryState extends StatelessWidget {
             Text(
               'Prescriptions saved to EMR for this patient will appear here.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -325,7 +324,7 @@ class _HistoryTableHeader extends StatelessWidget {
   }
 
   TextStyle _headerStyle(BuildContext context, bool compact) =>
-      GoogleFonts.inter(
+      TextStyle(fontFamily: 'Inter', 
         fontSize: compact ? 10 : 10.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.3,
@@ -383,7 +382,7 @@ class _HistoryTableRow extends StatelessWidget {
               children: [
                 Text(
                   date,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: compact ? 12 : 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -392,7 +391,7 @@ class _HistoryTableRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   time,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: compact ? 11 : 12,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -406,7 +405,7 @@ class _HistoryTableRow extends StatelessWidget {
               dx.isEmpty ? '—' : dx,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: compact ? 12 : 13,
                 color: AppColors.textPrimaryOf(context),
                 height: 1.35,
@@ -419,7 +418,7 @@ class _HistoryTableRow extends StatelessWidget {
               rx,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: compact ? 12 : 13,
                 color: AppColors.textPrimaryOf(context),
                 height: 1.35,
@@ -447,7 +446,7 @@ class _HistoryTableRow extends StatelessWidget {
                       ),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: GoogleFonts.inter(
+                      textStyle: TextStyle(fontFamily: 'Inter', 
                         fontSize: compact ? 11 : 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -465,7 +464,7 @@ class _HistoryTableRow extends StatelessWidget {
                       ),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: GoogleFonts.inter(
+                      textStyle: TextStyle(fontFamily: 'Inter', 
                         fontSize: compact ? 11 : 12,
                         fontWeight: FontWeight.w600,
                       ),

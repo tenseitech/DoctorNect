@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -11,6 +12,53 @@ import '../models/clinical_models.dart';
 import 'prescription_header_helper.dart';
 
 class PrescriptionPdfService {
+  static pw.ThemeData? _cachedPdfTheme;
+
+  static Future<pw.ThemeData> _loadPdfTheme() async {
+    if (_cachedPdfTheme != null) return _cachedPdfTheme!;
+    try {
+      final baseData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
+      final boldData = await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
+      final italicData = await rootBundle.load('assets/fonts/NotoSans-Italic.ttf');
+      final boldItalicData =
+          await rootBundle.load('assets/fonts/NotoSans-BoldItalic.ttf');
+
+      pw.Font? devanagariFont;
+      try {
+        final devData = await rootBundle.load(
+          'assets/fonts/NotoSansDevanagari-Regular.ttf',
+        );
+        devanagariFont = pw.Font.ttf(devData);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PrescriptionPdfService] Devanagari font fallback load failed: $e',
+          );
+        }
+      }
+
+      _cachedPdfTheme = pw.ThemeData.withFont(
+        base: pw.Font.ttf(baseData),
+        bold: pw.Font.ttf(boldData),
+        italic: pw.Font.ttf(italicData),
+        boldItalic: pw.Font.ttf(boldItalicData),
+        fontFallback: devanagariFont != null ? [devanagariFont] : null,
+      );
+      return _cachedPdfTheme!;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PrescriptionPdfService] Asset font load failed, falling back to Helvetica: $e',
+        );
+      }
+      return pw.ThemeData.withFont(
+        base: pw.Font.helvetica(),
+        bold: pw.Font.helveticaBold(),
+        italic: pw.Font.helveticaOblique(),
+        boldItalic: pw.Font.helveticaBoldOblique(),
+      );
+    }
+  }
   static Future<void> printPrescription(PrescriptionDraft draft) async {
     final bytes = await buildPdfBytes(draft);
     await Printing.layoutPdf(
@@ -72,17 +120,8 @@ class PrescriptionPdfService {
   }
 
   static Future<Uint8List> buildPdfBytes(PrescriptionDraft draft) async {
-    final baseFont = await PdfGoogleFonts.notoSansRegular();
-    final boldFont = await PdfGoogleFonts.notoSansBold();
-    final italicFont = await PdfGoogleFonts.notoSansItalic();
-
-    final doc = pw.Document(
-      theme: pw.ThemeData.withFont(
-        base: baseFont,
-        bold: boldFont,
-        italic: italicFont,
-      ),
-    );
+    final pdfTheme = await _loadPdfTheme();
+    final doc = pw.Document(theme: pdfTheme);
     final profile = DoctorProfileStore.instance.profile;
     final hasDoctorSnapshot = draft.doctorName.isNotEmpty;
     final doctorId =

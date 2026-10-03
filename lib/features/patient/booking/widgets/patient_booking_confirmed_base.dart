@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -100,7 +98,7 @@ class _PatientBookingConfirmedBaseState
         const SizedBox(height: 20),
         Text(
           widget.title,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.headlineLarge,
             fontWeight: FontWeight.w700,
           ),
@@ -109,7 +107,7 @@ class _PatientBookingConfirmedBaseState
         const SizedBox(height: 6),
         Text(
           widget.idLabel,
-          style: GoogleFonts.inter(color: AppColors.textSecondaryOf(context)),
+          style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
           textAlign: TextAlign.center,
         ),
         if (widget.subMessage != null && widget.subMessage!.isNotEmpty) ...[
@@ -117,7 +115,7 @@ class _PatientBookingConfirmedBaseState
           Text(
             widget.subMessage!,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
               height: 1.45,
@@ -153,7 +151,7 @@ class _PatientBookingConfirmedBaseState
           ),
           child: Text(
             widget.primaryActionLabel,
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
           ),
         ),
         if (widget.onSecondaryAction != null &&
@@ -163,7 +161,7 @@ class _PatientBookingConfirmedBaseState
             onPressed: widget.onSecondaryAction,
             child: Text(
               widget.secondaryActionLabel!,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondaryOf(context),
               ),

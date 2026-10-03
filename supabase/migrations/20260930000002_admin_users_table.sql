@@ -38,11 +38,7 @@ BEGIN
         INSERT INTO private.admin_users (user_id)
         SELECT id FROM auth.users
         WHERE lower(email) IN (
-            'sharmasd2@gmail.com',
-            'tenseitechpvtltd@gmail.com',
-            'admin@doctornect.com',
-            'superadmin@doctornect.com',
-            'support@doctornect.com'
+            'admin@doctornect.com'
         )
         AND email_confirmed_at IS NOT NULL
         ON CONFLICT (user_id) DO NOTHING

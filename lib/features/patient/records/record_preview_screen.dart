@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 
@@ -95,7 +94,7 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
       appBar: AppBar(
         title: Text(
           record.title,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontWeight: FontWeight.w600,
             fontSize: AppTypography.headlineSmall,
           ),
@@ -119,7 +118,7 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
             color: AppColors.surfaceOf(context),
             child: Text(
               '${DateFormat('dd MMM yyyy').format(record.date)} · ${record.fileName}',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -153,7 +152,7 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
@@ -162,7 +161,7 @@ class _RecordPreviewScreenState extends State<RecordPreviewScreen> {
                 Text(
                   'Files may be stored on the device where they were uploaded, or in cloud storage when sync is enabled.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),

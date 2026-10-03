@@ -3,8 +3,6 @@ import '../../../../core/notifications/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/notifications/in_app_notification_service.dart';
 import '../../../../core/notifications/medication_reminder_service.dart';
@@ -87,14 +85,14 @@ class _NotificationsSettingsScreenState
                         children: [
                           Text(
                             title,
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.bodyMedium,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
                             MedicationTimeSlots.rangeLabel(slot),
-                            style: GoogleFonts.inter(
+                            style: TextStyle(fontFamily: 'Inter', 
                               fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -117,7 +115,7 @@ class _NotificationsSettingsScreenState
                         ),
                         child: Text(
                           time,
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
                         ),
                       ),
                   ],
@@ -234,7 +232,7 @@ class _NotificationsSettingsScreenState
                 children: [
                   Text(
                     'All alerts are delivered inside DoctorNect. Push/SMS/WhatsApp tags show alert type only — nothing is sent outside the app.',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -335,7 +333,7 @@ class _NotificationsSettingsScreenState
                                       if (m.nightTime != null)
                                         'Night (${m.nightTime})',
                                     ].join(' • '),
-                                    style: GoogleFonts.inter(
+                                    style: TextStyle(fontFamily: 'Inter', 
                                       fontSize: AppTypography.labelMedium,
                                       color: AppColors.textSecondaryOf(context),
                                     ),

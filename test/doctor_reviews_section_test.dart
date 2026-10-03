@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/theme/app_colors.dart';
 import 'package:medibond/core/theme/app_theme.dart';
@@ -11,9 +10,7 @@ import 'package:medibond/features/doctor/profile/sections/reviews_section.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  GoogleFonts.config.allowRuntimeFetching = false;
-
-  setUp(() {
+setUp(() {
     DoctorSession.clear();
     DoctorProfileStore.instance.profile = DoctorProfileData(
       fullName: 'Aarav Sharma',

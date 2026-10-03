@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/countries.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../widgets/location_dropdown_fields.dart';
@@ -188,7 +186,7 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                 Expanded(
                   child: Text(
                     'Filters',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineMedium,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimaryOf(context),
@@ -199,7 +197,7 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                   onPressed: _clearAll,
                   child: Text(
                     'Clear all',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondaryOf(context),
@@ -291,7 +289,7 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                                   _showCustomLocation
                                       ? 'Hide worldwide location picker'
                                       : 'Select other city / country...',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodySmall,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.patientTeal,
@@ -386,14 +384,14 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                       activeThumbColor: AppColors.patientTeal,
                       title: Text(
                         'Available today',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       subtitle: Text(
                         'Show only doctors with slots today',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Inter', 
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -422,7 +420,7 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                 ),
                 child: Text(
                   'Apply filters',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                   ),
@@ -449,7 +447,7 @@ class _FilterSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimaryOf(context),
@@ -495,7 +493,7 @@ class _OptionChip extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
               color: selected

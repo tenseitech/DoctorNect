@@ -4,7 +4,6 @@ import '../../../../core/notifications/app_toast.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_constants.dart';
@@ -195,7 +194,7 @@ class _RescheduleModalState extends State<RescheduleModal> {
               Expanded(
                 child: Text(
                   'Reschedule Appointment',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -251,7 +250,7 @@ class _RescheduleModalState extends State<RescheduleModal> {
               ),
               child: Text(
                 'No slots available on this date. Update your availability schedule first.',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   color: AppColors.textSecondaryOf(context),
                   fontSize: AppTypography.bodySmall,
                 ),
@@ -303,11 +302,11 @@ class _RescheduleModalState extends State<RescheduleModal> {
             contentPadding: EdgeInsets.zero,
             title: Text(
               'Notify patient',
-              style: GoogleFonts.inter(fontSize: AppTypography.bodyMedium),
+              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
             ),
             subtitle: Text(
               'Send SMS & app notification',
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -330,7 +329,7 @@ class _RescheduleModalState extends State<RescheduleModal> {
             ),
             child: Text(
               'Confirm Reschedule',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -348,7 +347,7 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: GoogleFonts.inter(
+      style: TextStyle(fontFamily: 'Inter', 
         fontSize: AppTypography.bodySmall,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimaryOf(context),
@@ -386,7 +385,7 @@ class _PatientSummaryCard extends StatelessWidget {
             backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.15),
             child: Text(
               initial,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Inter', 
                 fontWeight: FontWeight.w700,
                 color: AppColors.doctorBlue,
               ),
@@ -399,7 +398,7 @@ class _PatientSummaryCard extends StatelessWidget {
               children: [
                 Text(
                   patientName,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -408,7 +407,7 @@ class _PatientSummaryCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Current: $currentLabel',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -453,7 +452,7 @@ class _DatePickerTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimaryOf(context),
@@ -505,7 +504,7 @@ class _SlotChip extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.labelMedium,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               color: selected

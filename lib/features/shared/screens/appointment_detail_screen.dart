@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:medibond/core/constants/ambulance_icons.dart';
 import 'package:medibond/core/constants/app_constants.dart';
@@ -278,7 +277,7 @@ class _DoctorAppointmentDetailScreenState
                         title: 'Reason for Visit',
                         child: Text(
                           appt.reasonForVisit!,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodyMedium,
                             height: 1.4,
                           ),
@@ -303,7 +302,7 @@ class _DoctorAppointmentDetailScreenState
                               Expanded(
                                 child: Text(
                                   appt.slotShareReason!.trim(),
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Inter', 
                                     fontSize: AppTypography.bodyMedium,
                                     height: 1.4,
                                   ),
@@ -337,7 +336,7 @@ class _DoctorAppointmentDetailScreenState
                         title: 'Diagnosis',
                         child: Text(
                           record.diagnosis!,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodyMedium,
                             height: 1.4,
                           ),
@@ -352,7 +351,7 @@ class _DoctorAppointmentDetailScreenState
                         title: 'Clinical Notes',
                         child: Text(
                           record.clinicalNotes!,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodyMedium,
                             height: 1.4,
                           ),
@@ -375,7 +374,7 @@ class _DoctorAppointmentDetailScreenState
                               ),
                               title: Text(
                                 r.name,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.bodyMedium,
                                 ),
                               ),
@@ -438,7 +437,7 @@ class _BookAmbulanceAppBarAction extends StatelessWidget {
       icon: const Icon(AmbulanceIcons.sign, size: 18, color: _ambulanceRed),
       label: Text(
         'Book Ambulance',
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Inter', 
           fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w600,
           color: _ambulanceRed,
@@ -475,7 +474,7 @@ class _PatientHeader extends StatelessWidget {
               children: [
                 Text(
                   appointment.patientName,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                   ),
@@ -483,7 +482,7 @@ class _PatientHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')}',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -491,7 +490,7 @@ class _PatientHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${DateFormat('dd MMM yyyy').format(appointment.appointmentDate)} · ${appointment.timeSlot}',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Inter', 
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textPrimaryOf(context),
                     fontWeight: FontWeight.w500,
@@ -517,7 +516,7 @@ class _PatientHeader extends StatelessWidget {
                           appointment.contactNumber!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.doctorBlue,
                           ),
@@ -533,7 +532,7 @@ class _PatientHeader extends StatelessWidget {
             children: [
               Text(
                 '#${appointment.tokenNumber}',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w800,
                   color: AppColors.doctorBlue,
@@ -572,7 +571,7 @@ class _InfoCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -628,7 +627,7 @@ class _VisitTimeline extends StatelessWidget {
                   children: [
                     Text(
                       DateFormat('dd MMM yyyy').format(visit.date),
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.doctorBlue,
@@ -636,14 +635,14 @@ class _VisitTimeline extends StatelessWidget {
                     ),
                     Text(
                       visit.diagnosis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
                       visit.notes,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -701,7 +700,7 @@ class _VitalsGrid extends StatelessWidget {
                       item.$1,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -710,7 +709,7 @@ class _VitalsGrid extends StatelessWidget {
                       item.$2,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -888,7 +887,7 @@ class _ActionTile extends StatelessWidget {
         icon: Icon(icon, size: 18, color: c),
         label: Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: 'Inter', 
             fontSize: AppTypography.labelMedium,
             color: c,
           ),
@@ -930,7 +929,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: Text(
           'Reschedule',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
         content: Text(
           'Pick a new slot for your visit with ${formatDoctorDisplayName(a.doctorName)}.',
@@ -971,7 +970,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: Text(
           'Cancel appointment?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
         content: const Text('Cancellation may be subject to clinic policy.'),
         actions: [
@@ -1104,7 +1103,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                 children: [
                   Text(
                     DateFormat('EEEE, dd MMMM yyyy').format(a.dateTime),
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
@@ -1113,7 +1112,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     DateFormat('hh:mm a').format(a.dateTime),
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w800,
                       color: AppColors.patientTeal,
@@ -1124,7 +1123,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       a.countdownLabel,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.patientTeal,
@@ -1179,7 +1178,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                       children: [
                         Text(
                           formatDoctorDisplayName(a.doctorName),
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -1188,7 +1187,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           a.specialization,
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: 'Inter', 
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -1264,7 +1263,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Lab reports',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Inter', 
                         fontWeight: FontWeight.w600,
                         fontSize: AppTypography.bodyMedium,
                       ),
@@ -1284,7 +1283,7 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 r,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Inter', 
                                   fontSize: AppTypography.bodySmall,
                                 ),
                               ),
@@ -1523,7 +1522,7 @@ class _StatusHeader extends StatelessWidget {
                   ),
                   child: Text(
                     label,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: color,
@@ -1534,7 +1533,7 @@ class _StatusHeader extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     'ID: ${appointment.appointmentId}',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -1544,7 +1543,7 @@ class _StatusHeader extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     appointment.cancellationReason!,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: 'Inter', 
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -1599,7 +1598,7 @@ class _DetailRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -1607,7 +1606,7 @@ class _DetailRow extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Inter', 
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),
@@ -1641,7 +1640,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontWeight: FontWeight.w600,
               fontSize: AppTypography.bodyMedium,
             ),
@@ -1649,7 +1648,7 @@ class _SectionCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             body,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Inter', 
               fontSize: AppTypography.bodySmall,
               height: 1.4,
             ),
