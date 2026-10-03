@@ -594,7 +594,8 @@ class _LabHeroCard extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   'Edit Profile',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     fontWeight: FontWeight.w700,
                                     color: const Color(0xFF6D28D9),

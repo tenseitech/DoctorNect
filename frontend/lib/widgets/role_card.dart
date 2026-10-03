@@ -128,7 +128,8 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                             offset: const Offset(0, 3),
                           ),
                           BoxShadow(
-                            color: color.withValues(alpha: isDark ? 0.08 : 0.03),
+                            color:
+                                color.withValues(alpha: isDark ? 0.08 : 0.03),
                             blurRadius: 6,
                             offset: const Offset(0, 1),
                           ),
@@ -136,7 +137,8 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                       : _hovered || widget.isSelected
                           ? [
                               BoxShadow(
-                                color: color.withValues(alpha: isDark ? 0.22 : 0.14),
+                                color: color.withValues(
+                                    alpha: isDark ? 0.22 : 0.14),
                                 blurRadius: 20,
                                 offset: const Offset(0, 8),
                               ),
@@ -159,7 +161,8 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                                 offset: const Offset(0, 2),
                               ),
                               BoxShadow(
-                                color: color.withValues(alpha: isDark ? 0.05 : 0.02),
+                                color: color.withValues(
+                                    alpha: isDark ? 0.05 : 0.02),
                                 blurRadius: 6,
                                 offset: const Offset(0, 1),
                               ),

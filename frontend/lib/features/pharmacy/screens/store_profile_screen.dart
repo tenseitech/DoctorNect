@@ -692,7 +692,8 @@ class _ProfileHeaderBand extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         'Edit Profile',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.pharmacyGreen,

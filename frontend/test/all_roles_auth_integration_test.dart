@@ -71,7 +71,8 @@ void main() {
           expect(
             continueWidget.onPressed,
             isNotNull,
-            reason: 'Continue button must be enabled once $roleName is selected',
+            reason:
+                'Continue button must be enabled once $roleName is selected',
           );
 
           // Step 3: Tap Continue to go to Name step
@@ -89,13 +90,15 @@ void main() {
           expect(
             nameContinueWidget.onPressed,
             isNull,
-            reason: 'Name Continue button must be disabled until valid name is typed',
+            reason:
+                'Name Continue button must be disabled until valid name is typed',
           );
 
           // Entering fake role name is rejected
           await tester.enterText(find.byType(TextField), roleName);
           await tester.pumpAndSettle();
-          expect(find.text('Please enter your real full name.'), findsOneWidget);
+          expect(
+              find.text('Please enter your real full name.'), findsOneWidget);
           nameContinueWidget = tester.widget<FilledButton>(nameContinue);
           expect(nameContinueWidget.onPressed, isNull);
 
@@ -141,7 +144,8 @@ void main() {
           expect(NameValidator.isRealName(savedRealName), isTrue);
 
           // 2. Formatted greeting is clean and accurate
-          final greeting = NameValidator.formatGreeting(savedRealName, role: role);
+          final greeting =
+              NameValidator.formatGreeting(savedRealName, role: role);
           if (role == UserType.doctor) {
             expect(greeting, 'Hi, Dr. Priya Patel');
           } else {
@@ -189,7 +193,8 @@ void main() {
           const correctedName = 'Vikram Malhotra';
           expect(NameValidator.isRealName(correctedName), isTrue);
 
-          final subsequentLoginNeedsPrompt = !NameValidator.isRealName(correctedName);
+          final subsequentLoginNeedsPrompt =
+              !NameValidator.isRealName(correctedName);
           expect(subsequentLoginNeedsPrompt, isFalse);
         },
       );

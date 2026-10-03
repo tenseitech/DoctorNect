@@ -1,4 +1,12 @@
-enum UserType { doctor, patient, medical, medicalStore, lab, ambulance, superAdmin }
+enum UserType {
+  doctor,
+  patient,
+  medical,
+  medicalStore,
+  lab,
+  ambulance,
+  superAdmin
+}
 
 extension UserTypeX on UserType {
   bool get isDoctor => this == UserType.doctor;

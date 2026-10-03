@@ -259,8 +259,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                                       fontSize: compact ? 18 : 22,
                                       fontWeight: FontWeight.w700,
                                       height: 1.15,
-                                      color:
-                                          Theme.of(context).colorScheme.onSurface,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
                                     ),
                                   );
                                 },

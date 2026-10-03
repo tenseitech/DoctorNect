@@ -17,7 +17,8 @@ void main() {
       expect(NameValidator.isValid('   '), isFalse);
       expect(NameValidator.isValid('a'), isFalse); // < 2 characters
       expect(NameValidator.validate('   '), 'Full name is required.');
-      expect(NameValidator.validate('a'), 'Full name must be at least 2 characters.');
+      expect(NameValidator.validate('a'),
+          'Full name must be at least 2 characters.');
 
       // Rejects fake role names for each of the 6 roles
       expect(NameValidator.isRealName('Doctor'), isFalse);
@@ -40,7 +41,8 @@ void main() {
       expect(NameValidator.isRealName('Rahul Sharma'), isTrue);
       expect(NameValidator.isValid('Dr. Rahul Sharma'), isTrue);
       expect(NameValidator.isRealName('Priya Patel'), isTrue);
-      expect(NameValidator.cleanDisplayName('  Ananya Verma  '), 'Ananya Verma');
+      expect(
+          NameValidator.cleanDisplayName('  Ananya Verma  '), 'Ananya Verma');
     });
 
     test('Formats greetings accurately per role with no fake fallbacks', () {
@@ -62,11 +64,13 @@ void main() {
 
       // Medical / Pharmacy role
       expect(
-        NameValidator.formatGreeting('City Care Pharmacy', role: UserType.medicalStore),
+        NameValidator.formatGreeting('City Care Pharmacy',
+            role: UserType.medicalStore),
         'Hi, City Care Pharmacy',
       );
       expect(
-        NameValidator.formatGreeting('City Care Pharmacy', role: UserType.medical),
+        NameValidator.formatGreeting('City Care Pharmacy',
+            role: UserType.medical),
         'Hi, City Care Pharmacy',
       );
 
@@ -78,7 +82,8 @@ void main() {
 
       // Ambulance role
       expect(
-        NameValidator.formatGreeting('Rapid Care Ambulance', role: UserType.ambulance),
+        NameValidator.formatGreeting('Rapid Care Ambulance',
+            role: UserType.ambulance),
         'Hi, Rapid Care Ambulance',
       );
 
@@ -94,7 +99,8 @@ void main() {
     });
   });
 
-  group('ProfileDraftStore Tests - Draft Persistence Across Modal & Reload', () {
+  group('ProfileDraftStore Tests - Draft Persistence Across Modal & Reload',
+      () {
     setUp(() {
       SharedPreferences.setMockInitialValues({});
     });
@@ -144,7 +150,8 @@ void main() {
   });
 
   group('OnboardingNameScreen Widget Tests', () {
-    testWidgets('Continue button is disabled until valid full name is typed', (tester) async {
+    testWidgets('Continue button is disabled until valid full name is typed',
+        (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: OnboardingNameScreen(
@@ -187,7 +194,8 @@ void main() {
       expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
     });
 
-    testWidgets('Works for all 6 roles with proper badge label', (tester) async {
+    testWidgets('Works for all 6 roles with proper badge label',
+        (tester) async {
       final roles = [
         (UserType.doctor, 'Doctor Account'),
         (UserType.patient, 'Patient Account'),
@@ -218,7 +226,9 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    testWidgets('Renders properly for all 6 roles with X close button preserving data', (tester) async {
+    testWidgets(
+        'Renders properly for all 6 roles with X close button preserving data',
+        (tester) async {
       final roles = [
         UserType.doctor,
         UserType.patient,
@@ -234,7 +244,8 @@ void main() {
             home: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
-                  onPressed: () => ProfileCompletionModal.show(context, role: role),
+                  onPressed: () =>
+                      ProfileCompletionModal.show(context, role: role),
                   child: const Text('Open Modal'),
                 ),
               ),

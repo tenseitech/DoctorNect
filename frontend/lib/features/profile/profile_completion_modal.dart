@@ -96,7 +96,9 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     return switch (widget.role) {
       UserType.doctor => DoctorSession.loggedInDoctorId,
       UserType.patient => PatientSession.loggedInPatientId,
-      UserType.medical || UserType.medicalStore => MedicalStoreSession.loggedInStoreId,
+      UserType.medical ||
+      UserType.medicalStore =>
+        MedicalStoreSession.loggedInStoreId,
       UserType.lab => LabSession.loggedInLabId,
       UserType.ambulance => AmbulanceSession.loggedInAmbulanceId,
       UserType.superAdmin => AppSession.adminId,
@@ -159,12 +161,16 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     if (widget.role == UserType.doctor) {
       final doc = DoctorProfileStore.instance.profile;
       if (_nameController.text.isEmpty) _nameController.text = doc.fullName;
-      if (doc.specialization.isNotEmpty) _specializationController.text = doc.specialization;
-      if (doc.registrationNumber.isNotEmpty) _regNumberController.text = doc.registrationNumber;
+      if (doc.specialization.isNotEmpty)
+        _specializationController.text = doc.specialization;
+      if (doc.registrationNumber.isNotEmpty)
+        _regNumberController.text = doc.registrationNumber;
       if (doc.city.isNotEmpty) _cityController.text = doc.city;
-      if (doc.addressLine1.isNotEmpty) _addressController.text = doc.addressLine1;
+      if (doc.addressLine1.isNotEmpty)
+        _addressController.text = doc.addressLine1;
       if (doc.mobile.isNotEmpty) _phoneController.text = doc.mobile;
-      if (doc.email.isNotEmpty && !RegistrationCredentials.isSyntheticEmail(doc.email)) {
+      if (doc.email.isNotEmpty &&
+          !RegistrationCredentials.isSyntheticEmail(doc.email)) {
         _emailController.text = doc.email;
       }
     } else if (widget.role == UserType.patient) {
@@ -173,20 +179,26 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
       if (p.gender.isNotEmpty) _genderController.text = p.gender;
       if (p.bloodGroup.isNotEmpty) _bloodGroupController.text = p.bloodGroup;
       if (p.mobile.isNotEmpty) _phoneController.text = p.mobile;
-      if (p.email.isNotEmpty && !RegistrationCredentials.isSyntheticEmail(p.email)) {
+      if (p.email.isNotEmpty &&
+          !RegistrationCredentials.isSyntheticEmail(p.email)) {
         _emailController.text = p.email;
       }
     } else if (widget.role == UserType.ambulance) {
       final amb = AmbulanceStore.instance.findAmbulance(id);
       if (amb != null) {
-        if (_facilityNameController.text.isEmpty) _facilityNameController.text = amb.serviceName;
+        if (_facilityNameController.text.isEmpty)
+          _facilityNameController.text = amb.serviceName;
         if (_nameController.text.isEmpty) {
-          _nameController.text = amb.driverName.isNotEmpty ? amb.driverName : amb.ownerName;
+          _nameController.text =
+              amb.driverName.isNotEmpty ? amb.driverName : amb.ownerName;
         }
-        if (amb.vehicleNumber.isNotEmpty) _vehicleNumberController.text = amb.vehicleNumber;
-        if (amb.licenseNumber.isNotEmpty) _regNumberController.text = amb.licenseNumber;
+        if (amb.vehicleNumber.isNotEmpty)
+          _vehicleNumberController.text = amb.vehicleNumber;
+        if (amb.licenseNumber.isNotEmpty)
+          _regNumberController.text = amb.licenseNumber;
         if (amb.city.isNotEmpty) _cityController.text = amb.city;
-        if (amb.addressLine1.isNotEmpty) _addressController.text = amb.addressLine1;
+        if (amb.addressLine1.isNotEmpty)
+          _addressController.text = amb.addressLine1;
         if (amb.phone.isNotEmpty) _phoneController.text = amb.phone;
       }
     }
@@ -224,7 +236,9 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     return switch (widget.role) {
       UserType.doctor => DoctorSession.loggedInDoctorName,
       UserType.patient => PatientSession.loggedInPatientName,
-      UserType.medical || UserType.medicalStore => MedicalStoreSession.loggedInStoreName,
+      UserType.medical ||
+      UserType.medicalStore =>
+        MedicalStoreSession.loggedInStoreName,
       UserType.lab => LabSession.loggedInLabName,
       UserType.ambulance => AmbulanceSession.loggedInDriverName.isNotEmpty
           ? AmbulanceSession.loggedInDriverName
@@ -251,19 +265,23 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     if (data['displayName'] is String && _nameController.text.isEmpty) {
       _nameController.text = data['displayName'].toString();
     }
-    if (data['storeName'] is String && data['storeName'].toString().isNotEmpty) {
+    if (data['storeName'] is String &&
+        data['storeName'].toString().isNotEmpty) {
       _facilityNameController.text = data['storeName'].toString();
       if (_nameController.text.isEmpty) {
-        _nameController.text = data['ownerName']?.toString() ?? data['storeName'].toString();
+        _nameController.text =
+            data['ownerName']?.toString() ?? data['storeName'].toString();
       }
     }
     if (data['labName'] is String && data['labName'].toString().isNotEmpty) {
       _facilityNameController.text = data['labName'].toString();
     }
-    if (data['serviceName'] is String && data['serviceName'].toString().isNotEmpty) {
+    if (data['serviceName'] is String &&
+        data['serviceName'].toString().isNotEmpty) {
       _facilityNameController.text = data['serviceName'].toString();
     }
-    if (data['driverName'] is String && data['driverName'].toString().isNotEmpty) {
+    if (data['driverName'] is String &&
+        data['driverName'].toString().isNotEmpty) {
       _nameController.text = data['driverName'].toString();
     }
     if (data['specialization'] is String) {
@@ -431,7 +449,8 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
             PatientProfileMock.profile.gender = _genderController.text.trim();
           }
           if (_bloodGroupController.text.isNotEmpty) {
-            PatientProfileMock.profile.bloodGroup = _bloodGroupController.text.trim();
+            PatientProfileMock.profile.bloodGroup =
+                _bloodGroupController.text.trim();
           }
           PatientProfileMock.notifyProfileUpdated();
         case UserType.medical:
@@ -609,7 +628,10 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
             height: 44,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [_accentColor, Color.lerp(_accentColor, Colors.white, 0.25)!],
+                colors: [
+                  _accentColor,
+                  Color.lerp(_accentColor, Colors.white, 0.25)!
+                ],
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -622,7 +644,8 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -631,7 +654,8 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 13,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -668,7 +692,8 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
               ),
               child: Text(
                 _errorMessage!,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 13,
                   color: AppColors.error,
                   fontWeight: FontWeight.w500,
@@ -850,7 +875,8 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
       controller: controller,
       keyboardType: keyboardType,
       textCapitalization: TextCapitalization.words,
-      style: TextStyle(fontFamily: 'Inter', 
+      style: TextStyle(
+        fontFamily: 'Inter',
         fontSize: 15,
         color: AppColors.textPrimaryOf(context),
       ),
@@ -931,7 +957,8 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
                   )
                 : Text(
                     widget.isEditing ? 'Save Changes' : 'Save & Continue',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w600),
                   ),
           ),
         ],

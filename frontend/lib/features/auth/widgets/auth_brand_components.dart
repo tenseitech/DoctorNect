@@ -390,7 +390,8 @@ class AuthDesktopBrandMark extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           'DoctorNect',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: 21,
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -411,7 +412,8 @@ class AuthMobileBrandWordmark extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'DoctorNect',
-      style: TextStyle(fontFamily: 'Inter', 
+      style: TextStyle(
+        fontFamily: 'Inter',
         fontSize: AppTypography.displayMedium,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.4,
@@ -546,7 +548,8 @@ class AuthDesktopTrustLine extends StatelessWidget {
             text,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.white.withValues(alpha: 0.80),
@@ -598,7 +601,8 @@ class _AuthDesktopAvatarStack extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   _initials[i],
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -733,7 +737,8 @@ class _AuthDesktopFeatureBulletState extends State<_AuthDesktopFeatureBullet> {
                   widget.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 15.5,
                     fontWeight: FontWeight.w500,
                     color: Colors.white.withValues(alpha: _hovered ? 1 : 0.88),
@@ -771,7 +776,8 @@ class AuthSecureFooter extends StatelessWidget {
         const SizedBox(width: 7),
         Text(
           text,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w500,
             color: AppColors.textSecondaryOf(context),

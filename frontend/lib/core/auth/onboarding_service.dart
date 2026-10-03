@@ -78,7 +78,8 @@ class OnboardingService {
     }
 
     final trimmedName = fullName.trim();
-    final cleanDigits = FormValidators.mobileDigits(mobileDigits) ?? mobileDigits;
+    final cleanDigits =
+        FormValidators.mobileDigits(mobileDigits) ?? mobileDigits;
     final formattedMobile = FormValidators.formatFullPhone('+91', cleanDigits);
 
     String? uid = FirebaseAuth.instance.currentUser?.uid;
@@ -141,9 +142,8 @@ class OnboardingService {
           'mobileVerified': true,
           'profileCompleted': false,
           'profileCompletionStatus': 'incomplete',
-          'verificationStatus': role == UserType.patient
-              ? 'verified'
-              : 'profile_incomplete',
+          'verificationStatus':
+              role == UserType.patient ? 'verified' : 'profile_incomplete',
           'status': role == UserType.patient ? 'approved' : 'pending_review',
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),

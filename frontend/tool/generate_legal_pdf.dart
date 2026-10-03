@@ -161,7 +161,8 @@ Future<void> main() async {
     }
   }
 
-  final outDirPath = Directory.current.path.endsWith('frontend') ? '../docs' : 'docs';
+  final outDirPath =
+      Directory.current.path.endsWith('frontend') ? '../docs' : 'docs';
   final outDir = Directory(outDirPath);
   if (!outDir.existsSync()) {
     outDir.createSync(recursive: true);

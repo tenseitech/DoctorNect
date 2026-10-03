@@ -7,7 +7,8 @@ import 'package:medibond/widgets/role_card.dart';
 
 void main() {
   group('Welcome Role Selection Alignment Tests', () {
-    testWidgets('Renders all 5 role cards in desktop split layout (>= 900px)', (tester) async {
+    testWidgets('Renders all 5 role cards in desktop split layout (>= 900px)',
+        (tester) async {
       tester.view.physicalSize = const Size(1280, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -23,7 +24,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('DoctorNect'), findsAtLeastNWidgets(1));
-      expect(find.text('One platform for every\nhealthcare role'), findsOneWidget);
+      expect(
+          find.text('One platform for every\nhealthcare role'), findsOneWidget);
       expect(find.text('Select your role'), findsOneWidget);
       expect(find.text('Choose your account type to continue'), findsOneWidget);
       expect(find.byType(RoleCard), findsNWidgets(6));
@@ -36,7 +38,8 @@ void main() {
       expect(find.text('Secure & encrypted sign-in'), findsOneWidget);
     });
 
-    testWidgets('Renders role cards in mobile layout (< 900px)', (tester) async {
+    testWidgets('Renders role cards in mobile layout (< 900px)',
+        (tester) async {
       tester.view.physicalSize = const Size(400, 960);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -85,8 +88,17 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Tapping role card navigates to UnifiedAuthIntroScreen for all roles', (tester) async {
-      final roles = ['Doctor', 'Patient', 'Medical', 'Pharmacy', 'Lab', 'Ambulance'];
+    testWidgets(
+        'Tapping role card navigates to UnifiedAuthIntroScreen for all roles',
+        (tester) async {
+      final roles = [
+        'Doctor',
+        'Patient',
+        'Medical',
+        'Pharmacy',
+        'Lab',
+        'Ambulance'
+      ];
 
       for (final role in roles) {
         tester.view.physicalSize = const Size(1280, 800);
@@ -117,4 +129,3 @@ void main() {
     });
   });
 }
-

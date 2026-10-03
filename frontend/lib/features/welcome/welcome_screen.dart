@@ -200,9 +200,8 @@ class _WebWelcomeScaffold extends StatelessWidget {
     final isDark = AppColors.isDark(context);
 
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.darkBackground
-          : AuthBrandTheme.desktopRightBg,
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AuthBrandTheme.desktopRightBg,
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -289,7 +288,8 @@ class _WebBrandPanel extends StatelessWidget {
                             delay: const Duration(milliseconds: 90),
                             child: Text(
                               'One platform for every\nhealthcare role',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: tall ? 42 : 36,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
@@ -303,7 +303,8 @@ class _WebBrandPanel extends StatelessWidget {
                             delay: const Duration(milliseconds: 150),
                             child: Text(
                               'Connect doctors, patients, medical facilities, pharmacies, labs, and ambulances in one seamless healthcare network.',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w400,
                                 color: Colors.white.withValues(alpha: 0.82),
@@ -479,7 +480,8 @@ class _DesktopRoleSelectionCard extends StatelessWidget {
             children: [
               Text(
                 'Select your role',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -489,7 +491,8 @@ class _DesktopRoleSelectionCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 'Choose your account type to continue',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w400,
                   color: AppColors.textSecondaryOf(context),
@@ -536,7 +539,8 @@ class _DesktopRoleSelectionCard extends StatelessWidget {
                   children: [
                     Text(
                       'Continue',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: canContinue
@@ -663,7 +667,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           'Welcome',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: compactHeight ? 24 : 28,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -674,7 +679,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Choose your role to continue',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: Colors.white.withValues(alpha: 0.85),
                             height: 1.35,
@@ -714,7 +720,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                               children: [
                                 Text(
                                   'Select your role',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.titleLarge,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.textPrimaryOf(context),
@@ -724,7 +731,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                 const SizedBox(height: 2),
                                 Text(
                                   'Select a role and tap Continue',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.bodySmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -770,7 +778,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                   children: [
                                     Text(
                                       'Continue',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                         color: canContinue

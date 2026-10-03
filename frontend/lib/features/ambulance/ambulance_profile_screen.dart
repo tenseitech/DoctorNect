@@ -399,7 +399,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                               if (!_loading)
                                 TextButton.icon(
                                   onPressed: _openEditModal,
-                                  icon: const Icon(Icons.edit_outlined, size: 16),
+                                  icon:
+                                      const Icon(Icons.edit_outlined, size: 16),
                                   label: Text(
                                     'Edit Profile',
                                     style: TextStyle(

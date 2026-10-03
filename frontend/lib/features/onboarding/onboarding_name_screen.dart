@@ -66,8 +66,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
     }
   }
 
-  bool get _canSubmit =>
-      !_saving && NameValidator.isValid(_controller.text);
+  bool get _canSubmit => !_saving && NameValidator.isValid(_controller.text);
 
   Future<void> _submit() async {
     final name = _controller.text.trim();
@@ -105,7 +104,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
         _saving = false;
         _errorText = e.toString().replaceAll('Exception: ', '');
       });
-      AppToast.error(context, _errorText ?? 'Failed to save profile. Try again.');
+      AppToast.error(
+          context, _errorText ?? 'Failed to save profile. Try again.');
     }
   }
 
@@ -291,7 +291,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: _roleAccent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -306,7 +307,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                     const SizedBox(width: 6),
                     Text(
                       '$roleLabel Account',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
                         color: _roleAccent,
@@ -320,7 +322,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
           const SizedBox(height: 18),
           Text(
             'What is your full name?',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineMedium,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
@@ -330,7 +333,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
           const SizedBox(height: 6),
           Text(
             'Enter your real name to complete registration. Generic role placeholders are not accepted.',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w400,
               color: AppColors.textSecondaryOf(context),
@@ -345,7 +349,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
             focusNode: _focusNode,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimaryOf(context),
@@ -380,8 +385,7 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                disabledBackgroundColor:
-                    _roleAccent.withValues(alpha: 0.35),
+                disabledBackgroundColor: _roleAccent.withValues(alpha: 0.35),
               ),
               child: _saving
                   ? const SizedBox(
@@ -394,7 +398,8 @@ class _OnboardingNameScreenState extends State<OnboardingNameScreen> {
                     )
                   : Text(
                       'Continue',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -439,7 +444,8 @@ class _DesktopBrandHeroPanel extends StatelessWidget {
                     children: [
                       Text(
                         'Set up your\nDoctorNect profile',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 40,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
@@ -450,7 +456,8 @@ class _DesktopBrandHeroPanel extends StatelessWidget {
                       const SizedBox(height: 14),
                       Text(
                         'Connect with care partners, verified clinical tools, and patient records across India.',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 16,
                           color: Colors.white.withValues(alpha: 0.82),
                           height: 1.5,

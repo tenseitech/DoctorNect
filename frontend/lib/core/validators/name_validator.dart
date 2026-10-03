@@ -62,7 +62,8 @@ abstract final class NameValidator {
     }
 
     // Detect repeated words like "Doctor Doctor", "Patient Patient", "Lab Lab"
-    final words = lower.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    final words =
+        lower.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
     if (words.length >= 2 && words.every((w) => _fakeNames.contains(w))) {
       return true;
     }
