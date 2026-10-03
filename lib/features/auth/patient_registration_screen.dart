@@ -230,7 +230,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                   controller: _nameController,
                   validator: FormValidators.fullName,
                   textInputAction: TextInputAction.done,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),
@@ -271,7 +272,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                                   _mobileDialCode,
                                   _mobileController.text.trim(),
                                 ),
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodyMedium,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -310,7 +312,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
                         padding: const EdgeInsets.only(top: 6, left: 4),
                         child: Text(
                           _mobileError!,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: Colors.red.shade700,
                             fontWeight: FontWeight.w500,

@@ -23,7 +23,8 @@ class LabeledAddButton extends StatelessWidget {
       icon: Icon(Icons.add, size: compact ? 16 : 18),
       label: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: compact ? 12 : 13,
           fontWeight: FontWeight.w600,
         ),

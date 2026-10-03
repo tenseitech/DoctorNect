@@ -27,7 +27,8 @@ class PatientScreenTitleBar extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineLarge,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -37,7 +38,8 @@ class PatientScreenTitleBar extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle!,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),

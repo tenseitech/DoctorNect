@@ -61,7 +61,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       'No tickets raised yet',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -71,7 +72,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                     Text(
                       'If you face any issues, submit a ticket in the support section.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -101,7 +103,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
               children: [
                 Text(
                   'Raised Tickets (${sortedDocs.length})',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -175,7 +178,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                   ),
                                   child: Text(
                                     issueType,
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.labelMedium,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.patientTeal,
@@ -193,7 +197,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                   ),
                                   child: Text(
                                     statusLabel,
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: statusColor,
@@ -205,7 +210,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             Text(
                               message,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodyMedium,
                                 color: AppColors.textPrimaryOf(context),
                                 height: 1.4,
@@ -226,7 +232,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                       screenshot,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.labelMedium,
                                         color: AppColors.textSecondaryOf(
                                           context,
@@ -249,7 +256,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   'Ticket ID: ${doc.id.substring(0, doc.id.length > 8 ? 8 : doc.id.length).toUpperCase()}',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                     letterSpacing: 0.5,
@@ -257,7 +265,8 @@ class SupportTicketsHistoryScreen extends StatelessWidget {
                                 ),
                                 Text(
                                   formattedDate,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),

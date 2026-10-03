@@ -291,7 +291,8 @@ class _DoctorPatientProfileScreenState
           labelColor: AppColors.doctorBlue,
           unselectedLabelColor: AppColors.textSecondaryOf(context),
           indicatorColor: AppColors.doctorBlue,
-          labelStyle: TextStyle(fontFamily: 'Inter', 
+          labelStyle: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w600,
           ),
@@ -365,7 +366,8 @@ class _PersonalInfoTab extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 s.name,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                 ),
@@ -472,7 +474,8 @@ class _MedicalHistoryTab extends StatelessWidget {
                 ? [
                     Text(
                       'None recorded',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
@@ -514,7 +517,8 @@ class _MedicalHistoryTab extends StatelessWidget {
                 ),
                 title: Text(
                   s.procedure,
-                  style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+                  style: TextStyle(
+                      fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
                 ),
                 subtitle: Text(DateFormat('dd MMM yyyy').format(s.date)),
               );
@@ -525,7 +529,8 @@ class _MedicalHistoryTab extends StatelessWidget {
           title: 'Family History',
           child: Text(
             profile.familyHistory,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               height: 1.4,
             ),
@@ -547,7 +552,8 @@ class _MedicalHistoryTab extends StatelessWidget {
                       clinicalDataBlocked
                           ? 'Medication history is hidden while sharing is off.'
                           : 'No medications prescribed yet',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         color: AppColors.textSecondaryOf(context),
                       ),
                     )
@@ -566,22 +572,25 @@ class _MedicalHistoryTab extends StatelessWidget {
                           ),
                           title: Text(
                             m.name,
-                            style:
-                                TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w600),
                           ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 m.dosage,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                 ),
                               ),
                               if (prescribedOn != null)
                                 Text(
                                   'Prescribed ${DateFormat('dd MMM yyyy').format(prescribedOn)}',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -692,7 +701,8 @@ class _VisitHistoryTab extends StatelessWidget {
               ? Center(
                   child: Text(
                     'No visits in this date range',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
@@ -749,7 +759,8 @@ class _VisitHistoryTab extends StatelessWidget {
                                 children: [
                                   Text(
                                     DateFormat('dd MMM yyyy').format(v.date),
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.labelMedium,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.doctorBlue,
@@ -758,7 +769,8 @@ class _VisitHistoryTab extends StatelessWidget {
                                   const SizedBox(height: 4),
                                   Text(
                                     v.diagnosis,
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.bodyMedium,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -878,7 +890,8 @@ class _ReportsTab extends StatelessWidget {
                   child: FilterChip(
                     label: Text(
                       _typeLabel(t),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                       ),
                     ),
@@ -902,7 +915,8 @@ class _ReportsTab extends StatelessWidget {
                         children: [
                           Text(
                             'No documents yet',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -939,13 +953,15 @@ class _ReportsTab extends StatelessWidget {
                           ),
                           title: Text(
                             f.name,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                             ),
                           ),
                           subtitle: Text(
                             '${_typeLabel(f.type)} · ${DateFormat('dd MMM yyyy').format(f.date)}',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                             ),
                           ),
@@ -986,7 +1002,8 @@ class _InfoCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
             ),
@@ -1016,7 +1033,8 @@ class _Row extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1025,7 +1043,8 @@ class _Row extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w500,
               ),
@@ -1059,7 +1078,8 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
             ),
@@ -1206,7 +1226,8 @@ class _PatientProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                       children: [
                         Text(
                           'Profile',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineLarge,
                             fontWeight: FontWeight.w700,
                             color: textPrimary,
@@ -1215,7 +1236,8 @@ class _PatientProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         const SizedBox(height: 3),
                         Text(
                           'Your account & health',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: textSecondary,
                             height: 1.3,
@@ -1247,7 +1269,8 @@ class _PatientProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                   displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: nameFontSize,
                     fontWeight: nameFontWeight,
                     color: textPrimary,
@@ -1356,7 +1379,8 @@ class _PatientProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
               child: avatarImage == null
                   ? Text(
                       initial,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: fontSize,
                         fontWeight: FontWeight.w800,
                         color: AppColors.patientTeal,
@@ -1679,7 +1703,8 @@ class _PatientPatientProfileScreenState
             child: avatarImage == null
                 ? Text(
                     initial,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: fontSize,
                       fontWeight: FontWeight.w800,
                       color: AppColors.patientTeal,
@@ -2217,7 +2242,8 @@ class _FamilyChip extends StatelessWidget {
                 backgroundColor: AppColors.surfaceOf(context),
                 child: Text(
                   initial,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF7C3AED),
@@ -2230,7 +2256,8 @@ class _FamilyChip extends StatelessWidget {
               m.name.split(' ').first,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w700,
               ),
@@ -2239,7 +2266,8 @@ class _FamilyChip extends StatelessWidget {
               m.relationLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 9.5,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -2287,7 +2315,8 @@ class _AddFamilyCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Add',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w700,
                 color: AppColors.patientTeal,

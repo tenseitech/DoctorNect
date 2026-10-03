@@ -247,7 +247,8 @@ class _SelectorBodyState extends State<_SelectorBody> {
           Chip(
             label: Text(
               value,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w500,
                 color: accent,
@@ -299,7 +300,8 @@ class _ModeChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w500,
             color:
@@ -404,7 +406,8 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                     Expanded(
                       child: Text(
                         'Select Specialization',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                         ),
@@ -516,7 +519,8 @@ class _SpecPickerSheetState extends State<_SpecPickerSheet> {
                           return ListTile(
                             title: Text(
                               e.text,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodyMedium,
                                 fontWeight: isSelected
                                     ? FontWeight.w600
@@ -566,7 +570,8 @@ class _CategoryHeader extends StatelessWidget {
       color: accentColor.withValues(alpha: 0.05),
       child: Text(
         label.toUpperCase(),
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.6,

@@ -32,7 +32,8 @@ class ServicesSection extends StatelessWidget {
         children: [
           Text(
             'Services',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: isWide ? 17 : 15,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
@@ -286,7 +287,8 @@ class _ServiceTileState extends State<_ServiceTile> {
                       _label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -297,7 +299,8 @@ class _ServiceTileState extends State<_ServiceTile> {
                       widget.style.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -405,7 +408,8 @@ class _ServiceTileState extends State<_ServiceTile> {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   height: 1.15,

@@ -229,7 +229,8 @@ class _FilterChip extends StatelessWidget {
               ],
               Text(
                 label,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w500,
                   color: selected

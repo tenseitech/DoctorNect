@@ -243,11 +243,13 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                           context,
                         ),
                         indicatorColor: AppColors.doctorBlue,
-                        labelStyle: TextStyle(fontFamily: 'Inter', 
+                        labelStyle: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                         ),
-                        unselectedLabelStyle: TextStyle(fontFamily: 'Inter', 
+                        unselectedLabelStyle: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                         ),
                         tabs: _tabLabels.map((l) => Tab(text: l)).toList(),

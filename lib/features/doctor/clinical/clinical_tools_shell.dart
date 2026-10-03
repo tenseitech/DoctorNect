@@ -82,7 +82,8 @@ class _ClinicalToolsShellState extends State<ClinicalToolsShell>
           labelColor: AppColors.doctorBlue,
           unselectedLabelColor: AppColors.textSecondaryOf(context),
           indicatorColor: AppColors.doctorBlue,
-          labelStyle: TextStyle(fontFamily: 'Inter', 
+          labelStyle: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodySmall,
             fontWeight: FontWeight.w600,
           ),

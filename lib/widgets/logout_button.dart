@@ -28,7 +28,8 @@ class LogoutIconButton extends StatelessWidget {
               'Logout',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
                 color: c,
@@ -50,7 +51,8 @@ class LogoutTextButton extends StatelessWidget {
       onPressed: () => AppLogout.confirmAndSignOut(context),
       child: Text(
         'Log out',
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.headlineSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.error,
@@ -83,7 +85,8 @@ class LogoutRailTile extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 'Log out',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.error,

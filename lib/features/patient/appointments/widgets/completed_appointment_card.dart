@@ -73,7 +73,8 @@ class CompletedAppointmentCard extends StatelessWidget {
             a.diagnosis!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),

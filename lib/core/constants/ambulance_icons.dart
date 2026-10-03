@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
+
 /// Ambulance action icon used across doctor and patient UI.
 abstract final class AmbulanceIcons {
   static const IconData sign = TablerIcons.ambulance;
@@ -52,7 +53,8 @@ class AmbulanceWithPlusIcon extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 '+',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: badgeSize * 0.7,
                   fontWeight: FontWeight.w800,
                   color: AmbulanceIcons.gradient.last,

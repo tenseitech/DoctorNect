@@ -127,7 +127,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                       children: [
                         Text(
                           'Invite and Connect',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -135,7 +136,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                         ),
                         Text(
                           'Share your DoctorNect invite link',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -152,7 +154,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
               const SizedBox(height: 16),
               Text(
                 'Choose who you are inviting, then copy or share your personal link from $doctorName.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -201,7 +204,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                             )
                           : SelectableText(
                               _link ?? fallbackLink,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodyMedium,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
@@ -217,7 +221,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                 icon: const Icon(Icons.copy_outlined),
                 label: Text(
                   'Copy Link',
-                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      fontFamily: 'Inter', fontWeight: FontWeight.w700),
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.doctorBlue,
@@ -236,7 +241,8 @@ class _InviteNetworkViewState extends State<InviteNetworkView> {
                 icon: const Icon(Icons.share_outlined),
                 label: Text(
                   'Share Link',
-                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      fontFamily: 'Inter', fontWeight: FontWeight.w700),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.doctorBlue,

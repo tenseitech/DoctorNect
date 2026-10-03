@@ -87,7 +87,8 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                   child: Text(
                     'No doctors in your list yet. Tap Add to search registered doctors or book a visit.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       color: AppColors.textSecondaryOf(context),
                       fontSize: AppTypography.bodyMedium,
                     ),
@@ -174,7 +175,8 @@ class _MyDoctorManageTile extends StatelessWidget {
                   children: [
                     Text(
                       'Dr. ${doctor.name}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),
@@ -182,7 +184,8 @@ class _MyDoctorManageTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       doctor.specialization,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -191,7 +194,8 @@ class _MyDoctorManageTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         doctor.city,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),

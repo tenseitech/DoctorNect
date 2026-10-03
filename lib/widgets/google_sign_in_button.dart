@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 /// Crisp multi-color Google "G" logo vector icon.
 class GoogleLogo extends StatelessWidget {
   const GoogleLogo({super.key, this.size = 20});
@@ -172,7 +173,8 @@ class _GoogleSignInButtonState extends State<GoogleSignInButton> {
                     const SizedBox(width: 12),
                     Text(
                       widget.text,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 14.5,
                         fontWeight: FontWeight.w600,
                         color: textColor,
@@ -217,7 +219,8 @@ class AuthOrDivider extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: Text(
               text,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
                 color: textColor,

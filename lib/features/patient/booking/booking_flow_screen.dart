@@ -1004,7 +1004,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                                     ? 'Confirm booking'
                                     : 'Submit request')
                                 : 'Continue',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontWeight: FontWeight.w600,
                               fontSize: AppTypography.bodyLarge,
                             ),
@@ -1221,7 +1222,8 @@ class _SlotStep extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -1229,7 +1231,8 @@ class _SlotStep extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       hasValue ? value : placeholder,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: hasValue
@@ -1304,7 +1307,8 @@ class _SlotStep extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Choose a date, then pick any available time using the clock dial.',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       height: 1.4,
                       color: AppColors.textPrimaryOf(context),
@@ -1348,7 +1352,8 @@ class _SlotStep extends StatelessWidget {
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 'This time has already passed. Please pick another time.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.error,
                 ),
@@ -1358,7 +1363,8 @@ class _SlotStep extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               '$selectableCount time${selectableCount == 1 ? '' : 's'} available on this date',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1370,7 +1376,8 @@ class _SlotStep extends StatelessWidget {
               child: Text(
                 _holidayMessage(selected) ??
                     'No appointment times on this date. The doctor may be on leave or fully booked.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -1400,7 +1407,8 @@ class _SlotStep extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'Selected: ${DateFormat('dd MMM yyyy').format(selected)} · ${draft.selectedSlotLabel}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -1427,7 +1435,8 @@ class _SlotStep extends StatelessWidget {
                   Text(
                     'This slot already has ${selectedSlot.bookingCount} patient(s). '
                     'Maximum $kMaxPatientsPerTimeSlot can share the same time. Please tell us why you need this slot:',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.35,
@@ -1618,18 +1627,21 @@ class _ReviewStep extends StatelessWidget {
                 children: [
                   Text(
                     'Dr. ${doctor.name}',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w600),
                   ),
                   Text(
                     '${DateFormat('dd MMM yyyy').format(draft.selectedDate!)} · ${draft.selectedSlotLabel}',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
                   Text(
                     'In-clinic visit',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.patientTeal,
                     ),
@@ -1644,7 +1656,8 @@ class _ReviewStep extends StatelessWidget {
         SizedBox(height: 16),
         Text(
           'Patient(s)',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -1658,7 +1671,8 @@ class _ReviewStep extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Your reason',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -1668,7 +1682,8 @@ class _ReviewStep extends StatelessWidget {
             getController('self').text.trim().isEmpty
                 ? '—'
                 : getController('self').text.trim(),
-            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
+            style: TextStyle(
+                fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
           ),
         ],
         for (final id in draft.familyMemberIds)
@@ -1676,7 +1691,8 @@ class _ReviewStep extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Family reason',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1684,7 +1700,8 @@ class _ReviewStep extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               getController(id).text.trim(),
-              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
+              style: TextStyle(
+                  fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
             ),
           ],
       ],

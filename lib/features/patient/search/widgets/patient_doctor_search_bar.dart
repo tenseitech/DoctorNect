@@ -96,7 +96,8 @@ class _PatientDoctorSearchBarState extends State<PatientDoctorSearchBar> {
                     onSubmitted: widget.onSubmitted,
                     textInputAction: TextInputAction.search,
                     textAlignVertical: TextAlignVertical.center,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: compact ? 14 : 15,
                       fontWeight: FontWeight.w400,
                       color: AppColors.textPrimaryOf(context),
@@ -107,7 +108,8 @@ class _PatientDoctorSearchBarState extends State<PatientDoctorSearchBar> {
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       hintText: widget.hintText,
-                      hintStyle: TextStyle(fontFamily: 'Inter', 
+                      hintStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: compact ? 14 : 15,
                         fontWeight: FontWeight.w400,
                         color: AppColors.textSecondaryOf(context),
@@ -214,7 +216,8 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                   const SizedBox(width: 8),
                   Text(
                     'Filters',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w600,
                       color: hasActive
@@ -226,7 +229,8 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                   const SizedBox(width: 6),
                   Text(
                     'Filter',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                       color: hasActive
@@ -248,7 +252,8 @@ class _SearchFilterButtonState extends State<SearchFilterButton> {
                     ),
                     child: Text(
                       '${widget.activeCount}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.surfaceOf(context),

@@ -104,7 +104,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                       ),
                       child: Text(
                         'FEATURED PROMOTION',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
@@ -123,7 +124,8 @@ class PromotedAdBannerCard extends StatelessWidget {
 
                 final titleText = Text(
                   'Promote Your $_providerLabel 🚀',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 14.5,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -133,7 +135,8 @@ class PromotedAdBannerCard extends StatelessWidget {
 
                 final subText = Text(
                   'Showcase your service on the Patient Home screen banner carousel to reach thousands of patients.',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: Colors.white.withValues(alpha: 0.92),
                     height: 1.3,
@@ -156,7 +159,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                   ),
                   child: Text(
                     'Book Ad',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w800,
                     ),
@@ -217,7 +221,8 @@ class PromotedAdBannerCard extends StatelessWidget {
                             ),
                             child: Text(
                               'FEATURED PROMOTION',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 10,
                                 fontWeight: FontWeight.w800,
                                 color: const Color(0xFF0F172A),

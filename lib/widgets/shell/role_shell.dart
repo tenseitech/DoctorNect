@@ -335,7 +335,8 @@ class _RoleSidebar extends StatelessWidget {
                     ),
                     label: Text(
                       'Log out',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.error,
@@ -422,7 +423,8 @@ class _RoleBrandBlock extends StatelessWidget {
                       entityName.isNotEmpty ? entityName : roleTitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: compact ? 18 : 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -455,7 +457,8 @@ class _RoleBrandBlock extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: compact ? 11 : 12,
                         fontWeight: FontWeight.w500,
                         color: AppColors.textSecondaryOf(context),
@@ -553,7 +556,8 @@ class _RoleNavTileState extends State<_RoleNavTile> {
                 Expanded(
                   child: Text(
                     widget.label,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight:
                           widget.selected ? FontWeight.w700 : FontWeight.w500,
@@ -603,7 +607,8 @@ class _BadgePill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
           color: selected ? accentColor : Colors.white,
@@ -714,7 +719,8 @@ class _RoleBottomNav extends StatelessWidget {
                                       item.badgeCount! > 9
                                           ? '9+'
                                           : '${item.badgeCount}',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
@@ -734,7 +740,8 @@ class _RoleBottomNav extends StatelessWidget {
                           SafeBottomNavLabel(
                             label: item.mobileLabel ??
                                 compactBottomNavLabel(item.label),
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 10,
                               fontWeight:
                                   selected ? FontWeight.w700 : FontWeight.w500,

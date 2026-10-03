@@ -132,7 +132,8 @@ class CompleteProfilePrompt extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -142,7 +143,8 @@ class CompleteProfilePrompt extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   height: 1.5,
                   color: AppColors.textSecondaryOf(context),

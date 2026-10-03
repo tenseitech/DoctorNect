@@ -52,7 +52,8 @@ class RoleEmptyState extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: compact
                       ? AppTypography.bodyLarge
                       : AppTypography.headlineSmall,
@@ -64,7 +65,8 @@ class RoleEmptyState extends StatelessWidget {
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -86,7 +88,8 @@ class RoleEmptyState extends StatelessWidget {
                   ),
                   child: Text(
                     actionLabel!,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                     ),

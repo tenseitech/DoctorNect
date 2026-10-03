@@ -45,7 +45,8 @@ class BookingStepHeader extends StatelessWidget {
                     ),
                     child: Text(
                       '${i + 1}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: active
@@ -84,7 +85,8 @@ class BookingStepHeader extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           title,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w700,
           ),

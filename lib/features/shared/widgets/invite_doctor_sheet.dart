@@ -284,7 +284,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
             const SizedBox(height: 16),
             Text(
               widget.title ?? 'Invite Doctor',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineMedium,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
@@ -293,7 +294,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
             const SizedBox(height: 8),
             Text(
               'Share this link with a doctor who is not on DoctorNect yet. They can download the app and connect with your $typeLabel.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
@@ -322,7 +324,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
                   Expanded(
                     child: SelectableText(
                       link,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -346,7 +349,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
               icon: const Icon(Icons.copy_outlined, size: 18),
               label: Text(
                 'Copy invite',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(height: 10),
@@ -365,7 +369,8 @@ class _LabInviteDoctorSheetState extends State<LabInviteDoctorSheet> {
               icon: const Icon(Icons.share_outlined, size: 18),
               label: Text(
                 'Share invite',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
               ),
             ),
           ],

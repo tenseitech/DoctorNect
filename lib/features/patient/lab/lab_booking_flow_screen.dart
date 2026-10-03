@@ -585,7 +585,8 @@ class _PatientStep extends StatelessWidget {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               'Age is required for lab bookings. Update your Profile or family member details before continuing.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.error,
                 height: 1.4,
@@ -636,12 +637,14 @@ class _CollectionStep extends StatelessWidget {
               children: [
                 Text(
                   lab.name,
-                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      fontFamily: 'Inter', fontWeight: FontWeight.w600),
                 ),
                 if (lab.area.trim().isNotEmpty)
                   Text(
                     lab.area,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondary,
                     ),
@@ -710,7 +713,8 @@ class _CollectionStep extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Select lab',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w600,
               ),
@@ -725,7 +729,8 @@ class _CollectionStep extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Select lab',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
             ),
@@ -749,7 +754,8 @@ class _CollectionStep extends StatelessWidget {
         ),
         child: Text(
           'No labs in My labs yet. Add a lab from the Lab tab to continue.',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodySmall,
             color: AppColors.textSecondaryOf(context),
             height: 1.45,
@@ -795,7 +801,8 @@ class _CollectionStep extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               'Choose a lab to continue.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondary,
               ),
@@ -851,11 +858,13 @@ class _TypeCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          fontFamily: 'Inter', fontWeight: FontWeight.w600),
                     ),
                     Text(
                       subtitle,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -994,7 +1003,8 @@ class _ScheduleStep extends StatelessWidget {
                   Expanded(
                     child: Text(
                       DateFormat('EEE, dd MMM yyyy').format(selectedDate),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -1032,7 +1042,8 @@ class _ScheduleStep extends StatelessWidget {
                   Expanded(
                     child: Text(
                       timeLabel ?? 'Tap to choose a time',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: timeLabel == null
@@ -1056,7 +1067,8 @@ class _ScheduleStep extends StatelessWidget {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               'This time has already passed. Please pick another time.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.error,
               ),
@@ -1094,7 +1106,8 @@ class _ReviewStep extends StatelessWidget {
             children: [
               Text(
                 tests.length == 1 ? 'Test' : '${tests.length} tests',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -1105,24 +1118,28 @@ class _ReviewStep extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     test.name,
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Patient: $patientLabel',
-                style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
+                style: TextStyle(
+                    fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
               ),
               Text(
                 '${DateFormat('dd MMM yyyy').format(draft.selectedDate!)} · ${draft.selectedSlotLabel}',
-                style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
+                style: TextStyle(
+                    fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
               ),
               Text(
                 draft.collectionType == LabCollectionType.home
                     ? 'Home collection'
                     : 'Walk-in · ${draft.selectedLab?.name}',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.labPurple,
                 ),

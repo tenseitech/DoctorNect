@@ -101,7 +101,8 @@ class _DoctorReferredPatientsScreenState
           child: Text(
             emptyMessage,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -164,11 +165,13 @@ class _DoctorReferredPatientsScreenState
                 labelColor: AppColors.doctorBlue,
                 unselectedLabelColor: AppColors.textSecondaryOf(context),
                 indicatorColor: AppColors.doctorBlue,
-                labelStyle: TextStyle(fontFamily: 'Inter', 
+                labelStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                 ),
-                unselectedLabelStyle: TextStyle(fontFamily: 'Inter', 
+                unselectedLabelStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                 ),
                 tabs: _tabLabels.map((l) => Tab(text: l)).toList(),

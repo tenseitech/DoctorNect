@@ -135,7 +135,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
               ),
               title: Text(
                 'Select month & year',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
                   fontSize: AppTypography.headlineSmall,
                 ),
@@ -148,7 +149,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                   children: [
                     Text(
                       'Year',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondaryOf(context),
@@ -182,7 +184,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                               value: y,
                               child: Text(
                                 '$y',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodyMedium,
                                 ),
                               ),
@@ -196,7 +199,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                     const SizedBox(height: 16),
                     Text(
                       'Month',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondaryOf(context),
@@ -236,7 +240,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                               ),
                               child: Text(
                                 label,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w600,
                                   color: isSelected
@@ -257,7 +262,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                   onPressed: () => Navigator.pop(dialogContext),
                   child: Text(
                     'Cancel',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
@@ -273,7 +279,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                       Navigator.pop(dialogContext, (year: year, month: month)),
                   child: Text(
                     'Apply',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -342,7 +349,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                               Text(
                                 monthName,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimaryOf(context),
@@ -352,7 +360,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                               Text(
                                 yearName,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.labelMedium,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textSecondaryOf(context),
@@ -384,7 +393,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                 ? Center(
                     child: Text(
                       'No dates this month',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -440,7 +450,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                               children: [
                                 Text(
                                   DateFormat('EEE').format(d),
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: 10,
                                     height: 1,
                                     color: weekdayColor,
@@ -449,7 +460,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                                 const SizedBox(height: 2),
                                 Text(
                                   DateFormat('d').format(d),
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.headlineSmall,
                                     height: 1,
                                     fontWeight: FontWeight.w700,
@@ -460,7 +472,8 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                                   const SizedBox(height: 2),
                                   Text(
                                     'Off',
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: 7,
                                       height: 1,
                                       fontWeight: FontWeight.w600,

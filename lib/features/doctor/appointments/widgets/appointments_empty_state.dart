@@ -31,7 +31,8 @@ class AppointmentsEmptyState extends StatelessWidget {
             Text(
               'No $tabLabel appointments',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -41,7 +42,8 @@ class AppointmentsEmptyState extends StatelessWidget {
             Text(
               'Appointments matching your filters will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,

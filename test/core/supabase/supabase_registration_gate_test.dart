@@ -34,7 +34,8 @@ void main() {
         SupabaseBootstrap.debugHasActiveSessionOverride = true;
         SupabaseBootstrap.debugSupabaseUserLoggedInOverride = true;
         SupabaseAuthService.instance.debugUserProfileOverride =
-            const SupabaseUserProfile(profileId: 'p_server_999', role: 'patient');
+            const SupabaseUserProfile(
+                profileId: 'p_server_999', role: 'patient');
 
         const clientGeneratedId = 'p_client_12345';
         final resolvedId = await SupabaseBootstrap.resolveRegistrationProfileId(
@@ -60,7 +61,8 @@ void main() {
         SupabaseBootstrap.debugHasActiveSessionOverride = true;
 
         SupabaseAuthService.instance.debugUserProfileOverride =
-            const SupabaseUserProfile(profileId: 'p_server_auth_profile', role: 'patient');
+            const SupabaseUserProfile(
+                profileId: 'p_server_auth_profile', role: 'patient');
 
         const clientGeneratedId = 'p_client_12345';
         final resolvedId = await SupabaseBootstrap.resolveRegistrationProfileId(
@@ -86,7 +88,8 @@ void main() {
         SupabaseBootstrap.debugHasActiveSessionOverride = true;
 
         SupabaseAuthService.instance.debugUserProfileOverride =
-            const SupabaseUserProfile(profileId: 'd_server_doc_profile', role: 'doctor');
+            const SupabaseUserProfile(
+                profileId: 'd_server_doc_profile', role: 'doctor');
 
         const clientGeneratedId = 'p_client_12345';
         final resolvedId = await SupabaseBootstrap.resolveRegistrationProfileId(
@@ -112,7 +115,8 @@ void main() {
         SupabaseBootstrap.debugHasActiveSessionOverride = true;
 
         SupabaseAuthService.instance.debugUserProfileOverride =
-            const SupabaseUserProfile(profileId: 'p_server_profile', role: 'patient');
+            const SupabaseUserProfile(
+                profileId: 'p_server_profile', role: 'patient');
 
         const clientGeneratedId = 'p_client_12345';
         final resolvedId = await SupabaseBootstrap.resolveRegistrationProfileId(

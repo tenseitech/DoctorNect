@@ -508,7 +508,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.titleSmall,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -544,7 +545,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.titleMedium,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -579,7 +581,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                 maxLines: compactHeight ? 2 : 3,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: compactHeight
                       ? AppTypography.headlineSmall
                       : AppTypography.headlineMedium,
@@ -596,7 +599,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
                   maxLines: compactHeight ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w400,
                     color: Colors.white.withValues(alpha: 0.82),
@@ -1038,7 +1042,8 @@ class _MobileBrandWordmark extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'DoctorNect',
-      style: TextStyle(fontFamily: 'Inter', 
+      style: TextStyle(
+        fontFamily: 'Inter',
         fontSize: AppTypography.displayMedium,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.4,
@@ -1271,7 +1276,8 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
         if (isMobileStep) ...[
           Text(
             'Let\'s get started! Enter your mobile number',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: hasKeyboard
                   ? AppTypography.titleSmall
                   : AppTypography.titleMedium,
@@ -1408,7 +1414,8 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
         ] else ...[
           Text(
             'Verify your number',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: hasKeyboard
                   ? AppTypography.titleSmall
                   : AppTypography.titleMedium,
@@ -1424,7 +1431,8 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
               Expanded(
                 child: Text(
                   'Enter the 6-digit OTP sent to +91 ${widget.flow.mobileDigits ?? ''}',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -1443,7 +1451,8 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
                 ),
                 child: Text(
                   'Change',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: widget.accent,
@@ -1478,7 +1487,8 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
                   widget.flow.otpCountdown > 0
                       ? 'Resend OTP in ${widget.flow.otpCountdown}s'
                       : 'Resend OTP',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: widget.flow.otpCountdown > 0
@@ -1499,7 +1509,8 @@ class _IntroAuthFormState extends State<_IntroAuthForm> {
                 ),
                 child: Text(
                   'Need help?',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w500,
                     color: widget.accent,
@@ -1577,7 +1588,8 @@ class _IntroPrimaryButton extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(
                       loadingLabel!,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelLarge,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -1592,7 +1604,8 @@ class _IntroPrimaryButton extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelLarge,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.1,
@@ -1620,7 +1633,8 @@ class _TermsDisclaimer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bodyStyle = TextStyle(fontFamily: 'Inter', 
+    final bodyStyle = TextStyle(
+      fontFamily: 'Inter',
       fontSize: AppTypography.bodySmall,
       height: 1.4,
       color: AppColors.textSecondaryOf(context),
@@ -2106,7 +2120,8 @@ class _DesktopBrandMark extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           'DoctorNect',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: 21,
             fontWeight: FontWeight.w700,
             color: Colors.white,
@@ -2137,7 +2152,8 @@ class _DesktopHeroText extends StatelessWidget {
             slide.headline,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: headlineSize,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -2154,7 +2170,8 @@ class _DesktopHeroText extends StatelessWidget {
               slide.supportingText!,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 16,
                 fontWeight: FontWeight.w400,
                 color: Colors.white.withValues(alpha: 0.74),
@@ -2327,7 +2344,8 @@ class _DesktopFeatureBulletState extends State<_DesktopFeatureBullet> {
                   widget.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 15.5,
                     fontWeight: FontWeight.w500,
                     color: Colors.white.withValues(alpha: _hovered ? 1 : 0.88),
@@ -2359,7 +2377,8 @@ class _DesktopTrustLine extends StatelessWidget {
             'Trusted by 10,000+ doctors across India',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.white.withValues(alpha: 0.80),
@@ -2558,7 +2577,8 @@ class _DesktopPrimaryButtonState extends State<_DesktopPrimaryButton> {
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.white,
@@ -2765,7 +2785,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
                 ),
                 child: Text(
                   'Trouble signing in?',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: widget.accent,
@@ -2856,7 +2877,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
               ),
               child: Text(
                 'Change',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: widget.accent,
@@ -2886,7 +2908,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
               countingDown
                   ? 'Resend OTP in ${flow.otpCountdown}s'
                   : 'Resend OTP',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: countingDown
@@ -2919,7 +2942,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
     );
   }
 
-  TextStyle _titleStyle(BuildContext context) => TextStyle(fontFamily: 'Inter', 
+  TextStyle _titleStyle(BuildContext context) => TextStyle(
+        fontFamily: 'Inter',
         fontSize: 26,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimaryOf(context),
@@ -2927,14 +2951,16 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
         height: 1.2,
       );
 
-  TextStyle _subtitleStyle(BuildContext context) => TextStyle(fontFamily: 'Inter', 
+  TextStyle _subtitleStyle(BuildContext context) => TextStyle(
+        fontFamily: 'Inter',
         fontSize: 15,
         fontWeight: FontWeight.w400,
         color: AppColors.textSecondaryOf(context),
         height: 1.5,
       );
 
-  TextStyle _fieldLabelStyle(BuildContext context) => TextStyle(fontFamily: 'Inter', 
+  TextStyle _fieldLabelStyle(BuildContext context) => TextStyle(
+        fontFamily: 'Inter',
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimaryOf(context),

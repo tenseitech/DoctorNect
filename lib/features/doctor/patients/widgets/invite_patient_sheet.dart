@@ -86,7 +86,8 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
             const SizedBox(height: 16),
             Text(
               'Invite Patient',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineMedium,
                 fontWeight: FontWeight.w700,
               ),
@@ -94,7 +95,8 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
             const SizedBox(height: 8),
             Text(
               'Share your personal DoctorNect link. When patients register with it, they are linked to $doctorName.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
@@ -130,7 +132,8 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
                                 DoctorInviteService.buildInviteLink(
                                   DoctorSession.loggedInDoctorId,
                                 ),
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodyMedium,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimaryOf(context),
@@ -150,7 +153,8 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
               icon: const Icon(Icons.copy_outlined),
               label: Text(
                 'Copy Link',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(height: 10),
@@ -164,7 +168,8 @@ class _InvitePatientSheetState extends State<InvitePatientSheet> {
               icon: const Icon(Icons.share_outlined),
               label: Text(
                 'Share',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
               ),
             ),
           ],

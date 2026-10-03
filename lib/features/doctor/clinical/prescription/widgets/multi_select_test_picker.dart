@@ -181,7 +181,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                       children: [
                         Text(
                           widget.title,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -190,7 +191,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                         if (totalSelected > 0)
                           Text(
                             '$totalSelected selected',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.doctorBlue,
                               fontWeight: FontWeight.w600,
@@ -216,7 +218,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                       ),
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: TextStyle(fontFamily: 'Inter', 
+                      textStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -282,7 +285,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
           padding: const EdgeInsets.fromLTRB(4, 12, 4, 6),
           child: Text(
             group.toUpperCase(),
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: AppColors.doctorBlue,
@@ -326,7 +330,8 @@ class _TestPickerSheetState extends State<_TestPickerSheet> {
                   Expanded(
                     child: Text(
                       t.name,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textPrimaryOf(context),
                         fontWeight:
@@ -494,7 +499,8 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                       children: [
                         Text(
                           widget.title,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -503,7 +509,8 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                         if (_selected.isNotEmpty)
                           Text(
                             '${_selected.length} selected',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.doctorBlue,
                               fontWeight: FontWeight.w600,
@@ -523,7 +530,8 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                       ),
                       minimumSize: const Size(0, 36),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: TextStyle(fontFamily: 'Inter', 
+                      textStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -602,7 +610,8 @@ class _StringPickerSheetState extends State<_StringPickerSheet> {
                             Expanded(
                               child: Text(
                                 item,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                   color: AppColors.textPrimaryOf(context),
                                   fontWeight: selected
@@ -653,7 +662,8 @@ class _AddCustomSearchTile extends StatelessWidget {
       ),
       title: RichText(
         text: TextSpan(
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodySmall,
             color: AppColors.doctorBlue,
             fontWeight: FontWeight.w600,
@@ -662,7 +672,8 @@ class _AddCustomSearchTile extends StatelessWidget {
             const TextSpan(text: '+ Add '),
             TextSpan(
               text: "'$query'",
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.doctorBlue,
                 fontWeight: FontWeight.w600,

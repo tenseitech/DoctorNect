@@ -64,7 +64,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
             Expanded(
               child: Text(
                 'Admin Verification Required',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
                   fontSize: AppTypography.headlineSmall,
                 ),
@@ -81,7 +82,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
             children: [
               Text(
                 'Doctor mobile numbers are verified for medical licensing and regulatory compliance. To update your registered phone number, please contact administration with your medical registration details.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.45,
@@ -111,7 +113,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                         Flexible(
                           child: Text(
                             'support@doctornect.com',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w600,
                               color: AppColors.doctorBlue,
@@ -133,7 +136,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                         Flexible(
                           child: Text(
                             '+91 80000 00000 (Admin Desk)',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimaryOf(context),
@@ -246,7 +250,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                                             ? DoctorProfileStore.displayName[0]
                                                 .toUpperCase()
                                             : 'D',
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.headlineLarge,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.doctorBlue,
@@ -279,7 +284,8 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                             const SizedBox(height: 10),
                             Text(
                               DoctorProfileStore.displayNameWithPrefix,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),

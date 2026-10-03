@@ -196,7 +196,8 @@ class _AmbulanceInviteSetupScreenState
             child: Text(
               _error!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -235,7 +236,8 @@ class _AmbulanceInviteSetupScreenState
                       children: [
                         Text(
                           invite.serviceName,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontWeight: FontWeight.w700,
                             fontSize: AppTypography.bodyLarge,
                           ),
@@ -243,7 +245,8 @@ class _AmbulanceInviteSetupScreenState
                         const SizedBox(height: 4),
                         Text(
                           'Driver: ${invite.driverName} · ${invite.city}',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -252,7 +255,8 @@ class _AmbulanceInviteSetupScreenState
                           const SizedBox(height: 4),
                           Text(
                             'Invited by Dr. ${invite.doctorName}',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -264,7 +268,8 @@ class _AmbulanceInviteSetupScreenState
                   const SizedBox(height: 20),
                   TextFormField(
                     controller: _usernameCtrl,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w600,
                     ),

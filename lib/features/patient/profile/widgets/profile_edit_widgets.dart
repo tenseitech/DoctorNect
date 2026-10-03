@@ -50,7 +50,8 @@ abstract final class ProfileEditWidgets {
                       child: avatarImage == null
                           ? Text(
                               initial,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.headlineLarge,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.patientTeal,
@@ -80,7 +81,8 @@ abstract final class ProfileEditWidgets {
           const SizedBox(height: 12),
           Text(
             name,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineMedium,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
@@ -90,7 +92,8 @@ abstract final class ProfileEditWidgets {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -140,7 +143,8 @@ abstract final class ProfileEditWidgets {
                     children: [
                       Text(
                         title,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
@@ -149,7 +153,8 @@ abstract final class ProfileEditWidgets {
                       if (subtitle != null)
                         Text(
                           subtitle,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -190,7 +195,8 @@ abstract final class ProfileEditWidgets {
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   height: 1.4,
                   color: AppColors.textSecondaryOf(context),
@@ -220,7 +226,8 @@ abstract final class ProfileEditWidgets {
                 children: [
                   Text(
                     label,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -228,7 +235,8 @@ abstract final class ProfileEditWidgets {
                   const SizedBox(height: 2),
                   Text(
                     value,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
@@ -252,7 +260,8 @@ abstract final class ProfileEditWidgets {
     return Builder(
       builder: (context) => Text(
         text,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w600,
           color: AppColors.textSecondaryOf(context),
@@ -288,7 +297,8 @@ abstract final class ProfileEditWidgets {
                 selectedColor: AppColors.patientTeal.withValues(alpha: 0.2),
                 backgroundColor: AppColors.cardBgOf(context),
                 disabledColor: AppColors.cardBgOf(context),
-                labelStyle: TextStyle(fontFamily: 'Inter', 
+                labelStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
@@ -351,7 +361,8 @@ abstract final class ProfileEditWidgets {
                 backgroundColor: AppColors.cardBgOf(context),
                 disabledColor: AppColors.cardBgOf(context),
                 checkmarkColor: AppColors.patientTeal,
-                labelStyle: TextStyle(fontFamily: 'Inter', 
+                labelStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: isSelected
                       ? (locked
@@ -421,7 +432,8 @@ abstract final class ProfileEditWidgets {
                 Expanded(
                   child: Text(
                     'BMI (Body Mass Index)',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -429,7 +441,8 @@ abstract final class ProfileEditWidgets {
                 ),
                 Text(
                   bmiResult,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w800,
                     fontSize: AppTypography.headlineMedium,
                     color: accent,
@@ -450,7 +463,8 @@ abstract final class ProfileEditWidgets {
                 ),
                 child: Text(
                   PatientBmiUtils.labelFor(category),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w700,
                     color: accent,
@@ -460,7 +474,8 @@ abstract final class ProfileEditWidgets {
               const SizedBox(height: 8),
               Text(
                 PatientBmiUtils.messageFor(category),
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   height: 1.4,
                   color: AppColors.textSecondaryOf(context),
@@ -471,7 +486,8 @@ abstract final class ProfileEditWidgets {
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'Enter height and weight to calculate your BMI.',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -521,7 +537,8 @@ abstract final class ProfileEditWidgets {
           contentPadding: EdgeInsets.zero,
           title: Text(
             'Insurance covered',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontWeight: FontWeight.w600,
               fontSize: AppTypography.bodyMedium,
               color: AppColors.textPrimaryOf(context),
@@ -529,7 +546,8 @@ abstract final class ProfileEditWidgets {
           ),
           subtitle: Text(
             'Include this member under your health insurance',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),

@@ -61,7 +61,8 @@ class _SendSheetState extends State<_SendSheet> {
         children: [
           Text(
             'Send to Medical Stores',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w700,
             ),
@@ -69,7 +70,8 @@ class _SendSheetState extends State<_SendSheet> {
           const SizedBox(height: 6),
           Text(
             'Prescription for ${widget.draft.patient.patientName}',
-            style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
+            style: TextStyle(
+                fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
           ),
           const SizedBox(height: 12),
           SwitchListTile(
@@ -160,7 +162,8 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
       children: [
         Text(
           'Pharmacy delivery',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w600,
             fontSize: AppTypography.bodySmall,
           ),
@@ -184,14 +187,16 @@ class PrescriptionPharmacyStatusSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     d.storeName,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                     ),
                   ),
                 ),
                 Text(
                   _statusLabel(d.status),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w600,
                     color: color,

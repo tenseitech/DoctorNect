@@ -118,7 +118,8 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
               children: [
                 Text(
                   _dialCode,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: widget.enabled
@@ -263,7 +264,8 @@ class _CountryCodePickerSheetState extends State<_CountryCodePickerSheet> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Text(
                 'Select country code',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                 ),
@@ -294,7 +296,8 @@ class _CountryCodePickerSheetState extends State<_CountryCodePickerSheet> {
                     title: Text(entry.country),
                     trailing: Text(
                       entry.dialCode,
-                      style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          fontFamily: 'Inter', fontWeight: FontWeight.w600),
                     ),
                     selected: selected,
                     onTap: () => Navigator.pop(context, entry.dialCode),

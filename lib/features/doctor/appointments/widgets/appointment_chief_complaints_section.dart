@@ -88,7 +88,8 @@ class _AppointmentChiefComplaintsSectionState
         children: [
           Text(
             'Chief Complaints',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -124,7 +125,8 @@ class _AppointmentChiefComplaintsSectionState
                     )
                   : Text(
                       'Save Complaints',
-                      style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          fontFamily: 'Inter', fontWeight: FontWeight.w600),
                     ),
             ),
           ),

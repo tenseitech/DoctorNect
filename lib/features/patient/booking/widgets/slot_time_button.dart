@@ -76,7 +76,8 @@ class SlotTimeButton extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: compact ? TextAlign.center : null,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: compact ? 12 : 13,
                   fontWeight: FontWeight.w600,
                   color: fg,
@@ -91,7 +92,8 @@ class SlotTimeButton extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: compact ? TextAlign.center : null,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFFB45309),

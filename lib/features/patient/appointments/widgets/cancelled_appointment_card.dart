@@ -59,7 +59,8 @@ class CancelledAppointmentCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       reason,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontStyle: FontStyle.italic,
                         color: AppColors.textSecondaryOf(context),
@@ -80,7 +81,8 @@ class CancelledAppointmentCard extends StatelessWidget {
               ),
               child: Text(
                 'Cancelled',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                   color: _cancelledBadgeText,

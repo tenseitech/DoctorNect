@@ -98,7 +98,8 @@ class _PatientBookingConfirmedBaseState
         const SizedBox(height: 20),
         Text(
           widget.title,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.headlineLarge,
             fontWeight: FontWeight.w700,
           ),
@@ -107,7 +108,8 @@ class _PatientBookingConfirmedBaseState
         const SizedBox(height: 6),
         Text(
           widget.idLabel,
-          style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
+          style: TextStyle(
+              fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
           textAlign: TextAlign.center,
         ),
         if (widget.subMessage != null && widget.subMessage!.isNotEmpty) ...[
@@ -115,7 +117,8 @@ class _PatientBookingConfirmedBaseState
           Text(
             widget.subMessage!,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
               height: 1.45,
@@ -161,7 +164,8 @@ class _PatientBookingConfirmedBaseState
             onPressed: widget.onSecondaryAction,
             child: Text(
               widget.secondaryActionLabel!,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondaryOf(context),
               ),

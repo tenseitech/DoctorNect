@@ -114,7 +114,8 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
               children: [
                 Text(
                   'Add family member',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                   ),
@@ -173,7 +174,8 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                                 dense: true,
                                 title: Text(
                                   option,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.bodyMedium,
                                   ),
                                 ),

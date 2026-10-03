@@ -167,7 +167,8 @@ class _SegmentTabState extends State<_SegmentTab> {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: selected
@@ -266,7 +267,8 @@ class PatientTabEmptyState extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
               ),
@@ -275,7 +277,8 @@ class PatientTabEmptyState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.45,
@@ -298,7 +301,8 @@ class PatientTabEmptyState extends StatelessWidget {
                 ),
                 child: Text(
                   actionLabel!,
-                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      fontFamily: 'Inter', fontWeight: FontWeight.w600),
                 ),
               ),
             ],

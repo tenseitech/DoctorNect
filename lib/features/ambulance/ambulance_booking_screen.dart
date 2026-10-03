@@ -421,14 +421,16 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                     children: [
                       Text(
                         'Emergency Ambulance',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontWeight: FontWeight.w700,
                           fontSize: AppTypography.headlineSmall,
                         ),
                       ),
                       Text(
                         'Fast help when you need it',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -652,10 +654,12 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                                     child: Text(
                                                       'Book Ambulance',
                                                       maxLines: 1,
-                                                      style: TextStyle(fontFamily: 'Inter', 
+                                                      style: TextStyle(
+                                                        fontFamily: 'Inter',
                                                         fontSize: AppTypography
                                                             .headlineSmall,
-                                                        fontWeight: FontWeight.w700,
+                                                        fontWeight:
+                                                            FontWeight.w700,
                                                       ),
                                                     ),
                                                   ),
@@ -668,7 +672,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       'Request goes to all online drivers. '
                                       'You will wait up to 5 minutes for acceptance.',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 12.5,
                                         color: AppColors.textSecondaryOf(
                                           context,
@@ -724,7 +729,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                                 child: Text(
                                                   'Add Ambulance',
                                                   maxLines: 1,
-                                                  style: TextStyle(fontFamily: 'Inter', 
+                                                  style: TextStyle(
+                                                    fontFamily: 'Inter',
                                                     fontWeight: FontWeight.w700,
                                                   ),
                                                 ),
@@ -737,7 +743,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
                                       Text(
                                         'Register a new ambulance service and send the driver an invite link.',
                                         textAlign: TextAlign.center,
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: AppTypography.labelSmall,
                                           color: AppColors.textSecondaryOf(
                                             context,
@@ -802,7 +809,8 @@ class _AmbulanceBookingScreenState extends State<AmbulanceBookingScreen> {
   InputDecoration _fieldDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(fontFamily: 'Inter', 
+      labelStyle: TextStyle(
+        fontFamily: 'Inter',
         fontSize: AppTypography.bodySmall,
         color: AppColors.textSecondaryOf(context),
         fontWeight: FontWeight.w500,
@@ -873,7 +881,8 @@ class _EmergencyInfoStrip extends StatelessWidget {
                 isPatient
                     ? 'Share pickup and destination. Nearby online drivers get notified instantly.'
                     : 'Book for your patient. All online ambulance drivers receive the request.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 12.5,
                   color: isDark
                       ? AppColors.darkTextPrimary.withValues(alpha: 0.88)
@@ -942,7 +951,8 @@ class _AmbulanceHistoryButton extends StatelessWidget {
                 ),
                 child: Text(
                   count > 9 ? '9+' : '$count',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     color: AppColors.surfaceOf(context),
@@ -1032,7 +1042,8 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
                             children: [
                               Text(
                                 'Ambulance History',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.headlineSmall,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1041,7 +1052,8 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
                                 trips.isEmpty
                                     ? 'No past trips yet'
                                     : '${trips.length} past trip${trips.length == 1 ? '' : 's'}',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.labelMedium,
                                   color: AppColors.textSecondaryOf(context),
                                 ),
@@ -1085,7 +1097,8 @@ class _AmbulanceHistoryDialog extends StatelessWidget {
                                   Text(
                                     'Your completed trips will show here.',
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.bodyMedium,
                                       color: AppColors.textSecondaryOf(context),
                                     ),
@@ -1156,7 +1169,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   trip.patientName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1170,7 +1184,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                 ),
                 child: Text(
                   statusLabel,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: statusColor,
@@ -1185,7 +1200,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
               trip.notes!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1206,7 +1222,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   DateFormat('dd MMM yyyy · hh:mm a').format(trip.createdAt),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -1236,7 +1253,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           trip.acceptedAmbulanceName!,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1250,7 +1268,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                       'Driver: ${trip.acceptedDriverName!} • ${trip.acceptedVehicleNumber ?? ""}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -1271,7 +1290,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                             trip.acceptedDriverPhone!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -1302,7 +1322,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '${trip.rating}/5',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFF59E0B),
@@ -1315,7 +1336,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                         '"${trip.review}"',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontStyle: FontStyle.italic,
                           color: AppColors.textSecondaryOf(context),
@@ -1333,7 +1355,8 @@ class _PatientHistoryTripCard extends StatelessWidget {
                   icon: const Icon(Icons.star_rounded, size: 16),
                   label: Text(
                     'Rate & Review',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1434,7 +1457,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
       children: [
         Text(
           'Ambulance type',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodySmall,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimaryOf(context),
@@ -1443,7 +1467,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
         SizedBox(height: isCompact ? 6 : 4),
         Text(
           'Optional — leave on All Types for fastest match',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelSmall,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -1501,7 +1526,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                         const SizedBox(width: 7),
                         Text(
                           label,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: 13,
                             fontWeight:
                                 selected ? FontWeight.w600 : FontWeight.w500,
@@ -1555,7 +1581,8 @@ class _AmbulanceTypeDropdown extends StatelessWidget {
                 Expanded(
                   child: Text(
                     ambulanceTypeDefinition(value),
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 13,
                       height: 1.45,
                       color: isDark
@@ -1786,14 +1813,16 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                       setState(() => _showPickupLocationError = false);
                     }
                   },
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimaryOf(context),
                   ),
                   decoration: InputDecoration(
                     hintText: 'Pickup location',
-                    hintStyle: TextStyle(fontFamily: 'Inter', 
+                    hintStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                       fontWeight: FontWeight.w400,
@@ -1867,14 +1896,16 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                           children: [
                             Text(
                               'Location access is needed to auto-fill pickup.',
-                              style: TextStyle(fontFamily: 'Inter', fontSize: 11),
+                              style:
+                                  TextStyle(fontFamily: 'Inter', fontSize: 11),
                             ),
                             InkWell(
                               onTap: _openDeviceLocationSettings,
                               borderRadius: BorderRadius.circular(4),
                               child: Text(
                                 'Open settings',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: 11,
                                   height: 1.35,
                                   fontWeight: FontWeight.w600,
@@ -1893,14 +1924,16 @@ class _AddressRouteInputsState extends State<_AddressRouteInputs> {
                   controller: widget.dropController,
                   enabled: widget.enabled,
                   textCapitalization: TextCapitalization.words,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimaryOf(context),
                   ),
                   decoration: InputDecoration(
                     hintText: 'Destination hospital or address',
-                    hintStyle: TextStyle(fontFamily: 'Inter', 
+                    hintStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                       fontWeight: FontWeight.w400,
@@ -2128,7 +2161,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w700,
                         fontSize: AppTypography.bodyMedium,
                         color: color,
@@ -2137,7 +2171,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -2218,7 +2253,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     Flexible(
                       child: Text(
                         'Time remaining: ${widget.remainingTimeLabel}',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w700,
                           color: color,
@@ -2275,7 +2311,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     icon: const Icon(Icons.star_rounded, size: 18),
                     label: Text(
                       'Rate Driver',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2307,7 +2344,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                       const SizedBox(width: 4),
                       Text(
                         'Rated ${booking.rating}★',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFFF59E0B),
@@ -2332,7 +2370,8 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
                     ),
                     child: Text(
                       'Done',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2390,7 +2429,8 @@ class _AcceptedDriverDetails extends StatelessWidget {
               children: [
                 Text(
                   'Assigned driver',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF16A34A),
@@ -2440,7 +2480,8 @@ class _AcceptedDriverDetails extends StatelessWidget {
                       icon: const Icon(Icons.phone, size: 18),
                       label: Text(
                         'Call ${driverPhone!.trim()}',
-                        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                            fontFamily: 'Inter', fontWeight: FontWeight.w600),
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF16A34A),
@@ -2479,7 +2520,8 @@ class _DetailRow extends StatelessWidget {
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -2570,7 +2612,8 @@ class _SkippedDriversRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   message,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: barColor,

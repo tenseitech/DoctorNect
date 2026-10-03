@@ -61,7 +61,8 @@ class SidebarDoctorNectLogo extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: extended ? 20 : 18,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.4,

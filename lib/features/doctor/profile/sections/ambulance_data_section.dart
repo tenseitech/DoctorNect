@@ -17,11 +17,13 @@ class AmbulanceDataSection extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Ambulance Data'),
           bottom: TabBar(
-            labelStyle: TextStyle(fontFamily: 'Inter', 
+            labelStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
             ),
-            unselectedLabelStyle: TextStyle(fontFamily: 'Inter', 
+            unselectedLabelStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w400,
             ),
@@ -119,7 +121,8 @@ class _AmbulanceCard extends StatelessWidget {
                   children: [
                     Text(
                       amb.serviceName,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -127,14 +130,16 @@ class _AmbulanceCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '${amb.driverName}  •  ${amb.vehicleNumber}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: Colors.grey[500],
                       ),
                     ),
                     Text(
                       amb.phone,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: Colors.grey[500],
                       ),
@@ -158,7 +163,8 @@ class _AmbulanceCard extends StatelessWidget {
                     ),
                     child: Text(
                       amb.available ? 'Available' : 'Unavailable',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                         color: amb.available
@@ -170,7 +176,8 @@ class _AmbulanceCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     amb.city,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       color: Colors.grey[400],
                     ),
@@ -219,7 +226,8 @@ class _Chip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: color,
@@ -305,14 +313,16 @@ class _BookingRow extends StatelessWidget {
               children: [
                 Text(
                   booking.patientName,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   booking.pickupLocation,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: Colors.grey[500],
                   ),
@@ -333,7 +343,8 @@ class _BookingRow extends StatelessWidget {
                         '${df.format(booking.createdAt)}  ${tf.format(booking.createdAt)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           color: Colors.grey[500],
                         ),
@@ -345,7 +356,8 @@ class _BookingRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'By: ${booking.acceptedAmbulanceName}',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       color: AppColors.pharmacyGreen,
                       fontWeight: FontWeight.w500,
@@ -363,7 +375,8 @@ class _BookingRow extends StatelessWidget {
             ),
             child: Text(
               _statusLabel,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: _statusColor,
@@ -392,7 +405,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               message,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 color: Colors.grey[500],
               ),

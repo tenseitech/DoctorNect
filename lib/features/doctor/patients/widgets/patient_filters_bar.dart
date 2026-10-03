@@ -54,7 +54,8 @@ class PatientFiltersBar extends StatelessWidget {
                       icon: const Icon(Icons.person_add_outlined, size: 18),
                       label: Text(
                         'Add Walk-in',
-                        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                            fontFamily: 'Inter', fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.doctorBlue,
@@ -75,7 +76,8 @@ class PatientFiltersBar extends StatelessWidget {
                       icon: const Icon(Icons.link, size: 18),
                       label: Text(
                         'Invite via Link',
-                        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                            fontFamily: 'Inter', fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.doctorBlue,
@@ -178,7 +180,8 @@ class PatientFiltersBar extends StatelessWidget {
             child: FilterChip(
               label: Text(
                 label,
-                style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
+                style: TextStyle(
+                    fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
               ),
               selected: selected,
               onSelected: (_) => onFilterChanged(f),
@@ -205,7 +208,8 @@ class PatientFiltersBar extends StatelessWidget {
         if (!compact)
           Text(
             'Sort:',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),

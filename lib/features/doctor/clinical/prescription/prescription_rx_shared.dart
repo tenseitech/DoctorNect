@@ -46,7 +46,8 @@ class RxEmptyState extends StatelessWidget {
           Text(
             'Search above to add medicines',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w500,
               color: AppColors.textSecondaryOf(context),
@@ -97,7 +98,8 @@ class RxMedicineSearchBar extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
-                style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+                style: TextStyle(
+                    fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
                 decoration: InputDecoration(
                   labelText: 'Search & add medicine',
                   isDense: true,
@@ -170,7 +172,8 @@ class RxMedicineSearchBar extends StatelessWidget {
                       ),
                       child: Text(
                         'No medicines found',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -199,14 +202,16 @@ class RxMedicineSearchBar extends StatelessWidget {
                           ),
                           title: Text(
                             item.name,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           subtitle: Text(
                             _formatSuggestion(item),
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -320,7 +325,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
         isDense: true,
         filled: true,
         fillColor: AppColors.surfaceOf(context),
-        labelStyle: TextStyle(fontFamily: 'Inter', 
+        labelStyle: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelSmall,
           color: AppColors.textSecondaryOf(context),
         ),
@@ -369,7 +375,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
               children: [
                 Text(
                   short,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w700,
                     color: selected
@@ -380,7 +387,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                 const SizedBox(height: 2),
                 Text(
                   label,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 10,
                     color: selected
                         ? Colors.white.withValues(alpha: 0.9)
@@ -408,7 +416,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: active ? Colors.white : AppColors.textSecondaryOf(context),
@@ -446,7 +455,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                 ),
                 child: Text(
                   '${widget.index + 1}',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color:
@@ -469,7 +479,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                           displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimaryOf(context),
@@ -483,7 +494,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               if (dosage.isNotEmpty)
                                 Text(
                                   dosage,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -491,7 +503,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               if (dosage.isNotEmpty && duration.isNotEmpty)
                                 Text(
                                   ' · ',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -499,7 +512,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               if (duration.isNotEmpty)
                                 Text(
                                   duration,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -508,7 +522,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                                 const SizedBox(width: 6),
                                 Text(
                                   'SOS',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.error,
@@ -520,7 +535,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                         ] else if (entry.form.isNotEmpty)
                           Text(
                             entry.form,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -540,7 +556,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                 if (freq == 'As directed')
                   Text(
                     freq,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -611,7 +628,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               maxDecimalDigits: 2,
                             ),
                           ],
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                           ),
                           decoration: _fieldDecoration(label: 'Strength'),
@@ -626,7 +644,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               ? entry.dosageUnit
                               : _dosageUnits.first,
                           isExpanded: true,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                           ),
                           decoration: _fieldDecoration(label: 'Unit'),
@@ -653,7 +672,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                           controller: _durationController,
                           keyboardType: TextInputType.number,
                           inputFormatters: const [DigitsMaxInputFormatter(3)],
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                           ),
                           decoration: _fieldDecoration(label: 'Duration'),
@@ -673,7 +693,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                               ? entry.durationUnit
                               : ClinicalMockData.durationUnits.first,
                           isExpanded: true,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                           ),
                           decoration: _fieldDecoration(label: 'Period'),
@@ -699,7 +720,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                           controller: _qtyController,
                           keyboardType: TextInputType.number,
                           inputFormatters: const [DigitsMaxInputFormatter(4)],
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                           ),
                           decoration: _fieldDecoration(label: 'Qty'),
@@ -711,7 +733,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                   const SizedBox(height: 12),
                   Text(
                     'Frequency',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondaryOf(context),
@@ -750,7 +773,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                       FilterChip(
                         label: Text(
                           'SOS',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                           ),
                         ),
@@ -763,7 +787,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                       FilterChip(
                         label: Text(
                           'Substitute OK',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                           ),
                         ),
@@ -792,7 +817,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                         widget.showInstruction
                             ? 'Hide instructions'
                             : 'Add instructions',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w600,
                         ),
@@ -814,7 +840,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                                 ? ''
                                 : entry.instructions,
                             isExpanded: true,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               color: AppColors.textPrimaryOf(context),
                             ),
@@ -824,7 +851,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                                 value: '',
                                 child: Text(
                                   'None',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     color: AppColors.textSecondaryOf(context),
                                   ),
                                 ),
@@ -844,7 +872,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                           flex: 2,
                           child: TextField(
                             controller: _specialInstructionsController,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                             ),
                             decoration: _fieldDecoration(
@@ -864,7 +893,8 @@ class _RxMedicineCardState extends State<RxMedicineCard> {
                       icon: const Icon(Icons.check_rounded, size: 18),
                       label: Text(
                         'Add to Rx',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                         ),

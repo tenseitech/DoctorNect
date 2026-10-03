@@ -33,7 +33,8 @@ void showImageViewerDialog(
             left: 60,
             child: Text(
               title,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 color: Colors.white,
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,

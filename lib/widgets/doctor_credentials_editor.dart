@@ -158,7 +158,8 @@ class _DoctorDegreesEditorState extends State<DoctorDegreesEditor> {
                   Icon(Icons.add_rounded, size: 18, color: widget.accentColor),
               label: Text(
                 '+ Add another degree',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: widget.accentColor,
@@ -319,7 +320,8 @@ class _DoctorSpecializationsEditorState
                   Icon(Icons.add_rounded, size: 18, color: widget.accentColor),
               label: Text(
                 '+ Add another specialization',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: widget.accentColor,

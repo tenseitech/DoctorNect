@@ -116,7 +116,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                       Expanded(
                         child: Text(
                           'This file is larger than typical lab reports — please confirm this is the correct report.',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: Color(0xFF9A3412),
                             height: 1.4,
@@ -361,7 +362,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             const SizedBox(height: 16),
             Text(
               'Upload lab report',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
               ),
@@ -369,7 +371,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
             const SizedBox(height: 6),
             Text(
               '$_patientName · $_testNames',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -406,7 +409,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                         children: [
                           Text(
                             _file!.name,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontWeight: FontWeight.w600,
                               fontSize: AppTypography.bodySmall,
                             ),
@@ -414,7 +418,8 @@ class _LabReportUploadSheetState extends State<_LabReportUploadSheet> {
                           ),
                           Text(
                             _formatFileSize(_file!.size),
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),

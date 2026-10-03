@@ -91,7 +91,8 @@ class _AuthLoginPasswordFieldState extends State<AuthLoginPasswordField> {
           autocorrect: false,
           enableSuggestions: false,
           enableInteractiveSelection: true,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimaryOf(context),

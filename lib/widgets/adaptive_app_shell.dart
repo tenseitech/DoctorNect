@@ -341,7 +341,8 @@ class _CustomSidebarState extends State<_CustomSidebar> {
                           Expanded(
                             child: Text(
                               d.label,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodyLarge,
                                 fontWeight: selected
                                     ? FontWeight.w600
@@ -596,7 +597,8 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                                           child: SafeBottomNavLabel(
                                             label: _navLabel(dest.label),
                                             maxLines: 1,
-                                            style: TextStyle(fontFamily: 'Inter', 
+                                            style: TextStyle(
+                                              fontFamily: 'Inter',
                                               fontSize: 10,
                                               height: 1.0,
                                               fontWeight: selected
@@ -777,7 +779,8 @@ class _CompactBottomNavBarState extends State<_CompactBottomNavBar> {
                           const SizedBox(height: 2),
                           SafeBottomNavLabel(
                             label: _navLabel(dest.label),
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 10,
                               height: 1.1,
                               fontWeight:

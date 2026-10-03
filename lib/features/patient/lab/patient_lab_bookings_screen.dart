@@ -180,7 +180,8 @@ class _LabBookingsHeader extends StatelessWidget {
                 children: [
                   Text(
                     'Bookings & History',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: compact ? 20 : 24,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -189,7 +190,8 @@ class _LabBookingsHeader extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Upcoming tests and past lab bookings',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: compact ? 12 : 13,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.35,

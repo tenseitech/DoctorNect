@@ -10,7 +10,7 @@ import 'package:medibond/features/doctor/profile/sections/reviews_section.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-setUp(() {
+  setUp(() {
     DoctorSession.clear();
     DoctorProfileStore.instance.profile = DoctorProfileData(
       fullName: 'Aarav Sharma',

@@ -226,7 +226,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                 children: [
                   Text(
                     'Track your health metrics',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -287,7 +288,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                           alpha: 0.15,
                         ),
                         checkmarkColor: AppColors.patientTeal,
-                        labelStyle: TextStyle(fontFamily: 'Inter', 
+                        labelStyle: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           color: selected
                               ? AppColors.patientTeal
@@ -322,7 +324,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                         ? Center(
                             child: Text(
                               'No data yet',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 color: AppColors.textSecondaryOf(context),
                               ),
                             ),
@@ -394,7 +397,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                             const SizedBox(height: 12),
                             Text(
                               'No vitals logged yet',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 color: AppColors.textSecondaryOf(context),
                               ),
                             ),
@@ -544,7 +548,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               'BMI: ${_bmi!.toStringAsFixed(1)}',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
                 color: AppColors.patientTeal,
               ),
@@ -623,7 +628,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
               children: [
                 Text(
                   DateFormat('dd MMM yyyy, hh:mm a').format(log.dateTime),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                   ),
@@ -637,7 +643,8 @@ class _VitalsTrackerScreenState extends State<VitalsTrackerScreen> {
                     if (log.weightKg != null) 'Weight ${log.weightKg} kg',
                     if (log.pulse != null) 'Pulse ${log.pulse}',
                   ].join(' · '),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),

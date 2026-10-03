@@ -64,7 +64,8 @@ class MyDoctorSection extends StatelessWidget {
                       children: [
                         Text(
                           'My Doctor',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: compact ? 14 : 15,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -75,7 +76,8 @@ class MyDoctorSection extends StatelessWidget {
                           subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -132,7 +134,8 @@ class MyDoctorSection extends StatelessWidget {
       ),
       child: Text(
         'Add',
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w600,
         ),

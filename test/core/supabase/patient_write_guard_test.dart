@@ -402,7 +402,8 @@ void main() {
                             PatientWriteGuard.debugMaintenanceOverride = true;
                             // Plain 42501 permission denied without "freeze" or "maintenance" in message
                             throw const PostgrestException(
-                              message: 'permission denied for table appointments',
+                              message:
+                                  'permission denied for table appointments',
                               code: '42501',
                             );
                           },

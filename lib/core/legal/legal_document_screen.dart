@@ -51,7 +51,8 @@ class LegalDocumentScreen extends StatelessWidget {
               children: [
                 Text(
                   'DoctorNect',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: accentColor,
@@ -60,7 +61,8 @@ class LegalDocumentScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   DoctorNectLegalContent.lastUpdated,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -72,7 +74,8 @@ class LegalDocumentScreen extends StatelessWidget {
           for (final section in sections) ...[
             Text(
               section.title,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
@@ -83,7 +86,8 @@ class LegalDocumentScreen extends StatelessWidget {
             for (final paragraph in section.paragraphs) ...[
               Text(
                 paragraph,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   height: 1.55,
                   color: AppColors.textSecondaryOf(context),

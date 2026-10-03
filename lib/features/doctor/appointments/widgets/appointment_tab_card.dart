@@ -204,7 +204,8 @@ class _WideLayout extends StatelessWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.doctorBlue,
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      textStyle: TextStyle(fontFamily: 'Inter', 
+                      textStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -305,7 +306,8 @@ class _AppointmentDetails extends StatelessWidget {
                 appointment.patientName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),
@@ -324,7 +326,8 @@ class _AppointmentDetails extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')} · $typeLabel',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -332,7 +335,8 @@ class _AppointmentDetails extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '${DateFormat('dd MMM yyyy').format(appointment.appointmentDate)} · ${appointment.timeSlot}',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -344,7 +348,8 @@ class _AppointmentDetails extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Booked by ${appointment.bookedByName}${appointment.patientRelation != null && appointment.patientRelation!.trim().isNotEmpty && appointment.patientRelation!.trim().toLowerCase() != 'self' ? ' (${appointment.patientRelation})' : ''}',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w500,
               color: typeColor,
@@ -362,7 +367,8 @@ class _AppointmentDetails extends StatelessWidget {
             'Reason: ${appointment.reasonForVisit}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -397,7 +403,8 @@ class _TokenBadge extends StatelessWidget {
       ),
       child: Text(
         '#$number',
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: wide ? 15 : 14,
           fontWeight: FontWeight.w800,
           color: AppColors.doctorBlue,

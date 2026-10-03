@@ -30,7 +30,8 @@ class RegistrationLegalConsentCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final linkStyle = TextStyle(fontFamily: 'Inter', 
+    final linkStyle = TextStyle(
+      fontFamily: 'Inter',
       fontSize: AppTypography.bodySmall,
       height: 1.45,
       color: accentColor,
@@ -38,7 +39,8 @@ class RegistrationLegalConsentCheckbox extends StatelessWidget {
       decoration: TextDecoration.underline,
       decorationColor: accentColor,
     );
-    final bodyStyle = TextStyle(fontFamily: 'Inter', 
+    final bodyStyle = TextStyle(
+      fontFamily: 'Inter',
       fontSize: AppTypography.bodySmall,
       height: 1.45,
       color: AppColors.textSecondaryOf(context),

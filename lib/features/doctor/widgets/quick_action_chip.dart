@@ -52,7 +52,8 @@ class QuickActionChip extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: compact ? 9.5 : 11,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimaryOf(context),

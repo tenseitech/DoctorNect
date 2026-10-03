@@ -184,7 +184,8 @@ class _ClinicalNotesScreenState extends State<ClinicalNotesScreen> {
                     return InputChip(
                       label: Text('${a.name} (${a.severity})'),
                       deleteIconColor: color,
-                      labelStyle: TextStyle(fontFamily: 'Inter', 
+                      labelStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: color,
                       ),
@@ -223,7 +224,8 @@ class _InfoLine extends StatelessWidget {
       children: [
         Text(
           '$label: ',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodySmall,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -233,7 +235,8 @@ class _InfoLine extends StatelessWidget {
             value,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
             ),

@@ -246,7 +246,8 @@ class _PartnerConnectDoctorsBaseViewState
                   children: [
                     Text(
                       widget.inviteTileTitle ?? 'Invite Doctor',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -256,7 +257,8 @@ class _PartnerConnectDoctorsBaseViewState
                     Text(
                       widget.inviteDownloadSubtitle ??
                           'Share an invite link with a doctor to join DoctorNect and connect with your ${widget.partnerTypeLabel}.',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                         height: 1.35,
@@ -270,7 +272,8 @@ class _PartnerConnectDoctorsBaseViewState
                 children: [
                   Text(
                     'Invite',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                       color: widget.accentColor,
@@ -303,7 +306,8 @@ class _PartnerConnectDoctorsBaseViewState
       ),
       label: Text(
         pendingCount > 0 ? 'Add Doctor ($pendingCount)' : 'Add Doctor',
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontWeight: FontWeight.w600,
           fontSize: AppTypography.bodySmall,
         ),
@@ -323,7 +327,8 @@ class _PartnerConnectDoctorsBaseViewState
         icon: const Icon(Icons.link, size: 18),
         label: Text(
           widget.inviteButtonLabel ?? 'Invite Doctor',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w600,
             fontSize: AppTypography.bodySmall,
           ),
@@ -431,7 +436,8 @@ class _PartnerConnectDoctorsBaseViewState
           hintText: compact
               ? 'Search doctors...'
               : 'Search by name, clinic, or registration no...',
-          hintStyle: TextStyle(fontFamily: 'Inter', 
+          hintStyle: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -497,7 +503,8 @@ class _PartnerConnectDoctorsBaseViewState
                   children: [
                     Text(
                       'Connect Dr.',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineLarge,
                         fontWeight: FontWeight.w700,
                       ),
@@ -505,7 +512,8 @@ class _PartnerConnectDoctorsBaseViewState
                     const SizedBox(height: 4),
                     Text(
                       'Manage your doctor connections and pending requests.',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -529,7 +537,8 @@ class _PartnerConnectDoctorsBaseViewState
                         children: [
                           Text(
                             'Connect Doctors',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.headlineLarge,
                               fontWeight: FontWeight.w700,
                             ),
@@ -537,7 +546,8 @@ class _PartnerConnectDoctorsBaseViewState
                           const SizedBox(height: 4),
                           Text(
                             'Manage your doctor connections and pending requests.',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodyMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -568,7 +578,8 @@ class _PartnerConnectDoctorsBaseViewState
                         const SizedBox(height: 12),
                         Text(
                           'No active connections',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodyLarge,
                             fontWeight: FontWeight.w600,
                           ),
@@ -577,7 +588,8 @@ class _PartnerConnectDoctorsBaseViewState
                         Text(
                           'Tap Add Doctor to search and connect with a doctor.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -615,7 +627,8 @@ class _PartnerConnectDoctorsBaseViewState
         appBar: AppBar(
           title: Text(
             widget.appBarTitle ?? 'Connect Doctors',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w600,
             ),
@@ -668,7 +681,8 @@ class _PartnerConnectDoctorsBaseViewState
             children: [
               Text(
                 'Find doctors on DoctorNect',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w700,
                 ),
@@ -678,7 +692,8 @@ class _PartnerConnectDoctorsBaseViewState
                 cityLabel == null
                     ? '${_results.length} registered · $connectedCount connected · ${fromDoctor.length} requests · ${sentByPartner.length} pending'
                     : '${_results.length} in $cityLabel · $connectedCount connected · ${fromDoctor.length} requests · ${sentByPartner.length} pending',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -707,7 +722,8 @@ class _PartnerConnectDoctorsBaseViewState
                         _PartnerDoctorNameCell(name: c.doctorName),
                         Text(
                           DateFormat('dd MMM yyyy').format(c.requestedAt),
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -770,7 +786,8 @@ class _PartnerConnectDoctorsBaseViewState
                         _PartnerDoctorNameCell(name: c.doctorName),
                         Text(
                           DateFormat('dd MMM yyyy').format(c.requestedAt),
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -931,7 +948,8 @@ class _PartnerConnectDoctorsBaseViewState
               cityLabel == null
                   ? 'No doctors found'
                   : 'No doctors in $cityLabel',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w600,
               ),
@@ -942,7 +960,8 @@ class _PartnerConnectDoctorsBaseViewState
                   ? 'Try a different name, clinic, or registration number.'
                   : 'Only doctors registered in your city are shown. Try a different search or check back later.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1001,14 +1020,16 @@ class _PartnerConnectDoctorsBaseViewState
             ),
             Text(
               d.specialization.isNotEmpty ? d.specialization : '—',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
             Text(
               d.clinicName.isNotEmpty ? d.clinicName : '—',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1017,7 +1038,8 @@ class _PartnerConnectDoctorsBaseViewState
               (d.councilNumber != null && d.councilNumber!.isNotEmpty)
                   ? d.councilNumber!
                   : '—',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1050,7 +1072,8 @@ class _PartnerSectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w700,
           ),
@@ -1067,7 +1090,8 @@ class _PartnerSectionHeader extends StatelessWidget {
           ),
           child: Text(
             '$count',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -1111,7 +1135,8 @@ class _PartnerConnectionTile extends StatelessWidget {
             foregroundColor: accentColor,
             child: Text(
               partnerDoctorInitial(connection.doctorName),
-              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+              style:
+                  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(width: 14),
@@ -1121,7 +1146,8 @@ class _PartnerConnectionTile extends StatelessWidget {
               children: [
                 Text(
                   partnerDoctorLabel(connection.doctorName),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1129,7 +1155,8 @@ class _PartnerConnectionTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -1179,7 +1206,8 @@ class _PartnerAddDoctorSectionHeader extends StatelessWidget {
           children: [
             Text(
               title,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w700,
               ),
@@ -1196,7 +1224,8 @@ class _PartnerAddDoctorSectionHeader extends StatelessWidget {
               ),
               child: Text(
                 '$count',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),
@@ -1209,7 +1238,8 @@ class _PartnerAddDoctorSectionHeader extends StatelessWidget {
           const SizedBox(height: 3),
           Text(
             subtitle!,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -1255,7 +1285,8 @@ class _PartnerAddDoctorTable extends StatelessWidget {
                       flex: (columnWidths[i]).toInt(),
                       child: Text(
                         headers[i],
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textSecondaryOf(context),
@@ -1271,7 +1302,8 @@ class _PartnerAddDoctorTable extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 child: Text(
                   'None',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -1333,7 +1365,8 @@ class _PartnerDoctorNameCell extends StatelessWidget {
           foregroundColor: AppColors.doctorBlue,
           child: Text(
             partnerDoctorInitial(name),
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
             ),
@@ -1347,7 +1380,8 @@ class _PartnerDoctorNameCell extends StatelessWidget {
             children: [
               Text(
                 partnerDoctorLabel(name),
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1356,7 +1390,8 @@ class _PartnerDoctorNameCell extends StatelessWidget {
               if (subtitle != null)
                 Text(
                   subtitle!,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -1405,7 +1440,8 @@ class _PartnerAddDoctorMobileHeader extends StatelessWidget {
         children: [
           Text(
             'Find doctors on DoctorNect',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w700,
             ),
@@ -1415,7 +1451,8 @@ class _PartnerAddDoctorMobileHeader extends StatelessWidget {
             cityLabel == null
                 ? 'Doctors registered on DoctorNect — connect or invite'
                 : 'Doctors registered in $cityLabel — connect or invite',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -1486,7 +1523,8 @@ class _PartnerMobileStatChip extends StatelessWidget {
         children: [
           Text(
             '$count',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w700,
               color: color,
@@ -1495,7 +1533,8 @@ class _PartnerMobileStatChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               color: color,
             ),
@@ -1521,7 +1560,8 @@ class _PartnerMobileSectionLabel extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w700,
             ),
@@ -1538,7 +1578,8 @@ class _PartnerMobileSectionLabel extends StatelessWidget {
             ),
             child: Text(
               '$count',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
@@ -1583,7 +1624,8 @@ class _PartnerConnectionRequestMobileCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Requested: ${DateFormat('dd MMM yyyy').format(connection.requestedAt)}',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -1658,7 +1700,8 @@ class _PartnerPendingInviteMobileCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Sent: ${DateFormat('dd MMM yyyy').format(connection.requestedAt)}',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -1713,7 +1756,8 @@ class _PartnerRegisteredDoctorMobileTile extends StatelessWidget {
                     if (doctor.specialization.isNotEmpty)
                       Text(
                         doctor.specialization,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -1721,7 +1765,8 @@ class _PartnerRegisteredDoctorMobileTile extends StatelessWidget {
                     if (doctor.clinicName.isNotEmpty)
                       Text(
                         '• ${doctor.clinicName}',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -1810,7 +1855,8 @@ class _PartnerDoctorAction extends StatelessWidget {
         ),
         child: Text(
           'Connect',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w600,
           ),
@@ -1859,7 +1905,8 @@ class _PartnerStatusPill extends StatelessWidget {
           ],
           Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: color,

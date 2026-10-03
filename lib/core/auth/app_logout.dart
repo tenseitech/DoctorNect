@@ -26,7 +26,8 @@ abstract final class AppLogout {
             ),
             child: Text(
               'Log out',
-              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+              style:
+                  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
             ),
           ),
         ],

@@ -108,7 +108,8 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
           Expanded(
             child: Text(
               'Chronic conditions help doctors provide safer care and better treatment plans.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 height: 1.4,
                 color: AppColors.textPrimaryOf(context),
@@ -168,7 +169,8 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
           const SizedBox(height: 12),
           Text(
             'Quick add',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -187,7 +189,8 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
                     onPressed: () => _add(s),
                     backgroundColor: AppColors.surfaceOf(context),
                     side: BorderSide(color: AppColors.borderOf(context)),
-                    labelStyle: TextStyle(fontFamily: 'Inter', 
+                    labelStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -213,7 +216,8 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
           const SizedBox(height: 12),
           Text(
             'No conditions added yet',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -223,7 +227,8 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
           Text(
             'Add any chronic health conditions above',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -257,7 +262,8 @@ class _MyConditionsScreenState extends State<MyConditionsScreen> {
             Expanded(
               child: Text(
                 condition,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),

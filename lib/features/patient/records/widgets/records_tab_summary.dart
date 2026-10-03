@@ -45,7 +45,8 @@ class RecordsTabSummary extends StatelessWidget {
                 children: [
                   Text(
                     countLabel,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -54,7 +55,8 @@ class RecordsTabSummary extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     hint,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.3,

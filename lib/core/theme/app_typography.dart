@@ -46,32 +46,30 @@ abstract final class AppTypography {
       );
     }
 
-    return base
-        .apply(
-          fontFamily: 'Inter',
-          fontFamilyFallback: const ['NotoSansDevanagari'],
-        )
-        .copyWith(
-          displayLarge: token(base.displayLarge, displayLarge, FontWeight.w700),
-          displayMedium: token(base.displayMedium, displayMedium, FontWeight.w700),
-          displaySmall: token(base.displaySmall, displaySmall, FontWeight.w600),
-          headlineLarge: token(base.headlineLarge, headlineLarge, FontWeight.w700),
-          headlineMedium: token(
-            base.headlineMedium,
-            headlineMedium,
-            FontWeight.w600,
-          ),
-          headlineSmall: token(base.headlineSmall, headlineSmall, FontWeight.w600),
-          titleLarge: token(base.titleLarge, titleLarge, FontWeight.w600),
-          titleMedium: token(base.titleMedium, titleMedium, FontWeight.w600),
-          titleSmall: token(base.titleSmall, titleSmall, FontWeight.w500),
-          bodyLarge: token(base.bodyLarge, bodyLarge, FontWeight.w400),
-          bodyMedium: token(base.bodyMedium, bodyMedium, FontWeight.w400),
-          bodySmall: token(base.bodySmall, bodySmall, FontWeight.w400),
-          labelLarge: token(base.labelLarge, labelLarge, FontWeight.w600),
-          labelMedium: token(base.labelMedium, labelMedium, FontWeight.w500),
-          labelSmall: token(base.labelSmall, labelSmall, FontWeight.w500),
-        );
+    return base.apply(
+      fontFamily: 'Inter',
+      fontFamilyFallback: const ['NotoSansDevanagari'],
+    ).copyWith(
+      displayLarge: token(base.displayLarge, displayLarge, FontWeight.w700),
+      displayMedium: token(base.displayMedium, displayMedium, FontWeight.w700),
+      displaySmall: token(base.displaySmall, displaySmall, FontWeight.w600),
+      headlineLarge: token(base.headlineLarge, headlineLarge, FontWeight.w700),
+      headlineMedium: token(
+        base.headlineMedium,
+        headlineMedium,
+        FontWeight.w600,
+      ),
+      headlineSmall: token(base.headlineSmall, headlineSmall, FontWeight.w600),
+      titleLarge: token(base.titleLarge, titleLarge, FontWeight.w600),
+      titleMedium: token(base.titleMedium, titleMedium, FontWeight.w600),
+      titleSmall: token(base.titleSmall, titleSmall, FontWeight.w500),
+      bodyLarge: token(base.bodyLarge, bodyLarge, FontWeight.w400),
+      bodyMedium: token(base.bodyMedium, bodyMedium, FontWeight.w400),
+      bodySmall: token(base.bodySmall, bodySmall, FontWeight.w400),
+      labelLarge: token(base.labelLarge, labelLarge, FontWeight.w600),
+      labelMedium: token(base.labelMedium, labelMedium, FontWeight.w500),
+      labelSmall: token(base.labelSmall, labelSmall, FontWeight.w500),
+    );
   }
 
   /// Inter [TextStyle] using a central size token.

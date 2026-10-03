@@ -96,7 +96,8 @@ class SupabaseAuthService {
 
   /// Fetches authoritative profile_id and role from public.users for the logged-in user.
   /// Cached once per session (keyed by uid) and invalidated on sign-out, uid mismatch, or auth state change.
-  Future<SupabaseUserProfile?> fetchCurrentUserProfile({bool forceRefresh = false}) async {
+  Future<SupabaseUserProfile?> fetchCurrentUserProfile(
+      {bool forceRefresh = false}) async {
     try {
       if (debugUserProfileOverride != null) {
         return debugUserProfileOverride;
@@ -107,8 +108,12 @@ class SupabaseAuthService {
         _invalidateProfileCache();
         return null;
       }
-      if (!forceRefresh && _cachedUid == uid && _cachedProfileId != null && _cachedRole != null) {
-        return SupabaseUserProfile(profileId: _cachedProfileId!, role: _cachedRole!);
+      if (!forceRefresh &&
+          _cachedUid == uid &&
+          _cachedProfileId != null &&
+          _cachedRole != null) {
+        return SupabaseUserProfile(
+            profileId: _cachedProfileId!, role: _cachedRole!);
       }
       final res = await _client
           .from('users')
@@ -123,11 +128,13 @@ class SupabaseAuthService {
       _cachedProfileId = res['profile_id'] as String?;
       _cachedRole = res['role'] as String?;
       if (_cachedProfileId != null && _cachedRole != null) {
-        return SupabaseUserProfile(profileId: _cachedProfileId!, role: _cachedRole!);
+        return SupabaseUserProfile(
+            profileId: _cachedProfileId!, role: _cachedRole!);
       }
       return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('[SupabaseAuthService] fetchCurrentUserProfile error: $e');
+      if (kDebugMode)
+        debugPrint('[SupabaseAuthService] fetchCurrentUserProfile error: $e');
       return null;
     }
   }

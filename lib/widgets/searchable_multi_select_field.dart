@@ -73,7 +73,8 @@ class SearchableMultiSelectField extends StatelessWidget {
                 suffixIcon: const Icon(Icons.arrow_drop_down),
                 border: const OutlineInputBorder(),
                 hintText: placeholder,
-                hintStyle: TextStyle(fontFamily: 'Inter', 
+                hintStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -86,7 +87,8 @@ class SearchableMultiSelectField extends StatelessWidget {
             child: hasSelection
                 ? Text(
                     _summary,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -105,7 +107,8 @@ class SearchableMultiSelectField extends StatelessWidget {
               return Chip(
                 label: Text(
                   item,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: accentColor,
                   ),
@@ -217,7 +220,8 @@ class _SearchableMultiSelectSheetState
                       children: [
                         Text(
                           widget.title,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -226,7 +230,8 @@ class _SearchableMultiSelectSheetState
                         if (_selected.isNotEmpty)
                           Text(
                             '${_selected.length} selected',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: widget.accentColor,
                               fontWeight: FontWeight.w600,
@@ -269,7 +274,8 @@ class _SearchableMultiSelectSheetState
                   ? Center(
                       child: Text(
                         'No results for "${_searchController.text.trim()}"',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           color: AppColors.textSecondaryOf(context),
                         ),
                       ),
@@ -300,7 +306,8 @@ class _SearchableMultiSelectSheetState
                                 Expanded(
                                   child: Text(
                                     item,
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.bodyMedium,
                                       color: AppColors.textPrimaryOf(context),
                                       fontWeight: isSelected

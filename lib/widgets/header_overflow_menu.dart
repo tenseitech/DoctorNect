@@ -75,7 +75,8 @@ class HeaderOverflowMenu extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       'Health Pass ID',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -104,7 +105,8 @@ class HeaderOverflowMenu extends StatelessWidget {
                     const SizedBox(width: 12),
                     Text(
                       'Emergency SOS',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFFDC2626),

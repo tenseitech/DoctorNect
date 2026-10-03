@@ -63,7 +63,8 @@ class TroubleSigningInScreen extends StatelessWidget {
                 children: [
                   Text(
                     'Need help logging in?',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -74,7 +75,8 @@ class TroubleSigningInScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   Text(
                     'Try the following',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.4,
@@ -148,7 +150,8 @@ class _HelpOptionCard extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               title,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineMedium,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
@@ -158,7 +161,8 @@ class _HelpOptionCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               description,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyLarge,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.45,
@@ -182,7 +186,8 @@ class _HelpOptionCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         ctaLabel,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                           color: accentColor,

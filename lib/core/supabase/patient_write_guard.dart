@@ -105,7 +105,8 @@ abstract final class PatientWriteGuard {
       // Standard RLS permission denials (e.g. wrong role, unverified, ID mismatch)
       // must NOT trigger system maintenance sheets.
       if (isFreezeMessage ||
-          (isPermissionDenied && await isMaintenanceActive(forceRefresh: true))) {
+          (isPermissionDenied &&
+              await isMaintenanceActive(forceRefresh: true))) {
         _cachedMaintenanceActive =
             true; // Cache the maintenance state immediately
         _lastCheckTime = DateTime.now();

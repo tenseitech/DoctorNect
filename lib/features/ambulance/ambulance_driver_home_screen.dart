@@ -426,7 +426,8 @@ class _RequestsHeader extends StatelessWidget {
               children: [
                 Text(
                   'Trip Requests',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineMedium,
                     fontWeight: FontWeight.w700,
                     color: AppColors.surfaceOf(context),
@@ -435,7 +436,8 @@ class _RequestsHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '$pendingCount new · $acceptedCount active · $completedCount completed',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.surfaceOf(context).withValues(alpha: 0.9),
@@ -591,7 +593,8 @@ class _TripTabPill extends StatelessWidget {
               children: [
                 Text(
                   '$count',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w800,
                     color:
@@ -600,7 +603,8 @@ class _TripTabPill extends StatelessWidget {
                 ),
                 Text(
                   label,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color:
@@ -644,7 +648,8 @@ class _SectionHeader extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w700,
               ),
@@ -659,7 +664,8 @@ class _SectionHeader extends StatelessWidget {
             ),
             child: Text(
               '$count',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w700,
                 color: color,
@@ -695,7 +701,8 @@ class _EmptyHint extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -812,14 +819,16 @@ class _RequestCard extends StatelessWidget {
                     children: [
                       Text(
                         booking.patientName,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         booking.pickupLocation,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -839,7 +848,8 @@ class _RequestCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Taken',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textSecondaryOf(context),
@@ -859,7 +869,8 @@ class _RequestCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   booking.contactPhone,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -874,7 +885,8 @@ class _RequestCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'by ${booking.bookedByName}',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -897,7 +909,8 @@ class _RequestCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       booking.notes!,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -922,7 +935,8 @@ class _RequestCard extends StatelessWidget {
                       'Assigned: ${booking.acceptedAmbulanceName}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF2563EB),
@@ -944,7 +958,8 @@ class _RequestCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   DateFormat('dd MMM · hh:mm a').format(booking.createdAt),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -971,7 +986,8 @@ class _RequestCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       _getCancelledByText(),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFFDC2626),
@@ -1071,7 +1087,8 @@ class _RequestCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     '${booking.rating}/5',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                       color: const Color(0xFFF59E0B),
@@ -1082,7 +1099,8 @@ class _RequestCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '"${booking.review}"',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontStyle: FontStyle.italic,
                           color: AppColors.textSecondaryOf(context),

@@ -28,7 +28,8 @@ class DoctorScreenTitleBar extends StatelessWidget {
 
           final titleWidget = Text(
             title,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: isNarrow
                   ? AppTypography.headlineMedium
                   : AppTypography.headlineLarge,
@@ -42,7 +43,8 @@ class DoctorScreenTitleBar extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     subtitle!,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),

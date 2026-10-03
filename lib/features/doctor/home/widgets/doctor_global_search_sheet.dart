@@ -138,13 +138,15 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
           controller: _searchController,
           autofocus: true,
           onChanged: (v) => setState(() => _query = v),
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             color: AppColors.textPrimaryOf(context),
           ),
           decoration: InputDecoration(
             hintText: 'Search for patient, medical, lab...',
-            hintStyle: TextStyle(fontFamily: 'Inter', 
+            hintStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -182,7 +184,8 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'Type to start searching',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textSecondaryOf(context),
@@ -205,7 +208,8 @@ class _DoctorGlobalSearchScreenState extends State<DoctorGlobalSearchScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'No results found for "$_query"',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -315,7 +319,8 @@ class _SectionHeader extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w700,
               ),
@@ -324,7 +329,8 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '($count)',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -371,7 +377,8 @@ class _PatientRow extends StatelessWidget {
                   children: [
                     Text(
                       appointment.patientName,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -382,7 +389,8 @@ class _PatientRow extends StatelessWidget {
                       details,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -440,7 +448,8 @@ class _MedicalStoreRow extends StatelessWidget {
               children: [
                 Text(
                   store.storeName,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
                     fontSize: AppTypography.bodyMedium,
                   ),
@@ -448,7 +457,8 @@ class _MedicalStoreRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   store.address,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -501,7 +511,8 @@ class _LabRow extends StatelessWidget {
               children: [
                 Text(
                   lab.labName,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
                     fontSize: AppTypography.bodyMedium,
                   ),
@@ -509,7 +520,8 @@ class _LabRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   lab.address,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -565,7 +577,8 @@ class _AmbulanceRow extends StatelessWidget {
                   children: [
                     Text(
                       'Ambulance Service',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w600,
                         fontSize: AppTypography.bodyMedium,
                       ),
@@ -573,7 +586,8 @@ class _AmbulanceRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Book an emergency ambulance',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),

@@ -65,7 +65,8 @@ class LabSearchResultTile extends StatelessWidget {
                           title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodyMedium,
                             fontWeight: FontWeight.w600,
                             height: 1.25,
@@ -76,7 +77,8 @@ class LabSearchResultTile extends StatelessWidget {
                           subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -144,7 +146,8 @@ class LabSearchSectionHeader extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -155,7 +158,8 @@ class LabSearchSectionHeader extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       '$count',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                         color: accentColor,
@@ -179,7 +183,8 @@ class LabSearchSectionHeader extends StatelessWidget {
                     children: [
                       Text(
                         viewAllText,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w600,
                           color: accentColor,

@@ -172,14 +172,16 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                             draft.primaryDiagnosis.isEmpty
                                 ? 'Prescription'
                                 : draft.primaryDiagnosis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           if (draft.doctorName.isNotEmpty)
                             Text(
                               draft.doctorName,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelMedium,
                                 color: AppColors.patientTeal,
                                 fontWeight: FontWeight.w500,
@@ -188,7 +190,8 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                           if (draft.clinicName.isNotEmpty)
                             Text(
                               draft.clinicName,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelSmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -196,7 +199,8 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> {
                           Text(
                             DateFormat('dd MMM yyyy')
                                 .format(draft.prescriptionDate),
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -269,7 +273,8 @@ class _PrescriptionsMessageState extends StatelessWidget {
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
@@ -280,7 +285,8 @@ class _PrescriptionsMessageState extends StatelessWidget {
                     Text(
                       subtitle!,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),

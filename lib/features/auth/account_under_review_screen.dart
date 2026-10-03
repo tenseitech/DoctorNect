@@ -38,7 +38,8 @@ class AccountUnderReviewScreen extends StatelessWidget {
               const SizedBox(height: 28),
               Text(
                 'Account under review',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -48,7 +49,8 @@ class AccountUnderReviewScreen extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 reviewMessage,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyLarge,
                   height: 1.5,
                   color: AppColors.textSecondaryOf(context),

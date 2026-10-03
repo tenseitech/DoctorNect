@@ -49,7 +49,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
         ),
         title: Text(
           'Promotional Ads Paused',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w700,
             fontSize: AppTypography.headlineSmall,
           ),
@@ -64,7 +65,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                 notice != null && notice.trim().isNotEmpty
                     ? notice.trim()
                     : 'Promotional ads and banner placements are currently paused by the Super Administrator. Please check back later or contact admin support.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(ctx),
                   height: 1.4,
@@ -92,7 +94,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                     Flexible(
                       child: Text(
                         'Status: Paused by Super Admin',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFFD97706),
@@ -119,7 +122,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
             ),
             child: Text(
               'Understood',
-              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+              style:
+                  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -200,7 +204,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(
               'My Banner Ads',
-              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+              style:
+                  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
             ),
             elevation: 0,
           ),
@@ -211,7 +216,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                   icon: const Icon(Icons.add_rounded, color: Colors.white),
                   label: Text(
                     'Create New Ad',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -241,7 +247,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                           config.bannerNotice.isNotEmpty
                               ? config.bannerNotice
                               : 'Banner promotion system is currently paused by administrator.',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
                             color: const Color(0xFFEF4444),
@@ -304,7 +311,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                               const SizedBox(height: 16),
                               Text(
                                 'No Promotional Ads Yet',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.headlineSmall,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimaryOf(context),
@@ -314,7 +322,8 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                               Text(
                                 'Promote your medical practice on the Patient Home screen banner carousel to gain maximum visibility.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                   color: AppColors.textSecondaryOf(context),
                                 ),
@@ -436,7 +445,8 @@ class _PromotedAdCard extends StatelessWidget {
                   ),
                   child: Text(
                     statusLabel,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -467,7 +477,8 @@ class _PromotedAdCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           ad.remainingTimeString,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelSmall,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
@@ -491,7 +502,8 @@ class _PromotedAdCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         ad.title,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
@@ -500,7 +512,8 @@ class _PromotedAdCard extends StatelessWidget {
                     ),
                     Text(
                       '₹${ad.amountPaid}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w800,
                         color: AppColors.doctorBlue,
@@ -511,7 +524,8 @@ class _PromotedAdCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   ad.description,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -524,7 +538,8 @@ class _PromotedAdCard extends StatelessWidget {
                   children: [
                     Text(
                       'Duration: ${_formatDuration(ad.durationHours)}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: Colors.grey,
                       ),
@@ -533,7 +548,8 @@ class _PromotedAdCard extends StatelessWidget {
                       ad.paymentStatus == 'verified'
                           ? 'Payment Verified'
                           : 'Payment Pending',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: ad.paymentStatus == 'verified'
@@ -556,7 +572,8 @@ class _PromotedAdCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Active paid ads are read-only to ensure ad integrity.',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelSmall,
                             color: Colors.grey,
                           ),

@@ -42,7 +42,8 @@ class MultiSelectChips extends StatelessWidget {
               },
               selectedColor: accentColor.withValues(alpha: 0.15),
               checkmarkColor: accentColor,
-              labelStyle: TextStyle(fontFamily: 'Inter', 
+              labelStyle: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: isSelected
                     ? accentColor
@@ -62,7 +63,8 @@ class MultiSelectChips extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             errorText!,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.error,
             ),

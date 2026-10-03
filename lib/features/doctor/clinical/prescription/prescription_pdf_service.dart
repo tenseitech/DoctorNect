@@ -17,9 +17,11 @@ class PrescriptionPdfService {
   static Future<pw.ThemeData> _loadPdfTheme() async {
     if (_cachedPdfTheme != null) return _cachedPdfTheme!;
     try {
-      final baseData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
+      final baseData =
+          await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
       final boldData = await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
-      final italicData = await rootBundle.load('assets/fonts/NotoSans-Italic.ttf');
+      final italicData =
+          await rootBundle.load('assets/fonts/NotoSans-Italic.ttf');
       final boldItalicData =
           await rootBundle.load('assets/fonts/NotoSans-BoldItalic.ttf');
 
@@ -59,6 +61,7 @@ class PrescriptionPdfService {
       );
     }
   }
+
   static Future<void> printPrescription(PrescriptionDraft draft) async {
     final bytes = await buildPdfBytes(draft);
     await Printing.layoutPdf(

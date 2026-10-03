@@ -105,7 +105,8 @@ class _Banner extends StatelessWidget {
                     children: [
                       Text(
                         notification.title,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontWeight: FontWeight.w700,
                           fontSize: AppTypography.bodyMedium,
                         ),
@@ -115,7 +116,8 @@ class _Banner extends StatelessWidget {
                         notification.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -123,7 +125,8 @@ class _Banner extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'In-app alert · Tap to open',
-                        style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: accent),
+                        style: TextStyle(
+                            fontFamily: 'Inter', fontSize: 10, color: accent),
                       ),
                     ],
                   ),

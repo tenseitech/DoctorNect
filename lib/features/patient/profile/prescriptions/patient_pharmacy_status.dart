@@ -58,7 +58,8 @@ class PatientPharmacyStatusChip extends StatelessWidget {
           Expanded(
             child: Text(
               status.label,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: status.color,

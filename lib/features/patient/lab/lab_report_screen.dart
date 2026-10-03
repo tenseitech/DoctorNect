@@ -203,7 +203,8 @@ class _LabReportScreenState extends State<LabReportScreen> {
               ),
               child: Text(
                 fileName,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -237,7 +238,8 @@ class _LabReportScreenState extends State<LabReportScreen> {
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),

@@ -119,7 +119,8 @@ class _DoctorProfileAvatarButtonState extends State<DoctorProfileAvatarButton> {
             child: avatarImage == null
                 ? Text(
                     initial,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: widget.radius * 0.82,
                       fontWeight: FontWeight.w800,
                       color: AppColors.patientTeal,

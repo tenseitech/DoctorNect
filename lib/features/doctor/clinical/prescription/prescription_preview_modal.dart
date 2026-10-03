@@ -81,7 +81,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'Share prescription',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
@@ -94,13 +95,15 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 ),
                 title: Text(
                   'WhatsApp',
-                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                      fontFamily: 'Inter', fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
                   kIsWeb
                       ? 'Share summary via WhatsApp'
                       : 'Share PDF via WhatsApp',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -123,13 +126,15 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                 ),
                 title: Text(
                   'Email',
-                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                      fontFamily: 'Inter', fontWeight: FontWeight.w500),
                 ),
                 subtitle: Text(
                   kIsWeb
                       ? 'Open email with prescription summary'
                       : 'Share PDF via email app',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -246,7 +251,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                   if (displayClinicName.isNotEmpty)
                     Text(
                       displayClinicName,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                       ),
@@ -254,7 +260,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                   if (displayAddress.isNotEmpty)
                     Text(
                       displayAddress,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -262,14 +269,16 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                   if (displayPhone.isNotEmpty)
                     Text(
                       'Phone: $displayPhone',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 10,
                         color: AppColors.textSecondaryOf(context),
                       ),
                     ),
                   Text(
                     'Consultation: $_timings',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -279,7 +288,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     displayQualifications.isNotEmpty
                         ? '$displayDoctorName · $displayQualifications'
                         : displayDoctorName,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                     ),
@@ -293,7 +303,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                         if (displayRegNumber.isNotEmpty)
                           'Reg: $displayRegNumber',
                       ].join(' · '),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -308,7 +319,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                           children: [
                             Text(
                               'Patient: ${draft.patient.patientName}',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelMedium,
                               ),
                               maxLines: 2,
@@ -316,7 +328,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                             ),
                             Text(
                               'Age: ${draft.patient.age > 0 ? '${draft.patient.age} yrs' : 'Not provided'} · ${draft.patient.gender ?? '—'} · ID: ${draft.patientId}',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelSmall,
                               ),
                               maxLines: 2,
@@ -325,7 +338,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                             if (draft.vitals.weightKg.isNotEmpty)
                               Text(
                                 'Weight: ${draft.vitals.weightKg} kg',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.labelSmall,
                                 ),
                               ),
@@ -339,14 +353,16 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                           children: [
                             Text(
                               'Date: $date',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelSmall,
                               ),
                               textAlign: TextAlign.end,
                             ),
                             Text(
                               'Rx ID: ${draft.prescriptionId}',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 10,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -363,18 +379,21 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 12),
                     Text(
                       'Vitals',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Text(_vitalsLine, style: TextStyle(fontFamily: 'Inter', fontSize: 10)),
+                    Text(_vitalsLine,
+                        style: TextStyle(fontFamily: 'Inter', fontSize: 10)),
                   ],
                   if (draft.chiefComplaint.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(
                       'Chief Complaint',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -388,7 +407,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 12),
                     Text(
                       'General examination',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -401,7 +421,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                   const SizedBox(height: 12),
                   Text(
                     'Diagnosis (${draft.diagnosisType})',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                     ),
@@ -413,7 +434,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 8),
                     Text(
                       'Symptoms',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -429,7 +451,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 8),
                     Text(
                       'Past medical history',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -443,7 +466,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 8),
                     Text(
                       'Allergies: ${draft.allergies}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 10,
                         color: AppColors.error,
                       ),
@@ -455,7 +479,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     children: [
                       Text(
                         '℞',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.headlineLarge,
                           fontWeight: FontWeight.w800,
                         ),
@@ -463,7 +488,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                       const SizedBox(width: 8),
                       Text(
                         'Medicines',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           fontWeight: FontWeight.w700,
                         ),
@@ -478,7 +504,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 16),
                     Text(
                       'Investigations / Tests',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w700,
                       ),
@@ -489,7 +516,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                       const SizedBox(height: 8),
                       Text(
                         'Body Part / Region',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF334155),
@@ -503,7 +531,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 12),
                     Text(
                       'Advice',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -525,7 +554,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 12),
                     Text(
                       'Follow-up',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -542,7 +572,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                     const SizedBox(height: 12),
                     Text(
                       'Referred to',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -581,7 +612,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                         const SizedBox(height: 4),
                         Text(
                           displayDoctorName,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelSmall,
                             fontStyle: FontStyle.italic,
                           ),
@@ -589,7 +621,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                         if (displayPhone.isNotEmpty)
                           Text(
                             'Phone: $displayPhone',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 9,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -597,7 +630,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
                         Text(
                           DateFormat('dd MMM yyyy, hh:mm a')
                               .format(DateTime.now()),
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: 9,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -626,14 +660,16 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
       padding: const EdgeInsets.only(top: 2),
       child: RichText(
         text: TextSpan(
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: 10,
             color: AppColors.textPrimaryOf(context),
           ),
           children: [
             TextSpan(
               text: '$label: ',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
@@ -679,7 +715,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               child: Text(
                 c,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 9.5,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF334155),
@@ -699,7 +736,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           child: Text(
             cells[i],
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 9.5,
               height: 1.35,
               fontWeight:
@@ -824,7 +862,8 @@ class _PrescriptionPreviewPageState extends State<_PrescriptionPreviewPage> {
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
                 title,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF334155),

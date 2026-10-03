@@ -200,7 +200,8 @@ class _VerificationSubmissionCardState
                 Expanded(
                   child: Text(
                     'Super Admin Verification',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.titleMedium,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -233,7 +234,8 @@ class _VerificationSubmissionCardState
                   ),
                   child: Text(
                     stage.displayLabel,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w600,
                       color: stage.isVerified
@@ -272,7 +274,8 @@ class _VerificationSubmissionCardState
                       Expanded(
                         child: Text(
                           'Your professional account is verified. All operational features are active.',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodyMedium,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -292,7 +295,8 @@ class _VerificationSubmissionCardState
                       Expanded(
                         child: Text(
                           'Your profile has been submitted and is currently being reviewed by Super Admin. You will receive an update once approved.',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodyMedium,
                             color: AppColors.textPrimaryOf(context),
                           ),
@@ -321,7 +325,8 @@ class _VerificationSubmissionCardState
                         children: [
                           Text(
                             'Revision requested by Super Admin:',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w700,
                               color: isDark
@@ -332,7 +337,8 @@ class _VerificationSubmissionCardState
                           const SizedBox(height: 4),
                           Text(
                             reason,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               color: isDark
                                   ? const Color(0xFFFDE68A)
@@ -345,7 +351,8 @@ class _VerificationSubmissionCardState
                   ],
                   Text(
                     'Required for Verification:',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.titleSmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
@@ -372,7 +379,8 @@ class _VerificationSubmissionCardState
                               children: [
                                 Text(
                                   item.label,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.bodySmall,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textPrimaryOf(context),
@@ -380,7 +388,8 @@ class _VerificationSubmissionCardState
                                 ),
                                 Text(
                                   item.description,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -419,7 +428,8 @@ class _VerificationSubmissionCardState
                         backgroundColor: accent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 13),
-                        textStyle: TextStyle(fontFamily: 'Inter', 
+                        textStyle: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelLarge,
                           fontWeight: FontWeight.w600,
                         ),

@@ -51,7 +51,8 @@ abstract final class PatientProfileFormStyles {
   static Widget changeSuffixLabel({VoidCallback? onPressed}) {
     final label = Text(
       'Change',
-      style: TextStyle(fontFamily: 'Inter', 
+      style: TextStyle(
+        fontFamily: 'Inter',
         fontSize: AppTypography.bodyMedium,
         fontWeight: FontWeight.w600,
         color: AppColors.patientTeal,
@@ -78,7 +79,8 @@ abstract final class PatientProfileFormStyles {
         alignment: Alignment.centerLeft,
         child: Text(
           text,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w500,
             color: AppColors.textSecondaryOf(context),
@@ -232,7 +234,8 @@ abstract final class PatientProfileFormStyles {
 
   static AppBar profileAppBar(String title, {BuildContext? context}) {
     return AppBar(
-      title: Text(title, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+      title: Text(title,
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
       backgroundColor:
           context != null ? AppColors.surfaceOf(context) : Colors.white,
       foregroundColor: context != null
@@ -271,7 +274,8 @@ abstract final class PatientProfileFormStyles {
                     RequiredFieldLabels.text(
                       label,
                       isRequired: isRequired,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -279,7 +283,8 @@ abstract final class PatientProfileFormStyles {
                     SizedBox(height: 2),
                     Text(
                       valueText,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         color: AppColors.textPrimaryOf(context),
                       ),
@@ -318,7 +323,8 @@ abstract final class PatientProfileFormStyles {
             backgroundColor: AppColors.cardBgOf(context),
             disabledColor: AppColors.cardBgOf(context),
             checkmarkColor: AppColors.patientTeal,
-            labelStyle: TextStyle(fontFamily: 'Inter', 
+            labelStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: isSelected
                   ? AppColors.patientTeal

@@ -185,7 +185,8 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
               const SizedBox(height: 16),
               Text(
                 'Add Walk-in Patient',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                 ),
@@ -193,7 +194,8 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
               const SizedBox(height: 4),
               Text(
                 'Register a patient who is at the clinic without an app booking.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                 ),

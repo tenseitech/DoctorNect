@@ -75,7 +75,8 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'Invite link created',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineMedium,
                 fontWeight: FontWeight.w700,
               ),
@@ -83,7 +84,8 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Share this link with $driverName. They can download DoctorNect, open the link, set a username & PIN, and login to the ambulance dashboard.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
@@ -99,7 +101,8 @@ class AmbulanceInviteLinkSheet extends StatelessWidget {
               ),
               child: SelectableText(
                 link,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textPrimaryOf(context),
                 ),

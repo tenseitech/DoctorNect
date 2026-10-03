@@ -96,7 +96,8 @@ class _MyLabsScreenState extends State<MyLabsScreen> {
                   child: Text(
                     'No labs in your list yet. Tap Add to search registered labs or book a lab test.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       color: AppColors.textSecondaryOf(context),
                       fontSize: AppTypography.bodyMedium,
                     ),
@@ -140,7 +141,8 @@ class _MyLabManageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(10);
-    final buttonTextStyle = TextStyle(fontFamily: 'Inter', 
+    final buttonTextStyle = TextStyle(
+      fontFamily: 'Inter',
       fontSize: AppTypography.bodySmall,
       fontWeight: FontWeight.w600,
     );
@@ -200,7 +202,8 @@ class _MyLabManageTile extends StatelessWidget {
                   lab.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -212,7 +215,8 @@ class _MyLabManageTile extends StatelessWidget {
                     lab.area,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),

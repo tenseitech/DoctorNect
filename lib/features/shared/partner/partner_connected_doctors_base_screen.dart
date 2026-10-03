@@ -52,7 +52,8 @@ class PartnerConnectedDoctorsBaseView extends StatelessWidget {
             children: [
               Text(
                 'Connected Doctors',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w700,
                 ),
@@ -60,7 +61,8 @@ class PartnerConnectedDoctorsBaseView extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Manage your doctor connections and pending requests.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -69,7 +71,8 @@ class PartnerConnectedDoctorsBaseView extends StatelessWidget {
               if (fromDoctor.isNotEmpty) ...[
                 Text(
                   'Doctor invites',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
                     color: AppColors.doctorBlue,
                   ),
@@ -77,7 +80,8 @@ class PartnerConnectedDoctorsBaseView extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'Doctors who sent you an invite',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -96,7 +100,8 @@ class PartnerConnectedDoctorsBaseView extends StatelessWidget {
               if (sentByPartner.isNotEmpty) ...[
                 Text(
                   'Pending invites',
-                  style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      fontFamily: 'Inter', fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 ...sentByPartner.map(
@@ -110,13 +115,15 @@ class PartnerConnectedDoctorsBaseView extends StatelessWidget {
               ],
               Text(
                 'Active connections',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               if (active.isEmpty)
                 Text(
                   'No active connections',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     color: AppColors.textSecondaryOf(context),
                   ),
                 )
@@ -166,7 +173,8 @@ class _BaseDoctorRequestCard extends StatelessWidget {
         children: [
           Text(
             '${partnerDoctorLabel(connection.doctorName)} sent you an invite',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w700,
             ),
@@ -174,7 +182,8 @@ class _BaseDoctorRequestCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Requested ${DateFormat('dd MMM yyyy, hh:mm a').format(connection.requestedAt)}',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -233,14 +242,16 @@ class _BasePendingInviteTile extends StatelessWidget {
               children: [
                 Text(
                   partnerDoctorLabel(connection.doctorName),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   'Invite Sent Â· ${DateFormat('dd MMM yyyy').format(connection.requestedAt)}',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -290,7 +301,8 @@ class _BaseSimpleConnectionTile extends StatelessWidget {
             backgroundColor: accentColor.withValues(alpha: 0.12),
             child: Text(
               partnerDoctorInitial(connection.doctorName),
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
                 color: accentColor,
               ),
@@ -303,14 +315,16 @@ class _BaseSimpleConnectionTile extends StatelessWidget {
               children: [
                 Text(
                   partnerDoctorLabel(connection.doctorName),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   'Connected',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -318,7 +332,8 @@ class _BaseSimpleConnectionTile extends StatelessWidget {
                 if (subtitle != null)
                   Text(
                     subtitle!,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -331,7 +346,8 @@ class _BaseSimpleConnectionTile extends StatelessWidget {
               icon: const Icon(Icons.link_off, size: 16),
               label: Text(
                 'Disconnect',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                 ),

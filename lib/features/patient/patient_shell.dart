@@ -157,7 +157,8 @@ class _PatientProfileTabAvatarState extends State<PatientProfileTabAvatar> {
       alignment: Alignment.center,
       child: Text(
         initial,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: size * 0.46,
           fontWeight: FontWeight.w700,
           color: Colors.white,

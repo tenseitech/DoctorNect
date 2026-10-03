@@ -36,7 +36,8 @@ class ProfileFlatSection extends StatelessWidget {
           children: [
             Text(
               title,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: isWide ? 17 : 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
@@ -46,7 +47,8 @@ class ProfileFlatSection extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle!,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: isWide ? 13 : 12,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.3,

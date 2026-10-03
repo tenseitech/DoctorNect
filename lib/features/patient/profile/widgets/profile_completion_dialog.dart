@@ -40,7 +40,8 @@ class ProfileCompletionDialog extends StatelessWidget {
                       'Complete Your Profile',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -81,7 +82,8 @@ class ProfileCompletionDialog extends StatelessWidget {
                     ),
                     Text(
                       '$percentage%',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.patientTeal,
@@ -94,7 +96,8 @@ class ProfileCompletionDialog extends StatelessWidget {
               Text(
                 'Your profile is $percentage% complete. Please complete your profile to book appointments and receive accurate medical care.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -123,7 +126,8 @@ class ProfileCompletionDialog extends StatelessWidget {
                 ),
                 child: Text(
                   'Complete Profile',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
@@ -140,7 +144,8 @@ class ProfileCompletionDialog extends StatelessWidget {
                 ),
                 child: Text(
                   'Later',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),

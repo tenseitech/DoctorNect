@@ -109,7 +109,8 @@ class _LabReportPdfViewState extends State<LabReportPdfView> {
               Text(
                 widget.fileName,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                 ),
@@ -118,7 +119,8 @@ class _LabReportPdfViewState extends State<LabReportPdfView> {
               Text(
                 'Your browser works best when this report opens in a full-screen viewer.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.45,

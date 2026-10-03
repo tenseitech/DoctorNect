@@ -152,7 +152,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                         children: [
                           Text(
                             'Refer another Doctor',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimaryOf(context),
@@ -160,7 +161,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                           ),
                           Text(
                             'Generate and share a referral link',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -177,7 +179,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                 const SizedBox(height: 16),
                 Text(
                   'Enter the doctor\'s name to generate a personalized referral message with your link from $doctorName.',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     color: AppColors.textSecondaryOf(context),
                     height: 1.4,
@@ -224,7 +227,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                               )
                             : SelectableText(
                                 _link ?? fallbackLink,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodyMedium,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimaryOf(context),
@@ -240,7 +244,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                   icon: const Icon(Icons.copy_outlined),
                   label: Text(
                     'Copy Invite Message',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w700),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.doctorBlue,
@@ -259,7 +264,8 @@ class _ReferDoctorViewState extends State<ReferDoctorView> {
                   icon: const Icon(Icons.share_outlined),
                   label: Text(
                     'Share Invite',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w700),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.doctorBlue,

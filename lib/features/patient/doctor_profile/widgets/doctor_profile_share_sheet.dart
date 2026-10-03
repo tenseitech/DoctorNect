@@ -84,7 +84,8 @@ abstract final class DoctorProfileShareSheet {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
                     'Share doctor profile',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -94,11 +95,13 @@ abstract final class DoctorProfileShareSheet {
                   leading: const Icon(Icons.image, color: AppColors.doctorBlue),
                   title: Text(
                     'Share as Image Poster',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Generate a beautiful image card',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -137,11 +140,13 @@ abstract final class DoctorProfileShareSheet {
                   ),
                   title: Text(
                     'WhatsApp',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Share via WhatsApp',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -163,11 +168,13 @@ abstract final class DoctorProfileShareSheet {
                   ),
                   title: Text(
                     'SMS',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Share via text message',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -189,11 +196,13 @@ abstract final class DoctorProfileShareSheet {
                   ),
                   title: Text(
                     'Telegram',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Share via Telegram',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -216,11 +225,13 @@ abstract final class DoctorProfileShareSheet {
                   ),
                   title: Text(
                     'More options...',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),
                   subtitle: Text(
                     'Share using other apps',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),

@@ -167,11 +167,14 @@ class UserRepository {
     final batch = _db.batch();
     if (roleString != 'super_admin') {
       final claimRef = _db.collection('profile_claims').doc(profileId);
-      batch.set(claimRef, {
-        'uid': user.uid,
-        'role': roleString,
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      batch.set(
+          claimRef,
+          {
+            'uid': user.uid,
+            'role': roleString,
+            'createdAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true));
     }
 
     final userRef = _db.collection(FirestorePaths.users).doc(user.uid);

@@ -22,7 +22,8 @@ class DataHubSection extends StatelessWidget {
             children: [
               Text(
                 'Reports & Analytics',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: Colors.grey[500],
@@ -134,7 +135,8 @@ class _HubCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),
@@ -142,7 +144,8 @@ class _HubCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: Colors.grey[500],
                       ),

@@ -23,7 +23,8 @@ class DoctorPlaceholderScreen extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineLarge,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
@@ -32,7 +33,8 @@ class DoctorPlaceholderScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -54,7 +56,8 @@ class DoctorPlaceholderScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Coming soon',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w600,
                     ),

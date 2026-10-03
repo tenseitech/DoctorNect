@@ -37,7 +37,8 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
             child: Text(
               'Upload Profile Photo',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -52,7 +53,8 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
               ),
               title: Text(
                 'View photo',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
               ),
               onTap: () {
                 Navigator.pop(ctx, 'view');
@@ -65,7 +67,8 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
             ),
             title: Text(
               'Choose from gallery',
-              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+              style:
+                  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
             ),
             onTap: () async {
               try {
@@ -84,7 +87,8 @@ Future<PickedProfilePhoto?> pickProfilePhoto(
               ),
               title: Text(
                 'Remove photo',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w500,
                   color: Colors.red,
                 ),
@@ -176,7 +180,8 @@ class ProfilePhotoAvatar extends StatelessWidget {
       child: image == null
           ? Text(
               initial,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: radius * 0.72,
                 fontWeight: FontWeight.w700,
                 color: fg,

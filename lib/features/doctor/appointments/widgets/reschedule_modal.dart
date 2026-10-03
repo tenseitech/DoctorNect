@@ -194,7 +194,8 @@ class _RescheduleModalState extends State<RescheduleModal> {
               Expanded(
                 child: Text(
                   'Reschedule Appointment',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -250,7 +251,8 @@ class _RescheduleModalState extends State<RescheduleModal> {
               ),
               child: Text(
                 'No slots available on this date. Update your availability schedule first.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   color: AppColors.textSecondaryOf(context),
                   fontSize: AppTypography.bodySmall,
                 ),
@@ -302,11 +304,13 @@ class _RescheduleModalState extends State<RescheduleModal> {
             contentPadding: EdgeInsets.zero,
             title: Text(
               'Notify patient',
-              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+              style: TextStyle(
+                  fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
             ),
             subtitle: Text(
               'Send SMS & app notification',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -329,7 +333,8 @@ class _RescheduleModalState extends State<RescheduleModal> {
             ),
             child: Text(
               'Confirm Reschedule',
-              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+              style:
+                  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -347,7 +352,8 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: TextStyle(fontFamily: 'Inter', 
+      style: TextStyle(
+        fontFamily: 'Inter',
         fontSize: AppTypography.bodySmall,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimaryOf(context),
@@ -385,7 +391,8 @@ class _PatientSummaryCard extends StatelessWidget {
             backgroundColor: AppColors.doctorBlue.withValues(alpha: 0.15),
             child: Text(
               initial,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
                 color: AppColors.doctorBlue,
               ),
@@ -398,7 +405,8 @@ class _PatientSummaryCard extends StatelessWidget {
               children: [
                 Text(
                   patientName,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -407,7 +415,8 @@ class _PatientSummaryCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Current: $currentLabel',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -452,7 +461,8 @@ class _DatePickerTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textPrimaryOf(context),
@@ -504,7 +514,8 @@ class _SlotChip extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               color: selected

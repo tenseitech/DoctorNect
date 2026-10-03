@@ -167,7 +167,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                               children: [
                                 Text(
                                   '${p.rating}',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.displayLarge,
                                     fontWeight: FontWeight.w800,
                                     height: 1.0,
@@ -202,7 +203,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                       const SizedBox(height: 4),
                                       Text(
                                         '${p.reviewCount} total reviews',
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: AppTypography.labelMedium,
                                           color: AppColors.textSecondaryOf(
                                             context,
@@ -235,7 +237,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                       width: 30,
                                       child: Text(
                                         '$stars★',
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: AppTypography.labelSmall,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.textSecondaryOf(
@@ -263,7 +266,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                       child: Text(
                                         '$count',
                                         textAlign: TextAlign.right,
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: AppTypography.labelSmall,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.textSecondaryOf(
@@ -307,7 +311,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                                 ),
                                 backgroundColor: AppColors.surfaceOf(context),
                                 selectedColor: AppColors.doctorBlue,
-                                labelStyle: TextStyle(fontFamily: 'Inter', 
+                                labelStyle: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w600,
                                   color: selected
@@ -379,7 +384,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                   children: [
                     Text(
                       r.maskedName,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w600,
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textPrimaryOf(context),
@@ -388,7 +394,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                     const SizedBox(height: 1),
                     Text(
                       DateFormat('dd MMM yyyy').format(r.date),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -413,7 +420,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
             const SizedBox(height: 8),
             Text(
               r.text,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 height: 1.38,
                 color: AppColors.textPrimaryOf(context),
@@ -434,7 +442,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                 children: [
                   Text(
                     'Your reply',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w600,
                       color: AppColors.doctorBlue,
@@ -443,7 +452,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                   const SizedBox(height: 2),
                   Text(
                     r.doctorReply!,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                     ),
                   ),
@@ -471,7 +481,8 @@ class _ReviewsSectionState extends State<ReviewsSection> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                textStyle: TextStyle(fontFamily: 'Inter', 
+                textStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w600,
                 ),
@@ -511,7 +522,8 @@ class _ReviewerAvatar extends StatelessWidget {
       backgroundColor: color.withValues(alpha: 0.14),
       child: Text(
         initial,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w700,
           color: color,

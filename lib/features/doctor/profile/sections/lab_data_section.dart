@@ -109,7 +109,8 @@ class _LabDataSectionState extends State<LabDataSection> {
                     Expanded(
                       child: Text(
                         '$total orders · $totalTests tests',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           fontWeight: FontWeight.w600,
                           color: AppColors.labPurple,
@@ -138,7 +139,8 @@ class _LabDataSectionState extends State<LabDataSection> {
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search by patient, test, or lab',
-                    hintStyle: TextStyle(fontFamily: 'Inter', 
+                    hintStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: Colors.grey[400],
                     ),
@@ -180,7 +182,8 @@ class _LabDataSectionState extends State<LabDataSection> {
                                       ? 'No lab orders yet'
                                       : 'No visible lab orders')
                                   : 'No results for "$_search"',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodyMedium,
                                 color: Colors.grey[500],
                               ),
@@ -191,7 +194,8 @@ class _LabDataSectionState extends State<LabDataSection> {
                               const SizedBox(height: 6),
                               Text(
                                 'Some orders are hidden because those patients turned off sharing.',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.labelMedium,
                                   color: Colors.grey[400],
                                 ),
@@ -201,7 +205,8 @@ class _LabDataSectionState extends State<LabDataSection> {
                               const SizedBox(height: 6),
                               Text(
                                 'Orders from prescriptions or connected labs appear here',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.labelMedium,
                                   color: Colors.grey[400],
                                 ),
@@ -263,7 +268,8 @@ class _LabOrderRow extends StatelessWidget {
             width: 26,
             child: Text(
               '${index + 1}.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: Colors.grey[400],
               ),
@@ -289,14 +295,16 @@ class _LabOrderRow extends StatelessWidget {
               children: [
                 Text(
                   order.patientName,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   '${order.patientAge > 0 ? '${order.patientAge} yrs' : 'Not provided'} · ${order.testNames.length} test(s)',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: Colors.grey[500],
                   ),
@@ -315,7 +323,8 @@ class _LabOrderRow extends StatelessWidget {
                         '${df.format(order.createdAt)}  ${tf.format(order.createdAt)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           color: Colors.grey[500],
                         ),
@@ -338,7 +347,8 @@ class _LabOrderRow extends StatelessWidget {
                           order.labName!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelSmall,
                             color: Colors.grey[500],
                           ),
@@ -352,7 +362,8 @@ class _LabOrderRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     order.indication!,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       color: Colors.grey[500],
                     ),
@@ -398,7 +409,8 @@ class _LabOrderRow extends StatelessWidget {
                 ),
                 child: Text(
                   order.status,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: AppColors.labPurple,
@@ -408,7 +420,8 @@ class _LabOrderRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 order.urgency,
-                style: TextStyle(fontFamily: 'Inter', fontSize: 10, color: Colors.grey[500]),
+                style: TextStyle(
+                    fontFamily: 'Inter', fontSize: 10, color: Colors.grey[500]),
               ),
             ],
           ),

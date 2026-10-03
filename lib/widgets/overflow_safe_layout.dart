@@ -41,7 +41,8 @@ class SafeIconTextRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: style ??
-                TextStyle(fontFamily: 'Inter', 
+                TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),

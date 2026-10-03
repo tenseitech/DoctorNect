@@ -48,7 +48,8 @@ Future<bool> showAmbulanceRatingDialog({
                   const SizedBox(height: 14),
                   Text(
                     'Rate your experience',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -57,7 +58,8 @@ Future<bool> showAmbulanceRatingDialog({
                   const SizedBox(height: 4),
                   Text(
                     ambulanceName,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -96,7 +98,8 @@ Future<bool> showAmbulanceRatingDialog({
                   if (selectedStars > 0)
                     Text(
                       _ratingLabel(selectedStars),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFFF59E0B),
@@ -110,12 +113,14 @@ Future<bool> showAmbulanceRatingDialog({
                     controller: reviewCtrl,
                     maxLines: 2,
                     maxLength: 200,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Write a short review (optional)',
-                      hintStyle: TextStyle(fontFamily: 'Inter', 
+                      hintStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),

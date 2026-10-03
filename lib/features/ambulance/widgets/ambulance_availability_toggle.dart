@@ -112,7 +112,8 @@ class _AmbulanceAvailabilityToggleState
                     children: [
                       Text(
                         isOnline ? 'Online for patient requests' : 'Offline',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                           color: isOnline
@@ -125,7 +126,8 @@ class _AmbulanceAvailabilityToggleState
                       const SizedBox(height: 2),
                       Text(
                         'Stays on even after logout or closing the app',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           color: AppColors.textSecondaryOf(context),
                         ),

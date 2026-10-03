@@ -85,14 +85,16 @@ class _NotificationsSettingsScreenState
                         children: [
                           Text(
                             title,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodyMedium,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
                             MedicationTimeSlots.rangeLabel(slot),
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -115,7 +117,8 @@ class _NotificationsSettingsScreenState
                         ),
                         child: Text(
                           time,
-                          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              fontFamily: 'Inter', fontWeight: FontWeight.w600),
                         ),
                       ),
                   ],
@@ -232,7 +235,8 @@ class _NotificationsSettingsScreenState
                 children: [
                   Text(
                     'All alerts are delivered inside DoctorNect. Push/SMS/WhatsApp tags show alert type only — nothing is sent outside the app.',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -333,7 +337,8 @@ class _NotificationsSettingsScreenState
                                       if (m.nightTime != null)
                                         'Night (${m.nightTime})',
                                     ].join(' • '),
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.labelMedium,
                                       color: AppColors.textSecondaryOf(context),
                                     ),

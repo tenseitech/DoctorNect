@@ -59,7 +59,8 @@ class AppointmentCard extends StatelessWidget {
                       appointment.patientName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -68,7 +69,8 @@ class AppointmentCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '${appointment.age > 0 ? '${appointment.age} yrs' : 'Not provided'} · ${AppConstants.patientGenderLabel(appointment.gender, fallback: 'Not provided')}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -87,7 +89,8 @@ class AppointmentCard extends StatelessWidget {
                             '${DateFormat('dd MMM yyyy').format(appointment.appointmentDate)} Â· ${appointment.timeSlot}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -121,7 +124,8 @@ class AppointmentCard extends StatelessWidget {
                       ),
                       child: Text(
                         'Booked by ${appointment.bookedByName}${appointment.patientRelation != null && appointment.patientRelation!.trim().isNotEmpty && appointment.patientRelation!.trim().toLowerCase() != 'self' ? ' (${appointment.patientRelation})' : ''}',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF7C3AED),
@@ -171,7 +175,8 @@ class AppointmentCard extends StatelessWidget {
                     'Reason: ${appointment.reasonForVisit}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),

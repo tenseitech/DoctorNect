@@ -206,7 +206,8 @@ class _WebWelcomeScaffold extends StatelessWidget {
                               children: [
                                 Text(
                                   'Select your role',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.headlineLarge,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.textPrimaryOf(context),
@@ -217,7 +218,8 @@ class _WebWelcomeScaffold extends StatelessWidget {
                                 const SizedBox(height: 8),
                                 Text(
                                   'Sign in to the experience built for you',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.bodyMedium,
                                     fontWeight: FontWeight.w400,
                                     color: AppColors.textSecondaryOf(context),
@@ -266,7 +268,8 @@ class _WebWelcomeScaffold extends StatelessWidget {
                           const SizedBox(width: 7),
                           Text(
                             'Secure & encrypted sign-in',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textSecondaryOf(context),
@@ -357,7 +360,8 @@ class _WebBrandPanel extends StatelessWidget {
                   delay: const Duration(milliseconds: 80),
                   child: Text(
                     'DoctorNect',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.displayLarge,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -370,7 +374,8 @@ class _WebBrandPanel extends StatelessWidget {
                   delay: const Duration(milliseconds: 140),
                   child: Text(
                     'One platform for every\nhealthcare role',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFFCCFBF1),
@@ -633,7 +638,8 @@ class _WebBrandBulletState extends State<_WebBrandBullet> {
               Flexible(
                 child: Text(
                   widget.text,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: Colors.white.withValues(alpha: _hovered ? 1 : 0.94),
@@ -864,7 +870,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                             SizedBox(height: compactHeight ? 10 : 16),
                             Text(
                               'DoctorNect',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: compactHeight
                                     ? AppTypography.titleMedium
                                     : AppTypography.headlineMedium,
@@ -876,7 +883,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                             SizedBox(height: compactHeight ? 4 : 8),
                             Text(
                               'Welcome',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.headlineLarge,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
@@ -887,7 +895,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                             SizedBox(height: compactHeight ? 4 : 6),
                             Text(
                               'Choose your role to continue',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: compactHeight
                                     ? AppTypography.bodySmall
                                     : AppTypography.bodyMedium,
@@ -939,7 +948,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                   children: [
                                     Text(
                                       'Select your role',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.headlineMedium,
                                         fontWeight: FontWeight.w700,
                                         color: AppColors.textPrimaryOf(context),
@@ -949,7 +959,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                     const SizedBox(height: 2),
                                     Text(
                                       'Tap a card to sign in',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.bodySmall,
                                         color: AppColors.textSecondaryOf(
                                           context,
@@ -995,7 +1006,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
                                         const SizedBox(width: 6),
                                         Text(
                                           'Secure & encrypted sign-in',
-                                          style: TextStyle(fontFamily: 'Inter', 
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
                                             fontSize: AppTypography.labelSmall,
                                             color: AppColors.textSecondaryOf(
                                               context,

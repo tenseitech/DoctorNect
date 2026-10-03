@@ -6,14 +6,17 @@ import 'package:medibond/features/patient/lab/lab_booking_confirmed_screen.dart'
 import 'package:medibond/features/patient/lab/models/lab_models.dart';
 
 void main() {
-  testWidgets('LabBookingConfirmedScreen renders without overflow at 360x640 with textScaler 1.3', (tester) async {
+  testWidgets(
+      'LabBookingConfirmedScreen renders without overflow at 360x640 with textScaler 1.3',
+      (tester) async {
     tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
     final booking = ConfirmedLabBooking(
       bookingId: 'LB-992144',
-      testName: 'Complete Blood Count (CBC) with Differential and Platelet Count',
+      testName:
+          'Complete Blood Count (CBC) with Differential and Platelet Count',
       date: DateTime.now().add(const Duration(days: 1)),
       slotLabel: '09:00 AM - 10:00 AM',
       isHomeCollection: true,
@@ -41,7 +44,9 @@ void main() {
     expect(find.text('Booking ID: LB-992144'), findsOneWidget);
   });
 
-  testWidgets('LabBookingConfirmedScreen renders pending state without overflow at 360x640 with textScaler 1.3', (tester) async {
+  testWidgets(
+      'LabBookingConfirmedScreen renders pending state without overflow at 360x640 with textScaler 1.3',
+      (tester) async {
     tester.view.physicalSize = const Size(360, 640);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);

@@ -75,7 +75,8 @@ class _PatientLabOrderSheet extends StatelessWidget {
                     children: [
                       Text(
                         'Lab test order',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                         ),
@@ -83,7 +84,8 @@ class _PatientLabOrderSheet extends StatelessWidget {
                       Text(
                         DateFormat('dd MMM yyyy · hh:mm a')
                             .format(order.createdAt),
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -120,7 +122,8 @@ class _PatientLabOrderSheet extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Tests (${order.testNames.length})',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
               ),
@@ -141,7 +144,8 @@ class _PatientLabOrderSheet extends StatelessWidget {
                     Expanded(
                       child: Text(
                         test,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                         ),
                       ),
@@ -212,7 +216,8 @@ class _InfoRow extends StatelessWidget {
             width: 96,
             child: Text(
               label,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -221,7 +226,8 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
               ),

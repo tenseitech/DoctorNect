@@ -108,7 +108,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                             ? null
                             : Text(
                                 initial,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.headlineSmall,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.patientTeal,
@@ -123,7 +124,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -136,7 +138,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.15,
@@ -157,7 +160,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         const SizedBox(width: 2),
                         Text(
                           doctor.rating.toStringAsFixed(1),
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -166,7 +170,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         if (doctor.reviewCount > 0) ...[
                           Text(
                             ' · ${doctor.reviewCount}',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 9.5,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -195,7 +200,8 @@ class _HomeDoctorTileState extends State<HomeDoctorTile> {
                         'Book',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -287,7 +293,8 @@ class HomeDoctorInlineMessage extends StatelessWidget {
             child: Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.35,

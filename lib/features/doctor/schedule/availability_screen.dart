@@ -374,7 +374,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                 alpha: 0.15,
                               ),
                               checkmarkColor: AppColors.doctorBlue,
-                              labelStyle: TextStyle(fontFamily: 'Inter', 
+                              labelStyle: TextStyle(
+                                fontFamily: 'Inter',
                                 fontWeight:
                                     active ? FontWeight.w600 : FontWeight.w400,
                                 color: active
@@ -492,7 +493,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               )
                             : Text(
                                 'No break scheduled',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   color: AppColors.textSecondaryOf(context),
                                   fontSize: AppTypography.bodyMedium,
                                 ),
@@ -514,7 +516,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                               selectedColor: AppColors.doctorBlue.withValues(
                                 alpha: 0.15,
                               ),
-                              labelStyle: TextStyle(fontFamily: 'Inter', 
+                              labelStyle: TextStyle(
+                                fontFamily: 'Inter',
                                 color: selected
                                     ? AppColors.doctorBlue
                                     : AppColors.textSecondaryOf(context),
@@ -579,7 +582,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                   return InputChip(
                                     label: Text(
                                       label,
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.labelMedium,
                                       ),
                                     ),
@@ -673,7 +677,8 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -715,7 +720,8 @@ class _TimeDropdown extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -739,7 +745,8 @@ class _TimeDropdown extends StatelessWidget {
                   value: t,
                   child: Text(
                     t,
-                    style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
                   ),
                 ),
               )

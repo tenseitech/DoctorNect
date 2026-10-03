@@ -139,14 +139,16 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
           children: [
             Text(
               'Ticket #$formattedTicketId',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
                 fontSize: AppTypography.headlineSmall,
               ),
             ),
             Text(
               widget.issueType,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -164,7 +166,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
               ),
               child: Text(
                 widget.status.toUpperCase(),
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   color: statusColor,
@@ -213,7 +216,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                           children: [
                             Text(
                               'Original Request',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodySmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
@@ -222,7 +226,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                             Text(
                               DateFormat('dd MMM yyyy, hh:mm a')
                                   .format(widget.createdAt),
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelSmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -232,7 +237,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                         const SizedBox(height: 6),
                         Text(
                           widget.message,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                             height: 1.4,
@@ -251,7 +257,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                               Expanded(
                                 child: Text(
                                   widget.screenshot!,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                     fontStyle: FontStyle.italic,
@@ -309,7 +316,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                 child: Center(
                                   child: Text(
                                     'No messages yet. Send a message to start conversation.',
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.bodySmall,
                                       color: AppColors.textSecondaryOf(context),
                                     ),
@@ -370,7 +378,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                     if (!isMe) ...[
                                       Text(
                                         senderName,
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: AppTypography.labelSmall,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.patientTeal,
@@ -380,7 +389,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                     ],
                                     Text(
                                       text,
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.bodyMedium,
                                         color: isMe
                                             ? AppColors.surfaceOf(context)
@@ -393,7 +403,8 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                                       alignment: Alignment.bottomRight,
                                       child: Text(
                                         timeLabel,
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: 9,
                                           color: isMe
                                               ? AppColors.surfaceOf(context)
@@ -429,50 +440,51 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                         ),
                       ),
                       child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            decoration: InputDecoration(
-                              hintText: 'Type a message...',
-                              hintStyle: TextStyle(fontFamily: 'Inter', 
-                                color: AppColors.textSecondaryOf(context),
-                                fontSize: AppTypography.bodyMedium,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _controller,
+                              decoration: InputDecoration(
+                                hintText: 'Type a message...',
+                                hintStyle: TextStyle(
+                                  fontFamily: 'Inter',
+                                  color: AppColors.textSecondaryOf(context),
+                                  fontSize: AppTypography.bodyMedium,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: AppColors.cardBgOf(context),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
                               ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(24),
-                                borderSide: BorderSide.none,
-                              ),
-                              filled: true,
-                              fillColor: AppColors.cardBgOf(context),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
+                              textCapitalization: TextCapitalization.sentences,
+                              onSubmitted: (_) => _sendMessage(),
                             ),
-                            textCapitalization: TextCapitalization.sentences,
-                            onSubmitted: (_) => _sendMessage(),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          decoration: const BoxDecoration(
-                            color: AppColors.patientTeal,
-                            shape: BoxShape.circle,
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.send,
-                              color: AppColors.white,
-                              size: 20,
+                          const SizedBox(width: 8),
+                          Container(
+                            decoration: const BoxDecoration(
+                              color: AppColors.patientTeal,
+                              shape: BoxShape.circle,
                             ),
-                            onPressed: _sendMessage,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.send,
+                                color: AppColors.white,
+                                size: 20,
+                              ),
+                              onPressed: _sendMessage,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 ],
               ),
             ),

@@ -40,20 +40,23 @@ class BookingConfirmedView extends StatelessWidget {
         children: [
           Text(
             'Dr. ${booking.doctorName}',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w600,
             ),
           ),
           Text(
             '${DateFormat('EEE, dd MMM yyyy').format(booking.date)} Â· ${booking.slotLabel}',
-            style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
+            style: TextStyle(
+                fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
           ),
           if (!pending) ...[
             const SizedBox(height: 16),
             Text(
               '#${booking.tokenNumber}',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 48,
                 fontWeight: FontWeight.w800,
                 color: AppColors.patientTeal,
@@ -61,7 +64,8 @@ class BookingConfirmedView extends StatelessWidget {
             ),
             Text(
               'Token Number',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 color: AppColors.textSecondaryOf(context),
               ),
             ),
@@ -72,7 +76,8 @@ class BookingConfirmedView extends StatelessWidget {
             Text(
               booking.clinicAddress!,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+              style: TextStyle(
+                  fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
             ),
           ],
         ],

@@ -186,7 +186,8 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                 Expanded(
                   child: Text(
                     'Filters',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineMedium,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimaryOf(context),
@@ -197,7 +198,8 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                   onPressed: _clearAll,
                   child: Text(
                     'Clear all',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondaryOf(context),
@@ -289,7 +291,8 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                                   _showCustomLocation
                                       ? 'Hide worldwide location picker'
                                       : 'Select other city / country...',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.bodySmall,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.patientTeal,
@@ -384,14 +387,16 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                       activeThumbColor: AppColors.patientTeal,
                       title: Text(
                         'Available today',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       subtitle: Text(
                         'Show only doctors with slots today',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -420,7 +425,8 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                 ),
                 child: Text(
                   'Apply filters',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                   ),
@@ -447,7 +453,8 @@ class _FilterSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimaryOf(context),
@@ -493,7 +500,8 @@ class _OptionChip extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
               color: selected

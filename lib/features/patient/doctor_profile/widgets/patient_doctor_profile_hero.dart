@@ -63,7 +63,8 @@ class PatientDoctorProfileHero extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                textStyle: TextStyle(fontFamily: 'Inter', 
+                textStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w600,
                 ),
@@ -85,7 +86,8 @@ class PatientDoctorProfileHero extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                textStyle: TextStyle(fontFamily: 'Inter', 
+                textStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                 ),
@@ -222,7 +224,8 @@ class _QuickAction extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: AppColors.patientTeal,
@@ -254,7 +257,8 @@ class _DoctorIdentity extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -279,7 +283,8 @@ class _DoctorIdentity extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w500,
             color: AppColors.textSecondaryOf(context),
@@ -292,7 +297,8 @@ class _DoctorIdentity extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -408,7 +414,8 @@ class _StatCell extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -427,7 +434,8 @@ class _StatCell extends StatelessWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -442,7 +450,8 @@ class _StatCell extends StatelessWidget {
               subtitle!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: 10,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -504,7 +513,8 @@ class PatientDoctorProfileBottomBar extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        textStyle: TextStyle(fontFamily: 'Inter', 
+                        textStyle: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                         ),
@@ -531,7 +541,8 @@ class PatientDoctorProfileBottomBar extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      textStyle: TextStyle(fontFamily: 'Inter', 
+                      textStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),

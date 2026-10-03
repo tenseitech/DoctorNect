@@ -351,7 +351,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                 banner.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
@@ -362,7 +363,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                 banner.subtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   height: 1.3,
                   color: Colors.white.withValues(alpha: 0.92),
@@ -442,7 +444,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                             banner.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.headlineLarge,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
@@ -454,7 +457,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                             banner.subtitle,
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodyMedium,
                               height: 1.4,
                               color: Colors.white.withValues(alpha: 0.92),
@@ -480,7 +484,8 @@ class _HomeBannerCarouselSlide extends StatelessWidget {
                               ),
                               child: Text(
                                 item.ctaLabel!,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -555,7 +560,8 @@ class _BadgeChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: Colors.white,

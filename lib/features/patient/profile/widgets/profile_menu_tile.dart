@@ -63,7 +63,8 @@ class ProfileMenuTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -97,7 +98,8 @@ class ProfileSectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(
         title,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodySmall,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondaryOf(context),

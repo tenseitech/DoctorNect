@@ -95,7 +95,8 @@ class MedicineRowCard extends StatelessWidget {
                   '℞ Medicine ${index + 1}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.doctorBlue,
@@ -115,7 +116,8 @@ class MedicineRowCard extends StatelessWidget {
                   ),
                   child: Text(
                     'SOS',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFFEA580C),
@@ -190,7 +192,8 @@ class MedicineRowCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Medicine not found in database',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                           fontWeight: FontWeight.w600,
@@ -281,7 +284,8 @@ class MedicineRowCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             'Frequency (M · A · N)',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -460,7 +464,8 @@ class MedicineRowCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                   textAlign: TextAlign.end,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.doctorBlue,
@@ -508,7 +513,8 @@ class _MealToggle extends StatelessWidget {
             child: Text(
               label[0],
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
                 color: selected

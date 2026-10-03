@@ -217,7 +217,8 @@ class _RegistrationMobileOtpSectionState
   Widget _buildFingerprint() {
     return Text(
       'Build ${AppConstants.registrationBuildFingerprint}',
-      style: TextStyle(fontFamily: 'Inter', 
+      style: TextStyle(
+        fontFamily: 'Inter',
         fontSize: 10,
         color: AppColors.textSecondaryOf(context).withValues(alpha: 0.75),
       ),
@@ -257,7 +258,8 @@ class _RegistrationMobileOtpSectionState
                     children: [
                       Text(
                         'Mobile verified ($_dialCode ${_maskedDigits(digits)})',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                           color: AppColors.pharmacyGreen,
@@ -329,7 +331,8 @@ class _RegistrationMobileOtpSectionState
         ] else ...[
           Text(
             'Enter the 6-digit code sent to $_dialCode ${_maskedDigits(sentDigits)}',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),

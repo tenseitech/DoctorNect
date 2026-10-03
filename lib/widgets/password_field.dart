@@ -90,7 +90,8 @@ class _PasswordFieldState extends State<PasswordField> {
           textInputAction: widget.textInputAction,
           onFieldSubmitted: widget.onFieldSubmitted,
           style: widget.accentColor != null
-              ? TextStyle(fontFamily: 'Inter', 
+              ? TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                 )
@@ -185,7 +186,8 @@ class _RequirementPill extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: met ? FontWeight.w600 : FontWeight.w400,
               color: met ? activeColor : inactiveColor,

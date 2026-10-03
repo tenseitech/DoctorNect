@@ -100,7 +100,8 @@ class _StoreNotificationsScreenState extends State<StoreNotificationsScreen>
             const SizedBox(height: 12),
             Text(
               isNew ? 'No new notifications' : 'No read notifications',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondaryOf(context),
@@ -136,7 +137,8 @@ class _StoreNotificationsScreenState extends State<StoreNotificationsScreen>
               const SizedBox(height: 4),
               Text(
                 DateFormat('dd MMM yyyy, hh:mm a').format(n.createdAt),
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -272,7 +274,8 @@ class _NotificationTabPill extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                     color: selected
@@ -293,7 +296,8 @@ class _NotificationTabPill extends StatelessWidget {
                 ),
                 child: Text(
                   '$count',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: selected

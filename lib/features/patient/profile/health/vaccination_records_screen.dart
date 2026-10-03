@@ -270,7 +270,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
               Expanded(
                 child: Text(
                   'Add Vaccination',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w600,
                   ),
@@ -387,7 +388,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
         Text(
           'No vaccination records yet',
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimaryOf(context),
@@ -397,7 +399,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
         Text(
           'Add your vaccination history to keep track',
           textAlign: TextAlign.center,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodySmall,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -425,7 +428,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
         ),
         child: Text(
           'Delete',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             color: AppColors.surfaceOf(context),
             fontWeight: FontWeight.w600,
             fontSize: AppTypography.labelMedium,
@@ -446,11 +450,13 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
                 children: [
                   Text(
                     entry.name,
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w600),
                   ),
                   Text(
                     DateFormat('dd MMM yyyy').format(entry.date),
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -458,7 +464,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
                   if (entry.dose != null && entry.dose!.isNotEmpty)
                     Text(
                       entry.dose!,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -466,7 +473,8 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
                   if (entry.notes != null && entry.notes!.isNotEmpty)
                     Text(
                       entry.notes!,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),

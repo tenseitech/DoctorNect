@@ -127,7 +127,8 @@ class QuickRxTemplateSheet extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     '1-Click Clinical Rx Templates',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -144,7 +145,8 @@ class QuickRxTemplateSheet extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             'Select a standard template to instantly pre-fill diagnosis, medicines, dosage, and dietary advice:',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -181,7 +183,8 @@ class QuickRxTemplateSheet extends StatelessWidget {
                                 children: [
                                   Text(
                                     t.title,
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: 14.5,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textPrimaryOf(context),
@@ -200,7 +203,8 @@ class QuickRxTemplateSheet extends StatelessWidget {
                                     ),
                                     child: Text(
                                       t.category,
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.labelSmall,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.doctorBlue,
@@ -212,7 +216,8 @@ class QuickRxTemplateSheet extends StatelessWidget {
                               const SizedBox(height: 6),
                               Text(
                                 t.diagnosis,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.labelMedium,
                                   color: AppColors.textSecondaryOf(context),
                                 ),
@@ -239,7 +244,8 @@ class QuickRxTemplateSheet extends StatelessWidget {
                                         ),
                                         child: Text(
                                           m,
-                                          style: TextStyle(fontFamily: 'Inter', 
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
                                             fontSize: AppTypography.labelSmall,
                                             fontWeight: FontWeight.w500,
                                             color: AppColors.textPrimaryOf(

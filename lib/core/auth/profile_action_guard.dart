@@ -204,7 +204,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Profile Under Review',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
@@ -240,7 +241,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                 Text(
                   'Your profile and credentials have been submitted for verification and are currently being reviewed by Super Admin. You can view all information in the app, but creating or modifying data is paused until approval.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     color: AppColors.textSecondaryOf(context),
                     height: 1.45,
@@ -259,7 +261,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                   ),
                   child: Text(
                     'Understood',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w600,
                     ),
@@ -297,7 +300,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                       stage.isRevisionRequested
                           ? 'Action Required'
                           : 'Complete Your Profile',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -330,7 +334,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                     ),
                     Text(
                       '$percentage%',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: accent,
@@ -356,7 +361,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                     children: [
                       Text(
                         'Revision Requested by Admin:',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF92400E),
@@ -365,7 +371,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         reason,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           color: const Color(0xFF78350F),
                         ),
@@ -377,7 +384,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                 Text(
                   'Your profile is $percentage% complete. Please complete the required fields to verify your account and unlock actions.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     color: AppColors.textSecondaryOf(context),
                     height: 1.4,
@@ -390,7 +398,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Missing Details (${missing.length}):',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -433,7 +442,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                           Expanded(
                             child: Text(
                               item.label,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodySmall,
                                 fontWeight: FontWeight.w500,
                                 color: AppColors.textPrimaryOf(context),
@@ -445,7 +455,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             item.section,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -472,7 +483,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                 ),
                 child: Text(
                   'Complete Profile',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
@@ -486,7 +498,8 @@ class _ProfileVerificationDialog extends StatelessWidget {
                 ),
                 child: Text(
                   'Later',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),

@@ -194,7 +194,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
           title: 'Patient',
           child: Text(
             '${widget.patient.patientName} · ${widget.patient.age > 0 ? '${widget.patient.age} yrs' : 'Not provided'}',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w500,
             ),
@@ -225,7 +226,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                         child: FilterChip(
                           label: Text(
                             cat,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                             ),
                           ),
@@ -245,7 +247,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
               if (_filteredTests.isEmpty)
                 Text(
                   'No tests found in catalog',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -259,13 +262,15 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                     value: selected,
                     title: Text(
                       test.name,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                       ),
                     ),
                     subtitle: Text(
                       _categoryFor(test),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -283,7 +288,8 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
               if (_selectedTestIds.isNotEmpty)
                 Text(
                   '${_selectedTestIds.length} test(s) selected',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.doctorBlue,
@@ -371,12 +377,14 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                     children: [
                       Text(
                         'No connected labs yet',
-                        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                            fontFamily: 'Inter', fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Connect a diagnostic lab to send test orders.',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -443,109 +451,113 @@ class _LabOrderSentSheet extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxHeight),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A).withValues(alpha: 0.12),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check_circle,
-                        color: Color(0xFF16A34A),
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Lab order sent successfully',
-                        style: TextStyle(fontFamily: 'Inter', 
-                          fontSize: AppTypography.headlineSmall,
-                          fontWeight: FontWeight.w700,
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color:
+                              const Color(0xFF16A34A).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check_circle,
+                          color: Color(0xFF16A34A),
+                          size: 28,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _SentTo(
-                  icon: Icons.person_outline,
-                  label: 'Patient notified',
-                  name: patientName,
-                  color: AppColors.patientTeal,
-                ),
-                const SizedBox(height: 12),
-                _SentTo(
-                  icon: Icons.biotech_outlined,
-                  label: labName != null
-                      ? 'Lab order saved'
-                      : 'Lab (not selected)',
-                  name: labName ?? 'No lab selected',
-                  color: labName != null
-                      ? AppColors.doctorBlue
-                      : AppColors.textSecondaryOf(context),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Tests ordered (${testNames.length})',
-                  style: TextStyle(fontFamily: 'Inter', 
-                    fontSize: AppTypography.bodySmall,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondaryOf(context),
-                  ),
-                ),
-                SizedBox(height: 8),
-                ...testNames.map(
-                  (t) => Padding(
-                    padding: EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.circle,
-                          size: 6,
-                          color: AppColors.textSecondaryOf(context),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            t,
-                            style: TextStyle(fontFamily: 'Inter', 
-                              fontSize: AppTypography.bodySmall,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Lab order sent successfully',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: AppTypography.headlineSmall,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _SentTo(
+                    icon: Icons.person_outline,
+                    label: 'Patient notified',
+                    name: patientName,
+                    color: AppColors.patientTeal,
+                  ),
+                  const SizedBox(height: 12),
+                  _SentTo(
+                    icon: Icons.biotech_outlined,
+                    label: labName != null
+                        ? 'Lab order saved'
+                        : 'Lab (not selected)',
+                    name: labName ?? 'No lab selected',
+                    color: labName != null
+                        ? AppColors.doctorBlue
+                        : AppColors.textSecondaryOf(context),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Tests ordered (${testNames.length})',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: AppTypography.bodySmall,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondaryOf(context),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.doctorBlue,
+                  SizedBox(height: 8),
+                  ...testNames.map(
+                    (t) => Padding(
+                      padding: EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.circle,
+                            size: 6,
+                            color: AppColors.textSecondaryOf(context),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              t,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: AppTypography.bodySmall,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: const Text('Done'),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.doctorBlue,
+                      ),
+                      child: const Text('Done'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -576,14 +588,16 @@ class _SentTo extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
               Text(
                 name,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: color,

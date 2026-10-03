@@ -44,7 +44,8 @@ class SymptomChipsPreview extends StatelessWidget {
           Chip(
             label: Text(
               s,
-              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelSmall),
+              style: TextStyle(
+                  fontFamily: 'Inter', fontSize: AppTypography.labelSmall),
             ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -52,7 +53,8 @@ class SymptomChipsPreview extends StatelessWidget {
             side: BorderSide(
               color: AppColors.doctorBlue.withValues(alpha: 0.25),
             ),
-            labelStyle: TextStyle(fontFamily: 'Inter', 
+            labelStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w500,
               color: AppColors.doctorBlue,
@@ -62,7 +64,8 @@ class SymptomChipsPreview extends StatelessWidget {
           Chip(
             label: Text(
               '+$extra',
-              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelSmall),
+              style: TextStyle(
+                  fontFamily: 'Inter', fontSize: AppTypography.labelSmall),
             ),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -146,7 +149,8 @@ class _AppointmentSymptomsSectionState
         children: [
           Text(
             'Symptoms',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -182,7 +186,8 @@ class _AppointmentSymptomsSectionState
                     )
                   : Text(
                       'Save Symptoms',
-                      style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          fontFamily: 'Inter', fontWeight: FontWeight.w600),
                     ),
             ),
           ),

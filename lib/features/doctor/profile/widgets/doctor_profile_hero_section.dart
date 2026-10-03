@@ -101,7 +101,8 @@ class _DoctorProfileMeta extends StatelessWidget {
                 displayName,
                 maxLines: isWide ? 2 : 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: isWide ? 24 : 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -154,7 +155,8 @@ class _MetaChip extends StatelessWidget {
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
@@ -185,7 +187,8 @@ class _MetaLine extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -266,7 +269,8 @@ class _StatTile extends StatelessWidget {
           children: [
             Text(
               value,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
@@ -276,7 +280,8 @@ class _StatTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondaryOf(context),

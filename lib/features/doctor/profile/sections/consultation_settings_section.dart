@@ -114,7 +114,8 @@ class _ConsultationSettingsSectionState
                                 _autoAccept
                                     ? 'New patient requests are confirmed instantly.'
                                     : 'You review each request and tap Accept or Decline.',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                 ),
                               ),
@@ -193,7 +194,8 @@ class _ConsultationSettingsSectionState
                                 _apptReminders
                                     ? 'Patients receive automated reminder alerts before their appointment.'
                                     : 'No reminders will be sent.',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodySmall,
                                 ),
                               ),

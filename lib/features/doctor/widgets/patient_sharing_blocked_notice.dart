@@ -39,7 +39,8 @@ class PatientSharingBlockedNotice extends StatelessWidget {
               children: [
                 Text(
                   PatientSharingMessages.dataNotSharedWithDoctors,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: compact ? 12.5 : 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -50,7 +51,8 @@ class PatientSharingBlockedNotice extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     PatientSharingMessages.dataNotSharedSubtitle,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: compact ? 11.5 : 12,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.35,
@@ -87,7 +89,8 @@ class PatientSharingBlockedEmptyState extends StatelessWidget {
             Text(
               PatientSharingMessages.dataNotSharedWithDoctors,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -97,7 +100,8 @@ class PatientSharingBlockedEmptyState extends StatelessWidget {
             Text(
               PatientSharingMessages.dataNotSharedSubtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),

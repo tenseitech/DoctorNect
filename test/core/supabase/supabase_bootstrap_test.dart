@@ -15,7 +15,8 @@ void main() {
       expect(SupabaseBootstrap.hasConfig, isFalse);
     });
 
-    test('initialize() is a safe no-op returning false when config is absent', () async {
+    test('initialize() is a safe no-op returning false when config is absent',
+        () async {
       final result = await SupabaseBootstrap.initialize();
 
       expect(result, isFalse);
@@ -23,14 +24,16 @@ void main() {
       expect(SupabaseBootstrap.lastInitError, contains('missing'));
     });
 
-    test('initialize() does not throw even with empty explicit strings', () async {
+    test('initialize() does not throw even with empty explicit strings',
+        () async {
       final result = await SupabaseBootstrap.initialize(url: '', anonKey: '');
 
       expect(result, isFalse);
       expect(SupabaseBootstrap.isReady, isFalse);
     });
 
-    test('client getter throws StateError when SupabaseBootstrap is not ready', () {
+    test('client getter throws StateError when SupabaseBootstrap is not ready',
+        () {
       expect(
         () => SupabaseBootstrap.client,
         throwsA(isA<StateError>().having(

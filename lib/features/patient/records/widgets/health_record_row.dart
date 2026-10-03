@@ -86,7 +86,8 @@ class HealthRecordRow extends StatelessWidget {
               _SourceChip(label: _chipLabel, color: accent),
               Text(
                 year,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -111,7 +112,8 @@ class HealthRecordRow extends StatelessWidget {
           _SourceChip(label: statusLabel, color: statusColor),
         Text(
           year,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelSmall,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -149,7 +151,8 @@ class HealthRecordRow extends StatelessWidget {
                           record.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodyLarge,
                             fontWeight: FontWeight.w700,
                             height: 1.25,
@@ -160,7 +163,8 @@ class HealthRecordRow extends StatelessWidget {
                           _provider,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -225,7 +229,8 @@ class _RecordDateBadge extends StatelessWidget {
         children: [
           Text(
             day,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w800,
               color: Colors.white,
@@ -235,7 +240,8 @@ class _RecordDateBadge extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             month,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: Colors.white.withValues(alpha: 0.92),
@@ -264,7 +270,8 @@ class _SourceChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: color,
@@ -303,7 +310,8 @@ class HealthRecordMonthHeader extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
         child: Text(
           label,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w700,
             color: AppColors.textSecondaryOf(context),

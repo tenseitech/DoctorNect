@@ -33,7 +33,8 @@ class LabeledRemoveButton extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(compact ? 8 : 12),
       ),
-      textStyle: TextStyle(fontFamily: 'Inter', 
+      textStyle: TextStyle(
+        fontFamily: 'Inter',
         fontSize: compact ? 12 : 15,
         fontWeight: FontWeight.w600,
       ),

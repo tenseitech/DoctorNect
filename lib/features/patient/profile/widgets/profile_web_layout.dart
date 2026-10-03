@@ -176,7 +176,8 @@ class _WebPageHeader extends StatelessWidget {
             children: [
               Text(
                 'Profile',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineLarge,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimaryOf(context),
@@ -186,7 +187,8 @@ class _WebPageHeader extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Manage your account, family & health records',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -250,7 +252,8 @@ class _ProfileIdentityPanel extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineLarge,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
@@ -314,7 +317,8 @@ class _ProfileIdentityPanel extends StatelessWidget {
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: Text(
                 'Edit Profile',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.patientTeal,
@@ -336,7 +340,8 @@ class _ProfileIdentityPanel extends StatelessWidget {
                     children: [
                       Text(
                         'Family',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimaryOf(context),
@@ -345,7 +350,8 @@ class _ProfileIdentityPanel extends StatelessWidget {
                       if (family.isNotEmpty)
                         Text(
                           '${family.length} member${family.length == 1 ? '' : 's'}',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -363,7 +369,8 @@ class _ProfileIdentityPanel extends StatelessWidget {
                   ),
                   child: Text(
                     'Manage',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -410,7 +417,8 @@ class _WebSectionPanel extends StatelessWidget {
           children: [
             Text(
               title,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimaryOf(context),
@@ -419,7 +427,8 @@ class _WebSectionPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -491,7 +500,8 @@ class _MetaChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
@@ -518,7 +528,8 @@ class _ContactRow extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -559,7 +570,8 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondaryOf(context),
@@ -568,7 +580,8 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w800,
               color: highlight
@@ -609,7 +622,8 @@ class _WebFamilyList extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
               child: Text(
                 'No family profiles yet',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -664,7 +678,8 @@ class _WebFamilyRow extends StatelessWidget {
                     const Color(0xFF7C3AED).withValues(alpha: 0.12),
                 child: Text(
                   initial,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF7C3AED),
@@ -680,7 +695,8 @@ class _WebFamilyRow extends StatelessWidget {
                       member.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -691,7 +707,8 @@ class _WebFamilyRow extends StatelessWidget {
                       member.relationLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -746,7 +763,8 @@ class _WebAddFamilyRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Add family member',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.patientTeal,

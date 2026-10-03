@@ -21,7 +21,8 @@ InputDecoration authLoginFieldDecoration({
 
   return InputDecoration(
     hintText: hintText,
-    hintStyle: TextStyle(fontFamily: 'Inter', 
+    hintStyle: TextStyle(
+      fontFamily: 'Inter',
       fontSize: AppTypography.bodyMedium,
       fontWeight: FontWeight.w400,
       color: AppColors.textSecondaryOf(context).withValues(alpha: 0.7),
@@ -40,7 +41,8 @@ InputDecoration authLoginFieldDecoration({
     errorBorder: border(AppColors.error),
     focusedErrorBorder: border(AppColors.error, 1.6),
     disabledBorder: border(AppColors.borderOf(context)),
-    errorStyle: TextStyle(fontFamily: 'Inter', 
+    errorStyle: TextStyle(
+      fontFamily: 'Inter',
       fontSize: AppTypography.labelMedium,
       color: AppColors.error,
       height: 1.2,
@@ -81,7 +83,8 @@ class AuthLoginFormHeader extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.headlineSmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -97,7 +100,8 @@ class AuthLoginFormHeader extends StatelessWidget {
             padding: const EdgeInsets.only(left: 14),
             child: Text(
               subtitle!,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
                 height: 1.4,
@@ -146,7 +150,8 @@ class AuthLoginSavedAccountChip extends StatelessWidget {
               children: [
                 Text(
                   'Signing in as',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -155,7 +160,8 @@ class AuthLoginSavedAccountChip extends StatelessWidget {
                   email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),
@@ -173,7 +179,8 @@ class AuthLoginSavedAccountChip extends StatelessWidget {
             ),
             child: Text(
               'Change',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
                 color: accentColor,
@@ -210,7 +217,8 @@ class AuthLoginFieldLabel extends StatelessWidget {
             child: RequiredFieldLabels.text(
               label,
               isRequired: isRequired,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -289,7 +297,8 @@ class AuthLoginFormField extends StatelessWidget {
           onChanged: onChanged,
           validator: validator,
           autofillHints: autofillHints,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w500,
             color: readOnly

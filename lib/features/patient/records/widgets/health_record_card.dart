@@ -132,7 +132,8 @@ class HealthRecordCard extends StatelessWidget {
                 record.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w700,
                 ),
@@ -142,7 +143,8 @@ class HealthRecordCard extends StatelessWidget {
                 _provider,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -156,7 +158,8 @@ class HealthRecordCard extends StatelessWidget {
                 ),
                 child: Text(
                   _chipLabel,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: _sourceColor,
@@ -198,21 +201,24 @@ class HealthRecordCard extends StatelessWidget {
                 children: [
                   Text(
                     record.title,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     _provider,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
                   Text(
                     DateFormat('dd MMM yyyy').format(record.date),
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -220,7 +226,8 @@ class HealthRecordCard extends StatelessWidget {
                   if (record.notes != null && record.notes!.trim().isNotEmpty)
                     Text(
                       record.notes!,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -236,7 +243,8 @@ class HealthRecordCard extends StatelessWidget {
               ),
               child: Text(
                 _chipLabel,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: _sourceColor,
@@ -292,7 +300,8 @@ class _RecordDateBadge extends StatelessWidget {
         children: [
           Text(
             day,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w800,
               color: color,
@@ -302,7 +311,8 @@ class _RecordDateBadge extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             month,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 9,
               fontWeight: FontWeight.w700,
               color: color.withValues(alpha: 0.85),

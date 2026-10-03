@@ -20,11 +20,13 @@ class PharmacyDataSection extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Pharmacy Data'),
           bottom: TabBar(
-            labelStyle: TextStyle(fontFamily: 'Inter', 
+            labelStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
             ),
-            unselectedLabelStyle: TextStyle(fontFamily: 'Inter', 
+            unselectedLabelStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w400,
             ),
@@ -148,7 +150,8 @@ class _StoreCard extends StatelessWidget {
               children: [
                 Text(
                   conn.storeName,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),
@@ -156,7 +159,8 @@ class _StoreCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Since ${df.format(conn.requestedAt)}',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: Colors.grey[500],
                   ),
@@ -174,7 +178,8 @@ class _StoreCard extends StatelessWidget {
             ),
             child: Text(
               isActive ? 'Active' : 'Pending',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: isActive ? AppColors.pharmacyGreen : Colors.orange[700],
@@ -267,14 +272,16 @@ class _DeliveryRow extends StatelessWidget {
               children: [
                 Text(
                   delivery.storeName,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   '${delivery.medicineLines.length} medicine(s)  •  ${df.format(delivery.sentAt)} ${tf.format(delivery.sentAt)}',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     color: Colors.grey[500],
                   ),
@@ -290,7 +297,8 @@ class _DeliveryRow extends StatelessWidget {
             ),
             child: Text(
               _statusLabel,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelSmall,
                 fontWeight: FontWeight.w600,
                 color: _statusColor,
@@ -313,7 +321,8 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: color,
@@ -340,7 +349,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               message,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 color: Colors.grey[500],
               ),

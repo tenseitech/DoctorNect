@@ -311,7 +311,8 @@ class _PatientSideTabTile extends StatelessWidget {
                     item.label,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                       color: labelColor,
@@ -512,7 +513,8 @@ class _PatientBottomTabBarState extends State<_PatientBottomTabBar> {
                                         child: SafeBottomNavLabel(
                                           label: compactBottomNavLabel(label),
                                           maxLines: 1,
-                                          style: TextStyle(fontFamily: 'Inter', 
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
                                             fontSize: 10,
                                             height: 1.0,
                                             fontWeight: selected

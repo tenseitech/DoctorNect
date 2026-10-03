@@ -403,7 +403,8 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                     _fetchingLocation
                                         ? 'Detecting...'
                                         : 'Use current location',
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.doctorBlue,
@@ -569,7 +570,8 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                     'Clinic photos (${_photos.length}/5) — optional',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.titleSmall,
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
                                   ),
                                 ),
                                 const SizedBox(width: 8),

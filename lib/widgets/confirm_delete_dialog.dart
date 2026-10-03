@@ -10,7 +10,8 @@ Future<bool> showConfirmDeleteDialog(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(title, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
+      title: Text(title,
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600)),
       content: Text(message, style: TextStyle(fontFamily: 'Inter')),
       actions: [
         TextButton(

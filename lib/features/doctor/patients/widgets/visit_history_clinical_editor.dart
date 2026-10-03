@@ -56,7 +56,8 @@ class _ReadOnlyTagList extends StatelessWidget {
     if (items.isEmpty) {
       return Text(
         emptyLabel,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodySmall,
           color: AppColors.textSecondaryOf(context),
           fontStyle: FontStyle.italic,
@@ -77,7 +78,8 @@ class _ReadOnlyTagList extends StatelessWidget {
           ),
           child: Text(
             item,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimaryOf(context),
@@ -107,7 +109,8 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           title,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             fontWeight: FontWeight.w600,
             color: color,

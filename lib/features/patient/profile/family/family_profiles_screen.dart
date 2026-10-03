@@ -130,7 +130,8 @@ class _EmptyFamilyState extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'No family members yet',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontWeight: FontWeight.w600,
               fontSize: AppTypography.bodyLarge,
             ),
@@ -139,7 +140,8 @@ class _EmptyFamilyState extends StatelessWidget {
           Text(
             'Add spouse, children, or parents to book on their behalf.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
               height: 1.4,
@@ -151,7 +153,8 @@ class _EmptyFamilyState extends StatelessWidget {
             icon: const Icon(Icons.add, color: AppColors.patientTeal),
             label: Text(
               'Add first member',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
                 color: AppColors.patientTeal,
               ),
@@ -218,7 +221,8 @@ class _MemberCard extends StatelessWidget {
                           ),
                           child: Text(
                             initial,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               color: AppColors.patientTeal,
                               fontWeight: FontWeight.w700,
                             ),
@@ -233,7 +237,8 @@ class _MemberCard extends StatelessWidget {
                         children: [
                           Text(
                             member.name,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontWeight: FontWeight.w700,
                               fontSize: AppTypography.headlineSmall,
                             ),
@@ -241,7 +246,8 @@ class _MemberCard extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             '${member.relationLabel} · ${member.age} yrs · ${member.bloodGroup}',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -316,7 +322,8 @@ class _InfoChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.patientTeal,

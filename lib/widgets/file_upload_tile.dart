@@ -37,7 +37,8 @@ class FileUploadTile extends StatelessWidget {
         RequiredFieldLabels.text(
           label,
           isRequired: isRequired,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimaryOf(context),
@@ -85,7 +86,8 @@ class FileUploadTile extends StatelessWidget {
                     isUploading
                         ? 'Uploading...'
                         : (hasFile ? fileName! : 'Tap to upload PDF file'),
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       color: hasFile
                           ? AppColors.textPrimaryOf(context)
@@ -107,7 +109,8 @@ class FileUploadTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             errorText!,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.error,
             ),

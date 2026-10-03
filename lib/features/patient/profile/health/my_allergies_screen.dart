@@ -102,7 +102,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           Expanded(
             child: Text(
               'List all known allergies including medicines and food. Doctors use this for safer prescriptions.',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 height: 1.4,
                 color: AppColors.textPrimaryOf(context),
@@ -162,7 +163,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           const SizedBox(height: 12),
           Text(
             'Quick add',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -181,7 +183,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
                     onPressed: () => _add(s),
                     backgroundColor: AppColors.surfaceOf(context),
                     side: BorderSide(color: AppColors.borderOf(context)),
-                    labelStyle: TextStyle(fontFamily: 'Inter', 
+                    labelStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textPrimaryOf(context),
                     ),
@@ -207,7 +210,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           const SizedBox(height: 12),
           Text(
             'No allergies added yet',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -217,7 +221,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           Text(
             'Add any medicine or food allergies above',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -251,7 +256,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
             Expanded(
               child: Text(
                 allergy,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimaryOf(context),

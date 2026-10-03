@@ -135,7 +135,8 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
       appBar: AppBar(
         title: Text(
           'All Patients',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w600,
           ),
@@ -166,7 +167,8 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                 children: [
                   Text(
                     'Patient bookings',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w700,
                     ),
@@ -174,7 +176,8 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '${all.length} total · ${patients.length} shown${pendingReports > 0 ? ' · $pendingReports need report' : ''}',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -185,7 +188,8 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       hintText: 'Search patient or test...',
-                      hintStyle: TextStyle(fontFamily: 'Inter', 
+                      hintStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -238,7 +242,8 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                               setState(() => _typeFilter = entry.$1),
                           selectedColor: _labPurple.withValues(alpha: 0.14),
                           checkmarkColor: _labPurple,
-                          labelStyle: TextStyle(fontFamily: 'Inter', 
+                          labelStyle: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             fontWeight: FontWeight.w600,
                             color: _typeFilter == entry.$1
@@ -270,7 +275,8 @@ class _LabAllPatientsScreenState extends State<LabAllPatientsScreen> {
                               ? 'No patient bookings yet. Walk-ins and app bookings will appear here.'
                               : 'No patients match your filters.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                             height: 1.4,
@@ -341,7 +347,8 @@ class _DateFilterRow extends StatelessWidget {
                   Expanded(
                     child: Text(
                       label,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                       ),
@@ -363,7 +370,8 @@ class _DateFilterRow extends StatelessWidget {
             style: TextButton.styleFrom(foregroundColor: AppColors.labPurple),
             child: Text(
               'Clear',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
                 fontSize: AppTypography.bodySmall,
               ),
@@ -411,7 +419,8 @@ class _PatientBookingCard extends StatelessWidget {
                   booking.patientName.trim().isNotEmpty
                       ? booking.patientName.trim()[0].toUpperCase()
                       : 'P',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w700,
                     color: AppColors.labPurple,
                   ),
@@ -424,7 +433,8 @@ class _PatientBookingCard extends StatelessWidget {
                   children: [
                     Text(
                       booking.patientName,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w700,
                       ),
@@ -432,7 +442,8 @@ class _PatientBookingCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       isWalkIn ? 'Walk-in' : 'Home collection',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -472,7 +483,8 @@ class _PatientBookingCard extends StatelessWidget {
                     children: [
                       Text(
                         labOrderStatusLabel(booking.status),
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: statusColor,
@@ -521,7 +533,8 @@ class _PatientBookingCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             testName,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w600,
                               height: 1.35,
@@ -537,7 +550,8 @@ class _PatientBookingCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '${DateFormat('dd MMM yyyy').format(booking.dateTime)} · ${booking.slotLabel}',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -546,7 +560,8 @@ class _PatientBookingCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               booking.address,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -564,7 +579,8 @@ class _PatientBookingCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   'Report sent',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.pharmacyGreen,
                     fontWeight: FontWeight.w600,

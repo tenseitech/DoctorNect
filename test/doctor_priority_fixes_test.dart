@@ -8,7 +8,7 @@ import 'package:medibond/features/doctor/shared/doctor_connected_partners_base_s
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-group('Priority 1 Doctor UI/UX Bug Fixes Tests', () {
+  group('Priority 1 Doctor UI/UX Bug Fixes Tests', () {
     testWidgets(
       '1. Patients screen: FAB is positioned at bottom 96 on mobile and list has 180 bottom padding with AlwaysScrollableScrollPhysics',
       (tester) async {

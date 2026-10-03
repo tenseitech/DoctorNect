@@ -151,7 +151,8 @@ class _QualificationSelectorBodyState
         ? widget.label
         : (widget.isRequired ? '${widget.label} *' : widget.label);
     final textStyle = widget.registrationStyle
-        ? TextStyle(fontFamily: 'Inter', 
+        ? TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             fontWeight: FontWeight.w600,
           )
@@ -174,7 +175,8 @@ class _QualificationSelectorBodyState
                   value: q,
                   child: Text(
                     q,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       fontWeight: FontWeight.w500,
                       color: isDark ? Colors.white : Colors.black87,

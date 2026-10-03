@@ -157,7 +157,8 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                   Expanded(
                     child: Text(
                       'Change location',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -173,7 +174,8 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
               ),
               Text(
                 'Enter your full address for home visits, lab collection, and nearby doctor search.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                   height: 1.4,
@@ -278,7 +280,8 @@ class _PatientAddressSheetState extends State<PatientAddressSheet> {
                         )
                       : Text(
                           'Save location',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodyLarge,
                             fontWeight: FontWeight.w600,
                           ),

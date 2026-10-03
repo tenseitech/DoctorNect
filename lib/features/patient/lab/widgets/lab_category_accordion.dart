@@ -27,7 +27,8 @@ class LabCategoryAccordionSection extends StatelessWidget {
     if (categoryOrder.isEmpty) {
       return Text(
         emptyMessage,
-        style: TextStyle(fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
+        style: TextStyle(
+            fontFamily: 'Inter', color: AppColors.textSecondaryOf(context)),
       );
     }
 
@@ -96,7 +97,8 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -114,7 +116,8 @@ class _LabCategoryAccordionPanel extends StatelessWidget {
                     ),
                     child: Text(
                       '${tests.length}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.labPurple,

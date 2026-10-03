@@ -192,7 +192,8 @@ class VerificationStatusBanner extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.titleSmall,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimaryOf(context),
@@ -201,7 +202,8 @@ class VerificationStatusBanner extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                         height: 1.4,
@@ -227,7 +229,8 @@ class VerificationStatusBanner extends StatelessWidget {
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  textStyle: TextStyle(fontFamily: 'Inter', 
+                  textStyle: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     fontWeight: FontWeight.w600,
                   ),

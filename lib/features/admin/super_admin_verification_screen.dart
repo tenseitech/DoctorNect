@@ -88,7 +88,8 @@ class _SuperAdminVerificationScreenState
                     'Super Admin Portal',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.titleMedium,
                       fontWeight: FontWeight.w700,
                     ),
@@ -97,7 +98,8 @@ class _SuperAdminVerificationScreenState
                     'Professional Account Verification',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -140,7 +142,8 @@ class _SuperAdminVerificationScreenState
                     label: Text(tab.$2),
                     selected: isSelected,
                     selectedColor: const Color(0xFF4F46E5),
-                    labelStyle: TextStyle(fontFamily: 'Inter', 
+                    labelStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -170,7 +173,8 @@ class _SuperAdminVerificationScreenState
                     selectedColor: isDark
                         ? const Color(0xFF312E81)
                         : const Color(0xFFEEF2FF),
-                    labelStyle: TextStyle(fontFamily: 'Inter', 
+                    labelStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -220,7 +224,8 @@ class _SuperAdminVerificationScreenState
                           const SizedBox(height: 16),
                           Text(
                             'No applications found',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimaryOf(context),
@@ -230,7 +235,8 @@ class _SuperAdminVerificationScreenState
                           Text(
                             'Try selecting another role or status filter above.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -326,7 +332,8 @@ class _ApplicantCard extends StatelessWidget {
                       children: [
                         Text(
                           applicant.displayName,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.titleMedium,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimaryOf(context),
@@ -335,7 +342,8 @@ class _ApplicantCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           '${applicant.role.name.toUpperCase()} • $dateStr',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelSmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -357,10 +365,13 @@ class _ApplicantCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      applicant.mobile.isNotEmpty ? applicant.mobile : 'No phone',
+                      applicant.mobile.isNotEmpty
+                          ? applicant.mobile
+                          : 'No phone',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -378,7 +389,8 @@ class _ApplicantCard extends StatelessWidget {
                       'ID: ${applicant.profileId}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -440,7 +452,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         stage.displayLabel,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w600,
           color: text,
@@ -499,7 +512,8 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
               isRevision
                   ? 'Specify what corrections or additional documents the applicant must provide:'
                   : 'Specify the reason for rejection:',
-              style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+              style: TextStyle(
+                  fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -602,7 +616,8 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
                           children: [
                             Text(
                               app.displayName,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.headlineMedium,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -610,14 +625,16 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
                             const SizedBox(height: 4),
                             Text(
                               '${app.role.name.toUpperCase()} • Mobile: ${app.mobile}',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodySmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
                             ),
                             Text(
                               'Profile ID: ${app.profileId}',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodySmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -640,7 +657,8 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
                       ),
                       child: Text(
                         'Existing Note/Reason: "${app.rejectionReason}"',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           color: const Color(0xFF92400E),
                         ),
@@ -650,7 +668,8 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
                   ],
                   Text(
                     'Verification Checklist & Credentials',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.titleMedium,
                       fontWeight: FontWeight.w700,
                     ),
@@ -681,14 +700,16 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
                               children: [
                                 Text(
                                   req.label,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.bodyMedium,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 Text(
                                   req.description,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelSmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -700,7 +721,8 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
                             widget.roleDetails.containsKey(req.key)
                                 ? '${widget.roleDetails[req.key]}'
                                 : 'Submitted',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               fontWeight: FontWeight.w500,
                               color: AppColors.textPrimaryOf(context),

@@ -58,14 +58,16 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     'DoctorNect',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
                     'Version ${PatientProfileMock.appVersion}',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),

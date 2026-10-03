@@ -208,7 +208,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             child: Text(
               'Change Password',
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
                 fontSize: AppTypography.headlineSmall,
               ),
@@ -236,7 +237,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
                   ),
                   child: Text(
                     _errorMsg!,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: const Color(0xFFDC2626),
                     ),

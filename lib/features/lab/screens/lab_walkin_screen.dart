@@ -157,7 +157,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       Expanded(
                         child: Text(
                           'Walk-in Patient',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineLarge,
                             fontWeight: FontWeight.w700,
                           ),
@@ -178,7 +179,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                         ),
                         child: Text(
                           'View all patients',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             fontWeight: FontWeight.w600,
                           ),
@@ -189,7 +191,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Register a patient at the lab counter without an app booking.',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodyMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -247,7 +250,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                 initialValue: _gender,
                                 hint: Text(
                                   'Select gender',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     color: AppColors.textSecondaryOf(context),
                                   ),
                                 ),
@@ -345,7 +349,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       const SizedBox(width: 8),
                       Text(
                         "Today's walk-ins",
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w700,
                         ),
@@ -353,7 +358,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                       const SizedBox(width: 8),
                       Text(
                         '(${walkIns.length})',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -390,7 +396,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                           children: [
                             Text(
                               booking.patientName,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodyLarge,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -398,7 +405,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                             const SizedBox(height: 4),
                             Text(
                               booking.displayTestName,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodySmall,
                                 color: AppColors.textPrimaryOf(context),
                               ),
@@ -406,7 +414,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                             const SizedBox(height: 4),
                             Text(
                               '${DateFormat('hh:mm a').format(booking.dateTime)} · ${booking.status}',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelMedium,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -423,7 +432,8 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                   const SizedBox(width: 6),
                                   Text(
                                     'Report sent',
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.labelMedium,
                                       color: AppColors.pharmacyGreen,
                                       fontWeight: FontWeight.w600,

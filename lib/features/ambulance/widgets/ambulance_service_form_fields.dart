@@ -27,7 +27,8 @@ class AmbulanceFormSectionTitle extends StatelessWidget {
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimaryOf(context),
@@ -186,7 +187,8 @@ class AmbulanceFormToggleRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w500,
               ),

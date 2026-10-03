@@ -104,7 +104,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
             Expanded(
               child: Text(
                 'Packages',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w700,
                   fontSize: AppTypography.headlineSmall,
                 ),
@@ -114,7 +115,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
         ),
         content: Text(
           'Health packages are coming soon. You will be able to book bundled checkups at better value.',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             color: AppColors.textSecondaryOf(context),
             height: 1.45,
@@ -131,7 +133,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
             ),
             child: Text(
               'Got it',
-              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+              style:
+                  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -222,7 +225,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
                   const SizedBox(width: 7),
                   Text(
                     'Bookings',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.surfaceOf(context),
@@ -249,7 +253,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
                       ),
                       child: Text(
                         '$upcomingCount',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w800,
                           color: AppColors.surfaceOf(context),
@@ -384,13 +389,15 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
           }
         });
       },
-      style: TextStyle(fontFamily: 'Inter', 
+      style: TextStyle(
+        fontFamily: 'Inter',
         fontSize: isWide ? 15 : 14,
         color: AppColors.textPrimaryOf(context),
       ),
       decoration: InputDecoration(
         hintText: 'Search tests, health packages…',
-        hintStyle: TextStyle(fontFamily: 'Inter', 
+        hintStyle: TextStyle(
+          fontFamily: 'Inter',
           fontSize: isWide ? 15 : 14,
           color: AppColors.textSecondaryOf(context),
         ),
@@ -440,7 +447,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
             if (!profileAgeValid) ...[
               Text(
                 'Booking for ${PatientLabAgeGuard.selfAgeLabel()}',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -448,7 +456,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
               const SizedBox(height: 8),
               Text(
                 PatientLabAgeGuard.missingAgeHint,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   color: AppColors.error,
                   height: 1.4,
@@ -528,7 +537,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
           child: filteredTests.isEmpty
               ? Text(
                   'No tests found',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     color: AppColors.textSecondaryOf(context),
                   ),
                 )
@@ -637,7 +647,8 @@ class _LabHomeScreenState extends State<LabHomeScreen> {
             appBar: AppBar(
               title: Text(
                 'My Lab',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
               ),
               backgroundColor: AppColors.surfaceOf(context),
               foregroundColor: AppColors.textPrimaryOf(context),
@@ -693,7 +704,8 @@ class _LabQuickAction extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimaryOf(context),

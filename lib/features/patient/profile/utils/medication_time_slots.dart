@@ -125,7 +125,8 @@ abstract final class MedicationTimeSlots {
                     const SizedBox(height: 14),
                     Text(
                       '${label(slot)} time',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.headlineSmall,
                         fontWeight: FontWeight.w700,
                       ),
@@ -133,7 +134,8 @@ abstract final class MedicationTimeSlots {
                     const SizedBox(height: 4),
                     Text(
                       'Select between ${rangeLabel(slot)}',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),

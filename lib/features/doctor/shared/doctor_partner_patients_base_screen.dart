@@ -138,7 +138,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
       appBar: AppBar(
         title: Text(
           widget.partnerTitle,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w600,
           ),
@@ -178,7 +179,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                           children: [
                             Text(
                               widget.sectionTitle,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -190,7 +192,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                                   : _isToday
                                       ? 'Today • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total'
                                       : '${_dateFormat.format(_selectedDate)} • $completedCount ${widget.completedStatusLabel} • $pendingCount ${widget.pendingStatusLabel} • ${forDate.length} total',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: 12.5,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -230,7 +233,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                                 ),
                                 child: Text(
                                   'All (${all.length})',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelMedium,
                                     fontWeight: _showAllDates
                                         ? FontWeight.w700
@@ -266,7 +270,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                                 ),
                                 child: Text(
                                   'By Date',
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelMedium,
                                     fontWeight: !_showAllDates
                                         ? FontWeight.w700
@@ -327,7 +332,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                                       _isToday
                                           ? 'Today • ${_dateFormat.format(_selectedDate)}'
                                           : _dateFormat.format(_selectedDate),
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.bodySmall,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.textPrimaryOf(context),
@@ -369,7 +375,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                             ),
                             child: Text(
                               'Today',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontWeight: FontWeight.w600,
                                 fontSize: AppTypography.bodySmall,
                               ),
@@ -383,13 +390,15 @@ class _DoctorPartnerPatientsBaseViewState<T>
                   TextField(
                     controller: _searchController,
                     onChanged: (_) => setState(() {}),
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textPrimaryOf(context),
                     ),
                     decoration: InputDecoration(
                       hintText: 'Search patient name...',
-                      hintStyle: TextStyle(fontFamily: 'Inter', 
+                      hintStyle: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -429,7 +438,8 @@ class _DoctorPartnerPatientsBaseViewState<T>
                                   ? 'No records on ${_dateFormat.format(_selectedDate)}. Switch to "All" or pick another date.'
                                   : 'No records match your search.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -498,7 +508,8 @@ class DocPartnerTableHeaderCell extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Text(
         text,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w700,
           color: AppColors.textSecondaryOf(context),
@@ -526,7 +537,8 @@ class DocPartnerTableBodyCell extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Text(
         text,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelMedium,
           height: 1.35,
           fontWeight: bold ? FontWeight.w600 : FontWeight.w400,

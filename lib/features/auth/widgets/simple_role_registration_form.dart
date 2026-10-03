@@ -214,7 +214,8 @@ class _SimpleRoleRegistrationFormState
                           FormValidators.required(v, field: 'Name'),
                       textInputAction: TextInputAction.next,
                       textCapitalization: TextCapitalization.words,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -317,7 +318,8 @@ class _VerifiedMobileField extends StatelessWidget {
           Expanded(
             child: Text(
               mobile,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w600,
               ),

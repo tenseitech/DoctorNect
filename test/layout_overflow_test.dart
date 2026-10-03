@@ -118,7 +118,8 @@ void main() {
 
     // 2. Login / Auth Intro Screen
     for (final config in kTestConfigs) {
-      testWidgets('UnifiedAuthIntroScreen layout - ${config.name}', (tester) async {
+      testWidgets('UnifiedAuthIntroScreen layout - ${config.name}',
+          (tester) async {
         await _pumpScreen(
           tester,
           config,
@@ -132,7 +133,8 @@ void main() {
 
     // 3. Doctor Verification Pending Screen
     for (final config in kTestConfigs) {
-      testWidgets('DoctorVerificationPendingScreen layout - ${config.name}', (tester) async {
+      testWidgets('DoctorVerificationPendingScreen layout - ${config.name}',
+          (tester) async {
         DoctorSession.setDoctor(id: 'doc-verify-01', name: 'Dr. Ananya Roy');
         addTearDown(DoctorSession.clear);
 
@@ -149,7 +151,8 @@ void main() {
 
     // 4. Lab Booking Confirmed Screen
     for (final config in kTestConfigs) {
-      testWidgets('LabBookingConfirmedScreen layout - ${config.name}', (tester) async {
+      testWidgets('LabBookingConfirmedScreen layout - ${config.name}',
+          (tester) async {
         final booking = ConfirmedLabBooking(
           bookingId: 'LBK-5432',
           testName: 'Lipid Profile & Glucose Fasting',
@@ -173,7 +176,8 @@ void main() {
 
     // 5. Write Prescription Screen
     for (final config in kTestConfigs) {
-      testWidgets('WritePrescriptionScreen layout - ${config.name}', (tester) async {
+      testWidgets('WritePrescriptionScreen layout - ${config.name}',
+          (tester) async {
         const patient = PatientClinicalContext(
           patientName: 'Devendra Patel',
           age: 42,
@@ -195,7 +199,8 @@ void main() {
 
     // 6. Clinical Tools Bottom Sheet / Drawer
     for (final config in kTestConfigs) {
-      testWidgets('ClinicalToolsDrawer layout - ${config.name}', (tester) async {
+      testWidgets('ClinicalToolsDrawer layout - ${config.name}',
+          (tester) async {
         await _pumpScreen(
           tester,
           config,
@@ -247,7 +252,8 @@ void main() {
 
     // 7. Ambulance Booking Screen
     for (final config in kTestConfigs) {
-      testWidgets('AmbulanceBookingScreen layout - ${config.name}', (tester) async {
+      testWidgets('AmbulanceBookingScreen layout - ${config.name}',
+          (tester) async {
         await _pumpScreen(
           tester,
           config,

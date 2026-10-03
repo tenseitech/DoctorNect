@@ -84,7 +84,8 @@ class _ProfileMeta extends StatelessWidget {
           profile.name.isNotEmpty ? profile.name : 'Your profile',
           maxLines: isWide ? 2 : 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: isWide ? 24 : 22,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimaryOf(context),
@@ -131,7 +132,8 @@ class MetaChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
@@ -164,7 +166,8 @@ class MetaLine extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -249,7 +252,8 @@ class PatientBmiCard extends StatelessWidget {
         children: [
           Text(
             'BMI',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w600,
               color: AppColors.patientTeal,
@@ -258,7 +262,8 @@ class PatientBmiCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             bmi.toStringAsFixed(1),
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: isWide ? 24 : 22,
               fontWeight: FontWeight.w800,
               color: AppColors.patientTeal,
@@ -280,7 +285,8 @@ class PatientBmiCard extends StatelessWidget {
           ),
           child: Text(
             PatientBmiUtils.labelFor(category),
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: AppColors.patientTeal,
@@ -290,7 +296,8 @@ class PatientBmiCard extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           PatientBmiUtils.messageFor(category),
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: isWide ? 14 : 13,
             fontWeight: FontWeight.w500,
             height: 1.35,
@@ -351,7 +358,8 @@ class _StatPill extends StatelessWidget {
       ),
       child: Text(
         '$label · $value',
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.textSecondaryOf(context),

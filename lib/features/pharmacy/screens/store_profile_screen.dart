@@ -199,7 +199,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                               ),
                               label: Text(
                                 'Promote Banner Ad on Patient Home',
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -434,7 +435,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
             return AlertDialog(
               title: Text(
                 'Edit $field',
-                style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                style:
+                    TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -444,7 +446,8 @@ class _StoreProfileScreenState extends State<StoreProfileScreen> {
                     if (errorText != null) ...[
                       Text(
                         errorText!,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           color: AppColors.error,
                         ),
@@ -577,7 +580,8 @@ class _ProfileHeaderBand extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   _storeInitial(store.storeName),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineLarge,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
@@ -595,7 +599,8 @@ class _ProfileHeaderBand extends StatelessWidget {
                         Flexible(
                           child: Text(
                             store.storeName,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.headlineMedium,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
@@ -614,7 +619,8 @@ class _ProfileHeaderBand extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       store.ownerName,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: Colors.white.withValues(alpha: 0.88),
                       ),
@@ -631,7 +637,8 @@ class _ProfileHeaderBand extends StatelessWidget {
                       ),
                       child: Text(
                         'Medical Store',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -687,7 +694,8 @@ class _HeaderStatPill extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -727,7 +735,8 @@ class _ProfileSection extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               title,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 fontWeight: FontWeight.w700,
               ),
@@ -737,7 +746,8 @@ class _ProfileSection extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           subtitle,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -767,7 +777,8 @@ class _ProfileSection extends StatelessWidget {
                             flex: 2,
                             child: Text(
                               'Field',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelMedium,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textSecondaryOf(context),
@@ -778,7 +789,8 @@ class _ProfileSection extends StatelessWidget {
                             flex: 3,
                             child: Text(
                               'Details',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelMedium,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textSecondaryOf(context),
@@ -829,7 +841,8 @@ class _ProfileTableRow extends StatelessWidget {
               flex: 2,
               child: Text(
                 field.label,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textSecondaryOf(context),
@@ -846,7 +859,8 @@ class _ProfileTableRow extends StatelessWidget {
                       field.value.trim().isEmpty ? '—' : field.value,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -931,7 +945,8 @@ class _AccountActionRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: effectiveColor,
@@ -1044,7 +1059,8 @@ class _AddressEditDialogState extends State<_AddressEditDialog> {
             if (_errorText != null) ...[
               Text(
                 _errorText!,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.error,
                 ),

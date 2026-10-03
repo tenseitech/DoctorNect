@@ -344,7 +344,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                                 'DoctorNect',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.headlineMedium,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -357,7 +358,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                         const SizedBox(height: 40),
                         Text(
                           welcomeTitle,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.displayLarge,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
@@ -370,7 +372,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                           subtitle,
                           maxLines: 4,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineSmall,
                             color: Colors.white.withValues(alpha: 0.92),
                             height: 1.55,
@@ -406,7 +409,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                                         f.title,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: AppTypography.bodyLarge,
                                           fontWeight: FontWeight.w600,
                                           color: Colors.white,
@@ -416,7 +420,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                                         f.subtitle,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: AppTypography.bodySmall,
                                           color: Colors.white.withValues(
                                             alpha: 0.85,
@@ -444,7 +449,8 @@ class _LoginBrandingPanel extends StatelessWidget {
                                 branding.footerNote,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.labelMedium,
                                   color: Colors.white.withValues(alpha: 0.8),
                                 ),
@@ -639,7 +645,8 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                             title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.headlineMedium,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
@@ -651,7 +658,8 @@ class _MobileBrandedLoginHeader extends StatelessWidget {
                             subtitle,
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               color: Colors.white.withValues(alpha: 0.92),
                               height: 1.4,
@@ -719,7 +727,8 @@ class _StackedLoginScaffold extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           appBarTitle,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimaryOf(context),
             fontSize: compact ? 16 : 17,
@@ -778,7 +787,8 @@ class _StackedLoginScaffold extends StatelessWidget {
                             welcomeTitle,
                             textAlign:
                                 compact ? TextAlign.center : TextAlign.left,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: compact ? 22 : 24,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textPrimaryOf(context),
@@ -790,7 +800,8 @@ class _StackedLoginScaffold extends StatelessWidget {
                             subtitle,
                             textAlign:
                                 compact ? TextAlign.center : TextAlign.left,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodyMedium,
                               color: AppColors.textSecondaryOf(context),
                               height: 1.45,
@@ -890,7 +901,8 @@ class AuthLoginDividerLabel extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondaryOf(context),
@@ -966,7 +978,8 @@ class AuthLoginPrimaryButton extends StatelessWidget {
                         loadingText!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyMedium,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -986,7 +999,8 @@ class AuthLoginPrimaryButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
@@ -1049,7 +1063,8 @@ class AuthLoginRegisterButton extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w600,
                   fontSize: AppTypography.bodyMedium,
                   color: accentColor,

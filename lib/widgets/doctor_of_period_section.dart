@@ -168,7 +168,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
       children: [
         Text(
           'Featured Doctors',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.headlineSmall,
             fontWeight: FontWeight.w600,
           ),
@@ -231,7 +232,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   ),
                                   child: Text(
                                     entry.title.toUpperCase(),
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: 10,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
@@ -245,7 +247,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                       : 'Dr. ${doctor.name}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: isCompact ? 15 : 16,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white,
@@ -255,7 +258,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   doctor.specialization,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelMedium,
                                     color: Colors.white.withValues(alpha: 0.92),
                                   ),
@@ -290,7 +294,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                         ' ${doctor.rating} · ${entry.subtitle}',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(fontFamily: 'Inter', 
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
                                           fontSize: AppTypography.labelSmall,
                                           color: Colors.white.withValues(
                                             alpha: 0.9,
@@ -357,7 +362,8 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                   children: [
                                     Text(
                                       isCompact ? 'Profile' : 'View profile',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
@@ -534,7 +540,8 @@ class _FeaturedDoctorPhoto extends StatelessWidget {
                 ),
                 Text(
                   initial,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     fontWeight: FontWeight.w700,
                     color: Colors.white.withValues(alpha: 0.9),
@@ -563,7 +570,8 @@ class _InfoRow extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               color: Colors.white.withValues(alpha: 0.88),
             ),

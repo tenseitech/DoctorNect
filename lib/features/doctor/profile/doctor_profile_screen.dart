@@ -199,7 +199,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             child: avatarImage == null
                 ? Text(
                     initial,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: fontSize,
                       fontWeight: FontWeight.w800,
                       color: AppColors.patientTeal,
@@ -461,7 +462,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                 children: [
                   Text(
                     'Profile',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -470,7 +472,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Your practice & account',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                       height: 1.3,

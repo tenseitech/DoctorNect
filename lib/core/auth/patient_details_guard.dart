@@ -210,7 +210,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                       children: [
                         Text(
                           'Patient Details',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                             color: textPrimary,
@@ -219,7 +220,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                         const SizedBox(height: 4),
                         Text(
                           'Please provide your age and gender to continue booking. Doctors need this for proper clinical diagnosis.',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.bodySmall,
                             color: textSecondary,
                             height: 1.35,
@@ -245,7 +247,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
               // AGE INPUT
               Text(
                 'Age (in years) *',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                   color: textPrimary,
@@ -260,13 +263,15 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(3),
                 ],
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   color: textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: 'e.g. 28',
-                  hintStyle: TextStyle(fontFamily: 'Inter', 
+                  hintStyle: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     color: textSecondary.withValues(alpha: 0.6),
                   ),
@@ -326,7 +331,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
               // GENDER INPUT
               Text(
                 'Gender *',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w600,
                   color: textPrimary,
@@ -350,7 +356,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                     selectedColor:
                         AppColors.patientTeal.withValues(alpha: 0.18),
                     backgroundColor: AppColors.cardBgOf(context),
-                    labelStyle: TextStyle(fontFamily: 'Inter', 
+                    labelStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w500,
@@ -376,7 +383,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                 const SizedBox(height: 6),
                 Text(
                   _genderError!,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     color: AppColors.error,
                     fontSize: AppTypography.labelSmall,
                   ),
@@ -408,7 +416,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                       )
                     : Text(
                         'Save & Continue',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w600,
                         ),
@@ -424,7 +433,8 @@ class _PatientDetailsSheetState extends State<PatientDetailsSheet> {
                 ),
                 child: Text(
                   'Cancel',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w500,
                   ),

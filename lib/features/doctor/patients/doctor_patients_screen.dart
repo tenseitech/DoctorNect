@@ -252,7 +252,8 @@ class _EmptyPatientsState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'No patients found',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -262,7 +263,8 @@ class _EmptyPatientsState extends StatelessWidget {
             Text(
               'Patients with appointments will appear here.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -364,7 +366,8 @@ class _SpeedDialOption extends StatelessWidget {
               ),
               child: Text(
                 label,
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                   color: enabled

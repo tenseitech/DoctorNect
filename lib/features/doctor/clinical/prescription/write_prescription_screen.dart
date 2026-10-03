@@ -633,7 +633,8 @@ class _WritePrescriptionScreenState extends State<WritePrescriptionScreen> {
                         Expanded(
                           child: Text(
                             'Editing · ${DateFormat('dd MMM yyyy, hh:mm a').format(_draft.prescriptionDate)} · ${_draft.prescriptionId}',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
                               color: AppColors.doctorBlue,
@@ -904,7 +905,8 @@ class _PrevRxCard extends StatelessWidget {
               children: [
                 Text(
                   DateFormat('dd MMM yyyy').format(draft.prescriptionDate),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textPrimaryOf(context),
@@ -916,7 +918,8 @@ class _PrevRxCard extends StatelessWidget {
                     dx,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -932,7 +935,8 @@ class _PrevRxCard extends StatelessWidget {
                     }).join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -947,7 +951,8 @@ class _PrevRxCard extends StatelessWidget {
                         .join(' · '),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -965,7 +970,8 @@ class _PrevRxCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 2),
                   child: Text(
                     'Editing',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: AppColors.doctorBlue,
@@ -988,7 +994,8 @@ class _PrevRxCard extends StatelessWidget {
                     ),
                     child: Text(
                       'Edit',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1008,7 +1015,8 @@ class _PrevRxCard extends StatelessWidget {
                     ),
                     child: Text(
                       'View',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1222,7 +1230,8 @@ class _SendToSheetState extends State<_SendToSheet> {
                     'Send Prescription to',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineSmall,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1233,7 +1242,8 @@ class _SendToSheetState extends State<_SendToSheet> {
             const SizedBox(height: 6),
             Text(
               'Select all recipients for ${widget.patient.patientName}\'s prescription',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1282,7 +1292,8 @@ class _SendToSheetState extends State<_SendToSheet> {
                   backgroundColor: AppColors.doctorBlue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  textStyle: TextStyle(fontFamily: 'Inter', 
+                  textStyle: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1328,7 +1339,8 @@ class _RecipientTile extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w600,
                 fontSize: AppTypography.bodyMedium,
               ),
@@ -1340,7 +1352,8 @@ class _RecipientTile extends StatelessWidget {
         padding: const EdgeInsets.only(left: 28),
         child: Text(
           subtitle,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.labelMedium,
             color: AppColors.textSecondaryOf(context),
           ),

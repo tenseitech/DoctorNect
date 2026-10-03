@@ -201,7 +201,8 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                                     widget.title,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: isMobile
                                           ? AppTypography.headlineSmall
                                           : AppTypography.bodyLarge,
@@ -215,7 +216,8 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                                     widget.subtitle,
                                     maxLines: isMobile ? 2 : 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontSize: AppTypography.labelMedium,
                                       height: 1.35,
                                       color: AppColors.textSecondaryOf(context),

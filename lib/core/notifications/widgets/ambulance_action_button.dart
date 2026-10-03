@@ -80,7 +80,8 @@ class _AmbulanceActionButtonState extends State<AmbulanceActionButton> {
                     const SizedBox(width: 7),
                     Text(
                       'Ambulance',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,

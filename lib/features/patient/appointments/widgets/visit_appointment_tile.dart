@@ -86,7 +86,8 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                                 formatDoctorDisplayName(a.doctorName),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.bodyLarge,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -103,7 +104,8 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                           a.specialization,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),
@@ -123,7 +125,8 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                                 time,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: AppTypography.labelMedium,
                                   color: AppColors.textSecondaryOf(context),
                                 ),
@@ -135,7 +138,8 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                           const SizedBox(height: 4),
                           Text(
                             _countdown,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF117554),
@@ -149,7 +153,8 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
                             a.cancellationReason!,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelSmall,
                               fontStyle: FontStyle.italic,
                               color: AppColors.textSecondaryOf(context),
@@ -219,7 +224,8 @@ class _DateBadge extends StatelessWidget {
         children: [
           Text(
             day,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.headlineSmall,
               fontWeight: FontWeight.w800,
               color: AppColors.surfaceOf(context),
@@ -229,7 +235,8 @@ class _DateBadge extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             month,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: AppColors.surfaceOf(context).withValues(alpha: 0.92),
@@ -258,7 +265,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: color,

@@ -132,7 +132,8 @@ class AppointmentActionButtons extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_radius),
           ),
-          textStyle: TextStyle(fontFamily: 'Inter', 
+          textStyle: TextStyle(
+            fontFamily: 'Inter',
             fontSize: fontSize,
             fontWeight: FontWeight.w600,
           ),
@@ -163,7 +164,8 @@ class AppointmentActionButtons extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_radius),
           ),
-          textStyle: TextStyle(fontFamily: 'Inter', 
+          textStyle: TextStyle(
+            fontFamily: 'Inter',
             fontSize: fontSize,
             fontWeight: FontWeight.w600,
           ),

@@ -42,7 +42,8 @@ class PatientDoctorSectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodyLarge,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),
@@ -64,7 +65,8 @@ class PatientDoctorTagWrap extends StatelessWidget {
     if (labels.isEmpty) {
       return Text(
         'Not added yet',
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodyMedium,
           color: AppColors.textSecondaryOf(context),
         ),
@@ -84,7 +86,8 @@ class PatientDoctorTagWrap extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w500,
               color: AppColors.textPrimaryOf(context),
@@ -116,7 +119,8 @@ class PatientDoctorMetaRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyMedium,
               color: AppColors.textSecondaryOf(context),
               height: 1.4,
@@ -152,7 +156,8 @@ class PatientDoctorBulletItem extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodyMedium,
                 height: 1.45,
               ),
@@ -197,7 +202,8 @@ class PatientDoctorTimelineTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontWeight: FontWeight.w600,
                     fontSize: AppTypography.bodyMedium,
                   ),
@@ -205,7 +211,8 @@ class PatientDoctorTimelineTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodySmall,
                     color: AppColors.textSecondaryOf(context),
                   ),

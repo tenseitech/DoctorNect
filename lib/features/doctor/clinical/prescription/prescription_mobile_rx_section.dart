@@ -195,7 +195,8 @@ class _PrescriptionMobileRxSectionState
           ),
           child: Text(
             _namedCount == 0 ? '0 medicines' : '$_namedCount in Rx',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelSmall,
               fontWeight: FontWeight.w700,
               color: _namedCount > 0

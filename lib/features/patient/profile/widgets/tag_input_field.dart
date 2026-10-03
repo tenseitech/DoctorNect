@@ -93,7 +93,8 @@ class _TagInputFieldState extends State<TagInputField> {
                     const SizedBox(width: 4),
                     Text(
                       t,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.patientTeal,

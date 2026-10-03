@@ -80,7 +80,8 @@ class LabTestRow extends StatelessWidget {
                       children: [
                         Text(
                           test.name,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontWeight: FontWeight.w600,
                             fontSize: AppTypography.bodyMedium,
                             height: 1.25,
@@ -89,7 +90,8 @@ class LabTestRow extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           _metaLine(test),
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.labelMedium,
                             color: AppColors.textSecondaryOf(context),
                           ),

@@ -155,7 +155,8 @@ class _DoctorAvatar extends StatelessWidget {
       child: imageProvider == null
           ? Text(
               initial,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: radius * 0.72,
                 fontWeight: FontWeight.w700,
                 color: AppColors.patientTeal,
@@ -181,7 +182,8 @@ class _DoctorMeta extends StatelessWidget {
           formatDoctorDisplayName(doctor.name),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: compactMeta ? 15 : 16,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimaryOf(context),
@@ -192,7 +194,8 @@ class _DoctorMeta extends StatelessWidget {
           '${doctor.specialization} · ${doctor.qualification}',
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodySmall,
             color: AppColors.textSecondaryOf(context),
             height: 1.3,
@@ -203,7 +206,8 @@ class _DoctorMeta extends StatelessWidget {
           children: [
             Text(
               formatExperienceYears(doctor.experienceYears),
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -213,7 +217,8 @@ class _DoctorMeta extends StatelessWidget {
             const SizedBox(width: 2),
             Text(
               doctor.rating.toStringAsFixed(1),
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimaryOf(context),
@@ -222,7 +227,8 @@ class _DoctorMeta extends StatelessWidget {
             if (doctor.reviewCount > 0) ...[
               Text(
                 ' (${doctor.reviewCount})',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -269,7 +275,8 @@ class _LocationRow extends StatelessWidget {
             location,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -307,7 +314,8 @@ class _AvailabilityRow extends StatelessWidget {
             formatAvailabilityLabel(doctor.availability, doctor.nextSlot),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -363,7 +371,8 @@ class _ActionRow extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
-            textStyle: TextStyle(fontFamily: 'Inter', 
+            textStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
             ),
@@ -381,7 +390,8 @@ class _ActionRow extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
-            textStyle: TextStyle(fontFamily: 'Inter', 
+            textStyle: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
             ),
@@ -405,7 +415,8 @@ class _ActionRow extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              textStyle: TextStyle(fontFamily: 'Inter', 
+              textStyle: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
               ),
@@ -446,7 +457,8 @@ class _ActionColumn extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              textStyle: TextStyle(fontFamily: 'Inter', 
+              textStyle: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
               ),
@@ -463,7 +475,8 @@ class _ActionColumn extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              textStyle: TextStyle(fontFamily: 'Inter', 
+              textStyle: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
               ),
@@ -486,7 +499,8 @@ class _ActionColumn extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                textStyle: TextStyle(fontFamily: 'Inter', 
+                textStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   fontWeight: FontWeight.w600,
                 ),
@@ -516,7 +530,8 @@ class _LanguagePill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w500,
           color: AppColors.textSecondaryOf(context),

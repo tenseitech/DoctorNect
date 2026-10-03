@@ -72,7 +72,8 @@ class EmergencySosSheet extends StatelessWidget {
                     children: [
                       Text(
                         'Emergency SOS Assistance',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.headlineSmall,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF991B1B),
@@ -80,7 +81,8 @@ class EmergencySosSheet extends StatelessWidget {
                       ),
                       Text(
                         '24/7 Rapid Emergency Response',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -137,7 +139,8 @@ class EmergencySosSheet extends StatelessWidget {
                           children: [
                             Text(
                               'Call 108 Emergency Hotline',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.headlineSmall,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
@@ -146,7 +149,8 @@ class EmergencySosSheet extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               'Toll-free immediate trauma & cardiac response',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelMedium,
                                 color: Colors.white.withValues(alpha: 0.9),
                               ),
@@ -189,7 +193,8 @@ class EmergencySosSheet extends StatelessWidget {
               icon: const Icon(Icons.airport_shuttle_rounded, size: 20),
               label: Text(
                 'Book Nearby ICU Ambulance Dispatcher',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   fontWeight: FontWeight.w700,
                 ),
@@ -198,7 +203,8 @@ class EmergencySosSheet extends StatelessWidget {
             const SizedBox(height: 20),
             Text(
               'Emergency Trauma Services',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
@@ -262,7 +268,8 @@ class _SosOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -270,7 +277,8 @@ class _SosOptionTile extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),

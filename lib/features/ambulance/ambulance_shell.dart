@@ -126,7 +126,8 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
         ),
         content: Text(
           'Are you sure you want to logout from ${widget.ambulance.serviceName}?',
-          style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+          style: TextStyle(
+              fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
         ),
         actions: [
           TextButton(
@@ -153,7 +154,8 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                     content: Text(
                       'Signed out, but session data may not have cleared fully. '
                       'If you still auto-login after refresh, clear site data for this browser.',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                       ),
                     ),
@@ -233,7 +235,8 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                                   Flexible(
                                     child: Text(
                                       ambulance.serviceName,
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.headlineSmall,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -262,7 +265,8 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
                                   Expanded(
                                     child: Text(
                                       '${ambulance.driverName} · ${isOnline ? 'Online' : 'Offline'}',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.labelMedium,
                                         color: AppColors.textSecondaryOf(
                                           context,

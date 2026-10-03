@@ -38,7 +38,8 @@ class EditPrescriptionScreen extends StatelessWidget {
         backgroundColor: AppColors.surfaceOf(context),
         foregroundColor: AppColors.textPrimaryOf(context),
         elevation: 0,
-        titleTextStyle: TextStyle(fontFamily: 'Inter', 
+        titleTextStyle: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.headlineSmall,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryOf(context),

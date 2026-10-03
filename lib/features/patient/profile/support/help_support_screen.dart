@@ -98,7 +98,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                           ),
                           title: Text(
                             e.value.question,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontWeight: FontWeight.w500,
                               fontSize: AppTypography.bodyMedium,
                             ),
@@ -110,7 +111,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
                                 alignment: Alignment.centerLeft,
                                 child: Text(
                                   e.value.answer,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.bodySmall,
                                     color: AppColors.textSecondaryOf(context),
                                   ),

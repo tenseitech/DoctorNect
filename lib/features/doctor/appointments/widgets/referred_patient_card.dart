@@ -62,7 +62,8 @@ class ReferredPatientCard extends StatelessWidget {
                       ),
                       child: Text(
                         'Referred',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           fontWeight: FontWeight.w700,
                           color: AppColors.isDark(context)
@@ -78,7 +79,8 @@ class ReferredPatientCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.end,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelSmall,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -89,7 +91,8 @@ class ReferredPatientCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   referral.patientName,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -145,7 +148,8 @@ class ReferredPatientCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: RichText(
         text: TextSpan(
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodySmall,
             color: AppColors.textPrimaryOf(context),
             height: 1.35,

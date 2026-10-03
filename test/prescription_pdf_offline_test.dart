@@ -5,7 +5,9 @@ import 'package:medibond/features/doctor/clinical/prescription/prescription_pdf_
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('PrescriptionPdfService generates valid PDF bytes completely offline with asset fonts', () async {
+  test(
+      'PrescriptionPdfService generates valid PDF bytes completely offline with asset fonts',
+      () async {
     final draft = PrescriptionDraft(
       patient: const PatientClinicalContext(
         patientName: 'अमित शर्मा (Amit Sharma)',

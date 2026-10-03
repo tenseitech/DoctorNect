@@ -37,7 +37,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-setUp(() {
+  setUp(() {
     SharedPreferences.setMockInitialValues({});
     DoctorSession.setDoctor(id: 'doc-test-001', name: 'Aarav Sharma');
     DoctorProfileStore.instance.profile = DoctorProfileData(

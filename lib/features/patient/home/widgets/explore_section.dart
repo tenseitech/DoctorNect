@@ -30,7 +30,8 @@ class ExploreSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Specialities',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -63,7 +64,8 @@ class ExploreSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Specialities',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimaryOf(context),
@@ -80,7 +82,8 @@ class ExploreSection extends StatelessWidget {
                   ),
                   child: Text(
                     'View all',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight: FontWeight.w600,
                     ),
@@ -432,7 +435,8 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                       Expanded(
                         child: Text(
                           'All specialities',
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                           ),
@@ -470,7 +474,8 @@ class _ExploreAllSheetState extends State<_ExploreAllSheet> {
                       ? Center(
                           child: Text(
                             'No specialities found',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               color: AppColors.textSecondaryOf(context),
                             ),
                           ),
@@ -564,7 +569,8 @@ class _ExploreCategoryTile extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: fontSize,
               fontWeight: FontWeight.w600,
               height: 1.2,

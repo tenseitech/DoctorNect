@@ -78,7 +78,8 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
         children: [
           Text(
             doctorName,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -88,7 +89,8 @@ class _PrescriptionHeaderSectionState extends State<PrescriptionHeaderSection> {
             const SizedBox(height: 2),
             Text(
               qualifications,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -158,7 +160,8 @@ class _DetailRow extends StatelessWidget {
             width: 104,
             child: Text(
               label,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -169,7 +172,8 @@ class _DetailRow extends StatelessWidget {
               value,
               maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w500,
                 color: muted
@@ -225,7 +229,8 @@ class PrescriptionPatientSection extends StatelessWidget {
         children: [
           Text(
             patient.patientName,
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -234,7 +239,8 @@ class PrescriptionPatientSection extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             '$gender · ${patient.age > 0 ? '${patient.age} yrs' : 'Not provided'} · $date',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -252,7 +258,8 @@ class PrescriptionPatientSection extends StatelessWidget {
             inputFormatters: const [
               DecimalInputFormatter(maxIntegerDigits: 3, maxDecimalDigits: 1),
             ],
-            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
+            style: TextStyle(
+                fontFamily: 'Inter', fontSize: AppTypography.bodySmall),
             decoration: InputDecoration(
               labelText: 'Weight (kg)',
               isDense: true,
@@ -281,7 +288,8 @@ class PrescriptionPatientSection extends StatelessWidget {
                   width: 1.2,
                 ),
               ),
-              labelStyle: TextStyle(fontFamily: 'Inter', 
+              labelStyle: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -365,7 +373,8 @@ class PrescriptionClinicalSection extends StatelessWidget {
         children: [
           Text(
             'Vitals (optional)',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w600,
             ),
@@ -632,7 +641,11 @@ class _VitalFieldState extends State<_VitalField> {
         helperText: _advisory.hasMessage ? _advisory.message : null,
         helperMaxLines: 2,
         helperStyle: advisoryColor != null
-            ? TextStyle(fontFamily: 'Inter', fontSize: 10, color: advisoryColor, height: 1.2)
+            ? TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 10,
+                color: advisoryColor,
+                height: 1.2)
             : null,
         enabledBorder: advisoryColor != null
             ? OutlineInputBorder(
@@ -754,7 +767,8 @@ class _DiagnosisSearchField extends StatelessWidget {
                       optional
                           ? 'Custom diagnosis — save to shared database (optional)'
                           : 'Not in ICD-10 list — save to shared database',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                         fontWeight: FontWeight.w600,
@@ -774,7 +788,8 @@ class _DiagnosisSearchField extends StatelessWidget {
                     ),
                     child: Text(
                       '+ Save diagnosis',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1101,7 +1116,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
               ),
               child: Text(
                 '$_totalCount',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelSmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.surfaceOf(context),
@@ -1115,7 +1131,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
           // Templates row
           Text(
             'Quick Templates',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               color: AppColors.textSecondaryOf(context),
               fontWeight: FontWeight.w600,
@@ -1137,7 +1154,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
                 ),
                 label: Text(
                   t,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelSmall,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     color: active
@@ -1218,7 +1236,8 @@ class PrescriptionInvestigationsSection extends StatelessWidget {
                 return InputChip(
                   label: Text(
                     bp,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                     ),
                   ),
@@ -1275,7 +1294,8 @@ class _PickerField extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: count > 0 ? 12 : 13,
                         color: count > 0
                             ? AppColors.textSecondaryOf(context)
@@ -1288,7 +1308,8 @@ class _PickerField extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         '$count selected',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           color: AppColors.textPrimaryOf(context),
                           fontWeight: FontWeight.w600,
@@ -1311,7 +1332,8 @@ class _PickerField extends StatelessWidget {
                   ),
                   child: Text(
                     '$count',
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelSmall,
                       fontWeight: FontWeight.w700,
                       color: AppColors.surfaceOf(context),
@@ -1367,7 +1389,8 @@ class _SelectedTestList extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     groupEntry.key.toUpperCase(),
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: AppColors.doctorBlue,
@@ -1445,7 +1468,8 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                 Expanded(
                   child: Text(
                     widget.entry.name,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimaryOf(context),
@@ -1495,7 +1519,8 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                     ),
                     label: Text(
                       'Remove',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.surfaceOf(context),
@@ -1531,7 +1556,8 @@ class _SelectedTestTileState extends State<_SelectedTestTile> {
                     vertical: 8,
                   ),
                 ),
-                style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
+                style: TextStyle(
+                    fontFamily: 'Inter', fontSize: AppTypography.labelMedium),
                 onChanged: widget.onNotesChanged,
               ),
             ),
@@ -1799,7 +1825,8 @@ class PrescriptionReferralsSection extends StatelessWidget {
                         children: [
                           Text(
                             draft.referrals[i].displayTitle,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1807,7 +1834,8 @@ class PrescriptionReferralsSection extends StatelessWidget {
                           if (draft.referrals[i].reason.isNotEmpty)
                             Text(
                               draft.referrals[i].reason,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelSmall,
                                 color: AppColors.textSecondaryOf(context),
                               ),
@@ -1818,7 +1846,8 @@ class PrescriptionReferralsSection extends StatelessWidget {
                     if (draft.referrals[i].sent)
                       Text(
                         'Sent',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF16A34A),
@@ -1868,7 +1897,8 @@ class PrescriptionPractoActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compactText = TextStyle(fontFamily: 'Inter', 
+    final compactText = TextStyle(
+      fontFamily: 'Inter',
       fontSize: AppTypography.labelSmall,
       fontWeight: FontWeight.w600,
     );

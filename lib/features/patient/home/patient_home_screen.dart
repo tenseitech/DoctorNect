@@ -247,7 +247,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                                 'Hi, ${p.name.trim().isEmpty ? "Patient" : p.name.trim()}',
                                 maxLines: compact ? 2 : 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontFamily: 'Inter', 
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
                                   fontSize: compact ? 18 : 22,
                                   fontWeight: FontWeight.w700,
                                   height: 1.15,
@@ -419,7 +420,8 @@ class _PatientLocationRow extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       fontWeight:
                           hasLocation ? FontWeight.w500 : FontWeight.w600,

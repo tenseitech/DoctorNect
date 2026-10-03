@@ -181,7 +181,8 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                 children: [
                   Text(
                     widget.test.name,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.headlineLarge,
                       fontWeight: FontWeight.w700,
                     ),
@@ -207,7 +208,8 @@ class _LabTestDetailScreenState extends State<LabTestDetailScreen> {
                           Expanded(
                             child: Text(
                               p,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.bodyMedium,
                               ),
                             ),
@@ -332,7 +334,8 @@ class _InfoChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelMedium,
           fontWeight: FontWeight.w600,
           color: AppColors.labPurple,
@@ -353,7 +356,8 @@ class _LabsEmptyNote extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Text(
         message,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.bodySmall,
           color: AppColors.textSecondaryOf(context),
           height: 1.35,
@@ -422,14 +426,16 @@ class _LabPartnerTile extends StatelessWidget {
                     children: [
                       Text(
                         lab.name,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontWeight: FontWeight.w600,
                           fontSize: AppTypography.bodyMedium,
                         ),
                       ),
                       Text(
                         lab.area,
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.labelMedium,
                           color: AppColors.textSecondaryOf(context),
                         ),

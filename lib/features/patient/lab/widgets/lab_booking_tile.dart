@@ -77,7 +77,8 @@ class LabBookingTile extends StatelessWidget {
                         children: [
                           Text(
                             day,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.headlineSmall,
                               fontWeight: FontWeight.w800,
                               color: AppColors.surfaceOf(context),
@@ -87,7 +88,8 @@ class LabBookingTile extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             month,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: AppColors.surfaceOf(context)
@@ -110,7 +112,8 @@ class LabBookingTile extends StatelessWidget {
                                   booking.displayTestName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.bodyMedium,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -128,7 +131,8 @@ class LabBookingTile extends StatelessWidget {
                               patientName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelMedium,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimaryOf(context),
@@ -138,7 +142,8 @@ class LabBookingTile extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               '${booking.allTestNames.length} tests booked',
-                              style: TextStyle(fontFamily: 'Inter', 
+                              style: TextStyle(
+                                fontFamily: 'Inter',
                                 fontSize: AppTypography.labelSmall,
                                 color: AppColors.labPurple,
                               ),
@@ -149,7 +154,8 @@ class LabBookingTile extends StatelessWidget {
                             labName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -169,7 +175,8 @@ class LabBookingTile extends StatelessWidget {
                                   booking.slotLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontFamily: 'Inter', 
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
                                     fontSize: AppTypography.labelMedium,
                                     color: AppColors.textSecondaryOf(context),
                                   ),
@@ -215,7 +222,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: color,

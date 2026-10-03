@@ -192,7 +192,8 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
           if (_serviceName.isNotEmpty) ...[
             Text(
               _serviceName,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.headlineSmall,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimaryOf(context),
@@ -202,7 +203,8 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
           ],
           Text(
             'Username: ${_username ?? ''}',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               color: AppColors.textSecondaryOf(context),
             ),
@@ -210,7 +212,8 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
           const SizedBox(height: 20),
           Text(
             'Security PIN',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodySmall,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimaryOf(context),
@@ -229,7 +232,8 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(6),
             ],
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w500,
               letterSpacing: _obscurePin ? 6 : 1.5,
@@ -290,7 +294,8 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
                   )
                 : Text(
                     'Continue',
-                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        fontFamily: 'Inter', fontWeight: FontWeight.w600),
                   ),
           ),
           const SizedBox(height: 12),
@@ -298,7 +303,8 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
             onPressed: _submitting ? null : _useDifferentAccount,
             child: Text(
               'Use a different account',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w600,
                 color: _accent,

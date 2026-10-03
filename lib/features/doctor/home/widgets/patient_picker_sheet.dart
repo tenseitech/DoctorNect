@@ -126,7 +126,8 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                   widget.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.headlineSmall,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -137,7 +138,8 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                   widget.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -147,13 +149,15 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                   controller: _searchController,
                   autofocus: false,
                   onChanged: (v) => setState(() => _query = v),
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     color: AppColors.textPrimaryOf(context),
                   ),
                   decoration: InputDecoration(
                     hintText: 'Search patient by name…',
-                    hintStyle: TextStyle(fontFamily: 'Inter', 
+                    hintStyle: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -214,7 +218,8 @@ class _PatientPickerSheetState extends State<PatientPickerSheet> {
                             _query.isEmpty
                                 ? 'No patients to choose from'
                                 : 'No patients found for "$_query"',
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.bodySmall,
                               color: AppColors.textSecondaryOf(context),
                             ),
@@ -345,7 +350,8 @@ class _PatientRow extends StatelessWidget {
                       appointment.patientName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimaryOf(context),
@@ -356,7 +362,8 @@ class _PatientRow extends StatelessWidget {
                       details,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),

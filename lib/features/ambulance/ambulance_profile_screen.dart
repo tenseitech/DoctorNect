@@ -342,7 +342,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
             ? Center(
                 child: Text(
                   'Profile not found',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     color: AppColors.textSecondaryOf(context),
                   ),
                 ),
@@ -366,7 +367,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                   children: [
                                     Text(
                                       'Profile',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.headlineLarge,
                                         fontWeight: FontWeight.w700,
                                       ),
@@ -374,7 +376,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       'Service details, availability & account',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.bodySmall,
                                         color:
                                             AppColors.textSecondaryOf(context),
@@ -395,7 +398,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                         },
                                   child: Text(
                                     _editing ? 'Cancel' : 'Edit',
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontWeight: FontWeight.w600,
                                       color: const Color(0xFFDC2626),
                                     ),
@@ -439,7 +443,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                   )
                                 : Text(
                                     'Save Profile',
-                                    style: TextStyle(fontFamily: 'Inter', 
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -548,14 +553,16 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                     ),
                                     title: Text(
                                       'Promote Banner Ad',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontWeight: FontWeight.w700,
                                         fontSize: AppTypography.bodyMedium,
                                       ),
                                     ),
                                     subtitle: Text(
                                       'Advertise ambulance service on Patient Home',
-                                      style: TextStyle(fontFamily: 'Inter', 
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
                                         fontSize: AppTypography.labelMedium,
                                         color: Colors.grey,
                                       ),
@@ -638,7 +645,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                     },
               child: Text(
                 _editing ? 'Cancel' : 'Edit',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFDC2626),
                 ),
@@ -790,7 +798,8 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
             const SizedBox(height: 8),
             Text(
               'Username: ${amb.username}',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1066,7 +1075,8 @@ class _AmbulanceProfileCompletionCardState
               children: [
                 Text(
                   'Profile completion',
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.titleMedium,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimaryOf(context),
@@ -1093,7 +1103,8 @@ class _AmbulanceProfileCompletionCardState
             const SizedBox(height: 8),
             Text(
               '$percentage% complete · $filled of $total details filled',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textSecondaryOf(context),
@@ -1120,7 +1131,8 @@ class _AmbulanceProfileCompletionCardState
                     Expanded(
                       child: Text(
                         'Submitted for verification. We will review your details shortly.',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           color: isDark
                               ? const Color(0xFF7DD3FC)
@@ -1160,7 +1172,8 @@ class _AmbulanceProfileCompletionCardState
                             'Revision note from admin',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontFamily: 'Inter', 
+                            style: TextStyle(
+                              fontFamily: 'Inter',
                               fontSize: AppTypography.labelMedium,
                               fontWeight: FontWeight.w700,
                               color: isDark
@@ -1174,7 +1187,8 @@ class _AmbulanceProfileCompletionCardState
                     const SizedBox(height: 4),
                     Text(
                       reason.trim(),
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: isDark
                             ? const Color(0xFFFCA5A5)
@@ -1189,7 +1203,8 @@ class _AmbulanceProfileCompletionCardState
               const SizedBox(height: 14),
               Text(
                 'Missing details (${missing.length})',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.labelMedium,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimaryOf(context),
@@ -1246,7 +1261,8 @@ class _AmbulanceProfileCompletionCardState
             Expanded(
               child: Text(
                 '${item.label} · ${item.section}',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodySmall,
                   color: AppColors.textPrimaryOf(context),
                 ),
@@ -1294,7 +1310,8 @@ class _AmbulanceProfileCompletionCardState
       ),
       child: Text(
         label,
-        style: TextStyle(fontFamily: 'Inter', 
+        style: TextStyle(
+          fontFamily: 'Inter',
           fontSize: AppTypography.labelSmall,
           fontWeight: FontWeight.w600,
           color: fg,
@@ -1347,7 +1364,8 @@ class _ProfileHeaderCard extends StatelessWidget {
                       Flexible(
                         child: Text(
                           ambulance.serviceName,
-                          style: TextStyle(fontFamily: 'Inter', 
+                          style: TextStyle(
+                            fontFamily: 'Inter',
                             fontSize: AppTypography.headlineSmall,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1362,14 +1380,16 @@ class _ProfileHeaderCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     ambulance.driverName,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.bodySmall,
                       color: AppColors.textSecondaryOf(context),
                     ),
                   ),
                   Text(
                     ambulance.vehicleNumber,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -1417,14 +1437,16 @@ class _AboutSection extends StatelessWidget {
                   children: [
                     Text(
                       'About',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       'Rate the app, share link & legal',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -1472,7 +1494,8 @@ class _ProfileSection extends StatelessWidget {
           children: [
             Text(
               title,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: FontWeight.w700,
                 color:
@@ -1518,7 +1541,8 @@ class _InfoRow extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.labelMedium,
                 color: AppColors.textSecondaryOf(context),
               ),
@@ -1527,7 +1551,8 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               isEmpty ? 'Not provided' : value,
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
                 color: isEmpty
@@ -1571,7 +1596,8 @@ class _EquipmentToggles extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             'Oxygen',
-            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+            style: TextStyle(
+                fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
           ),
           value: hasOxygen,
           activeThumbColor: const Color(0xFFDC2626),
@@ -1581,7 +1607,8 @@ class _EquipmentToggles extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             'Ventilator',
-            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+            style: TextStyle(
+                fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
           ),
           value: hasVentilator,
           activeThumbColor: const Color(0xFFDC2626),
@@ -1591,7 +1618,8 @@ class _EquipmentToggles extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             'Stretcher',
-            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+            style: TextStyle(
+                fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
           ),
           value: hasStretcher,
           activeThumbColor: const Color(0xFFDC2626),
@@ -1601,7 +1629,8 @@ class _EquipmentToggles extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             '24×7 service',
-            style: TextStyle(fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
+            style: TextStyle(
+                fontFamily: 'Inter', fontSize: AppTypography.bodyMedium),
           ),
           value: is24x7,
           activeThumbColor: const Color(0xFFDC2626),

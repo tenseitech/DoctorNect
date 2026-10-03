@@ -165,7 +165,8 @@ class _DoctorConnectedPartnersBaseViewState
         title: Text('Disconnect ${connection.partnerName}?'),
         content: Text(
           'Disconnect ${connection.partnerName}? This cannot be undone.',
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyMedium,
             color: AppColors.textSecondaryOf(context),
           ),
@@ -226,7 +227,8 @@ class _DoctorConnectedPartnersBaseViewState
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: widget.searchHintText,
-                hintStyle: TextStyle(fontFamily: 'Inter', 
+                hintStyle: TextStyle(
+                  fontFamily: 'Inter',
                   fontSize: AppTypography.bodyMedium,
                   color: AppColors.textSecondaryOf(context),
                 ),
@@ -252,7 +254,8 @@ class _DoctorConnectedPartnersBaseViewState
             ),
             child: Text(
               'Search',
-              style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+              style:
+                  TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -320,7 +323,8 @@ class _DoctorConnectedPartnersBaseViewState
                         pendingCount > 0
                             ? 'Add ${widget.partnerTypeLabel} ($pendingCount)'
                             : 'Add ${widget.partnerTypeLabel}',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontWeight: FontWeight.w600,
                           fontSize: AppTypography.bodySmall,
                         ),
@@ -346,7 +350,8 @@ class _DoctorConnectedPartnersBaseViewState
                     icon: const Icon(Icons.link, size: 18),
                     label: Text(
                       'Invite',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontWeight: FontWeight.w600,
                         fontSize: AppTypography.bodySmall,
                       ),
@@ -386,7 +391,8 @@ class _DoctorConnectedPartnersBaseViewState
                       const SizedBox(height: 10),
                       Text(
                         'No ${widget.partnerTypeLabel.toLowerCase()}s connected yet',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodyLarge,
                           fontWeight: FontWeight.w600,
                         ),
@@ -396,7 +402,8 @@ class _DoctorConnectedPartnersBaseViewState
                         widget.inlineCityDiscovery
                             ? 'Connect with a ${widget.partnerTypeLabel.toLowerCase()} below to get started.'
                             : 'Tap "Add ${widget.partnerTypeLabel}" to search and connect.',
-                        style: TextStyle(fontFamily: 'Inter', 
+                        style: TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: AppTypography.bodySmall,
                           color: AppColors.textSecondaryOf(context),
                         ),
@@ -439,7 +446,8 @@ class _DoctorConnectedPartnersBaseViewState
                       (cityLabel != null && cityLabel.isNotEmpty)
                           ? 'No other ${widget.partnerHeaderTitle.toLowerCase()} found in $cityLabel'
                           : 'No other ${widget.partnerHeaderTitle.toLowerCase()} found',
-                      style: TextStyle(fontFamily: 'Inter', 
+                      style: TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: AppTypography.bodySmall,
                         color: AppColors.textSecondaryOf(context),
                       ),
@@ -553,7 +561,8 @@ class _DoctorConnectedPartnersBaseViewState
             child: Center(
               child: Text(
                 'No verified ${widget.partnerTypeLabel.toLowerCase()}s found.',
-                style: TextStyle(fontFamily: 'Inter', 
+                style: TextStyle(
+                  fontFamily: 'Inter',
                   color: AppColors.textSecondaryOf(context),
                 ),
               ),
@@ -587,7 +596,8 @@ class _DocSectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(fontFamily: 'Inter', 
+          style: TextStyle(
+            fontFamily: 'Inter',
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w700,
           ),
@@ -601,7 +611,8 @@ class _DocSectionHeader extends StatelessWidget {
           ),
           child: Text(
             '$count',
-            style: TextStyle(fontFamily: 'Inter', 
+            style: TextStyle(
+              fontFamily: 'Inter',
               fontSize: AppTypography.labelMedium,
               fontWeight: FontWeight.w600,
             ),
@@ -646,7 +657,8 @@ class _DocConnectedPartnerRow extends StatelessWidget {
               connection.partnerName.trim().isNotEmpty
                   ? connection.partnerName.trim()[0].toUpperCase()
                   : 'P',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
                 color: accentColor,
               ),
@@ -662,7 +674,8 @@ class _DocConnectedPartnerRow extends StatelessWidget {
                   connection.partnerName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),
@@ -672,7 +685,8 @@ class _DocConnectedPartnerRow extends StatelessWidget {
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -761,7 +775,8 @@ class _DocDiscoveryPartnerRow extends StatelessWidget {
               partner.name.trim().isNotEmpty
                   ? partner.name.trim()[0].toUpperCase()
                   : 'P',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontWeight: FontWeight.w700,
                 color: accentColor,
               ),
@@ -777,7 +792,8 @@ class _DocDiscoveryPartnerRow extends StatelessWidget {
                   partner.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),
@@ -788,7 +804,8 @@ class _DocDiscoveryPartnerRow extends StatelessWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontFamily: 'Inter', 
+                    style: TextStyle(
+                      fontFamily: 'Inter',
                       fontSize: AppTypography.labelMedium,
                       color: AppColors.textSecondaryOf(context),
                     ),
@@ -877,7 +894,8 @@ class _DocPendingInviteRow extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
@@ -886,7 +904,8 @@ class _DocPendingInviteRow extends StatelessWidget {
                   dateLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -943,7 +962,8 @@ class _DocPartnerSearchTile extends StatelessWidget {
                   partner.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
@@ -952,7 +972,8 @@ class _DocPartnerSearchTile extends StatelessWidget {
                   partner.address,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
@@ -963,7 +984,8 @@ class _DocPartnerSearchTile extends StatelessWidget {
           if (isConnected)
             Text(
               'Connected',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: accentColor,
                 fontWeight: FontWeight.w600,
@@ -972,7 +994,8 @@ class _DocPartnerSearchTile extends StatelessWidget {
           else if (isPendingSent)
             Text(
               'Pending',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: Colors.amber.shade700,
                 fontWeight: FontWeight.w600,
@@ -981,7 +1004,8 @@ class _DocPartnerSearchTile extends StatelessWidget {
           else if (isPendingFromPartner)
             Text(
               'Requested',
-              style: TextStyle(fontFamily: 'Inter', 
+              style: TextStyle(
+                fontFamily: 'Inter',
                 fontSize: AppTypography.bodySmall,
                 color: Colors.orange,
                 fontWeight: FontWeight.w600,
@@ -1044,7 +1068,8 @@ class _DocPendingCard extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1053,7 +1078,8 @@ class _DocPendingCard extends StatelessWidget {
                   dateLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontFamily: 'Inter', 
+                  style: TextStyle(
+                    fontFamily: 'Inter',
                     fontSize: AppTypography.labelMedium,
                     color: AppColors.textSecondaryOf(context),
                   ),
