@@ -1,14 +1,14 @@
 {
   "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
+    "rules": "backend/firestore.rules",
+    "indexes": "backend/firestore.indexes.json"
   },
   "storage": {
-    "rules": "storage.rules"
+    "rules": "backend/storage.rules"
   },
   "functions": [
     {
-      "source": "functions",
+      "source": "backend/functions",
       "codebase": "default",
       "ignore": [
         "node_modules",
@@ -22,10 +22,7 @@
         ".env.medibond-45fad",
         ".secret.local",
         "secrets/**",
-        "*.pem",
-        "!redis_ca.pem",
-        "!redis-ca.pem",
-        "*.p12",
+               "*.p12",
         "service-account*.json"
       ]
     }
@@ -36,11 +33,11 @@
         "default": {
           "projectId": "medibond-45fad",
           "appId": "1:658118593597:android:02770e397a784e2c44ae54",
-          "fileOutput": "android/app/google-services.json"
+          "fileOutput": "frontend/android/app/google-services.json"
         }
       },
       "dart": {
-        "lib/firebase_options.dart": {
+        "frontend/lib/firebase_options.dart": {
           "projectId": "medibond-45fad",
           "configurations": {
             "android": "1:658118593597:android:02770e397a784e2c44ae54",
@@ -55,7 +52,7 @@
   },
   "hosting": {
     "site": "medibond-45fad",
-    "public": "build/web",
+    "public": "frontend/build/web",
     "ignore": [
       "firebase.json",
       "**/.*",

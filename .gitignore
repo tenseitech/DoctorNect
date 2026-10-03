@@ -29,11 +29,15 @@ node_modules/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+**/.dart_tool/
 .flutter-plugins-dependencies
+**/.flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
-/coverage/
+build/
+**/build/
+coverage/
+**/coverage/
 
 # Symbolication related
 app.*.symbols
@@ -42,9 +46,9 @@ app.*.symbols
 app.*.map.json
 
 # Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+**/android/app/debug
+**/android/app/profile
+**/android/app/release
 *.hprof
 
 # Secrets
@@ -55,36 +59,42 @@ app.*.map.json
 .env.migration
 **/.env.migration
 !.env.example
+!**/.env.example
 !.env.migration.example
-lib/firebase_options.secrets.dart
-functions/.env
-functions/.env.*
-!functions/.env.example
-functions/.secret.local
+!**/.env.migration.example
+frontend/lib/firebase_options.secrets.dart
+**/firebase_options.secrets.dart
+backend/functions/.env
+backend/functions/.env.*
+!backend/functions/.env.example
+backend/functions/.secret.local
 **/.secret.local
-!functions/.secret.local.example
+!backend/functions/.secret.local.example
 google-services.json
 **/google-services.json
 GoogleService-Info.plist
 **/GoogleService-Info.plist
 *-firebase-adminsdk-*.json
 service-account*.json
-functions/secrets/
+backend/functions/secrets/
+**/functions/secrets/
 *.jks
 *.keystore
 *.pem
-!functions/redis_ca.pem
-!functions/redis-ca.pem
+!backend/functions/redis_ca.pem
+!backend/functions/redis-ca.pem
+!**/functions/redis_ca.pem
+!**/functions/redis-ca.pem
 *.p12
 key.properties
 android/key.properties
 .qpanda/
 
 # Generated audit reports and script outputs
-scripts/*_audit_results.json
-scripts/backfill_profile_claims_report.json
-scripts/*_report.json
-scripts/*_report.csv
+**/scripts/*_audit_results.json
+**/scripts/backfill_profile_claims_report.json
+**/scripts/*_report.json
+**/scripts/*_report.csv
 
 # Temporary and scratch folders
 scratch/
