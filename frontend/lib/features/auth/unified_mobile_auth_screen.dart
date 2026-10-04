@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../core/auth/unified_auth_flow_controller.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/legal/legal_document_modal.dart';
 import '../../core/legal/medibond_legal_content.dart';
@@ -8,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/validators/form_validators.dart';
 import '../../widgets/otp_input.dart';
+import 'auth_autoflow_helper.dart';
 import 'widgets/unified_auth_mobile_field.dart';
 import 'trouble_signing_in_screen.dart';
 
@@ -40,9 +42,18 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _mobileController = TextEditingController();
   final _mobileFocusNode = FocusNode();
+  final _otpInputKey = GlobalKey<OtpInputState>();
+  final _mobileTracker = MobileAutoSendTracker();
 
   late final UnifiedAuthFlowController _flow;
   bool _transitionFocusScheduled = false;
+  bool _isAutoSending = false;
+  bool _isVerifying = false;
+  String? _lastFailedOtp;
+  UnifiedAuthStep? _stepOverride;
+
+  UnifiedAuthStep get _effectiveStep => _stepOverride ?? _flow.step;
+  bool get _isMobileStep => _effectiveStep == UnifiedAuthStep.mobile;
 
   Color get _accent => widget.accentColor ?? _defaultAccent;
 
@@ -78,11 +89,27 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
       ..addListener(_onFlowChanged);
     final initial = widget.initialMobile;
     if (initial != null && initial.isNotEmpty) {
+      _mobileTracker.initialize(initial);
       _mobileController.text = initial;
     }
-    _mobileController.addListener(() {
-      if (mounted) setState(() {});
-    });
+    _mobileController.addListener(_onMobileInputChanged);
+  }
+
+  void _onMobileInputChanged() {
+    if (!mounted) return;
+    _mobileTracker.checkAndNormalize(_mobileController);
+    setState(() {});
+
+    if (!_isMobileStep) return;
+
+    final shouldAutoSend = _mobileTracker.shouldTriggerAutoSend(
+      currentRaw: _mobileController.text,
+      isBusy: _isAutoSending || _flow.busy,
+    );
+
+    if (shouldAutoSend) {
+      _continueWithMobile(isAuto: true);
+    }
   }
 
   void _onFlowChanged() {
@@ -118,7 +145,7 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
   }
 
   void _requestMobileFocusOnce() {
-    if (!mounted || _flow.step != UnifiedAuthStep.mobile) return;
+    if (!mounted || !_isMobileStep) return;
     _mobileFocusNode.requestFocus();
   }
 
@@ -128,6 +155,7 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
 
   @override
   void dispose() {
+    _mobileController.removeListener(_onMobileInputChanged);
     _mobileController.dispose();
     _mobileFocusNode.dispose();
     _flow
@@ -153,7 +181,11 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
         builder: (_) => TroubleSigningInScreen(
           accentColor: _accent,
           onReenterMobile: () {
-            if (_flow.step == UnifiedAuthStep.otp) _flow.backToMobile();
+            if (!_isMobileStep) {
+              _stepOverride = null;
+              _mobileTracker.onReturnedFromOtp(_mobileController.text);
+              _flow.backToMobile();
+            }
             _mobileFocusNode.requestFocus();
           },
         ),
@@ -162,17 +194,82 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
   }
 
   void _handleBack() {
-    if (_flow.step == UnifiedAuthStep.otp) {
+    if (!_isMobileStep) {
+      _stepOverride = null;
+      _mobileTracker.onReturnedFromOtp(_mobileController.text);
       _flow.backToMobile();
       return;
     }
     Navigator.of(context).maybePop();
   }
 
-  Future<void> _continueWithMobile() async {
-    if (_flow.busy) return;
-    if (!_formKey.currentState!.validate()) return;
-    await _flow.sendOtp(context, _mobileController.text);
+  Future<void> _continueWithMobile({bool isAuto = false}) async {
+    if (_isAutoSending || _flow.busy) return;
+    final digits =
+        FormValidators.registrationMobileDigits(_mobileController.text);
+    if (digits == null) {
+      if (!isAuto) _formKey.currentState?.validate();
+      return;
+    }
+
+    // If user returns to edit and re-enters SAME number during active cooldown,
+    // show OTP step again with existing timer without sending new SMS.
+    if (digits == _flow.mobileDigits && _flow.otpCountdown > 0) {
+      _stepOverride = UnifiedAuthStep.otp;
+      setState(() {});
+      return;
+    }
+
+    _isAutoSending = true;
+    _stepOverride = null;
+    setState(() {});
+
+    try {
+      await _flow.sendOtp(context, digits);
+    } finally {
+      _isAutoSending = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _verifyOtp({bool isAuto = false}) async {
+    if (_isVerifying || _flow.verifying) return;
+    final otp = _flow.otp;
+    if (otp.length != AppConstants.otpLength) {
+      if (!isAuto) _flow.verifyOtp(context);
+      return;
+    }
+
+    if (isAuto && otp == _lastFailedOtp) return;
+
+    _isVerifying = true;
+    setState(() {});
+
+    bool hadNetworkException = false;
+
+    try {
+      await _flow.verifyOtp(context);
+    } catch (e) {
+      hadNetworkException =
+          AuthAutoFlowHelper.isNetworkOrServerError(e.toString());
+    } finally {
+      _isVerifying = false;
+      if (mounted) setState(() {});
+    }
+
+    if (!mounted) return;
+
+    // If still on OTP step, verification did not navigate away (failed)
+    if (!_isMobileStep) {
+      _lastFailedOtp = otp;
+      final isNetwork = hadNetworkException ||
+          AuthAutoFlowHelper.isOfflineOrUnavailable();
+      if (!isNetwork) {
+        // Wrong / expired OTP: shake, clear 6 boxes, refocus box 0
+        _otpInputKey.currentState?.shakeAndClear();
+      }
+      // If network error, digits are kept, input is unlocked, user can retry via Verify button
+    }
   }
 
   Future<void> _resendOtp() async {
@@ -182,7 +279,7 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
     await _flow.resendOtp(context);
   }
 
-  String get _heading => _flow.step == UnifiedAuthStep.mobile
+  String get _heading => _isMobileStep
       ? 'Enter your mobile number'
       : 'Enter the OTP sent to +91 ${_flow.mobileDigits ?? ''}';
 
@@ -191,7 +288,7 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
       controller: _mobileController,
       focusNode: _mobileFocusNode,
       validator: FormValidators.mobile,
-      onSubmitted: (_) => _continueWithMobile(),
+      onSubmitted: (_) => _continueWithMobile(isAuto: false),
     );
     final heroTag = widget.mobileHeroTag;
     if (heroTag != null) {
@@ -216,10 +313,17 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         OtpInput(
+          key: _otpInputKey,
           accentColor: _accent,
           autofocus: true,
-          onChanged: _flow.setOtp,
-          onCompleted: (_) => _flow.verifyOtp(context),
+          enabled: !_isVerifying && !_flow.busy,
+          onChanged: (val) {
+            _flow.setOtp(val);
+            if (_lastFailedOtp != null && val != _lastFailedOtp) {
+              _lastFailedOtp = null;
+            }
+          },
+          onCompleted: (_) => _verifyOtp(isAuto: true),
         ),
         const SizedBox(height: 16),
         Align(
@@ -253,152 +357,148 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobileStep = _flow.step == UnifiedAuthStep.mobile;
+    final isMobileStep = _isMobileStep;
     final canContinue = isMobileStep
-        ? _mobileValid && !_flow.sendingOtp
-        : _flow.otpValid && !_flow.verifying;
-    final isLoading = isMobileStep ? _flow.sendingOtp : _flow.verifying;
+        ? _mobileValid && !_flow.sendingOtp && !_isAutoSending
+        : _flow.otpValid && !_flow.verifying && !_isVerifying;
+    final isLoading = isMobileStep
+        ? (_flow.sendingOtp || _isAutoSending)
+        : (_flow.verifying || _isVerifying);
 
     return Theme(
       data: Theme.of(context).copyWith(
-        colorScheme: Theme.of(context).colorScheme.copyWith(primary: _accent),
+        colorScheme:
+            Theme.of(context).colorScheme.copyWith(primary: _accent),
       ),
       child: Scaffold(
-        backgroundColor: AppColors.surfaceOf(context),
-        resizeToAvoidBottomInset: true,
-        body: SafeArea(
-          bottom: false,
-          child: GestureDetector(
-            onTap: _dismissKeyboard,
-            behavior: HitTestBehavior.opaque,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _AuthTopBar(
-                  onBack: _handleBack,
-                  onHelp: _openTroubleSigningInHelp,
-                  canPop: Navigator.of(context).canPop() ||
-                      _flow.step == UnifiedAuthStep.otp,
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            height: 140,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  _accent.withValues(alpha: 0.90),
-                                  _accent,
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _accent.withValues(alpha: 0.25),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
+          backgroundColor: AppColors.surfaceOf(context),
+          resizeToAvoidBottomInset: true,
+          body: SafeArea(
+            bottom: false,
+            child: GestureDetector(
+              onTap: _dismissKeyboard,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _AuthTopBar(
+                    onBack: _handleBack,
+                    onHelp: _openTroubleSigningInHelp,
+                    canPop: Navigator.of(context).canPop() || !isMobileStep,
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 20),
+                              height: 140,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    _accent.withValues(alpha: 0.90),
+                                    _accent,
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Stack(
-                                children: [
-                                  Positioned.fill(
-                                    child: Image.asset(
-                                      'assets/images/doctor_illustration.jpg',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          const Center(
-                                        child: Icon(
-                                          Icons.medical_services_rounded,
-                                          size: 48,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned.fill(
-                                    child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            Colors.transparent,
-                                            Colors.black.withValues(
-                                              alpha: 0.40,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _accent.withValues(alpha: 0.25),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
                                   ),
                                 ],
                               ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: Image.asset(
+                                        'assets/images/doctor_illustration.jpg',
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) =>
+                                            const Center(
+                                          child: Icon(
+                                            Icons.medical_services_rounded,
+                                            size: 48,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned.fill(
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.black.withValues(
+                                                alpha: 0.40,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                          Text(
-                            _heading,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: AppTypography.headlineLarge,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimaryOf(context),
-                              letterSpacing: -0.4,
-                              height: 1.25,
+                            Text(
+                              _heading,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: AppTypography.headlineLarge,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimaryOf(context),
+                                letterSpacing: -0.4,
+                                height: 1.25,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 28),
-                          if (isMobileStep)
-                            _buildMobileStep()
-                          else
-                            _buildOtpStep(),
-                        ],
+                            const SizedBox(height: 28),
+                            if (isMobileStep)
+                              _buildMobileStep()
+                            else
+                              _buildOtpStep(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    8,
-                    20,
-                    16 + MediaQuery.paddingOf(context).bottom,
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      8,
+                      20,
+                      16 + MediaQuery.paddingOf(context).bottom,
+                    ),
+                    child: _PinnedPrimaryButton(
+                      label: isMobileStep ? 'Continue' : 'Verify & continue',
+                      accentColor: _accent,
+                      enabled: canContinue,
+                      loading: isLoading,
+                      loadingText:
+                          isMobileStep ? 'Sending OTP...' : 'Verifying...',
+                      onPressed: isMobileStep
+                          ? () => _continueWithMobile(isAuto: false)
+                          : () => _verifyOtp(isAuto: false),
+                    ),
                   ),
-                  child: _PinnedPrimaryButton(
-                    label: isMobileStep ? 'Continue' : 'Verify & continue',
-                    accentColor: _accent,
-                    enabled: canContinue,
-                    loading: isLoading,
-                    loadingText:
-                        isMobileStep ? 'Sending OTP...' : 'Verifying...',
-                    onPressed: isMobileStep
-                        ? () {
-                            _dismissKeyboard();
-                            _continueWithMobile();
-                          }
-                        : () {
-                            _dismissKeyboard();
-                            _flow.verifyOtp(context);
-                          },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ),
       ),
     );

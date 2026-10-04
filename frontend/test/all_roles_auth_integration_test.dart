@@ -16,13 +16,12 @@ void main() {
   const allRoles = <UserType, String>{
     UserType.doctor: 'Doctor',
     UserType.patient: 'Patient',
-    UserType.medical: 'Medical',
     UserType.medicalStore: 'Pharmacy',
     UserType.lab: 'Lab',
     UserType.ambulance: 'Ambulance',
   };
 
-  group('New User Flow Integration Test - All 6 Roles', () {
+  group('New User Flow Integration Test - All 5 Roles', () {
     for (final entry in allRoles.entries) {
       final role = entry.key;
       final roleName = entry.value;
@@ -66,8 +65,11 @@ void main() {
           await tester.tap(roleCard.first);
           await tester.pumpAndSettle();
 
-          // Continue button is now enabled
-          continueWidget = tester.widget<FilledButton>(continueButton);
+          // Continue button is now enabled with dynamic role label
+          final selectedContinue =
+              find.widgetWithText(FilledButton, 'Continue as $roleName');
+          expect(selectedContinue, findsOneWidget);
+          continueWidget = tester.widget<FilledButton>(selectedContinue);
           expect(
             continueWidget.onPressed,
             isNotNull,
@@ -76,7 +78,7 @@ void main() {
           );
 
           // Step 3: Tap Continue to go to Name step
-          await tester.tap(continueButton);
+          await tester.tap(selectedContinue);
           await tester.pumpAndSettle();
 
           // Now on OnboardingNameScreen

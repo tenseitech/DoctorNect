@@ -152,9 +152,9 @@ function buildRedisOptions(overrides = {}) {
     host,
     port,
     lazyConnect: true,
-    maxRetriesPerRequest: overrides.maxRetriesPerRequest !== undefined ? overrides.maxRetriesPerRequest : 3,
+    maxRetriesPerRequest: overrides.maxRetriesPerRequest !== undefined ? overrides.maxRetriesPerRequest : 1,
     enableReadyCheck: true,
-    connectTimeout: 10000,
+    connectTimeout: 1500,
     retryStrategy(times) {
       if (times > 10) {
         return null; // Stop reconnecting after 10 failed attempts

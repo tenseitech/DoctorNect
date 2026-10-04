@@ -380,6 +380,9 @@ async function getS3UploadUrlHandler(data, auth, db) {
     }
 
     case 'promoted_ads': {
+      if (!isAdmin && caller.role === 'patient') {
+        throw new HttpsError('permission-denied', 'Patients are not permitted to create promotions.');
+      }
       const adId = parentId;
       const providerId = auth.uid;
       objectKey = `promoted_ads/${providerId}/${adId}/${uuid}.jpg`;

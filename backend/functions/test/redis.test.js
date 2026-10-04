@@ -81,7 +81,7 @@ test('buildRedisOptions sets TLS configuration with CA cert and rejectUnauthoriz
   assert.equal(options.port, 6379);
   assert.equal(options.password, 'test-secret-password');
   assert.equal(options.lazyConnect, true);
-  assert.equal(options.maxRetriesPerRequest, 3);
+  assert.equal(options.maxRetriesPerRequest, 1);
   assert.ok(options.tls, 'TLS options should be present');
   assert.equal(options.tls.rejectUnauthorized, true);
   assert.equal(options.tls.servername, 'memorystore.test.internal');

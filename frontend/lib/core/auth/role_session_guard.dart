@@ -5,7 +5,7 @@ import '../enums/user_type.dart';
 import '../firebase/firebase_auth_service.dart';
 import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
-import '../../features/welcome/welcome_screen.dart';
+import '../../features/auth/unified_auth_intro_screen.dart';
 import '../firebase/firestore_service.dart';
 
 /// Safety validator to guarantee that the currently signed-in Firebase user's
@@ -84,7 +84,7 @@ abstract final class RoleSessionGuard {
     await FirebaseAuthService.instance.signOut();
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      MaterialPageRoute(builder: (_) => const UnifiedAuthIntroScreen()),
       (route) => false,
     );
   }

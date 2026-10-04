@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../core/auth/unified_auth_flow_controller.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/enums/user_type.dart';
 import '../../core/layout/responsive_layout.dart';
 import '../../core/legal/legal_document_modal.dart';
@@ -12,6 +13,7 @@ import '../../core/theme/app_theme_controller.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/validators/form_validators.dart';
 import '../../widgets/otp_input.dart';
+import 'auth_autoflow_helper.dart';
 import 'trouble_signing_in_screen.dart';
 import 'unified_auth_expand_route.dart';
 import 'unified_mobile_auth_screen.dart';
@@ -42,10 +44,10 @@ class _IntroSlideContent {
   final IconData? placeholderIcon;
 }
 
-const _kIntroSlide1 = 'assets/images/intro_slide_1.png';
-const _kIntroSlide2 = 'assets/images/intro_slide_2.png';
-const _kIntroSlide3 = 'assets/images/intro_slide_3.png';
-const _kIntroSlide4 = 'assets/images/intro_slide_4.png';
+const _kIntroSlide1 = 'assets/images/intro_slide_1.webp';
+const _kIntroSlide2 = 'assets/images/intro_slide_2.webp';
+const _kIntroSlide3 = 'assets/images/intro_slide_3.webp';
+const _kIntroSlide4 = 'assets/images/intro_slide_4.webp';
 
 abstract final class _IntroTheme {
   static const sheetRadius = 28.0;
@@ -2619,20 +2621,30 @@ class _DesktopAuthCard extends StatefulWidget {
 }
 
 class _DesktopAuthCardState extends State<_DesktopAuthCard> {
+  final _otpInputKey = GlobalKey<OtpInputState>();
+  final _mobileTracker = MobileAutoSendTracker();
   bool _focused = false;
+  bool _isAutoSending = false;
+  bool _isVerifying = false;
+  String? _lastFailedOtp;
+  UnifiedAuthStep? _stepOverride;
+
+  UnifiedAuthStep get _effectiveStep => _stepOverride ?? widget.flow.step;
+  bool get _isMobileStep => _effectiveStep == UnifiedAuthStep.mobile;
 
   @override
   void initState() {
     super.initState();
     widget.focusNode.addListener(_onFocusChange);
-    widget.mobileController.addListener(_onDependencyChanged);
+    _mobileTracker.initialize(widget.mobileController.text);
+    widget.mobileController.addListener(_onMobileInputChanged);
     widget.flow.addListener(_onDependencyChanged);
   }
 
   @override
   void dispose() {
     widget.focusNode.removeListener(_onFocusChange);
-    widget.mobileController.removeListener(_onDependencyChanged);
+    widget.mobileController.removeListener(_onMobileInputChanged);
     widget.flow.removeListener(_onDependencyChanged);
     super.dispose();
   }
@@ -2647,6 +2659,23 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
     if (mounted) setState(() {});
   }
 
+  void _onMobileInputChanged() {
+    if (!mounted) return;
+    _mobileTracker.checkAndNormalize(widget.mobileController);
+    setState(() {});
+
+    if (!_isMobileStep) return;
+
+    final shouldAutoSend = _mobileTracker.shouldTriggerAutoSend(
+      currentRaw: widget.mobileController.text,
+      isBusy: _isAutoSending || widget.flow.busy,
+    );
+
+    if (shouldAutoSend) {
+      _submitMobile(isAuto: true);
+    }
+  }
+
   bool get _mobileValid {
     final digits = FormValidators.registrationMobileDigits(
       widget.mobileController.text,
@@ -2654,159 +2683,228 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
     return digits != null && digits.length == 10;
   }
 
+  Future<void> _submitMobile({bool isAuto = false}) async {
+    if (_isAutoSending || widget.flow.busy) return;
+    final digits =
+        FormValidators.registrationMobileDigits(widget.mobileController.text);
+    if (digits == null) return;
+
+    // If user returns to edit and re-enters SAME number during active cooldown,
+    // show OTP step again with existing timer without sending new SMS.
+    if (digits == widget.flow.mobileDigits && widget.flow.otpCountdown > 0) {
+      _stepOverride = UnifiedAuthStep.otp;
+      setState(() {});
+      return;
+    }
+
+    _isAutoSending = true;
+    _stepOverride = null;
+    setState(() {});
+
+    try {
+      await widget.flow.sendOtp(context, digits);
+    } finally {
+      _isAutoSending = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _verifyOtp({bool isAuto = false}) async {
+    if (_isVerifying || widget.flow.verifying) return;
+    final otp = widget.flow.otp;
+    if (otp.length != AppConstants.otpLength) {
+      if (!isAuto) widget.flow.verifyOtp(context);
+      return;
+    }
+
+    if (isAuto && otp == _lastFailedOtp) return;
+
+    _isVerifying = true;
+    setState(() {});
+
+    bool hadNetworkException = false;
+
+    try {
+      await widget.flow.verifyOtp(context);
+    } catch (e) {
+      hadNetworkException =
+          AuthAutoFlowHelper.isNetworkOrServerError(e.toString());
+    } finally {
+      _isVerifying = false;
+      if (mounted) setState(() {});
+    }
+
+    if (!mounted) return;
+
+    // If still on OTP step, verification did not navigate away (failed)
+    if (!_isMobileStep) {
+      _lastFailedOtp = otp;
+      final isNetwork = hadNetworkException ||
+          AuthAutoFlowHelper.isOfflineOrUnavailable();
+      if (!isNetwork) {
+        // Wrong / expired OTP: shake, clear 6 boxes, refocus box 0
+        _otpInputKey.currentState?.shakeAndClear();
+      }
+      // If network error, digits are kept, input is unlocked, user can retry via Verify button
+    }
+  }
+
   void _submit() {
-    final flow = widget.flow;
-    if (flow.step == UnifiedAuthStep.mobile) {
-      widget.focusNode.unfocus();
-      flow.sendOtp(context, widget.mobileController.text);
+    if (_isMobileStep) {
+      _submitMobile(isAuto: false);
     } else {
-      flow.verifyOtp(context);
+      _verifyOtp(isAuto: false);
     }
   }
 
   void _changeNumber() {
+    _stepOverride = null;
+    _mobileTracker.onReturnedFromOtp(widget.mobileController.text);
     widget.flow.backToMobile();
     widget.focusNode.requestFocus();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isMobileStep = widget.flow.step == UnifiedAuthStep.mobile;
+    final isMobileStep = _isMobileStep;
     final isDark = AppColors.isDark(context);
     final cardColor = AppColors.surfaceOf(context);
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(_IntroTheme.desktopCardRadius),
-        border: Border.all(
-          color: isDark
-              ? AppColors.borderOf(context)
-              : Colors.white.withValues(alpha: 0.85),
-        ),
-        boxShadow: [
-          BoxShadow(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(_IntroTheme.desktopCardRadius),
+          border: Border.all(
             color: isDark
-                ? Colors.black.withValues(alpha: 0.42)
-                : const Color(0xFF0B1841).withValues(alpha: 0.10),
-            blurRadius: 48,
-            offset: const Offset(0, 24),
+                ? AppColors.borderOf(context)
+                : Colors.white.withValues(alpha: 0.85),
           ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.06),
-            blurRadius: 24,
-          ),
-          BoxShadow(
-            color: widget.accent.withValues(alpha: isDark ? 0.10 : 0.06),
-            blurRadius: 60,
-            spreadRadius: -12,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(38, 40, 38, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        widget.accent,
-                        widget.accent.withValues(alpha: 0.78),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: widget.accent.withValues(alpha: 0.32),
-                        blurRadius: 14,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.medical_services_rounded,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  width: 30,
-                  height: 3,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        widget.accent.withValues(alpha: 0.55),
-                        widget.accent.withValues(alpha: 0),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.42)
+                  : const Color(0xFF0B1841).withValues(alpha: 0.10),
+              blurRadius: 48,
+              offset: const Offset(0, 24),
             ),
-            const SizedBox(height: 22),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutCubic,
-              alignment: Alignment.topCenter,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: isMobileStep
-                    ? _buildMobileStep(context)
-                    : _buildOtpStep(context),
-              ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.06),
+              blurRadius: 24,
             ),
-            const SizedBox(height: 26),
-            _DesktopPrimaryButton(
-              label: isMobileStep ? 'Continue' : 'Verify & continue',
-              loadingLabel: isMobileStep ? 'Sending OTP...' : 'Verifying...',
-              accent: widget.accent,
-              enabled: isMobileStep ? _mobileValid : widget.flow.otpValid,
-              loading:
-                  isMobileStep ? widget.flow.sendingOtp : widget.flow.verifying,
-              onPressed: _submit,
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: TextButton(
-                onPressed: widget.onTroubleSigningIn,
-                style: TextButton.styleFrom(
-                  foregroundColor: widget.accent,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'Trouble signing in?',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: widget.accent,
-                    decoration: TextDecoration.underline,
-                    decorationColor: widget.accent,
-                  ),
-                ),
-              ),
+            BoxShadow(
+              color: widget.accent.withValues(alpha: isDark ? 0.10 : 0.06),
+              blurRadius: 60,
+              spreadRadius: -12,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
-      ),
-    );
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(38, 40, 38, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          widget.accent,
+                          widget.accent.withValues(alpha: 0.78),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: widget.accent.withValues(alpha: 0.32),
+                          blurRadius: 14,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.medical_services_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    width: 30,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          widget.accent.withValues(alpha: 0.55),
+                          widget.accent.withValues(alpha: 0),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: isMobileStep
+                      ? _buildMobileStep(context)
+                      : _buildOtpStep(context),
+                ),
+              ),
+              const SizedBox(height: 26),
+              _DesktopPrimaryButton(
+                label: isMobileStep ? 'Continue' : 'Verify & continue',
+                loadingLabel: isMobileStep ? 'Sending OTP...' : 'Verifying...',
+                accent: widget.accent,
+                enabled: isMobileStep
+                    ? _mobileValid && !_isAutoSending && !widget.flow.sendingOtp
+                    : widget.flow.otpValid && !_isVerifying && !widget.flow.verifying,
+                loading: isMobileStep
+                    ? widget.flow.sendingOtp || _isAutoSending
+                    : widget.flow.verifying || _isVerifying,
+                onPressed: _submit,
+              ),
+              const SizedBox(height: 20),
+              Center(
+                child: TextButton(
+                  onPressed: widget.onTroubleSigningIn,
+                  style: TextButton.styleFrom(
+                    foregroundColor: widget.accent,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Trouble signing in?',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: widget.accent,
+                      decoration: TextDecoration.underline,
+                      decorationColor: widget.accent,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
   }
 
   Widget _buildMobileStep(BuildContext context) {
@@ -2836,7 +2934,7 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
             return UnifiedAuthMobileField(
               controller: widget.mobileController,
               focusNode: widget.focusNode,
-              onSubmitted: (_) => _submit(),
+              onSubmitted: (_) => _submitMobile(isAuto: false),
               borderRadius: _IntroTheme.desktopInputRadius,
               fillColor: AppColors.cardBgOf(context),
               borderColor: borderColor ?? borderBase,
@@ -2940,10 +3038,17 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
       child: SizedBox(
         width: OtpInput.intrinsicRowWidth,
         child: OtpInput(
+          key: _otpInputKey,
           accentColor: widget.accent,
           autofocus: true,
-          onChanged: flow.setOtp,
-          onCompleted: (_) => flow.verifyOtp(context),
+          enabled: !_isVerifying && !flow.busy,
+          onChanged: (val) {
+            flow.setOtp(val);
+            if (_lastFailedOtp != null && val != _lastFailedOtp) {
+              _lastFailedOtp = null;
+            }
+          },
+          onCompleted: (_) => _verifyOtp(isAuto: true),
         ),
       ),
     );

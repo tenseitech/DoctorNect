@@ -36,22 +36,51 @@ class RegisteredDoctorsStore extends ChangeNotifier {
     return null;
   }
 
+  int _listenerCount = 0;
+
+  int get listenerCount => _listenerCount;
+
   /// Starts a real-time Firestore stream. Safe to call multiple times —
-  /// only one stream is active at a time. Retries automatically if Firebase
-  /// is not yet ready.
+  /// increments listener count. Only one stream is active at a time.
   void startListening() {
+    _listenerCount++;
+    _attachStream();
+  }
+
+  /// Decrements listener count and cancels the Firestore stream and auth listener
+  /// when the count reaches zero.
+  void stopListening() {
+    if (_listenerCount > 0) {
+      _listenerCount--;
+    }
+    if (_listenerCount == 0) {
+      _streamSub?.cancel();
+      _streamSub = null;
+      _streamActive = false;
+      _authWaitSub?.cancel();
+      _authWaitSub = null;
+    }
+  }
+
+  void _attachStream() {
     if (_streamActive) return;
 
     if (!FirebaseBootstrap.isReady) {
       // Firebase not initialised yet — retry after a short delay.
-      Future.delayed(const Duration(seconds: 2), startListening);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_listenerCount > 0 && !_streamActive) {
+          _attachStream();
+        }
+      });
       return;
     }
 
     _authWaitSub ??= FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null && _permissionDenied) {
         _permissionDenied = false;
-        startListening();
+        if (_listenerCount > 0) {
+          _attachStream();
+        }
       }
     });
 
@@ -86,7 +115,13 @@ class RegisteredDoctorsStore extends ChangeNotifier {
           _permissionDenied = true;
           return;
         }
-        Future.delayed(const Duration(seconds: 3), startListening);
+        if (_listenerCount > 0) {
+          Future.delayed(const Duration(seconds: 3), () {
+            if (_listenerCount > 0 && !_streamActive) {
+              _attachStream();
+            }
+          });
+        }
       },
     );
   }

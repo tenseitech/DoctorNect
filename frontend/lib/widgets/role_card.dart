@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/theme/app_colors.dart';
-import '../core/theme/app_typography.dart';
 
 enum RoleCardVariant { mobile, web }
 
@@ -46,7 +46,7 @@ class _RoleCardSurface extends StatefulWidget {
     required this.icon,
     required this.onTap,
     required this.variant,
-    this.isSelected = false,
+    required this.isSelected,
   });
 
   final String title;
@@ -65,29 +65,34 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
   bool _hovered = false;
   bool _pressed = false;
 
+  void _handleTap() {
+    HapticFeedback.selectionClick();
+    widget.onTap();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark(context);
-    final isMobile = widget.variant == RoleCardVariant.mobile;
-    final isWeb = !isMobile;
+    final isWeb = widget.variant == RoleCardVariant.web;
     final color = widget.color;
-    const radius = 14.0;
+    const radius = 16.0;
 
-    final scale = _pressed ? 0.985 : (isWeb && _hovered ? 1.010 : 1.0);
-    final lift = isWeb && _hovered && !_pressed ? -2.5 : 0.0;
+    final scale = _pressed ? 0.985 : (isWeb && _hovered ? 1.01 : 1.0);
+    final lift = isWeb && _hovered && !_pressed ? -2.0 : 0.0;
 
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() {
         _hovered = false;
         _pressed = false;
       }),
       child: AnimatedScale(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(milliseconds: 160),
         curve: Curves.easeOutCubic,
         scale: scale,
         child: AnimatedSlide(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
           offset: Offset(0, lift / 100),
           child: Material(
@@ -95,190 +100,175 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
             elevation: 0,
             borderRadius: BorderRadius.circular(radius),
             child: InkWell(
-              onTap: widget.onTap,
+              onTap: _handleTap,
               onTapDown: (_) => setState(() => _pressed = true),
               onTapUp: (_) => setState(() => _pressed = false),
               onTapCancel: () => setState(() => _pressed = false),
               borderRadius: BorderRadius.circular(radius),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(radius),
                   border: Border.all(
                     color: widget.isSelected
                         ? color
                         : (_hovered && isWeb
-                            ? color.withValues(alpha: 0.50)
+                            ? color.withValues(alpha: 0.45)
                             : (isDark
                                 ? AppColors.borderOf(context)
                                 : const Color(0xFFE2E8F0))),
-                    width: widget.isSelected
-                        ? 2.0
-                        : (_hovered && isWeb ? 1.5 : 1.0),
+                    width: widget.isSelected ? 2.0 : 1.0,
                   ),
-                  boxShadow: isMobile
+                  boxShadow: widget.isSelected
                       ? [
                           BoxShadow(
-                            color: (isDark
-                                    ? Colors.black
-                                    : const Color(0xFF0F172A))
-                                .withValues(alpha: isDark ? 0.28 : 0.04),
-                            blurRadius: 12,
-                            offset: const Offset(0, 3),
+                            color: color.withValues(alpha: isDark ? 0.25 : 0.14),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
                           ),
                           BoxShadow(
-                            color:
-                                color.withValues(alpha: isDark ? 0.08 : 0.03),
+                            color: (isDark ? Colors.black : const Color(0xFF0F172A))
+                                .withValues(alpha: isDark ? 0.20 : 0.03),
                             blurRadius: 6,
-                            offset: const Offset(0, 1),
+                            offset: const Offset(0, 2),
                           ),
                         ]
-                      : _hovered || widget.isSelected
+                      : _hovered && isWeb
                           ? [
                               BoxShadow(
-                                color: color.withValues(
-                                    alpha: isDark ? 0.22 : 0.14),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
+                                color: color.withValues(alpha: isDark ? 0.16 : 0.08),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
                               BoxShadow(
-                                color: (isDark
-                                        ? Colors.black
-                                        : const Color(0xFF0F172A))
-                                    .withValues(alpha: isDark ? 0.28 : 0.04),
-                                blurRadius: 8,
+                                color: (isDark ? Colors.black : const Color(0xFF0F172A))
+                                    .withValues(alpha: isDark ? 0.20 : 0.04),
+                                blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
                             ]
                           : [
                               BoxShadow(
-                                color: (isDark
-                                        ? Colors.black
-                                        : const Color(0xFF0F172A))
-                                    .withValues(alpha: isDark ? 0.24 : 0.04),
-                                blurRadius: 10,
+                                color: (isDark ? Colors.black : const Color(0xFF0F172A))
+                                    .withValues(alpha: isDark ? 0.20 : 0.03),
+                                blurRadius: 8,
                                 offset: const Offset(0, 2),
-                              ),
-                              BoxShadow(
-                                color: color.withValues(
-                                    alpha: isDark ? 0.05 : 0.02),
-                                blurRadius: 6,
-                                offset: const Offset(0, 1),
                               ),
                             ],
                   color: widget.isSelected
-                      ? color.withValues(alpha: isDark ? 0.16 : 0.08)
+                      ? color.withValues(alpha: isDark ? 0.16 : 0.07)
                       : (_hovered && isWeb
-                          ? color.withValues(alpha: isDark ? 0.09 : 0.038)
+                          ? color.withValues(alpha: isDark ? 0.06 : 0.03)
                           : AppColors.surfaceOf(context)),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    if (isMobile)
-                      Container(
-                        width: 4,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: const BorderRadius.horizontal(
-                            left: Radius.circular(radius),
-                          ),
+                    // Tinted rounded-square icon on the left (48px)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: widget.isSelected
+                            ? color
+                            : color.withValues(alpha: isDark ? 0.20 : 0.10),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(
+                          color: widget.isSelected
+                              ? color
+                              : color.withValues(alpha: isDark ? 0.32 : 0.18),
+                          width: 1,
                         ),
                       ),
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isMobile ? 14 : 16,
-                          vertical: isMobile ? 13 : 13,
+                      child: Center(
+                        child: Icon(
+                          widget.icon,
+                          color: widget.isSelected ? Colors.white : color,
+                          size: 24,
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: isMobile ? 46 : 44,
-                              height: isMobile ? 46 : 44,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    // Center: Bold title + full description (wraps up to 2 lines, NO ellipsis)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.title,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimaryOf(context),
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.subtitle,
+                            maxLines: 2,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w400,
+                              height: 1.35,
+                              color: AppColors.textSecondaryOf(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Right: Circular radio indicator (empty ring unselected, filled check selected)
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (child, anim) => ScaleTransition(
+                        scale: anim,
+                        child: FadeTransition(opacity: anim, child: child),
+                      ),
+                      child: widget.isSelected
+                          ? Container(
+                              key: const ValueKey('selected_check'),
+                              width: 22,
+                              height: 22,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    color,
-                                    Color.lerp(color, Colors.white, 0.20)!,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
+                                color: color,
+                                shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: color.withValues(alpha: 0.26),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
+                                    color: color.withValues(alpha: 0.35),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
-                              child: Icon(
-                                widget.icon,
-                                color: Colors.white,
-                                size: isMobile ? 22 : 21,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: isMobile
-                                          ? AppTypography.titleMedium
-                                          : AppTypography.bodyLarge,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.textPrimaryOf(context),
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    widget.subtitle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: AppTypography.labelMedium,
-                                      height: 1.35,
-                                      color: AppColors.textSecondaryOf(context),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            if (widget.isSelected)
-                              Icon(
-                                Icons.check_circle_rounded,
-                                size: 22,
-                                color: color,
-                              )
-                            else
-                              AnimatedSlide(
-                                duration: const Duration(milliseconds: 180),
-                                curve: Curves.easeOutCubic,
-                                offset: Offset(_hovered && isWeb ? 0.15 : 0, 0),
+                              child: const Center(
                                 child: Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 22,
-                                  color: _hovered || isMobile
-                                      ? color
-                                      : AppColors.textSecondaryOf(context)
-                                          .withValues(alpha: 0.45),
+                                  Icons.check_rounded,
+                                  size: 14,
+                                  color: Colors.white,
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
+                            )
+                          : Container(
+                              key: const ValueKey('unselected_radio'),
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF475569)
+                                      : const Color(0xFFCBD5E1),
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
                     ),
                   ],
                 ),

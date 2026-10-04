@@ -30,6 +30,38 @@ function getRazorpayCredentials() {
   return { keyId, keySecret };
 }
 
+/** Helper: verify provider ownership by auth.uid or users/{uid}.profileId */
+async function isAdOwner(db, adData, uid) {
+  if (!adData || !uid) return false;
+  if (adData.providerId === uid) return true;
+  try {
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (userDoc.exists) {
+      const profileId = userDoc.data()?.profileId;
+      if (profileId && adData.providerId === profileId) return true;
+    }
+  } catch (err) {
+    console.warn('[isAdOwner] Failed to check user profileId:', err.message);
+  }
+  return false;
+}
+
+/** Helper: ensure patients cannot create or pay for promotional campaigns */
+async function assertCanPromote(db, uid) {
+  try {
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (userDoc.exists) {
+      const role = String(userDoc.data()?.role || '').toLowerCase();
+      if (role === 'patient') {
+        throw new HttpsError('permission-denied', 'Patients are not permitted to create promotions.');
+      }
+    }
+  } catch (err) {
+    if (err instanceof HttpsError) throw err;
+    console.warn('[assertCanPromote] Failed to check user role:', err.message);
+  }
+}
+
 /** Helper: Send HTTPS Request to Razorpay REST API */
 function makeRazorpayRequest(path, method = 'GET', payload = null, keyId, keySecret) {
   return new Promise((resolve, reject) => {
@@ -107,7 +139,9 @@ const createRazorpayOrder = onCall({ region: 'asia-south1' }, async (request) =>
   }
 
   const adData = adSnap.data();
-  if (adData.providerId !== request.auth.uid) {
+  await assertCanPromote(db, request.auth.uid);
+  const isOwner = await isAdOwner(db, adData, request.auth.uid);
+  if (!isOwner) {
     throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
   }
 
@@ -228,7 +262,8 @@ const verifyRazorpayPayment = onCall({ region: 'asia-south1' }, async (request) 
   }
 
   const adData = adSnap.data();
-  if (adData.providerId !== request.auth.uid) {
+  const isOwner = await isAdOwner(db, adData, request.auth.uid);
+  if (!isOwner) {
     throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
   }
 
@@ -307,7 +342,11 @@ const verifyRazorpayPayment = onCall({ region: 'asia-south1' }, async (request) 
 
     const currentAd = currentAdDoc.data();
     if (currentAd.providerId !== request.auth.uid) {
-      throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+      const callerUserDoc = await tx.get(db.collection('users').doc(request.auth.uid));
+      const callerProfileId = callerUserDoc.exists ? callerUserDoc.data()?.profileId : null;
+      if (!callerProfileId || currentAd.providerId !== callerProfileId) {
+        throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+      }
     }
 
     // Ledger check: if it exists for the same adId and the ad is already active, return idempotent success; if for a different ad, reject.

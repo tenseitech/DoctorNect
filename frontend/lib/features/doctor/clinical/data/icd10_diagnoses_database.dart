@@ -1,9 +1,16 @@
+import 'dart:convert' show utf8;
+
+import 'package:archive/archive.dart' show GZipDecoder;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'clinical_mock_data.dart';
 
 /// Loads ICD-10 diagnosis lines from [assetPath].
+///
+/// The asset is stored gzip-compressed (.txt.gz) to reduce bundle size from
+/// ~13 MB to ~1.3 MB. Decompression and parsing run in an Isolate via
+/// [compute] so the main thread is never blocked.
 ///
 /// Supported line formats:
 /// - CMS tabular: `00001 A00     0 Cholera ... Cholera`
@@ -15,7 +22,7 @@ class Icd10DiagnosesDatabase {
 
   static final Icd10DiagnosesDatabase instance = Icd10DiagnosesDatabase._();
 
-  static const assetPath = 'assets/data/icd10_diagnoses.txt';
+  static const assetPath = 'assets/data/icd10_diagnoses.txt.gz';
 
   List<_Icd10Entry>? _entries;
   Set<String>? _displayLower;
@@ -24,6 +31,7 @@ class Icd10DiagnosesDatabase {
   Future<void>? _loading;
 
   bool get isLoaded => _entries != null;
+  int get entryCount => _entries?.length ?? 0;
 
   Future<void> ensureLoaded() {
     if (_entries != null) return Future.value();
@@ -32,22 +40,13 @@ class Icd10DiagnosesDatabase {
 
   Future<void> _load() async {
     try {
-      final raw = await rootBundle.loadString(assetPath);
-      final parsed = <_Icd10Entry>[];
-      var start = 0;
-      for (var i = 0; i < raw.length; i++) {
-        if (raw.codeUnitAt(i) == 0x0A) {
-          if (i > start) {
-            final entry = _parseLine(raw.substring(start, i));
-            if (entry != null) parsed.add(entry);
-          }
-          start = i + 1;
-        }
-      }
-      if (start < raw.length) {
-        final entry = _parseLine(raw.substring(start));
-        if (entry != null) parsed.add(entry);
-      }
+      final byteData = await rootBundle.load(assetPath);
+      final compressed = byteData.buffer.asUint8List(
+        byteData.offsetInBytes,
+        byteData.lengthInBytes,
+      );
+      // Decompress + parse entirely off the main thread.
+      final parsed = await compute(_decompressAndParse, compressed);
 
       if (parsed.isEmpty) {
         _useFallback();
@@ -192,6 +191,31 @@ class Icd10DiagnosesDatabase {
     }
     return query.length == 1 || RegExp(r'^\d').hasMatch(query.substring(1, 2));
   }
+}
+
+// ---------------------------------------------------------------------------
+// Top-level function — required by compute() to run in a separate Isolate.
+// ---------------------------------------------------------------------------
+
+List<_Icd10Entry> _decompressAndParse(Uint8List compressed) {
+  final decompressed = GZipDecoder().decodeBytes(compressed);
+  final raw = utf8.decode(decompressed, allowMalformed: true);
+  final parsed = <_Icd10Entry>[];
+  var start = 0;
+  for (var i = 0; i < raw.length; i++) {
+    if (raw.codeUnitAt(i) == 0x0A) {
+      if (i > start) {
+        final entry = Icd10DiagnosesDatabase._parseLine(raw.substring(start, i));
+        if (entry != null) parsed.add(entry);
+      }
+      start = i + 1;
+    }
+  }
+  if (start < raw.length) {
+    final entry = Icd10DiagnosesDatabase._parseLine(raw.substring(start));
+    if (entry != null) parsed.add(entry);
+  }
+  return parsed;
 }
 
 class _Icd10Entry {

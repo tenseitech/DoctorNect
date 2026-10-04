@@ -90,6 +90,21 @@ abstract final class DemoAuthConfig {
         (enableDemoSuperAdmin && digits == demoSuperAdminPhone);
   }
 
+  static UserType? roleForDemoPhone(String? phone) {
+    if (phone == null || phone.isEmpty) return null;
+    final digits = FormValidators.mobileDigits(phone) ??
+        FormValidators.registrationMobileDigits(phone);
+    if (digits == demoDoctorPhone) return UserType.doctor;
+    if (digits == demoPatientPhone) return UserType.patient;
+    if (digits == demoPharmacyPhone) return UserType.medicalStore;
+    if (digits == demoLabPhone) return UserType.lab;
+    if (digits == demoAmbulancePhone) return UserType.ambulance;
+    if (enableDemoSuperAdmin && digits == demoSuperAdminPhone) {
+      return UserType.superAdmin;
+    }
+    return null;
+  }
+
   static String trialLoginHint(UserType role) =>
       'Sign in with the email and password you used during registration.';
 }

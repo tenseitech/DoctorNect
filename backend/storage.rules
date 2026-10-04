@@ -40,6 +40,16 @@ service firebase.storage {
         && storageUser().get('role', '') == 'lab';
     }
 
+    function isNonPatientStorageUser() {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && storageUser().get('role', '') != 'patient';
+    }
+
+    function myStorageProfileId() {
+      return storageUser().get('profileId', '');
+    }
+
     function isPatientStorageOwner(patientId) {
       return isSignedIn()
         && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
@@ -250,11 +260,12 @@ service firebase.storage {
     match /promoted_ads/{providerId}/{fileName} {
       allow read: if isSignedIn();
       allow create, update: if isSignedIn()
-        && request.auth.uid == providerId
+        && (request.auth.uid == providerId || (isNonPatientStorageUser() && myStorageProfileId() == providerId))
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*')
         && fileName.matches('^[A-Za-z0-9._\\-]{1,120}$');
-      allow delete: if isSignedIn() && request.auth.uid == providerId;
+      allow delete: if isSignedIn()
+        && (request.auth.uid == providerId || (isNonPatientStorageUser() && myStorageProfileId() == providerId));
     }
 
     // ─── Lab Reports ────────────────────────────────────────────────────────

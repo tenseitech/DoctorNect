@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 /// Downsamples remote bitmaps to the on-screen pixel size before decode (Play memory guidance).
+/// Uses [CachedNetworkImageProvider] so repeated loads are served from disk cache.
 abstract final class ResampledNetworkImage {
   static int? cacheDimension(double? logicalSize, BuildContext context) {
     if (logicalSize == null || !logicalSize.isFinite || logicalSize <= 0) {
@@ -17,14 +19,16 @@ abstract final class ResampledNetworkImage {
   }) {
     final cacheW = cacheDimension(width, context);
     final cacheH = cacheDimension(height, context);
+    final base = CachedNetworkImageProvider(url);
     if (cacheW == null && cacheH == null) {
-      return NetworkImage(url);
+      return base;
     }
-    return ResizeImage(NetworkImage(url), width: cacheW, height: cacheH);
+    return ResizeImage(base, width: cacheW, height: cacheH);
   }
 }
 
-/// [Image.network] with [cacheWidth] / [cacheHeight] derived from layout size.
+/// [Image] with [cacheWidth] / [cacheHeight] derived from layout size,
+/// backed by [CachedNetworkImage] for persistent disk caching.
 class ResampledNetworkImageWidget extends StatelessWidget {
   const ResampledNetworkImageWidget({
     super.key,
@@ -43,14 +47,14 @@ class ResampledNetworkImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      url,
+    return CachedNetworkImage(
+      imageUrl: url,
       fit: fit,
       alignment: alignment,
       width: width,
       height: height,
-      cacheWidth: ResampledNetworkImage.cacheDimension(width, context),
-      cacheHeight: ResampledNetworkImage.cacheDimension(height, context),
+      memCacheWidth: ResampledNetworkImage.cacheDimension(width, context),
+      memCacheHeight: ResampledNetworkImage.cacheDimension(height, context),
     );
   }
 }

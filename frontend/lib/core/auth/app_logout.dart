@@ -3,9 +3,9 @@ import '../firebase/firebase_auth_service.dart';
 import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
 import '../theme/app_colors.dart';
-import '../../features/welcome/welcome_screen.dart';
+import '../../features/auth/unified_auth_intro_screen.dart';
 
-/// Sign out back to role selection (Welcome).
+/// Sign out back to login entry.
 abstract final class AppLogout {
   static Future<void> confirmAndSignOut(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -44,7 +44,7 @@ abstract final class AppLogout {
     await FirebaseAuthService.instance.signOut();
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      MaterialPageRoute(builder: (_) => const UnifiedAuthIntroScreen()),
       (route) => false,
     );
   }

@@ -104,6 +104,10 @@ service cloud.firestore {
       return userExists() && role() == 'lab'; // FIXED: lab operator role helper
     }
 
+    function isAmbulance() {
+      return userExists() && role() == 'ambulance';
+    }
+
     // Account admins (keep in sync with ACCOUNT_APPROVAL_ADMIN_EMAILS in functions/.env).
     // Explicit allow-list only — never match on email substrings (e.g. .*admin.*).
     function isAccountAdmin() {
@@ -1166,30 +1170,41 @@ service cloud.firestore {
 
       // Creation: Logged-in provider can create draft/pending_payment ads OR Super Admin
       // Disallows server-controlled payment/activation fields on creation (razorpay IDs, start/end times)
+      // Strictly forbids patient accounts from creating promotions
       allow create: if isSuperAdmin()
         || (isSignedIn()
-          && request.resource.data.providerId == request.auth.uid
+          && !isPatient()
+          && (request.resource.data.providerId == request.auth.uid
+              || (myProfileId() != '' && request.resource.data.providerId == myProfileId()))
           && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending_payment')
           && request.resource.data.paymentStatus == 'pending'
           && !request.resource.data.keys().hasAny(['razorpayOrderId', 'razorpayPaymentId', 'startTime', 'endTime'])
-          && validPromotedAdStorage(request.resource.data, request.auth.uid));
+          && (validPromotedAdStorage(request.resource.data, request.auth.uid)
+              || (myProfileId() != '' && validPromotedAdStorage(request.resource.data, myProfileId()))));
 
       // Update: Super Admin can update all fields; Provider can edit draft content
       // Forbids client writes to payment IDs, pricing/duration, activation times, and payment status other than pending
       allow update: if isSuperAdmin()
         || (isSignedIn()
-          && resource.data.providerId == request.auth.uid
+          && !isPatient()
+          && (resource.data.providerId == request.auth.uid
+              || (myProfileId() != '' && resource.data.providerId == myProfileId()))
           && request.resource.data.providerId == resource.data.providerId
           && request.resource.data.status != 'active'
           && request.resource.data.paymentStatus == 'pending'
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
               'razorpayOrderId', 'razorpayPaymentId', 'amountPaid', 'durationHours', 'startTime', 'endTime'
             ])
-          && validPromotedAdStorage(request.resource.data, resource.data.providerId));
+          && (validPromotedAdStorage(request.resource.data, resource.data.providerId)
+              || validPromotedAdStorage(request.resource.data, request.auth.uid)
+              || (myProfileId() != '' && validPromotedAdStorage(request.resource.data, myProfileId()))));
 
       // Deletion: Super Admin or owning provider
       allow delete: if isSuperAdmin()
-        || (isSignedIn() && resource.data.providerId == request.auth.uid);
+        || (isSignedIn()
+            && !isPatient()
+            && (resource.data.providerId == request.auth.uid
+                || (myProfileId() != '' && resource.data.providerId == myProfileId())));
     }
 
     // ─── Razorpay Payment Ledger (Server-only transaction record) ───────────

@@ -18,12 +18,13 @@ import '../session/ambulance_session.dart';
 import '../session/app_session.dart';
 import '../validators/form_validators.dart';
 import '../validators/name_validator.dart';
+import 'demo_auth_config.dart';
+import 'mobile_registration_lookup.dart';
 import 'registration_otp_service.dart';
 import 'unified_auth_coordinator.dart';
 import 'unified_auth_navigation.dart';
 import '../../features/onboarding/onboarding_name_screen.dart';
 import '../../features/welcome/welcome_screen.dart';
-import 'mobile_registration_lookup.dart';
 
 enum UnifiedAuthStep { mobile, otp }
 
@@ -114,8 +115,8 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     });
   }
 
-  /// Resolves login vs register server-side, then sends the OTP and advances to
-  /// [UnifiedAuthStep.otp]. Callers run their own form validation first.
+  /// Sends OTP and advances to [UnifiedAuthStep.otp].
+  /// Does NOT leak registered status before OTP is verified.
   Future<void> sendOtp(BuildContext context, String rawMobile) async {
     if (_sendingOtp || _verifying) return;
 
@@ -140,53 +141,31 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     _sendingOtp = true;
     _notify();
     try {
-      UnifiedAuthPath path;
+      UnifiedAuthPath? path;
+      String otpType;
+      UserType effectiveRole;
+
       if (role != null) {
         path = await UnifiedAuthCoordinator.resolvePath(
           mobile: digits,
           role: role!,
         );
         _matchedRole = role;
+        effectiveRole = role!;
+        otpType = UnifiedAuthCoordinator.otpTypeForPath(path);
+      } else if (DemoAuthConfig.isAnyDemoPhone(digits)) {
+        final demoRole =
+            DemoAuthConfig.roleForDemoPhone(digits) ?? UserType.patient;
+        path = UnifiedAuthPath.login;
+        _matchedRole = demoRole;
+        effectiveRole = demoRole;
+        otpType = 'login';
       } else {
-        // Detect existing vs new user across all candidate roles
-        final registrationConflict = await MobileRegistrationLookup.check(
-          digits,
-          role: UserType.patient,
-          intent: MobileLookupIntent.registration,
-        );
-
-        if (registrationConflict == true) {
-          path = UnifiedAuthPath.login;
-          const candidates = [
-            UserType.patient,
-            UserType.doctor,
-            UserType.medical,
-            UserType.medicalStore,
-            UserType.lab,
-            UserType.ambulance,
-            UserType.superAdmin,
-          ];
-          final checks = await Future.wait(
-            candidates.map(
-              (r) => MobileRegistrationLookup.check(
-                digits,
-                role: r,
-                intent: MobileLookupIntent.login,
-              ),
-            ),
-          );
-          UserType? found;
-          for (var i = 0; i < candidates.length; i++) {
-            if (checks[i] == false) {
-              found = candidates[i];
-              break;
-            }
-          }
-          _matchedRole = found;
-        } else {
-          path = UnifiedAuthPath.register;
-          _matchedRole = null;
-        }
+        // Unknown role for new/standard mobile entry:
+        // Do NOT probe registration lookup before OTP send to avoid leaking account existence.
+        _matchedRole = null;
+        effectiveRole = UserType.patient;
+        otpType = 'auth';
       }
       if (!context.mounted) return;
 
@@ -195,10 +174,9 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         return;
       }
 
-      final otpType = UnifiedAuthCoordinator.otpTypeForPath(path);
       final res = await RegistrationOtpService.sendOtp(
         digits,
-        role: _matchedRole ?? role ?? UserType.patient,
+        role: effectiveRole,
         otpType: otpType,
       );
       if (!context.mounted) return;
@@ -233,14 +211,13 @@ class UnifiedAuthFlowController extends ChangeNotifier {
   }
 
   /// LOGIN vs REGISTER (transparent to user):
-  /// - the path was resolved server-side before OTP send via
-  ///   [UnifiedAuthCoordinator.resolvePath] or role auto-detection.
-  /// - login: sign in with verified OTP (Firebase or ambulance mobile login).
-  /// - register: OTP session is valid; open role profile form or role selection.
+  /// - If role is already known (or demo account): log in or register directly.
+  /// - If role is unknown: checks whether number is registered after OTP is verified.
+  ///   - Registered: routes straight to that user's own role. No role selection screen.
+  ///   - Unregistered: routes to WelcomeScreen (role selection) for the new user.
   Future<void> verifyOtp(BuildContext context) async {
     final digits = _mobileDigits;
-    final path = _authPath;
-    if (_verifying || digits == null || path == null) return;
+    if (_verifying || digits == null) return;
     if (_otp.length != AppConstants.otpLength) {
       AppToast.error(context, 'Enter the 6-digit OTP.');
       return;
@@ -249,9 +226,57 @@ class UnifiedAuthFlowController extends ChangeNotifier {
     _verifying = true;
     _notify();
     try {
-      if (path == UnifiedAuthPath.login) {
-        await _completeLogin(context, digits, _otp);
+      if (_matchedRole != null || role != null) {
+        final target = _matchedRole ?? role!;
+        if (_authPath == UnifiedAuthPath.login ||
+            DemoAuthConfig.isAnyDemoPhone(digits)) {
+          await _completeLogin(context, digits, _otp, targetRole: target);
+        } else {
+          await _completeRegistration(context, digits, _otp);
+        }
+        return;
+      }
+
+      // Check whether this number is registered across candidate roles
+      final registrationConflict = await MobileRegistrationLookup.check(
+        digits,
+        role: UserType.patient,
+        intent: MobileLookupIntent.registration,
+      );
+
+      if (registrationConflict == true) {
+        const candidates = [
+          UserType.doctor,
+          UserType.patient,
+          UserType.medicalStore,
+          UserType.lab,
+          UserType.ambulance,
+        ];
+        final checks = await Future.wait(
+          candidates.map(
+            (r) => MobileRegistrationLookup.check(
+              digits,
+              role: r,
+              intent: MobileLookupIntent.login,
+            ),
+          ),
+        );
+        UserType? found;
+        for (var i = 0; i < candidates.length; i++) {
+          if (checks[i] == false) {
+            found = candidates[i];
+            break;
+          }
+        }
+
+        final targetRole = found ?? UserType.patient;
+        _matchedRole = targetRole;
+        _authPath = UnifiedAuthPath.login;
+        await _completeLogin(context, digits, _otp, targetRole: targetRole);
       } else {
+        // Not registered: complete registration OTP verification session, then open role selection
+        _matchedRole = null;
+        _authPath = UnifiedAuthPath.register;
         await _completeRegistration(context, digits, _otp);
       }
     } catch (e) {

@@ -28,10 +28,9 @@ void main() {
           find.text('One platform for every\nhealthcare role'), findsOneWidget);
       expect(find.text('Select your role'), findsOneWidget);
       expect(find.text('Choose your account type to continue'), findsOneWidget);
-      expect(find.byType(RoleCard), findsNWidgets(6));
+      expect(find.byType(RoleCard), findsNWidgets(5));
       expect(find.text('Doctor'), findsOneWidget);
       expect(find.text('Patient'), findsOneWidget);
-      expect(find.text('Medical'), findsOneWidget);
       expect(find.text('Pharmacy'), findsOneWidget);
       expect(find.text('Lab'), findsOneWidget);
       expect(find.text('Ambulance'), findsOneWidget);
@@ -55,10 +54,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('DoctorNect'), findsOneWidget);
-      expect(find.text('Welcome'), findsOneWidget);
-      expect(find.text('Choose your role to continue'), findsOneWidget);
-      expect(find.text('Select your role'), findsOneWidget);
-      expect(find.byType(RoleCard), findsNWidgets(6));
+      expect(find.text('Who are you joining as?'), findsOneWidget);
+      expect(find.text('Pick your role to get started'), findsOneWidget);
+      expect(
+          find.byWidgetPredicate(
+              (w) => w.runtimeType.toString() == '_MobileRoleTile'),
+          findsNWidgets(5));
       expect(find.text('Secure & encrypted sign-in'), findsOneWidget);
     });
 
@@ -94,7 +95,6 @@ void main() {
       final roles = [
         'Doctor',
         'Patient',
-        'Medical',
         'Pharmacy',
         'Lab',
         'Ambulance'
@@ -115,7 +115,7 @@ void main() {
         await tester.tap(find.text(role));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Continue'));
+        await tester.tap(find.text('Continue as $role'));
         await tester.pumpAndSettle();
 
         // Verify UnifiedAuthIntroScreen was pushed
@@ -126,6 +126,78 @@ void main() {
         nav.pop();
         await tester.pumpAndSettle();
       }
+    });
+
+    testWidgets(
+        'Mobile layout renders with zero overflow at 360px and 1.2x text scale',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(1.2),
+            ),
+            child: child!,
+          ),
+          home: const WelcomeScreen(isNewUser: true),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('DoctorNect'), findsOneWidget);
+      expect(find.text('Who are you joining as?'), findsOneWidget);
+      expect(find.text('Pick your role to get started'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
+      expect(find.text('Secure & encrypted sign-in'), findsOneWidget);
+
+      // Tap Pharmacy role on mobile
+      await tester.tap(find.text('Pharmacy'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Continue as Pharmacy'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Mobile layout displays all 5 roles on 390x844 and handles selection and continue',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: WelcomeScreen(isNewUser: false),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // Button starts disabled with "Continue"
+      expect(find.text('Continue'), findsOneWidget);
+
+      // Tap Doctor
+      await tester.tap(find.text('Doctor'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Continue as Doctor'), findsOneWidget);
+
+      // Tap continue and verify navigation
+      await tester.tap(find.text('Continue as Doctor'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(UnifiedAuthIntroScreen), findsOneWidget);
     });
   });
 }

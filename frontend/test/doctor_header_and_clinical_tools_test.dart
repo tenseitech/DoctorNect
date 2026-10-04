@@ -31,7 +31,6 @@ import 'package:medibond/widgets/digital_health_card_sheet.dart';
 import 'package:medibond/widgets/emergency_sos_sheet.dart';
 import 'package:medibond/widgets/header_overflow_menu.dart';
 import 'package:medibond/widgets/required_field_label.dart';
-import 'package:medibond/widgets/role_card.dart';
 import 'package:medibond/widgets/theme_toggle_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -605,10 +604,12 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        expect(find.byType(RoleCard), findsNWidgets(6));
+        expect(
+            find.byWidgetPredicate(
+                (w) => w.runtimeType.toString() == '_MobileRoleTile'),
+            findsNWidgets(5));
         expect(find.text('Doctor'), findsOneWidget);
         expect(find.text('Patient'), findsOneWidget);
-        expect(find.text('Medical'), findsOneWidget);
         expect(find.text('Pharmacy'), findsOneWidget);
         expect(find.text('Lab'), findsOneWidget);
         expect(find.text('Ambulance'), findsOneWidget);

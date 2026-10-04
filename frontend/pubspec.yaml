@@ -50,6 +50,7 @@ dependencies:
   flutter_native_splash: ^2.4.0
   sms_autofill: ^2.5.0
   firebase_remote_config: ^6.7.0
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
@@ -95,7 +96,7 @@ flutter:
     - assets/images/specialties/
     - assets/images/services/
     - assets/data/indian_medicines.txt.gz
-    - assets/data/icd10_diagnoses.txt
+    - assets/data/icd10_diagnoses.txt.gz
     - assets/data/symptoms.json
     - assets/data/symptom_lists.json
     - assets/icons/doctor/

@@ -199,6 +199,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
   @override
   void dispose() {
+    _doctorsStore.stopListening();
     AmbulanceStore.instance.removeListener(_onAmbulanceStoreChanged);
     _focusNode.removeListener(_onSearchFocusChanged);
     _searchController.dispose();

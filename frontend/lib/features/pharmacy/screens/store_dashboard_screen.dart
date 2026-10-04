@@ -10,6 +10,8 @@ import '../../../core/constants/app_icons.dart';
 import '../../../core/session/medical_store_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/verification_status_banner.dart';
+import '../../promoted_ads/screens/promoted_ads_management_screen.dart';
+import '../data/medical_store_registry.dart';
 import '../data/pharmacy_connection_store.dart';
 import '../data/pharmacy_prescription_store.dart';
 import '../models/pharmacy_models.dart';
@@ -419,19 +421,106 @@ class _StoreDashboardScreenState extends State<StoreDashboardScreen>
                     .expand((badge) => [badge, const SizedBox(width: 8)])
                     .toList()
                   ..removeLast(),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    final storeId = MedicalStoreSession.loggedInStoreId;
+                    final store = MedicalStoreRegistry.findById(storeId);
+                    final isVerified =
+                        store?.drugLicenseNumber.isNotEmpty ?? false;
+                    PromotedAdsManagementScreen.open(
+                      context,
+                      providerType: 'pharmacy',
+                      providerId: storeId,
+                      providerEmail: store?.email ?? '',
+                      providerContact: store?.phone ?? '',
+                      isVerified: isVerified,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.campaign_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Promote Ad',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: AppTypography.labelMedium,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
               ],
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  DateFormat('EEE, dd MMM').format(today),
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: AppTypography.bodySmall,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        DateFormat('EEE, dd MMM').format(today),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: AppTypography.bodySmall,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        final storeId = MedicalStoreSession.loggedInStoreId;
+                        final store = MedicalStoreRegistry.findById(storeId);
+                        final isVerified =
+                            store?.drugLicenseNumber.isNotEmpty ?? false;
+                        PromotedAdsManagementScreen.open(
+                          context,
+                          providerType: 'pharmacy',
+                          providerId: storeId,
+                          providerEmail: store?.email ?? '',
+                          providerContact: store?.phone ?? '',
+                          isVerified: isVerified,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.campaign_rounded,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Promote',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: AppTypography.labelSmall,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 Wrap(spacing: 8, runSpacing: 8, children: badges),
