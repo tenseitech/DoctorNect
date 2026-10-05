@@ -4,7 +4,11 @@ const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const { sendMsg91Email } = require('./msg91_email');
 const { readMsg91AuthKey } = require('./secure_config');
-const { isProductionFirebaseProject, isOtpTestModeConfigured } = require('./production_otp_guard');
+const {
+  isProductionFirebaseProject,
+  isFunctionsEmulator,
+  isOtpTestModeConfigured,
+} = require('./production_otp_guard');
 const {
   GENERIC_ACCOUNT_LOOKUP_FAILED,
   GENERIC_PASSWORD_UPDATE_FAILED,
@@ -52,22 +56,68 @@ let cachedDemoConfig = null;
 let lastDemoConfigFetchTime = 0;
 const DEMO_CONFIG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+let testDemoConfigDocOverride = undefined;
+
+function setDemoConfigDocForTesting(override) {
+  testDemoConfigDocOverride = override;
+  resetDemoConfigCacheForTesting();
+}
+
+function resetDemoConfigCacheForTesting() {
+  cachedDemoConfig = null;
+  lastDemoConfigFetchTime = 0;
+}
+
 async function getDemoConfig() {
   if (cachedDemoConfig && (Date.now() - lastDemoConfigFetchTime < DEMO_CONFIG_CACHE_TTL_MS)) {
     return cachedDemoConfig;
   }
-  
+
+  const isProd = isProductionFirebaseProject() && !isFunctionsEmulator();
+
   try {
-    const { getFirestore } = require('firebase-admin/firestore');
-    const doc = await getFirestore().collection('app_config').doc('demo_accounts').get();
-    if (doc.exists) {
-      cachedDemoConfig = doc.data();
+    let exists = false;
+    let data = null;
+
+    if (testDemoConfigDocOverride !== undefined) {
+      if (testDemoConfigDocOverride !== null) {
+        exists = true;
+        data = testDemoConfigDocOverride;
+      }
+    } else {
+      const { getFirestore } = require('firebase-admin/firestore');
+      const doc = await getFirestore().collection('app_config').doc('demo_accounts').get();
+      if (doc.exists) {
+        exists = true;
+        data = doc.data();
+      }
+    }
+
+    if (exists && data) {
+      if (isProd) {
+        if (data.demoLoginEnabled === true) {
+          cachedDemoConfig = data;
+          lastDemoConfigFetchTime = Date.now();
+          return cachedDemoConfig;
+        }
+        cachedDemoConfig = null;
+        lastDemoConfigFetchTime = Date.now();
+        return null;
+      }
+      cachedDemoConfig = data;
       lastDemoConfigFetchTime = Date.now();
       return cachedDemoConfig;
     }
   } catch (error) {
     console.error('Error fetching demo config:', error);
   }
+
+  if (isProd) {
+    cachedDemoConfig = null;
+    lastDemoConfigFetchTime = Date.now();
+    return null;
+  }
+
   return DEFAULT_DEMO_CONFIG;
 }
 
@@ -180,8 +230,76 @@ function mobileHash(role, digits) {
   return crypto.createHash('sha256').update(`${norm}:${digits}`).digest('hex');
 }
 
-function hashOtp(code) {
+function otpRedisKey(role, digits) {
+  const secret = readMsg91AuthKey({ required: false });
+  if (!secret) return null;
+  const normRole = role ? normalizeRole(role) : '';
+  const hashedDigits = crypto
+    .createHmac('sha256', secret)
+    .update(String(digits || '').trim())
+    .digest('hex');
+  return normRole ? `otp:challenge:${normRole}:${hashedDigits}` : `otp:challenge:${hashedDigits}`;
+}
+
+const ALLOW_LEGACY_UNSALTED_OTP_HASH = true;
+
+function legacyHashOtp(code) {
   return crypto.createHash('sha256').update(String(code || '')).digest('hex');
+}
+
+function hashOtp(code, roleOrOpts, maybeDigits) {
+  let role = '';
+  let digits = '';
+  if (roleOrOpts && typeof roleOrOpts === 'object') {
+    role = roleOrOpts.role || '';
+    digits = roleOrOpts.digits || roleOrOpts.mobileDigits || '';
+  } else {
+    role = roleOrOpts || '';
+    digits = maybeDigits || '';
+  }
+  const secret = readMsg91AuthKey({ required: false });
+  if (!secret) {
+    return legacyHashOtp(code);
+  }
+  const normRole = role ? normalizeRole(role) : '';
+  const normDigits = digits ? normalizeMobileDigits(digits) : '';
+  const payload = `${normRole}:${normDigits}:${String(code || '').trim()}`;
+  return crypto.createHmac('sha256', secret).update(payload).digest('hex');
+}
+
+function verifyChallengeOtpHash(otp, challengeOrHash, callerRole, callerDigits) {
+  let expectedHash = '';
+  let challengeRole = '';
+  let challengeDigits = '';
+  if (typeof challengeOrHash === 'object' && challengeOrHash !== null) {
+    expectedHash = challengeOrHash.otpHash || '';
+    challengeRole = challengeOrHash.role || '';
+    challengeDigits = challengeOrHash.mobileDigits || challengeOrHash.digits || '';
+  } else {
+    expectedHash = String(challengeOrHash || '');
+  }
+  if (!expectedHash) return false;
+
+  const role = callerRole || challengeRole || '';
+  const digits = callerDigits || challengeDigits || '';
+
+  // If both challenge and caller specify role, and they differ, cannot match
+  if (challengeRole && callerRole && normalizeRole(challengeRole) !== normalizeRole(callerRole)) {
+    return false;
+  }
+  // If both challenge and caller specify digits, and they differ, cannot match
+  if (challengeDigits && callerDigits && normalizeMobileDigits(challengeDigits) !== normalizeMobileDigits(callerDigits)) {
+    return false;
+  }
+
+  const currentHash = hashOtp(otp, role, digits);
+  if (otpHashesEqual(currentHash, expectedHash)) {
+    return true;
+  }
+  if (ALLOW_LEGACY_UNSALTED_OTP_HASH && otpHashesEqual(legacyHashOtp(otp), expectedHash)) {
+    return true;
+  }
+  return false;
 }
 
 function otpHashesEqual(a, b) {
@@ -1538,10 +1656,14 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
           try {
             const { redis } = require('./redis');
             if (redis && digits) {
-              await Promise.all([
-                redis.del(`otp:challenge:${digits}`).catch(() => {}),
-                redis.del(`otp:challenge:${role}:${digits}`).catch(() => {}),
-              ]).catch(() => {});
+              const keyNull = otpRedisKey(null, digits);
+              const keyRole = otpRedisKey(role, digits);
+              if (keyNull || keyRole) {
+                await Promise.all([
+                  keyNull ? redis.del(keyNull).catch(() => {}) : Promise.resolve(),
+                  keyRole ? redis.del(keyRole).catch(() => {}) : Promise.resolve(),
+                ]).catch(() => {});
+              }
             }
           } catch (_) {}
         } else {
@@ -1576,7 +1698,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   await challengeRef.set({
     role,
     mobileDigits: digits,
-    otpHash: hashOtp(code),
+    otpHash: hashOtp(code, role, digits),
     expiresAt,
     sentAt: FieldValue.serverTimestamp(),
     attempts: 0,
@@ -1587,19 +1709,26 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   try {
     const { redis } = require('./redis');
     if (redis && digits) {
-      const ttlSec = Math.max(1, Math.floor(expiryMs / 1000));
-      const redisPayload = JSON.stringify({
-        code,
-        otpHash: hashOtp(code),
-        role,
-        mobileDigits: digits,
-        expiresAt: Date.now() + expiryMs,
-      });
-      await Promise.all([
-        redis.set(`otp:challenge:${digits}`, redisPayload, 'EX', ttlSec).catch(() => {}),
-        redis.set(`otp:challenge:${role}:${digits}`, redisPayload, 'EX', ttlSec).catch(() => {}),
-      ]);
-      console.info(`[sendUserRegistrationOtp] OTP cached in Redis for mobile ending ${mobileLast4}`);
+      const secret = readMsg91AuthKey({ required: false });
+      if (!secret) {
+        console.warn('[sendUserRegistrationOtp] Redis OTP cache write skipped: MSG91 secret key not available');
+      } else {
+        const keyNull = otpRedisKey(null, digits);
+        const keyRole = otpRedisKey(role, digits);
+        if (keyNull || keyRole) {
+          const ttlSec = Math.max(1, Math.floor(expiryMs / 1000));
+          const redisPayload = JSON.stringify({
+            otpHash: hashOtp(code, role, digits),
+            role,
+            expiresAt: Date.now() + expiryMs,
+          });
+          await Promise.all([
+            keyNull ? redis.set(keyNull, redisPayload, 'EX', ttlSec).catch(() => {}) : Promise.resolve(),
+            keyRole ? redis.set(keyRole, redisPayload, 'EX', ttlSec).catch(() => {}) : Promise.resolve(),
+          ]);
+          console.info(`[sendUserRegistrationOtp] OTP cached in Redis for mobile ending ${mobileLast4}`);
+        }
+      }
     }
   } catch (redisErr) {
     console.warn('[sendUserRegistrationOtp] Redis cache write skipped:', redisErr.message);
@@ -1648,10 +1777,14 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     try {
       const { redis } = require('./redis');
       if (redis && digits) {
-        await Promise.all([
-          redis.del(`otp:challenge:${digits}`).catch(() => {}),
-          redis.del(`otp:challenge:${role}:${digits}`).catch(() => {}),
-        ]).catch(() => {});
+        const keyNull = otpRedisKey(null, digits);
+        const keyRole = otpRedisKey(role, digits);
+        if (keyNull || keyRole) {
+          await Promise.all([
+            keyNull ? redis.del(keyNull).catch(() => {}) : Promise.resolve(),
+            keyRole ? redis.del(keyRole).catch(() => {}) : Promise.resolve(),
+          ]).catch(() => {});
+        }
       }
     } catch (_) {}
     throw err;
@@ -1672,7 +1805,7 @@ async function isChallengeOtpValid({ otp, challenge, isDemoAccount, demoOtp }) {
   if (!isDemoAccount && isTestMode() && entered === DEV_TEST_OTP) {
     return true;
   }
-  if (otpHashesEqual(hashOtp(otp), challenge.otpHash)) {
+  if (verifyChallengeOtpHash(entered, challenge)) {
     return true;
   }
   if (isTestMode() || isDemoAccount) {
@@ -1722,18 +1855,38 @@ async function consumeOtpChallengeAtomically(
   try {
     redisClient = require('./redis').redis;
     if (redisClient && digits) {
-      const raw = (await redisClient.get(`otp:challenge:${digits}`).catch(() => null))
-        || (normalizedRole ? await redisClient.get(`otp:challenge:${normalizedRole}:${digits}`).catch(() => null) : null);
-      if (raw) {
-        redisChallenge = JSON.parse(raw);
-        console.info(`[consumeOtpChallengeAtomically] REDIS_KEY_FOUND for mobile ending ${digits.slice(-4)}`);
+      const secret = readMsg91AuthKey({ required: false });
+      if (!secret) {
+        console.warn('[consumeOtpChallengeAtomically] Redis lookup skipped: MSG91 secret key not available');
       } else {
-        console.info(`[consumeOtpChallengeAtomically] REDIS_KEY_NOT_FOUND for mobile ending ${digits.slice(-4)}`);
+        const keyNull = otpRedisKey(null, digits);
+        const keyRole = normalizedRole ? otpRedisKey(normalizedRole, digits) : null;
+        const raw = (keyNull ? await redisClient.get(keyNull).catch(() => null) : null)
+          || (keyRole ? await redisClient.get(keyRole).catch(() => null) : null);
+        if (raw) {
+          redisChallenge = JSON.parse(raw);
+          console.info(`[consumeOtpChallengeAtomically] REDIS_KEY_FOUND for mobile ending ${digits.slice(-4)}`);
+        } else {
+          console.info(`[consumeOtpChallengeAtomically] REDIS_KEY_NOT_FOUND for mobile ending ${digits.slice(-4)}`);
+        }
       }
     }
   } catch (redisErr) {
     console.warn('[consumeOtpChallengeAtomically] Redis lookup skipped:', redisErr.message);
   }
+
+  const cleanupRedisChallenge = async () => {
+    if (!redisClient || !digits) return;
+    try {
+      const keyNull = otpRedisKey(null, digits);
+      const keyRole = normalizedRole ? otpRedisKey(normalizedRole, digits) : null;
+      if (!keyNull && !keyRole) return;
+      await Promise.all([
+        keyNull ? redisClient.del(keyNull).catch(() => {}) : Promise.resolve(),
+        keyRole ? redisClient.del(keyRole).catch(() => {}) : Promise.resolve(),
+      ]).catch(() => {});
+    } catch (_) {}
+  };
 
   const demoConfig = await getDemoConfig();
   const demoOtp =
@@ -1760,11 +1913,14 @@ async function consumeOtpChallengeAtomically(
     }
 
     const treatAsDemo = isDemoAccount || challenge.demoAccount === true;
-    const localMatch = otpHashesEqual(hashOtp(otp), challenge.otpHash)
+    const localMatch = verifyChallengeOtpHash(otp, challenge, role, digits)
       || (treatAsDemo && demoOtp != null && otp === demoOtp)
       || (!treatAsDemo && isTestMode() && otp === DEV_TEST_OTP)
-      || (redisChallenge?.otpHash && otpHashesEqual(hashOtp(otp), redisChallenge.otpHash))
-      || (redisChallenge?.code && String(redisChallenge.code).trim() === otp);
+      || (redisChallenge?.otpHash && verifyChallengeOtpHash(otp, {
+           role: redisChallenge.role || challenge.role || role,
+           mobileDigits: digits || challenge.mobileDigits,
+           otpHash: redisChallenge.otpHash,
+         }));
 
     if (localMatch) {
       tx.delete(effectiveChallengeRef);
@@ -1784,12 +1940,7 @@ async function consumeOtpChallengeAtomically(
 
   // Handle immediate outcomes
   if (outcome.status === 'consumed') {
-    if (redisClient && digits) {
-      await Promise.all([
-        redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
-        normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
-      ]).catch(() => {});
-    }
+    await cleanupRedisChallenge();
     console.info(`[consumeOtpChallengeAtomically] OTP_VERIFIED successfully (local match) for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
     return { consumed: true };
   }
@@ -1801,23 +1952,13 @@ async function consumeOtpChallengeAtomically(
 
   if (outcome.status === 'expired') {
     console.warn(`[consumeOtpChallengeAtomically] OTP_EXPIRED for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
-    if (redisClient && digits) {
-      await Promise.all([
-        redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
-        normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
-      ]).catch(() => {});
-    }
+    await cleanupRedisChallenge();
     throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
   }
 
   if (outcome.status === 'locked') {
     console.warn(`[consumeOtpChallengeAtomically] OTP_LOCKED for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
-    if (redisClient && digits) {
-      await Promise.all([
-        redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
-        normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
-      ]).catch(() => {});
-    }
+    await cleanupRedisChallenge();
     throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
   }
 
@@ -1840,12 +1981,7 @@ async function consumeOtpChallengeAtomically(
           tx.delete(effectiveChallengeRef);
         }
       });
-      if (redisClient && digits) {
-        await Promise.all([
-          redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
-          normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
-        ]).catch(() => {});
-      }
+      await cleanupRedisChallenge();
       console.info(`[consumeOtpChallengeAtomically] OTP_VERIFIED successfully (MSG91 API confirmed) for mobile ending ${mobileForMsg91.slice(-4)}`);
       return { consumed: true };
     }
@@ -1865,12 +2001,7 @@ async function consumeOtpChallengeAtomically(
 
     console.warn(`[consumeOtpChallengeAtomically] INVALID_CODE (MSG91 rejected) attempt ${failOutcome.attempts}/5 for mobile ending ${mobileForMsg91.slice(-4)}`);
     if (failOutcome.status === 'locked') {
-      if (redisClient && digits) {
-        await Promise.all([
-          redisClient.del(`otp:challenge:${digits}`).catch(() => {}),
-          normalizedRole ? redisClient.del(`otp:challenge:${normalizedRole}:${digits}`).catch(() => {}) : Promise.resolve(),
-        ]).catch(() => {});
-      }
+      await cleanupRedisChallenge();
       throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
     }
     throw new HttpsError('permission-denied', 'Invalid OTP.');
@@ -2984,4 +3115,11 @@ module.exports = {
   normalizeRole,
   normalizeMobileDigits,
   verifyMsg91Otp,
+  otpRedisKey,
+  getDemoConfig,
+  setDemoConfigDocForTesting,
+  resetDemoConfigCacheForTesting,
+  ALLOW_LEGACY_UNSALTED_OTP_HASH,
+  legacyHashOtp,
+  verifyChallengeOtpHash,
 };

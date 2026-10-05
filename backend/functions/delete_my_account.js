@@ -157,6 +157,10 @@ async function deleteS3PrefixVersions(s3, bucketName, prefix) {
           });
           await s3.send(deleteCmd);
           totalDeleted += batch.length;
+          try {
+            const { invalidateS3DownloadUrlCacheBatch } = require('./s3_storage');
+            await invalidateS3DownloadUrlCacheBatch(batch.map((b) => b.Key));
+          } catch (_) {}
         }
       }
 
@@ -260,6 +264,10 @@ async function deleteS3SpecificKeysVersions(s3, bucketName, keys) {
         });
         await s3.send(deleteCmd);
         totalDeleted += batch.length;
+        try {
+          const { invalidateS3DownloadUrlCacheBatch } = require('./s3_storage');
+          await invalidateS3DownloadUrlCacheBatch(batch.map((item) => item.Key));
+        } catch (_) {}
       } catch (err) {
         logger.warn('deleteS3SpecificKeysVersions delete batch error', {
           batchSize: batch.length,

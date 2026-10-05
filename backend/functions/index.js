@@ -57,6 +57,10 @@ const {
   verifyRazorpayPayment,
   expirePromotedAds,
 } = require('./promoted_ads');
+const {
+  bookAppointment,
+  reconcileAppointmentSlot,
+} = require('./appointment_slots');
 
 const {
   sanitizeRuleParams,
@@ -1790,6 +1794,9 @@ exports.backfillPatientCareTeams = onCall(
 
 exports.createRazorpayOrder = createRazorpayOrder;
 exports.verifyRazorpayPayment = verifyRazorpayPayment;
+exports.expirePromotedAds = expirePromotedAds;
+exports.bookAppointment = bookAppointment;
+exports.reconcileAppointmentSlot = reconcileAppointmentSlot;
 
 const { sendMsg91Email } = require('./msg91_email');
 

@@ -408,6 +408,9 @@ async function getS3UploadUrlHandler(data, auth, db) {
     signableHeaders: new Set(['content-type', 'content-length', 'host']),
   });
 
+  // Invalidate cached download URL on upload URL request to guard against serving stale content on overwrite
+  await invalidateS3DownloadUrlCache(objectKey);
+
   return {
     uploadUrl,
     objectKey,
@@ -565,6 +568,78 @@ async function authorizeDelete(objectKey, caller, auth, db) {
   return false;
 }
 
+function hashKey(value) {
+  return crypto.createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+function s3DownloadUrlCacheKey(objectKey) {
+  return `s3:dl:${hashKey(objectKey)}`;
+}
+
+function getS3UrlCacheConfig() {
+  return String(process.env.S3_URL_CACHE || 'off').trim().toLowerCase();
+}
+
+function withRedisTimeout(promise, ms = 1500) {
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Redis S3 URL cache operation timed out')), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
+async function getCachedDownloadUrl(objectKey) {
+  if (getS3UrlCacheConfig() !== 'on' || !objectKey) return null;
+  try {
+    const { redis } = require('./redis');
+    if (!redis) return null;
+    const key = s3DownloadUrlCacheKey(objectKey);
+    const raw = await withRedisTimeout(redis.get(key), 1500).catch(() => null);
+    if (!raw) return null;
+    const ttl = await withRedisTimeout(redis.ttl(key), 1500).catch(() => 0);
+    // Ignore if less than 15 minutes (900s) remaining
+    if (ttl <= 0) return null;
+    return {
+      url: String(raw),
+      remainingTtlSec: ttl + 900,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+async function setCachedDownloadUrl(objectKey, url, ttlSec) {
+  if (getS3UrlCacheConfig() !== 'on' || !objectKey || !url) return;
+  try {
+    const { redis } = require('./redis');
+    if (!redis) return;
+    const key = s3DownloadUrlCacheKey(objectKey);
+    await withRedisTimeout(redis.set(key, url, 'EX', ttlSec), 1500).catch(() => {});
+  } catch (_) {}
+}
+
+async function invalidateS3DownloadUrlCache(objectKey) {
+  if (getS3UrlCacheConfig() !== 'on' || !objectKey) return;
+  try {
+    const { redis } = require('./redis');
+    if (!redis) return;
+    const key = s3DownloadUrlCacheKey(objectKey);
+    await withRedisTimeout(redis.del(key), 1500).catch(() => {});
+  } catch (_) {}
+}
+
+async function invalidateS3DownloadUrlCacheBatch(objectKeys) {
+  if (getS3UrlCacheConfig() !== 'on' || !Array.isArray(objectKeys) || objectKeys.length === 0) return;
+  try {
+    const { redis } = require('./redis');
+    if (!redis) return;
+    const keys = objectKeys.filter(Boolean).map(s3DownloadUrlCacheKey);
+    if (keys.length > 0) {
+      await withRedisTimeout(redis.del(...keys), 1500).catch(() => {});
+    }
+  } catch (_) {}
+}
+
 /**
  * 2. getS3DownloadUrl core handler.
  */
@@ -575,10 +650,23 @@ async function getS3DownloadUrlHandler(data, auth, db) {
   }
   assertValidObjectKey(objectKey, 'objectKey');
 
+  // ORDER MATTERS: run authorization check on EVERY request first.
   const caller = await resolveCallerUser(db, auth.uid);
   const allowed = await authorizeRead(objectKey, caller, auth, db);
   if (!allowed) {
     throw new HttpsError('permission-denied', 'You do not have permission to access this file.');
+  }
+
+  // Only after authorization passes, check the download URL cache
+  if (getS3UrlCacheConfig() === 'on') {
+    const cached = await getCachedDownloadUrl(objectKey);
+    if (cached) {
+      return {
+        url: cached.url,
+        expiresIn: cached.remainingTtlSec,
+        cached: true,
+      };
+    }
   }
 
   const s3 = getS3Client();
@@ -587,8 +675,15 @@ async function getS3DownloadUrlHandler(data, auth, db) {
     Key: objectKey,
   });
 
-  const expiresIn = 600; // 10 minutes
+  const isCacheOn = getS3UrlCacheConfig() === 'on';
+  const expiresIn = isCacheOn ? 3600 : 600;
   const url = await getSignedUrl(s3, command, { expiresIn });
+
+  if (isCacheOn) {
+    // Cache for (expiresIn - 900) seconds = 2700s (45 minutes)
+    const cacheTtlSec = Math.max(1, expiresIn - 900);
+    await setCachedDownloadUrl(objectKey, url, cacheTtlSec);
+  }
 
   return {
     url,
@@ -631,20 +726,35 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
   const caller = await resolveCallerUser(db, auth.uid);
   const s3 = getS3Client();
   const urls = {};
+  const isCacheOn = getS3UrlCacheConfig() === 'on';
   const expiresIn = 3600; // 1 hour for batch media
 
   for (const rawKey of objectKeys) {
     const key = String(rawKey || '').trim();
 
+    // ORDER MATTERS: authorize each key first
     const allowed = await authorizeRead(key, caller, auth, db);
     if (!allowed) continue;
+
+    if (isCacheOn) {
+      const cached = await getCachedDownloadUrl(key);
+      if (cached) {
+        urls[key] = cached.url;
+        continue;
+      }
+    }
 
     const command = new GetObjectCommand({
       Bucket: S3_BUCKET,
       Key: key,
     });
     try {
-      urls[key] = await getSignedUrl(s3, command, { expiresIn });
+      const signedUrl = await getSignedUrl(s3, command, { expiresIn });
+      urls[key] = signedUrl;
+      if (isCacheOn) {
+        const cacheTtlSec = Math.max(1, expiresIn - 900);
+        await setCachedDownloadUrl(key, signedUrl, cacheTtlSec);
+      }
     } catch (_) {
       // Omit failed keys from response map
     }
@@ -676,6 +786,9 @@ async function deleteS3ObjectHandler(data, auth, db) {
       Key: objectKey,
     }),
   );
+
+  // Invalidate cached download URL on object delete
+  await invalidateS3DownloadUrlCache(objectKey);
 
   return {
     success: true,
@@ -724,6 +837,13 @@ exports.deleteS3Object = onCall(CALLABLE_OPTIONS, async (request) => {
 exports.awsAccessKeyId = awsAccessKeyId;
 exports.awsSecretAccessKey = awsSecretAccessKey;
 
+exports.s3DownloadUrlCacheKey = s3DownloadUrlCacheKey;
+exports.getCachedDownloadUrl = getCachedDownloadUrl;
+exports.setCachedDownloadUrl = setCachedDownloadUrl;
+exports.invalidateS3DownloadUrlCache = invalidateS3DownloadUrlCache;
+exports.invalidateS3DownloadUrlCacheBatch = invalidateS3DownloadUrlCacheBatch;
+exports.getS3UrlCacheConfig = getS3UrlCacheConfig;
+
 // Export handlers & testing helpers for unit tests
 exports._test = {
   getS3UploadUrlHandler,
@@ -739,4 +859,10 @@ exports._test = {
   isValidObjectKey,
   assertValidObjectKey,
   isPublicMediaKey,
+  s3DownloadUrlCacheKey,
+  getCachedDownloadUrl,
+  setCachedDownloadUrl,
+  invalidateS3DownloadUrlCache,
+  invalidateS3DownloadUrlCacheBatch,
+  getS3UrlCacheConfig,
 };

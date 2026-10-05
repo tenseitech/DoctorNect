@@ -80,6 +80,77 @@ async function assertBucket(db, { bucket, windowMs, maxAttempts, message }) {
   });
 }
 
+function getRateLimitBackend() {
+  return String(process.env.RATE_LIMIT_BACKEND || 'firestore').trim().toLowerCase();
+}
+
+const LUA_INCR_EXPIRE = `
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+else
+  local ttl = redis.call('PTTL', KEYS[1])
+  if ttl == -1 then
+    redis.call('PEXPIRE', KEYS[1], ARGV[1])
+  end
+end
+return current
+`;
+
+function withRedisTimeout(promise, ms = 1500) {
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Redis rate limit operation timed out')), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
+async function executeRedisCounter(client, key, windowMs) {
+  if (typeof client.eval === 'function') {
+    const res = await withRedisTimeout(client.eval(LUA_INCR_EXPIRE, 1, key, String(windowMs)), 1500);
+    return Number(res);
+  }
+  if (typeof client.multi === 'function') {
+    const results = await withRedisTimeout(client.multi().incr(key).pexpire(key, windowMs).exec(), 1500);
+    return Number(results?.[0]?.[1] ?? results?.[0] ?? 1);
+  }
+  const count = await withRedisTimeout(client.incr(key), 1500);
+  if (count === 1 && typeof client.pexpire === 'function') {
+    await withRedisTimeout(client.pexpire(key, windowMs), 1500);
+  }
+  return Number(count);
+}
+
+async function assertBucketRedis(redisClient, { key, windowMs, maxAttempts, message }) {
+  const current = await executeRedisCounter(redisClient, key, windowMs);
+  if (current > maxAttempts) {
+    throw new HttpsError(
+      'resource-exhausted',
+      message || 'Too many requests. Please slow down and try again later.',
+    );
+  }
+}
+
+async function assertBucketUnified({ db, redisClient, useRedis, bucket, redisKey, windowMs, maxAttempts, message }) {
+  if (useRedis && redisClient) {
+    try {
+      await assertBucketRedis(redisClient, {
+        key: redisKey,
+        windowMs,
+        maxAttempts,
+        message,
+      });
+      return;
+    } catch (err) {
+      if (err instanceof HttpsError && err.code === 'resource-exhausted') {
+        throw err;
+      }
+      console.warn(`[abuse_rate_limit] Redis rate limit check failed (${err?.message || err}), falling back to Firestore`);
+    }
+  }
+  await assertBucket(db, { bucket, windowMs, maxAttempts, message });
+}
+
 /**
  * Enforce category limits for IP (+ uid when authenticated).
  * @param {'api'|'login'|'signup'|'otp_send'|'ai'|'scrape'|'payment'} category
@@ -95,27 +166,47 @@ async function enforceAbuseLimit(db, request, category, {
 
   const ip = clientIpFromRequest(request);
   const uid = request?.auth?.uid || '';
+  const useRedis = getRateLimitBackend() === 'redis';
+  let redisClient = null;
+  if (useRedis) {
+    try {
+      const { redis } = require('./redis');
+      redisClient = redis;
+    } catch (_) {}
+  }
 
   try {
     if (limits.ip) {
-      await assertBucket(db, {
+      await assertBucketUnified({
+        db,
+        redisClient,
+        useRedis,
         bucket: `${category}_ip_${hashKey(ip)}`,
+        redisKey: `ratelimit:${category}:${hashKey(`ip:${ip}`)}`,
         windowMs: limits.ip.windowMs,
         maxAttempts: limits.ip.max,
         message,
       });
     }
     if (limits.uid && uid) {
-      await assertBucket(db, {
+      await assertBucketUnified({
+        db,
+        redisClient,
+        useRedis,
         bucket: `${category}_uid_${hashKey(uid)}`,
+        redisKey: `ratelimit:${category}:${hashKey(`uid:${uid}`)}`,
         windowMs: limits.uid.windowMs,
         maxAttempts: limits.uid.max,
         message,
       });
     }
     if (limits.id && identifier) {
-      await assertBucket(db, {
+      await assertBucketUnified({
+        db,
+        redisClient,
+        useRedis,
         bucket: `${category}_id_${hashKey(String(identifier).toLowerCase())}`,
+        redisKey: `ratelimit:${category}:${hashKey(String(identifier).toLowerCase())}`,
         windowMs: limits.id.windowMs,
         maxAttempts: limits.id.max,
         message,
@@ -182,7 +273,10 @@ module.exports = {
   hashKey,
   clientIpFromRequest,
   assertBucket,
+  assertBucketRedis,
+  assertBucketUnified,
   enforceAbuseLimit,
   assertAppCheck,
   withAbuseProtection,
+  getRateLimitBackend,
 };

@@ -32,7 +32,12 @@ setRedisClientForTesting({
   del: async (...keys) => { for (const k of keys) redisMockStore.delete(k); return 1; },
 });
 
-const { sendUserRegistrationOtp } = require('../registration_otp');
+const {
+  sendUserRegistrationOtp,
+  consumeOtpChallengeAtomically,
+  legacyHashOtp,
+  otpRedisKey,
+} = require('../registration_otp');
 
 function mobileHash(role, digits) {
   return crypto.createHash('sha256').update(`${role}:${digits}`).digest('hex');
@@ -105,11 +110,12 @@ function createMockFirestore() {
           pending.set(ref.key, null);
         },
       };
-      await updateFn(tx);
+      const res = await updateFn(tx);
       for (const [key, value] of pending.entries()) {
         if (value == null) docs.delete(key);
         else docs.set(key, value);
       }
+      return res;
     },
   };
 }
@@ -136,8 +142,8 @@ test('retry fails with session expired -> fallback to fresh send, stale challeng
     sentAt: Timestamp.fromDate(new Date(Date.now() - 120000)),
     attempts: 3,
   });
-  redisStore.set(`otp:challenge:${phone}`, JSON.stringify({ otpHash: staleHash }));
-  redisStore.set(`otp:challenge:${role}:${phone}`, JSON.stringify({ otpHash: staleHash }));
+  redisStore.set(otpRedisKey(null, phone), JSON.stringify({ otpHash: staleHash }));
+  redisStore.set(otpRedisKey(role, phone), JSON.stringify({ otpHash: staleHash }));
 
   const httpCalls = [];
   const warnings = [];
@@ -211,10 +217,12 @@ test('retry fails with session expired -> fallback to fresh send, stale challeng
     assert.equal(freshDoc.mobileDigits, phone);
 
     // Redis contains updated challenge
-    const redisVal = redisStore.get(`otp:challenge:${phone}`);
+    const redisVal = redisStore.get(otpRedisKey(null, phone));
     assert.ok(redisVal);
     const parsedRedis = JSON.parse(redisVal);
     assert.notEqual(parsedRedis.otpHash, staleHash);
+    assert.equal(parsedRedis.code, undefined, 'Plaintext code must not be stored in Redis');
+    assert.equal(parsedRedis.mobileDigits, undefined, 'Raw mobileDigits must not be stored in Redis');
   } finally {
     https.request = origHttpsRequest;
     console.warn = origWarn;
@@ -401,3 +409,65 @@ test('fallback to fresh send works across all roles', async () => {
     }
   }
 });
+
+test('otpRedisKey returns null when no secret is available, skipping Redis write and read while Firestore continues to work', async () => {
+  const origKey = process.env.MSG91_AUTHKEY;
+  const origKey2 = process.env.MSG91_AUTH_KEY;
+  const origAuth = process.env.AUTH_KEY;
+
+  delete process.env.MSG91_AUTHKEY;
+  delete process.env.MSG91_AUTH_KEY;
+  delete process.env.AUTH_KEY;
+
+  const warnLogs = [];
+  const origWarn = console.warn;
+  console.warn = (...args) => {
+    warnLogs.push(args.join(' '));
+    origWarn(...args);
+  };
+
+  try {
+    // 1. otpRedisKey returns null without secret
+    const key = otpRedisKey('patient', '9876543210');
+    assert.equal(key, null, 'otpRedisKey must return null when no secret is configured');
+
+    const db = createMockFirestore();
+    const phone = '9876543210';
+    const chKey = `patient_${mobileHash('patient', phone)}`;
+
+    redisMockStore.clear();
+
+    // Seed challenge directly in Firestore (as sendUserRegistrationOtp does)
+    db.docs.set(`otp_challenges/${chKey}`, {
+      role: 'patient',
+      mobileDigits: phone,
+      otpHash: legacyHashOtp('654321'),
+      expiresAt: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)),
+      attempts: 0,
+    });
+
+    // 2. consumeOtpChallengeAtomically skips Redis lookup and successfully verifies via Firestore
+    const consumeRes = await consumeOtpChallengeAtomically(db, {
+      challengeKey: chKey,
+      otp: '654321',
+      mobileDigits: phone,
+      role: 'patient',
+      isDemoAccount: false,
+    });
+
+    assert.equal(consumeRes.consumed, true, 'Verification must succeed via Firestore');
+    assert.equal(redisMockStore.size, 0, 'Redis store must remain empty when secret is absent');
+    assert.equal(db.docs.has(`otp_challenges/${chKey}`), false, 'Challenge must be consumed');
+
+    assert.ok(
+      warnLogs.some((log) => log.includes('Redis lookup skipped: MSG91 secret key not available')),
+      'Warning must be logged without exposing secrets',
+    );
+  } finally {
+    console.warn = origWarn;
+    if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
+    if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
+    if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
+  }
+});
+
