@@ -92,13 +92,7 @@ void main() {
     testWidgets(
         'Tapping role card navigates to UnifiedAuthIntroScreen for all roles',
         (tester) async {
-      final roles = [
-        'Doctor',
-        'Patient',
-        'Pharmacy',
-        'Lab',
-        'Ambulance'
-      ];
+      final roles = ['Doctor', 'Patient', 'Pharmacy', 'Lab', 'Ambulance'];
 
       for (final role in roles) {
         tester.view.physicalSize = const Size(1280, 800);

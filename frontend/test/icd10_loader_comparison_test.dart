@@ -40,7 +40,8 @@ void main() {
       expect(
         Icd10DiagnosesDatabase.instance.entryCount,
         equals(oldEntries.length),
-        reason: 'Entry count must match between old raw parsing and new .gz loader',
+        reason:
+            'Entry count must match between old raw parsing and new .gz loader',
       );
       expect(oldEntries.length, greaterThan(1000));
 
@@ -60,7 +61,8 @@ void main() {
 
       for (final query in sampleQueries) {
         final oldResults = oldIndex.search(query, limit: 8);
-        final newResults = Icd10DiagnosesDatabase.instance.search(query, limit: 8);
+        final newResults =
+            Icd10DiagnosesDatabase.instance.search(query, limit: 8);
 
         expect(
           newResults,

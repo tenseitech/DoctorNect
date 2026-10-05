@@ -108,7 +108,8 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(radius),
                   border: Border.all(
@@ -124,12 +125,15 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                   boxShadow: widget.isSelected
                       ? [
                           BoxShadow(
-                            color: color.withValues(alpha: isDark ? 0.25 : 0.14),
+                            color:
+                                color.withValues(alpha: isDark ? 0.25 : 0.14),
                             blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
                           BoxShadow(
-                            color: (isDark ? Colors.black : const Color(0xFF0F172A))
+                            color: (isDark
+                                    ? Colors.black
+                                    : const Color(0xFF0F172A))
                                 .withValues(alpha: isDark ? 0.20 : 0.03),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
@@ -138,12 +142,15 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                       : _hovered && isWeb
                           ? [
                               BoxShadow(
-                                color: color.withValues(alpha: isDark ? 0.16 : 0.08),
+                                color: color.withValues(
+                                    alpha: isDark ? 0.16 : 0.08),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
                               BoxShadow(
-                                color: (isDark ? Colors.black : const Color(0xFF0F172A))
+                                color: (isDark
+                                        ? Colors.black
+                                        : const Color(0xFF0F172A))
                                     .withValues(alpha: isDark ? 0.20 : 0.04),
                                 blurRadius: 6,
                                 offset: const Offset(0, 2),
@@ -151,7 +158,9 @@ class _RoleCardSurfaceState extends State<_RoleCardSurface> {
                             ]
                           : [
                               BoxShadow(
-                                color: (isDark ? Colors.black : const Color(0xFF0F172A))
+                                color: (isDark
+                                        ? Colors.black
+                                        : const Color(0xFF0F172A))
                                     .withValues(alpha: isDark ? 0.20 : 0.03),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),

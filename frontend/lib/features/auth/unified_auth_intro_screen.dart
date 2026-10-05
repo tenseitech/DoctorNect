@@ -2740,8 +2740,8 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
     // If still on OTP step, verification did not navigate away (failed)
     if (!_isMobileStep) {
       _lastFailedOtp = otp;
-      final isNetwork = hadNetworkException ||
-          AuthAutoFlowHelper.isOfflineOrUnavailable();
+      final isNetwork =
+          hadNetworkException || AuthAutoFlowHelper.isOfflineOrUnavailable();
       if (!isNetwork) {
         // Wrong / expired OTP: shake, clear 6 boxes, refocus box 0
         _otpInputKey.currentState?.shakeAndClear();
@@ -2772,140 +2772,142 @@ class _DesktopAuthCardState extends State<_DesktopAuthCard> {
     final cardColor = AppColors.surfaceOf(context);
 
     return DecoratedBox(
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(_IntroTheme.desktopCardRadius),
-          border: Border.all(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(_IntroTheme.desktopCardRadius),
+        border: Border.all(
+          color: isDark
+              ? AppColors.borderOf(context)
+              : Colors.white.withValues(alpha: 0.85),
+        ),
+        boxShadow: [
+          BoxShadow(
             color: isDark
-                ? AppColors.borderOf(context)
-                : Colors.white.withValues(alpha: 0.85),
+                ? Colors.black.withValues(alpha: 0.42)
+                : const Color(0xFF0B1841).withValues(alpha: 0.10),
+            blurRadius: 48,
+            offset: const Offset(0, 24),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.42)
-                  : const Color(0xFF0B1841).withValues(alpha: 0.10),
-              blurRadius: 48,
-              offset: const Offset(0, 24),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.06),
+            blurRadius: 24,
+          ),
+          BoxShadow(
+            color: widget.accent.withValues(alpha: isDark ? 0.10 : 0.06),
+            blurRadius: 60,
+            spreadRadius: -12,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(38, 40, 38, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        widget.accent,
+                        widget.accent.withValues(alpha: 0.78),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.accent.withValues(alpha: 0.32),
+                        blurRadius: 14,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.medical_services_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 30,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        widget.accent.withValues(alpha: 0.55),
+                        widget.accent.withValues(alpha: 0),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ],
             ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.06),
-              blurRadius: 24,
+            const SizedBox(height: 22),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: isMobileStep
+                    ? _buildMobileStep(context)
+                    : _buildOtpStep(context),
+              ),
             ),
-            BoxShadow(
-              color: widget.accent.withValues(alpha: isDark ? 0.10 : 0.06),
-              blurRadius: 60,
-              spreadRadius: -12,
-              offset: const Offset(0, 12),
+            const SizedBox(height: 26),
+            _DesktopPrimaryButton(
+              label: isMobileStep ? 'Continue' : 'Verify & continue',
+              loadingLabel: isMobileStep ? 'Sending OTP...' : 'Verifying...',
+              accent: widget.accent,
+              enabled: isMobileStep
+                  ? _mobileValid && !_isAutoSending && !widget.flow.sendingOtp
+                  : widget.flow.otpValid &&
+                      !_isVerifying &&
+                      !widget.flow.verifying,
+              loading: isMobileStep
+                  ? widget.flow.sendingOtp || _isAutoSending
+                  : widget.flow.verifying || _isVerifying,
+              onPressed: _submit,
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: TextButton(
+                onPressed: widget.onTroubleSigningIn,
+                style: TextButton.styleFrom(
+                  foregroundColor: widget.accent,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Trouble signing in?',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: widget.accent,
+                    decoration: TextDecoration.underline,
+                    decorationColor: widget.accent,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(38, 40, 38, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          widget.accent,
-                          widget.accent.withValues(alpha: 0.78),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.accent.withValues(alpha: 0.32),
-                          blurRadius: 14,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.medical_services_rounded,
-                      size: 20,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 30,
-                    height: 3,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          widget.accent.withValues(alpha: 0.55),
-                          widget.accent.withValues(alpha: 0),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 22),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: isMobileStep
-                      ? _buildMobileStep(context)
-                      : _buildOtpStep(context),
-                ),
-              ),
-              const SizedBox(height: 26),
-              _DesktopPrimaryButton(
-                label: isMobileStep ? 'Continue' : 'Verify & continue',
-                loadingLabel: isMobileStep ? 'Sending OTP...' : 'Verifying...',
-                accent: widget.accent,
-                enabled: isMobileStep
-                    ? _mobileValid && !_isAutoSending && !widget.flow.sendingOtp
-                    : widget.flow.otpValid && !_isVerifying && !widget.flow.verifying,
-                loading: isMobileStep
-                    ? widget.flow.sendingOtp || _isAutoSending
-                    : widget.flow.verifying || _isVerifying,
-                onPressed: _submit,
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: TextButton(
-                  onPressed: widget.onTroubleSigningIn,
-                  style: TextButton.styleFrom(
-                    foregroundColor: widget.accent,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Trouble signing in?',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: widget.accent,
-                      decoration: TextDecoration.underline,
-                      decorationColor: widget.accent,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      ),
+    );
   }
 
   Widget _buildMobileStep(BuildContext context) {

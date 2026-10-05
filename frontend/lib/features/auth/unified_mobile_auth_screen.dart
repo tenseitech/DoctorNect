@@ -263,8 +263,8 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
     // If still on OTP step, verification did not navigate away (failed)
     if (!_isMobileStep) {
       _lastFailedOtp = otp;
-      final isNetwork = hadNetworkException ||
-          AuthAutoFlowHelper.isOfflineOrUnavailable();
+      final isNetwork =
+          hadNetworkException || AuthAutoFlowHelper.isOfflineOrUnavailable();
       if (!isNetwork) {
         // Wrong / expired OTP: shake, clear 6 boxes, refocus box 0
         _otpInputKey.currentState?.shakeAndClear();
@@ -368,140 +368,139 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
 
     return Theme(
       data: Theme.of(context).copyWith(
-        colorScheme:
-            Theme.of(context).colorScheme.copyWith(primary: _accent),
+        colorScheme: Theme.of(context).colorScheme.copyWith(primary: _accent),
       ),
       child: Scaffold(
-          backgroundColor: AppColors.surfaceOf(context),
-          resizeToAvoidBottomInset: true,
-          body: SafeArea(
-            bottom: false,
-            child: GestureDetector(
-              onTap: _dismissKeyboard,
-              behavior: HitTestBehavior.opaque,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _AuthTopBar(
-                    onBack: _handleBack,
-                    onHelp: _openTroubleSigningInHelp,
-                    canPop: Navigator.of(context).canPop() || !isMobileStep,
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 20),
-                              height: 140,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    _accent.withValues(alpha: 0.90),
-                                    _accent,
-                                  ],
+        backgroundColor: AppColors.surfaceOf(context),
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          bottom: false,
+          child: GestureDetector(
+            onTap: _dismissKeyboard,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _AuthTopBar(
+                  onBack: _handleBack,
+                  onHelp: _openTroubleSigningInHelp,
+                  canPop: Navigator.of(context).canPop() || !isMobileStep,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            height: 140,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  _accent.withValues(alpha: 0.90),
+                                  _accent,
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _accent.withValues(alpha: 0.25),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _accent.withValues(alpha: 0.25),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 6),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Image.asset(
+                                      AssetResolver.resolve(
+                                        'assets/images/doctor_illustration.jpg',
+                                      ),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          const Center(
+                                        child: Icon(
+                                          Icons.medical_services_rounded,
+                                          size: 48,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned.fill(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.transparent,
+                                            Colors.black.withValues(
+                                              alpha: 0.40,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: Image.asset(
-                                        AssetResolver.resolve(
-                                          'assets/images/doctor_illustration.jpg',
-                                        ),
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            const Center(
-                                          child: Icon(
-                                            Icons.medical_services_rounded,
-                                            size: 48,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned.fill(
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.transparent,
-                                              Colors.black.withValues(
-                                                alpha: 0.40,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
-                            Text(
-                              _heading,
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: AppTypography.headlineLarge,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimaryOf(context),
-                                letterSpacing: -0.4,
-                                height: 1.25,
-                              ),
+                          ),
+                          Text(
+                            _heading,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: AppTypography.headlineLarge,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimaryOf(context),
+                              letterSpacing: -0.4,
+                              height: 1.25,
                             ),
-                            const SizedBox(height: 28),
-                            if (isMobileStep)
-                              _buildMobileStep()
-                            else
-                              _buildOtpStep(),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 28),
+                          if (isMobileStep)
+                            _buildMobileStep()
+                          else
+                            _buildOtpStep(),
+                        ],
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      20,
-                      8,
-                      20,
-                      16 + MediaQuery.paddingOf(context).bottom,
-                    ),
-                    child: _PinnedPrimaryButton(
-                      label: isMobileStep ? 'Continue' : 'Verify & continue',
-                      accentColor: _accent,
-                      enabled: canContinue,
-                      loading: isLoading,
-                      loadingText:
-                          isMobileStep ? 'Sending OTP...' : 'Verifying...',
-                      onPressed: isMobileStep
-                          ? () => _continueWithMobile(isAuto: false)
-                          : () => _verifyOtp(isAuto: false),
-                    ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    8,
+                    20,
+                    16 + MediaQuery.paddingOf(context).bottom,
                   ),
-                ],
-              ),
+                  child: _PinnedPrimaryButton(
+                    label: isMobileStep ? 'Continue' : 'Verify & continue',
+                    accentColor: _accent,
+                    enabled: canContinue,
+                    loading: isLoading,
+                    loadingText:
+                        isMobileStep ? 'Sending OTP...' : 'Verifying...',
+                    onPressed: isMobileStep
+                        ? () => _continueWithMobile(isAuto: false)
+                        : () => _verifyOtp(isAuto: false),
+                  ),
+                ),
+              ],
             ),
+          ),
         ),
       ),
     );

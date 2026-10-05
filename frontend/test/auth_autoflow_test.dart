@@ -27,7 +27,8 @@ void main() {
       expect(AuthAutoFlowHelper.normalizeMobile('12345'), isNull);
     });
 
-    test('Triggers ONLY when input transitions from < 10 to 10 valid digits', () {
+    test('Triggers ONLY when input transitions from < 10 to 10 valid digits',
+        () {
       final tracker = MobileAutoSendTracker();
 
       // Typing digits 1 through 9: must NOT trigger
@@ -130,7 +131,9 @@ void main() {
       );
     });
 
-    testWidgets('Widget typing: 9 digits does nothing, 10th digit triggers auto-send once', (tester) async {
+    testWidgets(
+        'Widget typing: 9 digits does nothing, 10th digit triggers auto-send once',
+        (tester) async {
       int triggerCount = 0;
       final tracker = MobileAutoSendTracker();
       final controller = TextEditingController();
@@ -170,7 +173,8 @@ void main() {
       expect(triggerCount, 1);
     });
 
-    testWidgets('Widget programmatic prefill does NOT trigger auto-send', (tester) async {
+    testWidgets('Widget programmatic prefill does NOT trigger auto-send',
+        (tester) async {
       int triggerCount = 0;
       final tracker = MobileAutoSendTracker();
       final controller = TextEditingController(text: '9876543210');
@@ -215,7 +219,9 @@ void main() {
       expect(textFields, findsNWidgets(6));
     });
 
-    testWidgets('6th digit automatically triggers onCompleted once without extra tap', (tester) async {
+    testWidgets(
+        '6th digit automatically triggers onCompleted once without extra tap',
+        (tester) async {
       int completedCalls = 0;
       String? completedCode;
 
@@ -251,7 +257,9 @@ void main() {
       expect(completedCode, '123456');
     });
 
-    testWidgets('Pasting a 6-digit code into any box fills all 6 boxes and completes', (tester) async {
+    testWidgets(
+        'Pasting a 6-digit code into any box fills all 6 boxes and completes',
+        (tester) async {
       String? completedCode;
 
       await tester.pumpWidget(
@@ -277,7 +285,8 @@ void main() {
       }
     });
 
-    testWidgets('enabled: false locks all 6 boxes while verifying', (tester) async {
+    testWidgets('enabled: false locks all 6 boxes while verifying',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -296,7 +305,9 @@ void main() {
       }
     });
 
-    testWidgets('shakeAndClear clears all 6 boxes, notifies empty string, and refocuses box 0', (tester) async {
+    testWidgets(
+        'shakeAndClear clears all 6 boxes, notifies empty string, and refocuses box 0',
+        (tester) async {
       final key = GlobalKey<OtpInputState>();
       String currentCode = '';
 
@@ -377,7 +388,8 @@ void main() {
         isTrue,
       );
       expect(
-        AuthAutoFlowHelper.isNetworkOrServerError('Invalid OTP. Please try again.'),
+        AuthAutoFlowHelper.isNetworkOrServerError(
+            'Invalid OTP. Please try again.'),
         isFalse,
       );
       expect(

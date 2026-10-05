@@ -805,9 +805,8 @@ class _DesktopRoleSelectionCard extends StatelessWidget {
               onPressed: canContinue ? onContinue : null,
               style: FilledButton.styleFrom(
                 backgroundColor: selectedAccent,
-                disabledBackgroundColor: isDark
-                    ? const Color(0xFF1E293B)
-                    : const Color(0xFFE2E8F0),
+                disabledBackgroundColor:
+                    isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -870,7 +869,8 @@ class _MobileWelcomeScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark(context);
-    final pageBg = isDark ? AppColors.surfaceOf(context) : const Color(0xFFF7F9FC);
+    final pageBg =
+        isDark ? AppColors.surfaceOf(context) : const Color(0xFFF7F9FC);
     final canContinue = selectedRole != null;
 
     final continueLabel = canContinue

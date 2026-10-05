@@ -30,15 +30,21 @@ void main() {
       expect(allowedRoles.contains(patientRole), isFalse);
     });
 
-    test('PromotedAdProviderType enum supports all 4 non-patient roles only', () {
-      expect(PromotedAdProviderType.values, contains(PromotedAdProviderType.doctor));
-      expect(PromotedAdProviderType.values, contains(PromotedAdProviderType.lab));
-      expect(PromotedAdProviderType.values, contains(PromotedAdProviderType.pharmacy));
-      expect(PromotedAdProviderType.values, contains(PromotedAdProviderType.ambulance));
+    test('PromotedAdProviderType enum supports all 4 non-patient roles only',
+        () {
+      expect(PromotedAdProviderType.values,
+          contains(PromotedAdProviderType.doctor));
+      expect(
+          PromotedAdProviderType.values, contains(PromotedAdProviderType.lab));
+      expect(PromotedAdProviderType.values,
+          contains(PromotedAdProviderType.pharmacy));
+      expect(PromotedAdProviderType.values,
+          contains(PromotedAdProviderType.ambulance));
       expect(PromotedAdProviderType.values.length, 4);
     });
 
-    test('PromotedAdModel handles all non-patient provider types correctly', () {
+    test('PromotedAdModel handles all non-patient provider types correctly',
+        () {
       final adDoctor = PromotedAdModel(
         adId: 'ad_doc',
         providerType: 'doctor',
@@ -137,7 +143,8 @@ void main() {
       expect(IndianCities.dailyRate('Unknown'), 100); // Fallback standard
     });
 
-    testWidgets('Promote Ad button renders correctly with campaign icon', (tester) async {
+    testWidgets('Promote Ad button renders correctly with campaign icon',
+        (tester) async {
       bool pressed = false;
       await tester.pumpWidget(
         MaterialApp(

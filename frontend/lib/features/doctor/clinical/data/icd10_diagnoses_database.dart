@@ -205,7 +205,8 @@ List<_Icd10Entry> _decompressAndParse(Uint8List compressed) {
   for (var i = 0; i < raw.length; i++) {
     if (raw.codeUnitAt(i) == 0x0A) {
       if (i > start) {
-        final entry = Icd10DiagnosesDatabase._parseLine(raw.substring(start, i));
+        final entry =
+            Icd10DiagnosesDatabase._parseLine(raw.substring(start, i));
         if (entry != null) parsed.add(entry);
       }
       start = i + 1;
