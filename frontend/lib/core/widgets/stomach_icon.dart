@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/asset_resolver.dart';
 
 /// Stomach silhouette for Stomach & Digestion specialty tiles.
 class StomachIcon extends StatelessWidget {
@@ -12,7 +13,7 @@ class StomachIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      assetPath,
+      AssetResolver.resolve(assetPath),
       width: size,
       height: size,
       fit: BoxFit.contain,

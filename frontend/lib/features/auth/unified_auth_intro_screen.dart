@@ -12,6 +12,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme_controller.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/validators/form_validators.dart';
+import '../../core/utils/asset_resolver.dart';
 import '../../widgets/otp_input.dart';
 import 'auth_autoflow_helper.dart';
 import 'trouble_signing_in_screen.dart';
@@ -3133,7 +3134,7 @@ class _IntroIllustration extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: size * 0.04),
                 child: assetPath != null
                     ? Image.asset(
-                        assetPath!,
+                        AssetResolver.resolve(assetPath!),
                         height: size,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => _PlaceholderIllustration(

@@ -7,6 +7,7 @@ import '../../data/patient_mock_data.dart';
 import 'package:medibond/features/patient/models/patient_models.dart';
 
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/asset_resolver.dart';
 
 class ServicesSection extends StatelessWidget {
   const ServicesSection({super.key, required this.onServiceTap});
@@ -160,14 +161,16 @@ class _ServiceTileState extends State<_ServiceTile> {
     return _shortLabel;
   }
 
-  String? get _assetPath =>
-      widget.service.assetPath ??
-      switch (widget.service.route) {
-        'records' => 'assets/images/services/records.png',
-        'sos' => 'assets/images/services/sos.png',
-        'digital-pass' => 'assets/icons/common/digital_pass.png',
-        _ => null,
-      };
+  String? get _assetPath {
+    final raw = widget.service.assetPath ??
+        switch (widget.service.route) {
+          'records' => 'assets/images/services/records.png',
+          'sos' => 'assets/images/services/sos.png',
+          'digital-pass' => 'assets/icons/common/digital_pass.png',
+          _ => null,
+        };
+    return raw != null ? AssetResolver.resolve(raw) : null;
+  }
 
   Widget _serviceIcon(double size) {
     if (_assetPath != null) {

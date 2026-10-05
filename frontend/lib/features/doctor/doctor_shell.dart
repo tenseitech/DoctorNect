@@ -23,6 +23,7 @@ import '../../core/notifications/doctor_in_app_notification_sync.dart';
 import '../../core/notifications/doctor_notification_scheduler.dart';
 import '../../core/notifications/doctor_push_service.dart';
 import '../../core/notifications/in_app_notification_service.dart';
+import '../../core/utils/asset_resolver.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/adaptive_app_shell.dart';
@@ -80,14 +81,14 @@ class _DoctorShellState extends State<DoctorShell> {
     ),
     NavigationDestination(
       icon: Image.asset(
-        'assets/icons/doctor/lab.png',
+        AssetResolver.resolve('assets/icons/doctor/lab.png'),
         width: 22,
         height: 22,
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => const Icon(TablerIcons.flask, size: 22),
       ),
       selectedIcon: Image.asset(
-        'assets/icons/doctor/lab.png',
+        AssetResolver.resolve('assets/icons/doctor/lab.png'),
         width: 22,
         height: 22,
         fit: BoxFit.contain,

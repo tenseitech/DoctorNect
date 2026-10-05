@@ -10,6 +10,7 @@ import '../core/theme/app_colors.dart';
 import '../features/doctor/profile/data/doctor_profile_store.dart';
 import '../features/patient/profile/data/patient_profile_mock.dart';
 import '../core/theme/app_typography.dart';
+import '../core/utils/asset_resolver.dart';
 
 /// Modal sheet displaying a digital health ID card with scannable QR pass.
 class DigitalHealthCardSheet extends StatefulWidget {
@@ -316,7 +317,9 @@ class _DoctorNectPassCard extends StatelessWidget {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: Image.asset(
-                                'assets/icons/common/digital_pass.png',
+                                AssetResolver.resolve(
+                                  'assets/icons/common/digital_pass.png',
+                                ),
                                 width: 20,
                                 height: 20,
                                 fit: BoxFit.contain,

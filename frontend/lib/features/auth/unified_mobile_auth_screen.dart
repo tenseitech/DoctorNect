@@ -12,6 +12,7 @@ import '../../widgets/otp_input.dart';
 import 'auth_autoflow_helper.dart';
 import 'widgets/unified_auth_mobile_field.dart';
 import 'trouble_signing_in_screen.dart';
+import '../../core/utils/asset_resolver.dart';
 
 /// Single entry point for login and registration: mobile + OTP, then server-side branch.
 class UnifiedMobileAuthScreen extends StatefulWidget {
@@ -424,7 +425,9 @@ class _UnifiedMobileAuthScreenState extends State<UnifiedMobileAuthScreen> {
                                   children: [
                                     Positioned.fill(
                                       child: Image.asset(
-                                        'assets/images/doctor_illustration.jpg',
+                                        AssetResolver.resolve(
+                                          'assets/images/doctor_illustration.jpg',
+                                        ),
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) =>
                                             const Center(

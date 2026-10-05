@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/stomach_icon.dart';
 import '../../search/doctor_search_screen.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/utils/asset_resolver.dart';
 
 class ExploreSection extends StatelessWidget {
   const ExploreSection({super.key});
@@ -631,7 +632,10 @@ abstract final class _ExploreSpecialtyAssets {
     'Veterinary': 'assets/images/specialties/veterinary.png',
   };
 
-  static String? forCategory(String category) => _assetPaths[category];
+  static String? forCategory(String category) {
+    final path = _assetPaths[category];
+    return path != null ? AssetResolver.resolve(path) : null;
+  }
 }
 
 abstract final class _ExploreIcons {

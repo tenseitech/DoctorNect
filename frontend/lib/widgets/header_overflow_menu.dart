@@ -5,6 +5,7 @@ import '../core/theme/app_theme_controller.dart';
 import 'digital_health_card_sheet.dart';
 import 'emergency_sos_sheet.dart';
 import '../core/theme/app_typography.dart';
+import '../core/utils/asset_resolver.dart';
 
 /// Consolidated three-dot (⋮) overflow menu for top header bars.
 /// Contains QR Credentials Pass, Emergency SOS Hotline, and Theme Toggle.
@@ -60,7 +61,9 @@ class HeaderOverflowMenu extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: Image.asset(
-                          'assets/icons/common/digital_pass.png',
+                          AssetResolver.resolve(
+                            'assets/icons/common/digital_pass.png',
+                          ),
                           width: 18,
                           height: 18,
                           fit: BoxFit.contain,
