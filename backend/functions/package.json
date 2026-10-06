@@ -18,7 +18,8 @@
   "overrides": {
     "gaxios": "^7.3.1",
     "uuid": "^11.1.0",
-    "@grpc/grpc-js": "^1.14.5"
+    "@grpc/grpc-js": "^1.14.5",
+    "@fastify/busboy": "^3.2.2"
   },
   "scripts": {
     "build": "node --check index.js src/config/redis.js redis.js",
@@ -27,7 +28,8 @@
     "test:storage-rules": "firebase emulators:exec --only firestore,storage --project demo-doctornect-kyc \"node --test test/storage_doctor_kyc.rules.test.js test/storage_provider_kyc.rules.test.js\"",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-doctornect-reviews \"node --test test/firestore_reviews.rules.test.js\"",
     "test:firestore-s3-rules": "firebase emulators:exec --only firestore --project demo-doctornect-s3-rules \"node --test test/firestore_s3_rules.test.js\"",
-    "test:promoted-ads": "firebase emulators:exec --only firestore --project demo-doctornect-promoted-rules \"node --test test/promoted_ads_verification.test.js\""
+    "test:promoted-ads": "firebase emulators:exec --only firestore --project demo-doctornect-promoted-rules \"node --test test/promoted_ads_verification.test.js\"",
+    "test:doctor-slots-emulator": "firebase emulators:exec --only firestore --project demo-doctornect-slots \"node --test test/doctor_slots_emulator.test.js\""
   },
   "private": true
 }

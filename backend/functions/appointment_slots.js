@@ -8,6 +8,12 @@ const MAX_PATIENTS_PER_SLOT = 3;
 const FIRESTORE_TRIGGER_REGION = 'asia-south2';
 const CALLABLE_REGION = 'asia-south1';
 
+const { enforceAbuseLimit, assertAppCheck } = require('./abuse_rate_limit');
+
+const ENFORCE_ABUSE_APP_CHECK = String(
+  process.env.ENFORCE_ABUSE_APP_CHECK || process.env.ENFORCE_OTP_APP_CHECK || 'true',
+).trim().toLowerCase() !== 'false';
+
 const DEFAULT_DOCTOR_AVAILABILITY = {
   workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
   morningStart: '09:00 AM',
@@ -206,6 +212,7 @@ function buildAppointmentData({
   callerData,
   data,
   dateTimeTimestamp,
+  tokenNumber = 1,
 }) {
   const patientName = String(data?.patientName || callerData?.name || '').trim();
   const patientAge = Number(data?.patientAge) || Number(callerData?.age) || 0;
@@ -213,7 +220,6 @@ function buildAppointmentData({
   const doctorName = String(doctorData?.name || doctorData?.doctorName || data?.doctorName || '').trim();
   const specialization = String(doctorData?.specialization || data?.specialization || '').trim();
   const slotLabel = String(data?.slotLabel || '').trim();
-  const tokenNumber = Number(data?.tokenNumber) || 1;
   const visitType = String(data?.visitType || 'newVisit').trim();
   const patientStatus = String(data?.patientStatus || 'pending').trim();
   const doctorStatus = String(data?.doctorStatus || 'pendingRequest').trim();
@@ -229,7 +235,7 @@ function buildAppointmentData({
     patientGender,
     dateTime: dateTimeTimestamp,
     slotLabel,
-    tokenNumber,
+    tokenNumber: Number(tokenNumber) || 1,
     visitType,
     patientStatus,
     doctorStatus,
@@ -242,7 +248,7 @@ function buildAppointmentData({
       : (data?.reasonForVisit ? [String(data.reasonForVisit).trim()] : []),
     symptoms: Array.isArray(data?.symptoms) ? data.symptoms : [],
     observations: Array.isArray(data?.observations) ? data.observations : [],
-    wasRescheduled: Boolean(data?.wasRescheduled),
+    wasRescheduled: false, // In bookAppointment, always false (reschedule will be a separate callable)
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
@@ -292,6 +298,7 @@ async function reconcileAppointmentSlotTransaction(db, {
   afterActive,
   afterDoctorId,
   afterDateTime,
+  afterTokenNumber = 0,
 }) {
   const beforeSlotId = beforeActive && beforeDoctorId && beforeDateTime
     ? deriveSlotId(beforeDoctorId, beforeDateTime)
@@ -313,6 +320,26 @@ async function reconcileAppointmentSlotTransaction(db, {
     }
     if (afterSlotId) {
       afterSnap = await tx.get(db.collection('doctor_slots').doc(afterSlotId));
+    }
+
+    // On appointment CREATE or legacy write, raise doctor_day_counters to max(counter, tokenNumber)
+    if (afterActive && afterDoctorId && afterDateTime && afterTokenNumber > 0) {
+      const { date: afterDate } = toIstDateAndTime(afterDateTime);
+      const dayCounterRef = db.collection('doctor_day_counters').doc(`${afterDoctorId}_${afterDate}`);
+      const counterSnap = await tx.get(dayCounterRef);
+      const currentLast = counterSnap.exists ? Number(counterSnap.data()?.lastTokenNumber || 0) : 0;
+      if (afterTokenNumber > currentLast) {
+        tx.set(
+          dayCounterRef,
+          {
+            doctorId: afterDoctorId,
+            date: afterDate,
+            lastTokenNumber: afterTokenNumber,
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+      }
     }
 
     // 1. Remove from before slot if cancelled, deleted, or rescheduled
@@ -379,8 +406,13 @@ async function reconcileAppointmentSlotHandler(event, db = getFirestore()) {
 
   if (!appointmentId) return;
 
+  if (after && (!after.doctorId || !after.dateTime)) {
+    console.warn(`[reconcileAppointmentSlot] Skipping malformed appointment ${appointmentId}: missing doctorId or dateTime`);
+  }
+
   const beforeActive = Boolean(before && before.doctorId && before.dateTime && !before.cancellationReason);
   const afterActive = Boolean(after && after.doctorId && after.dateTime && !after.cancellationReason);
+  const afterTokenNumber = Number(after?.tokenNumber || 0);
 
   await reconcileAppointmentSlotTransaction(db, {
     appointmentId,
@@ -390,6 +422,7 @@ async function reconcileAppointmentSlotHandler(event, db = getFirestore()) {
     afterActive,
     afterDoctorId: after?.doctorId,
     afterDateTime: after?.dateTime,
+    afterTokenNumber,
   });
 }
 
@@ -466,8 +499,10 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
   const slotRef = db.collection('doctor_slots').doc(slotId);
   const apptRef = db.collection('appointments').doc();
   const appointmentId = apptRef.id;
+  const dayCounterRef = db.collection('doctor_day_counters').doc(`${doctorId}_${slotDate}`);
+  let assignedTokenNumber = 1;
 
-  // 5. In ONE transaction: check capacity, check patient double-booking, create appointment, add to slot
+  // 5. In ONE transaction: check capacity, check patient double-booking, check slotShareReason, increment day counter, create appointment, add to slot
   await db.runTransaction(async (tx) => {
     const slotSnap = await tx.get(slotRef);
     const slotData = slotSnap.exists ? slotSnap.data() : null;
@@ -495,6 +530,34 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
       }
     }
 
+    // Require slotShareReason if slot already has 1 or 2 active bookings (matching UI rule)
+    // Client-supplied wasRescheduled is NOT honored in bookAppointment; always treated as false.
+    if (currentActiveIds.length >= 1) {
+      const slotShareReason = String(data?.slotShareReason || '').trim();
+      if (!slotShareReason) {
+        throw new HttpsError(
+          'invalid-argument',
+          'Please provide a reason for sharing this time slot.',
+        );
+      }
+    }
+
+    // Read and increment per-doctor-per-day token counter
+    const counterSnap = await tx.get(dayCounterRef);
+    const lastToken = counterSnap.exists ? Number(counterSnap.data()?.lastTokenNumber || 0) : 0;
+    assignedTokenNumber = lastToken + 1;
+
+    tx.set(
+      dayCounterRef,
+      {
+        doctorId,
+        date: slotDate,
+        lastTokenNumber: assignedTokenNumber,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
     // Build appointment matching AppointmentFirestoreMapper
     const appointmentDoc = buildAppointmentData({
       appointmentId,
@@ -504,6 +567,7 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
       callerData,
       data,
       dateTimeTimestamp,
+      tokenNumber: assignedTokenNumber,
     });
 
     tx.set(apptRef, appointmentDoc);
@@ -531,6 +595,7 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
     patientId,
     slotDate,
     slotTime,
+    tokenNumber: assignedTokenNumber,
   };
 }
 
@@ -552,9 +617,12 @@ const reconcileAppointmentSlot = onDocumentWritten(
  * Cloud Function Callable bookAppointment in asia-south1.
  */
 const bookAppointment = onCall(
-  { region: CALLABLE_REGION },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   async (request) => {
-    return await bookAppointmentHandler(request.data, request.auth);
+    assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
+    const db = getFirestore();
+    await enforceAbuseLimit(db, request, 'booking');
+    return await bookAppointmentHandler(request.data, request.auth, db);
   },
 );
 
@@ -563,6 +631,7 @@ module.exports = {
   DEFAULT_DOCTOR_AVAILABILITY,
   FIRESTORE_TRIGGER_REGION,
   CALLABLE_REGION,
+  ENFORCE_ABUSE_APP_CHECK,
   toIstDateAndTime,
   deriveSlotId,
   parseTimeToMinutes,

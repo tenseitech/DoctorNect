@@ -37,6 +37,10 @@ const LIMITS = {
     ip: { windowMs: 60 * 60 * 1000, max: 30 },
     uid: { windowMs: 60 * 60 * 1000, max: 20 },
   },
+  booking: {
+    ip: { windowMs: 60 * 1000, max: 60 },
+    uid: { windowMs: 60 * 1000, max: 10 },
+  },
 };
 
 function hashKey(value) {
