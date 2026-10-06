@@ -36,6 +36,9 @@ const {
   sendUserRegistrationOtp,
   consumeOtpChallengeAtomically,
   legacyHashOtp,
+  hashOtp,
+  verifyChallengeOtpHash,
+  ALLOW_LEGACY_UNSALTED_OTP_HASH,
   otpRedisKey,
 } = require('../registration_otp');
 
@@ -465,6 +468,98 @@ test('otpRedisKey returns null when no secret is available, skipping Redis write
     );
   } finally {
     console.warn = origWarn;
+    if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
+    if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
+    if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
+  }
+});
+
+test('hashOtp in production project fails challenge creation when HMAC secret is missing, without leaking secrets', async () => {
+  const origProj = process.env.GCLOUD_PROJECT;
+  const origKey = process.env.MSG91_AUTHKEY;
+  const origKey2 = process.env.MSG91_AUTH_KEY;
+  const origAuth = process.env.AUTH_KEY;
+  const origEmu = process.env.FUNCTIONS_EMULATOR;
+
+  process.env.GCLOUD_PROJECT = 'medibond-45fad';
+  delete process.env.MSG91_AUTHKEY;
+  delete process.env.MSG91_AUTH_KEY;
+  delete process.env.AUTH_KEY;
+  delete process.env.FUNCTIONS_EMULATOR;
+
+  const errorLogs = [];
+  const origError = console.error;
+  console.error = (...args) => {
+    errorLogs.push(args.join(' '));
+    origError(...args);
+  };
+
+  try {
+    // 1. Calling hashOtp with purpose: 'create' directly throws HttpsError 'internal'
+    assert.throws(
+      () => {
+        hashOtp('123456', { role: 'patient', digits: '9876543210', purpose: 'create' });
+      },
+      (err) => err.code === 'internal' && err.message.includes('Could not send OTP'),
+    );
+
+    // 2. Calling with positional arguments and purpose: 'create' also throws
+    assert.throws(
+      () => {
+        hashOtp('123456', 'patient', '9876543210', { purpose: 'create' });
+      },
+      (err) => err.code === 'internal',
+    );
+
+    // 3. sendUserRegistrationOtp also fails closed
+    const db = createMockFirestore();
+    await assert.rejects(
+      sendUserRegistrationOtp(db, { mobile: '9876543210', role: 'patient' }),
+      (err) => err.code === 'internal',
+    );
+
+    // 4. Verify log was recorded without leaking secret
+    assert.ok(
+      errorLogs.some((log) => log.includes('otp_hash_secret_missing')),
+      'Security error must be logged',
+    );
+    for (const log of errorLogs) {
+      assert.equal(log.includes(origKey || 'NOT_PRESENT_ANYWAY'), false);
+    }
+  } finally {
+    console.error = origError;
+    if (origProj !== undefined) process.env.GCLOUD_PROJECT = origProj;
+    else delete process.env.GCLOUD_PROJECT;
+    if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
+    if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
+    if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
+    if (origEmu !== undefined) process.env.FUNCTIONS_EMULATOR = origEmu;
+  }
+});
+
+test('hashOtp allows fallback outside production or under emulator, and verification of legacy hashes continues to work', async () => {
+  const origProj = process.env.GCLOUD_PROJECT;
+  const origKey = process.env.MSG91_AUTHKEY;
+  const origKey2 = process.env.MSG91_AUTH_KEY;
+  const origAuth = process.env.AUTH_KEY;
+
+  process.env.GCLOUD_PROJECT = 'demo-test-project';
+  delete process.env.MSG91_AUTHKEY;
+  delete process.env.MSG91_AUTH_KEY;
+  delete process.env.AUTH_KEY;
+
+  try {
+    // 1. Outside prod, hashOtp falls back to legacyHashOtp
+    const hash = hashOtp('123456', { role: 'patient', digits: '9876543210', purpose: 'create' });
+    assert.equal(hash, legacyHashOtp('123456'));
+
+    // 2. Verification of legacy hashes stays active
+    assert.equal(ALLOW_LEGACY_UNSALTED_OTP_HASH, true);
+    const valid = verifyChallengeOtpHash('123456', legacyHashOtp('123456'), 'patient', '9876543210');
+    assert.equal(valid, true, 'Legacy unsalted OTP hash verification must succeed');
+  } finally {
+    if (origProj !== undefined) process.env.GCLOUD_PROJECT = origProj;
+    else delete process.env.GCLOUD_PROJECT;
     if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
     if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
     if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;

@@ -241,24 +241,42 @@ function otpRedisKey(role, digits) {
   return normRole ? `otp:challenge:${normRole}:${hashedDigits}` : `otp:challenge:${hashedDigits}`;
 }
 
+// Set to false 1 day after deploy once all in-flight legacy OTP challenges expire.
 const ALLOW_LEGACY_UNSALTED_OTP_HASH = true;
 
 function legacyHashOtp(code) {
   return crypto.createHash('sha256').update(String(code || '')).digest('hex');
 }
 
-function hashOtp(code, roleOrOpts, maybeDigits) {
+function hashOtp(code, roleOrOpts, maybeDigits, maybeOpts) {
   let role = '';
   let digits = '';
+  let purpose = '';
   if (roleOrOpts && typeof roleOrOpts === 'object') {
     role = roleOrOpts.role || '';
     digits = roleOrOpts.digits || roleOrOpts.mobileDigits || '';
+    purpose = roleOrOpts.purpose || '';
   } else {
     role = roleOrOpts || '';
-    digits = maybeDigits || '';
+    digits = typeof maybeDigits === 'string' ? maybeDigits : (maybeDigits?.digits || '');
+    if (maybeDigits && typeof maybeDigits === 'object') {
+      purpose = maybeDigits.purpose || '';
+    } else if (maybeOpts && typeof maybeOpts === 'object') {
+      purpose = maybeOpts.purpose || '';
+    }
   }
   const secret = readMsg91AuthKey({ required: false });
   if (!secret) {
+    if (purpose === 'create' && isProductionFirebaseProject() && !isFunctionsEmulator()) {
+      console.error(JSON.stringify({
+        securityEvent: true,
+        severity: 'ERROR',
+        category: 'security',
+        action: 'otp_hash_secret_missing',
+        detail: 'Cannot create OTP challenge without HMAC secret in production project',
+      }));
+      throw new HttpsError('internal', 'Could not send OTP. Please try again.');
+    }
     return legacyHashOtp(code);
   }
   const normRole = role ? normalizeRole(role) : '';
@@ -1698,7 +1716,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   await challengeRef.set({
     role,
     mobileDigits: digits,
-    otpHash: hashOtp(code, role, digits),
+    otpHash: hashOtp(code, { role, digits, purpose: 'create' }),
     expiresAt,
     sentAt: FieldValue.serverTimestamp(),
     attempts: 0,
@@ -1718,7 +1736,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
         if (keyNull || keyRole) {
           const ttlSec = Math.max(1, Math.floor(expiryMs / 1000));
           const redisPayload = JSON.stringify({
-            otpHash: hashOtp(code, role, digits),
+            otpHash: hashOtp(code, { role, digits, purpose: 'create' }),
             role,
             expiresAt: Date.now() + expiryMs,
           });

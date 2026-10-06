@@ -404,24 +404,23 @@ const verifyRazorpayPayment = onCall({ region: 'asia-south1' }, async (request) 
   };
 });
 
-/**
- * 3. Scheduled Cloud Function: expirePromotedAds
- * Runs hourly to set status = 'expired' on any active ad whose endTime has passed.
- */
-const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-south1' }, async () => {
-  const db = getFirestore();
-  const now = Timestamp.now();
+const EXPIRE_BATCH_LIMIT = 400;
 
-  try {
+async function expirePromotedAdsHandler(db, customNow, chunkSize = EXPIRE_BATCH_LIMIT) {
+  const now = customNow || Timestamp.now();
+  let totalExpired = 0;
+  let batchCount = 0;
+
+  while (true) {
     const snap = await db
       .collection('promotedAds')
       .where('status', '==', 'active')
       .where('endTime', '<=', now)
+      .limit(chunkSize)
       .get();
 
     if (snap.empty) {
-      console.log('[expirePromotedAds] No expired ads found.');
-      return;
+      break;
     }
 
     const batch = db.batch();
@@ -433,7 +432,31 @@ const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-sout
     });
 
     await batch.commit();
-    console.log(`[expirePromotedAds] Successfully expired ${snap.docs.length} ads.`);
+    batchCount++;
+    totalExpired += snap.docs.length;
+
+    if (snap.docs.length < chunkSize) {
+      break;
+    }
+  }
+
+  return { totalExpired, batchCount };
+}
+
+/**
+ * 3. Scheduled Cloud Function: expirePromotedAds
+ * Runs hourly to set status = 'expired' on any active ad whose endTime has passed.
+ */
+const expirePromotedAds = onSchedule({ schedule: '0 * * * *', region: 'asia-south1' }, async () => {
+  const db = getFirestore();
+
+  try {
+    const { totalExpired, batchCount } = await expirePromotedAdsHandler(db);
+    if (totalExpired === 0) {
+      console.log('[expirePromotedAds] No expired ads found.');
+    } else {
+      console.log(`[expirePromotedAds] Successfully expired ${totalExpired} ads across ${batchCount} batch(es).`);
+    }
   } catch (err) {
     console.error('[expirePromotedAds] Error expiring ads:', err);
   }
@@ -446,4 +469,6 @@ module.exports = {
   createRazorpayOrder,
   verifyRazorpayPayment,
   expirePromotedAds,
+  expirePromotedAdsHandler,
+  EXPIRE_BATCH_LIMIT,
 };
