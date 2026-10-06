@@ -849,5 +849,63 @@ test('backfillSingleSlotTransaction ignores appointments cancelled between scan 
   assert.deepEqual(slotDoc.activeAppointmentIds, ['appt_1']);
 });
 
+test('parity: appointment_slots and backfill_doctor_slots match on 23:59 IST, 00:00 IST, 18:29 UTC, 18:30 UTC', () => {
+  const backfillModule = require('../../scripts/backfill_doctor_slots');
+  const doctorId = 'doc_parity_test';
+
+  const testCases = [
+    // 18:29 UTC is 23:59 IST on the same day
+    {
+      label: '18:29 UTC / 23:59 IST',
+      rawUtcIso: '2026-10-06T18:29:00.000Z',
+      expectedDate: '2026-10-06',
+      expectedTime: '23:59',
+      expectedSlotId: `${doctorId}_2026-10-06_23:59`,
+    },
+    // 18:30 UTC rolls over to 00:00 IST of the NEXT day
+    {
+      label: '18:30 UTC / 00:00 IST',
+      rawUtcIso: '2026-10-06T18:30:00.000Z',
+      expectedDate: '2026-10-07',
+      expectedTime: '00:00',
+      expectedSlotId: `${doctorId}_2026-10-07_00:00`,
+    },
+  ];
+
+  for (const tc of testCases) {
+    const jsDate = new Date(tc.rawUtcIso);
+    const fsTimestamp = Timestamp.fromDate(jsDate);
+    const serializedTimestamp = { _seconds: Math.floor(jsDate.getTime() / 1000), _nanoseconds: 0 };
+
+    const variants = [
+      { type: 'ISO string', val: tc.rawUtcIso },
+      { type: 'JS Date', val: jsDate },
+      { type: 'Firestore Timestamp', val: fsTimestamp },
+      { type: 'Serialized Timestamp', val: serializedTimestamp },
+      { type: 'Epoch ms', val: jsDate.getTime() },
+    ];
+
+    for (const v of variants) {
+      // 1. Outputs from appointment_slots
+      const resSlots = toIstDateAndTime(v.val);
+      const slotIdSlots = deriveSlotId(doctorId, v.val);
+
+      // 2. Outputs from backfill_doctor_slots
+      const resBackfill = backfillModule.toIstDateAndTime(v.val);
+      const slotIdBackfill = backfillModule.deriveSlotId(doctorId, v.val);
+
+      // Parity check between the two modules
+      assert.equal(resSlots.date, resBackfill.date, `Date mismatch between modules for ${tc.label} (${v.type})`);
+      assert.equal(resSlots.time, resBackfill.time, `Time mismatch between modules for ${tc.label} (${v.type})`);
+      assert.equal(slotIdSlots, slotIdBackfill, `SlotId mismatch between modules for ${tc.label} (${v.type})`);
+
+      // Correctness against expected IST boundaries
+      assert.equal(resSlots.date, tc.expectedDate, `Expected date ${tc.expectedDate} for ${tc.label} (${v.type})`);
+      assert.equal(resSlots.time, tc.expectedTime, `Expected time ${tc.expectedTime} for ${tc.label} (${v.type})`);
+      assert.equal(slotIdSlots, tc.expectedSlotId, `Expected slotId ${tc.expectedSlotId} for ${tc.label} (${v.type})`);
+    }
+  }
+});
+
 
 

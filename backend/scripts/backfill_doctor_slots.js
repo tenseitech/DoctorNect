@@ -88,60 +88,14 @@ function initFirebaseAdmin() {
   });
 }
 
-function toIstDateAndTime(input) {
-  let date;
-  if (!input) return null;
-  if (typeof input.toDate === 'function') {
-    date = input.toDate();
-  } else if (input instanceof Date) {
-    date = input;
-  } else if (typeof input === 'number') {
-    date = new Date(input);
-  } else if (typeof input === 'string') {
-    date = new Date(input);
-  } else if (input._seconds !== undefined) {
-    date = new Date(input._seconds * 1000);
-  } else if (input.seconds !== undefined) {
-    date = new Date(input.seconds * 1000);
-  } else {
-    date = new Date(input);
-  }
-
-  if (isNaN(date.getTime())) return null;
-
-  const formatter = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  });
-
-  const parts = formatter.formatToParts(date);
-  let year = '', month = '', day = '', hour = '', minute = '';
-  for (const part of parts) {
-    if (part.type === 'year') year = part.value;
-    else if (part.type === 'month') month = part.value;
-    else if (part.type === 'day') day = part.value;
-    else if (part.type === 'hour') hour = part.value;
-    else if (part.type === 'minute') minute = part.value;
-  }
-
-  return {
-    date: `${year}-${month}-${day}`,
-    time: `${hour}:${minute}`,
-  };
+let appointmentSlotsModule;
+try {
+  appointmentSlotsModule = require('../functions/appointment_slots');
+} catch (_) {
+  const fnReq = createRequire(path.resolve(__dirname, '..', 'functions', 'package.json'));
+  appointmentSlotsModule = fnReq('./appointment_slots');
 }
-
-function deriveSlotId(doctorId, dateTime) {
-  const cleanDoctorId = String(doctorId || '').trim();
-  if (!cleanDoctorId) return null;
-  const ist = toIstDateAndTime(dateTime);
-  if (!ist) return null;
-  return `${cleanDoctorId}_${ist.date}_${ist.time}`;
-}
+const { deriveSlotId, toIstDateAndTime } = appointmentSlotsModule;
 
 async function backfillSingleSlotTransaction(db, entry) {
   const slotRef = db.collection('doctor_slots').doc(entry.slotId);
@@ -163,7 +117,13 @@ async function backfillSingleSlotTransaction(db, entry) {
         const apptData = apptSnap.data() || {};
         const isCancelled = Boolean(apptData.cancellationReason);
         const doctorMatches = String(apptData.doctorId || '').trim() === entry.doctorId;
-        const slotMatches = deriveSlotId(apptData.doctorId, apptData.dateTime) === entry.slotId;
+        let slotMatches = false;
+        try {
+          slotMatches = Boolean(apptData.doctorId && apptData.dateTime) &&
+            deriveSlotId(apptData.doctorId, apptData.dateTime) === entry.slotId;
+        } catch (_) {
+          slotMatches = false;
+        }
 
         // Add ID only if still active (cancellationReason null and doctorId, dateTime still match this slot)
         if (!isCancelled && doctorMatches && slotMatches) {
@@ -212,14 +172,22 @@ async function scanAppointmentsForSlots(db) {
       continue;
     }
 
-    const slotId = deriveSlotId(data.doctorId, data.dateTime);
+    let slotId = null;
+    let ist = null;
+    try {
+      slotId = deriveSlotId(data.doctorId, data.dateTime);
+      ist = toIstDateAndTime(data.dateTime);
+    } catch (_) {
+      invalidCount++;
+      continue;
+    }
+
     if (!slotId) {
       invalidCount++;
       continue;
     }
 
     activeCount++;
-    const ist = toIstDateAndTime(data.dateTime);
 
     if (!slotMap.has(slotId)) {
       slotMap.set(slotId, {
