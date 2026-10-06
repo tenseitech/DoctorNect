@@ -456,8 +456,68 @@ async function assertOtpRateLimit(db, { bucket, windowMs, maxAttempts }) {
   });
 }
 
+const DEMO_HOURLY_WINDOW_MS = 60 * 60 * 1000;
+const DEMO_SEND_MAX = 10;
+const DEMO_VERIFY_FAIL_MAX = 10;
+
+async function checkDemoVerifyFailureLimit(db, { role, digits }) {
+  const ref = db.collection('otp_rate_limits').doc(`verify_demo_fail_${mobileHash(role, digits)}`);
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const data = snap.data() || {};
+  const windowStartMs = data.windowStart?.toDate?.()?.getTime() || 0;
+  const nowMs = Date.now();
+  const withinWindow = windowStartMs > 0 && nowMs - windowStartMs < DEMO_HOURLY_WINDOW_MS;
+  const count = withinWindow ? (Number(data.count) || 0) : 0;
+  if (count >= DEMO_VERIFY_FAIL_MAX) {
+    throw new HttpsError(
+      'resource-exhausted',
+      'Too many invalid OTP attempts. Please try again later.',
+    );
+  }
+}
+
+async function recordDemoVerifyFailure(db, { role, digits }) {
+  const ref = db.collection('otp_rate_limits').doc(`verify_demo_fail_${mobileHash(role, digits)}`);
+  const nowMs = Date.now();
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const data = snap.data() || {};
+    const windowStartMs = data.windowStart?.toDate?.()?.getTime() || 0;
+    const withinWindow = windowStartMs > 0 && nowMs - windowStartMs < DEMO_HOURLY_WINDOW_MS;
+    const count = withinWindow ? (Number(data.count) || 0) : 0;
+
+    tx.set(ref, {
+      count: count + 1,
+      windowStart: withinWindow
+        ? data.windowStart
+        : Timestamp.fromDate(new Date(nowMs)),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  });
+}
+
 async function enforceSendOtpRateLimits(db, { clientIp, role, digits }) {
-  if (await isDemoPhone(digits, role)) return;
+  const isDemo = await isDemoPhone(digits, role);
+  if (isDemo) {
+    if (!isProductionFirebaseProject() || isFunctionsEmulator()) {
+      return;
+    }
+    // Production demo rate limits: keep IP limit, apply per-phone cap on sends (max 10 per hour)
+    await assertOtpRateLimit(db, {
+      bucket: `send_ip_${hashRateLimitKey(clientIp)}`,
+      windowMs: SEND_IP_WINDOW_MS,
+      maxAttempts: SEND_IP_MAX,
+    });
+    await assertOtpRateLimit(db, {
+      bucket: `send_demo_${mobileHash(role, digits)}`,
+      windowMs: DEMO_HOURLY_WINDOW_MS,
+      maxAttempts: DEMO_SEND_MAX,
+      message: 'Too many OTP requests. Please try again later.',
+    });
+    return;
+  }
+
   await assertOtpRateLimit(db, {
     bucket: `send_ip_${hashRateLimitKey(clientIp)}`,
     windowMs: SEND_IP_WINDOW_MS,
@@ -471,7 +531,21 @@ async function enforceSendOtpRateLimits(db, { clientIp, role, digits }) {
 }
 
 async function enforceVerifyOtpRateLimits(db, { clientIp, role, digits }) {
-  if (await isDemoPhone(digits, role)) return;
+  const isDemo = await isDemoPhone(digits, role);
+  if (isDemo) {
+    if (!isProductionFirebaseProject() || isFunctionsEmulator()) {
+      return;
+    }
+    // Production demo rate limits: keep IP limit, enforce per-phone cap on failed verifications (max 10 per hour)
+    await assertOtpRateLimit(db, {
+      bucket: `verify_ip_${hashRateLimitKey(clientIp)}`,
+      windowMs: VERIFY_IP_WINDOW_MS,
+      maxAttempts: VERIFY_IP_MAX,
+    });
+    await checkDemoVerifyFailureLimit(db, { role, digits });
+    return;
+  }
+
   await assertOtpRateLimit(db, {
     bucket: `verify_ip_${hashRateLimitKey(clientIp)}`,
     windowMs: VERIFY_IP_WINDOW_MS,
@@ -1709,8 +1783,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   }
 
   const code = isDemoAccount ? config.demoOtp : generateOtpCode();
-  // 10 years for demo expiry if we want it long lived, or just standard if not defined
-  const expiryMs = isDemoAccount ? (365 * 24 * 60 * 60 * 1000) : OTP_EXPIRY_MS;
+  const expiryMs = OTP_EXPIRY_MS;
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
 
   await challengeRef.set({
@@ -1924,13 +1997,23 @@ async function consumeOtpChallengeAtomically(
       return { status: 'expired' };
     }
 
+    const treatAsDemo = Boolean(isDemoAccount || challenge.demoAccount === true);
+
     const attempts = Number(challenge.attempts) || 0;
     if (attempts >= 5) {
       tx.delete(effectiveChallengeRef);
-      return { status: 'locked' };
+      return { status: 'locked', treatAsDemo };
     }
 
-    const treatAsDemo = isDemoAccount || challenge.demoAccount === true;
+    // In production, reject and delete any challenge tagged demoAccount if demo login is not currently enabled
+    if (challenge.demoAccount === true && isProductionFirebaseProject() && !isFunctionsEmulator()) {
+      const isDemoActive = Boolean(demoConfig && demoConfig.demoLoginEnabled === true && isDemoAccount);
+      if (!isDemoActive) {
+        tx.delete(effectiveChallengeRef);
+        return { status: 'stale_demo' };
+      }
+    }
+
     const localMatch = verifyChallengeOtpHash(otp, challenge, role, digits)
       || (treatAsDemo && demoOtp != null && otp === demoOtp)
       || (!treatAsDemo && isTestMode() && otp === DEV_TEST_OTP)
@@ -1953,7 +2036,7 @@ async function consumeOtpChallengeAtomically(
 
     // No MSG91 fallback available (e.g. test mode, demo, or missing mobile). Increment attempts.
     tx.set(effectiveChallengeRef, { attempts: attempts + 1 }, { merge: true });
-    return { status: 'invalid', attempts: attempts + 1, challenge };
+    return { status: 'invalid', attempts: attempts + 1, challenge, treatAsDemo };
   });
 
   // Handle immediate outcomes
@@ -1968,6 +2051,12 @@ async function consumeOtpChallengeAtomically(
     throw new HttpsError('failed-precondition', 'Send OTP first.');
   }
 
+  if (outcome.status === 'stale_demo') {
+    console.warn(`[consumeOtpChallengeAtomically] STALE_DEMO_CHALLENGE rejected and deleted for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
+    await cleanupRedisChallenge();
+    throw new HttpsError('permission-denied', 'Invalid OTP.');
+  }
+
   if (outcome.status === 'expired') {
     console.warn(`[consumeOtpChallengeAtomically] OTP_EXPIRED for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
     await cleanupRedisChallenge();
@@ -1975,12 +2064,18 @@ async function consumeOtpChallengeAtomically(
   }
 
   if (outcome.status === 'locked') {
+    if (outcome.treatAsDemo && isProductionFirebaseProject() && !isFunctionsEmulator() && digits) {
+      await recordDemoVerifyFailure(db, { role, digits }).catch(() => {});
+    }
     console.warn(`[consumeOtpChallengeAtomically] OTP_LOCKED for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
     await cleanupRedisChallenge();
     throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
   }
 
   if (outcome.status === 'invalid') {
+    if (outcome.treatAsDemo && isProductionFirebaseProject() && !isFunctionsEmulator() && digits) {
+      await recordDemoVerifyFailure(db, { role, digits }).catch(() => {});
+    }
     console.warn(`[consumeOtpChallengeAtomically] INVALID_CODE attempt ${outcome.attempts}/5 for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
     throw new HttpsError('permission-denied', 'Invalid OTP.');
   }
@@ -3140,4 +3235,10 @@ module.exports = {
   ALLOW_LEGACY_UNSALTED_OTP_HASH,
   legacyHashOtp,
   verifyChallengeOtpHash,
+  enforceSendOtpRateLimits,
+  enforceVerifyOtpRateLimits,
+  checkDemoVerifyFailureLimit,
+  recordDemoVerifyFailure,
+  DEMO_SEND_MAX,
+  DEMO_VERIFY_FAIL_MAX,
 };

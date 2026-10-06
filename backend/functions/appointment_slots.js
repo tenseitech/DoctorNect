@@ -396,6 +396,22 @@ async function reconcileAppointmentSlotTransaction(db, {
   return { reconciled: true, beforeSlotId, afterSlotId };
 }
 
+function areDateTimesEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const timeA = typeof a.toMillis === 'function' ? a.toMillis()
+    : a instanceof Date ? a.getTime()
+    : typeof a === 'number' ? a
+    : typeof a._seconds === 'number' ? a._seconds * 1000 + Math.floor((a._nanoseconds || 0) / 1e6)
+    : new Date(a).getTime();
+  const timeB = typeof b.toMillis === 'function' ? b.toMillis()
+    : b instanceof Date ? b.getTime()
+    : typeof b === 'number' ? b
+    : typeof b._seconds === 'number' ? b._seconds * 1000 + Math.floor((b._nanoseconds || 0) / 1e6)
+    : new Date(b).getTime();
+  return !isNaN(timeA) && !isNaN(timeB) && timeA === timeB;
+}
+
 /**
  * Handler for the appointments/{appointmentId} Firestore trigger.
  */
@@ -410,11 +426,24 @@ async function reconcileAppointmentSlotHandler(event, db = getFirestore()) {
     console.warn(`[reconcileAppointmentSlot] Skipping malformed appointment ${appointmentId}: missing doctorId or dateTime`);
   }
 
+  // Early return if neither doctorId, dateTime, cancellationReason, nor tokenNumber changed
+  // (e.g. status, clinical notes, symptoms, or prescription updates do not cause slot reads or writes)
+  if (before && after) {
+    const doctorUnchanged = String(before.doctorId || '').trim() === String(after.doctorId || '').trim();
+    const cancelUnchanged = Boolean(before.cancellationReason) === Boolean(after.cancellationReason);
+    const dateTimeUnchanged = areDateTimesEqual(before.dateTime, after.dateTime);
+    const tokenUnchanged = Number(before.tokenNumber || 0) === Number(after.tokenNumber || 0);
+
+    if (doctorUnchanged && cancelUnchanged && dateTimeUnchanged && tokenUnchanged) {
+      return { reconciled: false, reason: 'no_slot_relevant_changes' };
+    }
+  }
+
   const beforeActive = Boolean(before && before.doctorId && before.dateTime && !before.cancellationReason);
   const afterActive = Boolean(after && after.doctorId && after.dateTime && !after.cancellationReason);
   const afterTokenNumber = Number(after?.tokenNumber || 0);
 
-  await reconcileAppointmentSlotTransaction(db, {
+  return await reconcileAppointmentSlotTransaction(db, {
     appointmentId,
     beforeActive,
     beforeDoctorId: before?.doctorId,

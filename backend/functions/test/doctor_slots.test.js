@@ -907,5 +907,93 @@ test('parity: appointment_slots and backfill_doctor_slots match on 23:59 IST, 00
   }
 });
 
+test('reconcileAppointmentSlot skips cleanly without throwing or writing when cancelled appointment slot doc does not exist yet (pre-backfill)', async () => {
+  const db = createConcurrentMockFirestore();
+  const appointmentId = 'appt_prebackfill_cancel';
+  const doctorId = 'doc_prebackfill';
+  const dateTime = '2026-10-06T03:30:00.000Z';
+
+  // No doctor_slots document exists prior to cancellation event
+  const cancelEvent = {
+    params: { appointmentId },
+    data: {
+      before: {
+        id: appointmentId,
+        data: () => ({
+          doctorId,
+          dateTime,
+          cancellationReason: null,
+        }),
+      },
+      after: {
+        id: appointmentId,
+        data: () => ({
+          doctorId,
+          dateTime,
+          cancellationReason: 'Patient cancelled',
+        }),
+      },
+    },
+  };
+
+  const res = await reconcileAppointmentSlotHandler(cancelEvent, db);
+  assert.equal(res.reconciled, true);
+  // Assert no doctor_slots document was created or modified
+  const slotId = deriveSlotId(doctorId, dateTime);
+  assert.equal(db.docs.has(`doctor_slots/${slotId}`), false, 'Must not create a partial slot doc when beforeSnap did not exist');
+});
+
+test('reconcileAppointmentSlotHandler returns early when appointment update changes only notes or status (slot fields unchanged)', async () => {
+  const db = createConcurrentMockFirestore();
+  const appointmentId = 'appt_notes_update';
+  const doctorId = 'doc_unchanged';
+  const dateTime = '2026-10-06T03:30:00.000Z';
+  const slotId = deriveSlotId(doctorId, dateTime);
+
+  // Slot already exists with this appointment
+  db.docs.set(`doctor_slots/${slotId}`, {
+    doctorId,
+    date: '2026-10-06',
+    time: '09:00',
+    activeAppointmentIds: [appointmentId],
+    slotOverflow: false,
+  });
+
+  const updateEvent = {
+    params: { appointmentId },
+    data: {
+      before: {
+        id: appointmentId,
+        data: () => ({
+          doctorId,
+          dateTime,
+          cancellationReason: null,
+          status: 'pending',
+          clinicalNotes: 'Initial complaint',
+          tokenNumber: 3,
+        }),
+      },
+      after: {
+        id: appointmentId,
+        data: () => ({
+          doctorId,
+          dateTime,
+          cancellationReason: null,
+          status: 'confirmed',
+          clinicalNotes: 'Doctor updated examination notes and added vitals',
+          tokenNumber: 3,
+        }),
+      },
+    },
+  };
+
+  const res = await reconcileAppointmentSlotHandler(updateEvent, db);
+  assert.deepEqual(res, { reconciled: false, reason: 'no_slot_relevant_changes' });
+
+  // Doctor slots document must remain unchanged
+  const slotDoc = db.docs.get(`doctor_slots/${slotId}`);
+  assert.deepEqual(slotDoc.activeAppointmentIds, [appointmentId]);
+});
+
 
 
