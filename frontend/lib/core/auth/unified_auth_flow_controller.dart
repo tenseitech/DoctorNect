@@ -237,48 +237,49 @@ class UnifiedAuthFlowController extends ChangeNotifier {
         return;
       }
 
-      // Check whether this number is registered across candidate roles
-      final registrationConflict = await MobileRegistrationLookup.check(
+      // Authoritative server-side registration lookup
+      final lookupResult = await MobileRegistrationLookup.lookup(
         digits,
-        role: UserType.patient,
-        intent: MobileLookupIntent.registration,
+        intent: MobileLookupIntent.login,
       );
 
-      if (registrationConflict == true) {
-        const candidates = [
-          UserType.doctor,
-          UserType.patient,
-          UserType.medicalStore,
-          UserType.lab,
-          UserType.ambulance,
-        ];
-        final checks = await Future.wait(
-          candidates.map(
-            (r) => MobileRegistrationLookup.check(
-              digits,
-              role: r,
-              intent: MobileLookupIntent.login,
-            ),
-          ),
+      // Handle fetch error state — NEVER route to role selection on error
+      if (lookupResult.isError) {
+        if (!context.mounted) return;
+        AppToast.error(
+          context,
+          lookupResult.errorMessage ??
+              'Could not verify account. Please check your network and try again.',
         );
-        UserType? found;
-        for (var i = 0; i < candidates.length; i++) {
-          if (checks[i] == false) {
-            found = candidates[i];
-            break;
-          }
+        return;
+      }
+
+      // Handle confirmed existing user
+      if (lookupResult.exists) {
+        var targetRole = lookupResult.role;
+        // Fallback probe in Firestore if role was somehow omitted in lookup response
+        targetRole ??=
+            await FirestoreService.instance.user.findRoleWithMobile(digits);
+
+        if (targetRole == null) {
+          if (!context.mounted) return;
+          AppToast.error(
+            context,
+            'Account found, but account type could not be determined. Please contact support.',
+          );
+          return;
         }
 
-        final targetRole = found ?? UserType.patient;
         _matchedRole = targetRole;
         _authPath = UnifiedAuthPath.login;
         await _completeLogin(context, digits, _otp, targetRole: targetRole);
-      } else {
-        // Not registered: complete registration OTP verification session, then open role selection
-        _matchedRole = null;
-        _authPath = UnifiedAuthPath.register;
-        await _completeRegistration(context, digits, _otp);
+        return;
       }
+
+      // Confirmed NOT FOUND: only a confirmed "no profile exists for this phone" may show role selection
+      _matchedRole = null;
+      _authPath = UnifiedAuthPath.register;
+      await _completeRegistration(context, digits, _otp);
     } catch (e) {
       if (!context.mounted) return;
       AppToast.error(

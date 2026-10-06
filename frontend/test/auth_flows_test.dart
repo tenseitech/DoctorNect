@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/auth/last_login_store.dart';
+import 'package:medibond/core/auth/mobile_registration_lookup.dart';
 import 'package:medibond/core/auth/registration_otp_service.dart';
 import 'package:medibond/core/enums/user_type.dart';
 import 'package:medibond/core/firebase/firebase_auth_service.dart';
@@ -227,6 +228,88 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.message, contains('Firebase is not available'));
+    });
+  });
+
+  group('MobileLookupResult & MobileRegistrationLookup — role resolution and state separation', () {
+    test('parseUserType parses all healthcare roles and aliases', () {
+      expect(MobileRegistrationLookup.parseUserType('doctor'), UserType.doctor);
+      expect(MobileRegistrationLookup.parseUserType('Doctor'), UserType.doctor);
+      expect(MobileRegistrationLookup.parseUserType('patient'), UserType.patient);
+      expect(MobileRegistrationLookup.parseUserType('medicalStore'), UserType.medicalStore);
+      expect(MobileRegistrationLookup.parseUserType('medical_store'), UserType.medicalStore);
+      expect(MobileRegistrationLookup.parseUserType('medical'), UserType.medicalStore);
+      expect(MobileRegistrationLookup.parseUserType('pharmacy'), UserType.medicalStore);
+      expect(MobileRegistrationLookup.parseUserType('lab'), UserType.lab);
+      expect(MobileRegistrationLookup.parseUserType('ambulance'), UserType.ambulance);
+      expect(MobileRegistrationLookup.parseUserType('superAdmin'), UserType.superAdmin);
+      expect(MobileRegistrationLookup.parseUserType('super_admin'), UserType.superAdmin);
+      expect(MobileRegistrationLookup.parseUserType('unknown'), isNull);
+      expect(MobileRegistrationLookup.parseUserType(null), isNull);
+    });
+
+    test('MobileLookupResult distinguishes error, found, and not found', () {
+      // Error state: network or service failure must not be treated as "not found"
+      const errorResult = MobileLookupResult(
+        exists: false,
+        errorMessage: 'Network timeout',
+      );
+      expect(errorResult.isError, isTrue);
+      expect(errorResult.isFound, isFalse);
+      expect(errorResult.isNotFound, isFalse);
+
+      // Confirmed existing user
+      const foundResult = MobileLookupResult(
+        exists: true,
+        role: UserType.doctor,
+        rawRole: 'doctor',
+      );
+      expect(foundResult.isError, isFalse);
+      expect(foundResult.isFound, isTrue);
+      expect(foundResult.isNotFound, isFalse);
+      expect(foundResult.role, UserType.doctor);
+
+      // Confirmed NOT FOUND: only genuine non-existence allows new registration
+      const notFoundResult = MobileLookupResult(
+        exists: false,
+      );
+      expect(notFoundResult.isError, isFalse);
+      expect(notFoundResult.isFound, isFalse);
+      expect(notFoundResult.isNotFound, isTrue);
+      expect(notFoundResult.role, isNull);
+    });
+
+    test('lookup returns error when Firebase is unavailable instead of not-found', () async {
+      FirebaseBootstrap.isReady = false;
+      final result = await MobileRegistrationLookup.lookup(validMobile);
+      expect(result.isError, isTrue);
+      expect(result.isNotFound, isFalse, reason: 'Errors must never be treated as not-found');
+      expect(result.errorMessage, contains('unavailable'));
+    });
+
+    test('lookup rejects invalid mobile digits immediately', () async {
+      final result = await MobileRegistrationLookup.lookup('123');
+      expect(result.isError, isTrue);
+      expect(result.errorMessage, contains('10-digit'));
+    });
+
+    test('phone normalization is uniform across spaced and prefixed inputs', () {
+      const canonical = '9876543210';
+      final inputs = [
+        '9876543210',
+        '+91 98765 43210',
+        '+91-98765-43210',
+        '919876543210',
+        '09876543210',
+        '  9876543210  ',
+      ];
+      for (final input in inputs) {
+        expect(
+          FormValidators.registrationMobileDigits(input),
+          canonical,
+          reason: 'Failed to normalize $input',
+        );
+      }
     });
   });
 }

@@ -123,6 +123,17 @@ async function isDemoPhone(digits, role) {
   return expected != null && expected === digits;
 }
 
+async function findDemoRoleForDigits(digits) {
+  if (!digits) return null;
+  const roles = ['patient', 'doctor', 'medicalStore', 'lab', 'ambulance', 'superAdmin'];
+  for (const r of roles) {
+    if (await isDemoPhone(digits, r)) {
+      return r;
+    }
+  }
+  return null;
+}
+
 /** Callable/request mobile + role — demo bypass only for matching role number. */
 async function isDemoMobileInput(mobile, role) {
   const digits = normalizeMobileDigits(mobile);
@@ -1696,20 +1707,36 @@ async function consumeOtpChallengeAtomically(
   const digits = normalizeMobileDigits(mobileDigits);
   const normalizedRole = role ? normalizeRole(role) : null;
 
-  // 1. Locate challenge document: primary key, fallback by mobileDigits if role differed
+  // 1. Locate challenge document: primary key, candidate role keys, fallback by query
   let effectiveChallengeRef = challengeRef;
   if (typeof challengeRef.get === 'function') {
     try {
       const initialSnap = await challengeRef.get();
-      if (!initialSnap.exists && digits && typeof db.collection === 'function') {
-        const query = db.collection('otp_challenges');
-        if (typeof query.where === 'function') {
-          const fallbackSnap = await query.where('mobileDigits', '==', digits).limit(1).get();
-          if (fallbackSnap && !fallbackSnap.empty) {
+      if (!initialSnap.exists && digits) {
+        // Direct key lookup across candidate roles (fast, requires no secondary query index)
+        const candidateRoles = ['patient', 'doctor', 'medicalStore', 'lab', 'ambulance', 'superAdmin'];
+        for (const candidateRole of candidateRoles) {
+          if (candidateRole === normalizedRole) continue;
+          const candidateRef = db.collection('otp_challenges').doc(mobileHash(candidateRole, digits));
+          const snap = await candidateRef.get();
+          if (snap.exists) {
             console.info(
-              `[consumeOtpChallengeAtomically] Found challenge via mobileDigits fallback for mobile ending ${digits.slice(-4)}`,
+              `[consumeOtpChallengeAtomically] Found challenge via candidate role (${candidateRole}) for mobile ending ${digits.slice(-4)}`,
             );
-            effectiveChallengeRef = fallbackSnap.docs[0].ref;
+            effectiveChallengeRef = candidateRef;
+            break;
+          }
+        }
+        if (effectiveChallengeRef === challengeRef && typeof db.collection === 'function') {
+          const query = db.collection('otp_challenges');
+          if (typeof query.where === 'function') {
+            const fallbackSnap = await query.where('mobileDigits', '==', digits).limit(1).get();
+            if (fallbackSnap && !fallbackSnap.empty) {
+              console.info(
+                `[consumeOtpChallengeAtomically] Found challenge via mobileDigits fallback for mobile ending ${digits.slice(-4)}`,
+              );
+              effectiveChallengeRef = fallbackSnap.docs[0].ref;
+            }
           }
         }
       }
@@ -2144,23 +2171,25 @@ async function finalizePatientOtpVerification(db, data, auth) {
 
   const userProfile = await readUserProfile(db, auth.uid);
   const userRole = normalizeRole(userProfile?.role);
-  if (!userProfile || !['patient', 'doctor', 'lab', 'medicalStore', 'ambulance'].includes(userRole)) {
+  if (!userProfile || !['patient', 'doctor', 'lab', 'medicalStore', 'ambulance', 'superAdmin'].includes(userRole)) {
     throw new HttpsError('permission-denied', 'Supported account role required.');
   }
 
-  const profileId = String(userProfile.profileId || '').trim();
+  const profileId = String(userProfile.profileId || userProfile.id || '').trim();
   if (!profileId) {
-    throw new HttpsError('failed-precondition', 'Patient profile not found.');
+    throw new HttpsError('failed-precondition', 'Account profile not found.');
   }
 
   const session = await consumeOtpVerificationSessionAtomically(db, sessionId, {
     assertSession: (sessionData) => {
-      if (sessionData.role !== userRole || sessionData.mobileVerified !== true) {
+      const sessionRole = normalizeRole(sessionData.role);
+      const isRoleAllowed = !sessionRole || sessionRole === userRole || sessionRole === 'patient' || sessionRole === 'auth';
+      if (!isRoleAllowed || sessionData.mobileVerified !== true) {
         throw new HttpsError('failed-precondition', 'OTP verification incomplete.');
       }
 
-      const sessionMobile = normalizeMobileDigits(sessionData.mobileDigits);
-      const profileMobile = normalizeMobileDigits(userProfile.mobile);
+      const sessionMobile = normalizeMobileDigits(sessionData.mobileDigits || sessionData.identifier);
+      const profileMobile = normalizeMobileDigits(userProfile.mobile || userProfile.phone);
       if (!sessionMobile || !profileMobile || sessionMobile !== profileMobile) {
         throw new HttpsError(
           'permission-denied',
@@ -2170,7 +2199,7 @@ async function finalizePatientOtpVerification(db, data, auth) {
     },
   });
 
-  const sessionMobile = normalizeMobileDigits(session.mobileDigits);
+  const sessionMobile = normalizeMobileDigits(session.mobileDigits || session.identifier);
   await markUserMobileVerified(db, {
     uid: auth.uid,
     mobileDigits: sessionMobile,
@@ -2924,7 +2953,7 @@ async function clearFailedLogins(db, data) {
 const recordLoginFailure = recordFailedLogin;
 const resetLoginAttempts = clearFailedLogins;
 
-/** Read-only: whether a mobile conflicts with login/registration intent (no role disclosure). */
+/** Authoritative server-side lookup: returns conflict, exists flag, and registered role if found. */
 async function lookupMobileRegistration(db, data) {
   const digits = normalizeMobileDigits(data?.mobile);
   if (!digits) {
@@ -2935,21 +2964,31 @@ async function lookupMobileRegistration(db, data) {
     throw new HttpsError('invalid-argument', 'Invalid lookup intent.');
   }
   const requestedRole = normalizeRole(data?.role || '');
-  const effectiveRole = requestedRole || 'doctor';
-  const isDemo = await isDemoPhone(digits, effectiveRole);
+  const demoRole = await findDemoRoleForDigits(digits);
+  const effectiveRole = requestedRole || demoRole || 'doctor';
+  const isDemo = Boolean(demoRole);
   let search = await findUserByMobileDigits(db, digits);
   if (!search.found && isDemo) {
     try {
       search = await ensureDemoAccount(db, digits, effectiveRole);
     } catch (_) {}
   }
+  const registeredRole = search.found
+    ? normalizeRole(search.role)
+    : (demoRole ? normalizeRole(demoRole) : null);
+  const exists = Boolean(search.found || demoRole);
   const conflict = resolveMobileLookupConflict({
-    found: search.found,
-    registeredRole: search.role,
+    found: exists,
+    registeredRole,
     requestedRole,
     intent,
   });
-  return { ok: true, conflict };
+  return {
+    ok: true,
+    conflict,
+    exists,
+    role: exists ? registeredRole : null,
+  };
 }
 
 module.exports = {
@@ -2960,6 +2999,7 @@ module.exports = {
   hashOtp,
   lookupMobileRegistration,
   resolveMobileLookupConflict,
+  findDemoRoleForDigits,
   REGISTRATION_MOBILE_EXISTS_MESSAGE,
   LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE,
   finalizePatientOtpVerification,
