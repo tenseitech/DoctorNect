@@ -762,4 +762,30 @@ describe('prescription, delivery, and ambulance party rules', () => {
     await assertSucceeds(ref.get());
     await assertSucceeds(ref.update({ isAvailable: false }));
   });
+
+  test('a client cannot change prescription, delivery, or ambulance party ids', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertFails(doctor.collection('prescriptions').doc('rx_1').update({
+      patientId: 'other_patient',
+    }));
+    await assertFails(doctor.collection('prescriptions').doc('rx_1').update({
+      doctorId: 'other_doctor',
+    }));
+
+    const store = testEnv.authenticatedContext(STORE_UID).firestore();
+    await assertFails(store.collection('pharmacy_deliveries').doc('del_1').update({
+      storeId: 'other_store',
+    }));
+    await assertFails(store.collection('pharmacy_deliveries').doc('del_1').update({
+      patientId: 'other_patient',
+    }));
+    await assertFails(store.collection('pharmacy_deliveries').doc('del_1').update({
+      doctorId: 'other_doctor',
+    }));
+
+    const driver = testEnv.authenticatedContext(AMB_UID).firestore();
+    await assertFails(driver.collection('ambulances').doc(AMB_ID).update({
+      authUid: 'someone_else',
+    }));
+  });
 });
