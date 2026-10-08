@@ -2,6 +2,7 @@ import 'package:medibond/core/firebase/firestore_service.dart';
 
 import 'dart:async';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 
@@ -184,6 +185,18 @@ class DoctorNectAppointmentRecord {
       chiefComplaints.isEmpty ? '' : chiefComplaints.join(', ');
 }
 
+class PatientCallableBooking {
+  const PatientCallableBooking({
+    required this.appointmentId,
+    required this.tokenNumber,
+    required this.autoConfirmed,
+  });
+
+  final String appointmentId;
+  final int tokenNumber;
+  final bool autoConfirmed;
+}
+
 class SharedAppointmentsStore extends ChangeNotifier {
   SharedAppointmentsStore._();
 
@@ -203,6 +216,11 @@ class SharedAppointmentsStore extends ChangeNotifier {
   @visibleForTesting
   static Future<void> Function(String appointmentId, String reason)?
       debugSupabaseCancelOverride;
+
+  /// When set, new patient bookings call this instead of `bookAppointment`.
+  @visibleForTesting
+  static Future<Map<String, dynamic>> Function(Map<String, dynamic> payload)?
+      debugBookAppointmentOverride;
 
   List<DoctorNectAppointmentRecord> get records =>
       _recordsCache ??= List.unmodifiable(_records);
@@ -557,7 +575,144 @@ class SharedAppointmentsStore extends ChangeNotifier {
     return null;
   }
 
-  /// Returns `true` when the doctor auto-confirmed the request.
+  /// Patient booking through the `bookAppointment` callable (asia-south1).
+  /// The callable writes the Firestore document with the Admin SDK.
+  /// This method does not create an `appointments` document itself.
+  Future<PatientCallableBooking> bookPatientViaCallable({
+    required String doctorId,
+    required String doctorName,
+    required String specialization,
+    required DateTime date,
+    required String slotLabel,
+    required String patientName,
+    required int patientAge,
+    required String patientGender,
+    required String? clinicName,
+    required String? clinicAddress,
+    required String? mapsUrl,
+    String? reasonForVisit,
+    String? bookedByName,
+    String? patientRelation,
+    String? slotShareReason,
+  }) async {
+    if (bookingCountForSlot(doctorId, date, slotLabel) >=
+        kMaxPatientsPerTimeSlot) {
+      throw StateError(
+        'This time slot is full. Maximum $kMaxPatientsPerTimeSlot patients allowed at the same time.',
+      );
+    }
+    if (isSlotTimeInPast(date, slotLabel)) {
+      throw StateError('That time slot has already passed.');
+    }
+
+    final patientId = PatientSession.loggedInPatientId;
+    final dateTime = _dateTimeForSlot(date, slotLabel);
+    final autoAccept = DoctorProfileStore.autoAcceptForDoctor(doctorId);
+    final patientStatus = autoAccept
+        ? PatientBookingStatus.confirmed
+        : PatientBookingStatus.pending;
+    final doctorStatus = autoAccept
+        ? AppointmentStatus.confirmed
+        : AppointmentStatus.pendingRequest;
+    final visitType = _isReturningPatient(
+      patientId: patientId,
+      patientName: patientName,
+      doctorId: doctorId,
+    )
+        ? AppointmentType.followUp
+        : AppointmentType.newVisit;
+    final complaints = _normalizeTags(
+      reasonForVisit != null && reasonForVisit.trim().isNotEmpty
+          ? [reasonForVisit.trim()]
+          : const [],
+    );
+
+    final payload = <String, dynamic>{
+      'doctorId': doctorId,
+      'dateTime': dateTime.toIso8601String(),
+      'patientName': patientName,
+      'patientAge': patientAge,
+      'patientGender': AppConstants.normalizePatientGender(patientGender),
+      'doctorName': doctorName,
+      'specialization': specialization,
+      'slotLabel': slotLabel,
+      'visitType': visitType.name,
+      'patientStatus': patientStatus.name,
+      'doctorStatus': doctorStatus.name,
+      if (clinicName != null) 'clinicName': clinicName,
+      if (clinicAddress != null) 'clinicAddress': clinicAddress,
+      if (mapsUrl != null) 'mapsUrl': mapsUrl,
+      'contactNumber': PatientProfileMock.profile.mobile,
+      if (complaints.isNotEmpty) 'reasonForVisit': complaints.first,
+      if (bookedByName != null) 'bookedByName': bookedByName,
+      if (patientRelation != null) 'patientRelation': patientRelation,
+      if (slotShareReason != null && slotShareReason.trim().isNotEmpty)
+        'slotShareReason': slotShareReason.trim(),
+    };
+
+    final result = await _callBookAppointment(payload);
+    final appointmentId = '${result['appointmentId'] ?? ''}'.trim();
+    final tokenNumber = int.tryParse('${result['tokenNumber']}') ?? 0;
+    if (appointmentId.isEmpty || tokenNumber <= 0) {
+      throw StateError('Booking did not return an appointment.');
+    }
+
+    final id = 'pa${DateTime.now().millisecondsSinceEpoch}';
+    _records.add(
+      DoctorNectAppointmentRecord(
+        id: id,
+        appointmentId: appointmentId,
+        doctorId: doctorId,
+        doctorName: doctorName,
+        specialization: specialization,
+        patientName: patientName,
+        patientAge: patientAge,
+        patientGender: AppConstants.normalizePatientGender(patientGender),
+        dateTime: dateTime,
+        slotLabel: slotLabel,
+        tokenNumber: tokenNumber,
+        visitType: visitType,
+        patientStatus: patientStatus,
+        doctorStatus: doctorStatus,
+        clinicName: clinicName,
+        clinicAddress: clinicAddress,
+        mapsUrl: mapsUrl,
+        contactNumber: PatientProfileMock.profile.mobile,
+        chiefComplaints: complaints,
+        patientId: patientId,
+        bookedByName: bookedByName,
+        patientRelation: patientRelation,
+        slotShareReason: slotShareReason,
+      ),
+    );
+    notifyListeners();
+    return PatientCallableBooking(
+      appointmentId: appointmentId,
+      tokenNumber: tokenNumber,
+      autoConfirmed: autoAccept,
+    );
+  }
+
+  Future<Map<String, dynamic>> _callBookAppointment(
+    Map<String, dynamic> payload,
+  ) async {
+    final override = debugBookAppointmentOverride;
+    if (override != null) return override(payload);
+    if (!FirebaseBootstrap.isReady) {
+      throw StateError(
+        'Could not save appointment. Firebase is not available.',
+      );
+    }
+    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1')
+        .httpsCallable('bookAppointment');
+    final response = await callable.call(payload);
+    final data = response.data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    throw StateError('Booking did not return an appointment.');
+  }
+
+  /// Direct client create. New patient bookings use [bookPatientViaCallable].
+  /// Walk-ins use [addWalkInAppointment].
   Future<bool> addBooking({
     required String doctorId,
     required String doctorName,

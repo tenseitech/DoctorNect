@@ -30,7 +30,20 @@ Project: `medibond-45fad`. Run commands from the repo root.
 
    Updating functions that are already live is a separate explicit list, for example `functions:bookAppointment,functions:deleteMyAccount`. Do not fold the `sync*ToSupabase` names into that list unless `ENABLE_SUPABASE_SYNC=on` is a conscious choice for that one deploy. After they have been deployed once, leave the flag `on` for later deploys or the CLI will offer to delete them. Answer **No** unless you intend that deletion.
 
-3. Deploy Firestore rules **only after** the new app build that uses the `bookAppointment` callable is in users' hands. A rules deploy that denies patient client creates will break already-installed builds that still create `appointments` directly.
+Confirm this promoted-ad price table before deploying `createRazorpayOrder`, `verifyRazorpayPayment`, `reviewPromotedAd`, or `razorpayWebhook`. Amounts are INR. There is no 15-day (360h) plan in the app, so none was added.
+
+| Hours | INR |
+| --- | --- |
+| 6 | 100 |
+| 12 | 180 |
+| 24 | 300 |
+| 72 | 750 |
+| 168 | 1500 |
+| 720 | 5000 |
+
+`razorpayWebhook` answers **503** until `RAZORPAY_WEBHOOK_SECRET` is available. Do not treat that as a crash to retry in a loop.
+
+3. Deploy Firestore rules **only after** the new app build that uses the `bookAppointment` callable is in users' hands. A rules deploy that denies patient client creates will break already-installed builds that still create `appointments` directly. The Citywide banner query is `promotedAds` where `status == active` (single-field; the existing `status` + `endTime` index is unchanged).
 
    ```powershell
    firebase deploy --project medibond-45fad --only firestore:rules

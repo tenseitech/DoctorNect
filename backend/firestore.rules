@@ -532,7 +532,9 @@ service cloud.firestore {
 
     match /appointments/{appointmentId} {
       allow read: if appointmentParty();
-      allow create: if appointmentCreateValid() || walkInAppointmentCreateValid();
+      // Patient creates are Admin SDK only (bookAppointment). A client create
+      // remains allowed for a verified doctor's walk-in.
+      allow create: if walkInAppointmentCreateValid();
       allow update: if appointmentParty()
         && validAppointmentUpdate();
       allow delete: if false;
@@ -1220,8 +1222,13 @@ service cloud.firestore {
     // ─── Promoted Ads Banners ───────────────────────────────────────────────
 
     match /promotedAds/{adId} {
-      // Anyone (patients & providers) can read promoted ads for home banner display
-      allow read: if true;
+      // Active ads are public for the Citywide banner. Drafts and unpaid or
+      // unapproved ads are visible only to the owner and super admins.
+      allow read: if resource.data.status == 'active'
+        || isSuperAdmin()
+        || (isSignedIn()
+            && (resource.data.providerId == request.auth.uid
+                || (myProfileId() != '' && resource.data.providerId == myProfileId())));
 
       // Creation: Logged-in provider can create draft/pending_payment ads OR Super Admin
       // Disallows server-controlled payment/activation fields on creation (razorpay IDs, start/end times)

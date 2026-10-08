@@ -683,11 +683,6 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       String? bookedBy,
       String? patientRelation,
     }) async {
-      final appointmentId = BookingFlowHelpers.newAppointmentId();
-      firstAppointmentId ??= appointmentId;
-      final token = store.nextTokenNumberForDoctorOnDate(widget.doctorId, date);
-      firstToken ??= token;
-
       DateTime slotDateTime = date;
       final timeOfDay = parseSlotTimeLabel(slotLabel);
       if (timeOfDay != null) {
@@ -700,8 +695,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         );
       }
 
-      // Firestore is the source of truth doctors read. Supabase is best-effort.
-      final confirmed = await store.addBooking(
+      // Firestore is written by bookAppointment (Admin SDK). Supabase is best-effort.
+      final booked = await store.bookPatientViaCallable(
         doctorId: widget.doctorId,
         doctorName: _draft.doctorName,
         specialization: listing?.specialization ??
@@ -709,8 +704,6 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             'General Physician',
         date: date,
         slotLabel: slotLabel,
-        appointmentId: appointmentId,
-        tokenNumber: token,
         patientName: pName,
         patientAge: pAge,
         patientGender: pGender,
@@ -722,12 +715,14 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         patientRelation: patientRelation,
         slotShareReason: slotShareReason,
       );
-      if (!confirmed) allConfirmed = false;
+      firstAppointmentId ??= booked.appointmentId;
+      firstToken ??= booked.tokenNumber;
+      if (!booked.autoConfirmed) allConfirmed = false;
       if (SupabaseBootstrap.isReady) {
         try {
           await SupabasePatientRepository.instance.bookAppointment(
             context: context,
-            appointmentId: appointmentId,
+            appointmentId: booked.appointmentId,
             doctorId: widget.doctorId,
             patientId: patientId,
             doctorName: _draft.doctorName,
@@ -740,7 +735,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             dateTime: slotDateTime,
             slotLabel: slotLabel,
             visitType: 'newVisit',
-            tokenNumber: token,
+            tokenNumber: booked.tokenNumber,
             clinicName: _doctor?.clinicName,
             clinicAddress: clinicAddress,
           );

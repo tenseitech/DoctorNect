@@ -236,6 +236,48 @@ describe('promotedAds provider role rules', () => {
       testEnv.authenticatedContext(PATIENT_UID).firestore().collection('promotedAds').doc('ad_pat').set(draft(PATIENT_UID)),
     );
   });
+
+  async function seedAd(id, status, providerId) {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection('promotedAds').doc(id).set({
+        ...draft(providerId),
+        adId: id,
+        status,
+      });
+    });
+  }
+
+  test('non-owner cannot read draft, pending_payment, or pending_approval ads', async () => {
+    await seedAd('ad_draft', 'draft', DOCTOR_UID);
+    await seedAd('ad_pay', 'pending_payment', DOCTOR_UID);
+    await seedAd('ad_review', 'pending_approval', DOCTOR_UID);
+    const patient = testEnv.authenticatedContext(PATIENT_UID).firestore();
+    const stranger = testEnv.authenticatedContext(STORE_UID).firestore();
+    for (const id of ['ad_draft', 'ad_pay', 'ad_review']) {
+      await assertFails(patient.collection('promotedAds').doc(id).get());
+      await assertFails(stranger.collection('promotedAds').doc(id).get());
+    }
+  });
+
+  test('owner and super admin can read a pending ad; active ads are readable', async () => {
+    await seedAd('ad_review', 'pending_approval', DOCTOR_UID);
+    await seedAd('ad_live', 'active', DOCTOR_UID);
+    await assertSucceeds(
+      testEnv.authenticatedContext(DOCTOR_UID).firestore().collection('promotedAds').doc('ad_review').get(),
+    );
+    await assertSucceeds(
+      testEnv.authenticatedContext(ADMIN_UID).firestore().collection('promotedAds').doc('ad_review').get(),
+    );
+    await assertSucceeds(
+      testEnv.authenticatedContext(PATIENT_UID).firestore().collection('promotedAds').doc('ad_live').get(),
+    );
+    await assertSucceeds(
+      testEnv.authenticatedContext(PATIENT_UID).firestore()
+        .collection('promotedAds')
+        .where('status', '==', 'active')
+        .get(),
+    );
+  });
 });
 
 describe('patient appointment create', () => {
@@ -244,8 +286,7 @@ describe('patient appointment create', () => {
     await seed();
   });
 
-  // Mirrors AppointmentFirestoreMapper.toMap from SharedAppointmentsStore.addBooking
-  // (direct client .set, not the unused bookAppointment Cloud Function).
+  // Direct client create is denied. bookAppointment (Admin SDK) is the patient path.
   function patientCreatePayload() {
     return {
       appointmentId: 'appt_new_1',
@@ -275,10 +316,23 @@ describe('patient appointment create', () => {
     };
   }
 
-  test('signed-in patient can create appointment with mapper payload', async () => {
+  test('signed-in patient cannot create an appointment directly', async () => {
     const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
-    await assertSucceeds(
+    await assertFails(
       db.collection('appointments').doc('appt_new_1').set(patientCreatePayload()),
+    );
+  });
+
+  test('verified doctor can still create a walk-in appointment', async () => {
+    const db = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(
+      db.collection('appointments').doc('wi_appt').set({
+        appointmentId: 'wi_appt',
+        doctorId: DOCTOR_ID,
+        patientId: 'wi1710000000000',
+        source: 'walkin',
+        dateTime: new Date('2026-10-11T04:30:00.000Z'),
+      }),
     );
   });
 

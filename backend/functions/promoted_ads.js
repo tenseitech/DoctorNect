@@ -38,6 +38,8 @@ const AD_PRICING_TABLE = {
   24: 300,
   72: 750,
   168: 1500,
+  // Matches PromotedAdsService.defaultPricingTiers / BannerConfigModel (30 days).
+  720: 5000,
 };
 
 function getRazorpayCredentials() {
@@ -517,7 +519,7 @@ async function razorpayWebhookHandler(req, res, db) {
   }
   if (!webhookSecret) {
     console.error('[razorpayWebhook] RAZORPAY_WEBHOOK_SECRET is not configured.');
-    res.status(500).send('Webhook secret not configured.');
+    res.status(503).json({ error: { message: 'Webhook secret not configured.' } });
     return;
   }
 

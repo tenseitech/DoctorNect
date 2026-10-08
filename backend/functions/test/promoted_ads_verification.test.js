@@ -345,6 +345,14 @@ const {
   expirePromotedAdsHandler,
 } = require('../promoted_ads');
 
+test('AD_PRICING_TABLE includes every client plan amount', () => {
+  // PromotedAdsService.defaultPricingTiers and BannerConfigModel. There is no 15-day plan.
+  const clientPlans = { 24: 300, 72: 750, 168: 1500, 720: 5000 };
+  for (const [hours, amount] of Object.entries(clientPlans)) {
+    assert.equal(AD_PRICING_TABLE[Number(hours)], amount);
+  }
+});
+
 // Helper to compute valid Razorpay signature
 function computeRazorpaySignature(orderId, paymentId, secret = TEST_KEY_SECRET) {
   return crypto.createHmac('sha256', secret).update(`${orderId}|${paymentId}`).digest('hex');
@@ -852,6 +860,17 @@ describe('razorpayWebhook: real function unit tests', () => {
   after(() => {
     https.request = originalHttpsRequest;
     delete process.env.RAZORPAY_WEBHOOK_SECRET;
+  });
+
+  test('missing RAZORPAY_WEBHOOK_SECRET fails closed with 503', async () => {
+    delete process.env.RAZORPAY_WEBHOOK_SECRET;
+    const { req, res } = mockHttpCall({
+      headers: { 'x-razorpay-signature': 'deadbeef' },
+      rawBody: '{}',
+      body: {},
+    });
+    await razorpayWebhookHandler(req, res, firestoreModule.getFirestore());
+    assert.equal(res.getStatusCode(), 503);
   });
 
   function computeWebhookSignature(rawBody, secret = TEST_WEBHOOK_SECRET) {

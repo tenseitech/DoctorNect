@@ -550,7 +550,12 @@ async function bookAppointmentHandler(data, auth, db = getFirestore()) {
       const existingApptSnap = await tx.get(db.collection('appointments').doc(existingId));
       if (existingApptSnap.exists) {
         const existingData = existingApptSnap.data() || {};
-        if (existingData.patientId === patientId && !existingData.cancellationReason) {
+        const existingName = String(existingData.patientName || '').trim().toLowerCase();
+        const incomingName = String(data?.patientName || callerData?.name || '').trim().toLowerCase();
+        const samePerson = incomingName.length === 0 || existingName === incomingName;
+        // Same account may book a different family member in this slot.
+        // The max-3 cap and slotShareReason checks below still apply.
+        if (existingData.patientId === patientId && !existingData.cancellationReason && samePerson) {
           throw new HttpsError(
             'failed-precondition',
             'You already have an active appointment in this time slot.'

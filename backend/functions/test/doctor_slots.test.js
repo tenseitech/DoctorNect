@@ -660,6 +660,57 @@ test('slotShareReason is required when slot already has 1 or 2 active bookings, 
   assert.equal(slotDoc.activeAppointmentIds.length, 3);
 });
 
+test('same account can book a different family member in a shared slot', async () => {
+  const db = createConcurrentMockFirestore();
+  const doctorId = 'doc_family_slot';
+  const dateTime = '2026-10-06T03:30:00.000Z';
+
+  db.docs.set(`doctors/${doctorId}`, {
+    name: 'Dr. Family',
+    specialization: 'General',
+    verified: true,
+    deactivated: false,
+  });
+  db.docs.set('users/user_family', { role: 'patient', name: 'Parent', profileId: 'pat_family' });
+
+  const first = await bookAppointmentHandler(
+    { doctorId, dateTime, slotLabel: '09:00 AM', patientName: 'Parent' },
+    { uid: 'user_family' },
+    db,
+  );
+  assert.equal(first.ok, true);
+
+  await assert.rejects(
+    bookAppointmentHandler(
+      {
+        doctorId,
+        dateTime,
+        slotLabel: '09:00 AM',
+        patientName: 'Parent',
+        slotShareReason: 'same person',
+      },
+      { uid: 'user_family' },
+      db,
+    ),
+    (err) => err.code === 'failed-precondition',
+  );
+
+  const child = await bookAppointmentHandler(
+    {
+      doctorId,
+      dateTime,
+      slotLabel: '09:00 AM',
+      patientName: 'Child',
+      patientRelation: 'Son',
+      slotShareReason: 'Family member at the same visit',
+    },
+    { uid: 'user_family' },
+    db,
+  );
+  assert.equal(child.ok, true);
+  assert.notEqual(child.appointmentId, first.appointmentId);
+});
+
 test('legacy appointment with token 5 raises counter so subsequent callable booking receives token 6', async () => {
   const db = createConcurrentMockFirestore();
   const doctorId = 'doc_legacy_token';

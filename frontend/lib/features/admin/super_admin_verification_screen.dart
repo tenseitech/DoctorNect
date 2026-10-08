@@ -9,6 +9,7 @@ import '../../core/notifications/app_toast.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../widgets/theme_toggle_button.dart';
+import 'promoted_ad_review_screen.dart';
 
 class SuperAdminVerificationScreen extends StatefulWidget {
   const SuperAdminVerificationScreen({super.key});
@@ -110,6 +111,17 @@ class _SuperAdminVerificationScreenState
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.campaign_outlined),
+            tooltip: 'Review promoted ads',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const PromotedAdReviewScreen(),
+                ),
+              );
+            },
+          ),
           const ThemeToggleButton(),
           IconButton(
             icon: const Icon(Icons.logout_rounded),
