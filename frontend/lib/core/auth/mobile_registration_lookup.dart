@@ -52,7 +52,10 @@ class MobileRegistrationLookup {
     return switch (lower) {
       'doctor' => UserType.doctor,
       'patient' => UserType.patient,
-      'medical' || 'medicalstore' || 'medical_store' || 'pharmacy' =>
+      'medical' ||
+      'medicalstore' ||
+      'medical_store' ||
+      'pharmacy' =>
         UserType.medicalStore,
       'lab' => UserType.lab,
       'ambulance' => UserType.ambulance,

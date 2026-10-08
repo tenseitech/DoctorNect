@@ -231,19 +231,29 @@ void main() {
     });
   });
 
-  group('MobileLookupResult & MobileRegistrationLookup — role resolution and state separation', () {
+  group(
+      'MobileLookupResult & MobileRegistrationLookup — role resolution and state separation',
+      () {
     test('parseUserType parses all healthcare roles and aliases', () {
       expect(MobileRegistrationLookup.parseUserType('doctor'), UserType.doctor);
       expect(MobileRegistrationLookup.parseUserType('Doctor'), UserType.doctor);
-      expect(MobileRegistrationLookup.parseUserType('patient'), UserType.patient);
-      expect(MobileRegistrationLookup.parseUserType('medicalStore'), UserType.medicalStore);
-      expect(MobileRegistrationLookup.parseUserType('medical_store'), UserType.medicalStore);
-      expect(MobileRegistrationLookup.parseUserType('medical'), UserType.medicalStore);
-      expect(MobileRegistrationLookup.parseUserType('pharmacy'), UserType.medicalStore);
+      expect(
+          MobileRegistrationLookup.parseUserType('patient'), UserType.patient);
+      expect(MobileRegistrationLookup.parseUserType('medicalStore'),
+          UserType.medicalStore);
+      expect(MobileRegistrationLookup.parseUserType('medical_store'),
+          UserType.medicalStore);
+      expect(MobileRegistrationLookup.parseUserType('medical'),
+          UserType.medicalStore);
+      expect(MobileRegistrationLookup.parseUserType('pharmacy'),
+          UserType.medicalStore);
       expect(MobileRegistrationLookup.parseUserType('lab'), UserType.lab);
-      expect(MobileRegistrationLookup.parseUserType('ambulance'), UserType.ambulance);
-      expect(MobileRegistrationLookup.parseUserType('superAdmin'), UserType.superAdmin);
-      expect(MobileRegistrationLookup.parseUserType('super_admin'), UserType.superAdmin);
+      expect(MobileRegistrationLookup.parseUserType('ambulance'),
+          UserType.ambulance);
+      expect(MobileRegistrationLookup.parseUserType('superAdmin'),
+          UserType.superAdmin);
+      expect(MobileRegistrationLookup.parseUserType('super_admin'),
+          UserType.superAdmin);
       expect(MobileRegistrationLookup.parseUserType('unknown'), isNull);
       expect(MobileRegistrationLookup.parseUserType(null), isNull);
     });
@@ -279,11 +289,14 @@ void main() {
       expect(notFoundResult.role, isNull);
     });
 
-    test('lookup returns error when Firebase is unavailable instead of not-found', () async {
+    test(
+        'lookup returns error when Firebase is unavailable instead of not-found',
+        () async {
       FirebaseBootstrap.isReady = false;
       final result = await MobileRegistrationLookup.lookup(validMobile);
       expect(result.isError, isTrue);
-      expect(result.isNotFound, isFalse, reason: 'Errors must never be treated as not-found');
+      expect(result.isNotFound, isFalse,
+          reason: 'Errors must never be treated as not-found');
       expect(result.errorMessage, contains('unavailable'));
     });
 
@@ -293,7 +306,8 @@ void main() {
       expect(result.errorMessage, contains('10-digit'));
     });
 
-    test('phone normalization is uniform across spaced and prefixed inputs', () {
+    test('phone normalization is uniform across spaced and prefixed inputs',
+        () {
       const canonical = '9876543210';
       final inputs = [
         '9876543210',

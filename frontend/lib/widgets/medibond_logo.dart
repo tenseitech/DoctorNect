@@ -24,8 +24,8 @@ class DoctorNectMark extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = AppColors.isDark(context);
     // Mark color: crisp white on dark navy gradient; adjusts subtly with theme
-    final markColor = color ??
-        (isDark ? Colors.white : const Color(0xFFF8FAFC));
+    final markColor =
+        color ?? (isDark ? Colors.white : const Color(0xFFF8FAFC));
     final glowColor = isDark
         ? const Color(0xFF14B8A6).withValues(alpha: 0.32)
         : const Color(0xFF38BDF8).withValues(alpha: 0.28);

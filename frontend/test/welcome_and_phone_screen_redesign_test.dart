@@ -14,7 +14,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Screen 1 - Welcome Screen Redesign Tests', () {
-    testWidgets('Renders navy/teal gradient, logo, carousel, sheet and read-only field',
+    testWidgets(
+        'Renders navy/teal gradient, logo, carousel, sheet and read-only field',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -56,7 +57,8 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Continue'), findsOneWidget);
     });
 
-    testWidgets('Tapping Continue button navigates to Screen 2 (UnifiedMobileAuthScreen)',
+    testWidgets(
+        'Tapping Continue button navigates to Screen 2 (UnifiedMobileAuthScreen)',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -77,7 +79,8 @@ void main() {
       expect(find.text('Enter your mobile number'), findsOneWidget);
     });
 
-    testWidgets('Compact mobile viewport (360x640) renders hero and bottom sheet with Continue button cleanly without overflow',
+    testWidgets(
+        'Compact mobile viewport (360x640) renders hero and bottom sheet with Continue button cleanly without overflow',
         (tester) async {
       tester.view.physicalSize = const Size(360, 640);
       tester.view.devicePixelRatio = 1.0;
@@ -92,7 +95,8 @@ void main() {
       await tester.pump();
 
       expect(find.byType(UnifiedAuthIntroScreen), findsOneWidget);
-      expect(find.text("Let's get started! Enter your mobile number"), findsOneWidget);
+      expect(find.text("Let's get started! Enter your mobile number"),
+          findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Continue'), findsOneWidget);
       expect(find.text('Trouble signing in?'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -149,7 +153,8 @@ void main() {
       expect(find.text('Contact Support'), findsOneWidget);
     });
 
-    testWidgets('Tapping read-only field navigates to Screen 2 (UnifiedMobileAuthScreen)',
+    testWidgets(
+        'Tapping read-only field navigates to Screen 2 (UnifiedMobileAuthScreen)',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -170,7 +175,8 @@ void main() {
       expect(find.text('Enter your mobile number'), findsOneWidget);
     });
 
-    testWidgets('Web/Desktop layout (>=900px) renders full-screen Row with left carousel (flex 43) and right centered 480px form (flex 57) at 1920x1080',
+    testWidgets(
+        'Web/Desktop layout (>=900px) renders full-screen Row with left carousel (flex 43) and right centered 480px form (flex 57) at 1920x1080',
         (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.0;
@@ -209,7 +215,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Desktop layout at 1024x768 renders full-screen Row with left panel minWidth >= 380',
+    testWidgets(
+        'Desktop layout at 1024x768 renders full-screen Row with left panel minWidth >= 380',
         (tester) async {
       tester.view.physicalSize = const Size(1024, 768);
       tester.view.devicePixelRatio = 1.0;
@@ -228,7 +235,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Desktop layout at 1366x768 renders full-screen Row cleanly without overflow',
+    testWidgets(
+        'Desktop layout at 1366x768 renders full-screen Row cleanly without overflow',
         (tester) async {
       tester.view.physicalSize = const Size(1366, 768);
       tester.view.devicePixelRatio = 1.0;
@@ -248,7 +256,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Tablet viewport (<900px breakpoint, e.g. 800x1000) renders mobile layout',
+    testWidgets(
+        'Tablet viewport (<900px breakpoint, e.g. 800x1000) renders mobile layout',
         (tester) async {
       tester.view.physicalSize = const Size(800, 1000);
       tester.view.devicePixelRatio = 1.0;
@@ -264,11 +273,13 @@ void main() {
 
       expect(find.byType(UnifiedAuthIntroScreen), findsOneWidget);
       expect(find.byType(UnifiedAuthLoginForm), findsOneWidget);
-      expect(find.text("Let's get started! Enter your mobile number"), findsOneWidget);
+      expect(find.text("Let's get started! Enter your mobile number"),
+          findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Window resize from desktop (1920x1080) to mobile (390x844) and back switches cleanly',
+    testWidgets(
+        'Window resize from desktop (1920x1080) to mobile (390x844) and back switches cleanly',
         (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.0;
@@ -325,7 +336,8 @@ void main() {
   });
 
   group('Screen 2 - Enter Mobile Number Screen Redesign Tests', () {
-    testWidgets('Renders AppBar (back + help), title, country code, field, terms and continue button',
+    testWidgets(
+        'Renders AppBar (back + help), title, country code, field, terms and continue button',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -346,7 +358,8 @@ void main() {
       // Title & description
       expect(find.text('Enter your mobile number'), findsOneWidget);
       expect(
-        find.text('We will send a 6-digit verification code to verify your number.'),
+        find.text(
+            'We will send a 6-digit verification code to verify your number.'),
         findsOneWidget,
       );
 
@@ -363,7 +376,8 @@ void main() {
       expect(continueWidget.onPressed, isNull);
     });
 
-    testWidgets('Entering 10 digits enables Continue button, < 10 keeps it disabled',
+    testWidgets(
+        'Entering 10 digits enables Continue button, < 10 keeps it disabled',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -382,16 +396,16 @@ void main() {
       await tester.enterText(textField, '987654321');
       await tester.pump();
 
-      var continueWidget =
-          tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Continue'));
+      var continueWidget = tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Continue'));
       expect(continueWidget.onPressed, isNull);
 
       // Enter 10 digits
       await tester.enterText(textField, '9876543210');
       await tester.pump();
 
-      continueWidget =
-          tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Continue'));
+      continueWidget = tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Continue'));
       expect(continueWidget.onPressed, isNotNull);
     });
 
@@ -557,8 +571,11 @@ void main() {
     });
   });
 
-  group('AuthLoginPageShell & Patient Registration Desktop Responsiveness Tests', () {
-    testWidgets('PatientRegistrationScreen on desktop (1920x1080) renders split layout',
+  group(
+      'AuthLoginPageShell & Patient Registration Desktop Responsiveness Tests',
+      () {
+    testWidgets(
+        'PatientRegistrationScreen on desktop (1920x1080) renders split layout',
         (tester) async {
       tester.view.physicalSize = const Size(1920, 1080);
       tester.view.devicePixelRatio = 1.0;
@@ -592,7 +609,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('PatientRegistrationScreen at 1024x768 renders cleanly with left panel >= 380px',
+    testWidgets(
+        'PatientRegistrationScreen at 1024x768 renders cleanly with left panel >= 380px',
         (tester) async {
       tester.view.physicalSize = const Size(1024, 768);
       tester.view.devicePixelRatio = 1.0;
@@ -619,7 +637,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('PatientRegistrationScreen on mobile (390x844) renders stacked layout',
+    testWidgets(
+        'PatientRegistrationScreen on mobile (390x844) renders stacked layout',
         (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
@@ -673,11 +692,13 @@ void main() {
       await tester.pump();
 
       expect(find.byType(DoctorNectMark), findsOneWidget);
-      expect(find.byType(Image), findsNWidgets(2)); // Glow layer + crisp foreground layer
+      expect(find.byType(Image),
+          findsNWidgets(2)); // Glow layer + crisp foreground layer
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('DoctorNectLogo with transparent: true delegates to DoctorNectMark',
+    testWidgets(
+        'DoctorNectLogo with transparent: true delegates to DoctorNectMark',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -711,7 +732,8 @@ void main() {
 
       // Top bar contains transparent DoctorNectLogo and theme toggle button
       expect(find.byType(DoctorNectLogo), findsOneWidget);
-      final logoWidget = tester.widget<DoctorNectLogo>(find.byType(DoctorNectLogo));
+      final logoWidget =
+          tester.widget<DoctorNectLogo>(find.byType(DoctorNectLogo));
       expect(logoWidget.transparent, isTrue);
       expect(logoWidget.softGlow, isTrue);
 
@@ -727,4 +749,3 @@ void main() {
     });
   });
 }
-
