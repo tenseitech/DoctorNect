@@ -3,10 +3,28 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { Timestamp } = require('firebase-admin/firestore');
+const { initializeApp, getApps } = require('firebase-admin/app');
+if (!getApps().length) initializeApp({ projectId: 'test-project' });
+
+process.env.MSG91_AUTHKEY = 'mock_secret_key_123';
+process.env.OTP_TEST_MODE = 'true';
+
+const { setRedisClientForTesting } = require('../redis');
+setRedisClientForTesting({
+  set: async () => 'OK',
+  get: async () => null,
+  del: async () => 1,
+});
+
 const {
   consumeOtpChallengeAtomically,
   hashOtp,
+  legacyHashOtp,
+  ALLOW_LEGACY_UNSALTED_OTP_HASH,
+  setDemoConfigDocForTesting,
 } = require('../registration_otp');
+
+setDemoConfigDocForTesting(null);
 
 function createConcurrentMockFirestore() {
   const docs = new Map();
@@ -79,9 +97,17 @@ function createConcurrentMockFirestore() {
   };
 }
 
-function seedChallenge(db, challengeKey, { otpCode = '654321', attempts = 0 } = {}) {
+function seedChallenge(db, challengeKey, {
+  otpCode = '654321',
+  attempts = 0,
+  role = 'patient',
+  mobileDigits = '9876543210',
+  useLegacyHash = false,
+} = {}) {
   db.docs.set(`otp_challenges/${challengeKey}`, {
-    otpHash: hashOtp(otpCode),
+    role,
+    mobileDigits,
+    otpHash: useLegacyHash ? legacyHashOtp(otpCode) : hashOtp(otpCode, role, mobileDigits),
     attempts,
     expiresAt: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)),
   });
@@ -100,6 +126,8 @@ test('10 concurrent invalid OTP attempts increment attempts atomically and lock 
     Array.from({ length: 10 }, () => consumeOtpChallengeAtomically(db, {
       challengeKey,
       otp: '000000',
+      mobileDigits: '9876543210',
+      role: 'patient',
       isDemoAccount: false,
     })),
   );
@@ -128,6 +156,8 @@ test('10 concurrent valid OTP attempts consume the challenge exactly once', asyn
     Array.from({ length: 10 }, () => consumeOtpChallengeAtomically(db, {
       challengeKey,
       otp: '654321',
+      mobileDigits: '9876543210',
+      role: 'patient',
       isDemoAccount: false,
     })),
   );
@@ -139,4 +169,76 @@ test('10 concurrent valid OTP attempts consume the challenge exactly once', asyn
   assert.equal(failures.length, 9);
   assert.ok(failures.every((result) => result.reason?.code === 'failed-precondition'));
   assert.equal(readAttempts(db, challengeKey), null);
+});
+
+test('in-flight legacy unsalted SHA-256 challenge is accepted when ALLOW_LEGACY_UNSALTED_OTP_HASH is true', async () => {
+  assert.equal(ALLOW_LEGACY_UNSALTED_OTP_HASH, true, 'Legacy hash fallback must be enabled');
+  const db = createConcurrentMockFirestore();
+  const challengeKey = 'challenge-legacy-inflight';
+  seedChallenge(db, challengeKey, { otpCode: '849201', attempts: 0, useLegacyHash: true });
+
+  const result = await consumeOtpChallengeAtomically(db, {
+    challengeKey,
+    otp: '849201',
+    mobileDigits: '9876543210',
+    role: 'patient',
+    isDemoAccount: false,
+  });
+
+  assert.equal(result.consumed, true, 'Legacy unsalted OTP challenge must be consumed successfully');
+  assert.equal(db.docs.has(`otp_challenges/${challengeKey}`), false, 'Legacy challenge doc must be deleted');
+});
+
+test('HMAC-SHA256 OTP verification rejects mismatched mobile number or role', async () => {
+  const db = createConcurrentMockFirestore();
+  const challengeKey = 'challenge-mismatch';
+  seedChallenge(db, challengeKey, {
+    otpCode: '789012',
+    attempts: 0,
+    role: 'patient',
+    mobileDigits: '9876543210',
+  });
+
+  // Verify with matching role and mobile succeeds
+  const matchResult = await consumeOtpChallengeAtomically(db, {
+    challengeKey,
+    otp: '789012',
+    mobileDigits: '9876543210',
+    role: 'patient',
+    isDemoAccount: false,
+  });
+  assert.equal(matchResult.consumed, true, 'Matching role and mobile must succeed');
+
+  // Seed another challenge to test mismatch
+  const mismatchKey = 'challenge-mismatch-2';
+  seedChallenge(db, mismatchKey, {
+    otpCode: '789012',
+    attempts: 0,
+    role: 'patient',
+    mobileDigits: '9876543210',
+  });
+
+  // Verify with different role
+  await assert.rejects(
+    consumeOtpChallengeAtomically(db, {
+      challengeKey: mismatchKey,
+      otp: '789012',
+      mobileDigits: '9876543210',
+      role: 'doctor',
+      isDemoAccount: false,
+    }),
+    { code: 'permission-denied' },
+  );
+
+  // Verify with different mobile number
+  await assert.rejects(
+    consumeOtpChallengeAtomically(db, {
+      challengeKey: mismatchKey,
+      otp: '789012',
+      mobileDigits: '9111111111',
+      role: 'patient',
+      isDemoAccount: false,
+    }),
+    { code: 'permission-denied' },
+  );
 });
