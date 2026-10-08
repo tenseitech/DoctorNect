@@ -526,6 +526,7 @@ test('bookAppointment ignores client-supplied patientId and binds strictly to au
       slotLabel: '09:00 AM',
       patientId: 'attacker_spoofed_victim_id',
       patientName: 'Spoofed Name',
+      createdVia: 'x',
     },
     { uid: 'user_real' },
     db,
