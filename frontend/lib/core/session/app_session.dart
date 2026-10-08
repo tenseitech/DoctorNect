@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../auth/app_credential_store.dart';
+import '../security/file_encryption_service.dart';
 import '../data/shared_appointments_store.dart';
 import '../notifications/in_app_notification_service.dart';
 import '../../features/ambulance/data/ambulance_store.dart';
@@ -109,5 +112,9 @@ abstract final class AppSession {
     LabNotificationStore.instance.clear();
     InAppNotificationService.instance.clearAllNotifications();
     AppCredentialStore.clearAll();
+    unawaited(FileEncryptionService.clearOnLogout());
   }
+
+  static Future<void> clearCachedSecrets() =>
+      FileEncryptionService.clearOnLogout();
 }

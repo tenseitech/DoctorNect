@@ -416,4 +416,44 @@ void main() {
       expect(BookingFlowHelpers.isLegacyAppointmentId('APT12345'), isTrue);
     });
   });
+
+  group('resolvePatientId', () {
+    test('rejects empty and pat-default placeholders', () {
+      expect(
+        BookingFlowHelpers.resolvePatientId(sessionPatientId: ''),
+        isNull,
+      );
+      expect(
+        BookingFlowHelpers.resolvePatientId(sessionPatientId: 'pat-default'),
+        isNull,
+      );
+      expect(
+        BookingFlowHelpers.resolvePatientId(
+          sessionPatientId: '  pat-default  ',
+        ),
+        isNull,
+      );
+    });
+
+    test('prefers a real appointment patient id over session fallback', () {
+      expect(
+        BookingFlowHelpers.resolvePatientId(
+          sessionPatientId: 'pat_session',
+          appointmentPatientId: 'pat_from_record',
+        ),
+        'pat_from_record',
+      );
+      expect(
+        BookingFlowHelpers.resolvePatientId(
+          sessionPatientId: 'pat_session',
+          appointmentPatientId: 'pat-default',
+        ),
+        'pat_session',
+      );
+      expect(
+        BookingFlowHelpers.resolvePatientId(sessionPatientId: 'pat_123'),
+        'pat_123',
+      );
+    });
+  });
 }

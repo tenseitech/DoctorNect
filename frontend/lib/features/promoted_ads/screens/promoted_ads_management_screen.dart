@@ -377,18 +377,13 @@ class _PromotedAdCard extends StatelessWidget {
     final statusColor = switch (ad.status) {
       'active' => const Color(0xFF16A34A),
       'pending_payment' => const Color(0xFFEA580C),
+      'pending_approval' => const Color(0xFFCA8A04),
       'expired' => Colors.grey.shade600,
       'rejected' => Colors.red.shade700,
       _ => Colors.blue.shade700,
     };
 
-    final statusLabel = switch (ad.status) {
-      'active' => 'ACTIVE',
-      'pending_payment' => 'PENDING PAYMENT',
-      'expired' => 'EXPIRED',
-      'rejected' => 'FAILED / REJECTED',
-      _ => 'DRAFT',
-    };
+    final statusLabel = ad.ownerDashboardLabel;
 
     return Container(
       decoration: BoxDecoration(

@@ -3,8 +3,13 @@ import '../../core/notifications/app_toast.dart';
 
 import 'dart:async';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/session/app_session.dart';
+import '../../core/utils/external_launcher.dart';
+import '../patient/profile/data/patient_profile_mock.dart';
+import '../welcome/welcome_screen.dart';
 import '../../core/auth/contact_change_otp_service.dart';
 import '../../core/auth/contact_change_verification.dart';
 import '../../core/constants/country_phone_codes.dart';
@@ -120,6 +125,87 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
       );
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _contactSupport(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.email_outlined),
+                title: const Text('Email support'),
+                subtitle: Text(PatientProfileMock.supportEmail),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ExternalLauncher.openUrl(
+                    'mailto:${PatientProfileMock.supportEmail}',
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirestoreService.instance.user.deleteAccount(user: user);
+      }
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      await AmbulanceSession.clear();
+      AppSession.clear();
+      await FirebaseAuth.instance.signOut();
+      if (!context.mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        (_) => false,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      final message = e is FirebaseFunctionsException
+          ? (e.message ?? 'Could not delete account. Please try again.')
+          : 'Failed to delete account. Please try again.';
+      AppToast.info(context, message);
     }
   }
 
@@ -601,6 +687,19 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                                 ),
                               );
                             },
+                          ),
+                          _AboutSection(
+                            icon: Icons.support_agent_outlined,
+                            label: 'Contact support',
+                            subtitle: 'Email or call DoctorNect support',
+                            onTap: () => _contactSupport(context),
+                          ),
+                          _AboutSection(
+                            icon: Icons.person_remove_outlined,
+                            label: 'Delete account',
+                            subtitle: 'Permanently remove this ambulance account',
+                            iconColor: AppColors.error,
+                            onTap: () => _confirmDeleteAccount(context),
                           ),
                         ],
                         if (widget.embedded && widget.onLogout != null) ...[
@@ -1403,9 +1502,19 @@ class _ProfileHeaderCard extends StatelessWidget {
 }
 
 class _AboutSection extends StatelessWidget {
-  const _AboutSection({required this.onTap});
+  const _AboutSection({
+    required this.onTap,
+    this.icon = Icons.info_outline,
+    this.label = 'About',
+    this.subtitle = 'Rate the app, share link & legal',
+    this.iconColor = const Color(0xFFDC2626),
+  });
 
   final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1423,9 +1532,9 @@ class _AboutSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              const Icon(
-                Icons.info_outline,
-                color: Color(0xFFDC2626),
+              Icon(
+                icon,
+                color: iconColor,
                 size: 22,
               ),
               const SizedBox(width: 12),
@@ -1434,7 +1543,7 @@ class _AboutSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'About',
+                      label,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: AppTypography.bodyLarge,
@@ -1442,7 +1551,7 @@ class _AboutSection extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Rate the app, share link & legal',
+                      subtitle,
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: AppTypography.labelMedium,

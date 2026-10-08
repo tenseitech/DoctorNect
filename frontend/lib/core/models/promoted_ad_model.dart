@@ -45,13 +45,22 @@ class PromotedAdModel {
   final String? razorpayPaymentId;
   final String paymentStatus; // 'pending', 'verified', 'failed'
   final String
-      status; // 'draft', 'pending_payment', 'active', 'expired', 'rejected'
+      status; // 'draft', 'pending_payment', 'pending_approval', 'active', 'expired', 'rejected'
   final DateTime? startTime;
   final DateTime? endTime;
   final DateTime? createdAt;
 
   bool get isActive =>
       status == 'active' && endTime != null && endTime!.isAfter(DateTime.now());
+
+  String get ownerDashboardLabel => switch (status) {
+        'active' => 'ACTIVE',
+        'pending_payment' => 'PENDING PAYMENT',
+        'pending_approval' => 'UNDER REVIEW',
+        'expired' => 'EXPIRED',
+        'rejected' => 'REJECTED',
+        _ => 'DRAFT',
+      };
 
   int get remainingMinutes {
     if (!isActive || endTime == null) return 0;

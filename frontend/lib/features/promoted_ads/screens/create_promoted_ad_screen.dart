@@ -273,6 +273,10 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
       setState(() => _submitting = false);
 
       if (verified) {
+        AppToast.success(
+          context,
+          'Payment received — your ad is under review',
+        );
         Navigator.pop(context, true);
       } else {
         AppToast.error(

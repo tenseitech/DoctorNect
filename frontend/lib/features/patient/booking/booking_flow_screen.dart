@@ -494,6 +494,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     final date = _draft.selectedDate!;
     final store = SharedAppointmentsStore.instance;
     final slotShareReason = _resolvedSlotShareReason();
+    const missingPatientIdMessage =
+        'Your patient account is not ready. Sign in again before booking.';
 
     final selectedSlot = _selectedSlot;
     if (selectedSlot == null || !selectedSlot.isSelectable) {
@@ -553,16 +555,22 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         );
       }
 
+      final patientId = BookingFlowHelpers.resolvePatientId(
+        sessionPatientId: PatientSession.loggedInPatientId,
+        appointmentPatientId: old?.patientId,
+      );
+      if (patientId == null) {
+        _showBookingMessage(missingPatientIdMessage);
+        return;
+      }
+
       try {
         if (SupabaseBootstrap.isReady && old?.appointmentId != null) {
           await SupabasePatientRepository.instance.bookAppointment(
             context: context,
             appointmentId: old!.appointmentId,
             doctorId: widget.doctorId,
-            patientId: old.patientId ??
-                (PatientSession.loggedInPatientId.isNotEmpty
-                    ? PatientSession.loggedInPatientId
-                    : 'pat-default'),
+            patientId: patientId,
             doctorName: _draft.doctorName,
             specialization: listing?.specialization ??
                 _doctor?.specialization ??
@@ -632,6 +640,14 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     String? firstAppointmentId;
     int? firstToken;
 
+    final patientId = BookingFlowHelpers.resolvePatientId(
+      sessionPatientId: PatientSession.loggedInPatientId,
+    );
+    if (patientId == null) {
+      _showBookingMessage(missingPatientIdMessage);
+      return;
+    }
+
     if (_draft.bookingForSelf && !PatientDetailsGuard.hasRequiredDetails()) {
       await PatientDetailsGuard.run(context, () => _confirmPay());
       return;
@@ -687,9 +703,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           context: context,
           appointmentId: appointmentId,
           doctorId: widget.doctorId,
-          patientId: PatientSession.loggedInPatientId.isNotEmpty
-              ? PatientSession.loggedInPatientId
-              : 'pat-default',
+          patientId: patientId,
           doctorName: _draft.doctorName,
           specialization: listing?.specialization ??
               _doctor?.specialization ??
