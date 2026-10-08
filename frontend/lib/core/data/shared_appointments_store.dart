@@ -657,10 +657,11 @@ class SharedAppointmentsStore extends ChangeNotifier {
       throw StateError('Booking did not return an appointment.');
     }
 
-    final id = 'pa${DateTime.now().millisecondsSinceEpoch}';
+    // The callable already created appointments/{appointmentId}. The in-memory
+    // id must be that document id so cancel and reschedule update it.
     _records.add(
       DoctorNectAppointmentRecord(
-        id: id,
+        id: appointmentId,
         appointmentId: appointmentId,
         doctorId: doctorId,
         doctorName: doctorName,
@@ -709,102 +710,6 @@ class SharedAppointmentsStore extends ChangeNotifier {
     final data = response.data;
     if (data is Map) return Map<String, dynamic>.from(data);
     throw StateError('Booking did not return an appointment.');
-  }
-
-  /// Direct client create. New patient bookings use [bookPatientViaCallable].
-  /// Walk-ins use [addWalkInAppointment].
-  Future<bool> addBooking({
-    required String doctorId,
-    required String doctorName,
-    required String specialization,
-    required DateTime date,
-    required String slotLabel,
-    required String appointmentId,
-    required int tokenNumber,
-    required String patientName,
-    required int patientAge,
-    required String patientGender,
-    required String? clinicName,
-    required String? clinicAddress,
-    required String? mapsUrl,
-    String? reasonForVisit,
-    String? bookedByName,
-    String? patientRelation,
-    String? slotShareReason,
-  }) async {
-    if (bookingCountForSlot(doctorId, date, slotLabel) >=
-        kMaxPatientsPerTimeSlot) {
-      return false;
-    }
-    if (isSlotTimeInPast(date, slotLabel)) {
-      return false;
-    }
-    final id = 'pa${DateTime.now().millisecondsSinceEpoch}';
-    final dateTime = _dateTimeForSlot(
-      date,
-      slotLabel,
-    ); // FIXED: apply the booked slot's time instead of ignoring slotLabel
-    final autoAccept = DoctorProfileStore.autoAcceptForDoctor(doctorId);
-    final patientStatus = autoAccept
-        ? PatientBookingStatus.confirmed
-        : PatientBookingStatus.pending;
-    final doctorStatus = autoAccept
-        ? AppointmentStatus.confirmed
-        : AppointmentStatus.pendingRequest;
-    final patientId = PatientSession.loggedInPatientId;
-    final visitType = _isReturningPatient(
-      patientId: patientId,
-      patientName: patientName,
-      doctorId: doctorId,
-    )
-        ? AppointmentType.followUp
-        : AppointmentType.newVisit;
-
-    _records.add(
-      DoctorNectAppointmentRecord(
-        id: id,
-        appointmentId: appointmentId,
-        doctorId: doctorId,
-        doctorName: doctorName,
-        specialization: specialization,
-        patientName: patientName,
-        patientAge: patientAge,
-        patientGender: AppConstants.normalizePatientGender(patientGender),
-        dateTime: dateTime,
-        slotLabel: slotLabel,
-        tokenNumber: tokenNumber,
-        visitType: visitType,
-        patientStatus: patientStatus,
-        doctorStatus: doctorStatus,
-        clinicName: clinicName,
-        clinicAddress: clinicAddress,
-        mapsUrl: mapsUrl,
-        contactNumber: PatientProfileMock.profile.mobile,
-        chiefComplaints: _normalizeTags(
-          reasonForVisit != null && reasonForVisit.trim().isNotEmpty
-              ? [reasonForVisit.trim()]
-              : const [],
-        ),
-        patientId: patientId,
-        bookedByName: bookedByName,
-        patientRelation: patientRelation,
-        slotShareReason: slotShareReason,
-      ),
-    );
-    notifyListeners();
-    try {
-      await _persist(
-        _records.last,
-        patientId: patientId,
-        rethrowOnError: true,
-      ); // FIXED: surface write failure
-    } catch (e) {
-      // FIXED: roll back the optimistic record so we never show a confirmed booking that wasn't saved
-      _records.removeWhere((r) => r.id == id);
-      notifyListeners();
-      rethrow;
-    }
-    return autoAccept;
   }
 
   static List<String> _normalizeTags(List<String> raw) {

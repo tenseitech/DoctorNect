@@ -347,6 +347,28 @@ describe('patient appointment create', () => {
     );
   });
 
+  test('patient cancel and reschedule update the existing document and cannot create another', async () => {
+    const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
+    const existing = db.collection('appointments').doc(APPT_ID);
+    await assertSucceeds(existing.set({
+      doctorStatus: 'cancelled',
+      cancellationReason: 'Plans changed',
+      updatedAt: new Date(),
+    }, { merge: true }));
+    await assertSucceeds(existing.set({
+      dateTime: new Date('2026-10-09T05:30:00.000Z'),
+      slotLabel: '11:00 AM',
+      tokenNumber: 4,
+      patientStatus: 'confirmed',
+      doctorStatus: 'confirmed',
+      wasRescheduled: true,
+      updatedAt: new Date(),
+    }, { merge: true }));
+    await assertFails(
+      db.collection('appointments').doc('appt_second').set(patientCreatePayload()),
+    );
+  });
+
   test('patient create without dateTime is denied', async () => {
     const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
     const payload = patientCreatePayload();

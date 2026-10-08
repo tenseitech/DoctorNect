@@ -46,10 +46,49 @@ void main() {
     expect(payload?.containsKey('appointmentId'), isFalse);
     expect(booked.appointmentId, 'apt-callable');
     expect(booked.tokenNumber, 7);
-    expect(
-      store.records.any((record) => record.appointmentId == 'apt-callable'),
-      isTrue,
+    expect(store.records.single.id, 'apt-callable');
+    expect(store.records.single.appointmentId, 'apt-callable');
+  });
+
+  test('cancel and reschedule write appointments/{callable id} only', () async {
+    const callableId = 'apt-real-doc';
+    final writtenIds = <String>[];
+    SharedAppointmentsStore.debugPersistOverride = (record) async {
+      writtenIds.add(record.id);
+    };
+    SharedAppointmentsStore.debugBookAppointmentOverride = (_) async {
+      return {
+        'ok': true,
+        'appointmentId': callableId,
+        'tokenNumber': 3,
+      };
+    };
+
+    await store.bookPatientViaCallable(
+      doctorId: 'doc-1',
+      doctorName: 'Dr A',
+      specialization: 'General',
+      date: DateTime(2027, 6, 15),
+      slotLabel: '10:00 AM',
+      patientName: 'Pat',
+      patientAge: 30,
+      patientGender: 'Female',
+      clinicName: 'Clinic',
+      clinicAddress: 'Addr',
+      mapsUrl: null,
     );
+    expect(writtenIds, isEmpty);
+
+    await store.cancelByPatient(callableId, reason: 'plans changed');
+    await store.reschedulePatient(
+      recordId: callableId,
+      newDate: DateTime(2027, 6, 16),
+      newSlotLabel: '11:00 AM',
+      newToken: 4,
+    );
+
+    expect(writtenIds, [callableId, callableId]);
+    expect(writtenIds.any((id) => id != callableId), isFalse);
   });
 
   test('booking screen routes new bookings through the callable', () {
