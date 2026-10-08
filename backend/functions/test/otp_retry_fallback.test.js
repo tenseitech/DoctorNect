@@ -38,7 +38,7 @@ const {
   legacyHashOtp,
   hashOtp,
   verifyChallengeOtpHash,
-  ALLOW_LEGACY_UNSALTED_OTP_HASH,
+  allowLegacyUnsaltedOtpHash,
   otpRedisKey,
 } = require('../registration_otp');
 
@@ -561,10 +561,21 @@ test('hashOtp allows fallback outside production or under emulator, and verifica
     const hash = hashOtp('123456', { role: 'patient', digits: '9876543210', purpose: 'create' });
     assert.equal(hash, legacyHashOtp('123456'));
 
-    // 2. Verification of legacy hashes stays active
-    assert.equal(ALLOW_LEGACY_UNSALTED_OTP_HASH, true);
+    // 2. With an HMAC secret, a legacy hash matches only when the rollback flag is on.
+    const previousFlag = process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+    delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+    process.env.MSG91_AUTHKEY = 'unit-test-hmac-key';
+    assert.equal(allowLegacyUnsaltedOtpHash(), false);
+    assert.equal(
+      verifyChallengeOtpHash('123456', legacyHashOtp('123456'), 'patient', '9876543210'),
+      false,
+    );
+    process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = 'true';
     const valid = verifyChallengeOtpHash('123456', legacyHashOtp('123456'), 'patient', '9876543210');
-    assert.equal(valid, true, 'Legacy unsalted OTP hash verification must succeed');
+    assert.equal(valid, true, 'Legacy unsalted OTP hash verification must succeed when the flag is on');
+    delete process.env.MSG91_AUTHKEY;
+    if (previousFlag === undefined) delete process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH;
+    else process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH = previousFlag;
   } finally {
     if (origProj !== undefined) process.env.GCLOUD_PROJECT = origProj;
     else delete process.env.GCLOUD_PROJECT;

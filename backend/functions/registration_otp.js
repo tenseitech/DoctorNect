@@ -271,8 +271,13 @@ async function deleteOtpRedisKeys(redis, role, digits) {
   ]).catch(() => {});
 }
 
-// Set to false 1 day after deploy once all in-flight legacy OTP challenges expire.
-const ALLOW_LEGACY_UNSALTED_OTP_HASH = true;
+// Read at process start from the environment. Default false.
+// Set ALLOW_LEGACY_UNSALTED_OTP_HASH=true only as an instant rollback.
+function allowLegacyUnsaltedOtpHash() {
+  return String(process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH || '')
+    .trim()
+    .toLowerCase() === 'true';
+}
 
 function legacyHashOtp(code) {
   return crypto.createHash('sha256').update(String(code || '')).digest('hex');
@@ -344,7 +349,7 @@ function verifyChallengeOtpHash(otp, challengeOrHash, callerRole, callerDigits) 
   if (otpHashesEqual(currentHash, expectedHash)) {
     return true;
   }
-  if (ALLOW_LEGACY_UNSALTED_OTP_HASH && otpHashesEqual(legacyHashOtp(otp), expectedHash)) {
+  if (allowLegacyUnsaltedOtpHash() && otpHashesEqual(legacyHashOtp(otp), expectedHash)) {
     return true;
   }
   return false;
@@ -1934,25 +1939,9 @@ async function consumeOtpChallengeAtomically(
   const digits = normalizeMobileDigits(mobileDigits);
   const normalizedRole = role ? normalizeRole(role) : null;
 
-  // 1. Locate challenge document: primary key, fallback by mobileDigits if role differed
-  let effectiveChallengeRef = challengeRef;
-  if (typeof challengeRef.get === 'function') {
-    try {
-      const initialSnap = await challengeRef.get();
-      if (!initialSnap.exists && digits && typeof db.collection === 'function') {
-        const query = db.collection('otp_challenges');
-        if (typeof query.where === 'function') {
-          const fallbackSnap = await query.where('mobileDigits', '==', digits).limit(1).get();
-          if (fallbackSnap && !fallbackSnap.empty) {
-            console.info(
-              `[consumeOtpChallengeAtomically] Found challenge via mobileDigits fallback for mobile ending ${digits.slice(-4)}`,
-            );
-            effectiveChallengeRef = fallbackSnap.docs[0].ref;
-          }
-        }
-      }
-    } catch (_) {}
-  }
+  // Role-scoped challenge only. A missing doc is not replaced by another
+  // role's challenge for the same mobile.
+  const effectiveChallengeRef = challengeRef;
 
   // 2. Query Redis cache for OTP token (only when OTP_REDIS_MIRROR=on)
   let redisChallenge = null;
@@ -3263,7 +3252,7 @@ module.exports = {
   getDemoConfig,
   setDemoConfigDocForTesting,
   resetDemoConfigCacheForTesting,
-  ALLOW_LEGACY_UNSALTED_OTP_HASH,
+  allowLegacyUnsaltedOtpHash,
   legacyHashOtp,
   verifyChallengeOtpHash,
   enforceSendOtpRateLimits,
