@@ -146,6 +146,41 @@ const APPOINTMENT_SYNC_ORIGINS = new Set([
   'doctor_firestore',
 ]);
 
+/**
+ * doctors.experience_years is NOT NULL DEFAULT 1. A missing Firestore value is
+ * omitted so insert uses that default and update does not overwrite a real value.
+ */
+function experienceYearsFromDoctorDoc(after) {
+  const n = optionalFiniteNumber(after?.experienceYears ?? after?.yearsExperience);
+  if (n === undefined) return undefined;
+  return Math.trunc(n);
+}
+
+/**
+ * patients.age is nullable. patients.mobile is NOT NULL with no default.
+ * Missing mobile must not be invented; the caller dead-letters and skips the insert.
+ */
+function placeholderPatientPayload(patientId, docData, fallbackData = {}) {
+  const rawMobile = docData?.mobile || fallbackData.mobile || fallbackData.patientMobile || '';
+  const mobile = String(rawMobile).replace(/\D/g, '');
+  if (!mobile) {
+    return { skip: true, reason: 'patient_mobile_missing' };
+  }
+  const genderVal = docData?.gender || fallbackData.patientGender;
+  const validGender = ['Male', 'Female', 'Other'].includes(genderVal) ? genderVal : 'Other';
+  const patient = {
+    patient_id: patientId,
+    name: docData?.name || fallbackData.patientName || 'Patient',
+    mobile,
+    gender: validGender,
+    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  const age = optionalFiniteNumber(docData?.age ?? fallbackData.patientAge);
+  if (age !== undefined) patient.age = Math.trunc(age);
+  return { skip: false, patient };
+}
+
 /** Finite number, or undefined when the Firestore field is absent. Zero is kept. */
 function optionalFiniteNumber(value) {
   if (value === undefined || value === null || value === '') return undefined;
@@ -840,7 +875,6 @@ async function syncFirestoreDoctorToSupabase(event) {
     specialization: after.specialization || (Array.isArray(after.specializations) && after.specializations.length > 0 ? after.specializations[0] : 'General Physician'),
     super_specialization: after.superSpecialization || null,
     qualification: after.qualification || (Array.isArray(after.degrees) && after.degrees.length > 0 ? after.degrees.join(', ') : 'MBBS'),
-    experience_years: parseInt(after.experienceYears ?? after.yearsExperience ?? 1, 10) || 1,
     consultation_fee: parseFloat(after.consultationFee ?? 0.0) || 0.0,
     clinic_name: after.clinicName || null,
     area: after.area || null,
@@ -876,6 +910,8 @@ async function syncFirestoreDoctorToSupabase(event) {
     created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
     updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
   };
+  const experienceYears = experienceYearsFromDoctorDoc(after);
+  if (experienceYears !== undefined) doctorPayload.experience_years = experienceYears;
 
   try {
     await executeWithRetry(
@@ -1481,18 +1517,19 @@ async function ensurePatientExistsInPostgres(patientId, fallbackData = {}, { url
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const genderVal = docData?.gender || fallbackData.patientGender;
-  const validGender = ['Male', 'Female', 'Other'].includes(genderVal) ? genderVal : 'Other';
-
-  const placeholderPatient = {
-    patient_id: patientId,
-    name: docData?.name || fallbackData.patientName || 'Patient',
-    mobile: docData?.mobile || '0000000000',
-    age: parseInt(docData?.age || fallbackData.patientAge || 30, 10) || 30,
-    gender: validGender,
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const built = placeholderPatientPayload(patientId, docData, fallbackData);
+  if (built.skip) {
+    // patients.mobile is NOT NULL and has no default. Do not invent a number.
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'patient',
+      entityId: patientId,
+      payload: { reason: built.reason },
+      errorMessage: 'Skipped patient placeholder: mobile is required and was not on the document.',
+    });
+    return;
+  }
+  const placeholderPatient = built.patient;
 
   try {
     if (url && key) {
@@ -1515,7 +1552,7 @@ async function ensurePatientExistsInPostgres(patientId, fallbackData = {}, { url
         placeholderPatient.patient_id,
         placeholderPatient.name,
         placeholderPatient.mobile,
-        placeholderPatient.age,
+        placeholderPatient.age ?? null,
         placeholderPatient.gender,
       ]);
     }
@@ -4085,6 +4122,8 @@ module.exports = {
   buildAppointmentSupabasePayload,
   firestoreTimestampMs,
   optionalFiniteNumber,
+  experienceYearsFromDoctorDoc,
+  placeholderPatientPayload,
   toStringArray,
   toIsoTimestamp,
   toDateString,

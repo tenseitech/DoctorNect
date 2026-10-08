@@ -7,6 +7,9 @@ const {
   syncFirestorePrescriptionToSupabase,
   buildAppointmentSupabasePayload,
   resolveWriterSyncOrigin,
+  experienceYearsFromDoctorDoc,
+  placeholderPatientPayload,
+  ensurePatientExistsInPostgres,
 } = require('../cross_role_sync');
 
 const realFetch = global.fetch;
@@ -176,4 +179,42 @@ test('a stale Firestore snapshot does not upsert the appointment', async () => {
     calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/appointments')),
     false,
   );
+});
+
+test('missing doctor experience is omitted and a present value is copied', () => {
+  assert.equal(experienceYearsFromDoctorDoc({}), undefined);
+  assert.equal(experienceYearsFromDoctorDoc({ experienceYears: 12 }), 12);
+  assert.equal(experienceYearsFromDoctorDoc({ yearsExperience: 0 }), 0);
+});
+
+test('placeholder patient omits age and refuses a missing mobile', () => {
+  const missing = placeholderPatientPayload('pat-1', {}, {});
+  assert.equal(missing.skip, true);
+  assert.equal(missing.reason, 'patient_mobile_missing');
+
+  const noAge = placeholderPatientPayload('pat-2', { mobile: '1000000001', name: 'Ada' }, {});
+  assert.equal(noAge.skip, false);
+  assert.equal(noAge.patient.mobile, '1000000001');
+  assert.equal(Object.hasOwn(noAge.patient, 'age'), false);
+
+  const withAge = placeholderPatientPayload('pat-3', { mobile: '1000000001', age: 4 }, {});
+  assert.equal(withAge.patient.age, 4);
+});
+
+test('missing patient mobile is dead-lettered and not inserted', async () => {
+  const calls = [];
+  await withFakeSupabase(async () => {
+    global.fetch = async (url, opts) => {
+      calls.push({ url: String(url), method: (opts && opts.method) || 'GET', body: opts && opts.body });
+      return { ok: true, json: async () => [], text: async () => '' };
+    };
+    await ensurePatientExistsInPostgres('pat-no-mobile', {}, {
+      url: 'https://example.invalid',
+      key: 'test-only',
+    });
+  });
+  assert.equal(calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/patients')), false);
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.match(String(dlq.body), /patient_mobile_missing/);
 });
