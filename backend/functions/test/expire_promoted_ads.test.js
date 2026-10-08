@@ -139,3 +139,26 @@ test('expirePromotedAdsHandler processes >500 expired ads in chunks <= 400 per b
   assert.equal(secondRun.totalExpired, 0);
   assert.equal(secondRun.batchCount, 0);
 });
+
+test('expirePromotedAdsHandler ignores pending_approval ads even if endTime has passed', async () => {
+  const db = createMockFirestoreForAds();
+  const pastTime = Timestamp.fromDate(new Date(Date.now() - 3600000));
+  db.docs.set('ad_pending_review', {
+    status: 'pending_approval',
+    endTime: pastTime,
+  });
+  db.docs.set('ad_rejected', {
+    status: 'rejected',
+    endTime: pastTime,
+  });
+  db.docs.set('ad_active_expired', {
+    status: 'active',
+    endTime: pastTime,
+  });
+
+  const result = await expirePromotedAdsHandler(db);
+  assert.equal(result.totalExpired, 1);
+  assert.equal(db.docs.get('ad_pending_review').status, 'pending_approval');
+  assert.equal(db.docs.get('ad_rejected').status, 'rejected');
+  assert.equal(db.docs.get('ad_active_expired').status, 'expired');
+});

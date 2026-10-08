@@ -241,6 +241,36 @@ function otpRedisKey(role, digits) {
   return normRole ? `otp:challenge:${normRole}:${hashedDigits}` : `otp:challenge:${hashedDigits}`;
 }
 
+const OTP_REDIS_TIMEOUT_MS = 1500;
+
+/** OTP Redis mirror is opt-in; when off the OTP flow must never load or call Redis. */
+function isOtpRedisMirrorEnabled() {
+  return String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';
+}
+
+function getOtpRedisClient() {
+  if (!isOtpRedisMirrorEnabled()) return null;
+  return require('./redis').redis;
+}
+
+function withOtpRedisTimeout(promise, ms = OTP_REDIS_TIMEOUT_MS) {
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Redis OTP mirror operation timed out')), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
+
+async function deleteOtpRedisKeys(redis, role, digits) {
+  if (!redis || !digits) return;
+  const keyNull = otpRedisKey(null, digits);
+  const keyRole = role ? otpRedisKey(role, digits) : null;
+  await Promise.all([
+    keyNull ? withOtpRedisTimeout(redis.del(keyNull)).catch(() => {}) : Promise.resolve(),
+    keyRole ? withOtpRedisTimeout(redis.del(keyRole)).catch(() => {}) : Promise.resolve(),
+  ]).catch(() => {});
+}
+
 // Set to false 1 day after deploy once all in-flight legacy OTP challenges expire.
 const ALLOW_LEGACY_UNSALTED_OTP_HASH = true;
 
@@ -1746,17 +1776,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
           });
           await Promise.resolve(challengeRef.delete()).catch(() => {});
           try {
-            const { redis } = require('./redis');
-            if (redis && digits) {
-              const keyNull = otpRedisKey(null, digits);
-              const keyRole = otpRedisKey(role, digits);
-              if (keyNull || keyRole) {
-                await Promise.all([
-                  keyNull ? redis.del(keyNull).catch(() => {}) : Promise.resolve(),
-                  keyRole ? redis.del(keyRole).catch(() => {}) : Promise.resolve(),
-                ]).catch(() => {});
-              }
-            }
+            await deleteOtpRedisKeys(getOtpRedisClient(), role, digits);
           } catch (_) {}
         } else {
           if (err instanceof HttpsError) throw err;
@@ -1796,9 +1816,9 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     ...(isDemoAccount ? { demoAccount: true } : {}),
   });
 
-  // Mirror OTP challenge token in Redis cache if available
+  // Mirror OTP challenge token in Redis cache (only when OTP_REDIS_MIRROR=on)
   try {
-    const { redis } = require('./redis');
+    const redis = getOtpRedisClient();
     if (redis && digits) {
       const secret = readMsg91AuthKey({ required: false });
       if (!secret) {
@@ -1814,8 +1834,12 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
             expiresAt: Date.now() + expiryMs,
           });
           await Promise.all([
-            keyNull ? redis.set(keyNull, redisPayload, 'EX', ttlSec).catch(() => {}) : Promise.resolve(),
-            keyRole ? redis.set(keyRole, redisPayload, 'EX', ttlSec).catch(() => {}) : Promise.resolve(),
+            keyNull
+              ? withOtpRedisTimeout(redis.set(keyNull, redisPayload, 'EX', ttlSec)).catch(() => {})
+              : Promise.resolve(),
+            keyRole
+              ? withOtpRedisTimeout(redis.set(keyRole, redisPayload, 'EX', ttlSec)).catch(() => {})
+              : Promise.resolve(),
           ]);
           console.info(`[sendUserRegistrationOtp] OTP cached in Redis for mobile ending ${mobileLast4}`);
         }
@@ -1866,17 +1890,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     });
     await challengeRef.delete().catch(() => {});
     try {
-      const { redis } = require('./redis');
-      if (redis && digits) {
-        const keyNull = otpRedisKey(null, digits);
-        const keyRole = otpRedisKey(role, digits);
-        if (keyNull || keyRole) {
-          await Promise.all([
-            keyNull ? redis.del(keyNull).catch(() => {}) : Promise.resolve(),
-            keyRole ? redis.del(keyRole).catch(() => {}) : Promise.resolve(),
-          ]).catch(() => {});
-        }
-      }
+      await deleteOtpRedisKeys(getOtpRedisClient(), role, digits);
     } catch (_) {}
     throw err;
   }
@@ -1940,11 +1954,11 @@ async function consumeOtpChallengeAtomically(
     } catch (_) {}
   }
 
-  // 2. Query Redis cache for OTP token
+  // 2. Query Redis cache for OTP token (only when OTP_REDIS_MIRROR=on)
   let redisChallenge = null;
   let redisClient = null;
   try {
-    redisClient = require('./redis').redis;
+    redisClient = getOtpRedisClient();
     if (redisClient && digits) {
       const secret = readMsg91AuthKey({ required: false });
       if (!secret) {
@@ -1952,8 +1966,8 @@ async function consumeOtpChallengeAtomically(
       } else {
         const keyNull = otpRedisKey(null, digits);
         const keyRole = normalizedRole ? otpRedisKey(normalizedRole, digits) : null;
-        const raw = (keyNull ? await redisClient.get(keyNull).catch(() => null) : null)
-          || (keyRole ? await redisClient.get(keyRole).catch(() => null) : null);
+        const raw = (keyNull ? await withOtpRedisTimeout(redisClient.get(keyNull)).catch(() => null) : null)
+          || (keyRole ? await withOtpRedisTimeout(redisClient.get(keyRole)).catch(() => null) : null);
         if (raw) {
           redisChallenge = JSON.parse(raw);
           console.info(`[consumeOtpChallengeAtomically] REDIS_KEY_FOUND for mobile ending ${digits.slice(-4)}`);
@@ -1967,15 +1981,8 @@ async function consumeOtpChallengeAtomically(
   }
 
   const cleanupRedisChallenge = async () => {
-    if (!redisClient || !digits) return;
     try {
-      const keyNull = otpRedisKey(null, digits);
-      const keyRole = normalizedRole ? otpRedisKey(normalizedRole, digits) : null;
-      if (!keyNull && !keyRole) return;
-      await Promise.all([
-        keyNull ? redisClient.del(keyNull).catch(() => {}) : Promise.resolve(),
-        keyRole ? redisClient.del(keyRole).catch(() => {}) : Promise.resolve(),
-      ]).catch(() => {});
+      await deleteOtpRedisKeys(redisClient, normalizedRole, digits);
     } catch (_) {}
   };
 
@@ -3229,6 +3236,8 @@ module.exports = {
   normalizeMobileDigits,
   verifyMsg91Otp,
   otpRedisKey,
+  isOtpRedisMirrorEnabled,
+  OTP_REDIS_TIMEOUT_MS,
   getDemoConfig,
   setDemoConfigDocForTesting,
   resetDemoConfigCacheForTesting,

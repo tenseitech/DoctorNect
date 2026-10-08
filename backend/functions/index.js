@@ -56,6 +56,8 @@ const {
   createRazorpayOrder,
   verifyRazorpayPayment,
   expirePromotedAds,
+  razorpayWebhook,
+  reviewPromotedAd,
 } = require('./promoted_ads');
 const {
   bookAppointment,
@@ -101,7 +103,7 @@ const {
   GENERIC_AMBULANCE_LOGIN_FAILED,
   clientFacingHttpsMessage,
 } = require('./public_error_messages');
-const { deleteMyAccountHandler } = require('./delete_my_account');
+const { deleteMyAccountHandler, supabaseUrl, supabaseServiceRoleKey } = require('./delete_my_account');
 const {
   awsAccessKeyId,
   awsSecretAccessKey,
@@ -110,9 +112,15 @@ const {
 assertProductionSecrets();
 assertProductionOtpSafety();
 
-/** Match deployed regions: Firestore triggers in asia-south2, callables in asia-south1. */
-const FIRESTORE_TRIGGER_REGION = 'asia-south2';
+/** Firestore triggers must run in the Firestore database location (asia-south1); callables in asia-south1. */
+const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south1').trim();
 const CALLABLE_REGION = 'asia-south1';
+
+/** Redis secrets are bound to OTP callables only when the OTP Redis mirror is enabled. */
+const OTP_REDIS_MIRROR_ON = String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';
+const OTP_REDIS_SECRET_OPTIONS = OTP_REDIS_MIRROR_ON
+  ? { secrets: require('./redis').REDIS_SECRETS }
+  : {};
 
 /** MSG91 callable options (asia-south1) — region + optional VPC connector for static IP egress. */
 const MSG91_VPC_OPTIONS = {
@@ -961,7 +969,7 @@ async function enforceSendUserRegistrationOtpRateLimit(firestore, request) {
 
 /** Sends registration OTP (server-side storage; SMS optional). */
 exports.sendUserRegistrationOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  { ...MSG91_VPC_OPTIONS, ...OTP_REDIS_SECRET_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
   withSecurityLogging('sendUserRegistrationOtp', async (request) => {
   try {
     console.info('[sendUserRegistrationOtp] request', {
@@ -990,9 +998,10 @@ exports.enforceSendUserRegistrationOtpRateLimit = enforceSendUserRegistrationOtp
 
 /** Returns whether a mobile number conflicts with login/registration intent (no role disclosure). */
 exports.lookupMobileRegistration = onCall(
-  { region: 'asia-south1' },
+  { region: CALLABLE_REGION, enforceAppCheck: ENFORCE_ABUSE_APP_CHECK },
   withSecurityLogging('lookupMobileRegistration', async (request) => {
     try {
+      assertAppCheck(request, { enforce: ENFORCE_ABUSE_APP_CHECK });
       const firestore = getFirestore();
       await enforceAbuseLimit(firestore, request, 'api', {
         message: 'Too many requests. Please try again later.',
@@ -1008,7 +1017,7 @@ exports.lookupMobileRegistration = onCall(
 
 /** Verifies registration OTP. */
 exports.verifyUserRegistrationOtp = onCall(
-  { ...MSG91_VPC_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
+  { ...MSG91_VPC_OPTIONS, ...OTP_REDIS_SECRET_OPTIONS, enforceAppCheck: ENFORCE_OTP_APP_CHECK },
   withSecurityLogging('verifyUserRegistrationOtp', async (request) => {
     const mobileLast4 = String(request.data?.mobile || request.data?.identifier || '')
       .replace(/\D/g, '')
@@ -1794,7 +1803,9 @@ exports.backfillPatientCareTeams = onCall(
 
 exports.createRazorpayOrder = createRazorpayOrder;
 exports.verifyRazorpayPayment = verifyRazorpayPayment;
+exports.reviewPromotedAd = reviewPromotedAd;
 exports.expirePromotedAds = expirePromotedAds;
+exports.razorpayWebhook = razorpayWebhook;
 exports.bookAppointment = bookAppointment;
 exports.reconcileAppointmentSlot = reconcileAppointmentSlot;
 
@@ -1864,7 +1875,7 @@ exports.deleteMyAccount = onCall(
   {
     region: CALLABLE_REGION,
     enforceAppCheck: ENFORCE_ABUSE_APP_CHECK,
-    secrets: [awsAccessKeyId, awsSecretAccessKey],
+    secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseUrl, supabaseServiceRoleKey],
   },
   protectCallable('deleteMyAccount', { category: 'api' }, async (request) => {
     requireAuth(request);
@@ -1950,14 +1961,14 @@ const SYNC_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 
 exports.syncAppointmentToSupabase = onDocumentWritten({
   document: 'appointments/{appointmentId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAppointmentToSupabase);
 
 exports.syncPrescriptionToSupabase = onDocumentWritten({
   document: 'prescriptions/{prescriptionId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestorePrescriptionToSupabase);
@@ -1979,112 +1990,112 @@ exports.deleteS3Object = deleteS3Object;
 
 exports.syncDoctorToSupabase = onDocumentWritten({
   document: 'doctors/{doctorId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreDoctorToSupabase);
 
 exports.syncDoctorAvailabilityToSupabase = onDocumentWritten({
   document: 'doctor_availability/{doctorId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreDoctorAvailabilityToSupabase);
 
 exports.syncDoctorBlockedDatesToSupabase = onDocumentWritten({
   document: 'doctor_blocked_dates/{docId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreDoctorBlockedDatesToSupabase);
 
 exports.syncMedicalStoreToSupabase = onDocumentWritten({
   document: 'medical_stores/{storeId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreMedicalStoreToSupabase);
 
 exports.syncPharmacyConnectionToSupabase = onDocumentWritten({
   document: 'pharmacy_connections/{connectionId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestorePharmacyConnectionToSupabase);
 
 exports.syncPharmacyDeliveryToSupabase = onDocumentWritten({
   document: 'pharmacy_deliveries/{deliveryId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestorePharmacyDeliveryToSupabase);
 
 exports.syncLabToSupabase = onDocumentWritten({
   document: 'labs/{labId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabToSupabase);
 
 exports.syncLabCatalogTestToSupabase = onDocumentWritten({
   document: 'lab_catalog/{testId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabCatalogTestToSupabase);
 
 exports.syncLabBookingToSupabase = onDocumentWritten({
   document: 'lab_bookings/{bookingId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabBookingToSupabase);
 
 exports.syncLabOrderToSupabase = onDocumentWritten({
   document: 'lab_orders/{orderId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabOrderToSupabase);
 
 exports.syncLabConnectionToSupabase = onDocumentWritten({
   document: 'lab_connections/{connectionId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreLabConnectionToSupabase);
 
 exports.syncAmbulanceToSupabase = onDocumentWritten({
   document: 'ambulances/{ambulanceId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceToSupabase);
 
 exports.syncAmbulancePrivateSettingsToSupabase = onDocumentWritten({
   document: 'ambulance_private_settings/{ambulanceId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulancePrivateSettingsToSupabase);
 
 exports.syncAmbulanceBroadcastToSupabase = onDocumentWritten({
   document: 'ambulance_broadcasts/{broadcastId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceBroadcastToSupabase);
 
 exports.syncAmbulanceRequestToSupabase = onDocumentWritten({
   document: 'ambulance_requests/{requestId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceRequestToSupabase);
 
 exports.syncAmbulanceInviteToSupabase = onDocumentWritten({
   document: 'ambulance_invites/{inviteId}',
-  region: 'asia-south2',
+  region: FIRESTORE_TRIGGER_REGION,
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceInviteToSupabase);

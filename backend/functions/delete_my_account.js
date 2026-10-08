@@ -6,6 +6,15 @@ const { getAuth } = require('firebase-admin/auth');
 const { getStorage } = require('firebase-admin/storage');
 const { logger } = require('firebase-functions');
 const { HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
+
+const supabaseUrl = defineSecret('SUPABASE_URL');
+const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
+
+let _testingSupabaseFetch = null;
+function setSupabaseFetchForTesting(fn) {
+  _testingSupabaseFetch = fn;
+}
 let _s3Sdk;
 function getS3Sdk() {
   if (!_s3Sdk) {
@@ -624,6 +633,220 @@ async function deletePersonalStorage(db, bucket, uid) {
   ]);
 }
 
+function readBoundSecret(secret, envName) {
+  try {
+    if (secret && typeof secret.value === 'function') {
+      const bound = secret.value();
+      if (bound) return String(bound).trim();
+    }
+  } catch (_) {}
+  return String(process.env[envName] || '').trim();
+}
+
+function getSupabaseServiceConfig() {
+  const url = readBoundSecret(supabaseUrl, 'SUPABASE_URL').replace(/\/+$/, '');
+  const key = readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return null;
+  return { url, key };
+}
+
+function supabaseHeaders(key) {
+  return {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation',
+  };
+}
+
+async function supabaseRequest(config, method, pathAndQuery, body) {
+  const doFetch = _testingSupabaseFetch || fetch;
+  const resp = await doFetch(`${config.url}/rest/v1/${pathAndQuery}`, {
+    method,
+    headers: supabaseHeaders(config.key),
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await resp.text();
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch (_) {
+    json = null;
+  }
+  if (!resp.ok) {
+    const err = new Error(`Supabase ${method} ${pathAndQuery.split('?')[0]} failed (${resp.status})`);
+    err.status = resp.status;
+    throw err;
+  }
+  return json;
+}
+
+function addIds(set, rows, field) {
+  if (!Array.isArray(rows)) return;
+  for (const row of rows) {
+    const value = String(row?.[field] || '').trim();
+    if (value) set.add(value);
+  }
+}
+
+/**
+ * Best-effort PostgREST cleanup of this user's Supabase rows.
+ * Uses service-role credentials when present; soft-fails per table.
+ */
+async function cleanupUserSupabaseRows({ uid, role, profileId }) {
+  const failedSupabaseTables = [];
+  const config = getSupabaseServiceConfig();
+  if (!config) {
+    return { skipped: true, failedSupabaseTables };
+  }
+
+  const recordFailure = (table, err) => {
+    failedSupabaseTables.push(table);
+    logger.warn('deleteMyAccount supabase cleanup failed', {
+      table,
+      uid,
+      status: err?.status || 'unknown',
+    });
+  };
+
+  const del = async (table, query) => {
+    try {
+      await supabaseRequest(config, 'DELETE', `${table}?${query}`);
+    } catch (err) {
+      recordFailure(table, err);
+    }
+  };
+
+  const getRows = async (table, query, field) => {
+    try {
+      return await supabaseRequest(config, 'GET', `${table}?${query}&select=${field}`);
+    } catch (err) {
+      recordFailure(table, err);
+      return [];
+    }
+  };
+
+  let supabaseUserId = '';
+  let supabaseProfileId = String(profileId || '').trim();
+  let supabaseRole = String(role || '').trim();
+
+  try {
+    const rows = await supabaseRequest(
+      config,
+      'GET',
+      `users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id,profile_id,role`,
+    );
+    if (Array.isArray(rows) && rows[0]) {
+      supabaseUserId = String(rows[0].id || '').trim();
+      if (!supabaseProfileId) supabaseProfileId = String(rows[0].profile_id || '').trim();
+      if (!supabaseRole) supabaseRole = String(rows[0].role || '').trim();
+    }
+  } catch (err) {
+    recordFailure('users', err);
+  }
+
+  const patientIds = new Set();
+  const doctorIds = new Set();
+  const storeIds = new Set();
+  const labIds = new Set();
+  const ambulanceIds = new Set();
+
+  if (supabaseRole === 'patient' && supabaseProfileId) patientIds.add(supabaseProfileId);
+  if (supabaseRole === 'doctor' && supabaseProfileId) doctorIds.add(supabaseProfileId);
+  if (
+    (supabaseRole === 'medicalStore' || supabaseRole === 'medical' || supabaseRole === 'pharmacy')
+    && supabaseProfileId
+  ) {
+    storeIds.add(supabaseProfileId);
+  }
+  if (supabaseRole === 'lab' && supabaseProfileId) labIds.add(supabaseProfileId);
+  if (supabaseRole === 'ambulance' && supabaseProfileId) ambulanceIds.add(supabaseProfileId);
+
+  if (supabaseUserId) {
+    addIds(patientIds, await getRows('patients', `owner_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'patient_id'), 'patient_id');
+    addIds(doctorIds, await getRows('doctors', `owner_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'doctor_id'), 'doctor_id');
+    addIds(storeIds, await getRows('medical_stores', `owner_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'store_id'), 'store_id');
+    addIds(labIds, await getRows('labs', `owner_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'lab_id'), 'lab_id');
+    addIds(ambulanceIds, await getRows('ambulances', `auth_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'ambulance_id'), 'ambulance_id');
+  }
+
+  const prescriptionIds = new Set();
+  for (const patientId of patientIds) {
+    addIds(
+      prescriptionIds,
+      await getRows('prescriptions', `patient_id=eq.${encodeURIComponent(patientId)}`, 'prescription_id'),
+      'prescription_id',
+    );
+  }
+  for (const doctorId of doctorIds) {
+    addIds(
+      prescriptionIds,
+      await getRows('prescriptions', `doctor_id=eq.${encodeURIComponent(doctorId)}`, 'prescription_id'),
+      'prescription_id',
+    );
+  }
+
+  for (const prescriptionId of prescriptionIds) {
+    const q = `prescription_id=eq.${encodeURIComponent(prescriptionId)}`;
+    await del('prescription_medicines', q);
+    await del('prescription_investigations', q);
+    await del('prescription_referrals', q);
+    await del('prescriptions', q);
+  }
+
+  for (const patientId of patientIds) {
+    const q = `patient_id=eq.${encodeURIComponent(patientId)}`;
+    await del('health_records', q);
+    await del('family_members', q);
+    await del('reviews', q);
+    await del('appointments', q);
+    await del('patients', q);
+  }
+
+  for (const doctorId of doctorIds) {
+    const q = `doctor_id=eq.${encodeURIComponent(doctorId)}`;
+    await del('reviews', q);
+    await del('appointments', q);
+    await del('doctors', q);
+  }
+
+  for (const storeId of storeIds) {
+    await del('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`);
+  }
+  for (const labId of labIds) {
+    await del('labs', `lab_id=eq.${encodeURIComponent(labId)}`);
+  }
+  for (const ambulanceId of ambulanceIds) {
+    const q = `ambulance_id=eq.${encodeURIComponent(ambulanceId)}`;
+    await del('ambulance_private_settings', q);
+    await del('ambulances', q);
+  }
+
+  try {
+    await supabaseRequest(config, 'DELETE', `users?firebase_uid=eq.${encodeURIComponent(uid)}`);
+  } catch (deleteErr) {
+    try {
+      await supabaseRequest(
+        config,
+        'PATCH',
+        `users?firebase_uid=eq.${encodeURIComponent(uid)}`,
+        {
+          display_name: 'Deleted User',
+          email: `deleted-${uid}@deleted.invalid`,
+          mobile: null,
+          photo_url: null,
+          deactivated: true,
+          firebase_uid: null,
+        },
+      );
+    } catch (patchErr) {
+      recordFailure('users', patchErr || deleteErr);
+    }
+  }
+
+  return { skipped: false, failedSupabaseTables };
+}
+
 /**
  * Deletes only the authenticated user's personal/account data, then Auth.
  * Shared clinical/commerce/history records are intentionally preserved.
@@ -717,6 +940,28 @@ async function deleteMyAccountHandler(uid) {
       });
     }
 
+    let failedSupabaseTables = [];
+    try {
+      const supabaseCleanup = await cleanupUserSupabaseRows({
+        uid: normalizedUid,
+        role,
+        profileId,
+      });
+      failedSupabaseTables = supabaseCleanup.failedSupabaseTables || [];
+      if (failedSupabaseTables.length > 0) {
+        logger.warn('deleteMyAccount: Some Supabase tables failed cleanup (soft-fail)', {
+          uid: normalizedUid,
+          failedSupabaseTables,
+        });
+      }
+    } catch (supabaseErr) {
+      failedSupabaseTables = ['supabase'];
+      logger.warn('deleteMyAccount supabase cleanup unexpected failure (soft-fail)', {
+        uid: normalizedUid,
+        message: supabaseErr?.message || 'unknown',
+      });
+    }
+
     await deleteDocIfExists(db, userRef);
 
     await getAuth().deleteUser(normalizedUid);
@@ -726,6 +971,7 @@ async function deleteMyAccountHandler(uid) {
     return {
       ok: true,
       ...(failedS3Total.length > 0 ? { failedS3Prefixes: failedS3Total } : {}),
+      ...(failedSupabaseTables.length > 0 ? { failedSupabaseTables } : {}),
     };
   } catch (err) {
     logger.error('deleteMyAccount failed', {
@@ -746,6 +992,10 @@ module.exports = {
   collectRoleSpecificS3ReportKeys,
   resolveUserS3Prefixes,
   cleanupUserS3Prefixes,
+  cleanupUserSupabaseRows,
   setS3ClientForTesting,
+  setSupabaseFetchForTesting,
   getS3Client,
+  supabaseUrl,
+  supabaseServiceRoleKey,
 };

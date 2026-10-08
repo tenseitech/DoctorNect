@@ -107,3 +107,7 @@ auth_otp.diff
 reset.out
 verify.out
 firestore-debug.log
+baseline_functions.json
+secrets.txt
+secrets*.txt
+

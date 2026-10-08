@@ -124,6 +124,8 @@ function createMockFirestore() {
 }
 
 test('retry fails with session expired -> fallback to fresh send, stale challenge replaced, exactly one SMS sent', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  process.env.OTP_REDIS_MIRROR = 'on';
   const db = createMockFirestore();
   const redisStore = new Map();
   setRedisClientForTesting({
@@ -229,6 +231,8 @@ test('retry fails with session expired -> fallback to fresh send, stale challeng
   } finally {
     https.request = origHttpsRequest;
     console.warn = origWarn;
+    if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+    else process.env.OTP_REDIS_MIRROR = origMirror;
   }
 });
 
@@ -414,6 +418,8 @@ test('fallback to fresh send works across all roles', async () => {
 });
 
 test('otpRedisKey returns null when no secret is available, skipping Redis write and read while Firestore continues to work', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  process.env.OTP_REDIS_MIRROR = 'on';
   const origKey = process.env.MSG91_AUTHKEY;
   const origKey2 = process.env.MSG91_AUTH_KEY;
   const origAuth = process.env.AUTH_KEY;
@@ -471,6 +477,8 @@ test('otpRedisKey returns null when no secret is available, skipping Redis write
     if (origKey !== undefined) process.env.MSG91_AUTHKEY = origKey;
     if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
     if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
+    if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+    else process.env.OTP_REDIS_MIRROR = origMirror;
   }
 });
 
@@ -564,5 +572,127 @@ test('hashOtp allows fallback outside production or under emulator, and verifica
     if (origKey2 !== undefined) process.env.MSG91_AUTH_KEY = origKey2;
     if (origAuth !== undefined) process.env.AUTH_KEY = origAuth;
   }
+});
+
+test('sendUserRegistrationOtp never touches Redis when OTP_REDIS_MIRROR is not on', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  delete process.env.OTP_REDIS_MIRROR;
+
+  const redisCalls = [];
+  setRedisClientForTesting({
+    set: async () => { redisCalls.push('set'); return 'OK'; },
+    get: async () => { redisCalls.push('get'); return null; },
+    del: async () => { redisCalls.push('del'); return 1; },
+  });
+
+  const origHttpsRequest = https.request;
+  https.request = (options, cb) => {
+    const req = new EventEmitter();
+    req.setTimeout = () => {};
+    req.destroy = () => {};
+    req.write = () => {};
+    req.end = () => {
+      process.nextTick(() => {
+        const res = new EventEmitter();
+        res.statusCode = 200;
+        cb(res);
+        res.emit('data', JSON.stringify({ message: 'ok', type: 'success' }));
+        res.emit('end');
+      });
+    };
+    return req;
+  };
+
+  try {
+    const db = createMockFirestore();
+    const result = await sendUserRegistrationOtp(db, {
+      mobile: '9876543210',
+      role: 'patient',
+      otpType: 'registration',
+    }, { clientIp: '127.0.0.1' });
+    assert.equal(result.ok, true);
+    assert.equal(redisCalls.length, 0, 'Send path must not call Redis when mirror is off');
+  } finally {
+    https.request = origHttpsRequest;
+    if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+    else process.env.OTP_REDIS_MIRROR = origMirror;
+  }
+});
+
+test('OTP flow never touches Redis when OTP_REDIS_MIRROR is not on', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  delete process.env.OTP_REDIS_MIRROR;
+
+  const redisCalls = [];
+  setRedisClientForTesting({
+    set: async (...args) => { redisCalls.push('set'); return 'OK'; },
+    get: async (...args) => { redisCalls.push('get'); return null; },
+    del: async (...args) => { redisCalls.push('del'); return 1; },
+  });
+
+  const db = createMockFirestore();
+  const phone = '9876543210';
+  const role = 'patient';
+  const chKey = `patient_${mobileHash(role, phone)}`;
+  db.docs.set(`otp_challenges/${chKey}`, {
+    role,
+    mobileDigits: phone,
+    otpHash: hashOtp('654321', role, phone),
+    expiresAt: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)),
+    attempts: 0,
+  });
+
+  const consumeRes = await consumeOtpChallengeAtomically(db, {
+    challengeKey: chKey,
+    otp: '654321',
+    mobileDigits: phone,
+    role,
+    isDemoAccount: false,
+  });
+
+  assert.equal(consumeRes.consumed, true);
+  assert.equal(redisCalls.length, 0, 'Redis must not be called when OTP_REDIS_MIRROR is off');
+
+  if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+  else process.env.OTP_REDIS_MIRROR = origMirror;
+});
+
+test('verify-path Redis get is bounded by 1500ms timeout when mirror is on', async () => {
+  const origMirror = process.env.OTP_REDIS_MIRROR;
+  process.env.OTP_REDIS_MIRROR = 'on';
+
+  setRedisClientForTesting({
+    get: () => new Promise(() => {}),
+    del: async () => 1,
+    set: async () => 'OK',
+  });
+
+  const db = createMockFirestore();
+  const phone = '9876543210';
+  const role = 'patient';
+  const chKey = `patient_${mobileHash(role, phone)}`;
+  db.docs.set(`otp_challenges/${chKey}`, {
+    role,
+    mobileDigits: phone,
+    otpHash: hashOtp('112233', role, phone),
+    expiresAt: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)),
+    attempts: 0,
+  });
+
+  const started = Date.now();
+  const consumeRes = await consumeOtpChallengeAtomically(db, {
+    challengeKey: chKey,
+    otp: '112233',
+    mobileDigits: phone,
+    role,
+    isDemoAccount: false,
+  });
+  const elapsed = Date.now() - started;
+
+  assert.equal(consumeRes.consumed, true);
+  assert.ok(elapsed < 4000, `Redis get timeout should fail open quickly, elapsed=${elapsed}`);
+
+  if (origMirror === undefined) delete process.env.OTP_REDIS_MIRROR;
+  else process.env.OTP_REDIS_MIRROR = origMirror;
 });
 
