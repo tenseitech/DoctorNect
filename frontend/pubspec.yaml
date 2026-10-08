@@ -50,6 +50,7 @@ dependencies:
   flutter_native_splash: ^2.4.0
   sms_autofill: ^2.5.0
   firebase_remote_config: ^6.7.0
+  package_info_plus: ^8.3.0
   cached_network_image: ^3.4.1
 
 dev_dependencies:

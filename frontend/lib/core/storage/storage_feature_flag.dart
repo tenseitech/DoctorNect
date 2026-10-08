@@ -36,6 +36,11 @@ abstract final class StorageFeatureFlag {
       );
       await remoteConfig.setDefaults({
         flagKey: false,
+        'min_supported_build_android': 0,
+        'min_supported_build_ios': 0,
+        'update_required_message': 'Please update DoctorNect to continue.',
+        'store_url_android': '',
+        'store_url_ios': '',
       });
 
       // Best-effort fetch & activate in background

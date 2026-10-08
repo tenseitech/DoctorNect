@@ -18,6 +18,7 @@ import 'core/system/edge_to_edge_bootstrap.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_controller.dart';
+import 'core/update/minimum_build_gate.dart';
 import 'features/doctor/clinical/data/symptoms_database.dart';
 import 'features/splash/splash_screen.dart';
 
@@ -104,7 +105,9 @@ class DoctorNectApp extends StatelessWidget {
               data: clampedMediaQuery,
               child: AnnotatedRegion<SystemUiOverlayStyle>(
                 value: EdgeToEdgeBootstrap.overlayStyleFor(brightness),
-                child: child ?? const SizedBox.shrink(),
+                child: MinimumBuildHost(
+                  child: child ?? const SizedBox.shrink(),
+                ),
               ),
             );
           },
