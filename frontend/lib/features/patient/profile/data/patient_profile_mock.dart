@@ -620,8 +620,6 @@ class PatientProfileMock {
     ),
   ];
 
-  static const supportPhone = '+91 1800 123 4567';
-  static const supportWhatsApp = '+91 98765 43210';
   static const supportEmail = 'support@doctornect.com';
   static const websiteUrl = 'https://doctornect.com';
   static const appDownloadUrl = 'https://doctornect.com/download';

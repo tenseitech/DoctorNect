@@ -237,6 +237,15 @@ function normalizePurpose(raw) {
     case 'ad_banner':
     case 'adBanner':
       return 'promoted_ads';
+    case 'pharmacy_kyc':
+    case 'pharmacyKyc':
+      return 'pharmacy_kyc';
+    case 'lab_kyc':
+    case 'labKyc':
+      return 'lab_kyc';
+    case 'ambulance_kyc':
+    case 'ambulanceKyc':
+      return 'ambulance_kyc';
     default:
       return p;
   }
@@ -386,6 +395,42 @@ async function getS3UploadUrlHandler(data, auth, db) {
       const adId = parentId;
       const providerId = auth.uid;
       objectKey = `promoted_ads/${providerId}/${adId}/${uuid}.jpg`;
+      break;
+    }
+
+    case 'pharmacy_kyc': {
+      const storeId = parentId;
+      if (!isAdmin) {
+        if (
+          (caller.role !== 'medicalStore' && caller.role !== 'medical')
+          || caller.profileId !== storeId
+        ) {
+          throw new HttpsError('permission-denied', 'Only the pharmacy owner can upload pharmacy KYC.');
+        }
+      }
+      objectKey = `pharmacies/${storeId}/documents/${uuid}.${ext}`;
+      break;
+    }
+
+    case 'lab_kyc': {
+      const labId = parentId;
+      if (!isAdmin) {
+        if (caller.role !== 'lab' || caller.profileId !== labId) {
+          throw new HttpsError('permission-denied', 'Only the lab owner can upload lab KYC.');
+        }
+      }
+      objectKey = `labs/${labId}/documents/${uuid}.${ext}`;
+      break;
+    }
+
+    case 'ambulance_kyc': {
+      const ambulanceId = parentId;
+      if (!isAdmin) {
+        if (caller.role !== 'ambulance' || caller.profileId !== ambulanceId) {
+          throw new HttpsError('permission-denied', 'Only the ambulance owner can upload ambulance KYC.');
+        }
+      }
+      objectKey = `ambulances/${ambulanceId}/documents/${uuid}.${ext}`;
       break;
     }
 
@@ -563,6 +608,19 @@ async function authorizeDelete(objectKey, caller, auth, db) {
     // promoted_ads/{providerId}/{adId}/{fileName}
     const providerId = parts[1];
     return auth.uid === providerId || caller.profileId === providerId;
+  }
+
+  if (prefix === 'pharmacies') {
+    return (caller.role === 'medicalStore' || caller.role === 'medical')
+      && caller.profileId === parts[1];
+  }
+
+  if (prefix === 'labs') {
+    return caller.role === 'lab' && caller.profileId === parts[1];
+  }
+
+  if (prefix === 'ambulances') {
+    return caller.role === 'ambulance' && caller.profileId === parts[1];
   }
 
   return false;

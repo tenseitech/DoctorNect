@@ -99,6 +99,18 @@ test('readAppCheckToken reads X-Firebase-AppCheck header', () => {
   assert.equal(token, 'abc123');
 });
 
+test('ambulance HTTP login stays off until App Check enforcement is enabled', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
+  const handler = source.slice(source.indexOf('exports.verifyAmbulanceDriverLoginHttp'));
+  const gate = handler.indexOf('if (!ENFORCE_AMBULANCE_HTTP_APP_CHECK)');
+  const login = handler.indexOf('runVerifyAmbulanceDriverLogin');
+  assert.ok(gate > 0 && login > gate);
+  assert.match(handler, /Ambulance HTTP login is disabled until App Check is enforced/);
+  assert.equal(isAmbulanceHttpAppCheckEnforced({}), false);
+});
+
 test('isAmbulanceHttpAppCheckEnforced defaults to false', () => {
   assert.equal(isAmbulanceHttpAppCheckEnforced({}), false);
   assert.equal(isAmbulanceHttpAppCheckEnforced({ ENFORCE_AMBULANCE_HTTP_APP_CHECK: 'true' }), true);

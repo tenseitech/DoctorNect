@@ -195,6 +195,62 @@ test('wrong patient blocked from uploading to another patient record', async () 
   );
 });
 
+test('pharmacy, lab, and ambulance owners can upload their own KYC and nobody else can', async () => {
+  const db = createMockDb({
+    users: {
+      uid_store: { role: 'medicalStore', profileId: 'store_1' },
+      uid_lab: { role: 'lab', profileId: 'lab_1' },
+      uid_amb: { role: 'ambulance', profileId: 'amb_1' },
+      uid_patient: { role: 'patient', profileId: 'p_1', profileCompleted: true },
+    },
+  });
+
+  const pharmacy = await getS3UploadUrlHandler({
+    purpose: 'pharmacy_kyc',
+    parentId: 'store_1',
+    fileName: 'license.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+  }, { uid: 'uid_store' }, db);
+  assert.ok(pharmacy.objectKey.startsWith('pharmacies/store_1/documents/'));
+
+  const lab = await getS3UploadUrlHandler({
+    purpose: 'lab_kyc',
+    parentId: 'lab_1',
+    fileName: 'nabl.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+  }, { uid: 'uid_lab' }, db);
+  assert.ok(lab.objectKey.startsWith('labs/lab_1/documents/'));
+
+  const ambulance = await getS3UploadUrlHandler({
+    purpose: 'ambulance_kyc',
+    parentId: 'amb_1',
+    fileName: 'permit.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+  }, { uid: 'uid_amb' }, db);
+  assert.ok(ambulance.objectKey.startsWith('ambulances/amb_1/documents/'));
+
+  await assert.rejects(
+    () => getS3UploadUrlHandler({
+      purpose: 'pharmacy_kyc',
+      parentId: 'store_1',
+      fileName: 'license.pdf',
+      contentType: 'application/pdf',
+      sizeBytes: 2048,
+    }, { uid: 'uid_patient' }, db),
+    /Only the pharmacy owner can upload pharmacy KYC/,
+  );
+
+  const { authorizeRead } = _test;
+  const owner = { role: 'medicalStore', profileId: 'store_1' };
+  assert.equal(
+    await authorizeRead(pharmacy.objectKey, owner, { uid: 'uid_store' }, db),
+    false,
+  );
+});
+
 test('patient owner allowed to upload health record', async () => {
   const db = createMockDb({
     users: {

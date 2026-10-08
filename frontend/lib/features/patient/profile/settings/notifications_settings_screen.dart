@@ -48,10 +48,10 @@ class _NotificationsSettingsScreenState
     String? eveningTime;
     String? nightTime;
 
+    final nameCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) {
-        final nameCtrl = TextEditingController();
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             Widget buildTimeRow(
@@ -213,7 +213,7 @@ class _NotificationsSettingsScreenState
           },
         );
       },
-    );
+    ).whenComplete(nameCtrl.dispose);
   }
 
   @override
