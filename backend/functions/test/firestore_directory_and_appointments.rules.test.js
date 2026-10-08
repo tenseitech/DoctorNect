@@ -749,6 +749,25 @@ describe('prescription, delivery, and ambulance party rules', () => {
     }));
   });
 
+  test('store can set dispensed status but cannot change patientName or prescriptionId', async () => {
+    const store = testEnv.authenticatedContext(STORE_UID).firestore();
+    const ref = store.collection('pharmacy_deliveries').doc('del_1');
+    await assertSucceeds(ref.update({
+      status: 'dispensed',
+      dispensedAt: new Date('2026-10-08T05:00:00.000Z'),
+      dispensingNotes: 'Given',
+      updatedAt: new Date('2026-10-08T05:00:00.000Z'),
+    }));
+    await assertFails(ref.update({ patientName: 'Other Patient' }));
+    await assertFails(ref.update({ prescriptionId: 'rx_other' }));
+
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(doctor.collection('pharmacy_deliveries').doc('del_1').update({
+      patientName: 'Pat One',
+      status: 'sent',
+    }));
+  });
+
   test('unrelated signed-in user cannot read or write an ambulance', async () => {
     const db = testEnv.authenticatedContext(LAB_UID).firestore();
     const ref = db.collection('ambulances').doc(AMB_ID);
@@ -804,7 +823,7 @@ describe('community catalog create bounds', () => {
     };
   }
 
-  test('verified doctor can add catalog rows with the writer keys', async () => {
+  test('community_medicines normal create is allowed', async () => {
     const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
     await assertSucceeds(doctor.collection('community_medicines').doc('med_1').set({
       ...catalogBase(),
@@ -813,31 +832,9 @@ describe('community catalog create bounds', () => {
       dosageUnit: 'mg',
       form: 'Tablet',
     }));
-    await assertSucceeds(doctor.collection('community_diagnoses').doc('dx_1').set({
-      ...catalogBase(),
-      text: 'Viral fever',
-      textLower: 'viral fever',
-    }));
-    await assertSucceeds(doctor.collection('community_lab_tests').doc('lab_1').set({
-      ...catalogBase(),
-      name: 'CBC',
-      nameLower: 'cbc',
-      group: 'Hematology',
-    }));
-    await assertSucceeds(doctor.collection('community_radiology').doc('rad_1').set({
-      ...catalogBase(),
-      name: 'Chest X-ray',
-      nameLower: 'chest x-ray',
-      group: 'X-Ray',
-    }));
-    await assertSucceeds(doctor.collection('community_body_parts').doc('bp_1').set({
-      ...catalogBase(),
-      name: 'Knee',
-      nameLower: 'knee',
-    }));
   });
 
-  test('extra fields and over-length catalog text are denied', async () => {
+  test('community_medicines extra field is denied', async () => {
     const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
     await assertFails(doctor.collection('community_medicines').doc('med_extra').set({
       ...catalogBase(),
@@ -847,6 +844,10 @@ describe('community catalog create bounds', () => {
       form: 'Tablet',
       note: 'extra',
     }));
+  });
+
+  test('community_medicines over-length name is denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
     await assertFails(doctor.collection('community_medicines').doc('med_long').set({
       ...catalogBase(),
       name: 'P'.repeat(121),
@@ -868,42 +869,18 @@ describe('community catalog create bounds', () => {
       dosageUnit: 'mg',
       form: 'f'.repeat(61),
     }));
-    await assertFails(doctor.collection('community_diagnoses').doc('dx_long').set({
-      ...catalogBase(),
-      text: 'D'.repeat(301),
-      textLower: 'd'.repeat(301),
-    }));
-    await assertFails(doctor.collection('community_lab_tests').doc('lab_group').set({
-      ...catalogBase(),
-      name: 'CBC',
-      nameLower: 'cbc',
-      group: 'G'.repeat(61),
-    }));
-    await assertFails(doctor.collection('community_radiology').doc('rad_long').set({
-      ...catalogBase(),
-      name: 'R'.repeat(121),
-      nameLower: 'r'.repeat(121),
-      group: 'X-Ray',
-    }));
-    await assertFails(doctor.collection('community_body_parts').doc('bp_extra').set({
-      ...catalogBase(),
-      name: 'Knee',
-      nameLower: 'knee',
-      side: 'left',
-    }));
-    await assertFails(
-      testEnv.authenticatedContext(PATIENT_UID).firestore()
-        .collection('community_medicines').doc('med_patient').set({
-          ...catalogBase(),
-          name: 'Paracetamol',
-          nameLower: 'paracetamol',
-          dosageUnit: 'mg',
-          form: 'Tablet',
-        }),
-    );
   });
 
-  test('diagnoses, lab tests, and radiology reject an extra field; body parts reject an over-long name', async () => {
+  test('community_diagnoses normal create is allowed', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(doctor.collection('community_diagnoses').doc('dx_1').set({
+      ...catalogBase(),
+      text: 'Viral fever',
+      textLower: 'viral fever',
+    }));
+  });
+
+  test('community_diagnoses extra field is denied', async () => {
     const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
     await assertFails(doctor.collection('community_diagnoses').doc('dx_extra').set({
       ...catalogBase(),
@@ -911,6 +888,29 @@ describe('community catalog create bounds', () => {
       textLower: 'viral fever',
       note: 'extra',
     }));
+  });
+
+  test('community_diagnoses over-length text is denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertFails(doctor.collection('community_diagnoses').doc('dx_long').set({
+      ...catalogBase(),
+      text: 'D'.repeat(301),
+      textLower: 'd'.repeat(301),
+    }));
+  });
+
+  test('community_lab_tests normal create is allowed', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(doctor.collection('community_lab_tests').doc('lab_1').set({
+      ...catalogBase(),
+      name: 'CBC',
+      nameLower: 'cbc',
+      group: 'Hematology',
+    }));
+  });
+
+  test('community_lab_tests extra field is denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
     await assertFails(doctor.collection('community_lab_tests').doc('lab_extra').set({
       ...catalogBase(),
       name: 'CBC',
@@ -918,6 +918,30 @@ describe('community catalog create bounds', () => {
       group: 'Hematology',
       note: 'extra',
     }));
+  });
+
+  test('community_lab_tests over-length group is denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertFails(doctor.collection('community_lab_tests').doc('lab_group').set({
+      ...catalogBase(),
+      name: 'CBC',
+      nameLower: 'cbc',
+      group: 'G'.repeat(61),
+    }));
+  });
+
+  test('community_radiology normal create is allowed', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(doctor.collection('community_radiology').doc('rad_1').set({
+      ...catalogBase(),
+      name: 'Chest X-ray',
+      nameLower: 'chest x-ray',
+      group: 'X-Ray',
+    }));
+  });
+
+  test('community_radiology extra field is denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
     await assertFails(doctor.collection('community_radiology').doc('rad_extra').set({
       ...catalogBase(),
       name: 'Chest X-ray',
@@ -925,6 +949,39 @@ describe('community catalog create bounds', () => {
       group: 'X-Ray',
       note: 'extra',
     }));
+  });
+
+  test('community_radiology over-length name is denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertFails(doctor.collection('community_radiology').doc('rad_long').set({
+      ...catalogBase(),
+      name: 'R'.repeat(121),
+      nameLower: 'r'.repeat(121),
+      group: 'X-Ray',
+    }));
+  });
+
+  test('community_body_parts normal create is allowed', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(doctor.collection('community_body_parts').doc('bp_1').set({
+      ...catalogBase(),
+      name: 'Knee',
+      nameLower: 'knee',
+    }));
+  });
+
+  test('community_body_parts extra field is denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertFails(doctor.collection('community_body_parts').doc('bp_extra').set({
+      ...catalogBase(),
+      name: 'Knee',
+      nameLower: 'knee',
+      side: 'left',
+    }));
+  });
+
+  test('community_body_parts over-length name is denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
     await assertFails(doctor.collection('community_body_parts').doc('bp_long').set({
       ...catalogBase(),
       name: 'K'.repeat(121),

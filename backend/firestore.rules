@@ -1025,7 +1025,10 @@ service cloud.firestore {
             && resource.data.get('storeId', '') == myStoreId()
             && request.resource.data.get('doctorId', '') == resource.data.get('doctorId', '')
             && request.resource.data.get('patientId', '') == resource.data.get('patientId', '')
-            && request.resource.data.get('storeId', '') == resource.data.get('storeId', ''))
+            && request.resource.data.get('storeId', '') == resource.data.get('storeId', '')
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'status', 'viewedAt', 'dispensedAt', 'dispensingNotes', 'medicineLines', 'updatedAt'
+            ]))
         )
       );
       allow delete: if false;
