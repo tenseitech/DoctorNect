@@ -2632,39 +2632,53 @@ async function syncFirestoreLabCatalogTestToSupabase(event) {
   }
 
   // Determine if this document is a catalog aggregate (with tests array) or a single test doc
-  const rows = [];
-  if (Array.isArray(after.tests)) {
-    for (const t of after.tests) {
-      const tid = t.id || t.testId;
-      if (!tid) continue;
-      const rawSample = t.sampleType || 'blood';
-      const sampleType = ['blood', 'urine', 'swab', 'stool', 'other'].includes(rawSample) ? rawSample : 'blood';
-      rows.push({
-        test_id: tid,
-        name: t.name || 'Lab Test',
-        parameters: toStringArray(t.parameters, []),
-        fasting_required: Boolean(t.fastingRequired),
-        sample_type: sampleType,
-        report_hours: parseInt(t.reportHours ?? 24, 10) || 24,
-        popular: Boolean(t.popular),
-        category: t.category || null,
-      });
+  const catalogSamples = ['blood', 'urine', 'swab', 'stool', 'other'];
+  function catalogRow(id, doc) {
+    const name = firstText(doc && doc.name);
+    if (!id || !name) return { skip: true, reason: 'lab_catalog_name_missing' };
+    const rawSample = firstText(doc.sampleType);
+    if (rawSample && !catalogSamples.includes(rawSample)) {
+      return { skip: true, reason: 'lab_catalog_sample_type_invalid' };
     }
-  } else {
-    const rawSample = after.sampleType || 'blood';
-    const sampleType = ['blood', 'urine', 'swab', 'stool', 'other'].includes(rawSample) ? rawSample : 'blood';
-    rows.push({
-      test_id: testId,
-      name: after.name || 'Lab Test',
-      parameters: toStringArray(after.parameters, []),
-      fasting_required: Boolean(after.fastingRequired),
-      sample_type: sampleType,
-      report_hours: parseInt(after.reportHours ?? 24, 10) || 24,
-      popular: Boolean(after.popular),
-      category: after.category || null,
-    });
+    const row = { test_id: id, name };
+    if (Array.isArray(doc.parameters)) {
+      row.parameters = doc.parameters.map((item) => String(item || '').trim()).filter(Boolean);
+    }
+    if (typeof doc.fastingRequired === 'boolean') row.fasting_required = doc.fastingRequired;
+    // Missing sampleType is omitted. lab_catalog_tests.sample_type defaults to blood,
+    // matching the reader fallback in lab_catalog_repository.dart:179.
+    if (rawSample) row.sample_type = rawSample;
+    const hours = optionalFiniteNumber(doc.reportHours);
+    if (hours !== undefined) row.report_hours = Math.trunc(hours);
+    if (typeof doc.popular === 'boolean') row.popular = doc.popular;
+    putText(row, 'category', doc.category);
+    return { skip: false, row };
   }
 
+  const rows = [];
+  const skipped = [];
+  if (Array.isArray(after.tests)) {
+    for (const t of after.tests) {
+      const built = catalogRow(firstText(t.id, t.testId), t);
+      if (built.skip) skipped.push(built.reason);
+      else rows.push(built.row);
+    }
+  } else {
+    const built = catalogRow(testId, after);
+    if (built.skip) skipped.push(built.reason);
+    else rows.push(built.row);
+  }
+
+  if (skipped.length > 0) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab_catalog_tests',
+      entityId: testId,
+      payload: { reason: skipped[0] },
+      errorMessage: `Skipped lab catalog row: ${skipped[0]}`,
+      retryCount: 0,
+    });
+  }
   if (rows.length === 0) return;
 
   try {
@@ -2687,22 +2701,7 @@ async function syncFirestoreLabCatalogTestToSupabase(event) {
           }
         } else if (pool) {
           for (const row of rows) {
-            await pool.query(`
-              INSERT INTO lab_catalog_tests (
-                test_id, name, parameters, fasting_required, sample_type, report_hours, popular, category
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-              ON CONFLICT (test_id) DO UPDATE SET
-                name = EXCLUDED.name,
-                parameters = EXCLUDED.parameters,
-                fasting_required = EXCLUDED.fasting_required,
-                sample_type = EXCLUDED.sample_type,
-                report_hours = EXCLUDED.report_hours,
-                popular = EXCLUDED.popular,
-                category = EXCLUDED.category;
-            `, [
-              row.test_id, row.name, row.parameters, row.fasting_required,
-              row.sample_type, row.report_hours, row.popular, row.category,
-            ]);
+            await pgMergeUpsert(pool, 'lab_catalog_tests', row, 'test_id');
           }
         }
       },
@@ -3157,30 +3156,60 @@ async function syncFirestoreLabConnectionToSupabase(event) {
     return;
   }
 
-  const doctorId = after.doctorId;
-  const labId = after.labId;
+  const doctorId = firstText(after.doctorId);
+  const labId = firstText(after.labId);
+  const doctorName = firstText(after.doctorName);
+  const labName = firstText(after.labName);
+  const connectionStatuses = ['pending', 'active', 'rejected', 'removed'];
+  const rawStatus = firstText(after.status);
+  // New lab connections are created as pending.
+  // frontend/lib/features/lab/data/lab_connection_store.dart:204
+  const status = rawStatus
+    ? (connectionStatuses.includes(rawStatus) ? rawStatus : undefined)
+    : 'pending';
+  const rawReqBy = firstText(after.requestedBy);
+  // A doctor-sent invite sets requestedBy to doctor.
+  // frontend/lib/features/lab/data/lab_connection_store.dart:205
+  const requestedBy = rawReqBy
+    ? (['doctor', 'lab'].includes(rawReqBy) ? rawReqBy : undefined)
+    : 'doctor';
+  const missing = [];
+  if (!doctorId) missing.push('doctor_id');
+  if (!labId) missing.push('lab_id');
+  if (!doctorName) missing.push('doctor_name');
+  if (!labName) missing.push('lab_name');
+  if (!status) missing.push('status');
+  if (!requestedBy) missing.push('requested_by');
+  if (missing.length > 0) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab_connection',
+      entityId: connectionId,
+      payload: { reason: `lab_connection_required_missing:${missing.join(',')}` },
+      errorMessage: `Skipped lab connection: ${missing.join(', ')} required.`,
+      retryCount: 0,
+    });
+    return;
+  }
 
-  // Self-healing foreign keys
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
-  await ensureLabExistsInPostgres(labId, { labName: after.labName }, { url, key, pool });
-
-  const rawStatus = after.status || 'pending';
-  const status = ['pending', 'active', 'rejected', 'removed'].includes(rawStatus) ? rawStatus : 'pending';
-  const rawReqBy = after.requestedBy || 'doctor';
-  const requestedBy = ['doctor', 'lab'].includes(rawReqBy) ? rawReqBy : 'doctor';
+  await ensureLabExistsInPostgres(labId, { labName }, { url, key, pool });
 
   const labConnectionPayload = {
     connection_id: connectionId,
     doctor_id: doctorId,
     lab_id: labId,
-    doctor_name: after.doctorName || 'Doctor',
-    lab_name: after.labName || 'Diagnostic Lab',
-    status: status,
+    doctor_name: doctorName,
+    lab_name: labName,
+    status,
     requested_by: requestedBy,
-    requested_at: toIsoTimestamp(after.requestedAt) || new Date().toISOString(),
-    responded_at: toIsoTimestamp(after.respondedAt),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
   };
+  const requestedAt = toIsoTimestamp(after.requestedAt);
+  if (requestedAt) labConnectionPayload.requested_at = requestedAt;
+  const respondedAt = toIsoTimestamp(after.respondedAt);
+  if (respondedAt) labConnectionPayload.responded_at = respondedAt;
+  const connectionUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (connectionUpdatedAt) labConnectionPayload.updated_at = connectionUpdatedAt;
 
   try {
     await executeWithRetry(
@@ -3201,24 +3230,7 @@ async function syncFirestoreLabConnectionToSupabase(event) {
             throw new Error(`Supabase PostgREST lab connection error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO lab_connections (
-              connection_id, doctor_id, lab_id, doctor_name, lab_name,
-              status, requested_by, requested_at, responded_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-            ) ON CONFLICT (connection_id) DO UPDATE SET
-              status = EXCLUDED.status,
-              requested_by = EXCLUDED.requested_by,
-              responded_at = EXCLUDED.responded_at,
-              updated_at = NOW();
-          `, [
-            labConnectionPayload.connection_id, labConnectionPayload.doctor_id,
-            labConnectionPayload.lab_id, labConnectionPayload.doctor_name,
-            labConnectionPayload.lab_name, labConnectionPayload.status,
-            labConnectionPayload.requested_by, labConnectionPayload.requested_at,
-            labConnectionPayload.responded_at, labConnectionPayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'lab_connections', labConnectionPayload, 'connection_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'lab_connection', entityId: connectionId } }
