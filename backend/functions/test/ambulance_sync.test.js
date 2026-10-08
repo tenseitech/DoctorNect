@@ -354,6 +354,11 @@ test('Ambulance Broadcast Sync: Cancels sibling requests in Postgres when broadc
           id: 'bc-777',
           data: () => ({
             broadcastId: 'bc-777',
+            patientId: 'pat-777',
+            patientName: 'Nia',
+            pickupLocation: 'Gate',
+            dropLocation: 'Ward',
+            contactPhone: '9000000005',
             status: 'cancelled',
           }),
         },

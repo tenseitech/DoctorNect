@@ -416,6 +416,128 @@ function buildAmbulanceSupabasePayload(ambulanceId, docData, fallbackData = {}) 
   return { skip: false, ambulance };
 }
 
+// New broadcasts are written with status 'pending'.
+// frontend/lib/core/firebase/repositories/ambulance_repository.dart:501
+function ambulanceBroadcastStatus(raw) {
+  const value = firstText(raw) || 'pending';
+  return ['pending', 'accepted', 'completed', 'cancelled'].includes(value) ? value : 'pending';
+}
+
+// New driver requests are written with status 'pending'.
+// frontend/lib/core/firebase/repositories/ambulance_repository.dart:523
+function ambulanceRequestStatus(raw) {
+  const value = firstText(raw) || 'pending';
+  return ['pending', 'taken', 'accepted', 'cancelled'].includes(value) ? value : 'pending';
+}
+
+// New invites are written with status pending.
+// frontend/lib/core/invite/ambulance_invite_service.dart:68
+function ambulanceInviteStatus(raw) {
+  const value = firstText(raw) || 'pending';
+  if (value === 'expired') return 'cancelled';
+  return ['pending', 'completed', 'cancelled'].includes(value) ? value : 'pending';
+}
+
+function buildAmbulanceBroadcastSupabasePayload(broadcastId, docData, fallbackData = {}) {
+  const doc = docData || {};
+  const fallback = fallbackData || {};
+  const patientId = firstText(doc.patientId, fallback.patientId);
+  const patientName = firstText(doc.patientName, fallback.patientName);
+  const pickup = firstText(doc.pickupLocation, fallback.pickupLocation);
+  const drop = firstText(doc.dropLocation, fallback.dropLocation);
+  const phone = firstText(doc.contactPhone, fallback.contactPhone);
+  const missing = [];
+  if (!patientId) missing.push('patient_id');
+  if (!patientName) missing.push('patient_name');
+  if (!pickup) missing.push('pickup_location');
+  if (!drop) missing.push('drop_location');
+  if (!phone) missing.push('contact_phone');
+  if (missing.length > 0) {
+    return { skip: true, reason: `ambulance_broadcast_required_missing:${missing.join(',')}` };
+  }
+  return {
+    skip: false,
+    row: {
+      broadcast_id: broadcastId,
+      patient_id: patientId,
+      patient_name: patientName,
+      pickup_location: pickup,
+      drop_location: drop,
+      contact_phone: phone,
+      status: ambulanceBroadcastStatus(doc.status || fallback.status),
+    },
+  };
+}
+
+function buildAmbulanceRequestSupabasePayload(requestId, docData) {
+  const doc = docData || {};
+  const broadcastId = firstText(doc.broadcastId);
+  const driverId = firstText(doc.driverId);
+  const patientId = firstText(doc.patientId);
+  const patientName = firstText(doc.patientName);
+  const pickup = firstText(doc.pickupLocation);
+  const drop = firstText(doc.dropLocation);
+  const phone = firstText(doc.contactPhone);
+  const missing = [];
+  if (!broadcastId) missing.push('broadcast_id');
+  if (!driverId) missing.push('driver_id');
+  if (!patientId) missing.push('patient_id');
+  if (!patientName) missing.push('patient_name');
+  if (!pickup) missing.push('pickup_location');
+  if (!drop) missing.push('drop_location');
+  if (!phone) missing.push('contact_phone');
+  if (missing.length > 0) {
+    return { skip: true, reason: `ambulance_request_required_missing:${missing.join(',')}` };
+  }
+  return {
+    skip: false,
+    row: {
+      request_id: requestId,
+      broadcast_id: broadcastId,
+      driver_id: driverId,
+      patient_id: patientId,
+      patient_name: patientName,
+      pickup_location: pickup,
+      drop_location: drop,
+      contact_phone: phone,
+      status: ambulanceRequestStatus(doc.status),
+    },
+  };
+}
+
+function buildAmbulanceInviteSupabasePayload(inviteId, docData) {
+  const doc = docData || {};
+  const doctorId = firstText(doc.doctorId);
+  const ambulanceId = firstText(doc.ambulanceId);
+  const serviceName = firstText(doc.serviceName);
+  const driverName = firstText(doc.driverName);
+  const phone = firstText(doc.phone);
+  const token = firstText(doc.token);
+  const missing = [];
+  if (!doctorId) missing.push('doctor_id');
+  if (!ambulanceId) missing.push('ambulance_id');
+  if (!serviceName) missing.push('service_name');
+  if (!driverName) missing.push('driver_name');
+  if (!phone) missing.push('phone');
+  if (!token) missing.push('token');
+  if (missing.length > 0) {
+    return { skip: true, reason: `ambulance_invite_required_missing:${missing.join(',')}` };
+  }
+  return {
+    skip: false,
+    row: {
+      invite_id: inviteId,
+      token,
+      doctor_id: doctorId,
+      ambulance_id: ambulanceId,
+      service_name: serviceName,
+      driver_name: driverName,
+      phone,
+      status: ambulanceInviteStatus(doc.status),
+    },
+  };
+}
+
 function buildAvailabilitySupabasePayload(doctorId, after) {
   const doc = after || {};
   const payload = { doctor_id: doctorId };
@@ -510,6 +632,15 @@ function resolveWriterSyncOrigin(doc) {
 }
 
 function buildAppointmentSupabasePayload(after, appointmentId, syncOrigin) {
+  const doctorName = firstText(after.doctorName);
+  const patientName = firstText(after.patientName);
+  if (!doctorName || !patientName) {
+    const missing = [];
+    if (!doctorName) missing.push('doctor_name');
+    if (!patientName) missing.push('patient_name');
+    return { skip: true, reason: `appointment_required_missing:${missing.join(',')}` };
+  }
+
   const dateTimeIso = after.dateTime?.toDate?.()
     ? after.dateTime.toDate().toISOString()
     : (after.dateTime ? new Date(after.dateTime).toISOString() : new Date().toISOString());
@@ -518,9 +649,9 @@ function buildAppointmentSupabasePayload(after, appointmentId, syncOrigin) {
     appointment_id: appointmentId,
     doctor_id: after.doctorId || 'doc-unknown',
     patient_id: after.patientId || null,
-    doctor_name: after.doctorName || 'Doctor',
+    doctor_name: doctorName,
     specialization: after.specialization || 'General',
-    patient_name: after.patientName || 'Patient',
+    patient_name: patientName,
     patient_gender: after.patientGender || 'Other',
     date_time: dateTimeIso,
     visit_type: after.visitType || 'newVisit',
@@ -659,6 +790,16 @@ async function syncFirestoreAppointmentToSupabase(event) {
   }
 
   const supabasePayload = buildAppointmentSupabasePayload(after, appointmentId, syncOrigin);
+  if (supabasePayload.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      payload: { reason: supabasePayload.reason },
+      errorMessage: `Skipped appointment sync: ${supabasePayload.reason}`,
+    });
+    return;
+  }
   if (!supabasePayload.updated_at && remoteMs == null) {
     supabasePayload.updated_at = new Date().toISOString();
   }
@@ -3161,17 +3302,19 @@ async function ensureAmbulanceBroadcastExistsInPostgres(broadcastId, fallbackDat
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const placeholder = {
-    broadcast_id: broadcastId,
-    patient_id: docData?.patientId || fallbackData.patientId || 'pat-unknown',
-    patient_name: docData?.patientName || fallbackData.patientName || 'Patient',
-    pickup_location: docData?.pickupLocation || fallbackData.pickupLocation || 'Pickup location',
-    drop_location: docData?.dropLocation || fallbackData.dropLocation || 'Drop location',
-    contact_phone: docData?.contactPhone || fallbackData.contactPhone || '0000000000',
-    status: ['pending', 'accepted', 'completed', 'cancelled'].includes(docData?.status) ? docData.status : 'pending',
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const builtBroadcast = buildAmbulanceBroadcastSupabasePayload(broadcastId, docData, fallbackData);
+  if (builtBroadcast.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance_broadcast',
+      entityId: broadcastId,
+      payload: { reason: builtBroadcast.reason },
+      errorMessage: `Skipped ambulance broadcast placeholder: ${builtBroadcast.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+  const placeholder = builtBroadcast.row;
 
   try {
     if (url && key) {
@@ -3584,18 +3727,21 @@ async function syncFirestoreAmbulanceBroadcastToSupabase(event) {
     }, { url, key, pool });
   }
 
-  const rawStatus = after.status || 'pending';
-  const status = ['pending', 'accepted', 'completed', 'cancelled'].includes(rawStatus) ? rawStatus : 'pending';
-
+  const builtBroadcastSync = buildAmbulanceBroadcastSupabasePayload(broadcastId, after);
+  if (builtBroadcastSync.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance_broadcast',
+      entityId: broadcastId,
+      payload: { reason: builtBroadcastSync.reason },
+      errorMessage: `Skipped ambulance broadcast sync: ${builtBroadcastSync.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
   const broadcastPayload = {
-    broadcast_id: broadcastId,
-    patient_id: after.patientId || 'pat-unknown',
-    patient_name: after.patientName || 'Patient',
-    pickup_location: after.pickupLocation || 'Pickup location',
-    drop_location: after.dropLocation || 'Drop location',
-    contact_phone: after.contactPhone || '0000000000',
+    ...builtBroadcastSync.row,
     notes: after.notes || null,
-    status: status,
     accepted_driver_id: after.acceptedDriverId || null,
     accepted_driver_name: after.acceptedDriverName || after.acceptedAmbulanceName || null,
     accepted_driver_phone: after.acceptedDriverPhone || null,
@@ -3659,7 +3805,7 @@ async function syncFirestoreAmbulanceBroadcastToSupabase(event) {
         }
 
         // 2. Reflect Sibling Cancellation / Taken status in Postgres
-        if (status === 'accepted' && after.acceptedDriverId) {
+        if (broadcastPayload.status === 'accepted' && after.acceptedDriverId) {
           if (url && key) {
             await fetch(`${url.replace(/\/+$/, '')}/rest/v1/ambulance_requests?broadcast_id=eq.${encodeURIComponent(broadcastId)}&driver_id=neq.${encodeURIComponent(after.acceptedDriverId)}&status=eq.pending`, {
               method: 'PATCH',
@@ -3681,7 +3827,7 @@ async function syncFirestoreAmbulanceBroadcastToSupabase(event) {
               [after.acceptedDriverId, broadcastId]
             );
           }
-        } else if (status === 'cancelled') {
+        } else if (broadcastPayload.status === 'cancelled') {
           if (url && key) {
             await fetch(`${url.replace(/\/+$/, '')}/rest/v1/ambulance_requests?broadcast_id=eq.${encodeURIComponent(broadcastId)}&status=eq.pending`, {
               method: 'PATCH',
@@ -3790,19 +3936,20 @@ async function syncFirestoreAmbulanceRequestToSupabase(event) {
   await ensureAmbulanceBroadcastExistsInPostgres(broadcastId, after, { url, key, pool });
   await ensureAmbulanceExistsInPostgres(driverId, {}, { url, key, pool });
 
-  const rawStatus = after.status || 'pending';
-  const status = ['pending', 'taken', 'accepted', 'cancelled'].includes(rawStatus) ? rawStatus : 'pending';
-
+  const builtRequest = buildAmbulanceRequestSupabasePayload(requestId, after);
+  if (builtRequest.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance_request',
+      entityId: requestId,
+      payload: { reason: builtRequest.reason },
+      errorMessage: `Skipped ambulance request sync: ${builtRequest.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
   const requestPayload = {
-    request_id: requestId,
-    broadcast_id: broadcastId,
-    driver_id: driverId,
-    patient_id: after.patientId || 'pat-unknown',
-    patient_name: after.patientName || 'Patient',
-    pickup_location: after.pickupLocation || 'Pickup location',
-    drop_location: after.dropLocation || 'Drop location',
-    contact_phone: after.contactPhone || '0000000000',
-    status: status,
+    ...builtRequest.row,
     accepted_driver_id: after.acceptedDriverId || null,
     created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
     updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
@@ -3929,20 +4076,20 @@ async function syncFirestoreAmbulanceInviteToSupabase(event) {
   // Self-healing parent doctor foreign key
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
 
-  const rawStatus = after.status || 'pending';
-  const status = ['pending', 'completed', 'cancelled'].includes(rawStatus)
-    ? rawStatus
-    : (rawStatus === 'expired' ? 'cancelled' : 'pending');
-
+  const builtInvite = buildAmbulanceInviteSupabasePayload(inviteId, after);
+  if (builtInvite.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'ambulance_invite',
+      entityId: inviteId,
+      payload: { reason: builtInvite.reason },
+      errorMessage: `Skipped ambulance invite sync: ${builtInvite.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
   const invitePayload = {
-    invite_id: inviteId,
-    token: after.token || inviteId,
-    doctor_id: doctorId,
-    ambulance_id: after.ambulanceId || 'amb-unknown',
-    service_name: after.serviceName || 'Ambulance Service',
-    driver_name: after.driverName || 'Driver',
-    phone: after.phone || '0000000000',
-    status: status,
+    ...builtInvite.row,
     username: after.username || null,
     created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
     completed_at: toIsoTimestamp(after.completedAt),
@@ -4046,6 +4193,9 @@ module.exports = {
   buildMedicalStoreSupabasePayload,
   buildLabSupabasePayload,
   buildAmbulanceSupabasePayload,
+  buildAmbulanceBroadcastSupabasePayload,
+  buildAmbulanceRequestSupabasePayload,
+  buildAmbulanceInviteSupabasePayload,
   buildAvailabilitySupabasePayload,
   toStringArray,
   toIsoTimestamp,

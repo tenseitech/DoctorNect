@@ -13,6 +13,9 @@ const {
   buildDoctorSupabasePayload,
   buildMedicalStoreSupabasePayload,
   buildAvailabilitySupabasePayload,
+  buildAmbulanceBroadcastSupabasePayload,
+  buildAmbulanceRequestSupabasePayload,
+  buildAmbulanceInviteSupabasePayload,
 } = require('../cross_role_sync');
 
 const realFetch = global.fetch;
@@ -86,7 +89,9 @@ test('missing age, token, and slot are omitted from the appointment payload', ()
   const payload = buildAppointmentSupabasePayload(
     {
       doctorId: 'doc-1',
+      doctorName: 'Ada',
       patientId: 'pat-1',
+      patientName: 'Ben',
       updatedAt: '2026-01-01T00:00:00.000Z',
     },
     'apt-omit',
@@ -108,6 +113,8 @@ test('present age, token, and slot are copied and patient origin is not retagged
   assert.equal(resolveWriterSyncOrigin({ doctorId: 'doc-1' }), null);
   const payload = buildAppointmentSupabasePayload(
     {
+      doctorName: 'Ada',
+      patientName: 'Ben',
       patientAge: 41,
       tokenNumber: 4,
       slotLabel: '09:30 AM',
@@ -182,6 +189,73 @@ test('a stale Firestore snapshot does not upsert the appointment', async () => {
     calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/appointments')),
     false,
   );
+});
+
+test('appointment sync skips when a name is missing and keeps names that are present', () => {
+  const missing = buildAppointmentSupabasePayload(
+    { doctorId: 'doc-1', patientId: 'pat-1', doctorName: 'Ada' },
+    'apt-noname',
+    'doctor_firestore',
+  );
+  assert.equal(missing.skip, true);
+  assert.match(missing.reason, /patient_name/);
+  assert.equal(JSON.stringify(missing).includes('Patient'), false);
+
+  const present = buildAppointmentSupabasePayload(
+    { doctorName: 'Ada', patientName: 'Ben', doctorId: 'doc-1' },
+    'apt-named',
+    'doctor_firestore',
+  );
+  assert.equal(present.skip, undefined);
+  assert.equal(present.doctor_name, 'Ada');
+  assert.equal(present.patient_name, 'Ben');
+});
+
+test('ambulance rows skip instead of inventing a phone, name, or location', () => {
+  const broadcast = buildAmbulanceBroadcastSupabasePayload('bc-1', { patientId: 'pat-1' });
+  assert.equal(broadcast.skip, true);
+  assert.match(broadcast.reason, /contact_phone/);
+  assert.equal(JSON.stringify(broadcast).includes('0000000000'), false);
+
+  const broadcastWithStatusOmitted = buildAmbulanceBroadcastSupabasePayload('bc-2', {
+    patientId: 'pat-1',
+    patientName: 'Ben',
+    pickupLocation: 'Gate',
+    dropLocation: 'Ward',
+    contactPhone: '9000000003',
+  });
+  assert.equal(broadcastWithStatusOmitted.skip, false);
+  assert.equal(broadcastWithStatusOmitted.row.status, 'pending');
+
+  const request = buildAmbulanceRequestSupabasePayload('req-1', {
+    broadcastId: 'bc-2',
+    driverId: 'amb-1',
+    patientId: 'pat-1',
+    patientName: 'Ben',
+    pickupLocation: 'Gate',
+    dropLocation: 'Ward',
+  });
+  assert.equal(request.skip, true);
+  assert.match(request.reason, /contact_phone/);
+
+  const invite = buildAmbulanceInviteSupabasePayload('inv-1', {
+    doctorId: 'doc-1',
+    ambulanceId: 'amb-1',
+    serviceName: 'City',
+    driverName: 'Rae',
+  });
+  assert.equal(invite.skip, true);
+  assert.match(invite.reason, /phone/);
+  const expired = buildAmbulanceInviteSupabasePayload('inv-2', {
+    doctorId: 'doc-1',
+    ambulanceId: 'amb-1',
+    serviceName: 'City',
+    driverName: 'Rae',
+    phone: '9000000004',
+    token: 'tok',
+    status: 'expired',
+  });
+  assert.equal(expired.row.status, 'cancelled');
 });
 
 test('missing doctor experience is omitted and a present value is copied', () => {
