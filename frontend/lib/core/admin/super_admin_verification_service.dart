@@ -90,8 +90,13 @@ class SuperAdminVerificationService {
   Stream<List<VerificationApplicant>> streamApplicants({
     UserType? roleFilter,
     VerificationStage? stageFilter,
+    int limit = 150,
   }) {
-    return _firestore.collection(FirestorePaths.users).snapshots().map((
+    return _firestore
+        .collection(FirestorePaths.users)
+        .limit(limit)
+        .snapshots()
+        .map((
       snapshot,
     ) {
       final list = <VerificationApplicant>[];

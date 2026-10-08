@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../features/ambulance/ambulance_shell.dart';
+import '../../features/dashboard/dashboard_shell.dart';
 import '../../features/ambulance/data/ambulance_login_cache.dart';
 import '../../features/ambulance/data/ambulance_store.dart';
 import '../constants/app_constants.dart';
@@ -402,7 +402,9 @@ class UnifiedAuthFlowController extends ChangeNotifier {
 
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => AmbulanceShell(ambulance: fresh)),
+      MaterialPageRoute(
+        builder: (_) => const DashboardShell(userType: UserType.ambulance),
+      ),
       (_) => false,
     );
   }

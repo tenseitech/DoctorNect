@@ -307,9 +307,6 @@ class _PatientShellState extends State<PatientShell> {
   Future<void> _startPatientNotifications() async {
     final patientId = PatientSession.loggedInPatientId;
     final uid = FirebaseAuthService.instance.currentUser?.uid;
-    if (uid != null && uid.isNotEmpty) {
-      await PatientInAppNotificationSync.start(uid);
-    }
     if (patientId.isNotEmpty) {
       PatientNotificationPrefsSync.start(patientId);
     }
@@ -317,7 +314,12 @@ class _PatientShellState extends State<PatientShell> {
     PatientNotificationScheduler.instance.start();
     PatientPushService.onAppointmentPushOpened = _handleAppointmentPushOpen;
     PatientPushService.onPrescriptionPushOpened = _handlePrescriptionPushOpen;
-    await _refreshSessionData();
+
+    await Future.wait([
+      if (uid != null && uid.isNotEmpty) PatientInAppNotificationSync.start(uid),
+      _refreshSessionData(),
+    ]);
+
     if (patientId.isNotEmpty) {
       await PatientPushService.registerPatient(patientId);
       PatientLabBookingWatcher.start(patientId);
@@ -329,11 +331,13 @@ class _PatientShellState extends State<PatientShell> {
   Future<void> _refreshSessionData() async {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return;
-    await SharedAppointmentsStore.instance.refreshForPatient(patientId);
-    await PatientLabBookingStore.instance.refreshForPatient(
-      patientId,
-      preferCache: true,
-    );
+    await Future.wait([
+      SharedAppointmentsStore.instance.refreshForPatient(patientId),
+      PatientLabBookingStore.instance.refreshForPatient(
+        patientId,
+        preferCache: true,
+      ),
+    ]);
   }
 
   void _openFromPushIfNeeded() {

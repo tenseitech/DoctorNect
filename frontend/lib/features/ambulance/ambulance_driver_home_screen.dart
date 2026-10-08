@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../core/firebase/firestore_service.dart';
 
 // ignore_for_file: unused_element_parameter
@@ -63,16 +65,26 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
     final driverId = AmbulanceSession.loggedInAmbulanceId;
     if (driverId.isEmpty) return;
 
-    await AmbulanceAuthHelper.ensureSignedIn();
-    await FirestoreService.instance.ambulance.linkDriverAuth(driverId);
+    final signedIn = await AmbulanceAuthHelper.ensureSignedIn();
+    if (signedIn) {
+      await FirestoreService.instance.ambulance.linkDriverAuth(driverId);
+    }
 
-    // Self-healing: pull missing ratings from broadcasts for old trips
+    if (!mounted) return;
+    AmbulanceBookingSync.instance.watchDriverRequests(driverId);
+
+    // Self-healing: pull missing ratings in background with bounded query
+    unawaited(_healMissingRatings(driverId));
+  }
+
+  Future<void> _healMissingRatings(String driverId) async {
     try {
       final firestore = FirebaseFirestore.instance;
       final reqs = await firestore
           .collection(FirestorePaths.ambulanceRequests)
           .where('driverId', isEqualTo: driverId)
           .where('status', isEqualTo: 'completed')
+          .limit(20)
           .get();
       for (final doc in reqs.docs) {
         if (doc.data()['rating'] == null) {
@@ -93,9 +105,6 @@ class AmbulanceDriverHomeScreenState extends State<AmbulanceDriverHomeScreen> {
         }
       }
     } catch (_) {}
-
-    if (!mounted) return;
-    AmbulanceBookingSync.instance.watchDriverRequests(driverId);
   }
 
   @override

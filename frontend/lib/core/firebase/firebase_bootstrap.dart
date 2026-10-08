@@ -19,6 +19,8 @@ abstract final class FirebaseBootstrap {
   static bool appCheckReady = false;
   static String? lastInitError;
 
+  static Future<void> activateAppCheck() => _activateAppCheck();
+
   static Future<bool> initialize() async {
     if (isReady) return true;
     try {
@@ -40,14 +42,13 @@ abstract final class FirebaseBootstrap {
           cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
         );
       } catch (_) {}
-      await _activateAppCheck();
       isReady = true;
       if (kDebugMode) {
         debugPrint('Firebase initialized (${defaultTargetPlatform.name})');
       }
-      // Load validation rules from Cloud Functions (non-blocking).
+      // Non-critical startup tasks: App Check, validation rules, remote config run in background.
+      unawaited(activateAppCheck());
       unawaited(_loadValidationRules());
-      // Initialize Remote Config for storage feature flags (non-blocking).
       unawaited(StorageFeatureFlag.initialize());
       return true;
     } catch (e, st) {

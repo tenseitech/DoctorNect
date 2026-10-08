@@ -7,8 +7,9 @@ import '../../core/session/ambulance_session.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/widgets/auth_login_branding.dart';
 import '../auth/widgets/auth_login_page_shell.dart';
+import '../../core/enums/user_type.dart';
+import '../dashboard/dashboard_shell.dart';
 import '../welcome/welcome_screen.dart';
-import 'ambulance_shell.dart';
 import 'data/ambulance_store.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -136,11 +137,11 @@ class _AmbulanceShellAutoState extends State<AmbulanceShellAuto> {
         serviceName: match.serviceName,
         driverName: match.driverName,
       );
-
-      final fresh = AmbulanceStore.instance.findAmbulance(match.id) ?? match;
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => AmbulanceShell(ambulance: fresh)),
+        MaterialPageRoute(
+          builder: (_) => const DashboardShell(userType: UserType.ambulance),
+        ),
         (route) => false,
       );
     } catch (_) {
