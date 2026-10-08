@@ -108,6 +108,10 @@ service cloud.firestore {
       return userExists() && role() == 'ambulance';
     }
 
+    function isPromotedAdProvider() {
+      return userExists() && role() in ['doctor', 'medicalStore', 'medical', 'lab', 'ambulance'];
+    }
+
     // Account admins (keep in sync with ACCOUNT_APPROVAL_ADMIN_EMAILS in functions/.env).
     // Explicit allow-list only — never match on email substrings (e.g. .*admin.*).
     function isAccountAdmin() {
@@ -459,8 +463,10 @@ service cloud.firestore {
     // Patient search: verified doctors only. Doctor edits own profile.
 
     match /doctors/{doctorId} {
-      // Cap list page size to reduce scraping / bulk export abuse.
-      allow list: if request.query.limit <= 100;
+      // Cap list page size; public/patient directory sees verified doctors only.
+      allow list: if isSuperAdmin()
+        || (request.query.limit <= 100
+            && resource.data.get('verified', false) == true);
       allow get: if isSuperAdmin()
         || (isSignedIn() && (ownsDoctor(doctorId) || resource.data.get('ownerUid', '') == request.auth.uid))
         || resource.data.get('verified', false) == true;
@@ -532,12 +538,55 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    function appointmentIdsImmutable() {
+      return request.resource.data.patientId == resource.data.patientId
+        && request.resource.data.doctorId == resource.data.doctorId;
+    }
+
+    function appointmentPatientUpdateKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'patientStatus',
+        'doctorStatus',
+        'cancellationReason',
+        'wasRescheduled',
+        'dateTime',
+        'slotLabel',
+        'tokenNumber',
+        'hasReview',
+        'reviewRating',
+        'reviewId',
+        'reviewCreatedAt',
+        'updatedAt'
+      ]);
+    }
+
+    function appointmentDoctorUpdateKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'patientStatus',
+        'doctorStatus',
+        'cancellationReason',
+        'wasRescheduled',
+        'dateTime',
+        'slotLabel',
+        'tokenNumber',
+        'diagnosis',
+        'clinicalNotes',
+        'hasPrescription',
+        'hasReport',
+        'labReports',
+        'chiefComplaints',
+        'symptoms',
+        'observations',
+        'updatedAt'
+      ]);
+    }
+
     function validAppointmentUpdate() {
-      let incoming = request.resource.data;
-      let existing = resource.data;
-      // patientId / doctorId cannot change after booking
-      return incoming.patientId == existing.patientId
-        && incoming.doctorId == existing.doctorId;
+      return appointmentIdsImmutable()
+        && (
+          (isPatient() && resource.data.patientId == myPatientId() && appointmentPatientUpdateKeys())
+          || (isVerifiedDoctor() && resource.data.doctorId == myDoctorId() && appointmentDoctorUpdateKeys())
+        );
     }
 
     // ─── prescriptions/{prescriptionId} ──────────────────────────────────
@@ -783,7 +832,10 @@ service cloud.firestore {
     // ─── medical_stores/{storeId} ──────────────────────────────────────────
 
     match /medical_stores/{storeId} {
-      allow list: if isSignedIn() && request.query.limit <= 100;
+      allow list: if isSuperAdmin()
+        || (isSignedIn()
+            && request.query.limit <= 100
+            && resource.data.get('verified', false) == true);
       allow get: if isSignedIn() && (
         isSuperAdmin()
         || ownsStore(storeId)
@@ -807,7 +859,10 @@ service cloud.firestore {
     // ─── labs/{labId} ──────────────────────────────────────────────────────
 
     match /labs/{labId} {
-      allow list: if isSignedIn() && request.query.limit <= 100;
+      allow list: if isSuperAdmin()
+        || (isSignedIn()
+            && request.query.limit <= 100
+            && resource.data.get('verified', false) == true);
       allow get: if isSignedIn() && (
         isSuperAdmin()
         || ownsLab(labId)
@@ -1172,8 +1227,7 @@ service cloud.firestore {
       // Disallows server-controlled payment/activation fields on creation (razorpay IDs, start/end times)
       // Strictly forbids patient accounts from creating promotions
       allow create: if isSuperAdmin()
-        || (isSignedIn()
-          && !isPatient()
+        || (isPromotedAdProvider()
           && (request.resource.data.providerId == request.auth.uid
               || (myProfileId() != '' && request.resource.data.providerId == myProfileId()))
           && (request.resource.data.status == 'draft' || request.resource.data.status == 'pending_payment')
@@ -1185,8 +1239,7 @@ service cloud.firestore {
       // Update: Super Admin can update all fields; Provider can edit draft content
       // Forbids client writes to payment IDs, pricing/duration, activation times, and payment status other than pending
       allow update: if isSuperAdmin()
-        || (isSignedIn()
-          && !isPatient()
+        || (isPromotedAdProvider()
           && (resource.data.providerId == request.auth.uid
               || (myProfileId() != '' && resource.data.providerId == myProfileId()))
           && request.resource.data.providerId == resource.data.providerId
@@ -1201,8 +1254,7 @@ service cloud.firestore {
 
       // Deletion: Super Admin or owning provider
       allow delete: if isSuperAdmin()
-        || (isSignedIn()
-            && !isPatient()
+        || (isPromotedAdProvider()
             && (resource.data.providerId == request.auth.uid
                 || (myProfileId() != '' && resource.data.providerId == myProfileId())));
     }

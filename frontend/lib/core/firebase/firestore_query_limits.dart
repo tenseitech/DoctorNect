@@ -19,8 +19,8 @@ abstract final class FirestoreQueryLimits {
   //   at ~50+ registered drivers. Also pass preferCache: false on booking path
   //   if drivers report stale availability.
   //
-  // • Doctor directory (`DoctorDirectoryRepository`, limit = connectionsPage * 2):
-  //   add paginated load-more in patient search at ~50+ verified doctors.
+  // • Doctor directory (`DoctorDirectoryRepository`, limit = verifiedDirectoryListingCap):
+  //   add paginated load-more in patient search at ~100+ verified doctors.
   //
   // • Labs / stores (`fetchVerifiedLabs` / `fetchVerifiedStores`):
   //   paginate registry refresh at ~400+ verified entries (cap is
