@@ -12,7 +12,7 @@ Project: `medibond-45fad`. Run commands from the repo root.
 - Do not set `ENABLE_SUPABASE=1` on a release build.
 - Do not paste secret values into chat, git, or this file.
 - Do not set `OTP_REDIS_MIRROR`, `RATE_LIMIT_BACKEND=redis`, or `S3_URL_CACHE=on` until the `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` secrets are bound to the functions that read them. Redis stays fail-open: a Redis outage must not block OTP, rate limits, or S3 downloads.
-- Do not set `ENFORCE_AMBULANCE_HTTP_APP_CHECK=true` until the ambulance web client sends `X-Firebase-AppCheck`. With the flag unset, `verifyAmbulanceDriverLoginHttp` returns 503 and does not check a PIN. `getValidationRulesHttp` stays as it is; it serves declarative validation rules and is low-sensitivity.
+- Do not set `ENFORCE_AMBULANCE_HTTP_APP_CHECK=true` until the ambulance web client sends `X-Firebase-AppCheck`. With the flag unset, `verifyAmbulanceDriverLoginHttp` still checks the PIN and does not require App Check. M-8 stays open until the web client sends the App Check header; then set the flag to `true` in the same deploy. `getValidationRulesHttp` stays as it is; it serves declarative validation rules and is low-sensitivity.
 
 ## Order
 

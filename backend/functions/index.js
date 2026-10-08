@@ -1446,9 +1446,9 @@ exports.verifyAmbulanceDriverLogin = onCall(
 
 /**
  * Web-friendly HTTP entry for ambulance username/PIN login.
- * CORS is restricted to hosted app origins. The handler stays disabled
- * until ENFORCE_AMBULANCE_HTTP_APP_CHECK=true, and then requires
- * X-Firebase-AppCheck. The flag defaults to false.
+ * CORS is restricted to hosted app origins. App Check is required only when
+ * ENFORCE_AMBULANCE_HTTP_APP_CHECK=true. The flag defaults to false, and the
+ * PIN check still runs in that default path.
  */
 exports.verifyAmbulanceDriverLoginHttp = onRequest(
   { region: CALLABLE_REGION, cors: false, invoker: 'public' },
@@ -1475,18 +1475,8 @@ exports.verifyAmbulanceDriverLoginHttp = onRequest(
       .trim();
     const requestForLimits = { auth: null, rawRequest: req, app: null };
 
-    if (!ENFORCE_AMBULANCE_HTTP_APP_CHECK) {
-      res.status(503).json({
-        error: {
-          status: 'FAILED_PRECONDITION',
-          message: 'Ambulance HTTP login is disabled until App Check is enforced.',
-        },
-      });
-      return;
-    }
-
     try {
-      await assertAmbulanceHttpAppCheck(req, { enforce: true });
+      await assertAmbulanceHttpAppCheck(req, { enforce: ENFORCE_AMBULANCE_HTTP_APP_CHECK });
       const firestore = getFirestore();
       const payload = req.body?.data ?? req.body ?? {};
       const result = await runVerifyAmbulanceDriverLogin(
