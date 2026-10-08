@@ -47,6 +47,17 @@ Confirm this promoted-ad price table before deploying `createRazorpayOrder`, `ve
 
 3. Deploy Firestore rules **only after** the new app build that uses the `bookAppointment` callable is in users' hands. A rules deploy that denies patient client creates will break already-installed builds that still create `appointments` directly. The Citywide banner query is `promotedAds` where `status == active` (single-field; the existing `status` + `endTime` index is unchanged).
 
+## When to deploy Firestore rules
+
+`bookAppointment` writes `createdVia: 'bookAppointment'` and `createdAt`. Old app builds that create `appointments` directly do not write `createdVia`. Doctor walk-ins also lack `createdVia`; they have `source == 'walkin'`. Leave those out of the old-build count.
+
+In the Firebase console Firestore data viewer, for collection `appointments`, look at documents whose `createdAt` is in the last 24 hours and whose `source` is not `walkin`:
+
+- Count A: those documents without `createdVia`.
+- Count B: those documents with `createdVia` equal to `bookAppointment`.
+
+Suggested threshold, adjust it if you want: deploy the rules when count A is under 2% of A + B, for 3 days in a row. Redeploy `bookAppointment` before you start counting, or the marker will not be on new callable bookings.
+
    ```powershell
    firebase deploy --project medibond-45fad --only firestore:rules
    ```

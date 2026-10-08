@@ -533,6 +533,7 @@ test('bookAppointment ignores client-supplied patientId and binds strictly to au
 
   assert.equal(result.ok, true);
   const createdAppt = db.docs.get(`appointments/${result.appointmentId}`);
+  assert.equal(createdAppt.createdVia, 'bookAppointment');
   assert.equal(
     createdAppt.patientId,
     'real_patient_id',

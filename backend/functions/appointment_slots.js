@@ -249,6 +249,7 @@ function buildAppointmentData({
     symptoms: Array.isArray(data?.symptoms) ? data.symptoms : [],
     observations: Array.isArray(data?.observations) ? data.observations : [],
     wasRescheduled: false, // In bookAppointment, always false (reschedule will be a separate callable)
+    createdVia: 'bookAppointment',
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
