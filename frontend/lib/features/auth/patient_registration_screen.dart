@@ -19,6 +19,7 @@ import '../../core/supabase/supabase_bootstrap.dart';
 import '../dashboard/dashboard_shell.dart';
 import '../patient/profile/data/patient_profile_mock.dart';
 import '../patient/sharing/patient_sharing_utils.dart';
+import 'widgets/auth_login_branding.dart';
 import 'widgets/auth_login_page_shell.dart';
 import 'widgets/auth_registration_page_shell.dart';
 
@@ -212,7 +213,8 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
         accentColor: accent,
         icon: Icons.person_outline,
         welcomeTitle: 'Join as Patient',
-        maxWidth: 520,
+        branding: AuthLoginBranding.patient,
+        maxWidth: 480,
         subtitle:
             'Create your account to book doctors and manage health records',
         body: Form(

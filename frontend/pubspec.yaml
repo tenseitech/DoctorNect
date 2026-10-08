@@ -65,15 +65,17 @@ flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   remove_alpha_ios: true
-  image_path: "assets/images/logo_icon.png"
+  image_path: "assets/images/app_icon.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/logo_icon.png"
+  adaptive_icon_background: "#1D4ED8"
+  adaptive_icon_foreground: "assets/images/adaptive_foreground.png"
+  adaptive_icon_monochrome: "assets/images/adaptive_monochrome.png"
+  adaptive_icon_foreground_inset: 0
   web:
     generate: true
-    image_path: "assets/images/logo_icon.png"
-    background_color: "#FFFFFF"
-    theme_color: "#0B1F33"
+    image_path: "assets/images/app_icon.png"
+    background_color: "#1D4ED8"
+    theme_color: "#1D4ED8"
 
 flutter_native_splash:
   color: "#FFFFFF"
@@ -93,6 +95,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/images/logo_mark_transparent.png
     - assets/images/specialties/
     - assets/images/services/
     - assets/data/indian_medicines.txt.gz

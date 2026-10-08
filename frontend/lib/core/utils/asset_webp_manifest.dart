@@ -31,6 +31,7 @@ const Set<String> kWebpAssets = {
   'assets/images/intro_slide_4.webp',
   'assets/images/logo.webp',
   'assets/images/logo_icon.webp',
+  'assets/images/logo_mark_transparent.webp',
   'assets/images/logo_splash.webp',
   'assets/images/logo_splash_android12.webp',
   'assets/images/lung_respiratory.webp',

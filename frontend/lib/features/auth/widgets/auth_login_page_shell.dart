@@ -5,6 +5,7 @@ import '../../../core/layout/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../widgets/required_field_label.dart';
 import '../../../widgets/theme_toggle_button.dart';
+import 'auth_layout.dart';
 import 'auth_login_branding.dart';
 import 'auth_login_form_field.dart';
 import '../../../core/theme/app_typography.dart';
@@ -160,11 +161,28 @@ class AuthLoginPageShell extends StatelessWidget {
   final AuthLoginBranding? branding;
 
   bool _useSplit(BuildContext context) =>
-      branding != null && ResponsiveLayout.screenWidth(context) >= 900;
+      ResponsiveLayout.screenWidth(context) >= 900;
 
   @override
   Widget build(BuildContext context) {
     if (_useSplit(context)) {
+      final effectiveBranding = branding ??
+          AuthLoginBranding(
+            features: [
+              AuthLoginFeature(icon, welcomeTitle, subtitle),
+              const AuthLoginFeature(
+                Icons.verified_user_rounded,
+                'Verified & Secure',
+                'Your data is protected with end-to-end security',
+              ),
+              const AuthLoginFeature(
+                Icons.health_and_safety_rounded,
+                'Healthcare Network',
+                'Connect seamlessly with patients, clinics and providers',
+              ),
+            ],
+            footerNote: 'HIPAA-aware · Encrypted · Secure',
+          );
       return _SplitLoginScaffold(
         accentColor: accentColor,
         icon: icon,
@@ -172,7 +190,8 @@ class AuthLoginPageShell extends StatelessWidget {
         body: body,
         loading: loading,
         welcomeTitle: welcomeTitle,
-        branding: branding!,
+        branding: effectiveBranding,
+        maxWidth: maxWidth,
       );
     }
     if (branding != null) {
@@ -211,6 +230,7 @@ class _SplitLoginScaffold extends StatelessWidget {
     required this.loading,
     required this.welcomeTitle,
     required this.branding,
+    this.maxWidth = kAuthDesktopFormMaxWidth,
   });
 
   final Color accentColor;
@@ -220,6 +240,7 @@ class _SplitLoginScaffold extends StatelessWidget {
   final bool loading;
   final String welcomeTitle;
   final AuthLoginBranding branding;
+  final double maxWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -232,7 +253,7 @@ class _SplitLoginScaffold extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      flex: 48,
+                      flex: kAuthLeftPanelFlex,
                       child: _LoginBrandingPanel(
                         accentColor: accentColor,
                         icon: icon,
@@ -242,11 +263,11 @@ class _SplitLoginScaffold extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      flex: 52,
+                      flex: kAuthRightPanelFlex,
                       child: _LoginFormSide(
                         accentColor: accentColor,
                         body: body,
-                        maxWidth: 400,
+                        maxWidth: maxWidth,
                       ),
                     ),
                   ],
@@ -262,6 +283,7 @@ class _SplitLoginScaffold extends StatelessWidget {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.arrow_back_rounded),
+                          tooltip: 'Back',
                           onPressed: () => Navigator.maybePop(context),
                           style: IconButton.styleFrom(
                             foregroundColor: Colors.white,
@@ -296,6 +318,7 @@ class _LoginBrandingPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      constraints: const BoxConstraints(minWidth: kAuthLeftPanelMinWidth),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,

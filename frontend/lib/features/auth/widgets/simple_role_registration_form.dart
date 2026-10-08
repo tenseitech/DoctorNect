@@ -9,6 +9,7 @@ import '../../../widgets/doctor_credentials_editor.dart';
 import '../../../widgets/form_scroll_helper.dart';
 import '../../../widgets/qualification_selector.dart';
 import '../../../widgets/registration_mobile_otp_section.dart';
+import 'auth_login_branding.dart';
 import 'auth_login_page_shell.dart';
 import 'auth_registration_page_shell.dart';
 import '../../../core/theme/app_typography.dart';
@@ -194,6 +195,7 @@ class _SimpleRoleRegistrationFormState
         accentColor: widget.accentColor,
         icon: widget.icon,
         welcomeTitle: widget.welcomeTitle,
+        branding: AuthLoginBranding.forUserType(widget.role),
         maxWidth: 480,
         subtitle: widget.subtitle,
         body: Form(

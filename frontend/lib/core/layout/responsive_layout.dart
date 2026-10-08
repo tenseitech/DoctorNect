@@ -25,7 +25,7 @@ abstract final class ResponsiveLayout {
     final w = screenWidth(context);
     if (w < compactMaxWidth) return w;
     if (w < mediumMaxWidth) return 720;
-    return 1100;
+    return 1200;
   }
 
   static bool get isWeb => kIsWeb;
