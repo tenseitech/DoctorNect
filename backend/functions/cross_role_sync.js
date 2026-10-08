@@ -1854,8 +1854,21 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
     if (snap.exists) docData = snap.data();
   } catch (_) {}
 
-  const doctorId = docData?.doctorId || fallbackData.doctorId || 'doc-unknown';
-  const patientId = docData?.patientId || fallbackData.patientId || 'pat-unknown';
+  const doctorId = firstText(docData?.doctorId, fallbackData.doctorId);
+  const patientId = firstText(docData?.patientId, fallbackData.patientId);
+  const patientName = firstText(docData?.patientName, fallbackData.patientName);
+  const patientAge = optionalFiniteNumber(docData?.patientAge ?? fallbackData.patientAge);
+  if (!doctorId || !patientId || !patientName || patientAge === undefined) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'prescription',
+      entityId: prescriptionId,
+      payload: { prescription_id: prescriptionId },
+      errorMessage: 'Skipped prescription placeholder: doctor_id, patient_id, patient_name, and patient_age are required.',
+      retryCount: 0,
+    });
+    return;
+  }
 
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
   await ensurePatientExistsInPostgres(patientId, fallbackData, { url, key, pool });
@@ -1864,12 +1877,13 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
     prescription_id: prescriptionId,
     doctor_id: doctorId,
     patient_id: patientId,
-    doctor_name: docData?.doctorName || fallbackData.doctorName || 'Doctor',
-    patient_name: docData?.patientName || fallbackData.patientName || 'Patient',
-    primary_diagnosis: docData?.primaryDiagnosis || 'General Consultation',
-    created_at: toIsoTimestamp(docData?.createdAt) || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    patient_name: patientName,
+    patient_age: Math.trunc(patientAge),
   };
+  putText(placeholderPrescription, 'doctor_name', docData?.doctorName, fallbackData.doctorName);
+  putText(placeholderPrescription, 'primary_diagnosis', docData?.primaryDiagnosis, docData?.diagnosis);
+  const prescriptionCreatedAt = toIsoTimestamp(docData?.createdAt);
+  if (prescriptionCreatedAt) placeholderPrescription.created_at = prescriptionCreatedAt;
 
   try {
     if (url && key) {
@@ -1885,16 +1899,15 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
       });
     } else if (pool) {
       await pool.query(`
-        INSERT INTO prescriptions (prescription_id, doctor_id, patient_id, doctor_name, patient_name, primary_diagnosis, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        INSERT INTO prescriptions (prescription_id, doctor_id, patient_id, patient_name, patient_age)
+        VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (prescription_id) DO NOTHING;
       `, [
         placeholderPrescription.prescription_id,
         placeholderPrescription.doctor_id,
         placeholderPrescription.patient_id,
-        placeholderPrescription.doctor_name,
         placeholderPrescription.patient_name,
-        placeholderPrescription.primary_diagnosis,
+        placeholderPrescription.patient_age,
       ]);
     }
   } catch (e) {
@@ -1907,12 +1920,22 @@ async function ensurePrescriptionExistsInPostgres(prescriptionId, fallbackData =
  */
 async function syncPharmacyDeliveryMedicinesToSupabase(deliveryId, rawMedicines, { url, key, pool }) {
   const medList = Array.isArray(rawMedicines) ? rawMedicines : [];
-  const medicineRows = medList.map((m, idx) => ({
-    delivery_id: deliveryId,
-    medicine_entry_id: String(m.medicineEntryId || m.id || `${deliveryId}_med_${idx}`),
-    availability: ['pending', 'available', 'outOfStock', 'substituted'].includes(m.availability) ? m.availability : 'pending',
-    substitute_name: m.substituteName || null,
-  }));
+  const medicineRows = medList.flatMap((m) => {
+    const entryId = firstText(m.medicineEntryId, m.id);
+    if (!entryId) return [];
+    const row = {
+      delivery_id: deliveryId,
+      medicine_entry_id: entryId,
+    };
+    // New dispense lines start as pending.
+    // frontend/lib/features/pharmacy/models/pharmacy_models.dart:117
+    const availability = firstText(m.availability) || 'pending';
+    if (['pending', 'available', 'outOfStock', 'substituted'].includes(availability)) {
+      row.availability = availability;
+    }
+    putText(row, 'substitute_name', m.substituteName);
+    return [row];
+  });
 
   if (url && key) {
     // 1. Delete existing delivery medicines
@@ -2278,10 +2301,24 @@ async function syncFirestorePharmacyDeliveryToSupabase(event) {
     return;
   }
 
-  const prescriptionId = after.prescriptionId;
-  const doctorId = after.doctorId;
-  const storeId = after.storeId || after.medicalStoreId;
-  const patientId = after.patientId || (after.draft && after.draft.patientId);
+  const prescriptionId = firstText(after.prescriptionId);
+  const doctorId = firstText(after.doctorId);
+  const storeId = firstText(after.storeId, after.medicalStoreId);
+  const patientId = firstText(after.patientId, after.draft && after.draft.patientId);
+  const doctorName = firstText(after.doctorName);
+  const storeName = firstText(after.storeName);
+  const patientName = firstText(after.patientName);
+  if (!prescriptionId || !doctorId || !storeId || !patientId || !doctorName || !storeName || !patientName) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'pharmacy_delivery',
+      entityId: deliveryId,
+      payload: { delivery_id: deliveryId },
+      errorMessage: 'Skipped pharmacy delivery: prescription, doctor, store, patient, and their names are required.',
+      retryCount: 0,
+    });
+    return;
+  }
 
   // Self-healing foreign keys
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
@@ -2294,9 +2331,10 @@ async function syncFirestorePharmacyDeliveryToSupabase(event) {
     patientName: after.patientName,
   }, { url, key, pool });
 
-  const rawStatus = after.status || 'sent';
+  // New deliveries are constructed with status sent.
+  // frontend/lib/features/pharmacy/models/pharmacy_models.dart:143
+  const rawStatus = firstText(after.status) || 'sent';
   const status = ['sent', 'viewed', 'partiallyDispensed', 'dispensed'].includes(rawStatus) ? rawStatus : 'sent';
-  const medicineCount = parseInt(after.medicineCount ?? (Array.isArray(after.medicineLines) ? after.medicineLines.length : 0), 10) || 0;
 
   const deliveryPayload = {
     delivery_id: deliveryId,
@@ -2304,18 +2342,27 @@ async function syncFirestorePharmacyDeliveryToSupabase(event) {
     doctor_id: doctorId,
     store_id: storeId,
     patient_id: patientId,
-    doctor_name: after.doctorName || null,
-    store_name: after.storeName || null,
-    patient_name: after.patientName || null,
-    status: status,
-    sent_at: toIsoTimestamp(after.sentAt) || new Date().toISOString(),
-    viewed_at: toIsoTimestamp(after.viewedAt),
-    dispensed_at: toIsoTimestamp(after.dispensedAt),
-    dispensing_notes: after.dispensingNotes || null,
-    medicine_count: medicineCount,
-    prescription_draft: after.draft || null,
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
+    doctor_name: doctorName,
+    store_name: storeName,
+    patient_name: patientName,
+    status,
   };
+  const sentAt = toIsoTimestamp(after.sentAt);
+  if (sentAt) deliveryPayload.sent_at = sentAt;
+  const viewedAt = toIsoTimestamp(after.viewedAt);
+  if (viewedAt) deliveryPayload.viewed_at = viewedAt;
+  const dispensedAt = toIsoTimestamp(after.dispensedAt);
+  if (dispensedAt) deliveryPayload.dispensed_at = dispensedAt;
+  putText(deliveryPayload, 'dispensing_notes', after.dispensingNotes);
+  const medicineCount = optionalFiniteNumber(after.medicineCount);
+  if (medicineCount !== undefined) {
+    deliveryPayload.medicine_count = Math.trunc(medicineCount);
+  } else if (Array.isArray(after.medicineLines)) {
+    deliveryPayload.medicine_count = after.medicineLines.length;
+  }
+  if (after.draft) deliveryPayload.prescription_draft = after.draft;
+  const deliveryUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (deliveryUpdatedAt) deliveryPayload.updated_at = deliveryUpdatedAt;
 
   try {
     await executeWithRetry(

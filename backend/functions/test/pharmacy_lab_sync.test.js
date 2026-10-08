@@ -294,6 +294,41 @@ test('Pharmacy Delivery Sync: Upserts header and child delivery medicines', asyn
   }
 });
 
+test('Pharmacy Delivery Sync: missing patient name is dead-lettered and not inserted', async () => {
+  process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url: String(url), method: opts && opts.method, body: opts && opts.body });
+    return { ok: true, status: 200, json: async () => [], text: async () => 'OK' };
+  };
+  try {
+    await syncFirestorePharmacyDeliveryToSupabase({
+      params: { deliveryId: 'deliv-missing' },
+      data: {
+        after: {
+          exists: true,
+          id: 'deliv-missing',
+          data: () => ({
+            prescriptionId: 'rx-1',
+            doctorId: 'doc-1',
+            storeId: 'store-1',
+            patientId: 'pat-1',
+            doctorName: 'Ada',
+            storeName: 'Store',
+          }),
+        },
+      },
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+  assert.equal(calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/pharmacy_deliveries')), false);
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.equal(String(dlq.body).includes('Patient'), false);
+});
+
 test('Lab Profile Sync: Upserts labs table with defaults and soft-deletes on removal', async () => {
   process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
