@@ -350,17 +350,17 @@ describe('patient appointment create', () => {
   test('patient cancel and reschedule update the existing document and cannot create another', async () => {
     const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
     const existing = db.collection('appointments').doc(APPT_ID);
-    await assertSucceeds(existing.set({
-      doctorStatus: 'cancelled',
-      cancellationReason: 'Plans changed',
-      updatedAt: new Date(),
-    }, { merge: true }));
-    await assertSucceeds(existing.set({
+    await assertFails(existing.set({
       dateTime: new Date('2026-10-09T05:30:00.000Z'),
       slotLabel: '11:00 AM',
       patientStatus: 'confirmed',
       doctorStatus: 'confirmed',
       wasRescheduled: true,
+      updatedAt: new Date(),
+    }, { merge: true }));
+    await assertSucceeds(existing.set({
+      doctorStatus: 'cancelled',
+      cancellationReason: 'Plans changed',
       updatedAt: new Date(),
     }, { merge: true }));
     await assertFails(
@@ -390,17 +390,17 @@ describe('appointment update key restrictions', () => {
   test('patient cancel/reschedule/review keys are allowed', async () => {
     const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
     const ref = db.collection('appointments').doc(APPT_ID);
-    await assertSucceeds(ref.update({
-      doctorStatus: 'cancelled',
-      cancellationReason: 'Plans changed',
-      updatedAt: new Date(),
-    }));
-    await assertSucceeds(ref.update({
+    await assertFails(ref.update({
       dateTime: new Date('2026-10-09T04:30:00.000Z'),
       slotLabel: '11:00 AM',
       patientStatus: 'confirmed',
       doctorStatus: 'confirmed',
       wasRescheduled: true,
+      updatedAt: new Date(),
+    }));
+    await assertSucceeds(ref.update({
+      doctorStatus: 'cancelled',
+      cancellationReason: 'Plans changed',
       updatedAt: new Date(),
     }));
     await assertFails(ref.update({
@@ -526,17 +526,17 @@ describe('tightened appointment rules', () => {
   test('patient cancel, reschedule, and review are allowed', async () => {
     const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
     const ref = db.collection('appointments').doc(APPT_ID);
-    await assertSucceeds(ref.update({
-      doctorStatus: 'cancelled',
-      cancellationReason: 'Plans changed',
-      updatedAt: new Date(),
-    }));
-    await assertSucceeds(ref.update({
+    await assertFails(ref.update({
       dateTime: new Date('2026-10-12T04:30:00.000Z'),
       slotLabel: '11:00 AM',
       patientStatus: 'confirmed',
       doctorStatus: 'confirmed',
       wasRescheduled: true,
+      updatedAt: new Date(),
+    }));
+    await assertSucceeds(ref.update({
+      doctorStatus: 'cancelled',
+      cancellationReason: 'Plans changed',
       updatedAt: new Date(),
     }));
     await assertFails(ref.update({
@@ -574,24 +574,36 @@ describe('tightened appointment rules', () => {
     await assertFails(ref.update({ reviewRating: 6, updatedAt: new Date() }));
   });
 
-  test('patient reschedule cannot change tokenNumber', async () => {
+  test('patient reschedule is denied and cancel depends on doctorStatus', async () => {
     const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
     const ref = db.collection('appointments').doc(APPT_ID);
-    await assertSucceeds(ref.update({
+    await assertFails(ref.update({
       dateTime: new Date('2026-10-12T04:30:00.000Z'),
       slotLabel: '11:00 AM',
+      tokenNumber: 8,
       patientStatus: 'confirmed',
       doctorStatus: 'confirmed',
       wasRescheduled: true,
       updatedAt: new Date(),
     }));
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection('appointments').doc(APPT_ID).update({
+        doctorStatus: 'completed',
+      });
+    });
     await assertFails(ref.update({
-      dateTime: new Date('2026-10-13T04:30:00.000Z'),
-      slotLabel: '12:00 PM',
-      tokenNumber: 8,
-      patientStatus: 'confirmed',
-      doctorStatus: 'confirmed',
-      wasRescheduled: true,
+      doctorStatus: 'cancelled',
+      cancellationReason: 'too late',
+      updatedAt: new Date(),
+    }));
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection('appointments').doc(APPT_ID).update({
+        doctorStatus: 'confirmed',
+      });
+    });
+    await assertSucceeds(ref.update({
+      doctorStatus: 'cancelled',
+      cancellationReason: 'Plans changed',
       updatedAt: new Date(),
     }));
   });

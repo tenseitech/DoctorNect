@@ -547,28 +547,13 @@ service cloud.firestore {
       ]);
     }
 
-    // cancelByPatient writes cancellationReason and doctorStatus cancelled (:929-932).
+    // cancelByPatient writes cancellationReason and doctorStatus cancelled.
+    // Only while the visit is still pending, confirmed, or waiting.
     function appointmentPatientCancel() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
-      return changed.hasOnly(['cancellationReason', 'doctorStatus', 'updatedAt'])
+      return resource.data.doctorStatus in ['pendingRequest', 'confirmed', 'waiting']
+        && changed.hasOnly(['cancellationReason', 'doctorStatus', 'updatedAt'])
         && request.resource.data.doctorStatus == 'cancelled';
-    }
-
-    // reschedulePatient writes dateTime, slotLabel, confirmed statuses, wasRescheduled (:875-883).
-    // tokenNumber at :878 is not allowed. See appointmentClientImmutable.
-    function appointmentPatientReschedule() {
-      let changed = request.resource.data.diff(resource.data).affectedKeys();
-      return changed.hasOnly([
-        'dateTime',
-        'slotLabel',
-        'patientStatus',
-        'doctorStatus',
-        'wasRescheduled',
-        'updatedAt'
-      ])
-        && request.resource.data.patientStatus == 'confirmed'
-        && request.resource.data.doctorStatus == 'confirmed'
-        && request.resource.data.wasRescheduled == true;
     }
 
     // submitReview (:1159-1164) and updateReview (:1192, :1216).
@@ -644,7 +629,6 @@ service cloud.firestore {
         && (
           (isPatient() && resource.data.patientId == myPatientId() && (
             appointmentPatientCancel()
-            || appointmentPatientReschedule()
             || appointmentPatientReview()
           ))
           || (isVerifiedDoctor() && resource.data.doctorId == myDoctorId() && (
