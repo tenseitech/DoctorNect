@@ -1222,5 +1222,47 @@ test('rescheduleAppointment rejects a non-owner and a completed or cancelled app
   );
 });
 
+test('reconcileAppointmentSlot is idempotent after rescheduleAppointment has moved the slot', async () => {
+  const db = createConcurrentMockFirestore();
+  const doctorId = 'doc_rs';
+  seedRescheduleDoctor(db, doctorId);
+  const oldTime = '2026-10-06T03:30:00.000Z';
+  const newTime = '2026-10-07T03:30:00.000Z';
+  const oldSlotId = deriveSlotId(doctorId, oldTime);
+  db.docs.set('appointments/appt_move', {
+    doctorId,
+    patientId: 'pat_owner',
+    patientName: 'Owner',
+    doctorStatus: 'confirmed',
+    dateTime: oldTime,
+    tokenNumber: 2,
+  });
+  db.docs.set(`doctor_slots/${oldSlotId}`, {
+    activeAppointmentIds: ['appt_move'],
+  });
+
+  await rescheduleAppointmentHandler({
+    appointmentId: 'appt_move',
+    dateTime: newTime,
+    slotLabel: '09:00 AM',
+  }, { uid: 'uid_owner' }, db);
+
+  const after = db.docs.get('appointments/appt_move');
+  const newSlotId = deriveSlotId(doctorId, newTime);
+  const event = {
+    params: { appointmentId: 'appt_move' },
+    data: {
+      before: { data: () => ({ doctorId, dateTime: oldTime, tokenNumber: 2 }) },
+      after: { data: () => after },
+    },
+  };
+
+  await reconcileAppointmentSlotHandler(event, db);
+  await reconcileAppointmentSlotHandler(event, db);
+
+  assert.deepEqual(db.docs.get(`doctor_slots/${newSlotId}`).activeAppointmentIds, ['appt_move']);
+  assert.deepEqual(db.docs.get(`doctor_slots/${oldSlotId}`).activeAppointmentIds, []);
+});
+
 
 
