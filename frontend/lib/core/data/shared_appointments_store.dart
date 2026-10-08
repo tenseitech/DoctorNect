@@ -222,6 +222,32 @@ class SharedAppointmentsStore extends ChangeNotifier {
   static Future<Map<String, dynamic>> Function(Map<String, dynamic> payload)?
       debugBookAppointmentOverride;
 
+  /// When set, [refreshForPatient] uses this instead of Supabase.
+  @visibleForTesting
+  static Future<List<DoctorNectAppointmentRecord>> Function(String patientId)?
+      debugPatientSupabaseRefresh;
+
+  /// When set, [refreshForPatient] uses this instead of Firestore.
+  @visibleForTesting
+  static Future<List<DoctorNectAppointmentRecord>> Function(String patientId)?
+      debugPatientFirestoreRefresh;
+
+  /// Supabase rows first. The same [DoctorNectAppointmentRecord.id] keeps the Firestore row.
+  @visibleForTesting
+  static List<DoctorNectAppointmentRecord> mergePatientRefresh({
+    required List<DoctorNectAppointmentRecord> supabaseRows,
+    required List<DoctorNectAppointmentRecord> firestoreRows,
+  }) {
+    final byId = <String, DoctorNectAppointmentRecord>{};
+    for (final row in supabaseRows) {
+      byId[row.id] = row;
+    }
+    for (final row in firestoreRows) {
+      byId[row.id] = row;
+    }
+    return byId.values.toList();
+  }
+
   List<DoctorNectAppointmentRecord> get records =>
       _recordsCache ??= List.unmodifiable(_records);
 
@@ -274,28 +300,40 @@ class SharedAppointmentsStore extends ChangeNotifier {
 
   Future<void> refreshForPatient(String patientId) async {
     if (patientId.isEmpty) return;
-    if (SupabaseBootstrap.isReady) {
+    var supabaseRows = const <DoctorNectAppointmentRecord>[];
+    final supabaseOverride = debugPatientSupabaseRefresh;
+    if (SupabaseBootstrap.isReady || supabaseOverride != null) {
       try {
-        final rows = await SupabasePatientRepository.instance.fetchAppointments(
-          patientId,
-        );
-        final records = rows
-            .map((r) => SupabasePatientRepository.instance.toRecord(r))
-            .whereType<DoctorNectAppointmentRecord>()
-            .toList();
-        mergeFromFirestore(records);
-        return;
+        if (supabaseOverride != null) {
+          supabaseRows = await supabaseOverride(patientId);
+        } else {
+          final rows = await SupabasePatientRepository.instance
+              .fetchAppointments(patientId);
+          supabaseRows = rows
+              .map((r) => SupabasePatientRepository.instance.toRecord(r))
+              .whereType<DoctorNectAppointmentRecord>()
+              .toList();
+        }
       } catch (e) {
         if (kDebugMode) {
           debugPrint('Failed to refresh appointments from Supabase: $e');
         }
+        supabaseRows = const [];
       }
     }
-    final remote = await FirestoreService.instance.appointment.fetchForPatient(
-      patientId,
-      preferCache: false,
+    final firestoreOverride = debugPatientFirestoreRefresh;
+    final firestoreRows = firestoreOverride != null
+        ? await firestoreOverride(patientId)
+        : await FirestoreService.instance.appointment.fetchForPatient(
+            patientId,
+            preferCache: false,
+          );
+    mergeFromFirestore(
+      mergePatientRefresh(
+        supabaseRows: supabaseRows,
+        firestoreRows: firestoreRows,
+      ),
     );
-    mergeFromFirestore(remote);
   }
 
   void clearForSignOut() {
