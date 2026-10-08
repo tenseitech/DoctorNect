@@ -87,9 +87,14 @@ service cloud.firestore {
 
     // Admin-approved clinical access — pending doctors may only read own profile.
     function isVerifiedDoctor() {
-      return isDoctor()
-        && doctorProfileExists()
-        && doctorProfileDoc().get('verified', false) == true;
+      // Ternary so a non-doctor never get()s a missing doctors/{id} document.
+      // A missing-doc get() is an evaluation error, and this emulator still
+      // logs that error when && would otherwise skip it.
+      return isDoctor() ? (
+        myDoctorId() != ''
+        && exists(doctorProfilePath())
+        && get(doctorProfilePath()).data.get('verified', false) == true
+      ) : false;
     }
 
     function isPatient() {
@@ -318,11 +323,21 @@ service cloud.firestore {
         );
     }
 
+    function doctorOwnsAppointment() {
+      return isVerifiedDoctor()
+        && resource.data.get('doctorId', '') == myDoctorId();
+    }
+
+    function patientOwnsAppointment() {
+      return isPatient()
+        && resource != null
+        && resource.data.get('patientId', '') == myPatientId();
+    }
+
     function appointmentParty() {
-      return isSignedIn() && (
-        (isVerifiedDoctor() && resource.data.doctorId == myDoctorId()) ||
-        (isPatient() && resource.data.patientId == myPatientId())
-      );
+      return isSignedIn()
+        && resource != null
+        && (doctorOwnsAppointment() || patientOwnsAppointment());
     }
 
     function appointmentCreateValid() {
@@ -341,7 +356,7 @@ service cloud.firestore {
       let data = request.resource.data;
       return isDoctor()
         && data.get('source', '') == 'walkin'
-        && data.doctorId == request.auth.uid
+        && data.get('doctorId', '') == request.auth.uid
         && !data.keys().hasAny(['createdVia']);
     }
 
@@ -532,43 +547,48 @@ service cloud.firestore {
       // Patient creates are Admin SDK only (bookAppointment). A client create
       // remains allowed for a verified doctor's walk-in.
       allow create: if walkInAppointmentCreateValid();
-      allow update: if appointmentParty()
+      // Direct resource.data.doctorId throws when that field is absent.
+      // request.method keeps a create from entering the update checks.
+      allow update: if request.method == 'update'
+        && appointmentParty()
         && validAppointmentUpdate();
       allow delete: if false;
     }
 
     function appointmentClientImmutable() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-        'createdVia',
-        'doctorId',
-        'patientId',
-        'tokenNumber',
-        'createdAt'
-      ]);
+      return request.resource.data.get('createdVia', '') == resource.data.get('createdVia', '')
+        && request.resource.data.get('doctorId', '') == resource.data.get('doctorId', '')
+        && request.resource.data.get('patientId', '') == resource.data.get('patientId', '')
+        && request.resource.data.get('tokenNumber', 0) == resource.data.get('tokenNumber', 0)
+        && request.resource.data.get('createdAt', 0) == resource.data.get('createdAt', 0);
     }
 
     // cancelByPatient writes cancellationReason and doctorStatus cancelled.
     // Only while the visit is still pending, confirmed, or waiting.
     function appointmentPatientCancel() {
-      let changed = request.resource.data.diff(resource.data).affectedKeys();
-      return resource.data.doctorStatus in ['pendingRequest', 'confirmed', 'waiting']
-        && changed.hasOnly(['cancellationReason', 'doctorStatus', 'updatedAt'])
-        && request.resource.data.doctorStatus == 'cancelled';
+      return (
+          resource.data.get('doctorStatus', '') == 'pendingRequest'
+          || resource.data.get('doctorStatus', '') == 'confirmed'
+          || resource.data.get('doctorStatus', '') == 'waiting'
+        )
+        && request.resource.data.get('doctorStatus', '') == 'cancelled'
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['cancellationReason', 'doctorStatus', 'updatedAt']);
     }
 
     // submitReview (:1159-1164) and updateReview (:1192, :1216).
     // reviewRating is 1..5 in review_repository.dart:110 and :163.
     function appointmentPatientReview() {
-      let changed = request.resource.data.diff(resource.data).affectedKeys();
-      return resource.data.doctorStatus == 'completed'
-        && request.resource.data.reviewRating is int
-        && request.resource.data.reviewRating >= 1
-        && request.resource.data.reviewRating <= 5
+      return resource.data.get('doctorStatus', '') == 'completed'
+        && request.resource.data.get('reviewRating', 0) is int
+        && request.resource.data.get('reviewRating', 0) >= 1
+        && request.resource.data.get('reviewRating', 0) <= 5
         && (
-          changed.hasOnly(['reviewRating', 'updatedAt'])
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewRating', 'updatedAt'])
           || (
-            changed.hasOnly(['hasReview', 'reviewRating', 'reviewId', 'reviewCreatedAt', 'updatedAt'])
-            && request.resource.data.hasReview == true
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['hasReview', 'reviewRating', 'reviewId', 'reviewCreatedAt', 'updatedAt'])
+            && request.resource.data.get('hasReview', false) == true
           )
         );
     }
@@ -596,18 +616,18 @@ service cloud.firestore {
         'updatedAt'
       ])
         && (!changed.hasAny(['doctorStatus'])
-          || request.resource.data.doctorStatus in [
+          || request.resource.data.get('doctorStatus', '') in [
             'pendingRequest', 'confirmed', 'waiting', 'inProgress', 'completed', 'cancelled', 'noShow'
           ])
         && (!changed.hasAny(['patientStatus'])
-          || request.resource.data.patientStatus in ['pending', 'confirmed']);
+          || request.resource.data.get('patientStatus', '') in ['pending', 'confirmed']);
     }
 
     // cancelByDoctor writes cancellationReason and doctorStatus cancelled (:967-968).
     function appointmentDoctorCancel() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       return changed.hasOnly(['cancellationReason', 'doctorStatus', 'updatedAt'])
-        && request.resource.data.doctorStatus == 'cancelled';
+        && request.resource.data.get('doctorStatus', '') == 'cancelled';
     }
 
     // rescheduleByDoctor writes dateTime, slotLabel, doctorStatus confirmed, wasRescheduled (:901-905).
@@ -620,18 +640,17 @@ service cloud.firestore {
         'wasRescheduled',
         'updatedAt'
       ])
-        && request.resource.data.doctorStatus == 'confirmed'
-        && request.resource.data.wasRescheduled == true;
+        && request.resource.data.get('doctorStatus', '') == 'confirmed'
+        && request.resource.data.get('wasRescheduled', false) == true;
     }
 
     function validAppointmentUpdate() {
-      return appointmentClientImmutable()
-        && (
-          (isPatient() && resource.data.patientId == myPatientId() && (
+      return appointmentClientImmutable() && (
+          (isPatient() && resource.data.get('patientId', '') == myPatientId() && (
             appointmentPatientCancel()
             || appointmentPatientReview()
           ))
-          || (isVerifiedDoctor() && resource.data.doctorId == myDoctorId() && (
+          || (isVerifiedDoctor() && resource.data.get('doctorId', '') == myDoctorId() && (
             appointmentDoctorClinicalUpdate()
             || appointmentDoctorCancel()
             || appointmentDoctorReschedule()
@@ -644,21 +663,23 @@ service cloud.firestore {
     match /prescriptions/{prescriptionId} {
       // Doctors may read non-existent docs (existence check before first save).
       allow read: if isSignedIn() && (
-        (isVerifiedDoctor() && !exists(/databases/$(database)/documents/prescriptions/$(prescriptionId))) ||
-        (isPatient() && resource.data.patientId == myPatientId()) ||
-        (isVerifiedDoctor()
-          && resource.data.doctorId == myDoctorId()
-          && doctorCanReadPatientClinicalData(resource.data.patientId))
+        (isVerifiedDoctor() && !exists(/databases/$(database)/documents/prescriptions/$(prescriptionId)))
+        || (resource != null && isPatient() && resource.data.get('patientId', '') == myPatientId())
+        || (resource != null && isVerifiedDoctor()
+          && resource.data.get('doctorId', '') == myDoctorId()
+          && doctorCanReadPatientClinicalData(resource.data.get('patientId', '')))
       );
       allow create: if isVerifiedDoctor()
         && request.resource.data.doctorId == myDoctorId()
         && request.resource.data.keys().hasAll(['patientId', 'doctorId', 'prescriptionId'])
         && doctorCanReadPatientClinicalData(request.resource.data.patientId);
-      allow update: if isVerifiedDoctor()
-        && resource.data.doctorId == myDoctorId()
-        && request.resource.data.doctorId == resource.data.doctorId
-        && request.resource.data.patientId == resource.data.patientId
-        && doctorCanReadPatientClinicalData(resource.data.patientId);
+      allow update: if exists(/databases/$(database)/documents/prescriptions/$(prescriptionId)) && (
+        isVerifiedDoctor()
+        && resource.data.get('doctorId', '') == myDoctorId()
+        && request.resource.data.get('doctorId', '') == resource.data.get('doctorId', '')
+        && request.resource.data.get('patientId', '') == resource.data.get('patientId', '')
+        && doctorCanReadPatientClinicalData(resource.data.get('patientId', ''))
+      );
       allow delete: if false;
     }
 
@@ -985,25 +1006,27 @@ service cloud.firestore {
     // ─── pharmacy_deliveries/{deliveryId} ────────────────────────────────
 
     match /pharmacy_deliveries/{deliveryId} {
-      allow read: if isSignedIn() && (
-        (isVerifiedDoctor() && resource.data.doctorId == myDoctorId()) ||
-        (isMedicalStore() && resource.data.storeId == myStoreId()) ||
-        (isPatient() && resource.data.patientId == myPatientId())
+      allow read: if resource != null && isSignedIn() && (
+        (isVerifiedDoctor() && resource.data.get('doctorId', '') == myDoctorId())
+        || (isMedicalStore() && resource.data.get('storeId', '') == myStoreId())
+        || (isPatient() && resource.data.get('patientId', '') == myPatientId())
       );
       allow create: if isVerifiedDoctor()
         && request.resource.data.doctorId == myDoctorId()
         && request.resource.data.keys().hasAll(['patientId', 'doctorId'])
         && doctorCanReadPatientClinicalData(request.resource.data.patientId);
-      allow update: if isSignedIn() && (
-        (isVerifiedDoctor()
-          && resource.data.doctorId == myDoctorId()
-          && request.resource.data.doctorId == resource.data.doctorId
-          && request.resource.data.patientId == resource.data.patientId) ||
-        (isMedicalStore()
-          && resource.data.storeId == myStoreId()
-          && request.resource.data.doctorId == resource.data.doctorId
-          && request.resource.data.patientId == resource.data.patientId
-          && request.resource.data.storeId == resource.data.storeId)
+      allow update: if exists(/databases/$(database)/documents/pharmacy_deliveries/$(deliveryId)) && (
+        isSignedIn() && (
+          (isVerifiedDoctor()
+            && resource.data.get('doctorId', '') == myDoctorId()
+            && request.resource.data.get('doctorId', '') == resource.data.get('doctorId', '')
+            && request.resource.data.get('patientId', '') == resource.data.get('patientId', ''))
+          || (isMedicalStore()
+            && resource.data.get('storeId', '') == myStoreId()
+            && request.resource.data.get('doctorId', '') == resource.data.get('doctorId', '')
+            && request.resource.data.get('patientId', '') == resource.data.get('patientId', '')
+            && request.resource.data.get('storeId', '') == resource.data.get('storeId', ''))
+        )
       );
       allow delete: if false;
     }
@@ -1147,7 +1170,8 @@ service cloud.firestore {
           && request.resource.data.get('authUid', '') == request.auth.uid
           && !request.resource.data.keys().hasAny(['pin', 'fcmToken'])
           && registrationVerifiedFieldsValid());
-      allow update: if isSuperAdmin()
+      allow update: if exists(/databases/$(database)/documents/ambulances/$(driverId)) && (
+        isSuperAdmin()
         || (isSignedIn() && (
           (isDriverOwner(driverId)
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isAvailable']))
@@ -1156,7 +1180,8 @@ service cloud.firestore {
             && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
                 || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']))
           || canLinkAmbulanceAuthUid(driverId)
-        ));
+        ))
+      );
       allow delete: if isSuperAdmin();
 
       match /private/settings {

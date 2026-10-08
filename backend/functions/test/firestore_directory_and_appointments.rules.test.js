@@ -667,3 +667,99 @@ describe('tightened appointment rules', () => {
     await assertFails(ref.update({ doctorStatus: 'cancelled' }));
   });
 });
+
+describe('prescription, delivery, and ambulance party rules', () => {
+  beforeEach(async () => {
+    await testEnv.clearFirestore();
+    await seed();
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db.collection('prescriptions').doc('rx_1').set({
+        prescriptionId: 'rx_1',
+        patientId: PATIENT_ID,
+        doctorId: DOCTOR_ID,
+        title: 'Prescription',
+      });
+      await db.collection('pharmacy_deliveries').doc('del_1').set({
+        prescriptionId: 'rx_1',
+        doctorId: DOCTOR_ID,
+        storeId: STORE_ID,
+        patientId: PATIENT_ID,
+        status: 'sent',
+      });
+      await db.collection('ambulances').doc(AMB_ID).set({
+        authUid: AMB_UID,
+        username: 'driver1',
+        serviceName: 'City Ambulance',
+        isAvailable: true,
+      });
+    });
+  });
+
+  test('unrelated signed-in user cannot read or write a prescription', async () => {
+    const db = testEnv.authenticatedContext(STORE_UID).firestore();
+    const ref = db.collection('prescriptions').doc('rx_1');
+    await assertFails(ref.get());
+    await assertFails(ref.set({
+      prescriptionId: 'rx_1',
+      patientId: PATIENT_ID,
+      doctorId: DOCTOR_ID,
+      title: 'nope',
+    }));
+  });
+
+  test('patient can read their prescription and the doctor can update the title', async () => {
+    const patient = testEnv.authenticatedContext(PATIENT_UID).firestore();
+    await assertSucceeds(patient.collection('prescriptions').doc('rx_1').get());
+    await assertFails(patient.collection('prescriptions').doc('rx_1').update({ title: 'changed' }));
+
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(doctor.collection('prescriptions').doc('rx_1').update({
+      title: 'Viral fever',
+    }));
+    await assertSucceeds(doctor.collection('prescriptions').doc('rx_new').set({
+      prescriptionId: 'rx_new',
+      patientId: PATIENT_ID,
+      doctorId: DOCTOR_ID,
+    }));
+  });
+
+  test('unrelated signed-in user cannot read or write a pharmacy delivery', async () => {
+    const db = testEnv.authenticatedContext(LAB_UID).firestore();
+    const ref = db.collection('pharmacy_deliveries').doc('del_1');
+    await assertFails(ref.get());
+    await assertFails(ref.update({ status: 'viewed' }));
+  });
+
+  test('patient can read a delivery and the store can update its status', async () => {
+    const patient = testEnv.authenticatedContext(PATIENT_UID).firestore();
+    await assertSucceeds(patient.collection('pharmacy_deliveries').doc('del_1').get());
+
+    const store = testEnv.authenticatedContext(STORE_UID).firestore();
+    await assertSucceeds(store.collection('pharmacy_deliveries').doc('del_1').update({
+      status: 'viewed',
+    }));
+
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(doctor.collection('pharmacy_deliveries').doc('del_new').set({
+      doctorId: DOCTOR_ID,
+      patientId: PATIENT_ID,
+      storeId: STORE_ID,
+      status: 'sent',
+    }));
+  });
+
+  test('unrelated signed-in user cannot read or write an ambulance', async () => {
+    const db = testEnv.authenticatedContext(LAB_UID).firestore();
+    const ref = db.collection('ambulances').doc(AMB_ID);
+    await assertFails(ref.get());
+    await assertFails(ref.update({ isAvailable: false }));
+  });
+
+  test('the driver can read their ambulance and update availability', async () => {
+    const db = testEnv.authenticatedContext(AMB_UID).firestore();
+    const ref = db.collection('ambulances').doc(AMB_ID);
+    await assertSucceeds(ref.get());
+    await assertSucceeds(ref.update({ isAvailable: false }));
+  });
+});
