@@ -91,7 +91,7 @@ flutterfire --version
 - **Build → Firestore Database → Create database**
 - **Start in test mode** (development only)
 - Region: **asia-south1 (Mumbai)**
-- Cloud Functions Firestore triggers must use `FIRESTORE_TRIGGER_REGION=asia-south1` (the database location). Do not deploy triggers in a different region.
+- Cloud Functions Firestore triggers must use `FIRESTORE_TRIGGER_REGION` equal to the live Firestore database location (`asia-south2` for `medibond-45fad`). Do not deploy triggers in a different region.
 
 ### Storage (optional — files / reports)
 

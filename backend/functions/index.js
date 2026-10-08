@@ -112,8 +112,8 @@ const {
 assertProductionSecrets();
 assertProductionOtpSafety();
 
-/** Firestore triggers must run in the Firestore database location (asia-south1); callables in asia-south1. */
-const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south1').trim();
+/** Firestore triggers must run in the Firestore database location (live: asia-south2); callables in asia-south1. */
+const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south2').trim();
 const CALLABLE_REGION = 'asia-south1';
 
 /** Redis secrets are bound to OTP callables only when the OTP Redis mirror is enabled. */

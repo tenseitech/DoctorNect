@@ -5,13 +5,12 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 
-test('H-9: Firestore triggers default to asia-south1 and no asia-south2 remains in index.js', () => {
+test('H-9: Firestore triggers default to the live database location asia-south2', () => {
   const src = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
   assert.match(
     src,
-    /FIRESTORE_TRIGGER_REGION = String\(process\.env\.FIRESTORE_TRIGGER_REGION \|\| 'asia-south1'\)/,
+    /FIRESTORE_TRIGGER_REGION = String\(process\.env\.FIRESTORE_TRIGGER_REGION \|\| 'asia-south2'\)/,
   );
-  assert.equal(src.includes('asia-south2'), false);
   assert.match(src, /region: FIRESTORE_TRIGGER_REGION/);
 });
 
