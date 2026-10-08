@@ -608,6 +608,7 @@ class UserRepository {
       if (trimmed.isEmpty) return null;
       final snap = await _db
           .collection(FirestorePaths.doctors)
+          .where('verified', isEqualTo: true)
           .where('councilNumber', isEqualTo: trimmed)
           .limit(1)
           .get(const GetOptions(source: Source.server));

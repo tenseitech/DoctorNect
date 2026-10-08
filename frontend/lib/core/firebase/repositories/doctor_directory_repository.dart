@@ -19,7 +19,7 @@ class DoctorDirectoryRepository {
   }
 
   Future<List<DoctorListing>> fetchAllDoctors({
-    bool verifiedOnly = false,
+    bool verifiedOnly = true,
   }) async {
     if (!FirebaseBootstrap.isReady) return const [];
 
@@ -31,7 +31,7 @@ class DoctorDirectoryRepository {
     }
 
     final snapshot = await FirestoreReadHelper.getQuery(
-      query: query.limit(FirestoreQueryLimits.connectionsPage * 2),
+      query: query.limit(FirestoreQueryLimits.verifiedDirectoryListingCap),
     );
 
     return snapshot.docs
@@ -41,7 +41,7 @@ class DoctorDirectoryRepository {
   }
 
   /// Real-time stream of all doctors — automatically re-emits on Firestore changes.
-  Stream<List<DoctorListing>> streamAllDoctors({bool verifiedOnly = false}) {
+  Stream<List<DoctorListing>> streamAllDoctors({bool verifiedOnly = true}) {
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
@@ -52,7 +52,7 @@ class DoctorDirectoryRepository {
     }
 
     return query
-        .limit(FirestoreQueryLimits.connectionsPage * 2)
+        .limit(FirestoreQueryLimits.verifiedDirectoryListingCap)
         .snapshots()
         .map(
           (snap) => snap.docs
