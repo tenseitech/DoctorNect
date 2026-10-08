@@ -511,6 +511,14 @@ test('hashOtp in production project fails challenge creation when HMAC secret is
       (err) => err.code === 'internal' && err.message.includes('Could not send OTP'),
     );
 
+    // 1b. Production rejects a non-create hash as well. No legacy fallback.
+    assert.throws(
+      () => {
+        hashOtp('123456', { role: 'patient', digits: '9876543210', purpose: 'verify' });
+      },
+      (err) => err.code === 'internal' && err.message.includes('Could not send OTP'),
+    );
+
     // 2. Calling with positional arguments and purpose: 'create' also throws
     assert.throws(
       () => {

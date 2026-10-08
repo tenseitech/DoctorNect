@@ -16,6 +16,7 @@ test.describe('Demo accounts configuration gating', () => {
   const origGcloud = process.env.GCLOUD_PROJECT;
   const origGoogleCloud = process.env.GOOGLE_CLOUD_PROJECT;
   const origEmulator = process.env.FUNCTIONS_EMULATOR;
+  const origMsg91 = process.env.MSG91_AUTHKEY;
 
   test.afterEach(() => {
     // Restore env & reset testing overrides
@@ -27,6 +28,9 @@ test.describe('Demo accounts configuration gating', () => {
 
     if (origEmulator === undefined) delete process.env.FUNCTIONS_EMULATOR;
     else process.env.FUNCTIONS_EMULATOR = origEmulator;
+
+    if (origMsg91 === undefined) delete process.env.MSG91_AUTHKEY;
+    else process.env.MSG91_AUTHKEY = origMsg91;
 
     setDemoConfigDocForTesting(undefined);
     resetDemoConfigCacheForTesting();
@@ -136,6 +140,7 @@ test.describe('Demo accounts configuration gating', () => {
 
     setDemoConfigDocForTesting(null); // demo login disabled
 
+    process.env.MSG91_AUTHKEY = 'unit-test-hmac-key';
     const { consumeOtpChallengeAtomically, hashOtp } = require('../registration_otp');
     const { Timestamp } = require('firebase-admin/firestore');
 
@@ -221,6 +226,7 @@ test.describe('Demo accounts configuration gating', () => {
       },
     });
 
+    process.env.MSG91_AUTHKEY = 'unit-test-hmac-key';
     const { consumeOtpChallengeAtomically, hashOtp } = require('../registration_otp');
     const { Timestamp } = require('firebase-admin/firestore');
 
@@ -294,6 +300,7 @@ test.describe('Demo accounts configuration gating', () => {
 
     setDemoConfigDocForTesting(null); // demo login disabled
 
+    process.env.MSG91_AUTHKEY = 'unit-test-hmac-key';
     const { consumeOtpChallengeAtomically, hashOtp } = require('../registration_otp');
     const { Timestamp } = require('firebase-admin/firestore');
 
@@ -432,6 +439,7 @@ test.describe('Demo accounts configuration gating', () => {
     process.env.GCLOUD_PROJECT = PROD_PROJECT;
     delete process.env.GOOGLE_CLOUD_PROJECT;
     delete process.env.FUNCTIONS_EMULATOR;
+    process.env.MSG91_AUTHKEY = 'unit-test-hmac-key';
 
     setDemoConfigDocForTesting({
       demoLoginEnabled: true,
@@ -535,6 +543,7 @@ test.describe('Demo accounts configuration gating', () => {
     process.env.GCLOUD_PROJECT = PROD_PROJECT;
     delete process.env.GOOGLE_CLOUD_PROJECT;
     delete process.env.FUNCTIONS_EMULATOR;
+    process.env.MSG91_AUTHKEY = 'unit-test-hmac-key';
 
     setDemoConfigDocForTesting({
       demoLoginEnabled: true,

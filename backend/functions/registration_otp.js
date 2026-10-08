@@ -302,13 +302,13 @@ function hashOtp(code, roleOrOpts, maybeDigits, maybeOpts) {
   }
   const secret = readMsg91AuthKey({ required: false });
   if (!secret) {
-    if (purpose === 'create' && isProductionFirebaseProject() && !isFunctionsEmulator()) {
+    if (isProductionFirebaseProject() && !isFunctionsEmulator()) {
       console.error(JSON.stringify({
         securityEvent: true,
         severity: 'ERROR',
         category: 'security',
         action: 'otp_hash_secret_missing',
-        detail: 'Cannot create OTP challenge without HMAC secret in production project',
+        detail: 'Cannot hash OTP without HMAC secret in production project',
       }));
       throw new HttpsError('internal', 'Could not send OTP. Please try again.');
     }
