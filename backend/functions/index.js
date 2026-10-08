@@ -118,6 +118,8 @@ const CALLABLE_REGION = 'asia-south1';
 
 /** Redis secrets are bound to OTP callables only when the OTP Redis mirror is enabled. */
 const OTP_REDIS_MIRROR_ON = String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';
+/** Firestore→Supabase triggers stay unregistered unless this is exactly `on`. */
+const ENABLE_SUPABASE_SYNC = String(process.env.ENABLE_SUPABASE_SYNC || '').trim().toLowerCase() === 'on';
 const OTP_REDIS_SECRET_OPTIONS = OTP_REDIS_MIRROR_ON
   ? { secrets: require('./redis').REDIS_SECRETS }
   : {};
@@ -1959,6 +1961,7 @@ const {
 
 const SYNC_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 
+if (ENABLE_SUPABASE_SYNC) {
 exports.syncAppointmentToSupabase = onDocumentWritten({
   document: 'appointments/{appointmentId}',
   region: FIRESTORE_TRIGGER_REGION,
@@ -1972,6 +1975,7 @@ exports.syncPrescriptionToSupabase = onDocumentWritten({
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestorePrescriptionToSupabase);
+}
 
 // ----------------------------------------------------------------------------
 // AWS S3 STORAGE INTEGRATION (asia-south1, onCall v2)
@@ -1988,6 +1992,7 @@ exports.getS3DownloadUrl = getS3DownloadUrl;
 exports.getS3DownloadUrls = getS3DownloadUrls;
 exports.deleteS3Object = deleteS3Object;
 
+if (ENABLE_SUPABASE_SYNC) {
 exports.syncDoctorToSupabase = onDocumentWritten({
   document: 'doctors/{doctorId}',
   region: FIRESTORE_TRIGGER_REGION,
@@ -2099,3 +2104,4 @@ exports.syncAmbulanceInviteToSupabase = onDocumentWritten({
   retry: true,
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceInviteToSupabase);
+}

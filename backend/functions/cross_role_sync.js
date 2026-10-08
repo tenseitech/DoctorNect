@@ -8,8 +8,12 @@
  * 
  * Includes:
  * 1. Strict loop prevention (detects syncedBy: 'supabase_bridge' | 'reconciler_bot')
- * 2. Monotonic timestamp verification
- * 3. Dead-Letter Queue (DLQ) logging on unrecoverable failures
+ * 2. Monotonic compare-and-skip: an appointment upsert runs only when Firestore
+ *    updatedAt is strictly newer than the Postgres row's updated_at. A missing
+ *    updatedAt never overwrites an existing row. A first insert (no Postgres row)
+ *    is allowed. Stale snapshots are skipped, not applied.
+ * 3. Dead-Letter Queue (DLQ) logging on unrecoverable failures and when the
+ *    writer origin cannot be determined (those rows are not guessed).
  */
 
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
@@ -136,6 +140,148 @@ async function recordDlqFailure({ direction, entityType, entityId, payload, erro
   }
 }
 
+const APPOINTMENT_SYNC_ORIGINS = new Set([
+  'patient_supabase',
+  'patient_firestore',
+  'doctor_firestore',
+]);
+
+/** Finite number, or undefined when the Firestore field is absent. Zero is kept. */
+function optionalFiniteNumber(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const n = typeof value === 'number' ? value : Number(String(value).trim());
+  if (!Number.isFinite(n)) return undefined;
+  return n;
+}
+
+function firestoreTimestampMs(value) {
+  if (value == null || value === '') return null;
+  if (typeof value.toDate === 'function') {
+    const ms = value.toDate().getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (value instanceof Date) {
+    const ms = value.getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const ms = Date.parse(value);
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (typeof value === 'object' && Number.isFinite(value._seconds)) {
+    return value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1e6);
+  }
+  return null;
+}
+
+/**
+ * Writer origin already stored on the Firestore document.
+ * Returns null when the document does not say who wrote it — callers must skip.
+ */
+function resolveWriterSyncOrigin(doc) {
+  if (!doc || typeof doc !== 'object') return null;
+  const explicit = String(doc.syncOrigin || doc.sync_origin || '').trim();
+  if (APPOINTMENT_SYNC_ORIGINS.has(explicit)) return explicit;
+
+  const syncedBy = String(doc.syncedBy || '').trim().toLowerCase();
+  if (syncedBy === 'patient' || syncedBy === 'patient_client') return 'patient_firestore';
+  if (syncedBy === 'doctor' || syncedBy === 'doctor_client') return 'doctor_firestore';
+
+  const createdBy = String(doc.createdBy || doc.writerRole || doc.bookedByRole || '').trim().toLowerCase();
+  if (createdBy === 'patient') return 'patient_firestore';
+  if (createdBy === 'doctor') return 'doctor_firestore';
+
+  const source = String(doc.source || '').trim().toLowerCase();
+  if (source === 'walkin') return 'doctor_firestore';
+  if (source === 'patient' || source === 'patient_app') return 'patient_firestore';
+  return null;
+}
+
+function buildAppointmentSupabasePayload(after, appointmentId, syncOrigin) {
+  const dateTimeIso = after.dateTime?.toDate?.()
+    ? after.dateTime.toDate().toISOString()
+    : (after.dateTime ? new Date(after.dateTime).toISOString() : new Date().toISOString());
+
+  const payload = {
+    appointment_id: appointmentId,
+    doctor_id: after.doctorId || 'doc-unknown',
+    patient_id: after.patientId || null,
+    doctor_name: after.doctorName || 'Doctor',
+    specialization: after.specialization || 'General',
+    patient_name: after.patientName || 'Patient',
+    patient_gender: after.patientGender || 'Other',
+    date_time: dateTimeIso,
+    visit_type: after.visitType || 'newVisit',
+    patient_status: after.patientStatus || 'confirmed',
+    doctor_status: after.doctorStatus || 'pendingRequest',
+    clinic_name: after.clinicName || null,
+    clinic_address: after.clinicAddress || null,
+    cancellation_reason: after.cancellationReason || null,
+    diagnosis: after.diagnosis || null,
+    has_prescription: Boolean(after.hasPrescription),
+    sync_origin: syncOrigin,
+    synced_by: 'firestore_cloud_function',
+  };
+
+  const age = optionalFiniteNumber(after.patientAge);
+  if (age !== undefined) payload.patient_age = age;
+  const token = optionalFiniteNumber(after.tokenNumber);
+  if (token !== undefined) payload.token_number = token;
+  if (typeof after.slotLabel === 'string' && after.slotLabel.trim()) {
+    payload.slot_label = after.slotLabel.trim();
+  }
+  const updatedMs = firestoreTimestampMs(after.updatedAt);
+  if (updatedMs != null) payload.updated_at = new Date(updatedMs).toISOString();
+  return payload;
+}
+
+async function readRemoteUpdatedAtMs({ url, key, pool, table, idColumn, id }) {
+  if (!/^[a-z_]+$/.test(table) || !/^[a-z_]+$/.test(idColumn)) {
+    throw new Error('Unsupported compare-and-skip target');
+  }
+  if (url && key) {
+    const endpoint = `${url.replace(/\/+$/, '')}/rest/v1/${table}?${idColumn}=eq.${encodeURIComponent(id)}&select=updated_at&limit=1`;
+    const resp = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+      },
+    });
+    if (!resp.ok) {
+      throw new Error(`compare-and-skip read failed (${resp.status})`);
+    }
+    const rows = await resp.json();
+    if (!Array.isArray(rows) || rows.length === 0 || rows[0].updated_at == null) return null;
+    const ms = Date.parse(rows[0].updated_at);
+    return Number.isNaN(ms) ? null : ms;
+  }
+  if (pool) {
+    const result = await pool.query(
+      `SELECT updated_at FROM ${table} WHERE ${idColumn} = $1 LIMIT 1`,
+      [id],
+    );
+    if (!result.rows || result.rows.length === 0 || result.rows[0].updated_at == null) return null;
+    const ms = new Date(result.rows[0].updated_at).getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+  return null;
+}
+
+async function upsertMergeRow(pool, table, conflictColumn, payload) {
+  if (!/^[a-z_]+$/.test(table) || !/^[a-z_]+$/.test(conflictColumn)) {
+    throw new Error('Unsupported upsert target');
+  }
+  const cols = Object.keys(payload).filter((col) => /^[a-z_]+$/.test(col));
+  if (!cols.includes(conflictColumn)) throw new Error('Upsert payload missing conflict column');
+  const assignments = cols
+    .filter((col) => col !== conflictColumn)
+    .map((col) => `${col} = EXCLUDED.${col}`);
+  const sql = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')}) ON CONFLICT (${conflictColumn}) DO UPDATE SET ${assignments.join(', ')}`;
+  await pool.query(sql, cols.map((col) => payload[col]));
+}
+
 /**
  * Sync Firestore Appointment to Supabase
  */
@@ -154,6 +300,18 @@ async function syncFirestoreAppointmentToSupabase(event) {
     return;
   }
 
+  const syncOrigin = resolveWriterSyncOrigin(after);
+  if (!syncOrigin) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      payload: { reason: 'origin_undetermined' },
+      errorMessage: 'Skipped sync: appointment writer origin could not be determined from the document.',
+    });
+    return;
+  }
+
   const { url, key } = getSupabaseConfig();
   const pool = getPgPool();
 
@@ -162,34 +320,37 @@ async function syncFirestoreAppointmentToSupabase(event) {
     return;
   }
 
-  const dateTimeIso = after.dateTime?.toDate?.()
-    ? after.dateTime.toDate().toISOString()
-    : (after.dateTime ? new Date(after.dateTime).toISOString() : new Date().toISOString());
+  const localMs = firestoreTimestampMs(after.updatedAt);
+  let remoteMs = null;
+  try {
+    remoteMs = await readRemoteUpdatedAtMs({
+      url,
+      key,
+      pool,
+      table: 'appointments',
+      idColumn: 'appointment_id',
+      id: appointmentId,
+    });
+  } catch (err) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      payload: { reason: 'compare_and_skip_read_failed' },
+      errorMessage: err.message,
+      errorStack: err.stack,
+    });
+    return;
+  }
+  if (remoteMs != null && (localMs == null || localMs <= remoteMs)) {
+    console.info(`[SyncBridge] Skipping stale appointment snapshot ${appointmentId}`);
+    return;
+  }
 
-  const supabasePayload = {
-    appointment_id: appointmentId,
-    doctor_id: after.doctorId || 'doc-unknown',
-    patient_id: after.patientId || null,
-    doctor_name: after.doctorName || 'Doctor',
-    specialization: after.specialization || 'General',
-    patient_name: after.patientName || 'Patient',
-    patient_age: Number(after.patientAge) || 30,
-    patient_gender: after.patientGender || 'Other',
-    date_time: dateTimeIso,
-    slot_label: after.slotLabel || '10:00 AM',
-    visit_type: after.visitType || 'newVisit',
-    patient_status: after.patientStatus || 'confirmed',
-    doctor_status: after.doctorStatus || 'pendingRequest',
-    token_number: Number(after.tokenNumber) || 1,
-    clinic_name: after.clinicName || null,
-    clinic_address: after.clinicAddress || null,
-    cancellation_reason: after.cancellationReason || null,
-    diagnosis: after.diagnosis || null,
-    has_prescription: Boolean(after.hasPrescription),
-    sync_origin: 'doctor_firestore',
-    synced_by: 'firestore_cloud_function',
-    updated_at: new Date().toISOString(),
-  };
+  const supabasePayload = buildAppointmentSupabasePayload(after, appointmentId, syncOrigin);
+  if (!supabasePayload.updated_at && remoteMs == null) {
+    supabasePayload.updated_at = new Date().toISOString();
+  }
 
   try {
     await executeWithRetry(
@@ -211,46 +372,7 @@ async function syncFirestoreAppointmentToSupabase(event) {
             throw new Error(`Supabase PostgREST error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO appointments (
-              appointment_id, doctor_id, patient_id, doctor_name, specialization,
-              patient_name, patient_age, patient_gender, date_time, slot_label,
-              visit_type, patient_status, doctor_status, token_number, clinic_name,
-              clinic_address, cancellation_reason, diagnosis, has_prescription,
-              sync_origin, synced_by, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, NOW()
-            ) ON CONFLICT (appointment_id) DO UPDATE SET
-              doctor_status = EXCLUDED.doctor_status,
-              patient_status = EXCLUDED.patient_status,
-              diagnosis = EXCLUDED.diagnosis,
-              has_prescription = EXCLUDED.has_prescription,
-              sync_origin = 'doctor_firestore',
-              synced_by = 'firestore_cloud_function',
-              updated_at = NOW();
-          `, [
-            supabasePayload.appointment_id,
-            supabasePayload.doctor_id,
-            supabasePayload.patient_id,
-            supabasePayload.doctor_name,
-            supabasePayload.specialization,
-            supabasePayload.patient_name,
-            supabasePayload.patient_age,
-            supabasePayload.patient_gender,
-            supabasePayload.date_time,
-            supabasePayload.slot_label,
-            supabasePayload.visit_type,
-            supabasePayload.patient_status,
-            supabasePayload.doctor_status,
-            supabasePayload.token_number,
-            supabasePayload.clinic_name,
-            supabasePayload.clinic_address,
-            supabasePayload.cancellation_reason,
-            supabasePayload.diagnosis,
-            supabasePayload.has_prescription,
-            supabasePayload.sync_origin,
-            supabasePayload.synced_by,
-          ]);
+          await upsertMergeRow(pool, 'appointments', 'appointment_id', supabasePayload);
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'appointment', entityId: appointmentId } }
@@ -302,7 +424,6 @@ async function syncFirestorePrescriptionToSupabase(event) {
     appointment_id: after.appointmentId || null,
     doctor_name: after.doctorName || 'Doctor',
     patient_name: after.patientName || 'Patient',
-    patient_age: Number(after.patientAge) || 30,
     patient_gender: after.patientGender || 'Other',
     primary_diagnosis: after.primaryDiagnosis || after.diagnosis || 'General Consultation',
     general_advice: after.generalAdvice || null,
@@ -310,6 +431,8 @@ async function syncFirestorePrescriptionToSupabase(event) {
     synced_by: 'firestore_cloud_function',
     updated_at: new Date().toISOString(),
   };
+  const prescriptionAge = optionalFiniteNumber(after.patientAge);
+  if (prescriptionAge !== undefined) prescriptionPayload.patient_age = prescriptionAge;
 
   try {
     await executeWithRetry(
@@ -2465,7 +2588,6 @@ async function syncFirestoreLabBookingToSupabase(event) {
     patient_id: patientId,
     lab_id: after.labId || null,
     patient_name: after.patientName || 'Patient',
-    patient_age: parseInt(after.patientAge || 30, 10) || 30,
     patient_gender: after.patientGender || null,
     contact_number: after.contactNumber || null,
     test_id: after.testId || (testIds[0] || 'general_test'),
@@ -2478,7 +2600,6 @@ async function syncFirestoreLabBookingToSupabase(event) {
     partner_lab: after.partnerLab || null,
     address: after.address || null,
     date_time: toIsoTimestamp(after.dateTime) || new Date().toISOString(),
-    slot_label: after.slotLabel || 'Morning',
     status: status,
     source: source,
     report_file_name: after.reportFileName || null,
@@ -2488,6 +2609,11 @@ async function syncFirestoreLabBookingToSupabase(event) {
     created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
     updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
   };
+  const bookingAge = optionalFiniteNumber(after.patientAge);
+  if (bookingAge !== undefined) bookingPayload.patient_age = bookingAge;
+  if (typeof after.slotLabel === 'string' && after.slotLabel.trim()) {
+    bookingPayload.slot_label = after.slotLabel.trim();
+  }
 
   try {
     await executeWithRetry(
@@ -2646,7 +2772,6 @@ async function syncFirestoreLabOrderToSupabase(event) {
     admission_id: after.admissionId || null,
     doctor_name: after.doctorName || 'Doctor',
     patient_name: after.patientName || 'Patient',
-    patient_age: parseInt(after.patientAge || 30, 10) || 30,
     lab_name: after.labName || null,
     test_ids: testIds,
     test_names: testNames,
@@ -2662,6 +2787,8 @@ async function syncFirestoreLabOrderToSupabase(event) {
     created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
     updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
   };
+  const orderAge = optionalFiniteNumber(after.patientAge);
+  if (orderAge !== undefined) orderPayload.patient_age = orderAge;
 
   try {
     await executeWithRetry(
@@ -3954,6 +4081,10 @@ module.exports = {
   isAmbulancePinHash,
   recordDlqFailure,
   executeWithRetry,
+  resolveWriterSyncOrigin,
+  buildAppointmentSupabasePayload,
+  firestoreTimestampMs,
+  optionalFiniteNumber,
   toStringArray,
   toIsoTimestamp,
   toDateString,
