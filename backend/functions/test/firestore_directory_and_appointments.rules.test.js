@@ -789,3 +789,117 @@ describe('prescription, delivery, and ambulance party rules', () => {
     }));
   });
 });
+
+describe('community catalog create bounds', () => {
+  beforeEach(async () => {
+    await testEnv.clearFirestore();
+    await seed();
+  });
+
+  function catalogBase(extra = {}) {
+    return {
+      addedByDoctorId: DOCTOR_ID,
+      addedAt: new Date('2026-10-08T04:30:00.000Z'),
+      ...extra,
+    };
+  }
+
+  test('verified doctor can add catalog rows with the writer keys', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(doctor.collection('community_medicines').doc('med_1').set({
+      ...catalogBase(),
+      name: 'Paracetamol',
+      nameLower: 'paracetamol',
+      dosageUnit: 'mg',
+      form: 'Tablet',
+    }));
+    await assertSucceeds(doctor.collection('community_diagnoses').doc('dx_1').set({
+      ...catalogBase(),
+      text: 'Viral fever',
+      textLower: 'viral fever',
+    }));
+    await assertSucceeds(doctor.collection('community_lab_tests').doc('lab_1').set({
+      ...catalogBase(),
+      name: 'CBC',
+      nameLower: 'cbc',
+      group: 'Hematology',
+    }));
+    await assertSucceeds(doctor.collection('community_radiology').doc('rad_1').set({
+      ...catalogBase(),
+      name: 'Chest X-ray',
+      nameLower: 'chest x-ray',
+      group: 'X-Ray',
+    }));
+    await assertSucceeds(doctor.collection('community_body_parts').doc('bp_1').set({
+      ...catalogBase(),
+      name: 'Knee',
+      nameLower: 'knee',
+    }));
+  });
+
+  test('extra fields and over-length catalog text are denied', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertFails(doctor.collection('community_medicines').doc('med_extra').set({
+      ...catalogBase(),
+      name: 'Paracetamol',
+      nameLower: 'paracetamol',
+      dosageUnit: 'mg',
+      form: 'Tablet',
+      note: 'extra',
+    }));
+    await assertFails(doctor.collection('community_medicines').doc('med_long').set({
+      ...catalogBase(),
+      name: 'P'.repeat(121),
+      nameLower: 'p'.repeat(121),
+      dosageUnit: 'mg',
+      form: 'Tablet',
+    }));
+    await assertFails(doctor.collection('community_medicines').doc('med_unit').set({
+      ...catalogBase(),
+      name: 'Paracetamol',
+      nameLower: 'paracetamol',
+      dosageUnit: 'u'.repeat(61),
+      form: 'Tablet',
+    }));
+    await assertFails(doctor.collection('community_medicines').doc('med_form').set({
+      ...catalogBase(),
+      name: 'Paracetamol',
+      nameLower: 'paracetamol',
+      dosageUnit: 'mg',
+      form: 'f'.repeat(61),
+    }));
+    await assertFails(doctor.collection('community_diagnoses').doc('dx_long').set({
+      ...catalogBase(),
+      text: 'D'.repeat(301),
+      textLower: 'd'.repeat(301),
+    }));
+    await assertFails(doctor.collection('community_lab_tests').doc('lab_group').set({
+      ...catalogBase(),
+      name: 'CBC',
+      nameLower: 'cbc',
+      group: 'G'.repeat(61),
+    }));
+    await assertFails(doctor.collection('community_radiology').doc('rad_long').set({
+      ...catalogBase(),
+      name: 'R'.repeat(121),
+      nameLower: 'r'.repeat(121),
+      group: 'X-Ray',
+    }));
+    await assertFails(doctor.collection('community_body_parts').doc('bp_extra').set({
+      ...catalogBase(),
+      name: 'Knee',
+      nameLower: 'knee',
+      side: 'left',
+    }));
+    await assertFails(
+      testEnv.authenticatedContext(PATIENT_UID).firestore()
+        .collection('community_medicines').doc('med_patient').set({
+          ...catalogBase(),
+          name: 'Paracetamol',
+          nameLower: 'paracetamol',
+          dosageUnit: 'mg',
+          form: 'Tablet',
+        }),
+    );
+  });
+});

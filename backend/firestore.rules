@@ -1036,11 +1036,20 @@ service cloud.firestore {
 
     match /community_medicines/{docId} {
       allow read: if isSignedIn();
+      // community_medicine_repository.dart:180-186
       allow create: if isVerifiedDoctor()
-          && request.resource.data.keys().hasAll(['name', 'dosageUnit', 'form', 'addedByDoctorId'])
+          && request.resource.data.keys().hasAll(['name', 'nameLower', 'dosageUnit', 'form', 'addedByDoctorId', 'addedAt'])
+          && request.resource.data.keys().hasOnly(['name', 'nameLower', 'dosageUnit', 'form', 'addedByDoctorId', 'addedAt'])
           && request.resource.data.addedByDoctorId == myDoctorId()
           && request.resource.data.name is string
-          && request.resource.data.name.size() > 0;
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.nameLower is string
+          && request.resource.data.dosageUnit is string
+          && request.resource.data.dosageUnit.size() <= 60
+          && request.resource.data.form is string
+          && request.resource.data.form.size() <= 60
+          && request.resource.data.addedAt is timestamp;
       allow update, delete: if false;
     }
 
@@ -1049,11 +1058,16 @@ service cloud.firestore {
 
     match /community_diagnoses/{docId} {
       allow read: if isSignedIn();
+      // community_diagnosis_repository.dart:130-134
       allow create: if isVerifiedDoctor()
-          && request.resource.data.keys().hasAll(['text', 'addedByDoctorId'])
+          && request.resource.data.keys().hasAll(['text', 'textLower', 'addedByDoctorId', 'addedAt'])
+          && request.resource.data.keys().hasOnly(['text', 'textLower', 'addedByDoctorId', 'addedAt'])
           && request.resource.data.addedByDoctorId == myDoctorId()
           && request.resource.data.text is string
-          && request.resource.data.text.size() > 0;
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 300
+          && request.resource.data.textLower is string
+          && request.resource.data.addedAt is timestamp;
       allow update, delete: if false;
     }
 
@@ -1062,11 +1076,18 @@ service cloud.firestore {
 
     match /community_lab_tests/{docId} {
       allow read: if isSignedIn();
+      // community_investigations_repository.dart:211-216
       allow create: if isVerifiedDoctor()
-          && request.resource.data.keys().hasAll(['name', 'group', 'addedByDoctorId'])
+          && request.resource.data.keys().hasAll(['name', 'nameLower', 'group', 'addedByDoctorId', 'addedAt'])
+          && request.resource.data.keys().hasOnly(['name', 'nameLower', 'group', 'addedByDoctorId', 'addedAt'])
           && request.resource.data.addedByDoctorId == myDoctorId()
           && request.resource.data.name is string
-          && request.resource.data.name.size() > 0;
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.nameLower is string
+          && request.resource.data.group is string
+          && request.resource.data.group.size() <= 60
+          && request.resource.data.addedAt is timestamp;
       allow update, delete: if false;
     }
 
@@ -1074,11 +1095,18 @@ service cloud.firestore {
 
     match /community_radiology/{docId} {
       allow read: if isSignedIn();
+      // community_investigations_repository.dart:250-255
       allow create: if isVerifiedDoctor()
-          && request.resource.data.keys().hasAll(['name', 'group', 'addedByDoctorId'])
+          && request.resource.data.keys().hasAll(['name', 'nameLower', 'group', 'addedByDoctorId', 'addedAt'])
+          && request.resource.data.keys().hasOnly(['name', 'nameLower', 'group', 'addedByDoctorId', 'addedAt'])
           && request.resource.data.addedByDoctorId == myDoctorId()
           && request.resource.data.name is string
-          && request.resource.data.name.size() > 0;
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.nameLower is string
+          && request.resource.data.group is string
+          && request.resource.data.group.size() <= 60
+          && request.resource.data.addedAt is timestamp;
       allow update, delete: if false;
     }
 
@@ -1086,11 +1114,16 @@ service cloud.firestore {
 
     match /community_body_parts/{docId} {
       allow read: if isSignedIn();
+      // community_investigations_repository.dart:286-290
       allow create: if isVerifiedDoctor()
-          && request.resource.data.keys().hasAll(['name', 'addedByDoctorId'])
+          && request.resource.data.keys().hasAll(['name', 'nameLower', 'addedByDoctorId', 'addedAt'])
+          && request.resource.data.keys().hasOnly(['name', 'nameLower', 'addedByDoctorId', 'addedAt'])
           && request.resource.data.addedByDoctorId == myDoctorId()
           && request.resource.data.name is string
-          && request.resource.data.name.size() > 0;
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 120
+          && request.resource.data.nameLower is string
+          && request.resource.data.addedAt is timestamp;
       allow update, delete: if false;
     }
 
