@@ -535,14 +535,6 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           ? '${DateFormat('dd MMM').format(old.dateTime)} · ${old.slotLabel}'
           : '';
       final newLabel = '${DateFormat('dd MMM').format(date)} · $slotLabel';
-      final sameDay = old != null &&
-          old.dateTime.year == date.year &&
-          old.dateTime.month == date.month &&
-          old.dateTime.day == date.day;
-      final newToken = sameDay
-          ? old.tokenNumber
-          : store.nextTokenNumberForDoctorOnDate(widget.doctorId, date);
-
       DateTime newSlotDateTime = date;
       final timeOfDay = parseSlotTimeLabel(slotLabel);
       if (timeOfDay != null) {
@@ -564,12 +556,12 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         return;
       }
 
+      var newToken = old?.tokenNumber ?? 0;
       try {
-        await store.reschedulePatient(
+        newToken = await store.reschedulePatient(
           recordId: widget.rescheduleFromRecordId!,
           newDate: date,
           newSlotLabel: slotLabel,
-          newToken: newToken,
         );
         if (SupabaseBootstrap.isReady && old?.appointmentId != null) {
           try {

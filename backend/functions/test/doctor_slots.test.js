@@ -10,6 +10,7 @@ const {
   toIstDateAndTime,
   isSlotInsideDoctorAvailability,
   bookAppointmentHandler,
+  rescheduleAppointmentHandler,
   reconcileAppointmentSlotHandler,
   reconcileAppointmentSlotTransaction,
   bookAppointment,
@@ -1046,6 +1047,179 @@ test('reconcileAppointmentSlotHandler returns early when appointment update chan
   // Doctor slots document must remain unchanged
   const slotDoc = db.docs.get(`doctor_slots/${slotId}`);
   assert.deepEqual(slotDoc.activeAppointmentIds, [appointmentId]);
+});
+
+function seedRescheduleDoctor(db, doctorId) {
+  db.docs.set(`doctors/${doctorId}`, {
+    name: 'Dr. Reschedule',
+    specialization: 'General',
+    verified: true,
+    deactivated: false,
+  });
+  db.docs.set(`users/uid_owner`, {
+    role: 'patient',
+    profileId: 'pat_owner',
+    name: 'Owner',
+  });
+  db.docs.set(`users/uid_other`, {
+    role: 'patient',
+    profileId: 'pat_other',
+    name: 'Other',
+  });
+}
+
+test('rescheduleAppointment keeps the token on the same IST day and ignores a client token', async () => {
+  const db = createConcurrentMockFirestore();
+  const doctorId = 'doc_rs';
+  seedRescheduleDoctor(db, doctorId);
+  const oldTime = '2026-10-06T03:30:00.000Z';
+  const newTime = '2026-10-06T04:00:00.000Z';
+  db.docs.set('appointments/appt_same', {
+    doctorId,
+    patientId: 'pat_owner',
+    patientName: 'Owner',
+    doctorStatus: 'confirmed',
+    patientStatus: 'confirmed',
+    dateTime: oldTime,
+    slotLabel: '09:00 AM',
+    tokenNumber: 7,
+    createdVia: 'bookAppointment',
+    createdAt: 'keep-me',
+  });
+  db.docs.set(`doctor_slots/${deriveSlotId(doctorId, oldTime)}`, {
+    activeAppointmentIds: ['appt_same'],
+  });
+
+  const result = await rescheduleAppointmentHandler({
+    appointmentId: 'appt_same',
+    dateTime: newTime,
+    slotLabel: '09:30 AM',
+    tokenNumber: 99,
+    patientId: 'pat_other',
+    doctorId: 'doc_other',
+    createdVia: 'client',
+  }, { uid: 'uid_owner' }, db);
+
+  assert.equal(result.tokenNumber, 7);
+  const saved = db.docs.get('appointments/appt_same');
+  assert.equal(saved.tokenNumber, 7);
+  assert.equal(saved.slotLabel, '09:30 AM');
+  assert.equal(saved.doctorStatus, 'confirmed');
+  assert.equal(saved.patientStatus, 'confirmed');
+  assert.equal(saved.wasRescheduled, true);
+  assert.equal(saved.createdVia, 'bookAppointment');
+  assert.equal(saved.createdAt, 'keep-me');
+  assert.equal(saved.doctorId, doctorId);
+  assert.equal(saved.patientId, 'pat_owner');
+  assert.deepEqual(
+    db.docs.get(`doctor_slots/${deriveSlotId(doctorId, newTime)}`).activeAppointmentIds,
+    ['appt_same'],
+  );
+});
+
+test('rescheduleAppointment allocates the next server token on a different IST day', async () => {
+  const db = createConcurrentMockFirestore();
+  const doctorId = 'doc_rs';
+  seedRescheduleDoctor(db, doctorId);
+  const oldTime = '2026-10-06T03:30:00.000Z';
+  const newTime = '2026-10-07T03:30:00.000Z';
+  db.docs.set('appointments/appt_next', {
+    doctorId,
+    patientId: 'pat_owner',
+    patientName: 'Owner',
+    doctorStatus: 'pendingRequest',
+    dateTime: oldTime,
+    tokenNumber: 4,
+    createdVia: 'bookAppointment',
+  });
+  db.docs.set(`doctor_day_counters/${doctorId}_2026-10-07`, { lastTokenNumber: 5 });
+
+  const result = await rescheduleAppointmentHandler({
+    appointmentId: 'appt_next',
+    dateTime: newTime,
+    slotLabel: '09:00 AM',
+    tokenNumber: 1,
+  }, { uid: 'uid_owner' }, db);
+
+  assert.equal(result.tokenNumber, 6);
+  assert.equal(db.docs.get('appointments/appt_next').tokenNumber, 6);
+  assert.equal(db.docs.get('appointments/appt_next').createdVia, 'bookAppointment');
+});
+
+test('two concurrent reschedules onto the same new day do not share a token', async () => {
+  const db = createConcurrentMockFirestore();
+  const doctorId = 'doc_rs';
+  seedRescheduleDoctor(db, doctorId);
+  db.docs.set('users/uid_two', { role: 'patient', profileId: 'pat_two', name: 'Two' });
+  const oldTime = '2026-10-06T03:30:00.000Z';
+  const newTime = '2026-10-07T04:00:00.000Z';
+  for (const [id, patientId] of [['appt_a', 'pat_owner'], ['appt_b', 'pat_two']]) {
+    db.docs.set(`appointments/${id}`, {
+      doctorId,
+      patientId,
+      patientName: patientId,
+      doctorStatus: 'waiting',
+      dateTime: oldTime,
+      tokenNumber: 2,
+    });
+  }
+
+  const [first, second] = await Promise.all([
+    rescheduleAppointmentHandler({
+      appointmentId: 'appt_a',
+      dateTime: newTime,
+      slotLabel: '09:30 AM',
+    }, { uid: 'uid_owner' }, db),
+    rescheduleAppointmentHandler({
+      appointmentId: 'appt_b',
+      dateTime: newTime,
+      slotLabel: '09:30 AM',
+      slotShareReason: 'family',
+    }, { uid: 'uid_two' }, db),
+  ]);
+
+  assert.notEqual(first.tokenNumber, second.tokenNumber);
+  assert.equal(new Set([first.tokenNumber, second.tokenNumber]).size, 2);
+});
+
+test('rescheduleAppointment rejects a non-owner and a completed or cancelled appointment', async () => {
+  const db = createConcurrentMockFirestore();
+  const doctorId = 'doc_rs';
+  seedRescheduleDoctor(db, doctorId);
+  const oldTime = '2026-10-06T03:30:00.000Z';
+  const payload = {
+    appointmentId: 'appt_closed',
+    dateTime: '2026-10-06T04:00:00.000Z',
+    slotLabel: '09:30 AM',
+  };
+  db.docs.set('appointments/appt_closed', {
+    doctorId,
+    patientId: 'pat_owner',
+    doctorStatus: 'completed',
+    dateTime: oldTime,
+    tokenNumber: 3,
+  });
+
+  await assert.rejects(
+    () => rescheduleAppointmentHandler(payload, { uid: 'uid_other' }, db),
+    (err) => err.code === 'permission-denied',
+  );
+  await assert.rejects(
+    () => rescheduleAppointmentHandler(payload, { uid: 'uid_owner' }, db),
+    (err) => err.code === 'failed-precondition',
+  );
+
+  db.docs.set('appointments/appt_closed', {
+    doctorId,
+    patientId: 'pat_owner',
+    doctorStatus: 'cancelled',
+    dateTime: oldTime,
+    tokenNumber: 3,
+  });
+  await assert.rejects(
+    () => rescheduleAppointmentHandler(payload, { uid: 'uid_owner' }, db),
+    (err) => err.code === 'failed-precondition',
+  );
 });
 
 

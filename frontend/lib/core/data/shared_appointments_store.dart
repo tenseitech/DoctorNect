@@ -222,6 +222,11 @@ class SharedAppointmentsStore extends ChangeNotifier {
   static Future<Map<String, dynamic>> Function(Map<String, dynamic> payload)?
       debugBookAppointmentOverride;
 
+  /// When set, patient reschedules call this instead of `rescheduleAppointment`.
+  @visibleForTesting
+  static Future<Map<String, dynamic>> Function(Map<String, dynamic> payload)?
+      debugRescheduleAppointmentOverride;
+
   /// When set, [refreshForPatient] uses this instead of Supabase.
   @visibleForTesting
   static Future<List<DoctorNectAppointmentRecord>> Function(String patientId)?
@@ -750,6 +755,24 @@ class SharedAppointmentsStore extends ChangeNotifier {
     throw StateError('Booking did not return an appointment.');
   }
 
+  Future<Map<String, dynamic>> _callRescheduleAppointment(
+    Map<String, dynamic> payload,
+  ) async {
+    final override = debugRescheduleAppointmentOverride;
+    if (override != null) return override(payload);
+    if (!FirebaseBootstrap.isReady) {
+      throw StateError(
+        'Could not save appointment. Firebase is not available.',
+      );
+    }
+    final callable = FirebaseFunctions.instanceFor(region: 'asia-south1')
+        .httpsCallable('rescheduleAppointment');
+    final response = await callable.call(payload);
+    final data = response.data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    throw StateError('Could not reschedule this appointment.');
+  }
+
   static List<String> _normalizeTags(List<String> raw) {
     final out = <String>[];
     final seen = <String>{};
@@ -849,14 +872,13 @@ class SharedAppointmentsStore extends ChangeNotifier {
     return true;
   }
 
-  Future<void> reschedulePatient({
+  Future<int> reschedulePatient({
     required String recordId,
     required DateTime newDate,
     required String newSlotLabel,
-    required int? newToken,
   }) async {
     final i = _records.indexWhere((r) => r.id == recordId);
-    if (i < 0) return;
+    if (i < 0) return 0;
     final old = _records[i];
 
     if (old.doctorStatus == AppointmentStatus.completed ||
@@ -870,19 +892,26 @@ class SharedAppointmentsStore extends ChangeNotifier {
     final trimmedSlot = newSlotLabel.trim();
     final newDateTime = _resolveRescheduleDateTime(newDate, trimmedSlot);
     _assertSlotDateTimeConsistent(newDateTime, trimmedSlot);
-    await _updateRecordAtIndex(
-      i,
-      old.copyWith(
-        dateTime: newDateTime,
-        slotLabel: trimmedSlot,
-        tokenNumber: newToken ?? old.tokenNumber,
-        patientStatus: PatientBookingStatus.confirmed,
-        doctorStatus: AppointmentStatus.confirmed,
-        cancellationReason: null,
-        wasRescheduled: true,
-      ),
-      patientId: old.patientId,
+    final appointmentId = old.appointmentId.trim().isNotEmpty
+        ? old.appointmentId.trim()
+        : old.id;
+    final result = await _callRescheduleAppointment({
+      'appointmentId': appointmentId,
+      'dateTime': newDateTime.toIso8601String(),
+      'slotLabel': trimmedSlot,
+    });
+    final token = int.tryParse('${result['tokenNumber']}') ?? old.tokenNumber;
+    _records[i] = old.copyWith(
+      dateTime: newDateTime,
+      slotLabel: trimmedSlot,
+      tokenNumber: token,
+      patientStatus: PatientBookingStatus.confirmed,
+      doctorStatus: AppointmentStatus.confirmed,
+      cancellationReason: null,
+      wasRescheduled: true,
     );
+    notifyListeners();
+    return token;
   }
 
   Future<void> rescheduleByDoctor({

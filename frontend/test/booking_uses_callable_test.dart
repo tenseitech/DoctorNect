@@ -8,6 +8,7 @@ void main() {
 
   tearDown(() {
     SharedAppointmentsStore.debugBookAppointmentOverride = null;
+    SharedAppointmentsStore.debugRescheduleAppointmentOverride = null;
     SharedAppointmentsStore.debugPersistOverride = null;
     store.mergeFromFirestore(const []);
   });
@@ -80,14 +81,16 @@ void main() {
     expect(writtenIds, isEmpty);
 
     await store.cancelByPatient(callableId, reason: 'plans changed');
+    SharedAppointmentsStore.debugRescheduleAppointmentOverride = (_) async {
+      return {'ok': true, 'tokenNumber': 4};
+    };
     await store.reschedulePatient(
       recordId: callableId,
       newDate: DateTime(2027, 6, 16),
       newSlotLabel: '11:00 AM',
-      newToken: 4,
     );
 
-    expect(writtenIds, [callableId, callableId]);
+    expect(writtenIds, [callableId]);
     expect(writtenIds.any((id) => id != callableId), isFalse);
   });
 

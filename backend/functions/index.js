@@ -61,6 +61,7 @@ const {
 } = require('./promoted_ads');
 const {
   bookAppointment,
+  rescheduleAppointment,
   reconcileAppointmentSlot,
 } = require('./appointment_slots');
 
@@ -1810,6 +1811,7 @@ exports.reviewPromotedAd = reviewPromotedAd;
 exports.expirePromotedAds = expirePromotedAds;
 exports.razorpayWebhook = razorpayWebhook;
 exports.bookAppointment = bookAppointment;
+exports.rescheduleAppointment = rescheduleAppointment;
 exports.reconcileAppointmentSlot = reconcileAppointmentSlot;
 
 const { sendMsg91Email } = require('./msg91_email');
