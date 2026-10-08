@@ -18,9 +18,12 @@ const SUPER_ADMIN_EMAILS = ['admin@doctornect.com'];
 function isSuperAdmin(auth, userDoc) {
   const email = String(auth?.token?.email || '').trim().toLowerCase();
   const emailVerified = auth?.token?.email_verified === true;
-  if (email && emailVerified && SUPER_ADMIN_EMAILS.includes(email)) return true;
+  const allowListed = Boolean(email && emailVerified && SUPER_ADMIN_EMAILS.includes(email));
+  // Allow-listed verified email still passes, including a user doc whose role is admin.
+  if (allowListed) return true;
   const role = userDoc?.role || '';
-  return role === 'super_admin' || role === 'superAdmin' || role === 'admin';
+  // Role "admin" alone is not a super admin. super_admin / superAdmin stay.
+  return role === 'super_admin' || role === 'superAdmin';
 }
 
 const razorpayWebhookSecret = defineSecret('RAZORPAY_WEBHOOK_SECRET');
@@ -273,6 +276,7 @@ async function activatePromotedAdPayment(db, {
   currency,
   callerUid = null,
   customNow = null,
+  eventId = null,
 }) {
   const safeAdId = requireDocId(adId, 'adId');
   const safeOrderId = requireRazorpayId(orderId, 'orderId');
@@ -290,6 +294,10 @@ async function activatePromotedAdPayment(db, {
 
   const adRef = db.collection('promotedAds').doc(safeAdId);
   const paymentLedgerRef = db.collection('razorpayPayments').doc(safePaymentId);
+  const safeEventId = String(eventId || '').trim();
+  const eventRef = safeEventId
+    ? db.collection('razorpayWebhookEvents').doc(safeEventId)
+    : null;
   const paidStatuses = new Set(['pending_approval', 'active', 'rejected']);
 
   let isIdempotentSuccess = false;
@@ -297,10 +305,9 @@ async function activatePromotedAdPayment(db, {
   let resEndTime = null;
 
   await db.runTransaction(async (tx) => {
-    const [currentAdDoc, ledgerDoc] = await Promise.all([
-      tx.get(adRef),
-      tx.get(paymentLedgerRef),
-    ]);
+    const reads = [tx.get(adRef), tx.get(paymentLedgerRef)];
+    if (eventRef) reads.push(tx.get(eventRef));
+    const [currentAdDoc, ledgerDoc, eventDoc] = await Promise.all(reads);
 
     if (!currentAdDoc.exists) {
       throw new HttpsError('not-found', 'Promoted ad document not found.');
@@ -320,6 +327,17 @@ async function activatePromotedAdPayment(db, {
       }
     }
 
+    if (eventDoc && eventDoc.exists) {
+      const prev = eventDoc.data() || {};
+      if (prev.paymentId === safePaymentId && prev.adId === safeAdId) {
+        isIdempotentSuccess = true;
+        resStartTime = currentAd.startTime || null;
+        resEndTime = currentAd.endTime || null;
+        return;
+      }
+      throw new HttpsError('already-exists', 'This webhook event has already been used.');
+    }
+
     // Ledger check: same ad + already paid (pending_approval/active/rejected) is idempotent; other ads reject.
     if (ledgerDoc.exists) {
       const ledgerData = ledgerDoc.data();
@@ -331,6 +349,15 @@ async function activatePromotedAdPayment(db, {
         isIdempotentSuccess = true;
         resStartTime = currentAd.startTime || null;
         resEndTime = currentAd.endTime || null;
+        if (eventRef) {
+          tx.set(eventRef, {
+            eventId: safeEventId,
+            adId: safeAdId,
+            paymentId: safePaymentId,
+            orderId: safeOrderId,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        }
         return;
       }
       throw new HttpsError('already-exists', 'This payment has already been used.');
@@ -362,6 +389,15 @@ async function activatePromotedAdPayment(db, {
       amountPaid: expectedPriceINR,
       updatedAt: FieldValue.serverTimestamp(),
     });
+    if (eventRef) {
+      tx.set(eventRef, {
+        eventId: safeEventId,
+        adId: safeAdId,
+        paymentId: safePaymentId,
+        orderId: safeOrderId,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
   });
 
   return {
@@ -523,19 +559,16 @@ async function razorpayWebhookHandler(req, res, db) {
     return;
   }
 
-  let rawBodyBuffer;
+  let rawBodyBuffer = null;
   if (Buffer.isBuffer(req.rawBody)) {
     rawBodyBuffer = req.rawBody;
   } else if (typeof req.rawBody === 'string') {
     rawBodyBuffer = Buffer.from(req.rawBody, 'utf8');
-  } else if (Buffer.isBuffer(req.body)) {
-    rawBodyBuffer = req.body;
-  } else if (typeof req.body === 'string') {
-    rawBodyBuffer = Buffer.from(req.body, 'utf8');
-  } else if (req.body && typeof req.body === 'object') {
-    rawBodyBuffer = Buffer.from(JSON.stringify(req.body), 'utf8');
-  } else {
-    rawBodyBuffer = Buffer.from('');
+  }
+  if (!rawBodyBuffer || rawBodyBuffer.length === 0) {
+    console.warn('[razorpayWebhook] Missing raw request body; refusing to verify a re-serialized body.');
+    res.status(400).send('Missing raw request body.');
+    return;
   }
 
   const generatedSignature = crypto
@@ -644,6 +677,7 @@ async function razorpayWebhookHandler(req, res, db) {
       durationHours,
       amountPaise,
       currency,
+      eventId: String(req.headers['x-razorpay-event-id'] || '').trim(),
     });
 
     console.info(`[razorpayWebhook] Successfully processed ${eventType} for ad ${adId} (idempotent: ${activation.idempotent})`);
@@ -727,6 +761,15 @@ async function reviewPromotedAdHandler(db, data, auth) {
       'failed-precondition',
       `Ad is not pending approval (status: ${adData.status}).`,
     );
+  }
+
+  const providerId = String(adData.providerId || '').trim();
+  const callerProfileId = String(userDoc.profileId || '').trim();
+  if (
+    providerId
+    && (providerId === auth.uid || (callerProfileId && providerId === callerProfileId))
+  ) {
+    throw new HttpsError('permission-denied', 'You cannot review your own promoted ad.');
   }
 
   if (safeDecision === 'approve') {

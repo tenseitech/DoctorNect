@@ -1056,6 +1056,87 @@ describe('razorpayWebhook: real function unit tests', () => {
     assert.deepEqual(afterAdDoc.endTime, initialEndTime, 'endTime must not change on duplicate');
   });
 
+  test('valid signature over rawBody passes', async () => {
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: UID,
+      status: 'pending_payment',
+      razorpayOrderId: ORDER_ID,
+    });
+    const payloadObj = buildWebhookPayload();
+    const rawBody = JSON.stringify(payloadObj);
+    const signature = computeWebhookSignature(rawBody);
+    const { req, res } = mockHttpCall({
+      headers: { 'x-razorpay-signature': signature },
+      rawBody,
+      body: payloadObj,
+    });
+    await razorpayWebhookHandler(req, res, firestoreModule.getFirestore());
+    assert.equal(res.getStatusCode(), 200);
+    assert.equal(res.getResponseBody()?.success, true);
+    assert.equal(mockFirestoreStore.get(`promotedAds/${AD_ID}`).status, 'pending_approval');
+  });
+
+  test('missing rawBody is rejected', async () => {
+    const payloadObj = buildWebhookPayload();
+    const { req, res } = mockHttpCall({
+      headers: { 'x-razorpay-signature': 'ab'.repeat(32) },
+      rawBody: JSON.stringify(payloadObj),
+      body: payloadObj,
+    });
+    delete req.rawBody;
+    await razorpayWebhookHandler(req, res, firestoreModule.getFirestore());
+    assert.equal(res.getStatusCode(), 400);
+    assert.match(String(res.getResponseBody()), /raw request body/i);
+  });
+
+  test('a signature computed over re-serialized JSON is rejected', async () => {
+    const payloadObj = buildWebhookPayload();
+    const rawBody = `  ${JSON.stringify(payloadObj)}  `;
+    const reSerialized = JSON.stringify(payloadObj);
+    assert.notEqual(rawBody, reSerialized);
+    const signature = computeWebhookSignature(reSerialized);
+    const { req, res } = mockHttpCall({
+      headers: { 'x-razorpay-signature': signature },
+      rawBody,
+      body: payloadObj,
+    });
+    await razorpayWebhookHandler(req, res, firestoreModule.getFirestore());
+    assert.equal(res.getStatusCode(), 400);
+  });
+
+  test('replay of the same Razorpay event id and payment id does not write the payment twice', async () => {
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: UID,
+      status: 'pending_payment',
+      razorpayOrderId: ORDER_ID,
+    });
+    const payloadObj = buildWebhookPayload();
+    const rawBody = JSON.stringify(payloadObj);
+    const signature = computeWebhookSignature(rawBody);
+    const headers = {
+      'x-razorpay-signature': signature,
+      'x-razorpay-event-id': 'evt_test_replay_1',
+    };
+    const first = mockHttpCall({ headers, rawBody, body: payloadObj });
+    await razorpayWebhookHandler(first.req, first.res, firestoreModule.getFirestore());
+    assert.equal(first.res.getStatusCode(), 200);
+    assert.equal(first.res.getResponseBody()?.idempotent, false);
+    const ledger = mockFirestoreStore.get(`razorpayPayments/${PAYMENT_ID}`);
+    const eventDoc = mockFirestoreStore.get('razorpayWebhookEvents/evt_test_replay_1');
+    assert.equal(ledger.paymentId, PAYMENT_ID);
+    assert.equal(eventDoc.paymentId, PAYMENT_ID);
+
+    const second = mockHttpCall({ headers, rawBody, body: payloadObj });
+    await razorpayWebhookHandler(second.req, second.res, firestoreModule.getFirestore());
+    assert.equal(second.res.getStatusCode(), 200);
+    assert.equal(second.res.getResponseBody()?.idempotent, true);
+    assert.equal(mockFirestoreStore.get(`promotedAds/${AD_ID}`).status, 'pending_approval');
+    assert.equal(mockFirestoreStore.get(`razorpayPayments/${PAYMENT_ID}`).paymentId, PAYMENT_ID);
+    assert.equal(mockFirestoreStore.get('razorpayWebhookEvents/evt_test_replay_1').paymentId, PAYMENT_ID);
+  });
+
   test('4. webhook arrives after client verify and the ad is not extended', async () => {
     mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
       adId: AD_ID,
@@ -1381,6 +1462,100 @@ describe('reviewPromotedAd and App Check', () => {
     const ad = mockFirestoreStore.get(`promotedAds/${AD_ID}`);
     assert.equal(ad.status, 'rejected');
     assert.equal(ad.reviewReason, 'Policy violation');
+  });
+
+  test('reviewer cannot approve or reject an ad they own by uid', async () => {
+    mockFirestoreStore.set(`users/${ADMIN_UID}`, {
+      role: 'super_admin',
+      profileId: 'profile_other',
+    });
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: ADMIN_UID,
+      status: 'pending_approval',
+      durationHours: 24,
+    });
+    await assert.rejects(
+      reviewPromotedAdHandler(
+        firestoreModule.getFirestore(),
+        { adId: AD_ID, decision: 'approve' },
+        { uid: ADMIN_UID, token: { email: 'admin@doctornect.com', email_verified: true } },
+      ),
+      (err) => err.code === 'permission-denied',
+    );
+    await assert.rejects(
+      reviewPromotedAdHandler(
+        firestoreModule.getFirestore(),
+        { adId: AD_ID, decision: 'reject', reason: 'no' },
+        { uid: ADMIN_UID, token: { email: 'admin@doctornect.com', email_verified: true } },
+      ),
+      (err) => err.code === 'permission-denied',
+    );
+    assert.equal(mockFirestoreStore.get(`promotedAds/${AD_ID}`).status, 'pending_approval');
+  });
+
+  test('reviewer cannot approve or reject an ad owned by their profileId', async () => {
+    mockFirestoreStore.set(`users/${ADMIN_UID}`, {
+      role: 'super_admin',
+      profileId: 'doc_profile_1',
+    });
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: 'doc_profile_1',
+      status: 'pending_approval',
+      durationHours: 24,
+    });
+    await assert.rejects(
+      reviewPromotedAdHandler(
+        firestoreModule.getFirestore(),
+        { adId: AD_ID, decision: 'approve' },
+        { uid: ADMIN_UID },
+      ),
+      (err) => err.code === 'permission-denied',
+    );
+    await assert.rejects(
+      reviewPromotedAdHandler(
+        firestoreModule.getFirestore(),
+        { adId: AD_ID, decision: 'reject' },
+        { uid: ADMIN_UID },
+      ),
+      (err) => err.code === 'permission-denied',
+    );
+    assert.equal(mockFirestoreStore.get(`promotedAds/${AD_ID}`).status, 'pending_approval');
+  });
+
+  test('role admin without an allow-listed verified email cannot review', async () => {
+    mockFirestoreStore.set(`users/${ADMIN_UID}`, { role: 'admin' });
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: UID,
+      status: 'pending_approval',
+      durationHours: 24,
+    });
+    await assert.rejects(
+      reviewPromotedAdHandler(
+        firestoreModule.getFirestore(),
+        { adId: AD_ID, decision: 'approve' },
+        { uid: ADMIN_UID, token: { email: 'someone@example.com', email_verified: true } },
+      ),
+      (err) => err.code === 'permission-denied',
+    );
+  });
+
+  test('allow-listed verified admin email can still review', async () => {
+    mockFirestoreStore.set(`users/${ADMIN_UID}`, { role: 'admin', profileId: 'not_the_provider' });
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: UID,
+      status: 'pending_approval',
+      durationHours: 24,
+    });
+    const result = await reviewPromotedAdHandler(
+      firestoreModule.getFirestore(),
+      { adId: AD_ID, decision: 'approve' },
+      { uid: ADMIN_UID, token: { email: 'admin@doctornect.com', email_verified: true } },
+    );
+    assert.equal(result.status, 'active');
   });
 
   test('non-admin cannot review a promoted ad', async () => {
