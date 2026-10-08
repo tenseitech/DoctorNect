@@ -22,11 +22,15 @@ Project: `medibond-45fad`. Run commands from the repo root.
    firebase functions:secrets:set RAZORPAY_WEBHOOK_SECRET --project medibond-45fad
    ```
 
-2. Deploy functions **by name** only, after that secret exists. These two are in source and were not in the 2026-10-08 live list:
+2. Deploy functions **by name** only, after that secret exists. These were not in the 2026-10-08 live list. `rescheduleAppointment` is new and must be included before the app build that calls it is rolled out:
 
    ```powershell
-   firebase deploy --project medibond-45fad --only functions:reviewPromotedAd,functions:razorpayWebhook
+   firebase deploy --project medibond-45fad --only functions:reviewPromotedAd,functions:razorpayWebhook,functions:rescheduleAppointment
    ```
+
+   The repo does not record the last deployed commit. `origin/main` is `4fc3a6b` and is not proof of what is live. Confirm the deployed commit before using the comparison below.
+
+   Since `origin/main`, `getS3DownloadUrl` and `getS3DownloadUrls` have no change to auth, object-key checks, or expiry (`s3_storage.js` download handlers, `expiresIn` at lines 737 and 788). They do not need a deploy solely to match `getS3UploadUrl` / `deleteS3Object`. `deleteS3Object` does change: `authorizeDelete` now allows the pharmacy, lab, and ambulance prefixes (`s3_storage.js:613-623`). Deploy `functions:deleteS3Object` with `functions:getS3UploadUrl` if those KYC deletes should work. `getS3UploadUrl` gained `pharmacy_kyc`, `lab_kyc`, and `ambulance_kyc` purposes in the same file.
 
    If the CLI still asks to delete functions that are not in the source, answer **No** and stop. Do not add `--force`.
 
