@@ -10,6 +10,9 @@ const {
   experienceYearsFromDoctorDoc,
   placeholderPatientPayload,
   ensurePatientExistsInPostgres,
+  buildDoctorSupabasePayload,
+  buildMedicalStoreSupabasePayload,
+  buildAvailabilitySupabasePayload,
 } = require('../cross_role_sync');
 
 const realFetch = global.fetch;
@@ -197,8 +200,48 @@ test('placeholder patient omits age and refuses a missing mobile', () => {
   assert.equal(noAge.patient.mobile, '1000000001');
   assert.equal(Object.hasOwn(noAge.patient, 'age'), false);
 
-  const withAge = placeholderPatientPayload('pat-3', { mobile: '1000000001', age: 4 }, {});
+  const namedNoGender = placeholderPatientPayload('pat-3', { mobile: '1000000001', name: 'Ada' }, {});
+  assert.equal(Object.hasOwn(namedNoGender.patient, 'gender'), false);
+  assert.equal(namedNoGender.patient.name, 'Ada');
+
+  const missingName = placeholderPatientPayload('pat-4', { mobile: '1000000001', age: 4 }, {});
+  assert.equal(missingName.skip, true);
+  assert.equal(missingName.reason, 'patient_name_missing');
+
+  const withAge = placeholderPatientPayload('pat-5', { mobile: '1000000001', name: 'Ada', age: 4 }, {});
   assert.equal(withAge.patient.age, 4);
+});
+
+test('doctor, store, and availability payloads do not invent missing values', () => {
+  const missingDoctor = buildDoctorSupabasePayload('doc-1', { name: 'Ada' });
+  assert.equal(missingDoctor.skip, true);
+  assert.match(missingDoctor.reason, /email/);
+  assert.equal(JSON.stringify(missingDoctor).includes('0000000000'), false);
+  assert.equal(JSON.stringify(missingDoctor).includes('Mumbai'), false);
+
+  const doctor = buildDoctorSupabasePayload('doc-1', {
+    name: 'Ada',
+    email: 'ada@example.com',
+    mobile: '1000000001',
+    specialization: 'Cardiology',
+    qualification: 'MBBS',
+    city: 'Pune',
+  });
+  assert.equal(doctor.skip, false);
+  assert.equal(doctor.doctor.city, 'Pune');
+  assert.equal(Object.hasOwn(doctor.doctor, 'state'), false);
+  assert.equal(Object.hasOwn(doctor.doctor, 'country'), false);
+
+  const store = buildMedicalStoreSupabasePayload('store-1', { storeName: 'Ada Store' });
+  assert.equal(store.skip, true);
+  assert.equal(JSON.stringify(store).includes('PENDING'), false);
+
+  const hours = buildAvailabilitySupabasePayload('doc-1', {});
+  assert.deepEqual(hours, { doctor_id: 'doc-1' });
+  const copied = buildAvailabilitySupabasePayload('doc-1', { morningStart: '10:00 AM', eveningEnabled: false });
+  assert.equal(copied.morning_start, '10:00 AM');
+  assert.equal(copied.evening_enabled, false);
+  assert.equal(Object.hasOwn(copied, 'morning_end'), false);
 });
 
 test('missing patient mobile is dead-lettered and not inserted', async () => {

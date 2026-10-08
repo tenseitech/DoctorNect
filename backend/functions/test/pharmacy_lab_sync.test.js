@@ -137,7 +137,7 @@ test('Pharmacy Store Sync: Upserts medical_stores with structured address and de
     assert.equal(storeCall.body.owner_uid, '550e8400-e29b-41d4-a716-446655440000');
     assert.equal(storeCall.body.profile_completed, true);
     assert.equal(storeCall.body.verified, true);
-    assert.equal(storeCall.body.deactivated, false);
+    assert.equal(Object.hasOwn(storeCall.body, 'deactivated'), false);
   } finally {
     global.fetch = originalFetch;
   }

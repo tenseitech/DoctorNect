@@ -356,7 +356,14 @@ test('DLQ & Error Handling: PostgREST error records failure to DLQ and rethrows'
         after: {
           exists: true,
           id: 'doc-error-test',
-          data: () => ({ doctorId: 'doc-error-test', name: 'Dr. Fail' }),
+          data: () => ({
+            doctorId: 'doc-error-test',
+            name: 'Dr. Fail',
+            email: 'fail@example.com',
+            mobile: '1000000001',
+            specialization: 'Cardiology',
+            qualification: 'MBBS',
+          }),
         },
       },
     };
