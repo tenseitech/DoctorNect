@@ -328,7 +328,7 @@ describe('patient appointment create', () => {
     await assertSucceeds(
       db.collection('appointments').doc('wi_appt').set({
         appointmentId: 'wi_appt',
-        doctorId: DOCTOR_ID,
+        doctorId: DOCTOR_UID,
         patientId: 'wi1710000000000',
         source: 'walkin',
         dateTime: new Date('2026-10-11T04:30:00.000Z'),
@@ -358,7 +358,6 @@ describe('patient appointment create', () => {
     await assertSucceeds(existing.set({
       dateTime: new Date('2026-10-09T05:30:00.000Z'),
       slotLabel: '11:00 AM',
-      tokenNumber: 4,
       patientStatus: 'confirmed',
       doctorStatus: 'confirmed',
       wasRescheduled: true,
@@ -399,7 +398,6 @@ describe('appointment update key restrictions', () => {
     await assertSucceeds(ref.update({
       dateTime: new Date('2026-10-09T04:30:00.000Z'),
       slotLabel: '11:00 AM',
-      tokenNumber: 2,
       patientStatus: 'confirmed',
       doctorStatus: 'confirmed',
       wasRescheduled: true,
@@ -445,12 +443,12 @@ describe('appointment update key restrictions', () => {
       labReports: ['CBC'],
       updatedAt: new Date(),
     }));
-    await assertSucceeds(ref.update({
+    await assertFails(ref.update({
       doctorStatus: 'cancelled',
       cancellationReason: 'Clinic closed',
       updatedAt: new Date(),
     }));
-    await assertSucceeds(ref.update({
+    await assertFails(ref.update({
       dateTime: new Date('2026-10-10T04:30:00.000Z'),
       slotLabel: '12:00 PM',
       doctorStatus: 'confirmed',
@@ -475,5 +473,109 @@ describe('appointment update key restrictions', () => {
     await assertFails(ref.update({ fee: 0 }));
     await assertFails(ref.update({ consultationFee: 0 }));
     await assertFails(ref.update({ hasReport: true }));
+  });
+});
+
+describe('tightened appointment rules', () => {
+  beforeEach(async () => {
+    await testEnv.clearFirestore();
+    await seed();
+  });
+
+  test('patient create is denied, including set(merge) on a missing document', async () => {
+    const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
+    await assertFails(db.collection('appointments').doc('missing_appt').set({
+      doctorId: DOCTOR_ID,
+      patientId: PATIENT_ID,
+      source: 'app',
+    }, { merge: true }));
+  });
+
+  test('doctor walk-in create is allowed only for their uid and without createdVia', async () => {
+    const db = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc('wi_ok').set({
+      source: 'walkin',
+      doctorId: DOCTOR_UID,
+      patientId: 'wi1',
+    }));
+    await assertFails(db.collection('appointments').doc('wi_other').set({
+      source: 'walkin',
+      doctorId: 'someone_else',
+      patientId: 'wi2',
+    }));
+    await assertFails(db.collection('appointments').doc('wi_via').set({
+      source: 'walkin',
+      doctorId: DOCTOR_UID,
+      patientId: 'wi3',
+      createdVia: 'bookAppointment',
+    }));
+  });
+
+  test('patient cancel, reschedule, and review are allowed', async () => {
+    const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
+    const ref = db.collection('appointments').doc(APPT_ID);
+    await assertSucceeds(ref.update({
+      doctorStatus: 'cancelled',
+      cancellationReason: 'Plans changed',
+      updatedAt: new Date(),
+    }));
+    await assertSucceeds(ref.update({
+      dateTime: new Date('2026-10-12T04:30:00.000Z'),
+      slotLabel: '11:00 AM',
+      patientStatus: 'confirmed',
+      doctorStatus: 'confirmed',
+      wasRescheduled: true,
+      updatedAt: new Date(),
+    }));
+    await assertSucceeds(ref.update({
+      hasReview: true,
+      reviewRating: 4,
+      reviewId: 'rev_1',
+      reviewCreatedAt: new Date(),
+      updatedAt: new Date(),
+    }));
+  });
+
+  test('patient cannot change doctorId, createdVia, tokenNumber, or status to completed', async () => {
+    const db = testEnv.authenticatedContext(PATIENT_UID).firestore();
+    const ref = db.collection('appointments').doc(APPT_ID);
+    await assertFails(ref.update({ doctorId: 'other' }));
+    await assertFails(ref.update({ createdVia: 'bookAppointment' }));
+    await assertFails(ref.update({ tokenNumber: 9 }));
+    await assertFails(ref.update({ doctorStatus: 'completed', updatedAt: new Date() }));
+  });
+
+  test('each doctor clinical update is allowed and patientId is not', async () => {
+    const db = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    const ref = db.collection('appointments').doc(APPT_ID);
+    await assertSucceeds(ref.update({
+      doctorStatus: 'confirmed',
+      patientStatus: 'confirmed',
+      updatedAt: new Date(),
+    }));
+    await assertSucceeds(ref.update({ chiefComplaints: ['fever'], updatedAt: new Date() }));
+    await assertSucceeds(ref.update({ observations: ['nad'], updatedAt: new Date() }));
+    await assertSucceeds(ref.update({ symptoms: ['cough'], updatedAt: new Date() }));
+    await assertSucceeds(ref.update({
+      labReports: ['CBC'],
+      hasReport: true,
+      updatedAt: new Date(),
+    }));
+    await assertSucceeds(ref.update({
+      diagnosis: 'Viral fever',
+      clinicalNotes: 'Rest',
+      hasPrescription: true,
+      doctorStatus: 'completed',
+      patientStatus: 'confirmed',
+      updatedAt: new Date(),
+    }));
+    await assertFails(ref.update({ patientId: 'stolen' }));
+  });
+
+  test('another signed-in user cannot read or update the appointment', async () => {
+    const db = testEnv.authenticatedContext(STORE_UID).firestore();
+    const ref = db.collection('appointments').doc(APPT_ID);
+    await assertFails(ref.get());
+    await assertFails(ref.update({ doctorStatus: 'cancelled' }));
   });
 });

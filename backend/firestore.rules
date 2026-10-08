@@ -335,17 +335,14 @@ service cloud.firestore {
         && data.dateTime is timestamp;
     }
 
-    // Clinic walk-in: doctor creates appointment with generated patientId (wi…), not auth uid.
+    // Walk-in only. Patient creates stay on the bookAppointment Admin SDK path.
+    // doctorId must be the signed-in uid. createdVia is server-only.
     function walkInAppointmentCreateValid() {
       let data = request.resource.data;
-      return isVerifiedDoctor()
+      return isDoctor()
         && data.get('source', '') == 'walkin'
-        && data.doctorId == myDoctorId()
-        && data.keys().hasAll(['doctorId', 'patientId', 'appointmentId', 'dateTime'])
-        && data.doctorId is string
-        && data.patientId is string
-        && data.patientId.matches('^wi\\d+$')
-        && data.dateTime is timestamp;
+        && data.doctorId == request.auth.uid
+        && !data.keys().hasAny(['createdVia']);
     }
 
     function validPatientProfileStorage(data, patientId) {
@@ -540,51 +537,65 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    function appointmentIdsImmutable() {
-      return request.resource.data.patientId == resource.data.patientId
-        && request.resource.data.doctorId == resource.data.doctorId;
+    function appointmentClientImmutable() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'createdVia',
+        'doctorId',
+        'patientId',
+        'tokenNumber',
+        'createdAt'
+      ]);
     }
 
+    // cancelByPatient: cancellationReason, doctorStatus (shared_appointments_store.dart:929-932).
+    // reschedulePatient: dateTime, slotLabel, patientStatus, doctorStatus, wasRescheduled (:875-883).
+    // tokenNumber is also written at :878 and is rejected below.
+    // submitReview: hasReview, reviewRating, reviewId, reviewCreatedAt (:1159-1164).
+    // updateReview / updateReviewByReviewId: reviewRating (:1192, :1216).
+    // Mapper always sends updatedAt.
     function appointmentPatientUpdateKeys() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'patientStatus',
-        'doctorStatus',
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly([
         'cancellationReason',
-        'wasRescheduled',
+        'doctorStatus',
         'dateTime',
         'slotLabel',
-        'tokenNumber',
+        'patientStatus',
+        'wasRescheduled',
         'hasReview',
         'reviewRating',
         'reviewId',
         'reviewCreatedAt',
         'updatedAt'
-      ]);
+      ])
+        && (!changed.hasAny(['doctorStatus']) || request.resource.data.doctorStatus != 'completed');
     }
 
+    // updateDoctorStatus: doctorStatus, patientStatus (:1023-1025).
+    // saveChiefComplaints: chiefComplaints (:1043).
+    // saveObservations: observations (:1056).
+    // saveSymptoms: symptoms (:1077).
+    // appendLabReports: labReports, hasReport (:1098).
+    // saveConsultationOutcome: diagnosis, clinicalNotes, hasPrescription, hasReport,
+    // doctorStatus, patientStatus (:1115-1123).
     function appointmentDoctorUpdateKeys() {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-        'patientStatus',
         'doctorStatus',
-        'cancellationReason',
-        'wasRescheduled',
-        'dateTime',
-        'slotLabel',
-        'tokenNumber',
+        'patientStatus',
+        'chiefComplaints',
+        'observations',
+        'symptoms',
+        'labReports',
+        'hasReport',
         'diagnosis',
         'clinicalNotes',
         'hasPrescription',
-        'hasReport',
-        'labReports',
-        'chiefComplaints',
-        'symptoms',
-        'observations',
         'updatedAt'
       ]);
     }
 
     function validAppointmentUpdate() {
-      return appointmentIdsImmutable()
+      return appointmentClientImmutable()
         && (
           (isPatient() && resource.data.patientId == myPatientId() && appointmentPatientUpdateKeys())
           || (isVerifiedDoctor() && resource.data.doctorId == myDoctorId() && appointmentDoctorUpdateKeys())
