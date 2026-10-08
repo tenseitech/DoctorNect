@@ -512,6 +512,44 @@ test('Lab Booking Sync: Upserts lab_bookings and ensures parent patient & lab re
   }
 });
 
+test('Lab Booking Sync: missing patient name is dead-lettered and not inserted', async () => {
+  process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url: String(url), method: opts && opts.method, body: opts && opts.body });
+    return { ok: true, status: 200, json: async () => [], text: async () => 'OK' };
+  };
+  try {
+    await syncFirestoreLabBookingToSupabase({
+      params: { bookingId: 'book-missing' },
+      data: {
+        after: {
+          exists: true,
+          id: 'book-missing',
+          data: () => ({
+            patientId: 'pat-1',
+            testId: 'cbc',
+            testName: 'CBC',
+            testNames: ['CBC'],
+            collectionType: 'labVisit',
+            dateTime: '2026-09-15T07:30:00.000Z',
+            slotLabel: '7:30 AM',
+            patientAge: 30,
+          }),
+        },
+      },
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+  assert.equal(calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/lab_bookings')), false);
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.equal(String(dlq.body).includes('Patient'), false);
+  assert.match(String(dlq.body), /patient_name/);
+});
+
 test('Lab Order Sync: Upserts doctor-initiated lab order with urgency and tests', async () => {
   process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
@@ -564,6 +602,42 @@ test('Lab Order Sync: Upserts doctor-initiated lab order with urgency and tests'
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('Lab Order Sync: missing doctor name is dead-lettered and not inserted', async () => {
+  process.env.SUPABASE_URL = 'https://fake-project.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'fake-key';
+  const calls = [];
+  global.fetch = async (url, opts) => {
+    calls.push({ url: String(url), method: opts && opts.method, body: opts && opts.body });
+    return { ok: true, status: 200, json: async () => [], text: async () => 'OK' };
+  };
+  try {
+    await syncFirestoreLabOrderToSupabase({
+      params: { orderId: 'lorder-missing' },
+      data: {
+        after: {
+          exists: true,
+          id: 'lorder-missing',
+          data: () => ({
+            doctorId: 'doc-1',
+            patientId: 'pat-1',
+            patientName: 'Ada',
+            patientAge: 30,
+            testIds: ['cbc'],
+            testNames: ['CBC'],
+          }),
+        },
+      },
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+  assert.equal(calls.some((call) => call.method === 'POST' && call.url.includes('/rest/v1/lab_orders')), false);
+  const dlq = calls.find((call) => call.url.includes('sync_dead_letter_queue'));
+  assert.ok(dlq);
+  assert.equal(String(dlq.body).includes('Doctor'), false);
+  assert.match(String(dlq.body), /doctor_name/);
 });
 
 test('Lab Connection Sync: Upserts lab_connections and hard-deletes on removal', async () => {

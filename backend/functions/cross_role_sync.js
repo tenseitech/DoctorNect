@@ -2784,12 +2784,54 @@ async function syncFirestoreLabBookingToSupabase(event) {
     return;
   }
 
-  const patientId = after.patientId || 'pat-unknown';
+  const patientId = firstText(after.patientId);
+  const patientName = firstText(after.patientName);
+  const bookingAge = optionalFiniteNumber(after.patientAge);
+  const testIds = Array.isArray(after.testIds)
+    ? after.testIds.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const testNames = Array.isArray(after.testNames)
+    ? after.testNames.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const testId = firstText(after.testId, testIds[0]);
+  const testName = firstText(after.testName, testNames[0]);
+  const slotLabel = firstText(after.slotLabel);
+  const dateTime = toIsoTimestamp(after.dateTime);
+  const collectionType = firstText(after.collectionType);
+  const collectionOk = ['homeCollection', 'labVisit', 'walkIn'].includes(collectionType);
+  const bookingStatuses = ['confirmed', 'sampleCollected', 'inAnalysis', 'completed', 'cancelled'];
+  const rawBookingStatus = firstText(after.status);
+  // Patient and walk-in bookings are created with status confirmed.
+  // frontend/lib/core/firebase/repositories/lab_booking_repository.dart:109
+  const status = rawBookingStatus
+    ? (bookingStatuses.includes(rawBookingStatus) ? rawBookingStatus : undefined)
+    : 'confirmed';
+  const missing = [];
+  if (!patientId) missing.push('patient_id');
+  if (!patientName) missing.push('patient_name');
+  if (bookingAge === undefined) missing.push('patient_age');
+  if (!testId) missing.push('test_id');
+  if (!testName) missing.push('test_name');
+  if (testNames.length === 0 && !testName) missing.push('test_names');
+  if (!collectionOk) missing.push('collection_type');
+  if (!dateTime) missing.push('date_time');
+  if (!slotLabel) missing.push('slot_label');
+  if (!status) missing.push('status');
+  if (missing.length > 0) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab_booking',
+      entityId: bookingId,
+      payload: { reason: `lab_booking_required_missing:${missing.join(',')}` },
+      errorMessage: `Skipped lab booking: ${missing.join(', ')} required.`,
+      retryCount: 0,
+    });
+    return;
+  }
 
-  // Self-healing foreign keys
   await ensurePatientExistsInPostgres(patientId, {
-    patientName: after.patientName,
-    patientAge: after.patientAge,
+    patientName,
+    patientAge: bookingAge,
     patientGender: after.patientGender,
   }, { url, key, pool });
 
@@ -2797,46 +2839,38 @@ async function syncFirestoreLabBookingToSupabase(event) {
     await ensureLabExistsInPostgres(after.labId, { labName: after.partnerLab }, { url, key, pool });
   }
 
-  const testNames = toStringArray(after.testNames, [after.testName || 'Lab Test']);
-  const testIds = toStringArray(after.testIds, [after.testId || 'general_test']);
-  const rawColl = after.collectionType || 'labVisit';
-  const collectionType = ['homeCollection', 'labVisit', 'walkIn'].includes(rawColl) ? rawColl : 'labVisit';
-  const rawStatus = after.status || 'confirmed';
-  const status = ['confirmed', 'sampleCollected', 'inAnalysis', 'completed', 'cancelled'].includes(rawStatus) ? rawStatus : 'confirmed';
-  const rawSource = after.source || 'app';
-  const source = ['app', 'walkin'].includes(rawSource) ? rawSource : 'app';
-
   const bookingPayload = {
     booking_id: bookingId,
     patient_id: patientId,
-    lab_id: after.labId || null,
-    patient_name: after.patientName || 'Patient',
-    patient_gender: after.patientGender || null,
-    contact_number: after.contactNumber || null,
-    test_id: after.testId || (testIds[0] || 'general_test'),
-    test_name: after.testName || (testNames[0] || 'Lab Test'),
-    test_names: testNames,
-    test_ids: testIds,
-    booking_for_self: after.bookingForSelf !== false,
-    family_member_id: after.familyMemberId || null,
+    patient_name: patientName,
+    patient_age: Math.trunc(bookingAge),
+    test_id: testId,
+    test_name: testName,
+    test_names: testNames.length > 0 ? testNames : [testName],
     collection_type: collectionType,
-    partner_lab: after.partnerLab || null,
-    address: after.address || null,
-    date_time: toIsoTimestamp(after.dateTime) || new Date().toISOString(),
-    status: status,
-    source: source,
-    report_file_name: after.reportFileName || null,
-    report_storage_url: after.reportStorageUrl || null,
-    report_booking_id: after.reportBookingId || null,
-    report_submitted_at: toIsoTimestamp(after.reportSubmittedAt),
-    created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
+    date_time: dateTime,
+    slot_label: slotLabel,
+    status,
   };
-  const bookingAge = optionalFiniteNumber(after.patientAge);
-  if (bookingAge !== undefined) bookingPayload.patient_age = bookingAge;
-  if (typeof after.slotLabel === 'string' && after.slotLabel.trim()) {
-    bookingPayload.slot_label = after.slotLabel.trim();
-  }
+  if (testIds.length > 0) bookingPayload.test_ids = testIds;
+  putText(bookingPayload, 'lab_id', after.labId);
+  putText(bookingPayload, 'patient_gender', after.patientGender);
+  putText(bookingPayload, 'contact_number', after.contactNumber);
+  putText(bookingPayload, 'family_member_id', after.familyMemberId);
+  putText(bookingPayload, 'partner_lab', after.partnerLab);
+  putText(bookingPayload, 'address', after.address);
+  if (typeof after.bookingForSelf === 'boolean') bookingPayload.booking_for_self = after.bookingForSelf;
+  const bookingSource = firstText(after.source);
+  if (bookingSource === 'app' || bookingSource === 'walkin') bookingPayload.source = bookingSource;
+  putText(bookingPayload, 'report_file_name', after.reportFileName);
+  putText(bookingPayload, 'report_storage_url', after.reportStorageUrl);
+  putText(bookingPayload, 'report_booking_id', after.reportBookingId);
+  const reportSubmittedAt = toIsoTimestamp(after.reportSubmittedAt);
+  if (reportSubmittedAt) bookingPayload.report_submitted_at = reportSubmittedAt;
+  const bookingCreatedAt = toIsoTimestamp(after.createdAt);
+  if (bookingCreatedAt) bookingPayload.created_at = bookingCreatedAt;
+  const bookingUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (bookingUpdatedAt) bookingPayload.updated_at = bookingUpdatedAt;
 
   try {
     await executeWithRetry(
@@ -2857,33 +2891,7 @@ async function syncFirestoreLabBookingToSupabase(event) {
             throw new Error(`Supabase PostgREST lab booking error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO lab_bookings (
-              booking_id, patient_id, lab_id, patient_name, patient_age, patient_gender,
-              contact_number, test_id, test_name, test_names, test_ids, booking_for_self,
-              family_member_id, collection_type, partner_lab, address, date_time, slot_label,
-              status, source, report_file_name, report_storage_url, report_booking_id,
-              report_submitted_at, created_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
-            ) ON CONFLICT (booking_id) DO UPDATE SET
-              status = EXCLUDED.status,
-              report_file_name = EXCLUDED.report_file_name,
-              report_storage_url = EXCLUDED.report_storage_url,
-              report_booking_id = EXCLUDED.report_booking_id,
-              report_submitted_at = EXCLUDED.report_submitted_at,
-              updated_at = NOW();
-          `, [
-            bookingPayload.booking_id, bookingPayload.patient_id, bookingPayload.lab_id,
-            bookingPayload.patient_name, bookingPayload.patient_age, bookingPayload.patient_gender,
-            bookingPayload.contact_number, bookingPayload.test_id, bookingPayload.test_name,
-            bookingPayload.test_names, bookingPayload.test_ids, bookingPayload.booking_for_self,
-            bookingPayload.family_member_id, bookingPayload.collection_type, bookingPayload.partner_lab,
-            bookingPayload.address, bookingPayload.date_time, bookingPayload.slot_label,
-            bookingPayload.status, bookingPayload.source, bookingPayload.report_file_name,
-            bookingPayload.report_storage_url, bookingPayload.report_booking_id,
-            bookingPayload.report_submitted_at, bookingPayload.created_at, bookingPayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'lab_bookings', bookingPayload, 'booking_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'lab_booking', entityId: bookingId } }
@@ -2964,54 +2972,90 @@ async function syncFirestoreLabOrderToSupabase(event) {
     return;
   }
 
-  const doctorId = after.doctorId || 'doc-unknown';
-  const patientId = after.patientId || 'pat-unknown';
+  const doctorId = firstText(after.doctorId);
+  const patientId = firstText(after.patientId);
+  const doctorName = firstText(after.doctorName);
+  const patientName = firstText(after.patientName);
+  const orderAge = optionalFiniteNumber(after.patientAge);
+  const testIds = Array.isArray(after.testIds)
+    ? after.testIds.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const testNames = Array.isArray(after.testNames)
+    ? after.testNames.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const orderStatuses = ['ordered', 'received', 'inProgress', 'completed', 'cancelled'];
+  const rawOrderStatus = firstText(after.status);
+  // Doctor lab orders are constructed with status ordered.
+  // frontend/lib/core/firebase/models/doctor_lab_order.dart:20
+  const status = rawOrderStatus
+    ? (orderStatuses.includes(rawOrderStatus) ? rawOrderStatus : undefined)
+    : 'ordered';
+  const rawUrgency = firstText(after.urgency);
+  const urgency = !rawUrgency
+    ? undefined
+    : (['Routine', 'Urgent', 'STAT'].includes(rawUrgency) ? rawUrgency : undefined);
+  const missing = [];
+  if (!doctorId) missing.push('doctor_id');
+  if (!patientId) missing.push('patient_id');
+  if (!doctorName) missing.push('doctor_name');
+  if (!patientName) missing.push('patient_name');
+  if (orderAge === undefined) missing.push('patient_age');
+  if (testIds.length === 0) missing.push('test_ids');
+  if (testNames.length === 0) missing.push('test_names');
+  if (!status) missing.push('status');
+  if (rawUrgency && !urgency) missing.push('urgency');
+  if (missing.length > 0) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'lab_order',
+      entityId: orderId,
+      payload: { reason: `lab_order_required_missing:${missing.join(',')}` },
+      errorMessage: `Skipped lab order: ${missing.join(', ')} required.`,
+      retryCount: 0,
+    });
+    return;
+  }
 
-  // Self-healing foreign keys
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
   await ensurePatientExistsInPostgres(patientId, {
-    patientName: after.patientName,
-    patientAge: after.patientAge,
+    patientName,
+    patientAge: orderAge,
   }, { url, key, pool });
 
   if (after.labId) {
     await ensureLabExistsInPostgres(after.labId, { labName: after.labName }, { url, key, pool });
   }
 
-  const testIds = toStringArray(after.testIds, []);
-  const testNames = toStringArray(after.testNames, []);
-  const rawUrgency = after.urgency || 'Routine';
-  const urgency = ['Routine', 'Urgent', 'STAT'].includes(rawUrgency) ? rawUrgency : 'Routine';
-  const rawStatus = after.status || 'ordered';
-  const status = ['ordered', 'received', 'inProgress', 'completed', 'cancelled'].includes(rawStatus) ? rawStatus : 'ordered';
-
   const orderPayload = {
     order_id: orderId,
     doctor_id: doctorId,
     patient_id: patientId,
-    lab_id: after.labId || null,
-    appointment_id: after.appointmentId || null,
-    facility_id: after.facilityId || null,
-    admission_id: after.admissionId || null,
-    doctor_name: after.doctorName || 'Doctor',
-    patient_name: after.patientName || 'Patient',
-    lab_name: after.labName || null,
+    doctor_name: doctorName,
+    patient_name: patientName,
+    patient_age: Math.trunc(orderAge),
     test_ids: testIds,
     test_names: testNames,
-    indication: after.indication || null,
-    urgency: urgency,
-    fasting_required: Boolean(after.fastingRequired),
-    home_collection: Boolean(after.homeCollection),
-    source: after.source || 'investigations',
-    status: status,
-    report_file_name: after.reportFileName || null,
-    report_storage_url: after.reportStorageUrl || null,
-    report_submitted_at: toIsoTimestamp(after.reportSubmittedAt),
-    created_at: toIsoTimestamp(after.createdAt) || new Date().toISOString(),
-    updated_at: toIsoTimestamp(after.updatedAt) || new Date().toISOString(),
+    status,
   };
-  const orderAge = optionalFiniteNumber(after.patientAge);
-  if (orderAge !== undefined) orderPayload.patient_age = orderAge;
+  putText(orderPayload, 'lab_id', after.labId);
+  putText(orderPayload, 'appointment_id', after.appointmentId);
+  putText(orderPayload, 'facility_id', after.facilityId);
+  putText(orderPayload, 'admission_id', after.admissionId);
+  putText(orderPayload, 'lab_name', after.labName);
+  putText(orderPayload, 'indication', after.indication);
+  if (urgency) orderPayload.urgency = urgency;
+  if (typeof after.fastingRequired === 'boolean') orderPayload.fasting_required = after.fastingRequired;
+  if (typeof after.homeCollection === 'boolean') orderPayload.home_collection = after.homeCollection;
+  const orderSource = firstText(after.source);
+  if (orderSource) orderPayload.source = orderSource;
+  putText(orderPayload, 'report_file_name', after.reportFileName);
+  putText(orderPayload, 'report_storage_url', after.reportStorageUrl);
+  const orderReportAt = toIsoTimestamp(after.reportSubmittedAt);
+  if (orderReportAt) orderPayload.report_submitted_at = orderReportAt;
+  const orderCreatedAt = toIsoTimestamp(after.createdAt);
+  if (orderCreatedAt) orderPayload.created_at = orderCreatedAt;
+  const orderUpdatedAt = toIsoTimestamp(after.updatedAt);
+  if (orderUpdatedAt) orderPayload.updated_at = orderUpdatedAt;
 
   try {
     await executeWithRetry(
@@ -3032,30 +3076,7 @@ async function syncFirestoreLabOrderToSupabase(event) {
             throw new Error(`Supabase PostgREST lab order error (${resp.status}): ${errBody}`);
           }
         } else if (pool) {
-          await pool.query(`
-            INSERT INTO lab_orders (
-              order_id, doctor_id, patient_id, lab_id, appointment_id, facility_id, admission_id,
-              doctor_name, patient_name, patient_age, lab_name, test_ids, test_names, indication,
-              urgency, fasting_required, home_collection, source, status, report_file_name,
-              report_storage_url, report_submitted_at, created_at, updated_at
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
-            ) ON CONFLICT (order_id) DO UPDATE SET
-              status = EXCLUDED.status,
-              report_file_name = EXCLUDED.report_file_name,
-              report_storage_url = EXCLUDED.report_storage_url,
-              report_submitted_at = EXCLUDED.report_submitted_at,
-              updated_at = NOW();
-          `, [
-            orderPayload.order_id, orderPayload.doctor_id, orderPayload.patient_id,
-            orderPayload.lab_id, orderPayload.appointment_id, orderPayload.facility_id,
-            orderPayload.admission_id, orderPayload.doctor_name, orderPayload.patient_name,
-            orderPayload.patient_age, orderPayload.lab_name, orderPayload.test_ids,
-            orderPayload.test_names, orderPayload.indication, orderPayload.urgency,
-            orderPayload.fasting_required, orderPayload.home_collection, orderPayload.source,
-            orderPayload.status, orderPayload.report_file_name, orderPayload.report_storage_url,
-            orderPayload.report_submitted_at, orderPayload.created_at, orderPayload.updated_at,
-          ]);
+          await pgMergeUpsert(pool, 'lab_orders', orderPayload, 'order_id');
         }
       },
       { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'lab_order', entityId: orderId } }
