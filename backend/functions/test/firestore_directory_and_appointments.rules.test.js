@@ -902,4 +902,33 @@ describe('community catalog create bounds', () => {
         }),
     );
   });
+
+  test('diagnoses, lab tests, and radiology reject an extra field; body parts reject an over-long name', async () => {
+    const doctor = testEnv.authenticatedContext(DOCTOR_UID).firestore();
+    await assertFails(doctor.collection('community_diagnoses').doc('dx_extra').set({
+      ...catalogBase(),
+      text: 'Viral fever',
+      textLower: 'viral fever',
+      note: 'extra',
+    }));
+    await assertFails(doctor.collection('community_lab_tests').doc('lab_extra').set({
+      ...catalogBase(),
+      name: 'CBC',
+      nameLower: 'cbc',
+      group: 'Hematology',
+      note: 'extra',
+    }));
+    await assertFails(doctor.collection('community_radiology').doc('rad_extra').set({
+      ...catalogBase(),
+      name: 'Chest X-ray',
+      nameLower: 'chest x-ray',
+      group: 'X-Ray',
+      note: 'extra',
+    }));
+    await assertFails(doctor.collection('community_body_parts').doc('bp_long').set({
+      ...catalogBase(),
+      name: 'K'.repeat(121),
+      nameLower: 'k'.repeat(121),
+    }));
+  });
 });
