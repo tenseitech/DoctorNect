@@ -243,6 +243,7 @@ class _VaccinationRecordsScreenState extends State<VaccinationRecordsScreen> {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isNotEmpty) {
       try {
+        // Vaccinations stay on Firestore with the rest of the patient chart.
         await FirestoreService.instance.patientProfile.saveHealthRecord(
           patientId,
           _healthRecordFromEntry(entry),

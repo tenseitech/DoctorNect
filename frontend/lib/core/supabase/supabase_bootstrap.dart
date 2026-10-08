@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,6 +20,26 @@ abstract final class SupabaseBootstrap {
   /// Test override for USE_SUPABASE_AUTH mode — do not use outside test/
   @visibleForTesting
   static bool? debugUseSupabaseAuthOverride;
+
+  /// Test stand-in for the Firebase ID token passed to Supabase.
+  @visibleForTesting
+  static Future<String?> Function()? debugAccessTokenOverride;
+
+  /// Firebase ID token for Supabase third-party auth (`accessToken`).
+  /// Returns null when Firebase has no signed-in user.
+  static Future<String?> currentFirebaseAccessToken() async {
+    if (debugAccessTokenOverride != null) {
+      return debugAccessTokenOverride!();
+    }
+    if (Firebase.apps.isEmpty) return null;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+    try {
+      return await user.getIdToken();
+    } catch (_) {
+      return null;
+    }
+  }
 
   static bool get isSupabaseAuthEnabled =>
       debugUseSupabaseAuthOverride ?? useSupabaseAuth;
@@ -110,6 +131,7 @@ abstract final class SupabaseBootstrap {
     debugSupabaseUserLoggedInOverride = null;
     debugHasActiveSessionOverride = null;
     debugUseSupabaseAuthOverride = null;
+    debugAccessTokenOverride = null;
   }
 
   /// Initializes Supabase client with local persistence and auto refresh.
@@ -140,6 +162,7 @@ abstract final class SupabaseBootstrap {
         url: targetUrl,
         // ignore: deprecated_member_use
         anonKey: targetKey,
+        accessToken: currentFirebaseAccessToken,
         authOptions: const FlutterAuthClientOptions(
           authFlowType: AuthFlowType.pkce,
           autoRefreshToken: true,

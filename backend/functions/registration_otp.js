@@ -2354,7 +2354,10 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
         await ensureRoleFullVerified(db, search.uid, role, search.data?.profileId, { mobile: digits });
       }
     }
-    const customToken = await getAuth().createCustomToken(search.uid, { role });
+    const customToken = await getAuth().createCustomToken(
+      search.uid,
+      supabaseCompatibleCustomClaims(role),
+    );
     console.info('[verifyUserRegistrationOtp] Login OTP verified successfully, customToken minted', {
       role,
       mobileLast4: digits.slice(-4),
@@ -3110,8 +3113,10 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     }
   }
 
-  const roleClaim = (role === 'superAdmin' || role === 'super_admin') ? 'super_admin' : role;
-  const customToken = await getAuth().createCustomToken(authUid, { role: roleClaim, loginMethod: 'mobile_otp' });
+  const customToken = await getAuth().createCustomToken(
+    authUid,
+    supabaseCompatibleCustomClaims(role, { loginMethod: 'mobile_otp' }),
+  );
   return { ok: true, customToken, uid: authUid };
 }
 
@@ -3203,6 +3208,22 @@ async function lookupMobileRegistration(db, data) {
   return { ok: true, conflict };
 }
 
+/**
+ * Supabase third-party Firebase auth requires the JWT `role` claim to be
+ * `authenticated`. The app role stays in `app_role`. Firestore rules read
+ * users/{uid}.role, not this claim.
+ */
+function supabaseCompatibleCustomClaims(appRole, extra) {
+  const normalized = (appRole === 'superAdmin' || appRole === 'super_admin')
+    ? 'super_admin'
+    : appRole;
+  return {
+    role: 'authenticated',
+    app_role: normalized,
+    ...(extra || {}),
+  };
+}
+
 module.exports = {
   sendUserRegistrationOtp,
   consumeOtpChallengeAtomically,
@@ -3229,6 +3250,7 @@ module.exports = {
   hashAmbulancePin,
   ambulancePinMatches,
   isPlayReviewMobileInput,
+  supabaseCompatibleCustomClaims,
   isDemoMobileInput,
   isDemoPhone,
   isTestMode,

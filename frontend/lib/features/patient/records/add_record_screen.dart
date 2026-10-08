@@ -11,8 +11,6 @@ import '../../../core/firebase/repositories/patient_profile_repository.dart';
 import '../../../core/media/gallery_image_picker.dart';
 
 import '../../../core/session/patient_session.dart';
-import '../../../core/supabase/supabase_bootstrap.dart';
-import '../../../core/supabase/supabase_patient_repository.dart';
 import '../../../core/theme/app_colors.dart';
 import 'data/health_record_file_store.dart';
 import 'data/health_records_mock.dart';
@@ -205,37 +203,9 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
       final storageKey = uploadResult?.objectKey;
       final storageProvider = uploadResult?.provider;
 
-      // Persist to Supabase if available (guarded by PatientWriteGuard)
-      if (SupabaseBootstrap.isReady) {
-        try {
-          await SupabasePatientRepository.instance.addHealthRecord(
-            context: context,
-            recordId: recordId,
-            patientId: patientId,
-            title: _titleController.text.trim(),
-            type: _type.name,
-            date: _date,
-            source: 'selfUploaded',
-            fileName: fileName,
-            doctorName: _doctorController.text.trim().isEmpty
-                ? null
-                : _doctorController.text.trim(),
-            labName: _facilityController.text.trim().isEmpty
-                ? null
-                : _facilityController.text.trim(),
-            isImage: _isImageFile(fileName),
-            notes: _notesController.text.trim().isEmpty
-                ? null
-                : _notesController.text.trim(),
-            sharedWithDoctors: _shareWithDoctors,
-            fileStorage: uploadResult != null ? 'cloudUploaded' : 'localOnly',
-            storageUrl: storageUrl,
-            storageKey: storageKey,
-            storageProvider: storageProvider,
-          );
-        } catch (_) {}
-      }
-
+      // Firestore is the only write target for health records until the
+      // Supabase bridge is proven. SupabasePatientRepository.addHealthRecord
+      // stays in the repository for a later cutover and is not called here.
       final record = HealthRecord(
         id: recordId,
         title: _titleController.text.trim(),

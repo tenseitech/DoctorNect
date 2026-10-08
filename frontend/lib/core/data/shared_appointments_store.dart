@@ -194,6 +194,16 @@ class SharedAppointmentsStore extends ChangeNotifier {
   final Map<String, DateTime> _lastDoctorRefresh = {};
   static const _doctorRefreshTtl = Duration(minutes: 2);
 
+  /// When set, appointment persists go here instead of Firestore.
+  @visibleForTesting
+  static Future<void> Function(DoctorNectAppointmentRecord record)?
+      debugPersistOverride;
+
+  /// When set, the Supabase cancel mirror goes here instead of PostgREST.
+  @visibleForTesting
+  static Future<void> Function(String appointmentId, String reason)?
+      debugSupabaseCancelOverride;
+
   List<DoctorNectAppointmentRecord> get records =>
       _recordsCache ??= List.unmodifiable(_records);
 
@@ -282,6 +292,11 @@ class SharedAppointmentsStore extends ChangeNotifier {
     bool rethrowOnError =
         false, // FIXED: let booking flows surface write failures instead of only logging
   }) async {
+    final persistOverride = debugPersistOverride;
+    if (persistOverride != null) {
+      await persistOverride(record);
+      return;
+    }
     if (!FirebaseBootstrap.isReady) {
       if (rethrowOnError) {
         throw StateError(
@@ -811,27 +826,6 @@ class SharedAppointmentsStore extends ChangeNotifier {
       );
     }
 
-    if (SupabaseBootstrap.isReady) {
-      final previous = _records[i];
-      _records[i] = old.copyWith(
-        cancellationReason: reason,
-        doctorStatus: AppointmentStatus.cancelled,
-      );
-      notifyListeners();
-      try {
-        await SupabasePatientRepository.instance.cancelAppointment(
-          context: null,
-          appointmentId: old.appointmentId,
-          reason: reason,
-        );
-      } catch (e) {
-        _records[i] = previous;
-        notifyListeners();
-        rethrow;
-      }
-      return;
-    }
-
     await _updateRecordAtIndex(
       i,
       old.copyWith(
@@ -840,6 +834,29 @@ class SharedAppointmentsStore extends ChangeNotifier {
       ),
       patientId: old.patientId,
     );
+    await _mirrorPatientCancelToSupabase(old.appointmentId, reason);
+  }
+
+  /// Firestore is already updated. Supabase is a best-effort mirror.
+  Future<void> _mirrorPatientCancelToSupabase(
+    String appointmentId,
+    String reason,
+  ) async {
+    final override = debugSupabaseCancelOverride;
+    if (override == null && !SupabaseBootstrap.isReady) return;
+    try {
+      if (override != null) {
+        await override(appointmentId, reason);
+        return;
+      }
+      await SupabasePatientRepository.instance.cancelAppointment(
+        context: null,
+        appointmentId: appointmentId,
+        reason: reason,
+      );
+    } catch (_) {
+      // A Supabase failure must not roll back the Firestore cancel.
+    }
   }
 
   Future<void> cancelByDoctor(String recordId, {required String reason}) async {

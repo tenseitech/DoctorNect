@@ -14,6 +14,22 @@ import '../../profile/data/doctor_profile_store.dart';
 /// In-memory EMR store for saved prescriptions (single source of truth).
 
 class ClinicalPrescriptionStore extends ChangeNotifier {
+  /// Supabase rows first, then Firestore. The same [PrescriptionDraft.prescriptionId] keeps the Firestore row.
+  @visibleForTesting
+  static List<PrescriptionDraft> mergeByIdFirestoreWins(
+    List<PrescriptionDraft> supabaseRows,
+    List<PrescriptionDraft> firestoreRows,
+  ) {
+    final byId = <String, PrescriptionDraft>{};
+    for (final row in supabaseRows) {
+      byId[row.prescriptionId] = row;
+    }
+    for (final row in firestoreRows) {
+      byId[row.prescriptionId] = row;
+    }
+    return byId.values.toList();
+  }
+
   ClinicalPrescriptionStore._();
 
   static final ClinicalPrescriptionStore instance =
@@ -256,24 +272,22 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
       return;
     }
 
-    // Patient reading prescriptions in Supabase-first mode:
-    if (!_isDoctorContext && SupabaseBootstrap.isReady) {
+    // Supabase rows are merged with Firestore. Firestore wins on the same id.
+    var supaItems = const <PrescriptionDraft>[];
+    if (!_isDoctorContext &&
+        SupabaseBootstrap.isReady &&
+        _lastPatientPage == null) {
       try {
         final rows = await SupabasePatientRepository.instance
             .fetchPrescriptions(patientId);
-        final supaItems = rows
+        supaItems = rows
             .map((r) => PrescriptionSupabaseMapper.fromRow(r))
             .whereType<PrescriptionDraft>()
             .toList();
-        if (supaItems.isNotEmpty) {
-          mergeFirestoreRecords(supaItems);
-          _hasMorePatient = false;
-          return;
-        }
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
-            'ClinicalPrescriptionStore: Supabase fetch failed, falling back to Firestore: $e',
+            'ClinicalPrescriptionStore: Supabase fetch failed, reading Firestore: $e',
           );
         }
       }
@@ -293,7 +307,9 @@ class ClinicalPrescriptionStore extends ChangeNotifier {
               preferCache: preferCache,
             );
 
-      mergeFirestoreRecords(page.items);
+      mergeFirestoreRecords(
+        mergeByIdFirestoreWins(supaItems, page.items),
+      );
 
       _lastPatientPage = page.lastDocument;
 

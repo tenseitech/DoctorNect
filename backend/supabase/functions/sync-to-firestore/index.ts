@@ -1,6 +1,7 @@
 // Supabase Edge Function: sync-to-firestore
-// Handles Database Webhooks from appointments, patients, and reviews
-// Synchronizes records to Firestore with strict loop prevention & origin tagging.
+// DO NOT register a Database Webhook to this function.
+// It does not write Firestore. A webhook here would acknowledge patient
+// writes that doctors (who read Firestore) would never see.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -16,7 +17,7 @@ serve(async (req) => {
 
   try {
     const payload = await req.json();
-    const { type, table, record, old_record } = payload;
+    const { table, record } = payload;
 
     // 1. LOOP PREVENTION:
     // If the change originated from the Firestore Doctor trigger or Reconciler, DROP IT!
@@ -31,10 +32,13 @@ serve(async (req) => {
       );
     }
 
-    // Process sync payload depending on table
     return new Response(
-      JSON.stringify({ success: true, table, id: record?.appointment_id || record?.patient_id || record?.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: "not_implemented",
+        message: "sync-to-firestore does not write Firestore. Do not register a webhook until it does.",
+        table,
+      }),
+      { status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
     return new Response(

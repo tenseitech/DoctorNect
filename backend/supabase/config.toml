@@ -339,9 +339,11 @@ email_optional = false
 enabled = false
 
 # Use Firebase Auth as a third-party provider alongside Supabase Auth.
+# Hosted project must enable the same provider in the Supabase dashboard.
+# project_id is the existing Firebase project (also in .firebaserc), not a secret.
 [auth.third_party.firebase]
-enabled = false
-# project_id = "my-firebase-project"
+enabled = true
+project_id = "medibond-45fad"
 
 # Use Auth0 as a third-party provider alongside Supabase Auth.
 [auth.third_party.auth0]

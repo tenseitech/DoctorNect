@@ -565,35 +565,39 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       }
 
       try {
-        if (SupabaseBootstrap.isReady && old?.appointmentId != null) {
-          await SupabasePatientRepository.instance.bookAppointment(
-            context: context,
-            appointmentId: old!.appointmentId,
-            doctorId: widget.doctorId,
-            patientId: patientId,
-            doctorName: _draft.doctorName,
-            specialization: listing?.specialization ??
-                _doctor?.specialization ??
-                'General Physician',
-            patientName: combinedName,
-            patientAge: profile.age,
-            patientGender:
-                BookingFlowHelpers.resolvePatientGender(profile.gender) ??
-                    'Other',
-            dateTime: newSlotDateTime,
-            slotLabel: slotLabel,
-            visitType: 'followUp',
-            tokenNumber: newToken,
-            clinicName: _doctor?.clinicName,
-            clinicAddress: clinicAddress,
-          );
-        }
         await store.reschedulePatient(
           recordId: widget.rescheduleFromRecordId!,
           newDate: date,
           newSlotLabel: slotLabel,
           newToken: newToken,
         );
+        if (SupabaseBootstrap.isReady && old?.appointmentId != null) {
+          try {
+            await SupabasePatientRepository.instance.bookAppointment(
+              context: context,
+              appointmentId: old!.appointmentId,
+              doctorId: widget.doctorId,
+              patientId: patientId,
+              doctorName: _draft.doctorName,
+              specialization: listing?.specialization ??
+                  _doctor?.specialization ??
+                  'General Physician',
+              patientName: combinedName,
+              patientAge: profile.age,
+              patientGender:
+                  BookingFlowHelpers.resolvePatientGender(profile.gender) ??
+                      'Other',
+              dateTime: newSlotDateTime,
+              slotLabel: slotLabel,
+              visitType: 'followUp',
+              tokenNumber: newToken,
+              clinicName: _doctor?.clinicName,
+              clinicAddress: clinicAddress,
+            );
+          } catch (_) {
+            // Firestore reschedule already succeeded.
+          }
+        }
       } on PatientMaintenanceException catch (_) {
         // Friendly maintenance sheet already displayed by PatientWriteGuard
         return;
@@ -696,31 +700,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         );
       }
 
-      // 1. PRIMARY WRITE: Supabase PostgreSQL (Patient Module Staged Cutover)
-      // Guarded by PatientWriteGuard for maintenance kill-switch & 42501 defense
-      if (SupabaseBootstrap.isReady) {
-        await SupabasePatientRepository.instance.bookAppointment(
-          context: context,
-          appointmentId: appointmentId,
-          doctorId: widget.doctorId,
-          patientId: patientId,
-          doctorName: _draft.doctorName,
-          specialization: listing?.specialization ??
-              _doctor?.specialization ??
-              'General Physician',
-          patientName: pName,
-          patientAge: pAge,
-          patientGender: pGender,
-          dateTime: slotDateTime,
-          slotLabel: slotLabel,
-          visitType: 'newVisit',
-          tokenNumber: token,
-          clinicName: _doctor?.clinicName,
-          clinicAddress: clinicAddress,
-        );
-      }
-
-      // 2. Synchronize local store for UI responsiveness
+      // Firestore is the source of truth doctors read. Supabase is best-effort.
       final confirmed = await store.addBooking(
         doctorId: widget.doctorId,
         doctorName: _draft.doctorName,
@@ -743,6 +723,31 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         slotShareReason: slotShareReason,
       );
       if (!confirmed) allConfirmed = false;
+      if (SupabaseBootstrap.isReady) {
+        try {
+          await SupabasePatientRepository.instance.bookAppointment(
+            context: context,
+            appointmentId: appointmentId,
+            doctorId: widget.doctorId,
+            patientId: patientId,
+            doctorName: _draft.doctorName,
+            specialization: listing?.specialization ??
+                _doctor?.specialization ??
+                'General Physician',
+            patientName: pName,
+            patientAge: pAge,
+            patientGender: pGender,
+            dateTime: slotDateTime,
+            slotLabel: slotLabel,
+            visitType: 'newVisit',
+            tokenNumber: token,
+            clinicName: _doctor?.clinicName,
+            clinicAddress: clinicAddress,
+          );
+        } catch (_) {
+          // Mirror failure must not undo the Firestore booking.
+        }
+      }
     }
 
     final mainPatientName = PatientProfileMock.profile.name.isNotEmpty
