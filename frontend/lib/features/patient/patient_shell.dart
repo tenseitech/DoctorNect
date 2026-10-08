@@ -289,16 +289,23 @@ class _PatientShellState extends State<PatientShell> {
     ),
   ];
 
+  final Set<int> _visitedTabs = {0};
+
   void _selectTab(int index) {
     Navigator.of(context).popUntil((route) => route.isFirst);
     if (!mounted) return;
-    setState(() => _index = index);
+    setState(() {
+      _visitedTabs.add(index);
+      _index = index;
+    });
   }
 
   @override
   void initState() {
     super.initState();
+    _visitedTabs.add(_index);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!FirebaseBootstrap.isReady) return;
       RoleSessionGuard.verifyRole(context, UserType.patient);
       unawaited(_startPatientNotifications());
     });
@@ -404,19 +411,31 @@ class _PatientShellState extends State<PatientShell> {
     super.dispose();
   }
 
-  List<Widget> _buildPages() => [
-        PatientHomeScreen(onSelectTab: _selectTab),
-        const PatientAppointmentsScreen(),
-        const MyLabsScreen(embeddedInShell: true),
-        const AmbulanceBookingScreen(
+  Widget _lazyTab(int index) {
+    if (!_visitedTabs.contains(index)) {
+      return const SizedBox.shrink();
+    }
+    switch (index) {
+      case 0:
+        return PatientHomeScreen(onSelectTab: _selectTab);
+      case 1:
+        return const PatientAppointmentsScreen();
+      case 2:
+        return const MyLabsScreen(embeddedInShell: true);
+      case 3:
+        return const AmbulanceBookingScreen(
           bookedByRole: AmbulanceBookedByRole.patient,
           embeddedInShell: true,
-        ),
-        PatientProfileScreen(
+        );
+      case 4:
+        return PatientProfileScreen(
           embeddedInShell: true,
           onOpenAppointments: () => _selectTab(1),
-        ),
-      ];
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -439,7 +458,10 @@ class _PatientShellState extends State<PatientShell> {
             onDestinationSelected: _selectTab,
             tabs: _tabs,
             requestDots: requestDots,
-            child: IndexedStack(index: _index, children: _buildPages()),
+            child: IndexedStack(
+              index: _index,
+              children: List.generate(_tabs.length, _lazyTab),
+            ),
           );
         },
       ),

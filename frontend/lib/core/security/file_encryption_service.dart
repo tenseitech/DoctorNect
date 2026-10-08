@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// App-level AES-256-GCM encryption for PHI files cached on device or in web memory.
 abstract final class FileEncryptionService {
@@ -170,6 +171,26 @@ abstract final class FileEncryptionService {
       ),
     );
     return plain;
+  }
+
+  /// Drops the in-memory key, wipes flutter_secure_storage, and deletes local
+  /// encrypted PHI cache directories. Safe to call on every logout path.
+  static Future<void> clearOnLogout() async {
+    _cachedKey = null;
+    _initFuture = null;
+    try {
+      await _secureStorage.deleteAll();
+    } catch (_) {}
+    if (kIsWeb) return;
+    try {
+      final documents = await getApplicationDocumentsDirectory();
+      for (final folder in const ['health_records', 'lab_reports']) {
+        final dir = Directory('${documents.path}/$folder');
+        if (await dir.exists()) {
+          await dir.delete(recursive: true);
+        }
+      }
+    } catch (_) {}
   }
 
   static Future<void> deleteDiskFiles({

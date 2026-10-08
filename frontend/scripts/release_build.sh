@@ -105,6 +105,18 @@ EOF
   if [[ -n "${RECAPTCHA_SITE_KEY:-}" ]]; then
     DART_DEFINES+=(--dart-define=RECAPTCHA_SITE_KEY="$RECAPTCHA_SITE_KEY")
   fi
+
+  # Never pass USE_SUPABASE_AUTH. Inject Supabase compile-time config only when
+  # ENABLE_SUPABASE=1 is set explicitly for this release.
+  if [[ "${ENABLE_SUPABASE:-}" == "1" ]]; then
+    echo "WARNING: ENABLE_SUPABASE=1 — injecting SUPABASE_URL and SUPABASE_ANON_KEY dart-defines into this release build." >&2
+    if [[ -n "${SUPABASE_URL:-}" ]]; then
+      DART_DEFINES+=(--dart-define=SUPABASE_URL="$SUPABASE_URL")
+    fi
+    if [[ -n "${SUPABASE_ANON_KEY:-}" ]]; then
+      DART_DEFINES+=(--dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY")
+    fi
+  fi
 }
 
 cd "$PROJECT_ROOT"

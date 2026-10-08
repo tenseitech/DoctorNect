@@ -19,6 +19,8 @@ import '../security/app_check_service.dart';
 import '../security/abuse_protection_service.dart';
 import '../security/client_request_throttle.dart';
 import '../validators/form_validators.dart';
+import '../security/file_encryption_service.dart';
+import '../supabase/supabase_auth_service.dart';
 import '../supabase/supabase_bootstrap.dart';
 import '../auth/profile_completion_service.dart';
 import '../auth/verification_lifecycle.dart';
@@ -795,8 +797,14 @@ class FirebaseAuthService {
     DoctorProfileStore.resetNotificationPrefsSession();
     InAppNotificationService.instance.clearSessionState();
     RoleVerificationController.instance.reset();
+    await FileEncryptionService.clearOnLogout();
     AppSession.clear();
     await SessionExpiry.clear();
+    if (SupabaseBootstrap.isReady) {
+      try {
+        await SupabaseAuthService.instance.signOut();
+      } catch (_) {}
+    }
     if (FirebaseBootstrap.isReady) {
       await _auth.signOut();
     }

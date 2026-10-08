@@ -31,6 +31,26 @@ abstract final class BookingFlowHelpers {
   static bool isLegacyAppointmentId(String id) =>
       RegExp(r'^APT\d+$').hasMatch(id);
 
+  static const placeholderPatientId = 'pat-default';
+
+  /// Returns a real patient id, or null when the session/appointment only has
+  /// the legacy placeholder (or is empty).
+  static String? resolvePatientId({
+    required String sessionPatientId,
+    String? appointmentPatientId,
+  }) {
+    final fromAppointment = appointmentPatientId?.trim() ?? '';
+    if (fromAppointment.isNotEmpty &&
+        fromAppointment != placeholderPatientId) {
+      return fromAppointment;
+    }
+    final fromSession = sessionPatientId.trim();
+    if (fromSession.isNotEmpty && fromSession != placeholderPatientId) {
+      return fromSession;
+    }
+    return null;
+  }
+
   @visibleForTesting
   static void debugReset() {
     debugAppointmentsCollection = null;

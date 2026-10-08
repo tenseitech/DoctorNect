@@ -70,7 +70,7 @@ Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or expor
     }
     $defines.Add("--dart-define=FIREBASE_API_KEY_ANDROID=$androidKey")
 
-    foreach ($name in @('GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY', 'SUPABASE_URL', 'SUPABASE_ANON_KEY')) {
+    foreach ($name in @('GOOGLE_MAPS_API_KEY', 'RECAPTCHA_SITE_KEY')) {
         $item = Get-Item -Path "Env:$name" -ErrorAction SilentlyContinue
         if ($null -eq $item) {
             continue
@@ -78,6 +78,22 @@ Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or expor
         $value = $item.Value
         if (-not [string]::IsNullOrWhiteSpace($value)) {
             $defines.Add("--dart-define=$name=$value")
+        }
+    }
+
+    # Never pass USE_SUPABASE_AUTH. Inject Supabase compile-time config only when
+    # ENABLE_SUPABASE=1 is set explicitly for this release.
+    if ($env:ENABLE_SUPABASE -eq '1') {
+        Write-Host 'WARNING: ENABLE_SUPABASE=1 — injecting SUPABASE_URL and SUPABASE_ANON_KEY dart-defines into this release build.' -ForegroundColor Yellow
+        foreach ($name in @('SUPABASE_URL', 'SUPABASE_ANON_KEY')) {
+            $item = Get-Item -Path "Env:$name" -ErrorAction SilentlyContinue
+            if ($null -eq $item) {
+                continue
+            }
+            $value = $item.Value
+            if (-not [string]::IsNullOrWhiteSpace($value)) {
+                $defines.Add("--dart-define=$name=$value")
+            }
         }
     }
 
