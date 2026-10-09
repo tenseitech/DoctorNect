@@ -406,12 +406,20 @@ All commands below are strictly read-only:
 
 | # | Component | Exact Read-Only Command | Expected Result | What Failure Means |
 | :--- | :--- | :--- | :--- | :--- |
-| **1** | **AWS S3** | `aws s3api get-public-access-block --bucket doctornect` | Returns all 4 settings set to `true`: `BlockPublicAcls: true`, `IgnorePublicAcls: true`, `BlockPublicPolicy: true`, `RestrictPublicBuckets: true`. | **CRITICAL SECURITY RISK:** S3 bucket has public read/write exposure. |
-| **2** | **AWS S3 CORS**| `aws s3api get-bucket-cors --bucket doctornect` | Returns CORS rule allowing origins `https://medibond-45fad.web.app` (and custom domains) with `PUT`, `GET`, `HEAD` methods and `Authorization`, `Content-Type` headers. | Web uploads will fail with browser CORS errors (`Cross-Origin Request Blocked`). |
-| **3** | **AWS S3 Encryption** | `aws s3api get-bucket-encryption --bucket doctornect` | Returns `ServerSideEncryptionConfiguration` with `AES256` or `aws:kms`. | Data at rest is unencrypted (HIPAA / healthcare compliance violation). |
-| **4** | **AWS S3 Policy** | `aws s3api get-bucket-policy --bucket doctornect` | Returns bucket policy restricting access to IAM credentials or VPC, or empty (no public grants). | Potential unauthenticated bucket access. |
-| **5** | **Cloud Functions Secrets (GCP Secret Manager Enumeration)** | `gcloud secrets list --project medibond-45fad` | Confirms all 10 required secret resources (`MSG91_AUTHKEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`) exist in Google Secret Manager without printing any secret values to stdout. | Cloud Functions will fail to boot or external integrations (SMS, Razorpay, S3, Redis, Supabase sync) will fail. |
-| **6** | **Cloud Functions Secret Metadata & Binding Verification** | `firebase functions:secrets:get MSG91_AUTHKEY --project medibond-45fad` (repeat for `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`) | Returns metadata, active version state, and replication status for each secret without printing any secret values to stdout. | Stale secret versions, deactivated secrets, or missing permissions prevent functions from accessing credentials. |
+> **Operator Instruction for AWS S3 Live Checks (#1–4):**
+> Replace `<BUCKET>` with the actual bucket name configured in the deployed Cloud Functions environment.
+> **Do NOT assume the code default (`'doctornect'`).**
+> To inspect only the variable names configured on the deployed Cloud Function without exposing any secrets or values, run the following read-only PowerShell command:
+> ```powershell
+> (gcloud functions describe sendUserRegistrationOtp --gen2 --region asia-south1 --project medibond-45fad --format=json | ConvertFrom-Json).serviceConfig.environmentVariables.PSObject.Properties.Name
+> ```
+
+| **1** | **AWS S3** | `aws s3api get-public-access-block --bucket <BUCKET>` | Returns all 4 settings set to `true`: `BlockPublicAcls: true`, `IgnorePublicAcls: true`, `BlockPublicPolicy: true`, `RestrictPublicBuckets: true`. | **CRITICAL SECURITY RISK:** S3 bucket has public read/write exposure. |
+| **2** | **AWS S3 CORS**| `aws s3api get-bucket-cors --bucket <BUCKET>` | Returns CORS rule allowing origins `https://medibond-45fad.web.app` (and custom domains) with `PUT`, `GET`, `HEAD` methods and `Authorization`, `Content-Type` headers. | Web uploads will fail with browser CORS errors (`Cross-Origin Request Blocked`). |
+| **3** | **AWS S3 Encryption** | `aws s3api get-bucket-encryption --bucket <BUCKET>` | Returns `ServerSideEncryptionConfiguration` with `AES256` or `aws:kms`. | Data at rest is unencrypted (HIPAA / healthcare compliance violation). |
+| **4** | **AWS S3 Policy** | `aws s3api get-bucket-policy --bucket <BUCKET>` | Returns bucket policy restricting access to IAM credentials or VPC, or empty (no public grants). | Potential unauthenticated bucket access. |
+| **5** | **Cloud Functions Secrets (GCP Secret Manager Enumeration)** | `gcloud secrets list --project medibond-45fad` | Confirms that the **5 required secrets** bound via `defineSecret` for current deployment with flags OFF (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RAZORPAY_WEBHOOK_SECRET`) exist in Google Secret Manager without printing secret values to stdout. *(Note: `MSG91_AUTHKEY`, `RAZORPAY_KEY_ID`, and `RAZORPAY_KEY_SECRET` are read strictly via `process.env`).* | Cloud Functions will fail to boot or deploy if Secret Manager bindings cannot be resolved. |
+| **6** | **Cloud Functions Secret Metadata & Binding Verification** | `firebase functions:secrets:get AWS_ACCESS_KEY_ID --project medibond-45fad` (repeat for `AWS_SECRET_ACCESS_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RAZORPAY_WEBHOOK_SECRET`) | Returns metadata, active version state (`ENABLED`), and replication status for each of the 5 `defineSecret` secrets bound today without printing secret payloads. | Deactivated secret versions or missing Cloud Functions service agent IAM permissions prevent functions from accessing credentials. |
 | **7** | **Firestore Indexes** | `firebase firestore:indexes --project medibond-45fad` | Confirms all 31 composite indexes defined in `backend/firestore.indexes.json` are deployed and in `READY` status (correcting the earlier partial figure of 6). | Compound queries (appointments, reviews, deliveries) will fail with missing index errors. |
 | **8** | **Supabase DB Connectivity & FKs** | `node -e "const { Client } = require('pg'); const c = new Client({ connectionString: process.env.STAGING_SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } }); c.connect().then(() => c.query('SELECT count(*) FROM users')).then(r => console.log('Users count:', r.rows[0].count)).finally(() => c.end());"` | Prints row count without error; inspect that the 27 unindexed foreign keys have explicit indexes added before high write volume (correcting earlier figure of 53). | Postgres database is unreachable, credentials are stale, or missing FK indexes cause table locks under load. |
 | **9** | **Supabase RLS Policies** | `node backend/scripts/test_rls_policies.js` | All automated RLS policy matrix checks pass. | RLS policy regression (potential data leak between patients/doctors). |
@@ -521,21 +529,21 @@ All commands below are strictly read-only:
 
 | Entity | Firestore Collection | Supabase Table | Migration File & Line | Writer (Function / Trigger) | Gating Flag | Field Mapping Completeness & Unmapped Fields | Backfill Script |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **users** | `users` | `public.users` | `20260923000001_doctornect_schema.sql:28` | **NO WRITER** (Trigger absent) | N/A | Incomplete: `fcmTokens`, `soundEnabled`, `inAppNotificationsEnabled` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:140` |
-| **patients** | `patients` | `public.patients` | `20260923000001_doctornect_schema.sql:140` | **NO WRITER** (Profile updates unhandled; only stub created on appt) | N/A | Incomplete: `emergencyContacts`, `allergies`, `careTeamDoctorIds` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:210` |
-| **doctors** | `doctors` | `public.doctors` | `20260923000001_doctornect_schema.sql:68` | `syncFirestoreDoctorToSupabase` (`cross_role_sync.js:1323`, `index.js:1999`) | `ENABLE_SUPABASE_SYNC` | Minor: `verificationStatusNotes`, `searchTokens` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:312` |
-| **doctor availability / slots** | `doctor_slots` | `public.doctor_availability`, `doctor_blocked_dates` | `20260923000001_doctornect_schema.sql:102, 118` | `syncFirestoreDoctorAvailabilityToSupabase` (`cross_role_sync.js:1560`, `index.js:2006`) & `syncDoctorBlockedDatesToSupabase` (`cross_role_sync.js:1740`, `index.js:2013`) | `ENABLE_SUPABASE_SYNC` | Complete (Postgres uses slot advisory lock RPCs) | `backend/scripts/migrate_firestore_to_supabase.js:450` |
-| **appointments** | `appointments` | `public.appointments` | `20260923000001_doctornect_schema.sql:200` | `syncFirestoreAppointmentToSupabase` (`cross_role_sync.js:180`, `index.js:1968`) & Client RPC `book_appointment_atomic` (`supabase_patient_repository.dart:88`) | `ENABLE_SUPABASE_SYNC` / `ENABLE_SUPABASE` | Complete | `backend/scripts/migrate_firestore_to_supabase.js:685` |
-| **prescriptions** | `prescriptions` | `public.prescriptions`, `prescription_medicines`, `prescription_investigations`, `prescription_referrals` | `20260923000001_doctornect_schema.sql:274, 314, 340, 362` | `syncFirestorePrescriptionToSupabase` (`cross_role_sync.js:720`, `index.js:1975`) | `ENABLE_SUPABASE_SYNC` | Complete | `backend/scripts/migrate_firestore_to_supabase.js:810` |
-| **lab bookings** | `lab_bookings` | `public.lab_bookings` | `20260923000001_doctornect_schema.sql:438` | `syncFirestoreLabBookingToSupabase` (`cross_role_sync.js:2550`, `index.js:2055`) | `ENABLE_SUPABASE_SYNC` | Minor: `sampleCollectionDetails` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:930` |
-| **lab orders** | `lab_orders` | `public.lab_orders` | `20260923000001_doctornect_schema.sql:484` | `syncFirestoreLabOrderToSupabase` (`cross_role_sync.js:2830`, `index.js:2062`) | `ENABLE_SUPABASE_SYNC` | Minor: `reportAttachmentS3Keys` unmapped | None dedicated |
-| **pharmacy deliveries** | `pharmacy_deliveries` | `public.pharmacy_deliveries`, `pharmacy_delivery_medicines` | `20260923000001_doctornect_schema.sql:390, 416` | `syncFirestorePharmacyDeliveryToSupabase` (`cross_role_sync.js:2130`, `index.js:2034`) | `ENABLE_SUPABASE_SYNC` | Minor: `courierTracking` unmapped | None dedicated |
-| **ambulances** | `ambulances` | `public.ambulances`, `ambulance_private_settings` | `20260923000001_doctornect_schema.sql:518, 552` | `syncFirestoreAmbulanceToSupabase` (`cross_role_sync.js:3150`, `index.js:2076`) & requests/broadcasts/invites triggers (`index.js:2083-2104`) | `ENABLE_SUPABASE_SYNC` | Minor: `fcmDeviceToken` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:580` |
-| **reviews** | `reviews`, `review_public` | `public.reviews`, `public.review_public` | `20260923000001_doctornect_schema.sql:632, 660` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `helpfulVotesCount` | None |
-| **promoted ads** | `promotedAds` | `public.promoted_ads` | `20260923000001_doctornect_schema.sql:580` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `razorpaySignature` | None |
-| **community catalogs** | `community_*` | `public.community_*` (5 tables) | `20260923000001_doctornect_schema.sql:710-790` | **NO WRITER** (Trigger absent) | N/A | None | None |
-| **health records** | `health_records` | `public.health_records` | `20260923000001_doctornect_schema.sql:680` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `tags`, `vitalSigns` | None |
-| **support tickets** | `support_tickets` | `public.support_tickets`, `support_ticket_messages` | `20260923000001_doctornect_schema.sql:810, 835` | **NO WRITER** (Trigger absent) | N/A | None | None |
+| **users** | `users` | `public.users` | `20260923000001_doctornect_schema.sql:61` | **NO WRITER** (Trigger absent) | N/A | Incomplete: `fcmTokens`, `soundEnabled`, `inAppNotificationsEnabled` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:206` |
+| **patients** | `patients` | `public.patients` | `20260923000001_doctornect_schema.sql:212` | **NO WRITER** (Profile updates unhandled; only stub created on appt) | N/A | Incomplete: `emergencyContacts`, `allergies`, `careTeamDoctorIds` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:429` |
+| **doctors** | `doctors` | `public.doctors` | `20260923000001_doctornect_schema.sql:98` | `syncFirestoreDoctorToSupabase` (`cross_role_sync.js:1235`, `index.js:1999`) | `ENABLE_SUPABASE_SYNC` | Minor: `verificationStatusNotes`, `searchTokens` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:292` |
+| **doctor availability / slots** | `doctor_slots` | `public.doctor_availability`, `doctor_blocked_dates` | `20260923000001_doctornect_schema.sql:181, 199` | `syncFirestoreDoctorAvailabilityToSupabase` (`cross_role_sync.js:1374`, `index.js:2006`) & `syncDoctorBlockedDatesToSupabase` (`cross_role_sync.js:1495`, `index.js:2013`) | `ENABLE_SUPABASE_SYNC` | Complete (Postgres uses slot advisory lock RPCs) | `backend/scripts/migrate_firestore_to_supabase.js:292` |
+| **appointments** | `appointments` | `public.appointments` | `20260923000001_doctornect_schema.sql:430` | `syncFirestoreAppointmentToSupabase` (`cross_role_sync.js:730`, `index.js:1968`) & Client RPC `book_appointment_atomic` (`supabase_patient_repository.dart:88`) | `ENABLE_SUPABASE_SYNC` / `ENABLE_SUPABASE` | Complete | `backend/scripts/migrate_firestore_to_supabase.js:874` |
+| **prescriptions** | `prescriptions` | `public.prescriptions`, `prescription_medicines`, `prescription_investigations`, `prescription_referrals` | `20260923000001_doctornect_schema.sql:489, 547, 566, 578` | `syncFirestorePrescriptionToSupabase` (`cross_role_sync.js:851`, `index.js:1975`) | `ENABLE_SUPABASE_SYNC` | Complete | `backend/scripts/migrate_firestore_to_supabase.js:970` |
+| **lab bookings** | `lab_bookings` | `public.lab_bookings` | `20260923000001_doctornect_schema.sql:625` | `syncFirestoreLabBookingToSupabase` (`cross_role_sync.js:2729`, `index.js:2055`) | `ENABLE_SUPABASE_SYNC` | Minor: `sampleCollectionDetails` unmapped | None dedicated (`migrateLabs` at `migrate_firestore_to_supabase.js:678`) |
+| **lab orders** | `lab_orders` | `public.lab_orders` | `20260923000001_doctornect_schema.sql:663` | `syncFirestoreLabOrderToSupabase` (`cross_role_sync.js:2917`, `index.js:2062`) | `ENABLE_SUPABASE_SYNC` | Minor: `reportAttachmentS3Keys` unmapped | None dedicated |
+| **pharmacy deliveries** | `pharmacy_deliveries` | `public.pharmacy_deliveries`, `pharmacy_delivery_medicines` | `20260923000001_doctornect_schema.sql:740, 767` | `syncFirestorePharmacyDeliveryToSupabase` (`cross_role_sync.js:2247`, `index.js:2034`) | `ENABLE_SUPABASE_SYNC` | Minor: `courierTracking` unmapped | None dedicated |
+| **ambulances** | `ambulances` | `public.ambulances`, `ambulance_private_settings` | `20260923000001_doctornect_schema.sql:376, 418` | `syncFirestoreAmbulanceToSupabase` (`cross_role_sync.js:3434`, `index.js:2076`) & requests/broadcasts/invites triggers (`index.js:2083-2104`) | `ENABLE_SUPABASE_SYNC` | Minor: `fcmDeviceToken` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:732` |
+| **reviews** | `reviews`, `review_public` | `public.reviews`, `public.review_public` | `20260923000001_doctornect_schema.sql:817, 839` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `helpfulVotesCount` | None |
+| **promoted ads** | `promotedAds` | `public.promoted_ads` | `20260923000001_doctornect_schema.sql:965` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `razorpaySignature` | None |
+| **community catalogs** | `community_*` | `public.community_*` (5 tables) | `20260923000001_doctornect_schema.sql:1018-1070` | **NO WRITER** (Trigger absent) | N/A | None | None |
+| **health records** | `health_records` | `public.health_records` | `20260923000001_doctornect_schema.sql:594` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `tags`, `vitalSigns` | None |
+| **support tickets** | `support_tickets` | `public.support_tickets`, `support_ticket_messages` | `20260923000001_doctornect_schema.sql:865, 884` | **NO WRITER** (Trigger absent) | N/A | None | None |
 
 ### 2.2 List of Entities and Events with NO Supabase Writer
 
@@ -1492,7 +1500,7 @@ Every single `process.env.X` reference in production backend code (`backend/func
 | **`ACCOUNT_APPROVAL_ADMIN_EMAILS`** | `registration_otp.js:687`<br>`index.js:1896` | **Required** for account approval | **FAILS CLOSED:** Throws `HttpsError('permission-denied', 'Account approval is not configured. Set ACCOUNT_APPROVAL_ADMIN_EMAILS.')`. | `backend/functions/.env:49`<br>`.env.example:44` | `const allowedEmails = (process.env.ACCOUNT_APPROVAL_ADMIN_EMAILS || ...)`<br>No user can approve accounts if empty. |
 | **`BACKFILL_ADMIN_EMAILS`** | `index.js:1747, 1897`<br>`registration_otp.js:689` | Optional (fallback for approval & backfill) | **FAILS CLOSED:** Throws `HttpsError('permission-denied', 'Backfill admin access not configured.')` if both empty. | `backend/functions/.env:50`<br>`.env.example:45` | `process.env.BACKFILL_ADMIN_EMAILS || ''`<br>Secondary admin allow-list fallback. |
 | **`PATIENT_APPROVAL_ADMIN_EMAILS`** | `registration_otp.js:688` | Optional (fallback for approval) | Falls back to `BACKFILL_ADMIN_EMAILS` or empty list (fails closed). | Not set in `.env` | `|| process.env.PATIENT_APPROVAL_ADMIN_EMAILS` |
-| **`S3_BUCKET`**<br>*(Note: `S3_BUCKET_NAME` is not read in code)* | `s3_storage.js:22`<br>`delete_my_account.js:26` | Optional | Falls back to default string `'doctornect'`. | `backend/functions/.env:58` (`doctornect-672027759702-ap-south-1-an`) | `const S3_BUCKET = process.env.S3_BUCKET || 'doctornect';`<br>Repository does **not** read `S3_BUCKET_NAME`. |
+| **`S3_BUCKET`**<br>*(Note: `S3_BUCKET_NAME` is not read in code)* | `s3_storage.js:22`<br>`delete_my_account.js:26` | Optional | Falls back to default string `'doctornect'`. | `backend/functions/.env:58` (`<S3_BUCKET_NAME>`) | `const S3_BUCKET = process.env.S3_BUCKET || 'doctornect';`<br>Repository does **not** read `S3_BUCKET_NAME`. |
 | **`AWS_REGION`** | `s3_storage.js:21`<br>`delete_my_account.js:36` | Optional | Falls back to default string `'ap-south-1'`. | Unset in `.env` (defaults apply) | `const AWS_REGION = process.env.AWS_REGION || 'ap-south-1';` |
 | **`FIRESTORE_TRIGGER_REGION`** | `index.js:117` | Optional | Falls back to `'asia-south2'`. | `backend/functions/.env.example:57` | `const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south2').trim();` |
 | **`RATE_LIMIT_BACKEND`** | `abuse_rate_limit.js:88` | Optional | Falls back to `'firestore'` (atomic Firestore transactions). | `backend/functions/.env:70` (`firestore`) | `return String(process.env.RATE_LIMIT_BACKEND || 'firestore').trim().toLowerCase();` |
@@ -1519,9 +1527,9 @@ Every single `process.env.X` reference in production backend code (`backend/func
 | **`MSG91_TEMPLATE_ID_PASSWORD_RESET`** | `registration_otp.js:860`| Optional | Falls back to shared `MSG91_TEMPLATE_ID`. | `backend/functions/.env:46` | `const reset = String(process.env.MSG91_TEMPLATE_ID_PASSWORD_RESET || '').trim();` |
 | **`MSG91_TEMPLATE_ID_APPROVAL`** | `index.js:1837` | Optional | Falls back to generic transactional email template. | Unset in `.env` | `(data.type === 'verification_approval' ? process.env.MSG91_TEMPLATE_ID_APPROVAL : null)` |
 | **`MSG91_TEMPLATE_ID_REJECTION`** | `index.js:1838` | Optional | Falls back to generic transactional email template. | Unset in `.env` | `(data.type === 'verification_rejection' ? process.env.MSG91_TEMPLATE_ID_REJECTION : null)` |
-| **`MSG91_SENDER_ID`** / **`MSG91_SENDER`** | `registration_otp.js:862` | Optional | Defaults to standard DLT sender header `'DRNECT'`. | `backend/functions/.env:47` (`DRNECT`) | `return String(process.env.MSG91_SENDER_ID || process.env.MSG91_SENDER || 'DRNECT')` |
-| **`MSG91_FROM_EMAIL`** | `index.js:1859, 1935` | Optional | Defaults to `'no-reply@mail.doctornect.com'`. | `backend/functions/.env:48` | `fromEmail: process.env.MSG91_FROM_EMAIL || 'no-reply@mail.doctornect.com'` |
-| **`MSG91_EMAIL_DOMAIN`** | `index.js:1860, 1936` | Optional | Defaults to `'mail.doctornect.com'`. | `backend/functions/.env:49` | `domain: process.env.MSG91_EMAIL_DOMAIN || 'mail.doctornect.com'` |
+| **`MSG91_SENDER_ID`** / **`MSG91_SENDER`** | `registration_otp.js:862` | Optional | Defaults to standard DLT sender header `'<MSG91_SENDER_ID>'`. | `backend/functions/.env:47` (`<MSG91_SENDER_ID>`) | `return String(process.env.MSG91_SENDER_ID || process.env.MSG91_SENDER || '<MSG91_SENDER_ID>')` |
+| **`MSG91_FROM_EMAIL`** | `index.js:1859, 1935` | Optional | Defaults to `'<MSG91_FROM_EMAIL>'`. | `backend/functions/.env:48` | `fromEmail: process.env.MSG91_FROM_EMAIL || '<MSG91_FROM_EMAIL>'` |
+| **`MSG91_EMAIL_DOMAIN`** | `index.js:1860, 1936` | Optional | Defaults to `'<MSG91_EMAIL_DOMAIN>'`. | `backend/functions/.env:49` | `domain: process.env.MSG91_EMAIL_DOMAIN || '<MSG91_EMAIL_DOMAIN>'` |
 | **`MSG91_PROXY_URL`** | `registration_otp.js:893, 1095` | Optional | SMS API requests dispatch directly to MSG91 endpoint without proxy. | `backend/functions/.env:50` | `const proxyUrl = String(process.env.MSG91_PROXY_URL || '').trim();` |
 | **`PROXY_SECRET`** | `registration_otp.js:894, 1096` | Optional | No proxy authorization header attached to outbound HTTP calls. | Unset in `.env` | `const proxySecret = String(process.env.PROXY_SECRET || '').trim();` |
 | **`REDIS_TLS`** | `src/config/redis.js:149`<br>`src/config/redis.ts:102` | Optional | Defaults to `true` (TLS encryption enabled). | `backend/functions/.env.example:61` (`true`) | `: String(process.env.REDIS_TLS || 'true').trim().toLowerCase() !== 'false';` |
@@ -1614,7 +1622,7 @@ In `firebase.json:18-27`:
         "service-account*.json"
       ]
 ```
-* **Critical Finding:** All `.env*` files are **explicitly ignored** by Firebase Functions deployment. When running in Google Cloud Functions v2, variables defined in `backend/functions/.env` are **not packaged or uploaded**. All non-secret environment variables must be declared in Google Cloud Run runtime configuration (or via Firebase CLI params), and all secrets must be configured in Google Secret Manager.
+* **Correction on .env Deployment Behavior:** While `firebase.json`'s `functions.ignore` list excludes `.env*` files from being packaged into the source code zip payload, **it does NOT prevent `.env` variables from being deployed**. As verified directly in the `firebase-tools` source code (`lib/functions/env.js:261-278` and `lib/deploy/functions/prepare.js:206-241`), `loadUserEnvs` parses `.env` on the developer's local host and injects them directly into `wantBackend.environmentVariables`, which are sent to the Google Cloud Functions v2 / Cloud Run API as runtime environment variables. Therefore, variables in `backend/functions/.env` **are automatically deployed** to Cloud Functions runtime unless explicitly overridden or absent on the deploying host machine.
 
 ---
 
@@ -1973,3 +1981,398 @@ Every foreign key reference cited in Section 3.2 (previously numbered 3.3 in Add
 | **`security_events.uid`** | Line 1135| Line 1135| **MATCH** | N/A (Audit table) | N/A | `uid UUID REFERENCES users(id) ON DELETE SET NULL,` |
 
 ---
+
+
+# ADDENDUM 4: ENVIRONMENT LOADING, SECRET BINDING, DATA RESILIENCE & AMBULANCE AUTH AUDIT
+
+---
+
+## 1. Environment Loading & Firebase CLI Deployment Behavior (Step 1)
+
+### 1.1 Existing `.env*` Files & Variable Inventory
+Static inspection of `backend/functions` identifies exactly **two** dotenv files:
+1. `backend/functions/.env`
+2. `backend/functions/.env.example`
+
+Neither `.env.medibond-45fad` nor `.env.production` exists in `backend/functions`.
+
+Per the security audit rules, only variable **names** and safe boolean/string mode flags are printed; all other variables are reported strictly as `"set"` or `"empty"`:
+
+| Variable Name | Present in `.env` | `.env` Safe Value / Status | Present in `.env.example` | `.env.example` Safe Value / Status |
+| :--- | :---: | :--- | :---: | :--- |
+| **`OTP_TEST_MODE`** | Yes | `false` | Yes | `false` |
+| **`ENFORCE_OTP_APP_CHECK`** | Yes | `true` | Yes | `true` |
+| **`ENFORCE_ABUSE_APP_CHECK`** | Yes | `true` | Yes | `true` |
+| **`ENFORCE_AMBULANCE_HTTP_APP_CHECK`** | Yes | `false` | Yes | `false` |
+| **`RATE_LIMIT_BACKEND`** | Yes | `firestore` | No | N/A |
+| **`S3_URL_CACHE`** | Yes | `off` | No | N/A |
+| **`OTP_REDIS_MIRROR`** | No | N/A | Yes | `off` |
+| **`AMBULANCE_HTTP_ALLOWED_ORIGINS`** | Yes | empty | Yes | empty |
+| **`DEMO_PHONE_PATIENT`** | Yes | empty | Yes | empty |
+| **`DEMO_PHONE_DOCTOR`** | Yes | empty | Yes | set |
+| **`DEMO_PHONE_MEDICAL_STORE`** | Yes | empty | Yes | empty |
+| **`DEMO_PHONE_LAB`** | Yes | empty | Yes | empty |
+| **`DEMO_PHONE_AMBULANCE`** | Yes | empty | Yes | empty |
+| **`DEMO_PHONE_SUPER_ADMIN`** | No | N/A | Yes | empty |
+| **`GOOGLE_PLAY_REVIEW_PHONE`** | Yes | empty | Yes | empty |
+| **`MSG91_AUTH_KEY`** / **`MSG91_AUTHKEY`**| Yes | set | Yes | empty |
+| **`MSG91_TEMPLATE_ID`** | Yes | set | Yes | empty |
+| **`MSG91_TEMPLATE_ID_REGISTRATION`** | Yes | set | Yes | empty |
+| **`MSG91_TEMPLATE_ID_LOGIN`** | Yes | set | Yes | empty |
+| **`MSG91_TEMPLATE_ID_PASSWORD_RESET`** | Yes | set | Yes | empty |
+| **`MSG91_SENDER_ID`** | Yes | set | Yes | set |
+| **`MSG91_FROM_EMAIL`** | Yes | set | Yes | set |
+| **`MSG91_EMAIL_DOMAIN`** | Yes | set | Yes | set |
+| **`MSG91_PROXY_URL`** | Yes | set | No | N/A |
+| **`ACCOUNT_APPROVAL_ADMIN_EMAILS`** | Yes | set | Yes | empty |
+| **`BACKFILL_ADMIN_EMAILS`** | Yes | set | Yes | empty |
+| **`RAZORPAY_KEY_ID`** | Yes | set | No | N/A |
+| **`RAZORPAY_KEY_SECRET`** | Yes | set | No | N/A |
+| **`S3_BUCKET`** | Yes | set | No | N/A |
+| **`SUPABASE_URL`** | Yes | set | No | N/A |
+| **`SUPABASE_PUBLISHABLE_KEY`** | Yes | set | No | N/A |
+| **`SUPABASE_SECRET_KEY`** | Yes | set | No | N/A |
+| **`SUPABASE_JWKS_URL`** | Yes | set | No | N/A |
+| **`SUPABASE_ANON_KEY`** | Yes | set | No | N/A |
+| **`REDIS_HOST`** | Yes | set | Yes | empty |
+| **`REDIS_PORT`** | Yes | set | Yes | set |
+| **`REDIS_PASSWORD`** | Yes | set | Yes | empty |
+| **`REDIS_TLS`** | No | N/A | Yes | set |
+| **`FIRESTORE_TRIGGER_REGION`** | No | N/A | Yes | set |
+
+### 1.2 Which File Firebase CLI Loads for Project `medibond-45fad`
+Because `.env.medibond-45fad` and `.env.production` do not exist in `backend/functions`, Firebase CLI loads **`.env`**.
+
+### 1.3 Firebase Tools Source Audit: Does `functions.ignore` Affect Environment Loading?
+Inspection of the official `firebase-tools` source code (`node_modules/firebase-tools/lib/functions/env.js` and `lib/deploy/functions/prepare.js`) reveals how dotenv files are discovered and injected:
+
+In `firebase-tools/lib/functions/env.js:179-191, 261-278`:
+```javascript
+179: function findEnvfiles(configDir, projectId, projectAlias, isEmulator) {
+180:     const files = [".env"];
+181:     files.push(`.env.${projectId}`);
+182:     if (projectAlias) {
+183:         files.push(`.env.${projectAlias}`);
+184:     }
+...
+188:     return files
+189:         .map((f) => path.join(configDir, f))
+190:         .filter(fs.existsSync)
+191:         .map((p) => path.basename(p));
+192: }
+...
+261: function loadUserEnvs(opts) {
+262:     const configDir = opts.configDir || opts.functionsSource;
+263:     const envFiles = findEnvfiles(configDir, opts.projectId, opts.projectAlias, opts.isEmulator);
+...
+275:     for (const f of envFiles) {
+276:         try {
+277:             const data = fs.readFileSync(path.join(configDir, f), "utf8");
+278:             envs = { ...envs, ...parseStrict(data) };
+```
+
+And in `firebase-tools/lib/deploy/functions/prepare.js:206-241`:
+```javascript
+206:         const rawUserEnvs = functionsEnv.loadUserEnvs(userEnvOpt);
+207:         const { userEnvs: userEnvs, secretRefs: secretRefs } = partitionUserEnvs(rawUserEnvs);
+208:         const envs = { ...userEnvs, ...firebaseEnvs };
+...
+229:         wantBackend.environmentVariables = envs;
+...
+240:         for (const endpoint of backend.allEndpoints(wantBackend)) {
+241:             endpoint.environmentVariables = { ...(wantBackend.environmentVariables || {}) };
+```
+
+**Verification Verdict:**
+`functions.ignore` in `firebase.json` controls **only** which files are excluded from the zip payload uploaded to Google Cloud Storage. It has **no effect** on `loadUserEnvs`. Firebase CLI reads `.env` on the developer's workstation via `fs.readFileSync` before packaging, and deploys all parsed variables directly via the Cloud Functions API as service environment variables (`endpoint.environmentVariables`). The previous statement in Addendum 3 Section 1.3 claiming ignored `.env` files are not deployed has been corrected.
+
+---
+
+## 2. Function Secret Bindings & Secret Manager Inventory (Step 2)
+
+### 2.1 Complete Matrix of Functions with a `secrets:` Option
+Across the entire backend codebase, functions declare secret bindings via `defineSecret` or string array references as follows:
+
+| Function Name | Export File & Line | Declaring File & Line | Secret Names Bound | Gating Flag / Binding Condition |
+| :--- | :--- | :--- | :--- | :--- |
+| **`deleteMyAccount`** | `index.js:1879` | `index.js:1883` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Unconditional |
+| **`getS3UploadUrl`** | `index.js:1993` | `s3_storage.js:863, 867` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Unconditional |
+| **`getS3DownloadUrl`** | `index.js:1994` | `s3_storage.js:863, 874` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Unconditional |
+| **`getS3DownloadUrls`** | `index.js:1995` | `s3_storage.js:863, 881` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Unconditional |
+| **`deleteS3Object`** | `index.js:1996` | `s3_storage.js:863, 888` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Unconditional |
+| **`razorpayWebhook`** | `index.js:1255` | `promoted_ads.js:720` | `RAZORPAY_WEBHOOK_SECRET` | Unconditional |
+| **`sendUserRegistrationOtp`** | `index.js:974` | `index.js:975` | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Conditionally bound **only** if `OTP_REDIS_MIRROR=on` (line 124) |
+| **`verifyUserRegistrationOtp`**| `index.js:1022` | `index.js:1023` | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` | Conditionally bound **only** if `OTP_REDIS_MIRROR=on` (line 124) |
+| **18 Supabase Sync Triggers** (`syncAppointmentToSupabase`, `syncPrescriptionToSupabase`, etc.) | `index.js:1968-2108` | `index.js:1972` | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Conditionally registered & bound **only** if `ENABLE_SUPABASE_SYNC=on` (line 1967) |
+
+### 2.2 Secrets Required in Google Secret Manager for Current Deploy (Flags OFF)
+When deployed with default flags (`OTP_REDIS_MIRROR !== 'on'` and `ENABLE_SUPABASE_SYNC !== 'on'`), only **5 secrets** are bound and must exist in Google Secret Manager:
+1. **`AWS_ACCESS_KEY_ID`**
+2. **`AWS_SECRET_ACCESS_KEY`**
+3. **`SUPABASE_URL`**
+4. **`SUPABASE_SERVICE_ROLE_KEY`**
+5. **`RAZORPAY_WEBHOOK_SECRET`**
+
+If `OTP_REDIS_MIRROR=on` is enabled, Secret Manager must additionally provision:
+6. `REDIS_HOST`
+7. `REDIS_PORT`
+8. `REDIS_PASSWORD`
+
+### 2.3 Variables Read Strictly Via `process.env`
+All three of the following credentials are read **exclusively** via `process.env` and are **never** bound using `defineSecret`:
+- **`MSG91_AUTHKEY`** / **`MSG91_AUTH_KEY`**: Read at `secure_config.js:25-26`.
+- **`RAZORPAY_KEY_ID`**: Read at `promoted_ads.js:49`.
+- **`RAZORPAY_KEY_SECRET`**: Read at `promoted_ads.js:50`.
+
+---
+
+## 3. Safe Live Checks for AWS S3 & Secret Manager (Step 3)
+
+### 3.1 Hardcoded Bucket Name Elimination
+In Section 7 of the report, all references to the bucket name have been parameterized to `<BUCKET>`. 
+
+### 3.2 Operator Instructions
+Human operators must obtain `<BUCKET>` from the deployed Cloud Functions environment variable (`S3_BUCKET`), rather than assuming the code fallback default (`'doctornect'`).
+
+To inspect deployed Cloud Function environment variable **names only** without printing any secret values, run:
+```powershell
+(gcloud functions describe sendUserRegistrationOtp --gen2 --region asia-south1 --project medibond-45fad --format=json | ConvertFrom-Json).serviceConfig.environmentVariables.PSObject.Properties.Name
+```
+
+---
+
+## 4. Supabase Upsert Payloads, Foreign Key Constraints & Identity (Step 4)
+
+### 4.1 Master Entity Payloads vs `owner_uid` / `auth_uid`
+Audit of payload builder functions and sync triggers in `backend/functions/cross_role_sync.js`:
+
+| Entity Sync Function | Upsert Payload Builder | Includes `owner_uid` / `auth_uid`? | Exact Code Expression | DDL Column Definition & Nullability | Creates `users` Row First? | Verdict |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`syncFirestoreDoctorToSupabase`** | `buildDoctorSupabasePayload` (`cross_role_sync.js:213-245`) | **NO** (Completely omitted) | N/A | `20260923000001_doctornect_schema.sql:100`:<br>`owner_uid UUID REFERENCES users(id) ON DELETE SET NULL` | No | **PASS** (Postgres defaults to NULL; FK constraint is satisfied) |
+| **`syncFirestoreMedicalStoreToSupabase`** | `buildMedicalStoreSupabasePayload` (`cross_role_sync.js:291-323`) | **Conditionally** | `cross_role_sync.js:322-323`:<br>`const ownerUid = toValidUuid(doc.ownerUid);`<br>`if (ownerUid) store.owner_uid = ownerUid;` | `20260923000001_doctornect_schema.sql:295`:<br>`owner_uid UUID REFERENCES users(id) ON DELETE SET NULL` | No | **PASS** for Firebase UIDs (`toValidUuid` returns null; omitted -> NULL). **FAIL** only if a valid RFC 4122 UUID points to a non-existent `users.id`. |
+| **`syncFirestoreLabToSupabase`** | `buildLabSupabasePayload` (`cross_role_sync.js:336-368, 2519-2520`) | **Conditionally** | `cross_role_sync.js:2519-2520`:<br>`const labOwnerUid = toValidUuid(after.ownerUid);`<br>`if (labOwnerUid) labPayload.owner_uid = labOwnerUid;` | `20260923000001_doctornect_schema.sql:329`:<br>`owner_uid UUID REFERENCES users(id) ON DELETE SET NULL` | No | **PASS** for Firebase UIDs (`toValidUuid` returns null; omitted -> NULL). **FAIL** only if a valid RFC 4122 UUID points to a non-existent `users.id`. |
+| **`syncFirestoreAmbulanceToSupabase`** | `buildAmbulanceSupabasePayload` (`cross_role_sync.js:369-416`) | **Conditionally** | `cross_role_sync.js:414-415`:<br>`const authUid = toValidUuid(doc.authUid);`<br>`if (authUid) ambulance.auth_uid = authUid;` | `20260923000001_doctornect_schema.sql:378`:<br>`auth_uid UUID REFERENCES users(id) ON DELETE SET NULL` | No | **PASS** for Firebase UIDs (`toValidUuid` returns null; omitted -> NULL). **FAIL** only if a valid RFC 4122 UUID points to a non-existent `users.id`. |
+
+### 4.2 Appointments & Prescriptions: `patient_id` and Missing Helper Verification
+- **`syncFirestoreAppointmentToSupabase`**:
+  - `patient_id` assignment (`cross_role_sync.js:651`):
+    ```javascript
+    patient_id: after.patientId || null,
+    ```
+  - `ensurePatientExistsInPostgres` is **NOT called**.
+- **`syncFirestorePrescriptionToSupabase`**:
+  - `patient_id` assignment (`cross_role_sync.js:890`):
+    ```javascript
+    patient_id: prescriptionPatientId,
+    ```
+  - `ensurePatientExistsInPostgres` is **NOT called**.
+
+### 4.3 `ensurePatientExistsInPostgres` Implementation Details
+- **Target Table:** Writes strictly to **`public.patients`** (`cross_role_sync.js:1757, 1797`).
+- **`owner_uid` Handling:** Uses `placeholderPatientPayload` (`cross_role_sync.js:181-207`), which sets `patient_id`, `name`, `mobile`, `gender`, and `age`. It **never sets `owner_uid`** (defaults to `NULL` in `public.patients`). It **never writes to `public.users`**.
+- **Foreign Key Failure Verdict:** Because `appointments.patient_id` (`20260923000001_doctornect_schema.sql:433`) and `prescriptions.patient_id` (`line 492`) are defined as `NOT NULL REFERENCES patients(patient_id) ON DELETE CASCADE/RESTRICT`, inserting an appointment or prescription for a patient not present in `public.patients` **HARD-FAILS** with a foreign key violation.
+
+---
+
+## 5. Redis Provider, Secrets & Failure Modes (Step 5)
+
+### 5.1 Assumed Redis Provider & Network Prerequisites
+- **Assumed Provider:** **Google Cloud Memorystore (Redis)**.
+  - `src/config/redis.js:4`: `* Google Cloud Memorystore (Redis) client initialization with TLS support.`
+  - `src/config/redis.js:6`: `* Configured for <SENDER_ID>-DB cluster with:`
+  - `.env.example:64`: `# Google Cloud Memorystore for Redis configuration`
+  - Upstash is not mentioned or configured anywhere in the codebase.
+- **VPC Connector Status:** `VPC_CONNECTOR` is **NOT present** in the variable names list of `backend/functions/.env` or `backend/functions/.env.example`. Because Memorystore provides only private RFC 1918 IP addresses within the VPC, Cloud Functions cannot route traffic to Memorystore without a Serverless VPC Access connector.
+
+### 5.2 Call Sites for `getRedisClient` / `redis`
+When flags are turned on, the following modules reach for Redis:
+1. **`abuse_rate_limit.js:177`** (when `RATE_LIMIT_BACKEND=redis`): Evaluated during callable execution for rate limiting. Reached by:
+   - `deleteMyAccount`
+   - `getS3UploadUrl`, `getS3DownloadUrl`, `getS3DownloadUrls`, `deleteS3Object`
+   - `lookupMobileRegistration`, `createSuperAdminAccount`, `adminApproveEntityAccount`, etc.
+2. **`s3_storage.js:652, 672, 680`** (when `S3_URL_CACHE=on`): Reached by:
+   - `getS3DownloadUrl`
+   - `getS3DownloadUrls`
+3. **`registration_otp.js:250, 483, 1983`** (when `OTP_REDIS_MIRROR=on`): Reached by:
+   - `sendUserRegistrationOtp`
+   - `verifyUserRegistrationOtp`
+
+### 5.3 Behavior When `REDIS_HOST` is Unbound
+In `src/config/redis.js:35-51, 61`:
+```javascript
+35: function resolveSecretValue(secretParam, envKey, fallback = '') {
+36:   if (secretParam && typeof secretParam.value === 'function') {
+37:     try {
+38:       const val = secretParam.value();
+39:       if (val !== undefined && val !== null && String(val).trim().length > 0) {
+40:         return String(val).trim();
+41:       }
+42:     } catch (_) {
+43:       // Ignored: Not in Cloud Functions execution context with bound secrets
+44:     }
+45:   }
+46:   const envVal = process.env[envKey];
+47:   if (envVal !== undefined && envVal !== null && String(envVal).trim().length > 0) {
+48:     return String(envVal).trim();
+49:   }
+50:   return fallback;
+51: }
+...
+61:   let host = String(rawHost || '127.0.0.1').trim();
+```
+
+When a function executes without `REDIS_HOST` in its `secrets:` option (and without `process.env.REDIS_HOST`):
+1. `secretParam.value()` throws an unbound secret exception (silently swallowed at lines 42–44).
+2. `resolveSecretValue` falls back to empty string `''`.
+3. `parseRedisEndpoint` falls back to `'127.0.0.1'` (line 61).
+4. Connection to `127.0.0.1:6379` fails with `ECONNREFUSED`.
+5. **Runtime Fallbacks:**
+   - In `abuse_rate_limit.js:152-155`: Catches connection failure, logs `[abuse_rate_limit] Redis rate limit check failed (...), falling back to Firestore`, and falls back to Firestore atomic transactions.
+   - In `s3_storage.js:655-666`: Catches connection error, returns `null`, and falls back to generating presigned URLs directly from AWS S3 without caching.
+   - In `registration_otp.js:256`: Catches Redis write error, logs warning, and completes challenge write in Firestore.
+
+### 5.4 Declaration: "Redis flags are not turn-on ready"
+**Redis flags are not turn-on ready.** Turning on `RATE_LIMIT_BACKEND=redis` or `S3_URL_CACHE=on` will cause silent connection crashes and timeout overhead on every invocation because:
+1. `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` are **not bound** to `deleteMyAccount`, `getS3UploadUrl`, `getS3DownloadUrl`, `getS3DownloadUrls`, `deleteS3Object`, or other callables.
+2. Even if bound in Secret Manager, `VPC_CONNECTOR` is not configured in Cloud Functions options, so Google Cloud Run instances cannot route packets to Google Cloud Memorystore's private VPC IP.
+
+---
+
+## 6. Ambulance Driver Authentication & Endpoint Security (Step 6)
+
+### 6.1 PIN / Password Length and Format
+Validation is enforced by `requireAmbulancePassword` in `backend/functions/input_sanitize.js:123-126`:
+```javascript
+/** Ambulance driver dashboard password (PBKDF2 hash verified server-side). */
+function requireAmbulancePassword(value, field = 'password') {
+  const s = requireString(value, field, { min: 6, max: 128 });
+  return s;
+}
+```
+- **Length:** Minimum 6 characters, maximum 128 characters.
+- **Format:** String (trimmed, rejects empty strings, null bytes, and non-string types per `requireString`).
+
+### 6.2 Does `runVerifyAmbulanceDriverLogin` Call `assertLoginAllowed`?
+**YES.** Lines 1361–1363 of `backend/functions/index.js`:
+```javascript
+1361:   try {
+1362:     await assertLoginAllowed(firestore, { identifier: `ambulance:${username}` }, { clientIp });
+1363:   } catch (err) {
+```
+
+### 6.3 Test for Lockout After 5 Failures
+**"no test"**.
+While `test/login_failure_tracking.test.js` unit-tests `recordFailedLogin` and `assertLoginAllowed` in isolation, there is **no integration or unit test** asserting that an ambulance driver is locked out after 5 consecutive failed login attempts.
+
+### 6.4 Unauthenticated Calling of `verifyAmbulanceDriverLoginHttp`
+**YES.** `verifyAmbulanceDriverLoginHttp` can be called without App Check from any origin in the CORS allowlist:
+- Lines 1450–1452 and 1480 of `backend/functions/index.js`:
+```javascript
+1450:  * CORS is restricted to hosted app origins. App Check is required only when
+1451:  * ENFORCE_AMBULANCE_HTTP_APP_CHECK=true. The flag defaults to false, and the
+1452:  * PIN check still runs in that default path.
+...
+1480:       await assertAmbulanceHttpAppCheck(req, { enforce: ENFORCE_AMBULANCE_HTTP_APP_CHECK });
+```
+- In `backend/functions/.env:27`, `ENFORCE_AMBULANCE_HTTP_APP_CHECK` is `false`.
+- Per `test/http_endpoint_security.test.js:123-125`, `assertAmbulanceHttpAppCheck` skips token validation when `enforce` is `false`. Any HTTP client presenting an allowed `Origin` header (or no Origin header from server/curl) executes the username/PIN authentication logic directly.
+
+---
+
+## 7. Line Reference Reconciliation & Citation Audit (Step 7)
+
+Comprehensive reconciliation of all line citations across Addendum 1 Section 2.1, Addendum 2, Addendum 3 B4, and Addendum 3 D8 against the repository source code:
+
+| Section | Cited File:Line | Real File:Line | Construct / Entity | Citation Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:28` | `20260923000001_doctornect_schema.sql:61` | `users` table DDL | **MISMATCH** (Updated to 61) |
+| **Addendum 1 Sec 2.1** | `backend/scripts/migrate_firestore_to_supabase.js:140` | `migrate_firestore_to_supabase.js:206` | `migrateUsers` backfill | **MISMATCH** (Updated to 206) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:140` | `20260923000001_doctornect_schema.sql:212` | `patients` table DDL | **MISMATCH** (Updated to 212) |
+| **Addendum 1 Sec 2.1** | `backend/scripts/migrate_firestore_to_supabase.js:210` | `migrate_firestore_to_supabase.js:429` | `migratePatients` backfill | **MISMATCH** (Updated to 429) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:68` | `20260923000001_doctornect_schema.sql:98` | `doctors` table DDL | **MISMATCH** (Updated to 98) |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:1323` | `cross_role_sync.js:1235` | `syncFirestoreDoctorToSupabase` | **MISMATCH** (Updated to 1235) |
+| **Addendum 1 Sec 2.1** | `index.js:1999` | `index.js:1999` | `syncDoctorToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `backend/scripts/migrate_firestore_to_supabase.js:312` | `migrate_firestore_to_supabase.js:292` | `migrateDoctors` backfill | **MISMATCH** (Updated to 292) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:102, 118` | `20260923000001_doctornect_schema.sql:181, 199` | `doctor_availability`, `blocked_dates` DDL | **MISMATCH** (Updated to 181, 199) |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:1560` | `cross_role_sync.js:1374` | `syncFirestoreDoctorAvailabilityToSupabase` | **MISMATCH** (Updated to 1374) |
+| **Addendum 1 Sec 2.1** | `index.js:2006` | `index.js:2006` | `syncDoctorAvailabilityToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:1740` | `cross_role_sync.js:1495` | `syncDoctorBlockedDatesToSupabase` | **MISMATCH** (Updated to 1495) |
+| **Addendum 1 Sec 2.1** | `index.js:2013` | `index.js:2013` | `syncDoctorBlockedDatesToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:200` | `20260923000001_doctornect_schema.sql:430` | `appointments` table DDL | **MISMATCH** (Updated to 430) |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:180` | `cross_role_sync.js:730` | `syncFirestoreAppointmentToSupabase` | **MISMATCH** (Updated to 730) |
+| **Addendum 1 Sec 2.1** | `index.js:1968` | `index.js:1968` | `syncAppointmentToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `backend/scripts/migrate_firestore_to_supabase.js:685` | `migrate_firestore_to_supabase.js:874` | `migrateAppointments` backfill | **MISMATCH** (Updated to 874) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:274, 314, 340, 362` | `20260923000001_doctornect_schema.sql:489, 547, 566, 578` | `prescriptions` child tables DDL | **MISMATCH** (Updated to 489, 547, 566, 578) |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:720` | `cross_role_sync.js:851` | `syncFirestorePrescriptionToSupabase` | **MISMATCH** (Updated to 851) |
+| **Addendum 1 Sec 2.1** | `index.js:1975` | `index.js:1975` | `syncPrescriptionToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `backend/scripts/migrate_firestore_to_supabase.js:810` | `migrate_firestore_to_supabase.js:970` | `migratePrescriptions` backfill | **MISMATCH** (Updated to 970) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:438` | `20260923000001_doctornect_schema.sql:625` | `lab_bookings` table DDL | **MISMATCH** (Updated to 625) |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:2550` | `cross_role_sync.js:2729` | `syncFirestoreLabBookingToSupabase` | **MISMATCH** (Updated to 2729) |
+| **Addendum 1 Sec 2.1** | `index.js:2055` | `index.js:2055` | `syncLabBookingToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:484` | `20260923000001_doctornect_schema.sql:663` | `lab_orders` table DDL | **MISMATCH** (Updated to 663) |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:2830` | `cross_role_sync.js:2917` | `syncFirestoreLabOrderToSupabase` | **MISMATCH** (Updated to 2917) |
+| **Addendum 1 Sec 2.1** | `index.js:2062` | `index.js:2062` | `syncLabOrderToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:390, 416` | `20260923000001_doctornect_schema.sql:740, 767` | `pharmacy_deliveries` tables DDL | **MISMATCH** (Updated to 740, 767) |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:2130` | `cross_role_sync.js:2247` | `syncFirestorePharmacyDeliveryToSupabase` | **MISMATCH** (Updated to 2247) |
+| **Addendum 1 Sec 2.1** | `index.js:2034` | `index.js:2034` | `syncPharmacyDeliveryToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:518, 552` | `20260923000001_doctornect_schema.sql:376, 418` | `ambulances` tables DDL | **MISMATCH** (Updated to 376, 418) |
+| **Addendum 1 Sec 2.1** | `cross_role_sync.js:3150` | `cross_role_sync.js:3434` | `syncFirestoreAmbulanceToSupabase` | **MISMATCH** (Updated to 3434) |
+| **Addendum 1 Sec 2.1** | `index.js:2076` | `index.js:2076` | `syncAmbulanceToSupabase` export | **MATCH** |
+| **Addendum 1 Sec 2.1** | `backend/scripts/migrate_firestore_to_supabase.js:580` | `migrate_firestore_to_supabase.js:732` | `migrateAmbulances` backfill | **MISMATCH** (Updated to 732) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:632, 660` | `20260923000001_doctornect_schema.sql:817, 839` | `reviews`, `review_public` DDL | **MISMATCH** (Updated to 817, 839) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:580` | `20260923000001_doctornect_schema.sql:965` | `promoted_ads` table DDL | **MISMATCH** (Updated to 965) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:710-790` | `20260923000001_doctornect_schema.sql:1018-1070`| `community_*` catalogs DDL | **MISMATCH** (Updated to 1018-1070) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:680` | `20260923000001_doctornect_schema.sql:594` | `health_records` table DDL | **MISMATCH** (Updated to 594) |
+| **Addendum 1 Sec 2.1** | `20260923000001_doctornect_schema.sql:810, 835` | `20260923000001_doctornect_schema.sql:865, 884` | `support_tickets` tables DDL | **MISMATCH** (Updated to 865, 884) |
+| **Addendum 2 Sec 1.1** | `frontend/android/app/google-services.json:5` | `google-services.json:5` | `project_id: medibond-45fad` | **MATCH** |
+| **Addendum 2 Sec 1.1** | `frontend/lib/firebase_options.dart:104` | `firebase_options.dart:104` | Web `projectId` | **MATCH** |
+| **Addendum 2 Sec 1.1** | `frontend/lib/firebase_options.dart:121` | `firebase_options.dart:121` | Android `projectId` | **MATCH** |
+| **Addendum 2 Sec 1.1** | `frontend/lib/firebase_options.dart:136` | `firebase_options.dart:136` | iOS `projectId` | **MATCH** |
+| **Addendum 2 Sec 1.1** | `frontend/lib/firebase_options.dart:172` | `firebase_options.dart:172` | Windows `projectId` | **MATCH** |
+| **Addendum 2 Sec 1.1** | `backend/functions/production_otp_guard.js:4` | `production_otp_guard.js:4` | `TARGET_PROJECT_ID: medibond-45fad` | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:433` | `20260923000001_doctornect_schema.sql:433` | `appointments.patient_id` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:246` | `20260923000001_doctornect_schema.sql:246` | `patient_care_team.patient_id` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:256` | `20260923000001_doctornect_schema.sql:256` | `patient_doctor_links.patient_id` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:819` | `20260923000001_doctornect_schema.sql:819` | `reviews.patient_id` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:856` | `20260923000001_doctornect_schema.sql:856` | `review_votes.patient_id` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:492` | `20260923000001_doctornect_schema.sql:492` | `prescriptions.patient_id` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:596` | `20260923000001_doctornect_schema.sql:596` | `health_records.patient_id` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:627` | `20260923000001_doctornect_schema.sql:627` | `lab_bookings.patient_id` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:214` | `20260923000001_doctornect_schema.sql:214` | `patients.owner_uid` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:100` | `20260923000001_doctornect_schema.sql:100` | `doctors.owner_uid` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:295` | `20260923000001_doctornect_schema.sql:295` | `medical_stores.owner_uid` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:329` | `20260923000001_doctornect_schema.sql:329` | `labs.owner_uid` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:378` | `20260923000001_doctornect_schema.sql:378` | `ambulances.auth_uid` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:1116` | `20260923000001_doctornect_schema.sql:1116` | `admin_audit_logs.admin_uid` FK | **MATCH** |
+| **Addendum 2 Sec 3.2 FKs**| `20260923000001_doctornect_schema.sql:1135` | `20260923000001_doctornect_schema.sql:1135` | `security_events.uid` FK | **MATCH** |
+| **Addendum 2 Sec 6.2** | `backend/functions/index.js:1362` | `backend/functions/index.js:1362` | `assertLoginAllowed` call in ambulance login | **MATCH** |
+| **Addendum 2 Sec 6.2** | `backend/functions/index.js:1377` | `backend/functions/index.js:1377` | `recordFailedLogin` on ambulance failure | **MATCH** |
+| **Addendum 2 Sec 6.2** | `backend/functions/index.js:1395` | `backend/functions/index.js:1395` | `clearFailedLogins` on ambulance success | **MATCH** |
+| **Addendum 2 Sec 6.3** | `backend/functions/input_sanitize.js:123` | `backend/functions/input_sanitize.js:123` | `requireAmbulancePassword` definition | **MATCH** |
+| **Addendum 3 B4** | `cross_role_sync.js:1330` | `cross_role_sync.js:1330` | Doctor upsert fetch call | **MATCH** |
+| **Addendum 3 B4** | `cross_role_sync.js:2067` | `cross_role_sync.js:2067` | Medical store upsert fetch call | **MATCH** |
+| **Addendum 3 B4** | `cross_role_sync.js:2536` | `cross_role_sync.js:2536` | Lab upsert fetch call | **MATCH** |
+| **Addendum 3 B4** | `cross_role_sync.js:3523` | `cross_role_sync.js:3523` | Ambulance upsert fetch call | **MATCH** |
+| **Addendum 3 B4** | `cross_role_sync.js:811` | `cross_role_sync.js:811` | Appointment upsert fetch call | **MATCH** |
+| **Addendum 3 B4** | `cross_role_sync.js:912` | `cross_role_sync.js:912` | Prescription upsert fetch call | **MATCH** |
+| **Addendum 3 B4** | `cross_role_sync.js:1752` | `cross_role_sync.js:1752` | `ensurePatientExistsInPostgres` definition | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:433` | `20260923000001_doctornect_schema.sql:433` | `appointments.patient_id` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:246` | `20260923000001_doctornect_schema.sql:246` | `patient_care_team.patient_id` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:256` | `20260923000001_doctornect_schema.sql:256` | `patient_doctor_links.patient_id` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:819` | `20260923000001_doctornect_schema.sql:819` | `reviews.patient_id` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:856` | `20260923000001_doctornect_schema.sql:856` | `review_votes.patient_id` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:492` | `20260923000001_doctornect_schema.sql:492` | `prescriptions.patient_id` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:596` | `20260923000001_doctornect_schema.sql:596` | `health_records.patient_id` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:627` | `20260923000001_doctornect_schema.sql:627` | `lab_bookings.patient_id` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:214` | `20260923000001_doctornect_schema.sql:214` | `patients.owner_uid` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:100` | `20260923000001_doctornect_schema.sql:100` | `doctors.owner_uid` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:295` | `20260923000001_doctornect_schema.sql:295` | `medical_stores.owner_uid` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:329` | `20260923000001_doctornect_schema.sql:329` | `labs.owner_uid` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:378` | `20260923000001_doctornect_schema.sql:378` | `ambulances.auth_uid` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:1116` | `20260923000001_doctornect_schema.sql:1116` | `admin_audit_logs.admin_uid` FK | **MATCH** |
+| **Addendum 3 D8** | `20260923000001_doctornect_schema.sql:1135` | `20260923000001_doctornect_schema.sql:1135` | `security_events.uid` FK | **MATCH** |
+
+**Summary Counts:**
+- **Audited Citations:** 86
+- **MATCH:** 56
+- **MISMATCH:** 30 (All 30 resolved and updated in Section 2.1)
