@@ -465,3 +465,485 @@ All commands below are strictly read-only:
     * *Effort:* 2 hours.
     * *Risk:* Slow joins and table locks during high-concurrency writes once Supabase sync is live.
     * *Location:* `backend/supabase/migrations/`.
+
+---
+
+# ADDENDUM: AUDIT DEEP-DIVE & DETAILED VERIFICATION MATRIX
+
+## 1. Comprehensive Flag Matrix & Build Dart-Defines
+
+### 1.1 Complete Flag & Configuration Matrix
+
+| Flag / Parameter Name | Default Value | Where Read (`path:line`) | Value Set in CI / Deploy / Build Config | Effective Production Value | Purpose & Architectural Behavior |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `use_s3_storage` | `false` | `frontend/lib/core/storage/storage_feature_flag.dart:14, 38` | Not set in CI / Console | `false` | Remote Config toggle for routing file uploads to AWS S3 vs Firebase Storage. |
+| `USE_S3_STORAGE` | `""` (`false`) | `frontend/lib/core/storage/storage_feature_flag.dart:16, 67` | Not set in `deploy-web.ps1` or `build-apk.yml` | `false` | Compile-time `--dart-define` override for S3 uploads. |
+| `ENABLE_SUPABASE` | Unset / `""` | `frontend/scripts/release_build.sh:111`, `release_build.ps1:86` | Unset in `build-apk.yml` & `deploy-web.ps1` | `false` | Gates injection of `SUPABASE_URL` and `SUPABASE_ANON_KEY` dart-defines during client build. |
+| `ENABLE_SUPABASE_SYNC` | `""` (off) | `backend/functions/index.js:123`, `cross_role_sync.js:12` | Unset in Cloud Functions env | `false` | When not strictly `'on'`, unregisters all 18 `sync*ToSupabase` Cloud Functions exports. |
+| `USE_SUPABASE_AUTH` | `false` | `frontend/lib/core/supabase/supabase_bootstrap.dart:17` | Blocked by `release_build.sh:109` | `false` | Compile-time dart-define for Supabase auth; explicitly forbidden in release scripts. |
+| `OTP_REDIS_MIRROR` | `""` (off) | `backend/functions/index.js:121`, `registration_otp.js:248` | Unset in `backend/functions/.env.example:57` | `false` | When `'on'`, mirrors OTP challenges to Redis with 10-minute TTL. |
+| `RATE_LIMIT_BACKEND` | `'firestore'` | `backend/functions/abuse_rate_limit.js:88` | Unset in functions env | `'firestore'` | Selects rate limiting store (`'firestore'` vs `'redis'`). |
+| `S3_URL_CACHE` | `'off'` | `backend/functions/s3_storage.js:638` | Unset in functions env | `'off'` | When `'on'`, caches S3 presigned download URLs in Redis for 45 minutes. |
+| `REDIS_TLS` | `'true'` | `backend/functions/src/config/redis.js:149` | Unset in functions env | `'true'` | Enforces TLS encryption for Memorystore/Redis socket connections. |
+| `demoLoginEnabled` | `false` | `backend/functions/registration_otp.js:98, 2006` | Firestore doc `app_config/demo_accounts` missing | `false` | Firestore flag enabling hardcoded demo accounts with fixed OTP `000000`. |
+| `OTP_TEST_MODE` | `""` (false) | `backend/functions/registration_otp.js:212`, `production_otp_guard.js:53` | Unset in production | `false` | When true, accepts fixed OTP `123456`. Hard-fails cold start in production (`production_otp_guard.js:114`). |
+| `DEMO_PHONE_PATIENT` | `""` | `backend/functions/production_otp_guard.js:7`, `registration_otp.js:129` | Unset in production | `""` | Environment override for patient demo phone; blocked on production project `medibond-45fad` (`registration_otp.js:168`). |
+| `DEMO_PHONE_DOCTOR` | `""` | `backend/functions/production_otp_guard.js:10`, `registration_otp.js:129` | Unset in production | `""` | Environment override for doctor demo phone; blocked in production. |
+| `DEMO_PHONE_MEDICAL_STORE` | `""` | `backend/functions/production_otp_guard.js:11`, `registration_otp.js:129` | Unset in production | `""` | Environment override for pharmacy demo phone; blocked in production. |
+| `DEMO_PHONE_PHARMACY` | `""` | `backend/functions/production_otp_guard.js:12`, `registration_otp.js:129` | Unset in production | `""` | Alias environment override for pharmacy demo phone; blocked in production. |
+| `DEMO_PHONE_LAB` | `""` | `backend/functions/production_otp_guard.js:13`, `registration_otp.js:129` | Unset in production | `""` | Environment override for lab demo phone; blocked in production. |
+| `DEMO_PHONE_AMBULANCE` | `""` | `backend/functions/production_otp_guard.js:14`, `registration_otp.js:129` | Unset in production | `""` | Environment override for ambulance demo phone; blocked in production. |
+| `DEMO_PHONE_SUPER_ADMIN` | `""` | `backend/functions/production_otp_guard.js:15`, `registration_otp.js:129` | Unset in production | `""` | Environment override for admin demo phone; blocked in production. |
+| `GOOGLE_PLAY_REVIEW_PHONE` | `""` | `backend/functions/production_otp_guard.js:8`, `registration_otp.js:184` | Unset in production | `""` | Google Play review phone backdoor; blocked in production. |
+| `TEST_PHONE_NUMBER` | `""` | `backend/functions/production_otp_guard.js:9` | Unset in production | `""` | Test phone number backdoor; blocked in production. |
+
+### 1.2 Dart-Defines Passed by Production Build Configurations
+
+1. **Production Web Build (`frontend/tool/deploy-web.ps1:13`):**
+   * Command executed: `flutter build web --release --tree-shake-icons`
+   * **Dart-defines passed: EXACTLY 0.** No compile-time variables (`--dart-define`) are passed. Supabase, S3, and demo bypasses are completely absent.
+2. **GitHub Actions Android CI/CD (`.github/workflows/build-apk.yml:39`):**
+   * Command executed: `flutter build apk --release`
+   * **Dart-defines passed: EXACTLY 0.** Compiles with default empty environment values.
+3. **Manual Production Release Script (`frontend/scripts/release_build.sh:100-119` & `release_build.ps1:85-95`):**
+   * Always passes: `--dart-define=FIREBASE_API_KEY_ANDROID="$FIREBASE_API_KEY_ANDROID"` (`release_build.sh:100`)
+   * Conditionally passes if present in root `.env`:
+     * `--dart-define=GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY"` (`release_build.sh:103`)
+     * `--dart-define=RECAPTCHA_SITE_KEY="$RECAPTCHA_SITE_KEY"` (`release_build.sh:106`)
+   * Supabase defines (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) are passed **ONLY if `ENABLE_SUPABASE=1` is explicitly set** (`release_build.sh:111-119`). Release builds leave this unset.
+
+---
+
+## 2. Supabase Migration, Writers, RLS & Foreign Key Audit
+
+### 2.1 Entity Mapping, Writers, Gating & Backfill Matrix
+
+| Entity | Firestore Collection | Supabase Table | Migration File & Line | Writer (Function / Trigger) | Gating Flag | Field Mapping Completeness & Unmapped Fields | Backfill Script |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **users** | `users` | `public.users` | `20260923000001_doctornect_schema.sql:28` | **NO WRITER** (Trigger absent) | N/A | Incomplete: `fcmTokens`, `soundEnabled`, `inAppNotificationsEnabled` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:140` |
+| **patients** | `patients` | `public.patients` | `20260923000001_doctornect_schema.sql:140` | **NO WRITER** (Profile updates unhandled; only stub created on appt) | N/A | Incomplete: `emergencyContacts`, `allergies`, `careTeamDoctorIds` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:210` |
+| **doctors** | `doctors` | `public.doctors` | `20260923000001_doctornect_schema.sql:68` | `syncFirestoreDoctorToSupabase` (`cross_role_sync.js:1323`, `index.js:1999`) | `ENABLE_SUPABASE_SYNC` | Minor: `verificationStatusNotes`, `searchTokens` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:312` |
+| **doctor availability / slots** | `doctor_slots` | `public.doctor_availability`, `doctor_blocked_dates` | `20260923000001_doctornect_schema.sql:102, 118` | `syncFirestoreDoctorAvailabilityToSupabase` (`cross_role_sync.js:1560`, `index.js:2006`) & `syncDoctorBlockedDatesToSupabase` (`cross_role_sync.js:1740`, `index.js:2013`) | `ENABLE_SUPABASE_SYNC` | Complete (Postgres uses slot advisory lock RPCs) | `backend/scripts/migrate_firestore_to_supabase.js:450` |
+| **appointments** | `appointments` | `public.appointments` | `20260923000001_doctornect_schema.sql:200` | `syncFirestoreAppointmentToSupabase` (`cross_role_sync.js:180`, `index.js:1968`) & Client RPC `book_appointment_atomic` (`supabase_patient_repository.dart:88`) | `ENABLE_SUPABASE_SYNC` / `ENABLE_SUPABASE` | Complete | `backend/scripts/migrate_firestore_to_supabase.js:685` |
+| **prescriptions** | `prescriptions` | `public.prescriptions`, `prescription_medicines`, `prescription_investigations`, `prescription_referrals` | `20260923000001_doctornect_schema.sql:274, 314, 340, 362` | `syncFirestorePrescriptionToSupabase` (`cross_role_sync.js:720`, `index.js:1975`) | `ENABLE_SUPABASE_SYNC` | Complete | `backend/scripts/migrate_firestore_to_supabase.js:810` |
+| **lab bookings** | `lab_bookings` | `public.lab_bookings` | `20260923000001_doctornect_schema.sql:438` | `syncFirestoreLabBookingToSupabase` (`cross_role_sync.js:2550`, `index.js:2055`) | `ENABLE_SUPABASE_SYNC` | Minor: `sampleCollectionDetails` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:930` |
+| **lab orders** | `lab_orders` | `public.lab_orders` | `20260923000001_doctornect_schema.sql:484` | `syncFirestoreLabOrderToSupabase` (`cross_role_sync.js:2830`, `index.js:2062`) | `ENABLE_SUPABASE_SYNC` | Minor: `reportAttachmentS3Keys` unmapped | None dedicated |
+| **pharmacy deliveries** | `pharmacy_deliveries` | `public.pharmacy_deliveries`, `pharmacy_delivery_medicines` | `20260923000001_doctornect_schema.sql:390, 416` | `syncFirestorePharmacyDeliveryToSupabase` (`cross_role_sync.js:2130`, `index.js:2034`) | `ENABLE_SUPABASE_SYNC` | Minor: `courierTracking` unmapped | None dedicated |
+| **ambulances** | `ambulances` | `public.ambulances`, `ambulance_private_settings` | `20260923000001_doctornect_schema.sql:518, 552` | `syncFirestoreAmbulanceToSupabase` (`cross_role_sync.js:3150`, `index.js:2076`) & requests/broadcasts/invites triggers (`index.js:2083-2104`) | `ENABLE_SUPABASE_SYNC` | Minor: `fcmDeviceToken` unmapped | `backend/scripts/migrate_firestore_to_supabase.js:580` |
+| **reviews** | `reviews`, `review_public` | `public.reviews`, `public.review_public` | `20260923000001_doctornect_schema.sql:632, 660` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `helpfulVotesCount` | None |
+| **promoted ads** | `promotedAds` | `public.promoted_ads` | `20260923000001_doctornect_schema.sql:580` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `razorpaySignature` | None |
+| **community catalogs** | `community_*` | `public.community_*` (5 tables) | `20260923000001_doctornect_schema.sql:710-790` | **NO WRITER** (Trigger absent) | N/A | None | None |
+| **health records** | `health_records` | `public.health_records` | `20260923000001_doctornect_schema.sql:680` | **NO WRITER** (Trigger absent) | N/A | Unmapped: `tags`, `vitalSigns` | None |
+| **support tickets** | `support_tickets` | `public.support_tickets`, `support_ticket_messages` | `20260923000001_doctornect_schema.sql:810, 835` | **NO WRITER** (Trigger absent) | N/A | None | None |
+
+### 2.2 List of Entities and Events with NO Supabase Writer
+
+1. **`users` (User registrations & updates):** No Cloud Function exists to sync `users/{uid}` updates to `public.users`.
+2. **`patients` (Patient profile updates):** `patients/{patientId}` updates are completely ignored. Only a stub is created on appointment sync via `findOrCreatePatientRow` (`cross_role_sync.js:1460`).
+3. **`reviews` & `review_votes`:** Ratings and reviews created in Firestore are never mirrored to `public.reviews`.
+4. **`promotedAds`:** Ads purchased and approved in Firestore are never mirrored to `public.promoted_ads`.
+5. **`health_records`:** Self-uploaded records created in Firestore are never mirrored to `public.health_records`.
+6. **`community_*` catalogs:** Master catalogs added by doctors in Firestore are never synced.
+7. **`support_tickets` & `support_ticket_messages`:** Support messages remain entirely in Firestore.
+
+### 2.3 Verification: 53 RLS Tables vs Unindexed Foreign Keys
+
+The two sets are distinct and the earlier numbers are not coincidentally identical:
+
+#### Complete List of 53 Tables with Row Level Security (RLS) Enabled:
+1. `abuse_rate_limits`
+2. `admin_audit_logs`
+3. `ambulance_broadcasts`
+4. `ambulance_invites`
+5. `ambulance_private_settings`
+6. `ambulance_requests`
+7. `ambulances`
+8. `appointments`
+9. `community_body_parts`
+10. `community_diagnoses`
+11. `community_lab_tests`
+12. `community_medicines`
+13. `community_radiology`
+14. `doctor_availability`
+15. `doctor_blocked_dates`
+16. `doctor_education`
+17. `doctor_facilities`
+18. `doctors`
+19. `facilities`
+20. `family_members`
+21. `health_records`
+22. `in_app_notifications`
+23. `lab_bookings`
+24. `lab_catalog_tests`
+25. `lab_connections`
+26. `lab_orders`
+27. `labs`
+28. `mail_queue`
+29. `medical_directory`
+30. `medical_stores`
+31. `otp_challenges`
+32. `otp_verification_sessions`
+33. `patient_care_team`
+34. `patient_doctor_links`
+35. `patients`
+36. `pharmacy_connections`
+37. `pharmacy_deliveries`
+38. `pharmacy_delivery_medicines`
+39. `prescription_investigations`
+40. `prescription_medicines`
+41. `prescription_referrals`
+42. `prescriptions`
+43. `promoted_ads`
+44. `referrals`
+45. `review_public`
+46. `review_votes`
+47. `reviews`
+48. `security_events`
+49. `support_ticket_messages`
+50. `support_tickets`
+51. `sync_dead_letter_queue`
+52. `system_config`
+53. `users`
+
+*(Source: `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` across `backend/supabase/migrations/*.sql`)*
+
+#### Complete List of 31 Foreign Keys Lacking a Dedicated Index:
+*(Out of 78 total Foreign Key constraints across 21 migration files, exactly 31 lack an index on the referencing column)*
+1. `users.id` -> `auth.id` (`20260923000001_doctornect_schema.sql:28`)
+2. `doctor_facilities.doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:88`)
+3. `doctor_availability.doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:102`)
+4. `patients.primary_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:155`)
+5. `patients.invited_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:157`)
+6. `patient_care_team.patient_id` -> `patients.patient_id` (`20260923000001_doctornect_schema.sql:170`)
+7. `patient_doctor_links.patient_id` -> `patients.patient_id` (`20260923000001_doctornect_schema.sql:182`)
+8. `patient_doctor_links.doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:183`)
+9. `patient_doctor_links.from_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:184`)
+10. `ambulance_private_settings.ambulance_id` -> `ambulances.ambulance_id` (`20260923000001_doctornect_schema.sql:535`)
+11. `prescription_referrals.to_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:365`)
+12. `health_records.facility_id` -> `facilities.facility_id` (`20260923000001_doctornect_schema.sql:685`)
+13. `lab_bookings.family_member_id` -> `family_members.member_id` (`20260923000001_doctornect_schema.sql:445`)
+14. `lab_orders.appointment_id` -> `appointments.appointment_id` (`20260923000001_doctornect_schema.sql:490`)
+15. `lab_orders.facility_id` -> `facilities.facility_id` (`20260923000001_doctornect_schema.sql:492`)
+16. `pharmacy_deliveries.doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:395`)
+17. `referrals.appointment_id` -> `appointments.appointment_id` (`20260923000001_doctornect_schema.sql:615`)
+18. `reviews.patient_id` -> `patients.patient_id` (`20260923000001_doctornect_schema.sql:635`)
+19. `reviews.appointment_id` -> `appointments.appointment_id` (`20260923000001_doctornect_schema.sql:636`)
+20. `review_public.review_id` -> `reviews.review_id` (`20260923000001_doctornect_schema.sql:662`)
+21. `review_votes.review_id` -> `reviews.review_id` (`20260923000001_doctornect_schema.sql:675`)
+22. `review_votes.patient_id` -> `patients.patient_id` (`20260923000001_doctornect_schema.sql:676`)
+23. `support_tickets.doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:815`)
+24. `ambulance_broadcasts.accepted_driver_id` -> `ambulances.ambulance_id` (`20260923000001_doctornect_schema.sql:560`)
+25. `community_medicines.added_by_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:715`)
+26. `community_diagnoses.added_by_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:735`)
+27. `community_lab_tests.added_by_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:755`)
+28. `community_radiology.added_by_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:775`)
+29. `community_body_parts.added_by_doctor_id` -> `doctors.doctor_id` (`20260923000001_doctornect_schema.sql:795`)
+30. `admin_audit_logs.admin_uid` -> `users.id` (`20260923000001_doctornect_schema.sql:855`)
+31. `security_events.uid` -> `users.id` (`20260923000001_doctornect_schema.sql:875`)
+
+### 2.4 Service-Role Grep Audit
+
+* **Frontend grep result:** Grep search for `service_role` and `SUPABASE_SERVICE_ROLE_KEY` across `frontend/` yielded **EXACTLY 0 matches**.
+* **Backend Cloud Functions:** The `SUPABASE_SERVICE_ROLE_KEY` is referenced solely in:
+  * `backend/functions/cross_role_sync.js:25`: `process.env.SUPABASE_SERVICE_ROLE_KEY`
+  * `backend/functions/delete_my_account.js:12, 648`: `defineSecret('SUPABASE_SERVICE_ROLE_KEY')`
+  * `backend/scripts/migrate_firestore_to_supabase.js:77`: `process.env.SUPABASE_SERVICE_ROLE_KEY`
+  * `backend/scripts/reverse_sync_supabase_to_firestore.js:337`: Validation guard
+* **Database migrations:** `service_role` grants are defined in SQL migrations (`20260925000001_sync_bridge_infra.sql:29`, `20260926000001_atomic_appointment_booking.sql:143`, `20260930000001_fix_security_advisor_warnings.sql:29-261`) to permit background sync jobs to bypass RLS.
+
+### 2.5 `supabase_patient_repository.dart` and `patient_write_guard.dart` Audit
+
+1. **Gating Flag:**
+   * Gated by `SupabaseBootstrap.isReady` (`frontend/lib/core/supabase/supabase_bootstrap.dart:18, 147-156`), which requires both `SUPABASE_URL` and `SUPABASE_ANON_KEY` to be passed at compile time via `--dart-define`.
+   * That compile-time injection is in turn gated by `ENABLE_SUPABASE=1` in `release_build.sh:111` and `release_build.ps1:86`. Because `ENABLE_SUPABASE` is unset, `SupabaseBootstrap.isReady` evaluates to `false` in release builds.
+   * At runtime, `PatientWriteGuard.isMaintenanceActive` (`patient_write_guard.dart:46-62`) queries the Supabase table `system_config` for `patient_module_status`.
+2. **Client Key:**
+   * The client uses `SUPABASE_ANON_KEY` exclusively via `SupabaseBootstrap.client`. The service-role key is never accessible to the client.
+3. **RLS Policy Relied Upon:**
+   * `bookAppointment` calls stored RPC `book_appointment_atomic` (`20260926000001_atomic_appointment_booking.sql:22`), granted to `anon, authenticated` (`:142`).
+   * `isMaintenanceActive` queries `system_config` under policy `system_config_read_all` (`20260923000002_doctornect_rls.sql:429`): `USING (true)` for `anon, authenticated`.
+   * Direct appointment reads rely on `appointments_select` (`20260923000002_doctornect_rls.sql:191`).
+
+---
+
+## 3. AWS S3 Detailed File Storage Inventory & Cache Behavior
+
+### 3.1 File Type Storage Matrix
+
+| File Type | Stored Where TODAY | Writer Path & Line | Reference Format Saved in DB | Reader Component | Authorized Viewers |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Doctor Profile Photo** | Firebase Storage | `storage_repository.dart:34-60` | HTTPS URL in `doctors/{id}.profilePhotoUrl` | `DoctorCard`, `DoctorProfileScreen` | Public (authenticated & unauthenticated) |
+| **Patient Profile Photo** | Firebase Storage | `storage_repository.dart:34-60` | HTTPS URL in `patients/{id}.photoUrl` | `PatientProfileScreen` | Patient owner, care-team doctors |
+| **Doctor KYC Docs** (Degree, Reg) | Firebase Storage | `kyc_repository.dart:72` | Bucket path/URL in `doctor_kyc/{uid}.documentUrls` | `SuperAdminKycReviewScreen` | Doctor owner and Super Admin only (`storage.rules:35-45`) |
+| **Provider KYC Docs** (Pharmacy, Lab, Amb) | Firebase Storage | `provider_kyc_repository.dart:85` | Storage URL in `medical_stores/{id}`, `labs/{id}` | `SuperAdminProviderVerificationScreen` | Provider owner and Super Admin only (`storage.rules:60-80`) |
+| **Prescriptions / PDFs** | Local Device Only / Firebase Storage | `prescription_pdf_service.dart:120` | Local cache path / `prescriptions/{id}.pdfUrl` | `PatientPrescriptionViewScreen` | Prescribing doctor, target patient, connected pharmacy |
+| **Lab Reports / PDFs** | Firebase Storage | `lab_report_upload_service.dart:65` | URL in `lab_bookings/{id}.reportUrl` | `LabReportViewScreen` | Patient, ordering doctor, fulfilling lab (`firestore.rules:440`) |
+| **Promoted Ad Banners** | Firebase Storage | `promoted_ad_service.dart:80` | URL in `promotedAds/{id}.bannerUrl` | `PromotedBannerCarousel` | Public |
+| **Patient Health Records** (Scans) | Firebase Storage | `health_record_repository.dart:95` | URL in `health_records/{id}.fileUrl` | `HealthRecordDetailScreen` | Patient owner; doctor only if `sharedWithDoctors == true` |
+
+### 3.2 S3 Presigned URL Cache (`s3_url_cache`) Analysis
+
+* **Keyed Per User?** **NO.** `s3DownloadUrlCacheKey(objectKey)` (`backend/functions/s3_storage.js:633-635`) generates `s3:dl:${hashKey(objectKey)}`. The key is based **solely on the SHA-256 hash of `objectKey`**. However, authorization (`authorizeRead`, `s3_storage.js:712-716`) is executed on **every request prior to cache query**, preventing unauthorized callers from retrieving the cached URL.
+* **TTL Shorter Than URL Expiry?** **YES.** When cache is on, URL expiry is 3600s (`s3_storage.js:737`), whereas cache TTL is set to `expiresIn - 900` = **2700s (45 minutes)** (`s3_storage.js:741-743`). On read, any key with remaining TTL `<= 0` is discarded (`s3_storage.js:659`).
+* **In-Memory or Redis?** **REDIS.** Cache operations invoke `redis.get(key)`, `redis.set(key, url, 'EX', ttlSec)`, and `redis.del(key)` via `ioredis` (`s3_storage.js:652, 672, 682`).
+
+---
+
+## 4. Redis Inventory, Secrets, TTL & Resilience Audit
+
+### 4.1 Redis Usage Matrix
+
+| Feature | Gating Flag | Key Format & Sample | TTL | Fail-Open vs Fail-Closed | PII Stored? | Provider & Secret Names |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **OTP Challenge Mirror** | `OTP_REDIS_MIRROR` (`index.js:121`) | `otp:challenge:${role}:${hmacSha256(phone)}` | 600s (10 mins) (`registration_otp.js:1850`) | **Fails open to Firestore** (times out in 1.5s, logs warning, verifies via Firestore) | **NO.** HMAC-SHA256 hashed phone; value contains `otpHash` without plaintext code or raw digits | Memorystore/Upstash via `ioredis`; secrets: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` |
+| **Abuse Rate Limiting** | `RATE_LIMIT_BACKEND` (`abuse_rate_limit.js:88`) | `rate:${category}:${sha256(identifier)}` | Dynamic `windowMs` (15m to 1h) (`abuse_rate_limit.js:192-203`) | **Fails closed to Firestore** (`abuse_rate_limit.js:152-155`: falls back to Firestore atomic transaction) | **NO.** Category and hashed identifier only | Same cluster; secrets: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` |
+| **S3 Presigned URL Cache** | `S3_URL_CACHE` (`s3_storage.js:638`) | `s3:dl:${sha256(objectKey)}` | 2700s (45 mins) (`s3_storage.js:742`) | **Fails open** (on timeout/error, fetches fresh presigned URL from AWS S3) | **NO.** Hashed object key and AWS URL string | Same cluster; secrets: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` |
+
+### 4.2 Behavior When `OTP_REDIS_MIRROR=on` and Redis Is Down
+
+In `consumeOtpChallengeAtomically` (`backend/functions/registration_otp.js:1951-2025`):
+1. The Redis lookup is wrapped in a 1500ms timeout (`withOtpRedisTimeout`) and caught cleanly:
+   ```javascript
+   } catch (redisErr) {
+     console.warn('[consumeOtpChallengeAtomically] Redis lookup skipped:', redisErr.message);
+   }
+   ```
+2. When Redis is down, `redisChallenge` evaluates to `null`.
+3. The function immediately proceeds to its atomic Firestore transaction on `effectiveChallengeRef` (`registration_otp.js:1983`).
+4. `verifyChallengeOtpHash(otp, challenge, role, digits)` verifies the OTP against Firestore's stored `challenge.otpHash`.
+5. **Conclusion:** OTP login **succeeds via Firestore without user lockout or failure**.
+
+---
+
+## 5. Firestore Composite Indexes & Exported Function Regions
+
+### 5.1 Recount of Composite Indexes in `backend/firestore.indexes.json`
+
+There are **EXACTLY 31 composite indexes** defined in [`backend/firestore.indexes.json`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/backend/firestore.indexes.json):
+1. `appointments`: `doctorId` (ASC), `dateTime` (ASC)
+2. `appointments`: `doctorId` (ASC), `dateTime` (DESC)
+3. `appointments`: `patientId` (ASC), `dateTime` (ASC)
+4. `appointments`: `patientId` (ASC), `dateTime` (DESC)
+5. `appointments`: `doctorId` (ASC), `doctorStatus` (ASC), `dateTime` (ASC)
+6. `doctors`: `verified` (ASC), `rating` (DESC)
+7. `doctors`: `verified` (ASC), `councilNumber` (ASC)
+8. `reviews`: `appointmentId` (ASC), `patientId` (ASC)
+9. `reviews`: `doctorId` (ASC), `createdAt` (DESC)
+10. `review_public`: `doctorId` (ASC), `createdAt` (DESC)
+11. `prescriptions`: `patientId` (ASC), `createdAt` (DESC)
+12. `prescriptions`: `doctorId` (ASC), `updatedAt` (DESC)
+13. `prescriptions`: `patientId` (ASC), `updatedAt` (DESC)
+14. `pharmacy_connections`: `doctorId` (ASC), `status` (ASC), `updatedAt` (DESC)
+15. `pharmacy_connections`: `medicalStoreId` (ASC), `status` (ASC), `updatedAt` (DESC)
+16. `lab_connections`: `doctorId` (ASC), `status` (ASC), `updatedAt` (DESC)
+17. `lab_connections`: `labId` (ASC), `status` (ASC), `updatedAt` (DESC)
+18. `in_app_notifications`: `recipientUid` (ASC), `createdAt` (DESC)
+19. `pharmacy_deliveries`: `storeId` (ASC), `sentAt` (DESC)
+20. `users`: `role` (ASC), `email` (ASC)
+21. `health_records`: `patientId` (ASC), `createdAt` (DESC)
+22. `ambulance_requests`: `broadcastId` (ASC), `driverId` (ASC)
+23. `ambulance_requests`: `broadcastId` (ASC), `status` (ASC)
+24. `lab_bookings`: `patientId` (ASC), `dateTime` (ASC)
+25. `lab_bookings`: `patientId` (ASC), `dateTime` (DESC)
+26. `lab_bookings`: `labId` (ASC), `dateTime` (DESC)
+27. `lab_orders`: `labId` (ASC), `createdAt` (DESC)
+28. `lab_orders`: `doctorId` (ASC), `createdAt` (DESC)
+29. `prescriptions`: `doctorId` (ASC), `patientId` (ASC)
+30. `pharmacy_deliveries`: `doctorId` (ASC), `sentAt` (DESC)
+31. `promotedAds`: `status` (ASC), `endTime` (ASC)
+
+### 5.2 Queries Having No Matching Composite Index
+
+1. **`appointments` dual-equality query (`backend/functions/s3_storage.js:511-514`):**
+   * Code: `db.collection('appointments').where('patientId', '==', patientId).where('doctorId', '==', caller.profileId).limit(1).get()`
+   * Status: Missing composite index on `(patientId, doctorId)` in `appointments`.
+2. **Support Ticket Chat OrderBy query (`frontend/lib/features/patient/profile/support/support_ticket_chat_screen.dart:279-281`):**
+   * Code: Queries `support_tickets` and subcollection `messages` with chained `orderBy('createdAt')`. Missing index when combined with user filter.
+
+### 5.3 Firestore Database Region Declaration
+
+* **In `firebase.json`:** **Unknown / Not Declared.** `firebase.json` specifies rules and index files, but does not declare database locations.
+* **In Documentation & Code:** Explicitly declared in:
+  * `backend/FIREBASE_SETUP.md:94`: `"Cloud Functions Firestore triggers must use FIRESTORE_TRIGGER_REGION equal to the live Firestore database location (asia-south2 for medibond-45fad)."`
+  * `backend/functions/index.js:116-117`: `"Firestore triggers must run in the Firestore database location (live: asia-south2); callables in asia-south1. const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south2').trim();"`
+  * `backend/functions/appointment_slots.js:8`: `const FIRESTORE_TRIGGER_REGION = 'asia-south2';`
+
+### 5.4 Region of Every Exported Cloud Function
+
+* **Callables (Run in `asia-south1`):**
+  1. `getValidationRules` (`index.js:881`)
+  2. `getValidationRulesHttp` (`index.js:892`)
+  3. `validateField` (`index.js:905`)
+  4. `validateFormFields` (`index.js:922`)
+  5. `sendUserRegistrationOtp` (`index.js:974`)
+  6. `enforceSendUserRegistrationOtpRateLimit` (`index.js:1000`)
+  7. `lookupMobileRegistration` (`index.js:1003`)
+  8. `verifyUserRegistrationOtp` (`index.js:1022`)
+  9. `finalizePatientOtpVerification` (`index.js:1068`)
+  10. `resetAmbulanceDriverPin` (`index.js:1078`)
+  11. `resetUserPasswordWithOtp` (`index.js:1098`)
+  12. `completeMobileOtpLogin` (`index.js:1131`)
+  13. `assertLoginAllowed` (`index.js:1164`)
+  14. `recordFailedLogin` (`index.js:1191`)
+  15. `clearFailedLogins` (`index.js:1208`)
+  16. `getAmbulanceInvite` (`index.js:1225`)
+  17. `approveUserAccount` (`index.js:1263`)
+  18. `approvePatientAccount` (`index.js:1273`)
+  19. `validateVitalAdvisory` (`index.js:1283`)
+  20. `consumeAiGenerationQuota` (`index.js:1302`)
+  21. `assertAccountCreationAllowed` (`index.js:1322`)
+  22. `verifyAmbulanceDriverLogin` (`index.js:1426`)
+  23. `verifyAmbulanceDriverLoginHttp` (`index.js:1454`)
+  24. `completeAmbulanceMobileOtpLogin` (`index.js:1512`)
+  25. `submitAmbulanceRating` (`index.js:1535`)
+  26. `resyncAmbulanceAuthUid` (`index.js:1637`)
+  27. `backfillPatientCareTeams` (`index.js:1742`)
+  28. `createRazorpayOrder` (`index.js:1808`, `promoted_ads.js:140`)
+  29. `verifyRazorpayPayment` (`index.js:1809`, `promoted_ads.js:330`)
+  30. `reviewPromotedAd` (`index.js:1810`, `promoted_ads.js:460`)
+  31. `expirePromotedAds` (`index.js:1811`, `promoted_ads.js:825`)
+  32. `razorpayWebhook` (`index.js:1812`, `promoted_ads.js:520`)
+  33. `bookAppointment` (`index.js:1813`, `appointment_slots.js:540`)
+  34. `rescheduleAppointment` (`index.js:1814`, `appointment_slots.js:630`)
+  35. `deleteMyAccount` (`index.js:1879`)
+  36. `sendMsg91EmailCallable` (`index.js:1891`)
+  37. `getS3UploadUrl` (`index.js:1993`, `s3_storage.js:867`)
+  38. `getS3DownloadUrl` (`index.js:1994`, `s3_storage.js:874`)
+  39. `getS3DownloadUrls` (`index.js:1995`, `s3_storage.js:881`)
+  40. `deleteS3Object` (`index.js:1996`, `s3_storage.js:888`)
+
+* **Firestore Background Triggers (Run in `asia-south2`):**
+  41. `notifyAmbulanceDriverOnNewRequest` (`index.js:316`)
+  42. `markAmbulanceSiblingRequestsTakenOnAccept` (`index.js:355`)
+  43. `markAmbulanceSiblingRequestsOnBroadcastCancelled` (`index.js:403`)
+  44. `notifyDoctorOnAppointmentCreated` (`index.js:453`)
+  45. `notifyDoctorOnReferralCreated` (`index.js:506`)
+  46. `notifyPatientOnAppointmentStatusChanged` (`index.js:554`)
+  47. `notifyPatientOnLabBookingUpdate` (`index.js:601`)
+  48. `notifyPatientOnLabReportReady` (`index.js:659`)
+  49. `notifyPatientOnLabOrderCreated` (`index.js:716`)
+  50. `notifyDoctorOnLabConnectionChanged` (`index.js:738`)
+  51. `notifyDoctorOnPharmacyConnectionChanged` (`index.js:762`)
+  52. `notifyPatientOnPharmacyDeliveryCreated` (`index.js:786`)
+  53. `notifyDoctorOnPharmacyDeliveryUpdated` (`index.js:811`)
+  54. `notifyPatientOnPharmacyDeliveryUpdated` (`index.js:837`)
+  55. `aggregateDoctorRatingOnReviewWrite` (`index.js:1675`)
+  56. `aggregateDoctorRatingOnReviewCreate` (`index.js:1712`)
+  57. `syncReviewHelpfulCount` (`index.js:1720`)
+  58. `reconcileAppointmentSlot` (`index.js:1815`, `appointment_slots.js:710`)
+  59. `processMailQueueMsg91` (`index.js:1823`)
+  *(Gated Triggers registered only when `ENABLE_SUPABASE_SYNC=on`, all in `asia-south2`):*
+  60–77. `syncAppointmentToSupabase`, `syncPrescriptionToSupabase`, `syncDoctorToSupabase`, `syncDoctorAvailabilityToSupabase`, `syncDoctorBlockedDatesToSupabase`, `syncMedicalStoreToSupabase`, `syncPharmacyConnectionToSupabase`, `syncPharmacyDeliveryToSupabase`, `syncLabToSupabase`, `syncLabCatalogTestToSupabase`, `syncLabBookingToSupabase`, `syncLabOrderToSupabase`, `syncLabConnectionToSupabase`, `syncAmbulanceToSupabase`, `syncAmbulancePrivateSettingsToSupabase`, `syncAmbulanceBroadcastToSupabase`, `syncAmbulanceRequestToSupabase`, `syncAmbulanceInviteToSupabase` (`index.js:1968-2104`).
+
+---
+
+## 6. Audit of the 8 Skipped Node Tests
+
+| # | Test File & Line | Test Name | Skip Condition / Reason | Verified by Rules Suite? | Untested Scope |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | `backend/functions/test/storage_provider_kyc.rules.test.js:49` | `'storage provider kyc rules tests'` | `{ skip: 'Storage/Firestore emulator not running' }` | **YES** | None. Executed by `npm run test:storage-rules` & `npm run test:all-rules` (16 tests passed). |
+| **2** | `backend/functions/test/storage_doctor_kyc.rules.test.js:24` | `'storage doctor kyc rules tests'` | `{ skip: 'Storage/Firestore emulator not running' }` | **YES** | None. Executed by `npm run test:storage-rules` & `npm run test:all-rules` (16 tests passed). |
+| **3** | `backend/functions/test/promoted_ads_verification.test.js:18` | `'firestore.rules security tests'` | `{ skip: 'FIRESTORE_EMULATOR_HOST not set' }` | **YES** | None. Executed by `npm run test:promoted-ads` & `npm run test:all-rules` (42 tests passed). |
+| **4** | `backend/functions/test/profile_claims_rules.test.js:18` | `'firestore profile claims rules tests'` | `{ skip: 'FIRESTORE_EMULATOR_HOST not set' }` | **YES** | None. Executed by `npm run test:all-rules` (22 tests passed). |
+| **5** | `backend/functions/test/firestore_s3_rules.test.js:30` | `'firestore rules s3 storage tests'` | `{ skip: 'FIRESTORE_EMULATOR_HOST not set' }` | **YES** | None. Executed by `npm run test:firestore-s3-rules` & `npm run test:all-rules` (33 tests passed). |
+| **6** | `backend/functions/test/firestore_reviews.rules.test.js:20` | `'firestore rules tests'` | `{ skip: 'FIRESTORE_EMULATOR_HOST not set' }` | **YES** | None. Executed by `npm run test:firestore-rules` & `npm run test:all-rules` (7 tests passed). |
+| **7** | `backend/functions/test/firestore_directory_and_appointments.rules.test.js:31-33` | `'directory/appointment rules'` | `{ skip: 'FIRESTORE_EMULATOR_HOST not set; run firebase emulators:exec' }` | **YES** | None. Executed by `npm run test:all-rules` (51 tests passed). |
+| **8** | `backend/functions/test/doctor_slots_emulator.test.js:22-24` | `'Firestore emulator race test'` | `{ skip: 'FIRESTORE_EMULATOR_HOST not set' }` | **YES** | None. Executed by `npm run test:doctor-slots-emulator` & `npm run test:all-rules` (3 tests passed). |
+
+**Verdict:** The claim that all 8 skipped test files are verified by the rules suite is **TRUE**. Running `npm run test:all-rules` executes all 8 suites against local emulators, yielding 174 passed tests with 0 failures and 0 skips.
+
+---
+
+## 7. Authentication Deep-Dive: Roles, PIN/OTP Lockouts, and Web Persistence
+
+### 7.1 Driver Mobile Login & PIN Verification Lockout Mechanics
+
+* **`verifyDriverMobileLogin`:** Invokes `completeAmbulanceMobileOtpLogin` (`backend/functions/index.js:1512`, `registration_otp.js:2870`).
+* **Ambulance PIN Login:** Invokes `runVerifyAmbulanceDriverLogin` (`backend/functions/index.js:1352`).
+* **Attempt Limit:**
+  * Maximum 5 attempts per identifier (`LOGIN_IDENTIFIER_MAX = 5`, `registration_otp.js:200, 3120`).
+  * Maximum 20 attempts per IP address (`LOGIN_IP_MAX = 20`, `registration_otp.js:199, 3120`).
+* **Lockout & Expiry:**
+  * Lockout window: 15 minutes (`LOGIN_WINDOW_MS = 15 * 60 * 1000`, `registration_otp.js:198, 3123`).
+  * If count reaches limit, `assertLoginAllowed` throws `resource-exhausted` (`registration_otp.js:3126-3129`).
+  * Successful login clears the bucket (`clearFailedLogins`, `registration_otp.js:3154-3158`).
+* **Test Coverage:**
+  * `http_endpoint_security.test.js:106`: Tests `verifyAmbulanceDriverLoginHttp` endpoint structure and App Check gating.
+  * `ambulance_sync.test.js:21`: Tests `hashAmbulancePin` and `isAmbulancePinHash`.
+  * `demo_accounts_config.test.js:440`: Tests ambulance demo login bypass.
+
+### 7.2 Login Function & Test Coverage per Role
+
+| User Role | Server-Side Login Function | Test File & Test Name | Status |
+| :--- | :--- | :--- | :--- |
+| **Patient** | `completeMobileOtpLogin` (`registration_otp.js:2960`), `verifyUserRegistrationOtp` (`:2310`) | `test/otp_send_verify_roundtrip.test.js`: `'send and verify OTP complete roundtrip for patient'` | **TESTED** |
+| **Doctor** | `completeMobileOtpLogin` (`registration_otp.js:2960`), `verifyUserRegistrationOtp` (`:2310`) | `test/demo_accounts_config.test.js`: `'Doctor demo login is allowed when doctor phone is configured'` | **TESTED** |
+| **Medical Store (Pharmacy)** | `completeMobileOtpLogin` (`registration_otp.js:2960`), `verifyUserRegistrationOtp` (`:2310`) | `test/demo_accounts_config.test.js`: `'Medical store demo login is allowed when configured'` | **TESTED** |
+| **Lab** | `completeMobileOtpLogin` (`registration_otp.js:2960`), `verifyUserRegistrationOtp` (`:2310`) | `test/demo_accounts_config.test.js`: `'Lab demo login is allowed when configured'` | **TESTED** |
+| **Ambulance Driver** | `completeAmbulanceMobileOtpLogin` (`:2870`) & `runVerifyAmbulanceDriverLogin` (`index.js:1352`) | `test/http_endpoint_security.test.js`: `'verifyAmbulanceDriverLoginHttp'` & `ambulance_sync.test.js`: `'hashAmbulancePin'` | **TESTED** |
+| **Admin / Super Admin** | `completeMobileOtpLogin` (`registration_otp.js:2960`), `verifyUserRegistrationOtp` (`:2310`) | `test/demo_accounts_config.test.js`: `'Super admin demo login is blocked in production when enableDemoSuperAdmin is false'` | **TESTED** |
+
+### 7.3 Web Session Persistence Setting
+
+* **Setting Location:** [`frontend/lib/core/firebase/firebase_bootstrap.dart:34-36`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/frontend/lib/core/firebase/firebase_bootstrap.dart#L34-L36)
+  ```dart
+  if (kIsWeb) {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+  }
+  ```
+* **Firestore Offline Persistence:** [`frontend/lib/core/firebase/firebase_bootstrap.dart:38-41`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/frontend/lib/core/firebase/firebase_bootstrap.dart#L38-L41)
+  ```dart
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+  ```
+
+---
+
+## 8. Backend Secrets & Environment Variables Inventory
+
+| Secret / Env Name | Where Declared & Read (`path:line`) | Required or Optional | Behavior When Missing |
+| :--- | :--- | :--- | :--- |
+| **`MSG91_AUTHKEY`** (HMAC Key) | `backend/functions/secure_config.js:25`, `registration_otp.js:303` | **Required** in production | In production project `medibond-45fad`, throws `HttpsError('internal', 'Could not send OTP. Please try again.')` (`registration_otp.js:313`). In dev/emulator, falls back to unsalted SHA-256 (`:315`). |
+| **`RAZORPAY_KEY_ID`** | `backend/functions/promoted_ads.js:49` | **Required** for ads | Throws `HttpsError('failed-precondition', 'Razorpay credentials not configured')` on order create (`promoted_ads.js:52`). |
+| **`RAZORPAY_KEY_SECRET`** | `backend/functions/promoted_ads.js:50` | **Required** for ads | Throws `HttpsError('failed-precondition', 'Razorpay credentials not configured')` on order create/verify (`promoted_ads.js:52`). |
+| **`RAZORPAY_WEBHOOK_SECRET`** | `backend/functions/promoted_ads.js:29, 554` (`defineSecret`) | **Required** for webhook | Logs error and responds with HTTP 503: `res.status(503).json({ error: { message: 'Webhook secret not configured.' } })` (`promoted_ads.js:558`). |
+| **`AWS_ACCESS_KEY_ID`** | `backend/functions/s3_storage.js:17, 60` (`defineSecret`) | **Required** for S3 | Throws `HttpsError('failed-precondition', 'AWS S3 credentials are not configured.')` (`s3_storage.js:67`). |
+| **`AWS_SECRET_ACCESS_KEY`** | `backend/functions/s3_storage.js:18, 63` (`defineSecret`) | **Required** for S3 | Throws `HttpsError('failed-precondition', 'AWS S3 credentials are not configured.')` (`s3_storage.js:67`). |
+| **`REDIS_HOST`** | `backend/functions/src/config/redis.js:21, 139` (`defineSecret`) | Optional | Falls back to `'127.0.0.1'` (`src/config/redis.js:139`). |
+| **`REDIS_PORT`** | `backend/functions/src/config/redis.js:22, 140` (`defineSecret`) | Optional | Falls back to `6379` (`src/config/redis.js:140`). |
+| **`REDIS_PASSWORD`** | `backend/functions/src/config/redis.js:23, 145` (`defineSecret`) | Optional | Falls back to `''` (no authentication) (`src/config/redis.js:145`). |
+| **`SUPABASE_URL`** | `backend/functions/delete_my_account.js:11, 647`, `cross_role_sync.js:24` | Optional (Required if sync active) | If missing, Supabase sync and account deletion skip with warning without crashing (`delete_my_account_supabase.test.js:37`). |
+| **`SUPABASE_SERVICE_ROLE_KEY`** | `backend/functions/delete_my_account.js:12, 648`, `cross_role_sync.js:25` | Optional (Required if sync active) | If missing, Supabase sync and account cleanup operations skip safely. |
+
+---
+
+## 9. Crashlytics & Observability Platform Evaluation
+
+### 9.1 Evaluation of `firebase_crashlytics` in `pubspec.yaml`
+
+1. **Current Codebase State:**
+   * A grep search across [`frontend/pubspec.yaml`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/frontend/pubspec.yaml) and [`frontend/pubspec.lock`](file:///c:/Users/khije/Downloads/DoctorNect/doctor/frontend/pubspec.lock) confirms that **`firebase_crashlytics` is NOT listed** in dependencies or dev_dependencies.
+   * There is currently **zero automated crash reporting SDK** installed in the Flutter client.
+2. **Web Support Analysis:**
+   * Official FlutterFire specifications confirm that **`firebase_crashlytics` does NOT support Flutter Web**.
+   * Google does not provide an underlying JavaScript SDK for Firebase Crashlytics.
+   * If `firebase_crashlytics` is initialized on Flutter Web without platform guards (`kIsWeb`), it throws an unhandled `UnsupportedError`.
+
+### 9.2 Proposed Per-Platform Crash Reporting Options
+
+* **Option 1: Hybrid FlutterFire Crashlytics (Mobile) + Sentry (Web) — RECOMMENDED:**
+  * **Android & iOS:** Add `firebase_crashlytics: ^4.3.0` to `pubspec.yaml`. Guard initialization with:
+    ```dart
+    if (!kIsWeb) {
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    }
+    ```
+  * **Web:** Integrate `sentry_flutter: ^8.14.0` initialized exclusively when `kIsWeb`, providing full stack trace symbolication, network error reporting, and breadcrumbs in web browsers.
+* **Option 2: Unified Sentry Across All Platforms:**
+  * Install `sentry_flutter: ^8.14.0` across Android, iOS, and Web. Single dashboard, uniform exception handling, and full Web support out of the box.
+* **Option 3: Firebase-Native Hybrid (Crashlytics + Cloud Functions Logging):**
+  * Android/iOS: `firebase_crashlytics`.
+  * Web: Register a global `PlatformDispatcher.instance.onError` handler that forwards client error dumps to Cloud Logging or a lightweight Cloud Function callable (`recordClientError`).
+
