@@ -410,11 +410,12 @@ All commands below are strictly read-only:
 | **2** | **AWS S3 CORS**| `aws s3api get-bucket-cors --bucket doctornect` | Returns CORS rule allowing origins `https://medibond-45fad.web.app` (and custom domains) with `PUT`, `GET`, `HEAD` methods and `Authorization`, `Content-Type` headers. | Web uploads will fail with browser CORS errors (`Cross-Origin Request Blocked`). |
 | **3** | **AWS S3 Encryption** | `aws s3api get-bucket-encryption --bucket doctornect` | Returns `ServerSideEncryptionConfiguration` with `AES256` or `aws:kms`. | Data at rest is unencrypted (HIPAA / healthcare compliance violation). |
 | **4** | **AWS S3 Policy** | `aws s3api get-bucket-policy --bucket doctornect` | Returns bucket policy restricting access to IAM credentials or VPC, or empty (no public grants). | Potential unauthenticated bucket access. |
-| **5** | **Cloud Functions Secrets** | `firebase functions:secrets:access MSG91_AUTHKEY --project medibond-45fad` (also inspect `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`) | Outputs the current secret version without error for each secret. | Cloud Functions will fail to boot or external integrations (SMS, Razorpay, S3, Redis, Supabase sync) will fail. |
-| **6** | **Firestore Indexes** | `firebase firestore:indexes --project medibond-45fad` | Confirms all 31 composite indexes defined in `backend/firestore.indexes.json` are deployed and in `READY` status (correcting the earlier partial figure of 6). | Compound queries (appointments, reviews, deliveries) will fail with missing index errors. |
-| **7** | **Supabase DB Connectivity & FKs** | `node -e "const { Client } = require('pg'); const c = new Client({ connectionString: process.env.STAGING_SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } }); c.connect().then(() => c.query('SELECT count(*) FROM users')).then(r => console.log('Users count:', r.rows[0].count)).finally(() => c.end());"` | Prints row count without error; inspect that the 27 unindexed foreign keys have explicit indexes added before high write volume (correcting earlier figure of 53). | Postgres database is unreachable, credentials are stale, or missing FK indexes cause table locks under load. |
-| **8** | **Supabase RLS Policies** | `node backend/scripts/test_rls_policies.js` | All automated RLS policy matrix checks pass. | RLS policy regression (potential data leak between patients/doctors). |
-| **9** | **Redis Ping** | From Cloud Functions environment with VPC access: `redis-cli -h $REDIS_HOST -p $REDIS_PORT -a $REDIS_PASSWORD --tls --cacert redis_ca.pem PING` | Returns `PONG`. | Memorystore instance unreachable from functions runtime. |
+| **5** | **Cloud Functions Secrets (GCP Secret Manager Enumeration)** | `gcloud secrets list --project medibond-45fad` | Confirms all 10 required secret resources (`MSG91_AUTHKEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`) exist in Google Secret Manager without printing any secret values to stdout. | Cloud Functions will fail to boot or external integrations (SMS, Razorpay, S3, Redis, Supabase sync) will fail. |
+| **6** | **Cloud Functions Secret Metadata & Binding Verification** | `firebase functions:secrets:get MSG91_AUTHKEY --project medibond-45fad` (repeat for `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`) | Returns metadata, active version state, and replication status for each secret without printing any secret values to stdout. | Stale secret versions, deactivated secrets, or missing permissions prevent functions from accessing credentials. |
+| **7** | **Firestore Indexes** | `firebase firestore:indexes --project medibond-45fad` | Confirms all 31 composite indexes defined in `backend/firestore.indexes.json` are deployed and in `READY` status (correcting the earlier partial figure of 6). | Compound queries (appointments, reviews, deliveries) will fail with missing index errors. |
+| **8** | **Supabase DB Connectivity & FKs** | `node -e "const { Client } = require('pg'); const c = new Client({ connectionString: process.env.STAGING_SUPABASE_DB_URL, ssl: { rejectUnauthorized: false } }); c.connect().then(() => c.query('SELECT count(*) FROM users')).then(r => console.log('Users count:', r.rows[0].count)).finally(() => c.end());"` | Prints row count without error; inspect that the 27 unindexed foreign keys have explicit indexes added before high write volume (correcting earlier figure of 53). | Postgres database is unreachable, credentials are stale, or missing FK indexes cause table locks under load. |
+| **9** | **Supabase RLS Policies** | `node backend/scripts/test_rls_policies.js` | All automated RLS policy matrix checks pass. | RLS policy regression (potential data leak between patients/doctors). |
+| **10** | **Redis Ping** | From Cloud Functions environment with VPC access: `redis-cli -h $REDIS_HOST -p $REDIS_PORT -a $REDIS_PASSWORD --tls --cacert redis_ca.pem PING` | Returns `PONG`. | Memorystore instance unreachable from functions runtime. |
 
 ---
 
@@ -1159,9 +1160,9 @@ When a client connects using the Supabase `anon` key with Firebase authenticatio
    ```
    where `v_caller_profile_id := private.current_profile_id();` reads from `public.users` where `firebase_uid = auth.jwt() ->> 'sub'`.
 
-### 3.3 Foreign Keys Broken by Missing Sync Writers
+### 3.2 Foreign Keys Broken by Missing Sync Writers (8 to Patients, 7 to Users)
 
-Because Firestore collections `users` and `patients` have **zero sync triggers** in `cross_role_sync.js`, creating or updating records in Firestore leaves `public.users` and `public.patients` empty in PostgreSQL. Any subsequent attempt to replicate related operational events causes foreign key constraint violations:
+Because Firestore collections `users` and `patients` have **zero sync triggers** in `cross_role_sync.js`, creating or updating records in Firestore leaves `public.users` and `public.patients` empty in PostgreSQL. While secondary child writers for pharmacy deliveries (`cross_role_sync.js:2326`), lab bookings (`:2831`), and lab orders (`:3019`) invoke `ensurePatientExistsInPostgres` (`cross_role_sync.js:1752`) to insert a placeholder stub row (`INSERT INTO patients (patient_id, name, mobile) ... ON CONFLICT (patient_id) DO NOTHING`), this stub-row behavior only mitigates `patients` FK violations when patient mobile digits can be resolved. It **does NOT apply** to `appointments` (`:811`) or `prescriptions` (`:912`) sync (which do not call `ensurePatientExistsInPostgres`), and **zero stubbing exists for any of the 7 foreign keys referencing `users.id`**. Any operational event referencing a user not in the initial backfill triggers an immediate foreign key constraint failure:
 
 | Referencing Table & Column | Referenced Table & Column | Migration File & Line | Breaking Condition |
 | :--- | :--- | :--- | :--- |
@@ -1170,14 +1171,14 @@ Because Firestore collections `users` and `patients` have **zero sync triggers**
 | `patient_doctor_links.patient_id`| `patients.patient_id` | `20260923000001_doctornect_schema.sql:256` | Patient-doctor relationship link fails FK constraint. |
 | `reviews.patient_id` | `patients.patient_id` | `20260923000001_doctornect_schema.sql:819` | Review submission fails FK constraint. |
 | `review_votes.patient_id` | `patients.patient_id` | `20260923000001_doctornect_schema.sql:856` | Helpful vote fails FK constraint. |
-| `prescriptions.patient_id` | `patients.patient_id` | `20260923000001_doctornect_schema.sql:509` | Prescription sync fails FK constraint when patient is new. |
-| `health_records.patient_id` | `patients.patient_id` | `20260923000001_doctornect_schema.sql:595` | Health record fails FK constraint. |
-| `lab_bookings.patient_id` | `patients.patient_id` | `20260923000001_doctornect_schema.sql:632` | Lab booking fails FK constraint. |
+| `prescriptions.patient_id` | `patients.patient_id` | `20260923000001_doctornect_schema.sql:492` | Prescription sync fails FK constraint when patient is new (no stubbing). |
+| `health_records.patient_id` | `patients.patient_id` | `20260923000001_doctornect_schema.sql:596` | Health record fails FK constraint. |
+| `lab_bookings.patient_id` | `patients.patient_id` | `20260923000001_doctornect_schema.sql:627` | Lab booking fails FK constraint if patient mobile missing for stub creation. |
 | `patients.owner_uid` | `users.id` | `20260923000001_doctornect_schema.sql:214` | Patient creation fails FK constraint because `users` row is missing. |
-| `doctors.owner_uid` | `users.id` | `20260923000001_doctornect_schema.sql:69` | Doctor sync fails FK constraint if `users` row is missing. |
-| `medical_stores.owner_uid` | `users.id` | `20260923000001_doctornect_schema.sql:715` | Medical store sync fails FK constraint. |
-| `labs.owner_uid` | `users.id` | `20260923000001_doctornect_schema.sql:615` | Lab sync fails FK constraint. |
-| `ambulances.auth_uid` | `users.id` | `20260923000001_doctornect_schema.sql:881` | Ambulance sync fails FK constraint. |
+| `doctors.owner_uid` | `users.id` | `20260923000001_doctornect_schema.sql:100` | Doctor sync fails FK constraint if `users` row is missing (no stubbing). |
+| `medical_stores.owner_uid` | `users.id` | `20260923000001_doctornect_schema.sql:295` | Medical store sync fails FK constraint (no stubbing). |
+| `labs.owner_uid` | `users.id` | `20260923000001_doctornect_schema.sql:329` | Lab sync fails FK constraint (no stubbing). |
+| `ambulances.auth_uid` | `users.id` | `20260923000001_doctornect_schema.sql:378` | Ambulance sync fails FK constraint (no stubbing). |
 | `admin_audit_logs.admin_uid` | `users.id` | `20260923000001_doctornect_schema.sql:1116`| Admin audit log insert fails FK constraint. |
 | `security_events.uid` | `users.id` | `20260923000001_doctornect_schema.sql:1135`| Security event insert fails FK constraint. |
 
@@ -1468,3 +1469,507 @@ The web client reads several compile-time variables via `String.fromEnvironment`
 | **`SUPABASE_URL`** & **`SUPABASE_ANON_KEY`** | `frontend/lib/core/supabase/supabase_bootstrap.dart:15-16` | Empty string (`""`) | If `ENABLE_SUPABASE` client mode is enabled without these defines, `Supabase.initialize` throws or skips, crashing client-side database repositories. |
 | **`USE_S3_STORAGE`** | `frontend/lib/core/storage/storage_feature_flag.dart:16` | Empty string (`false`) | Compile-time toggle; defaults to Firebase Storage when absent. |
 | **`ENABLE_DEMO_SUPERADMIN`** | `frontend/lib/core/auth/demo_auth_config.dart:11` | `false` | Disables demo superadmin login on web builds. |
+
+
+---
+
+# ADDENDUM 3: PRE-DEPLOYMENT ENVIRONMENT, STORAGE, & SUPABASE BRIDGING AUDIT
+
+*Date of Audit:* October 9, 2026  
+*Auditor:* Independent Platform Auditor  
+*Scope:* Comprehensive Pre-Deployment Environment Verification, Live Check Sanitization, Supabase Identity Bridging, Redis Mirror Accounting, and Schema Foreign Key Reconciliation.
+
+---
+
+## 1. Before Functions Deploy
+
+### 1.1 Complete `process.env.X` Inventory (`backend/functions`)
+
+Every single `process.env.X` reference in production backend code (`backend/functions`, excluding test suites) was cataloged and audited:
+
+| Variable Name | Code Location (`file:line`) | Required / Optional | Behavior When Missing | Where Configured (`functions/.env*`, params, CI) | Code Snippet & Audit Finding |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`ACCOUNT_APPROVAL_ADMIN_EMAILS`** | `registration_otp.js:687`<br>`index.js:1896` | **Required** for account approval | **FAILS CLOSED:** Throws `HttpsError('permission-denied', 'Account approval is not configured. Set ACCOUNT_APPROVAL_ADMIN_EMAILS.')`. | `backend/functions/.env:49`<br>`.env.example:44` | `const allowedEmails = (process.env.ACCOUNT_APPROVAL_ADMIN_EMAILS || ...)`<br>No user can approve accounts if empty. |
+| **`BACKFILL_ADMIN_EMAILS`** | `index.js:1747, 1897`<br>`registration_otp.js:689` | Optional (fallback for approval & backfill) | **FAILS CLOSED:** Throws `HttpsError('permission-denied', 'Backfill admin access not configured.')` if both empty. | `backend/functions/.env:50`<br>`.env.example:45` | `process.env.BACKFILL_ADMIN_EMAILS || ''`<br>Secondary admin allow-list fallback. |
+| **`PATIENT_APPROVAL_ADMIN_EMAILS`** | `registration_otp.js:688` | Optional (fallback for approval) | Falls back to `BACKFILL_ADMIN_EMAILS` or empty list (fails closed). | Not set in `.env` | `|| process.env.PATIENT_APPROVAL_ADMIN_EMAILS` |
+| **`S3_BUCKET`**<br>*(Note: `S3_BUCKET_NAME` is not read in code)* | `s3_storage.js:22`<br>`delete_my_account.js:26` | Optional | Falls back to default string `'doctornect'`. | `backend/functions/.env:58` (`doctornect-672027759702-ap-south-1-an`) | `const S3_BUCKET = process.env.S3_BUCKET || 'doctornect';`<br>Repository does **not** read `S3_BUCKET_NAME`. |
+| **`AWS_REGION`** | `s3_storage.js:21`<br>`delete_my_account.js:36` | Optional | Falls back to default string `'ap-south-1'`. | Unset in `.env` (defaults apply) | `const AWS_REGION = process.env.AWS_REGION || 'ap-south-1';` |
+| **`FIRESTORE_TRIGGER_REGION`** | `index.js:117` | Optional | Falls back to `'asia-south2'`. | `backend/functions/.env.example:57` | `const FIRESTORE_TRIGGER_REGION = String(process.env.FIRESTORE_TRIGGER_REGION || 'asia-south2').trim();` |
+| **`RATE_LIMIT_BACKEND`** | `abuse_rate_limit.js:88` | Optional | Falls back to `'firestore'` (atomic Firestore transactions). | `backend/functions/.env:70` (`firestore`) | `return String(process.env.RATE_LIMIT_BACKEND || 'firestore').trim().toLowerCase();` |
+| **`OTP_REDIS_MIRROR`** | `index.js:121`<br>`registration_otp.js:248` | Optional | Disabled (`false`); OTP challenges stored and verified strictly in Firestore. | `backend/functions/.env.example:66` (`off`) | `const OTP_REDIS_MIRROR_ON = String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';` |
+| **`S3_URL_CACHE`** | `s3_storage.js:638` | Optional | Disabled (`'off'`); presigned download URLs generated on-demand without Redis caching. | `backend/functions/.env:71` (`off`) | `return String(process.env.S3_URL_CACHE || 'off').trim().toLowerCase();` |
+| **`ENABLE_SUPABASE_SYNC`** | `index.js:123`<br>`cross_role_sync.js:12` | Optional | Disabled (`false`); zero Firestore-to-Supabase background sync triggers exported. | Unset in `.env` (defaults to off) | `const ENABLE_SUPABASE_SYNC = String(process.env.ENABLE_SUPABASE_SYNC || '').trim().toLowerCase() === 'on';` |
+| **`OTP_TEST_MODE`** | `registration_otp.js:212`<br>`secure_config.js:40, 44`<br>`production_otp_guard.js:31` | Optional | Normal production mode (fixed OTP `123456` rejected). | `backend/functions/.env:21` (`false`) | `const mode = String(process.env.OTP_TEST_MODE || '').trim().toLowerCase();`<br>Hard-crash on `medibond-45fad`. |
+| **`DEMO_PHONE_PATIENT`** | `production_otp_guard.js:6` | Optional | No demo bypass for patients; real SMS OTP enforced. | `backend/functions/.env:31` (empty) | `env.DEMO_PHONE_PATIENT || ''` |
+| **`DEMO_PHONE_DOCTOR`** | `production_otp_guard.js:7` | Optional | No demo bypass for doctors. | `backend/functions/.env:32` (empty) | `env.DEMO_PHONE_DOCTOR || ''` |
+| **`DEMO_PHONE_MEDICAL_STORE`**| `production_otp_guard.js:8` | Optional | No demo bypass for stores. | `backend/functions/.env:33` (empty) | `env.DEMO_PHONE_MEDICAL_STORE || ''` |
+| **`DEMO_PHONE_LAB`** | `production_otp_guard.js:9` | Optional | No demo bypass for labs. | `backend/functions/.env:34` (empty) | `env.DEMO_PHONE_LAB || ''` |
+| **`DEMO_PHONE_AMBULANCE`** | `production_otp_guard.js:10` | Optional | No demo bypass for ambulances. | `backend/functions/.env:35` (empty) | `env.DEMO_PHONE_AMBULANCE || ''` |
+| **`DEMO_PHONE_SUPER_ADMIN`** | `production_otp_guard.js:11` | Optional | No demo bypass for super admins. | `backend/functions/.env.example:35` (empty)| `env.DEMO_PHONE_SUPER_ADMIN || ''` |
+| **`GOOGLE_PLAY_REVIEW_PHONE`** | `production_otp_guard.js:16`<br>`registration_otp.js:162` | Optional | No demo bypass for review account. | `backend/functions/.env:37` (empty) | `env.GOOGLE_PLAY_REVIEW_PHONE || ''` |
+| **`ENFORCE_OTP_APP_CHECK`** | `index.js:138`<br>`security_logger.js:149`<br>`secure_config.js:52` | Optional | Defaults to `true` (App Check enforced on OTP callables). | `backend/functions/.env:23` (`true`) | `String(process.env.ENFORCE_OTP_APP_CHECK || 'true').trim().toLowerCase() !== 'false'` |
+| **`ENFORCE_ABUSE_APP_CHECK`**| `index.js:144`<br>`appointment_slots.js:14` | Optional | Defaults to `true` (App Check enforced on appointment booking & orders). | `backend/functions/.env:24` (`true`) | `String(process.env.ENFORCE_ABUSE_APP_CHECK || 'true').trim().toLowerCase() !== 'false'` |
+| **`ENFORCE_AMBULANCE_HTTP_APP_CHECK`** | `index.js:150` | Optional | Defaults to `false` (allows Flutter Web ambulance driver login without App Check). | `backend/functions/.env:27` (`false`) | `String(process.env.ENFORCE_AMBULANCE_HTTP_APP_CHECK || 'false').trim().toLowerCase() === 'true'` |
+| **`AMBULANCE_HTTP_ALLOWED_ORIGINS`** | `index.js:154` | Optional | Default CORS allowlist applied (`localhost:5000`, `medibond-45fad.web.app`). | `backend/functions/.env:29` (empty) | `String(process.env.AMBULANCE_HTTP_ALLOWED_ORIGINS || '').split(',')` |
+| **`VPC_CONNECTOR`** | `index.js:131, 132` | Optional | Functions route egress via public internet without dedicated VPC connector. | Unset in `.env` | `...(process.env.VPC_CONNECTOR ? { vpcConnector: process.env.VPC_CONNECTOR, ... } : {})` |
+| **`ALLOW_LEGACY_UNSALTED_OTP_HASH`** | `registration_otp.js:277` | Optional | Defaults to `false` (rejects unsalted OTP hashes). | Unset in `.env` | `return String(process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH || '').trim().toLowerCase() === 'true';` |
+| **`MSG91_TEMPLATE_ID`** | `index.js:1839`<br>`registration_otp.js:857` | Optional | Falls back to role-specific template or throws error if no template resolved. | `backend/functions/.env:43` | `const shared = String(process.env.MSG91_TEMPLATE_ID || '').trim();` |
+| **`MSG91_TEMPLATE_ID_REGISTRATION`** | `registration_otp.js:858` | Optional | Falls back to shared `MSG91_TEMPLATE_ID`. | `backend/functions/.env:44` | `const reg = String(process.env.MSG91_TEMPLATE_ID_REGISTRATION || '').trim();` |
+| **`MSG91_TEMPLATE_ID_LOGIN`** | `registration_otp.js:859` | Optional | Falls back to shared `MSG91_TEMPLATE_ID`. | `backend/functions/.env:45` | `const login = String(process.env.MSG91_TEMPLATE_ID_LOGIN || '').trim();` |
+| **`MSG91_TEMPLATE_ID_PASSWORD_RESET`** | `registration_otp.js:860`| Optional | Falls back to shared `MSG91_TEMPLATE_ID`. | `backend/functions/.env:46` | `const reset = String(process.env.MSG91_TEMPLATE_ID_PASSWORD_RESET || '').trim();` |
+| **`MSG91_TEMPLATE_ID_APPROVAL`** | `index.js:1837` | Optional | Falls back to generic transactional email template. | Unset in `.env` | `(data.type === 'verification_approval' ? process.env.MSG91_TEMPLATE_ID_APPROVAL : null)` |
+| **`MSG91_TEMPLATE_ID_REJECTION`** | `index.js:1838` | Optional | Falls back to generic transactional email template. | Unset in `.env` | `(data.type === 'verification_rejection' ? process.env.MSG91_TEMPLATE_ID_REJECTION : null)` |
+| **`MSG91_SENDER_ID`** / **`MSG91_SENDER`** | `registration_otp.js:862` | Optional | Defaults to standard DLT sender header `'DRNECT'`. | `backend/functions/.env:47` (`DRNECT`) | `return String(process.env.MSG91_SENDER_ID || process.env.MSG91_SENDER || 'DRNECT')` |
+| **`MSG91_FROM_EMAIL`** | `index.js:1859, 1935` | Optional | Defaults to `'no-reply@mail.doctornect.com'`. | `backend/functions/.env:48` | `fromEmail: process.env.MSG91_FROM_EMAIL || 'no-reply@mail.doctornect.com'` |
+| **`MSG91_EMAIL_DOMAIN`** | `index.js:1860, 1936` | Optional | Defaults to `'mail.doctornect.com'`. | `backend/functions/.env:49` | `domain: process.env.MSG91_EMAIL_DOMAIN || 'mail.doctornect.com'` |
+| **`MSG91_PROXY_URL`** | `registration_otp.js:893, 1095` | Optional | SMS API requests dispatch directly to MSG91 endpoint without proxy. | `backend/functions/.env:50` | `const proxyUrl = String(process.env.MSG91_PROXY_URL || '').trim();` |
+| **`PROXY_SECRET`** | `registration_otp.js:894, 1096` | Optional | No proxy authorization header attached to outbound HTTP calls. | Unset in `.env` | `const proxySecret = String(process.env.PROXY_SECRET || '').trim();` |
+| **`REDIS_TLS`** | `src/config/redis.js:149`<br>`src/config/redis.ts:102` | Optional | Defaults to `true` (TLS encryption enabled). | `backend/functions/.env.example:61` (`true`) | `: String(process.env.REDIS_TLS || 'true').trim().toLowerCase() !== 'false';` |
+| **`REDIS_CA_PATH`** | `src/config/redis.js:88, 89`<br>`src/config/redis.ts:52` | Optional | Falls back to system trust store or `REDIS_CA_CERT`. | Unset in `.env` | `if (process.env.REDIS_CA_PATH) { const customPath = path.resolve(process.env.REDIS_CA_PATH); }` |
+| **`REDIS_CA_CERT`** | `src/config/redis.js:126, 127`<br>`src/config/redis.ts:85` | Optional | Falls back to system trust store. | Unset in `.env` | `if (process.env.REDIS_CA_CERT) return Buffer.from(process.env.REDIS_CA_CERT, 'utf8');` |
+| **`FUNCTION_TARGET`** | `secure_config.js:39` | System / Runtime | Returns false for `isProduction()` when running locally. | Injected by Google Cloud Functions | `return String(process.env.FUNCTION_TARGET || '').length > 0` |
+| **`NODE_ENV`** | `src/config/redis.js:209`<br>`src/config/redis.ts:155` | Optional | Assumed production / staging; connection warnings logged. | Injected by runtime / test runner | `if (process.env.NODE_ENV !== 'test') { ... }` |
+| **`SUPABASE_URL`** / **`STAGING_SUPABASE_URL`** | `cross_role_sync.js:24` | Optional fallback | Throws warning and skips PostgreSQL sync if absent. | `backend/functions/.env:61` | `const url = process.env.SUPABASE_URL || process.env.STAGING_SUPABASE_URL;` |
+| **`SUPABASE_SERVICE_ROLE_KEY`** / **`SUPABASE_SERVICE_KEY`** | `cross_role_sync.js:25` | Optional fallback | Throws warning and skips PostgreSQL sync if absent. | `backend/functions/.env:63` | `const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;` |
+| **`SUPABASE_DB_URL`** / **`STAGING_SUPABASE_DB_URL`** / **`DATABASE_URL`** | `cross_role_sync.js:31` | Optional fallback | Direct `pg` pool disabled; sync relies on PostgREST HTTP API. | Unset in `.env` | `const dbUrl = process.env.STAGING_SUPABASE_DB_URL || process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;` |
+| **`MSG91_AUTHKEY`** / **`MSG91_AUTH_KEY`** / **`AUTH_KEY`** | `secure_config.js:25-27` | **Required** for SMS | **FAILS CLOSED:** Throws `Error('Missing required secret: MSG91_AUTHKEY')` when required is true. | `backend/functions/.env:40` | `readMsg91AuthKey({ required: true })`<br>Local env fallback for SMS auth. |
+| **`RAZORPAY_KEY_ID`** | `promoted_ads.js:49` | Optional (Required for Ads) | Promoted ad order creation fails with `500 (Razorpay credentials not configured)`. | `backend/functions/.env:53` | `const keyId = (process.env.RAZORPAY_KEY_ID || '').trim();` |
+| **`RAZORPAY_KEY_SECRET`** | `promoted_ads.js:50` | Optional (Required for Ads) | Promoted ad order creation fails with `500 (Razorpay credentials not configured)`. | `backend/functions/.env:54` | `const keySecret = (process.env.RAZORPAY_KEY_SECRET || '').trim();` |
+| **`RAZORPAY_WEBHOOK_SECRET`** | `promoted_ads.js:554` | Optional fallback | Webhook validation relies on `defineSecret('RAZORPAY_WEBHOOK_SECRET')`. | Unset in `.env` | `webhookSecret = (process.env.RAZORPAY_WEBHOOK_SECRET || '').trim();` |
+| **`AWS_ACCESS_KEY_ID`** | `s3_storage.js:17` | Fallback | S3 presigned URL generation relies on `defineSecret('AWS_ACCESS_KEY_ID')`. | Unset in `.env` | Fallback to Secret Manager binding. |
+| **`AWS_SECRET_ACCESS_KEY`** | `s3_storage.js:18` | Fallback | S3 presigned URL generation relies on `defineSecret('AWS_SECRET_ACCESS_KEY')`. | Unset in `.env` | Fallback to Secret Manager binding. |
+| **`FIREBASE_PROJECT_ID`** | Scripts (`audit-kyc-owneruid.js:14`, etc.) | Optional (CLI only) | Defaults to `'medibond-45fad'`. | Shell / CLI execution | `const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'medibond-45fad';` |
+| **`CONFIRM_PROD_SEED`** | `seed_demo_accounts.js:12`<br>`create_super_admin.js:142` | **Required** for prod seed | Refuses execution on production project `medibond-45fad`. | Shell / CLI execution | `if (projectId === 'medibond-45fad' && process.env.CONFIRM_PROD_SEED !== 'medibond-45fad')` |
+| **`ALLOW_DEMO_SEED`** | `seed_demo_accounts.js:4` | **Required** for demo seed | Refuses seed execution (`exits with code 1`). | Shell / CLI execution | `if (process.env.ALLOW_DEMO_SEED !== '1')` |
+
+---
+
+### 1.2 Account Approval Fails Closed Verification
+
+**Audit Question:** *If the admin email lists are empty, can anyone approve doctor/store/lab accounts?*
+
+**Answer:** **NO. The backend strictly FAILS CLOSED.**
+
+In `backend/functions/registration_otp.js:685-705`:
+```javascript
+async function approveUserAccount(db, data, auth) {
+  const allowedEmails = (
+    process.env.ACCOUNT_APPROVAL_ADMIN_EMAILS
+    || process.env.PATIENT_APPROVAL_ADMIN_EMAILS
+    || process.env.BACKFILL_ADMIN_EMAILS
+    || ''
+  )
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const callerEmail = String(auth?.token?.email || '').trim().toLowerCase();
+  const emailVerified = auth?.token?.email_verified === true;
+  if (allowedEmails.length === 0) {
+    throw new HttpsError(
+      'permission-denied',
+      'Account approval is not configured. Set ACCOUNT_APPROVAL_ADMIN_EMAILS.',
+    );
+  }
+  if (!emailVerified || !allowedEmails.includes(callerEmail)) {
+    throw new HttpsError('permission-denied', 'Not authorized to approve accounts.');
+  }
+```
+And in `backend/functions/index.js:1895-1907` (`sendMsg91EmailCallable`):
+```javascript
+  const allowedEmails = (
+    process.env.ACCOUNT_APPROVAL_ADMIN_EMAILS
+    || process.env.BACKFILL_ADMIN_EMAILS
+    || ''
+  )
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const callerEmail = String(request.auth.token.email || '').trim().toLowerCase();
+  const emailVerified = request.auth.token.email_verified === true;
+  if (allowedEmails.length === 0 || !emailVerified || !allowedEmails.includes(callerEmail)) {
+    throw new HttpsError('permission-denied', 'Not authorized to send email.');
+  }
+```
+* **Conclusion:** If `ACCOUNT_APPROVAL_ADMIN_EMAILS`, `PATIENT_APPROVAL_ADMIN_EMAILS`, and `BACKFILL_ADMIN_EMAILS` are empty, `allowedEmails.length === 0` triggers an immediate `permission-denied` rejection. **Zero accounts can be approved** by any user, even if authenticated with a verified email.
+
+---
+
+### 1.3 Deployment Configuration Packaging Reality Check
+
+In `firebase.json:18-27`:
+```json
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local",
+        ".env",
+        ".env.local",
+        ".env.production",
+        ".env.medibond-45fad",
+        ".secret.local",
+        "secrets/**",
+        "*.p12",
+        "service-account*.json"
+      ]
+```
+* **Critical Finding:** All `.env*` files are **explicitly ignored** by Firebase Functions deployment. When running in Google Cloud Functions v2, variables defined in `backend/functions/.env` are **not packaged or uploaded**. All non-secret environment variables must be declared in Google Cloud Run runtime configuration (or via Firebase CLI params), and all secrets must be configured in Google Secret Manager.
+
+---
+
+### 1.4 Safe Live Checks & `defineSecret` Expectations (A2)
+
+To prevent any leakage of production credentials to operator terminals or log streams, all uses of `firebase functions:secrets:access` have been eradicated. Operator checks must strictly use read-only metadata commands:
+
+| Command | Purpose | Output Behavior |
+| :--- | :--- | :--- |
+| `gcloud secrets list --project medibond-45fad` | Enumerate all Secret Manager secret resources in the project | Prints secret names, replication policies, and creation timestamps. **Never outputs secret payloads.** |
+| `firebase functions:secrets:get NAME --project medibond-45fad` | Verify active version status and Cloud Functions binding metadata | Outputs version number, state (`ENABLED`), and update time. **Never outputs secret payloads.** |
+
+#### Exact Secret Names Expected by `defineSecret` in the Codebase
+
+Static scan across all files in `backend/functions` identifies the exact list of secrets defined via `defineSecret`:
+
+| Secret Name | Declaring File & Line | Consumer Function / Module | Purpose |
+| :--- | :--- | :--- | :--- |
+| **`SUPABASE_URL`** | `delete_my_account.js:11` | `deleteMyAccount` | Supabase PostgREST endpoint for user GDPR account deletion |
+| **`SUPABASE_SERVICE_ROLE_KEY`** | `delete_my_account.js:12` | `deleteMyAccount` | Bypass RLS to delete public tables and `auth.users` on account erasure |
+| **`RAZORPAY_WEBHOOK_SECRET`** | `promoted_ads.js:29` | `razorpayWebhook` | Cryptographic HMAC-SHA256 signature verification for payment webhooks |
+| **`AWS_ACCESS_KEY_ID`** | `s3_storage.js:17` | `CALLABLE_OPTIONS` (`getS3UploadUrl`, `getS3DownloadUrl`, `deleteS3Object`) | AWS IAM user access key for presigned S3 URL minting |
+| **`AWS_SECRET_ACCESS_KEY`** | `s3_storage.js:18` | `CALLABLE_OPTIONS` (`getS3UploadUrl`, `getS3DownloadUrl`, `deleteS3Object`) | AWS IAM secret access key for presigned S3 URL minting |
+| **`REDIS_HOST`** | `src/config/redis.js:21`<br>`src/config/redis.ts:8` | `OTP_REDIS_SECRET_OPTIONS` (`sendUserRegistrationOtp`, `verifyUserRegistrationOtp`) | Memorystore / Redis instance hostname |
+| **`REDIS_PORT`** | `src/config/redis.js:22`<br>`src/config/redis.ts:9` | `OTP_REDIS_SECRET_OPTIONS` (`sendUserRegistrationOtp`, `verifyUserRegistrationOtp`) | Memorystore / Redis instance TCP port |
+| **`REDIS_PASSWORD`** | `src/config/redis.js:23`<br>`src/config/redis.ts:10` | `OTP_REDIS_SECRET_OPTIONS` (`sendUserRegistrationOtp`, `verifyUserRegistrationOtp`) | Memorystore / Redis AUTH password |
+
+*(Note on `MSG91_AUTHKEY`, `RAZORPAY_KEY_ID`, and `RAZORPAY_KEY_SECRET`: Per `backend/functions/secure_config.js:10`, `defineSecret` bindings for MSG91 and Razorpay were removed to prevent deployment overlap crashes; they are resolved via `process.env`).*
+
+---
+
+## 2. Before Any Supabase Flag
+
+### 2.1 Database Migration vs Firestore-to-Supabase Backfill (B3)
+
+**Audit Question:** *Does `migrate_firestore_to_supabase.js` write `users.firebase_uid` and `users.profile_id`? What does the new migration do with rows created by the old backfill?*
+
+#### 1. Code Lines Writing `users.firebase_uid` and `users.profile_id`
+
+In `backend/scripts/migrate_firestore_to_supabase.js`:
+* **User Accounts (`migrateUsers`, lines 258-272):**
+  ```javascript
+  await pgClient.query(
+    `INSERT INTO users (
+        id, firebase_uid, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, verified_at, deactivated, status, photo_url,
+        created_at, updated_at
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+     ON CONFLICT (id) DO UPDATE SET
+        display_name = $5, mobile = $7, profile_completed = $8,
+        verified = $9, status = $12, updated_at = $15`,
+    [
+      userUuid,
+      firebaseUid,
+      role,
+      data.profileId || `prof_${firebaseUid}`,
+  ```
+  Writes `firebaseUid` to `firebase_uid` ($2) and `profileId` to `profile_id` ($4).
+
+* **Synthesized Patient User Rows (`migratePatients`, lines 466-476):**
+  ```javascript
+  await pgClient.query(
+    `INSERT INTO users (
+        id, firebase_uid, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, status, created_at, updated_at
+     )
+     VALUES ($1, $2, 'patient', $3, $4, $5, $6, TRUE, TRUE, 'approved', $7, $8)
+     ON CONFLICT (id) DO UPDATE SET display_name = $4, mobile = $6, updated_at = $8`,
+    [
+      ownerUuid,
+      data.ownerUid,
+      patientId,
+  ```
+  Writes `data.ownerUid` to `firebase_uid` ($2) and `patientId` to `profile_id` ($3).
+
+* **Synthesized Ambulance User Rows (`migrateAmbulances`, lines 786-796):**
+  ```javascript
+  await pgClient.query(
+    `INSERT INTO users (
+        id, firebase_uid, role, profile_id, display_name, email, mobile,
+        profile_completed, verified, status, created_at, updated_at
+     )
+     VALUES ($1, $2, 'ambulance', $3, $4, $5, $6, TRUE, TRUE, 'approved', $7, $8)
+     ON CONFLICT (id) DO UPDATE SET display_name = $4, mobile = $6, updated_at = $8`,
+    [
+      authUuid,
+      data.authUid,
+      ambulanceId,
+  ```
+  Writes `data.authUid` to `firebase_uid` ($2) and `ambulanceId` to `profile_id` ($3).
+
+#### 2. What Migration `20261008000001_firebase_uid_identity.sql` Does with Rows Created by the Old Backfill
+
+* **ZERO DATA MIGRATION STATEMENTS:** Migration `20261008000001_firebase_uid_identity.sql` contains **zero** `UPDATE`, `ALTER TABLE ... ADD COLUMN`, or data backfill statements.
+* **Preservation of Existing Data:** Because `users.firebase_uid` was already added in initial schema migration `20260923000001_doctornect_schema.sql:63`, migration `20261008000001` leaves all existing table rows **completely untouched**.
+* **Failure Mode for Pre-Existing Rows Lacking `firebase_uid`:** The migration creates helper functions:
+  ```sql
+  CREATE OR REPLACE FUNCTION private.current_profile_id()
+  RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+    SELECT profile_id FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
+  $$;
+  ```
+  If any row was inserted by an older script that left `firebase_uid` as `NULL`, migration `20261008000001` performs no remediation. Any authenticated request from that user will result in `private.current_profile_id()` returning `NULL`, causing `book_appointment_atomic` to abort with **`42501 PROFILE_NOT_FOUND`**.
+
+---
+
+### 2.2 Parent Row Pre-Condition & Foreign Key Failure in Sync Triggers (B4)
+
+**Audit Question:** *For each sync in `cross_role_sync.js` (doctor, store, lab, ambulance, appointment, prescription): does it ensure a `users` and/or `patients` row exists before an upsert that has `owner_uid` or `patient_id` FKs? Which syncs fail for a user not in the backfill? Correct the "storage behavior if flag on per user type" table.*
+
+#### 1. Audit of Parent Row Creation Across All 6 Sync Functions
+
+1. **Doctor Sync (`syncFirestoreDoctorToSupabase`, `cross_role_sync.js:1330-1348`):**
+   ```javascript
+   const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/doctors?on_conflict=doctor_id`, {
+     method: 'POST',
+     headers: { ... },
+     body: JSON.stringify(doctorPayload),
+   });
+   ```
+   *Does it ensure `users` exists?* **NO.** Upserts directly into `public.doctors` with `owner_uid`. Zero user pre-creation logic.
+2. **Medical Store Sync (`syncFirestoreMedicalStoreToSupabase`, `cross_role_sync.js:2067-2083`):**
+   ```javascript
+   const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/medical_stores?on_conflict=store_id`, {
+     method: 'POST',
+     headers: { ... },
+     body: JSON.stringify(storePayload),
+   });
+   ```
+   *Does it ensure `users` exists?* **NO.** Upserts directly into `public.medical_stores` with `owner_uid`. Zero user pre-creation logic.
+3. **Lab Sync (`syncFirestoreLabToSupabase`, `cross_role_sync.js:2536-2550`):**
+   ```javascript
+   const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/labs?on_conflict=lab_id`, {
+     method: 'POST',
+     headers: { ... },
+     body: JSON.stringify(labPayload),
+   });
+   ```
+   *Does it ensure `users` exists?* **NO.** Upserts directly into `public.labs` with `owner_uid`. Zero user pre-creation logic.
+4. **Ambulance Sync (`syncFirestoreAmbulanceToSupabase`, `cross_role_sync.js:3523-3539`):**
+   ```javascript
+   const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/ambulances?on_conflict=ambulance_id`, {
+     method: 'POST',
+     headers: { ... },
+     body: JSON.stringify(ambulancePayload),
+   });
+   ```
+   *Does it ensure `users` exists?* **NO.** Upserts directly into `public.ambulances` with `auth_uid`. Zero user pre-creation logic.
+5. **Appointment Sync (`syncFirestoreAppointmentToSupabase`, `cross_role_sync.js:811-828`):**
+   ```javascript
+   const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/appointments?on_conflict=appointment_id`, {
+     method: 'POST',
+     headers: { ... },
+     body: JSON.stringify(supabasePayload),
+   });
+   ```
+   *Does it ensure `patients` exists?* **NO.** Does **not** call `ensurePatientExistsInPostgres`. Upserts directly into `public.appointments` with `patient_id`.
+6. **Prescription Sync (`syncFirestorePrescriptionToSupabase`, `cross_role_sync.js:912-927`):**
+   ```javascript
+   const resp = await fetch(`${url.replace(/\/+$/, '')}/rest/v1/prescriptions?on_conflict=prescription_id`, {
+     method: 'POST',
+     headers: { ... },
+     body: JSON.stringify(prescriptionPayload),
+   });
+   ```
+   *Does it ensure `patients` exists?* **NO.** Does **not** call `ensurePatientExistsInPostgres`. Upserts directly into `public.prescriptions` with `patient_id`.
+
+#### 2. Downstream Stub-Row Exception
+The helper function `ensurePatientExistsInPostgres` (`cross_role_sync.js:1752-1823`) creates a placeholder patient row (`INSERT INTO patients (patient_id, name, mobile, age, gender) VALUES (...) ON CONFLICT (patient_id) DO NOTHING`), but it is **ONLY** called by:
+* `ensurePrescriptionExistsInPostgres` (`:1874`)
+* `syncFirestorePharmacyDeliveryToSupabase` (`:2326`)
+* `syncFirestoreLabBookingToSupabase` (`:2831`)
+* `syncFirestoreLabOrderToSupabase` (`:3019`)
+
+#### 3. Which Syncs Fail for a User Not in the Initial Backfill?
+**ALL SIX SYNCS FAIL** with PostgreSQL foreign key constraint violations if the user or patient was not pre-migrated into PostgreSQL:
+* `doctor` fails with `doctors_owner_uid_fkey` (`Key (owner_uid)=(...) is not present in table "users"`).
+* `medicalStore` fails with `medical_stores_owner_uid_fkey` (`Key (owner_uid)=(...) is not present in table "users"`).
+* `lab` fails with `labs_owner_uid_fkey` (`Key (owner_uid)=(...) is not present in table "users"`).
+* `ambulance` fails with `ambulances_auth_uid_fkey` (`Key (auth_uid)=(...) is not present in table "users"`).
+* `appointment` fails with `appointments_patient_id_fkey` (`Key (patient_id)=(...) is not present in table "patients"`).
+* `prescription` fails with `prescriptions_patient_id_fkey` (`Key (patient_id)=(...) is not present in table "patients"`).
+
+#### 4. Corrected Storage Behavior If Flag Turned On per User Type
+
+*(Correcting earlier over-optimistic ratings in Section 2.2 of the initial report):*
+
+| User Type | Original Report Claim | Corrected Reality When `ENABLE_SUPABASE_SYNC` Is Turned On | Breaking Condition & Root Cause |
+| :--- | :--- | :--- | :--- |
+| **Doctor** | YES | **FAILS for newly registered doctors** | `syncFirestoreDoctorToSupabase` lacks a `users` parent check. Fails on `doctors.owner_uid -> users.id` FK constraint. |
+| **Medical Store** | YES | **FAILS for newly registered stores** | `syncFirestoreMedicalStoreToSupabase` lacks a `users` parent check. Fails on `medical_stores.owner_uid -> users.id` FK constraint. |
+| **Lab** | YES | **FAILS for newly registered labs** | `syncFirestoreLabToSupabase` lacks a `users` parent check. Fails on `labs.owner_uid -> users.id` FK constraint. |
+| **Ambulance Driver**| YES | **FAILS for newly registered ambulances** | `syncFirestoreAmbulanceToSupabase` lacks a `users` parent check. Fails on `ambulances.auth_uid -> users.id` FK constraint. |
+| **Patient** | PARTIAL | **FAILS for new patients (Appointments & Prescriptions)** | Appointments and prescriptions sync do not stub patients; fail on `patient_id -> patients.patient_id` FK constraint. Only deliveries/lab bookings create stubs. |
+| **Super Admin** | NO | **NO** (No change) | No sync triggers exist for `private.admin_users`. |
+
+---
+
+### 2.3 Client JWT Flow & Anonymous Firebase Session Analysis (B5)
+
+**Audit Question:** *Which JWT does the Flutter client send to Supabase (Firebase ID token via third-party auth, or a custom minted one)? What would an anonymous Firebase session (ambulance driver) produce for `auth.jwt()->>'sub'` and `role`?*
+
+#### 1. Code Lines Governing the Client JWT
+
+In `frontend/lib/core/supabase/supabase_bootstrap.dart:31-41`:
+```dart
+  /// Firebase ID token for Supabase third-party auth (`accessToken`).
+  /// Returns null when Firebase has no signed-in user.
+  static Future<String?> currentFirebaseAccessToken() async {
+    if (debugAccessTokenOverride != null) {
+      return debugAccessTokenOverride!();
+    }
+    if (Firebase.apps.isEmpty) return null;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+    try {
+      return await user.getIdToken();
+    } catch (_) {
+      return null;
+    }
+  }
+```
+And in `frontend/lib/core/supabase/supabase_bootstrap.dart:150-158`:
+```dart
+      await Supabase.initialize(
+        url: targetUrl,
+        // ignore: deprecated_member_use
+        anonKey: targetKey,
+        accessToken: currentFirebaseAccessToken,
+        authOptions: const FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
+          autoRefreshToken: true,
+        ),
+        realtimeClientOptions: const RealtimeClientOptions(eventsPerSecond: 10),
+      );
+```
+* **Finding:** The Flutter client sends the **standard Firebase ID token** via Supabase's third-party authentication integration (`accessToken: currentFirebaseAccessToken`). It does **not** mint a custom JWT.
+
+#### 2. Evaluation of Anonymous Firebase Session (Ambulance Driver)
+When an ambulance driver connects with an anonymous Firebase session (`user.isAnonymous == true`):
+1. **`auth.jwt() ->> 'sub'`:** Evaluates to the string of the **anonymous Firebase UID** (e.g., `"A3k8L...anon"`).
+2. **`auth.jwt() ->> 'role'` / PostgreSQL Role:** Evaluates to **`'authenticated'`**, because Supabase's GoTrue / PostgREST engine successfully verifies the token signature against Google Firebase's public JWKS.
+3. **Internal Security Impact:**
+   * `private.current_firebase_uid()` successfully returns the anonymous UID string.
+   * However, because `public.users` contains **no row** with `firebase_uid = <anon_uid>`, `private.current_profile_id()` returns **`NULL`**.
+   * Any attempt to invoke profile-scoped procedures (such as `book_appointment_atomic`) immediately aborts with:
+     ```sql
+     RAISE EXCEPTION 'PROFILE_NOT_FOUND: Authenticated user % has no active profile in public.users.', private.current_firebase_uid()
+     ```
+   * Any table RLS policy requiring `owner_uid = private.current_firebase_uid()` or `auth_uid = private.current_firebase_uid()` fails closed, preventing the driver from modifying records.
+
+---
+
+## 3. Redis In-Depth Mirroring & Binding Audit
+
+### 3.1 Failed Attempt Accounting Under Redis Mirror (C6)
+
+**Audit Question:** *When the Redis mirror hash is used and the OTP is wrong, where is the failed attempt counted (Firestore attempts field or Redis)? Is there a test running `verifyUserRegistrationOtp` with `OTP_REDIS_MIRROR` on and a mocked Redis?*
+
+#### 1. Code Lines Governing Failed Attempt Counting
+
+In `backend/functions/registration_otp.js:2033-2035` (when local hash and test overrides fail):
+```javascript
+    // No MSG91 fallback available (e.g. test mode, demo, or missing mobile). Increment attempts.
+    tx.set(effectiveChallengeRef, { attempts: attempts + 1 }, { merge: true });
+    return { status: 'invalid', attempts: attempts + 1, challenge, treatAsDemo };
+```
+And in `backend/functions/registration_otp.js:2098-2109` (when MSG91 verify API also rejects the code):
+```javascript
+    // Both local hash and MSG91 rejected the code -> Increment attempts
+    const failOutcome = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(effectiveChallengeRef);
+      if (!snap.exists) return { status: 'missing' };
+      const curAttempts = (Number(snap.data()?.attempts) || 0) + 1;
+      if (curAttempts >= 5) {
+        tx.delete(effectiveChallengeRef);
+        return { status: 'locked', attempts: curAttempts };
+      }
+      tx.set(effectiveChallengeRef, { attempts: curAttempts }, { merge: true });
+      return { status: 'invalid', attempts: curAttempts };
+    });
+```
+* **Finding:** Failed attempts are **COUNTED STRICTLY IN FIRESTORE** on the `effectiveChallengeRef` document in the `otp_challenges` collection.
+* Redis **never** records or increments failed attempt counts. Redis stores only the initial challenge snapshot via `setRedisOtpMirror` (`registration_otp.js:1850`) and deletes it on successful verification via `cleanupRedisChallenge` (`registration_otp.js:2040`).
+
+#### 2. Unit Test Audit for `verifyUserRegistrationOtp` with Redis Mirror
+* **Result:** **no test**.
+* **Verification Proof:**
+  * `backend/functions/test/otp_send_verify_roundtrip.test.js:11` explicitly executes:
+    ```javascript
+    delete process.env.OTP_REDIS_MIRROR;
+    ```
+  * In `backend/functions/test/otp_retry_fallback.test.js:679-715`, the test `'verify-path Redis get is bounded by 1500ms timeout when mirror is on'` sets `process.env.OTP_REDIS_MIRROR = 'on'`, but it directly calls the internal helper function `consumeOtpChallengeAtomically`, **not** the exported callable `verifyUserRegistrationOtp`.
+  * Across all 293 tests in `backend/functions/test/`, zero tests execute the callable `verifyUserRegistrationOtp` with `OTP_REDIS_MIRROR=on` and a mocked Redis client.
+
+---
+
+### 3.2 Secret Binding Audit for Redis-Reaching Callables (C7)
+
+**Audit Question:** *Are `REDIS_SECRETS` bound to every function that can reach Redis when `RATE_LIMIT_BACKEND=redis` or `S3_URL_CACHE=on`, not only the OTP functions? List the functions and their `secrets:` option.*
+
+**Answer:** **NO. `REDIS_SECRETS` are NOT bound to every function that can reach Redis.**
+
+In `backend/functions/index.js:124-126`:
+```javascript
+const OTP_REDIS_SECRET_OPTIONS = OTP_REDIS_MIRROR_ON
+  ? { secrets: require('./redis').REDIS_SECRETS }
+  : {};
+```
+`OTP_REDIS_SECRET_OPTIONS` is attached **strictly to two callables**:
+1. `exports.sendUserRegistrationOtp` (`index.js:975`)
+2. `exports.verifyUserRegistrationOtp` (`index.js:1023`)
+
+#### Complete Matrix of Functions That Can Reach Redis and Their `secrets:` Option
+
+| Exported Function | Trigger Type | Condition Under Which It Reaches Redis | Deployed `secrets:` Option in Code | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **`sendUserRegistrationOtp`** | `onCall` (`index.js:974`) | `OTP_REDIS_MIRROR=on` or `RATE_LIMIT_BACKEND=redis` | `secrets: [redisHostSecret, redisPortSecret, redisPasswordSecret]` *(if mirror on)* | **BOUND** (only if mirror on) |
+| **`verifyUserRegistrationOtp`** | `onCall` (`index.js:1022`) | `OTP_REDIS_MIRROR=on` or `RATE_LIMIT_BACKEND=redis` | `secrets: [redisHostSecret, redisPortSecret, redisPasswordSecret]` *(if mirror on)* | **BOUND** (only if mirror on) |
+| **`completeMobileOtpLogin`** | `onCall` (`index.js:1131`) | `RATE_LIMIT_BACKEND=redis` (`enforceAbuseLimit`) | **NONE / OMITTED** (`index.js:1132`) | **UNBOUND** (Cannot reach Redis secrets in v2) |
+| **`completeAmbulanceMobileOtpLogin`** | `onCall` (`index.js:1512`) | `RATE_LIMIT_BACKEND=redis` (`enforceAbuseLimit`) | **NONE / OMITTED** (`index.js:1513`) | **UNBOUND** (Cannot reach Redis secrets in v2) |
+| **`bookAppointment`** | `onCall` (`appointment_slots.js:840`) | `RATE_LIMIT_BACKEND=redis` (`enforceRateLimit`) | **NONE / OMITTED** (`appointment_slots.js:840`) | **UNBOUND** (Cannot reach Redis secrets in v2) |
+| **`rescheduleAppointment`** | `onCall` (`appointment_slots.js:850`) | `RATE_LIMIT_BACKEND=redis` (`enforceRateLimit`) | **NONE / OMITTED** (`appointment_slots.js:850`) | **UNBOUND** (Cannot reach Redis secrets in v2) |
+| **`createRazorpayOrder`** | `onCall` (`promoted_ads.js:140`) | `RATE_LIMIT_BACKEND=redis` (`enforceRateLimit`) | **NONE / OMITTED** (`promoted_ads.js:140`) | **UNBOUND** (Cannot reach Redis secrets in v2) |
+| **`verifyAmbulanceDriverLoginHttp`**| `onRequest` (`index.js:1454`)| `RATE_LIMIT_BACKEND=redis` (`enforceAbuseLimit`) | **NONE / OMITTED** (`index.js:1454`) | **UNBOUND** (Cannot reach Redis secrets in v2) |
+| **`getValidationRulesHttp`** | `onRequest` (`index.js:892`)| `RATE_LIMIT_BACKEND=redis` (`enforceAbuseLimit`) | **NONE / OMITTED** (`index.js:892`) | **UNBOUND** (Cannot reach Redis secrets in v2) |
+| **`sendMsg91EmailCallable`** | `onCall` (`index.js:1891`) | `RATE_LIMIT_BACKEND=redis` (`enforceAbuseLimit`) | **NONE / OMITTED** (`index.js:1892`) | **UNBOUND** (Cannot reach Redis secrets in v2) |
+| **`getS3DownloadUrl`** | `onCall` (`s3_storage.js:874`) | `S3_URL_CACHE=on` (`getRedisClient()`) | `secrets: [awsAccessKeyId, awsSecretAccessKey]` (`s3_storage.js:863`) | **MISSING REDIS SECRETS** |
+| **`getS3DownloadUrls`** | `onCall` (`s3_storage.js:881`) | `S3_URL_CACHE=on` (`getRedisClient()`) | `secrets: [awsAccessKeyId, awsSecretAccessKey]` (`s3_storage.js:863`) | **MISSING REDIS SECRETS** |
+
+* **Impact:** In Cloud Functions v2, functions only mount secrets explicitly declared in their deployment options. When `RATE_LIMIT_BACKEND=redis` or `S3_URL_CACHE=on` are activated, any function lacking `REDIS_SECRETS` cannot access `REDIS_HOST`, `REDIS_PORT`, or `REDIS_PASSWORD` from Google Secret Manager. They will either fail open to Firestore rate limiting or fail to populate cache keys.
+
+---
+
+## 4. Schema Reconciliation & Citation Line Mapping (D8)
+
+Every foreign key reference cited in Section 3.2 (previously numbered 3.3 in Addendum 2) was re-verified against the master schema migration `20260923000001_doctornect_schema.sql` and cross-referenced against the entity matrix in Addendum 1 Section 2.1:
+
+| Foreign Key Constraint | Section 3.2 Citation | Actual Schema File:Line | 3.2 Citation Status | Section 2.1 Matrix Citation | 2.1 Matrix Line Status | Actual DDL Line in Schema |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`appointments.patient_id`** | Line 433 | Line 433 | **MATCH** | Line 200 (table) | **MISMATCH** (Table at 430, FK at 433) | `patient_id VARCHAR(64) NOT NULL REFERENCES patients(patient_id) ON DELETE RESTRICT,` |
+| **`patient_care_team.patient_id`** | Line 246 | Line 246 | **MATCH** | N/A (Child table) | N/A | `patient_id VARCHAR(64) NOT NULL REFERENCES patients(patient_id) ON DELETE CASCADE,` |
+| **`patient_doctor_links.patient_id`**| Line 256 | Line 256 | **MATCH** | N/A (Child table) | N/A | `patient_id VARCHAR(64) NOT NULL REFERENCES patients(patient_id) ON DELETE CASCADE,` |
+| **`reviews.patient_id`** | Line 819 | Line 819 | **MATCH** | Line 632, 660 | **MISMATCH** (Reviews at 816, FK at 819) | `patient_id VARCHAR(64) NOT NULL REFERENCES patients(patient_id) ON DELETE CASCADE,` |
+| **`review_votes.patient_id`** | Line 856 | Line 856 | **MATCH** | N/A (Child table) | N/A | `patient_id VARCHAR(64) NOT NULL REFERENCES patients(patient_id) ON DELETE CASCADE,` |
+| **`prescriptions.patient_id`** | Line 509 | Line 492 | **MISMATCH** | Line 274 | **MISMATCH** (Prescriptions at 489, FK at 492) | `patient_id VARCHAR(64) NOT NULL REFERENCES patients(patient_id) ON DELETE RESTRICT,` |
+| **`health_records.patient_id`** | Line 595 | Line 596 | **MISMATCH** | Line 680 | **MISMATCH** (Records at 593, FK at 596) | `patient_id VARCHAR(64) NOT NULL REFERENCES patients(patient_id) ON DELETE CASCADE,` |
+| **`lab_bookings.patient_id`** | Line 632 | Line 627 | **MISMATCH** | Line 438 | **MISMATCH** (Bookings at 624, FK at 627) | `patient_id VARCHAR(64) NOT NULL REFERENCES patients(patient_id) ON DELETE RESTRICT,` |
+| **`patients.owner_uid`** | Line 214 | Line 214 | **MATCH** | Line 140 | **MISMATCH** (Patients at 212, FK at 214) | `owner_uid UUID REFERENCES users(id) ON DELETE SET NULL,` |
+| **`doctors.owner_uid`** | Line 69 | Line 100 | **MISMATCH** | Line 68 (table) | **MATCH on table creation, MISMATCH on FK column** | `owner_uid UUID REFERENCES users(id) ON DELETE SET NULL,` |
+| **`medical_stores.owner_uid`** | Line 715 | Line 295 | **MISMATCH** | Line 390 (delivery)| **MISMATCH** (Store table at 292, FK at 295) | `owner_uid UUID REFERENCES users(id) ON DELETE SET NULL,` |
+| **`labs.owner_uid`** | Line 615 | Line 329 | **MISMATCH** | Line 438 (booking) | **MISMATCH** (Labs table at 326, FK at 329) | `owner_uid UUID REFERENCES users(id) ON DELETE SET NULL,` |
+| **`ambulances.auth_uid`** | Line 881 | Line 378 | **MISMATCH** | Line 518 | **MISMATCH** (Ambulances at 375, FK at 378) | `auth_uid UUID REFERENCES users(id) ON DELETE SET NULL,` |
+| **`admin_audit_logs.admin_uid`** | Line 1116| Line 1116| **MATCH** | N/A (Audit table) | N/A | `admin_uid UUID REFERENCES users(id) ON DELETE SET NULL,` |
+| **`security_events.uid`** | Line 1135| Line 1135| **MATCH** | N/A (Audit table) | N/A | `uid UUID REFERENCES users(id) ON DELETE SET NULL,` |
+
+---
