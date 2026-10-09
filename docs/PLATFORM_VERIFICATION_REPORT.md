@@ -2405,7 +2405,7 @@ Every parameter declared via defineSecret in backend/functions was evaluated aga
 | **REDIS_PORT** | secure_config.js:51 | **YES** (Key present) | sendRegistrationOtp, verifyRegistrationOtp (secure_config.js:55-58) | OTP_REDIS_MIRROR=on (secure_config.js:56) | **NONE** (Flag is off; returns []) | **CRITICAL (Deploy Blocker)** |
 | **REDIS_PASSWORD** | secure_config.js:52 | **YES** (Key present) | sendRegistrationOtp, verifyRegistrationOtp (secure_config.js:55-58) | OTP_REDIS_MIRROR=on (secure_config.js:56) | **NONE** (Flag is off; returns []) | **CRITICAL (Deploy Blocker)** |
 
-### 1.2 Enforcement Mechanics: Firebase CLI & Cloud Run API
+### 1.2 Enforcement Mechanics: Firebase CLI & Cloud Run API (Corrected)
 
 1. **Firebase CLI Collision Check:**
    In firebase-tools (node_modules/firebase-tools/lib/deploy/functions/env.js:241-253):
@@ -2453,7 +2453,7 @@ function checkForDuplicateKeys(userEnvs, paramEnvs) {
 ## 2. Redis Host Category, Connection Behavior & Added Latency
 
 ### 2.1 Category of REDIS_HOST
-- **Category:** **public-hostname** (e.g. *.db.redis.io). It is not private-ip, not localhost, and not empty.
+- **Category:** **public-hostname** (public DNS host). It is not private-ip, not localhost, and not empty.
 
 ### 2.2 Connection Behavior Under Feature Flags
 Because Cloud Functions bundle .env variables into process.env during deployment:
@@ -2491,54 +2491,112 @@ const cached = await withRedisTimeout(client.get(cacheKey), 1500);
 ```
    - **Worst-case added latency per call:** **1500ms (1.5 seconds)** before falling back to generating presigned URLs directly.
 
-### 2.4 Memorystore TLS & CA Certificate Status
-- **Is CA Certificate Needed?** **YES.** Google Cloud Memorystore with in-transit encryption utilizes a project-specific Server CA certificate that is not present in standard operating system trust stores.
-- **Is the CA File in the Repo?** **YES.** backend/functions/redis_ca.pem is tracked in git (file mode 100644, 1131 bytes). It is resolved automatically by backend/functions/redis.js:104:
-```javascript
-const caFile = process.env.REDIS_CA_PATH || path.join(__dirname, 'redis_ca.pem');
-```
+### 2.4 Redis TLS & CA Certificate Status
+- **Public Suffix:** `redis.io`
+- **Port (Numeric):** `12465`
+- **Effective REDIS_TLS:** `true` (evaluated by `src/config/redis.js:149`)
+- **CA Certificate Inspection (`backend/functions/redis_ca.pem`):**
+  - **Subject:** `CN=GlobalSign, O=GlobalSign, OU=GlobalSign Root CA - R3`
+  - **Issuer:** `CN=GlobalSign, O=GlobalSign, OU=GlobalSign Root CA - R3`
+  - **Validity:** `Mar 18 10:00:00 2009 GMT` to `Mar 18 10:00:00 2029 GMT`
+  - **Finding:** The CA certificate in the repo is the public GlobalSign Root CA - R3 used by **Redis Cloud** (formerly Redis Labs / Redis Enterprise Cloud). It is **not** a Google Cloud Memorystore private Server CA certificate.
+- **Provider Names in Repo:**
+  - Repo comments and documentation reference both **Memorystore** (`.env.example:64`, `src/config/redis.js:4`) and **Redis Cloud** (`docs/ARCHITECTURE_AUDIT_REPORT.md:391`). Upstash is only mentioned in passing audit notes.
 
 ---
 
 ## 3. Supabase Ownership, RLS Policies & Runtime Resolution
 
-### 3.1 RLS Policies and Helpers in Migrations
-In supabase/migrations/20261008000001_firebase_uid_identity.sql:
-- **Identity Helpers:**
+### 3.1 RLS Policies and Helpers in Migrations (Corrected)
+In `backend/supabase/migrations/20261008000001_firebase_uid_identity.sql`:
+- **Identity Helpers (`20261008000001_firebase_uid_identity.sql:12-20, 35-43`):**
 ```sql
-CREATE OR REPLACE FUNCTION private.current_firebase_uid() RETURNS TEXT AS $$
-  SELECT NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '');
-$$ LANGUAGE sql STABLE;
+CREATE OR REPLACE FUNCTION private.current_firebase_uid()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $
+  SELECT NULLIF(auth.jwt() ->> 'sub', '');
+$;
 
-CREATE OR REPLACE FUNCTION private.current_profile_id() RETURNS TEXT AS $$
-  SELECT NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'profile_id', '');
-$$ LANGUAGE sql STABLE;
+CREATE OR REPLACE FUNCTION private.current_profile_id()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $
+  SELECT profile_id FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
+$;
 ```
-- **Table RLS Policies:**
-  1. doctors UPDATE:
+- **Table RLS UPDATE Policies (`20261008000001_firebase_uid_identity.sql:350-361, 410-421, 444-455, 480-491`):**
+  1. `doctors_update` (`lines 350-361`):
 ```sql
-CREATE POLICY "doctors_update_own" ON public.doctors
-  FOR UPDATE
-  USING (owner_uid = private.current_firebase_uid() AND doctor_id = private.current_profile_id());
+CREATE POLICY "doctors_update" ON public.doctors
+    FOR UPDATE TO authenticated
+    USING (
+        owner_uid = private.current_firebase_uid()
+        OR doctor_id = private.current_profile_id()
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        owner_uid = private.current_firebase_uid()
+        OR doctor_id = private.current_profile_id()
+        OR private.is_super_admin()
+    );
 ```
-  2. medical_stores UPDATE:
+  2. `medical_stores_update` (`lines 410-421`):
 ```sql
-CREATE POLICY "stores_update_own" ON public.medical_stores
-  FOR UPDATE
-  USING (owner_uid = private.current_firebase_uid() AND store_id = private.current_profile_id());
+CREATE POLICY "medical_stores_update" ON public.medical_stores
+    FOR UPDATE TO authenticated
+    USING (
+        owner_uid = private.current_firebase_uid()
+        OR store_id = private.current_profile_id()
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        owner_uid = private.current_firebase_uid()
+        OR store_id = private.current_profile_id()
+        OR private.is_super_admin()
+    );
 ```
-  3. labs UPDATE:
+  3. `labs_update` (`lines 444-455`):
 ```sql
-CREATE POLICY "labs_update_own" ON public.labs
-  FOR UPDATE
-  USING (owner_uid = private.current_firebase_uid() AND lab_id = private.current_profile_id());
+CREATE POLICY "labs_update" ON public.labs
+    FOR UPDATE TO authenticated
+    USING (
+        owner_uid = private.current_firebase_uid()
+        OR lab_id = private.current_profile_id()
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        owner_uid = private.current_firebase_uid()
+        OR lab_id = private.current_profile_id()
+        OR private.is_super_admin()
+    );
 ```
-  4. ambulances UPDATE:
+  4. `ambulances_update` (`lines 480-491`):
 ```sql
-CREATE POLICY "ambulances_update_own" ON public.ambulances
-  FOR UPDATE
-  USING (auth_uid = private.current_firebase_uid());
+CREATE POLICY "ambulances_update" ON public.ambulances
+    FOR UPDATE TO authenticated
+    USING (
+        auth_uid = private.current_firebase_uid()
+        OR ambulance_id = private.current_profile_id()
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        auth_uid = private.current_firebase_uid()
+        OR ambulance_id = private.current_profile_id()
+        OR private.is_super_admin()
+    );
 ```
+- **Column Types vs Helper Return Types:**
+  - In `20260923000001_doctornect_schema.sql:100, 295, 329, 378`, `owner_uid` and `auth_uid` are declared as **`UUID REFERENCES users(id)`**.
+  - `private.current_firebase_uid()` returns **`TEXT`** (Firebase UID string).
+  - Comparing `owner_uid = private.current_firebase_uid()` compares `UUID = TEXT`. In standard PostgreSQL, this throws `operator does not exist: uuid = text`.
+  - However, because the policy uses **`OR doctor_id = private.current_profile_id()`**, updates succeed via the profile ID clause where both operands are `TEXT` (assuming the user profile exists in `public.users`).
 
 ### 3.2 Owner Read and Update Capability After Sync-Created Insert
 - **Read:** **ALLOWED.** Public and authenticated SELECT policies on doctors, medical_stores, labs, and ambulances allow read access (USING (true) or USING (auth.role() = 'authenticated')).
@@ -2759,4 +2817,552 @@ e1f8ffe fix(sync): remove remaining placeholders
 c8d037f fix(audit): phase 2 C-1 C-2 M-3 M-4
 b84a4ee fix(audit): phase 1 C-3 H-6 L-4 L-5
 317af8d Point Firestore triggers at live asia-south2.
+```
+
+
+---
+
+# ADDENDUM 6: RAW CLI AUDIT, SUPABASE TYPE RECONCILIATION, ROLLOUT SAFETY & 13E ANALYSIS
+
+*Date of Audit:* October 9, 2026  
+*Auditor:* Independent Platform Auditor  
+*Scope:* Raw Command Verifications for Secret Overlaps, CLI Parameter vs Secret Mechanics, Supabase Schema UUID/TEXT Reconciliations, Redis Infrastructure Details, Commit Rollout Safety, 13e Findings, and Citation Hygiene.
+
+---
+
+## 1. Secret Names & Function Bindings (Raw Verification)
+
+### 1.1 Raw Command Outputs
+
+**Command:** `git grep -n "defineSecret(" -- backend/functions`
+```text
+backend/functions/delete_my_account.js:11:const supabaseUrl = defineSecret('SUPABASE_URL');
+backend/functions/delete_my_account.js:12:const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
+backend/functions/promoted_ads.js:29:const razorpayWebhookSecret = defineSecret('RAZORPAY_WEBHOOK_SECRET');
+backend/functions/s3_storage.js:17:const awsAccessKeyId = defineSecret('AWS_ACCESS_KEY_ID');
+backend/functions/s3_storage.js:18:const awsSecretAccessKey = defineSecret('AWS_SECRET_ACCESS_KEY');
+backend/functions/src/config/redis.js:21:const redisHostSecret = defineSecret('REDIS_HOST');
+backend/functions/src/config/redis.js:22:const redisPortSecret = defineSecret('REDIS_PORT');
+backend/functions/src/config/redis.js:23:const redisPasswordSecret = defineSecret('REDIS_PASSWORD');
+backend/functions/src/config/redis.ts:8:export const redisHostSecret: SecretParam = defineSecret('REDIS_HOST');
+backend/functions/src/config/redis.ts:9:export const redisPortSecret: SecretParam = defineSecret('REDIS_PORT');
+backend/functions/src/config/redis.ts:10:export const redisPasswordSecret: SecretParam = defineSecret('REDIS_PASSWORD');
+```
+
+**Command:** `git grep -n "secrets:" -- backend/functions`
+```text
+backend/functions/.env.example:6:#   firebase functions:secrets:set MSG91_AUTHKEY
+backend/functions/.env.example:7:#   firebase functions:secrets:set RAZORPAY_KEY_ID
+backend/functions/.env.example:8:#   firebase functions:secrets:set RAZORPAY_KEY_SECRET
+backend/functions/.env.example:65:# Production uses: firebase functions:secrets:set REDIS_HOST / REDIS_PORT / REDIS_PASSWORD
+backend/functions/.secret.local.example:11:# Production uses: firebase functions:secrets:set <NAME>
+backend/functions/index.js:125:  ? { secrets: require('./redis').REDIS_SECRETS }
+backend/functions/index.js:1883:    secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseUrl, supabaseServiceRoleKey],
+backend/functions/index.js:1972:  secrets: SYNC_SECRETS,
+backend/functions/index.js:1979:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2003:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2010:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2017:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2024:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2031:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2038:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2045:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2052:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2059:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2066:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2073:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2080:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2087:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2094:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2101:  secrets: SYNC_SECRETS,
+backend/functions/index.js:2108:  secrets: SYNC_SECRETS,
+backend/functions/promoted_ads.js:720:    secrets: [razorpayWebhookSecret],
+backend/functions/s3_storage.js:863:  secrets: [awsAccessKeyId, awsSecretAccessKey],
+backend/functions/scripts/create_super_admin.js:19: * 7. Zero hardcoded secrets: uses GOOGLE_APPLICATION_CREDENTIALS.
+backend/functions/test/backend_audit_fixes.test.js:20:  assert.match(src, /secrets: require('./redis').REDIS_SECRETS/);
+backend/functions/test/backend_audit_fixes.test.js:39:  assert.match(src, /secrets: [awsAccessKeyId, awsSecretAccessKey, supabaseUrl, supabaseServiceRoleKey]/);
+```
+
+**Command:** `git grep -n "getRedisClient\|enforceAbuseLimit\|enforceRateLimit\|enforceOtpAbuseLimit" -- backend/functions ':!backend/functions/test'`
+```text
+backend/functions/abuse_rate_limit.js:162:async function enforceAbuseLimit(db, request, category, {
+backend/functions/abuse_rate_limit.js:270:    await enforceAbuseLimit(db, request, category, { identifier, message });
+backend/functions/abuse_rate_limit.js:282:  enforceAbuseLimit,
+backend/functions/appointment_slots.js:11:const { enforceAbuseLimit, assertAppCheck } = require('./abuse_rate_limit');
+backend/functions/appointment_slots.js:845:    await enforceAbuseLimit(db, request, 'booking');
+backend/functions/appointment_slots.js:855:    await enforceAbuseLimit(db, request, 'booking');
+backend/functions/index.js:91:  enforceAbuseLimit,
+backend/functions/index.js:958:      await enforceAbuseLimit(firestore, request, 'signup', {
+backend/functions/index.js:963:      await enforceAbuseLimit(firestore, request, 'otp_send', {
+backend/functions/index.js:968:      await enforceAbuseLimit(firestore, request, 'api');
+backend/functions/index.js:1009:      await enforceAbuseLimit(firestore, request, 'api', {
+backend/functions/index.js:1039:      await enforceAbuseLimit(firestore, request, 'api', {
+backend/functions/index.js:1103:      await enforceAbuseLimit(firestore, request, 'login', {
+backend/functions/index.js:1136:      await enforceAbuseLimit(firestore, request, 'login', {
+backend/functions/index.js:1168:  await enforceAbuseLimit(firestore, request, 'login', {
+backend/functions/index.js:1229:  await enforceAbuseLimit(getFirestore(), request, 'api');
+backend/functions/index.js:1356:  await enforceAbuseLimit(firestore, requestForLimits, 'login', {
+backend/functions/promoted_ads.js:7:const { enforceAbuseLimit, assertAppCheck } = require('./abuse_rate_limit');
+backend/functions/promoted_ads.js:147:  await enforceAbuseLimit(getFirestore(), request, 'payment', {
+backend/functions/promoted_ads.js:435:  await enforceAbuseLimit(getFirestore(), request, 'payment');
+backend/functions/promoted_ads.js:813:    await enforceAbuseLimit(getFirestore(), request, 'api', {
+backend/functions/s3_storage.js:14:const { enforceAbuseLimit } = require('./abuse_rate_limit');
+backend/functions/s3_storage.js:870:  await enforceAbuseLimit(db, request, 'api');
+backend/functions/s3_storage.js:877:  await enforceAbuseLimit(db, request, 'api');
+backend/functions/s3_storage.js:884:  await enforceAbuseLimit(db, request, 'api');
+backend/functions/s3_storage.js:891:  await enforceAbuseLimit(db, request, 'api');
+backend/functions/src/config/redis.d.ts:22:export declare function getRedisClient(options?: Record<string, any>): Redis;
+backend/functions/src/config/redis.js:10: * - Exported singleton instance (redis) and factory (getRedisClient)
+backend/functions/src/config/redis.js:235:function getRedisClient(options = {}) {
+backend/functions/src/config/redis.js:270:    const client = getRedisClient();
+backend/functions/src/config/redis.js:275:    const client = getRedisClient();
+backend/functions/src/config/redis.js:279:    const client = getRedisClient();
+backend/functions/src/config/redis.js:286:  getRedisClient,
+backend/functions/src/config/redis.ts:170:export function getRedisClient(options: Record<string, any> = {}): Redis {
+backend/functions/src/config/redis.ts:193:    const client = getRedisClient();
+backend/functions/src/config/redis.ts:198:    const client = getRedisClient();
+backend/functions/src/config/redis.ts:202:    const client = getRedisClient();
+```
+
+### 1.2 Table of Secret Declarations & Bindings
+
+| Secret Name | Declared At | Functions Binding It | Gating Flag | Name Present in `.env`? |
+| :--- | :--- | :--- | :--- | :--- |
+| **`SUPABASE_URL`** | `delete_my_account.js:11` | `deleteMyAccount` (`index.js:1883`), sync triggers (`index.js:1972-2108`) | None for `deleteMyAccount`; `ENABLE_SUPABASE_SYNC=on` for sync triggers | **YES** |
+| **`SUPABASE_SERVICE_ROLE_KEY`** | `delete_my_account.js:12` | `deleteMyAccount` (`index.js:1883`), sync triggers (`index.js:1972-2108`) | None for `deleteMyAccount`; `ENABLE_SUPABASE_SYNC=on` for sync triggers | **NO** (`.env` has `SUPABASE_SECRET_KEY`) |
+| **`RAZORPAY_WEBHOOK_SECRET`** | `promoted_ads.js:29` | `razorpayWebhook` (`promoted_ads.js:720`) | None (Unconditional) | **NO** (`.env` has `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`) |
+| **`AWS_ACCESS_KEY_ID`** | `s3_storage.js:17` | `deleteMyAccount` (`index.js:1883`), S3 callables (`s3_storage.js:863`) | None (Unconditional) | **NO** |
+| **`AWS_SECRET_ACCESS_KEY`** | `s3_storage.js:18` | `deleteMyAccount` (`index.js:1883`), S3 callables (`s3_storage.js:863`) | None (Unconditional) | **NO** |
+| **`REDIS_HOST`** | `src/config/redis.js:21` | `sendUserRegistrationOtp` (`index.js:975`), `verifyUserRegistrationOtp` (`index.js:1023`) | `OTP_REDIS_MIRROR=on` (`index.js:121, 125`) | **YES** |
+| **`REDIS_PORT`** | `src/config/redis.js:22` | `sendUserRegistrationOtp` (`index.js:975`), `verifyUserRegistrationOtp` (`index.js:1023`) | `OTP_REDIS_MIRROR=on` (`index.js:121, 125`) | **YES** |
+| **`REDIS_PASSWORD`** | `src/config/redis.js:23` | `sendUserRegistrationOtp` (`index.js:975`), `verifyUserRegistrationOtp` (`index.js:1023`) | `OTP_REDIS_MIRROR=on` (`index.js:121, 125`) | **YES** |
+
+### 1.3 Exported Function Names Reaching Redis when `RATE_LIMIT_BACKEND=redis`
+Derived strictly from `index.js` exported symbols that invoke `enforceAbuseLimit` or `protectCallable`:
+1. `getValidationRules`
+2. `validateField`
+3. `validateFormFields`
+4. `sendUserRegistrationOtp`
+5. `enforceSendUserRegistrationOtpRateLimit`
+6. `lookupMobileRegistration`
+7. `verifyUserRegistrationOtp`
+8. `finalizePatientOtpVerification`
+9. `resetAmbulanceDriverPin`
+10. `recordFailedLogin`
+11. `clearFailedLogins`
+12. `approveUserAccount`
+13. `approvePatientAccount`
+14. `validateVitalAdvisory`
+15. `consumeAiGenerationQuota`
+16. `assertAccountCreationAllowed`
+17. `verifyAmbulanceDriverLogin`
+18. `verifyAmbulanceDriverLoginHttp`
+19. `submitAmbulanceRating`
+20. `resyncAmbulanceAuthUid`
+21. `backfillPatientCareTeams`
+22. `createRazorpayOrder`
+23. `verifyRazorpayPayment`
+24. `reviewPromotedAd`
+25. `bookAppointment`
+26. `rescheduleAppointment`
+27. `deleteMyAccount`
+28. `sendMsg91EmailCallable`
+29. `getS3UploadUrl`
+30. `getS3DownloadUrl`
+31. `getS3DownloadUrls`
+32. `deleteS3Object`
+
+*(Deleted non-export names from Addendum 5: `doctorRegistrationOtp`, `doctorRegistrationVerify`, `createPromotedAdOrder`, `requestDataExport`, `syncUserRole`, `sendRegistrationOtp`, `verifyRegistrationOtp`)*.
+
+---
+
+## 2. Firebase CLI Parameter vs Secret Mechanics
+
+### 2.1 File and Line Location in `firebase-tools`
+- **File:** `firebase-tools/lib/functions/env.js:241-253`
+- **Function:** `checkForDuplicateKeys(isEmulator, keys, fullEnv, envsWithoutLocal)`
+- **Caller:** `writeUserEnvs` (`lib/functions/env.js:229`)
+- **Code:**
+```javascript
+function checkForDuplicateKeys(isEmulator, keys, fullEnv, envsWithoutLocal) {
+    for (const key of keys) {
+        const definedInEnv = fullEnv.hasOwnProperty(key);
+        if (definedInEnv) {
+            if (envsWithoutLocal && isEmulator && envsWithoutLocal.hasOwnProperty(key)) {
+                (0, utils_1.logWarning)(clc.cyan(clc.yellow("functions: ")) +
+                    `Writing parameter ${key} to emulator-specific config .env.local. This will overwrite your existing definition only when emulating.`);
+                continue;
+            }
+            throw new error_1.FirebaseError(`Attempted to write param-defined key ${key} to .env files, but it was already defined.`);
+        }
+    }
+}
+```
+
+### 2.2 Finding & Correction
+- **What It Concerns:** It concerns **parameter prompts** (from parameterized configuration e.g. `defineString`, `defineInt`) being resolved during deploy and written back to disk into `.env.<projectId>` or `.env.local`. It does **not** concern secrets declared via `defineSecret` or bound to Cloud Functions via `secrets:`.
+- **Verdict:** **CLI does not block; Cloud Run behavior not verifiable offline.**
+
+---
+
+## 3. Supabase Migrations, Types & Policy Reconciliations
+
+### 3.1 Raw Output of Migration Grep
+```text
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:12:CREATE OR REPLACE FUNCTION private.current_firebase_uid()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:19:  SELECT NULLIF(auth.jwt() ->> 'sub', '');
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:35:CREATE OR REPLACE FUNCTION private.current_profile_id()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:42:  SELECT profile_id FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:350:CREATE POLICY "doctors_update" ON public.doctors
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:353:        owner_uid = private.current_firebase_uid()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:354:        OR doctor_id = private.current_profile_id()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:410:CREATE POLICY "medical_stores_update" ON public.medical_stores
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:413:        owner_uid = private.current_firebase_uid()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:414:        OR store_id = private.current_profile_id()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:444:CREATE POLICY "labs_update" ON public.labs
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:447:        owner_uid = private.current_firebase_uid()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:448:        OR lab_id = private.current_profile_id()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:480:CREATE POLICY "ambulances_update" ON public.ambulances
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:483:        auth_uid = private.current_firebase_uid()
+backend/supabase/migrations/20261008000001_firebase_uid_identity.sql:484:        OR ambulance_id = private.current_profile_id()
+```
+
+### 3.2 Full Functions & Policies with File and Lines
+
+**1. `private.current_firebase_uid()` (`20261008000001_firebase_uid_identity.sql:12-20`):**
+```sql
+CREATE OR REPLACE FUNCTION private.current_firebase_uid()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT NULLIF(auth.jwt() ->> 'sub', '');
+$$;
+```
+
+**2. `private.current_profile_id()` (`20261008000001_firebase_uid_identity.sql:35-43`):**
+```sql
+CREATE OR REPLACE FUNCTION private.current_profile_id()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT profile_id FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
+$$;
+```
+
+**3. `doctors_update` Policy (`20261008000001_firebase_uid_identity.sql:350-361`):**
+```sql
+CREATE POLICY "doctors_update" ON public.doctors
+    FOR UPDATE TO authenticated
+    USING (
+        owner_uid = private.current_firebase_uid()
+        OR doctor_id = private.current_profile_id()
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        owner_uid = private.current_firebase_uid()
+        OR doctor_id = private.current_profile_id()
+        OR private.is_super_admin()
+    );
+```
+
+**4. `medical_stores_update` Policy (`20261008000001_firebase_uid_identity.sql:410-421`):**
+```sql
+CREATE POLICY "medical_stores_update" ON public.medical_stores
+    FOR UPDATE TO authenticated
+    USING (
+        owner_uid = private.current_firebase_uid()
+        OR store_id = private.current_profile_id()
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        owner_uid = private.current_firebase_uid()
+        OR store_id = private.current_profile_id()
+        OR private.is_super_admin()
+    );
+```
+
+**5. `labs_update` Policy (`20261008000001_firebase_uid_identity.sql:444-455`):**
+```sql
+CREATE POLICY "labs_update" ON public.labs
+    FOR UPDATE TO authenticated
+    USING (
+        owner_uid = private.current_firebase_uid()
+        OR lab_id = private.current_profile_id()
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        owner_uid = private.current_firebase_uid()
+        OR lab_id = private.current_profile_id()
+        OR private.is_super_admin()
+    );
+```
+
+**6. `ambulances_update` Policy (`20261008000001_firebase_uid_identity.sql:480-491`):**
+```sql
+CREATE POLICY "ambulances_update" ON public.ambulances
+    FOR UPDATE TO authenticated
+    USING (
+        auth_uid = private.current_firebase_uid()
+        OR ambulance_id = private.current_profile_id()
+        OR private.is_super_admin()
+    )
+    WITH CHECK (
+        auth_uid = private.current_firebase_uid()
+        OR ambulance_id = private.current_profile_id()
+        OR private.is_super_admin()
+    );
+```
+
+### 3.3 Column Types vs Helper Return Types & Type Error
+- **Column Types:** `owner_uid` and `auth_uid` in `20260923000001_doctornect_schema.sql:100, 295, 329, 378` are of type **`UUID`** (`REFERENCES users(id)`).
+- **Helper Return Types:** `private.current_firebase_uid()` returns **`TEXT`**.
+- **Would a `UUID = TEXT` comparison error?**
+  **YES.** In PostgreSQL, comparing a `UUID` column with a `TEXT` value directly without casting throws:
+  `ERROR: operator does not exist: uuid = text`.
+  However, because the policy uses `OR doctor_id = private.current_profile_id()` (where both `doctor_id` and `current_profile_id()` are `VARCHAR`/`TEXT`), PostgreSQL will allow the update if evaluation can resolve via the profile ID clause without failing on the untyped uuid comparison.
+
+---
+
+## 4. Redis Infrastructure, Public Suffix & Certificate Audit
+
+### 4.1 Redis Host Properties
+- **Public Suffix (last two labels):** **`redis.io`**
+- **Port (Numeric):** **`12465`**
+- **Effective `REDIS_TLS`:** **`true`** (Defaulted by `src/config/redis.js:149`)
+
+### 4.2 Code Choosing CA File and TLS Options
+In `backend/functions/src/config/redis.js`:
+- **CA File Selection (`lines 88-114`):**
+```javascript
+  if (process.env.REDIS_CA_PATH) {
+    const customPath = path.resolve(process.env.REDIS_CA_PATH);
+    if (fs.existsSync(customPath)) {
+      return customPath;
+    }
+  }
+
+  const candidates = [
+    path.join(__dirname, 'redis_ca.pem'),
+    path.join(__dirname, 'redis-ca.pem'),
+    path.join(__dirname, '..', 'redis_ca.pem'),
+    path.join(__dirname, '..', 'redis-ca.pem'),
+    path.join(__dirname, '..', '..', 'redis_ca.pem'),
+    path.join(__dirname, '..', '..', 'redis-ca.pem'),
+    path.join(process.cwd(), 'redis_ca.pem'),
+    path.join(process.cwd(), 'redis-ca.pem'),
+    path.join(process.cwd(), 'functions', 'redis_ca.pem'),
+    path.join(process.cwd(), 'functions', 'redis-ca.pem'),
+  ];
+```
+- **TLS Configuration (`lines 147-150, 170-185`):**
+```javascript
+  const useTls = overrides.tls !== undefined
+    ? Boolean(overrides.tls)
+    : String(process.env.REDIS_TLS || 'true').trim().toLowerCase() !== 'false';
+...
+  if (useTls) {
+    const caCert = overrides.ca || readRedisCaCertificate();
+    const tls = {
+      rejectUnauthorized: true,
+    };
+    if (caCert) {
+      tls.ca = [caCert];
+    }
+    if (!net.isIP(host)) {
+      tls.servername = host;
+    }
+    if (typeof overrides.tls === 'object' && overrides.tls !== null) {
+      Object.assign(tls, overrides.tls);
+    }
+    options.tls = tls;
+  }
+```
+
+### 4.3 Certificate Details (`backend/functions/redis_ca.pem`)
+- **Subject:** `CN=GlobalSign, O=GlobalSign, OU=GlobalSign Root CA - R3`
+- **Issuer:** `CN=GlobalSign, O=GlobalSign, OU=GlobalSign Root CA - R3`
+- **Valid From:** `Mar 18 10:00:00 2009 GMT`
+- **Valid To:** `Mar 18 10:00:00 2029 GMT`
+- **Provider Association:** Public Root CA used by **Redis Cloud** (formerly Redis Labs). It is **not** a Google Cloud Memorystore private Server CA certificate.
+- **Provider Names in Repo:**
+  - Repo comments and configs reference **Memorystore** (`.env.example:64`, `src/config/redis.js:4`) and **Redis Cloud** (`docs/ARCHITECTURE_AUDIT_REPORT.md:391`). Upstash is only mentioned in passing audit notes.
+
+---
+
+## 5. Rollout Safety: Six Rule Commits & Client Denials
+
+### 5.1 Commit Stats & Newly Denied Writes (vs Live Parent `7e0ab46`)
+
+1. **`5cad719` (`feat(rules): tighten appointments rules (not deployed)`)**
+```text
+ backend/firestore.rules                            |  69 +++++++------
+ ...estore_directory_and_appointments.rules.test.js | 112 ++++++++++++++++++++-
+ 2 files changed, 147 insertions(+), 34 deletions(-)
+```
+   - **Newly Denied Client Write:** Direct patient client-side creation of appointment documents in `appointments/{id}` (enforces that patient booking occurs via `bookAppointment` callable, leaving direct create only for verified doctor walk-ins).
+   - **Flutter Call Site:** `frontend/lib/core/data/shared_appointments_store.dart:751` (`bookAppointment` callable invocation).
+   - **First App Commit to Callable:** Commit `0bf62c7` (`fix(audit): phase 3 H-1 H-2 H-5 M-5`).
+
+2. **`e999302` (`fix(rules): keep doctor cancel/reschedule, pin values (not deployed)`)**
+```text
+ backend/firestore.rules                            | 91 +++++++++++++++++-----
+ ...estore_directory_and_appointments.rules.test.js | 82 ++++++++++++++++++-
+ 2 files changed, 151 insertions(+), 22 deletions(-)
+```
+   - **Newly Denied Client Write:** Arbitrary doctor updates to appointment documents (pins required values and restricts mutations strictly to allowed cancel/reschedule fields).
+
+3. **`401ac69` (`fix(rules): patient reschedule via callable only (not deployed)`)**
+```text
+ backend/firestore.rules                            | 24 ++------
+ ...estore_directory_and_appointments.rules.test.js | 64 +++++++++++++---------
+ 2 files changed, 42 insertions(+), 46 deletions(-)
+```
+   - **Newly Denied Client Write:** Direct client-side patient reschedule writes to `appointments/{id}` (removes `patientCanReschedule()`; patient reschedule must call `rescheduleAppointment` callable).
+   - **Flutter Call Site:** `frontend/lib/core/data/shared_appointments_store.dart:769` (`rescheduleAppointment` callable invocation).
+   - **First App Commit to Callable:** Commit `5a3ee54` (`feat(booking): rescheduleAppointment callable`).
+
+4. **`ea7c130` (`test(rules): fix throw, run all suites, add PII deny tests (not deployed)`)**
+```text
+ backend/firestore.rules                            | 151 ++++++++++++---------
+ backend/functions/package.json                     |   3 +-
+ ...estore_directory_and_appointments.rules.test.js |  96 +++++++++++++
+ 3 files changed, 186 insertions(+), 64 deletions(-)
+```
+   - **Newly Denied Client Write:** Unauthenticated and third-party reads/writes of sensitive appointment PII fields and unauthorized updates on prescription/delivery party links.
+
+5. **`a1e1a91` (`fix(rules): bound community catalog creates (not deployed)`)**
+```text
+ backend/firestore.rules                            |  53 ++++++++--
+ ...estore_directory_and_appointments.rules.test.js | 114 +++++++++++++++++++++
+ 2 files changed, 157 insertions(+), 10 deletions(-)
+```
+   - **Newly Denied Client Write:** Community catalog creates with unapproved field keys or over-length strings (>120/300 chars) on `community_medicines`, `community_diagnoses`, etc.
+   - **Flutter Call Site:** `frontend/lib/features/doctor/clinical/data/community_medicine_repository.dart:178-187` (direct Firestore `add()`). Remains direct client write compliant with bounded keys.
+
+6. **`c892590` (`fix(rules): restrict store delivery update keys; catalog test coverage (not deployed)`)**
+```text
+ backend/firestore.rules                            |   5 +-
+ ...estore_directory_and_appointments.rules.test.js | 167 ++++++++++++++-------
+ 2 files changed, 116 insertions(+), 56 deletions(-)
+```
+   - **Newly Denied Client Write:** Pharmacy delivery updates modifying keys outside the strict allowlist (`status`, `viewedAt`, `dispensedAt`, `dispensingNotes`, `medicineLines`, `updatedAt`).
+
+### 5.2 Force-Update, Minimum-Version & Maintenance Checks in Flutter
+- **Minimum-Version / Force-Update Implementation:**
+  - **Class:** `MinimumBuildGate` in `frontend/lib/core/update/minimum_build_gate.dart:13-77`
+  - **Remote Config Keys:**
+    - `min_supported_build_android` (`line 14`)
+    - `min_supported_build_ios` (`line 15`)
+    - `update_required_message` (`line 16`)
+    - `store_url_android` (`line 17`)
+    - `store_url_ios` (`line 18`)
+- **Current App Version:** `1.0.2+7` (build number 7, in `frontend/pubspec.yaml:4`).
+
+---
+
+## 6. 13e Leftovers: Provider ProfileId Mismatch & Ambulance Auth Resync
+
+### 6.1 Can `users/{uid}.profileId` Differ from Auth UID?
+**YES.**
+In `backend/functions/registration_otp.js:2937, 2788`:
+```javascript
+const profileId = knownProfileIds[mobileDigits] || `${meta.idPrefix}${mobileDigits}`;
+```
+For doctors, medical stores, labs, and ambulances, `profileId` contains role-prefixed identifiers (e.g. `doc_7666892394`, `store_9876543210`, `lab_9876543210`, `amb_9876543210`), whereas `auth.uid` is an arbitrary Firebase Authentication UID.
+
+### 6.2 Rules Lines Denied Due to UID vs ProfileId Discrepancy
+1. **Walk-in Appointment Create (`backend/firestore.rules:359`):**
+```javascript
+358:         && data.get('source', '') == 'walkin'
+359:         && data.get('doctorId', '') == request.auth.uid
+360:         && !data.keys().hasAny(['createdVia']);
+```
+   - Line 359 compares `doctorId` against `request.auth.uid`. If a doctor client writes their `profileId` (`doc_...`), the write is **DENIED**.
+2. **Prescriptions Create (`backend/firestore.rules:673`):**
+```javascript
+672:       allow create: if isVerifiedDoctor()
+673:         && request.resource.data.doctorId == myDoctorId()
+```
+   - Line 673 enforces that `doctorId` matches `myDoctorId()` (which returns `profileId`). If the client writes `request.auth.uid`, the write is **DENIED**.
+3. **Pharmacy Deliveries Update (`backend/firestore.rules:1025`):**
+```javascript
+1024:           || (isMedicalStore()
+1025:             && resource.data.get('storeId', '') == myStoreId()
+```
+   - Line 1025 enforces that `storeId` matches `myStoreId()` (`profileId`). If matched against `request.auth.uid`, the update is **DENIED**.
+
+### 6.3 Caller Verification in `resyncAmbulanceAuthUid`
+In `backend/functions/index.js:1644-1659`:
+```javascript
+1644:   if (!request.auth) {
+1645:     throw new HttpsError('unauthenticated', 'Anonymous sign-in required.');
+1646:   }
+1647: 
+1648:   const username = requireUsername(request.data?.username);
+1649:   const pin = requireAmbulancePassword(request.data?.pin, 'password');
+1650: 
+1651:   const firestore = getFirestore();
+1652:   const verified = await verifyAmbulanceCredentials(firestore, username, pin);
+1653:   if (!verified.ok) {
+1654:     throw new HttpsError('permission-denied', 'Incorrect username or PIN.');
+1655:   }
+1656: 
+1657:   await firestore.collection('ambulances').doc(verified.driverId).set({
+1658:     authUid: request.auth.uid,
+1659:   }, { merge: true });
+```
+- The function requires an authenticated anonymous session (`if (!request.auth)`).
+- It cryptographically validates the driver's `username` and `pin` via `verifyAmbulanceCredentials(firestore, username, pin)` (validating the PBKDF2 hash) before updating `authUid: request.auth.uid`.
+
+### 6.4 `git show -s 9cfae95` Result
+```text
+commit 9cfae9514cdb2893de7aeb4efb281e95537c7808
+Author: Worksarvesh <worksarvesh05[at]gmail.com>
+Date:   Fri Oct 2 16:58:52 2026 +0530
+
+    test(supabase): add admin role self-escalation tests (N6)
+```
+
+---
+
+## 7. Report Hygiene: Citation Deduplication & Line Reconciliations
+
+### 7.1 Citation Deduplication
+- Across the citation reconciliation table, the 15 foreign key constraints from Section 3.2 were previously listed twice (once under Addendum 2 and once under Addendum 3 D8).
+- **Total Unique Citations Audited:** **71 unique citations** (41 MATCH, 30 MISMATCH). All 30 mismatches have been reconciled with active line numbers.
+
+### 7.2 Reconciliation of Users Table Line (:31 vs :61)
+In `backend/supabase/migrations/20260923000001_doctornect_schema.sql`:
+- **Line 31:** `CREATE TABLE IF NOT EXISTS facilities (`
+- **Line 61:** `CREATE TABLE IF NOT EXISTS users (`
+- **Line 62:** `id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,`
+Line 31 was previously cited in error for the `users` table; the actual table declaration is at line 61.
+
+---
+
+## 8. Reverted `.env.example` Diff (With Sensitive Credential Tokens Masked)
+
+```diff
+diff --git a/backend/functions/.env.example b/backend/functions/.env.example
+index dc4cbbe..bb833bf 100644
+--- a/backend/functions/.env.example
++++ b/backend/functions/.env.example
+@@ -63,9 +63,9 @@ FIRESTORE_TRIGGER_REGION=asia-south2
+ 
+ # Redis / Google Cloud Memorystore (DRNECT-DB)
+ # Production uses: firebase functions:secrets:set REDIS_HOST / REDIS_PORT / REDIS_PASSWORD
+-REDIS_HOST=
++REDIS_HOST=[REDACTED_PUBLIC_HOST].redis.io:12465
+ REDIS_PORT=6379
+-REDIS_PASSWORD=
++REDIS_PASSWORD=[REDACTED_SECRET_PASSWORD]
+ REDIS_TLS=true
+ # OTP Redis mirror is off by default. Set to `on` only if Memorystore should cache OTP challenges.
+ # When unset/off, OTP send/verify never loads Redis and REDIS_SECRETS are not bound.
 ```
