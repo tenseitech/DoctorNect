@@ -3119,13 +3119,13 @@ CREATE POLICY "ambulances_update" ON public.ambulances
     );
 ```
 
-### 3.3 Column Types vs Helper Return Types & Type Error
-- **Column Types:** `owner_uid` and `auth_uid` in `20260923000001_doctornect_schema.sql:100, 295, 329, 378` are of type **`UUID`** (`REFERENCES users(id)`).
-- **Helper Return Types:** `private.current_firebase_uid()` returns **`TEXT`**.
-- **Would a `UUID = TEXT` comparison error?**
-  **YES.** In PostgreSQL, comparing a `UUID` column with a `TEXT` value directly without casting throws:
-  `ERROR: operator does not exist: uuid = text`.
-  However, because the policy uses `OR doctor_id = private.current_profile_id()` (where both `doctor_id` and `current_profile_id()` are `VARCHAR`/`TEXT`), PostgreSQL will allow the update if evaluation can resolve via the profile ID clause without failing on the untyped uuid comparison.
+### 3.3 Column Types vs Helper Return Types & Type Error (Corrected Finding)
+- **Migration Apply Failure (PostgreSQL Error 42883):**
+  `CREATE POLICY` statements that compare a `UUID` column (`owner_uid`, `auth_uid`) directly with a `TEXT` helper (`private.current_firebase_uid()`) fail at migration apply time (`ERROR: operator does not exist: uuid = text`, SQLSTATE `42883`). PostgreSQL parses, validates, and binds expression types when the DDL is executed, before any rows exist or queries run.
+- **Identity Model Incompatibility:**
+  Across `20260923000001_doctornect_schema.sql:100, 295, 329, 378`, `owner_uid` and `auth_uid` are defined as `UUID REFERENCES users(id) ON DELETE CASCADE`, where `users.id` is `UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE`. Firebase Authentication UIDs are 28-character alphanumeric strings (not RFC 4122 UUIDs) and cannot be stored in PostgreSQL `UUID` columns or reference `auth.users(id)`.
+- **System Architecture Requirement:**
+  Supabase must stay off (`ENABLE_SUPABASE=false`, `ENABLE_SUPABASE_SYNC=off`) until the identity model is decided and the foreign key and column types are reconciled.
 
 ---
 
@@ -3197,61 +3197,16 @@ In `backend/functions/src/config/redis.js`:
 
 ## 5. Rollout Safety: Six Rule Commits & Client Denials
 
-### 5.1 Commit Stats & Newly Denied Writes (vs Live Parent `7e0ab46`)
+### 5.1 Rebuilt Rollout Verification Table (Quoted Evidence Only)
 
-1. **`5cad719` (`feat(rules): tighten appointments rules (not deployed)`)**
-```text
- backend/firestore.rules                            |  69 +++++++------
- ...estore_directory_and_appointments.rules.test.js | 112 ++++++++++++++++++++-
- 2 files changed, 147 insertions(+), 34 deletions(-)
-```
-   - **Newly Denied Client Write:** Direct patient client-side creation of appointment documents in `appointments/{id}` (enforces that patient booking occurs via `bookAppointment` callable, leaving direct create only for verified doctor walk-ins).
-   - **Flutter Call Site:** `frontend/lib/core/data/shared_appointments_store.dart:751` (`bookAppointment` callable invocation).
-   - **First App Commit to Callable:** Commit `0bf62c7` (`fix(audit): phase 3 H-1 H-2 H-5 M-5`).
-
-2. **`e999302` (`fix(rules): keep doctor cancel/reschedule, pin values (not deployed)`)**
-```text
- backend/firestore.rules                            | 91 +++++++++++++++++-----
- ...estore_directory_and_appointments.rules.test.js | 82 ++++++++++++++++++-
- 2 files changed, 151 insertions(+), 22 deletions(-)
-```
-   - **Newly Denied Client Write:** Arbitrary doctor updates to appointment documents (pins required values and restricts mutations strictly to allowed cancel/reschedule fields).
-
-3. **`401ac69` (`fix(rules): patient reschedule via callable only (not deployed)`)**
-```text
- backend/firestore.rules                            | 24 ++------
- ...estore_directory_and_appointments.rules.test.js | 64 +++++++++++++---------
- 2 files changed, 42 insertions(+), 46 deletions(-)
-```
-   - **Newly Denied Client Write:** Direct client-side patient reschedule writes to `appointments/{id}` (removes `patientCanReschedule()`; patient reschedule must call `rescheduleAppointment` callable).
-   - **Flutter Call Site:** `frontend/lib/core/data/shared_appointments_store.dart:769` (`rescheduleAppointment` callable invocation).
-   - **First App Commit to Callable:** Commit `5a3ee54` (`feat(booking): rescheduleAppointment callable`).
-
-4. **`ea7c130` (`test(rules): fix throw, run all suites, add PII deny tests (not deployed)`)**
-```text
- backend/firestore.rules                            | 151 ++++++++++++---------
- backend/functions/package.json                     |   3 +-
- ...estore_directory_and_appointments.rules.test.js |  96 +++++++++++++
- 3 files changed, 186 insertions(+), 64 deletions(-)
-```
-   - **Newly Denied Client Write:** Unauthenticated and third-party reads/writes of sensitive appointment PII fields and unauthorized updates on prescription/delivery party links.
-
-5. **`a1e1a91` (`fix(rules): bound community catalog creates (not deployed)`)**
-```text
- backend/firestore.rules                            |  53 ++++++++--
- ...estore_directory_and_appointments.rules.test.js | 114 +++++++++++++++++++++
- 2 files changed, 157 insertions(+), 10 deletions(-)
-```
-   - **Newly Denied Client Write:** Community catalog creates with unapproved field keys or over-length strings (>120/300 chars) on `community_medicines`, `community_diagnoses`, etc.
-   - **Flutter Call Site:** `frontend/lib/features/doctor/clinical/data/community_medicine_repository.dart:178-187` (direct Firestore `add()`). Remains direct client write compliant with bounded keys.
-
-6. **`c892590` (`fix(rules): restrict store delivery update keys; catalog test coverage (not deployed)`)**
-```text
- backend/firestore.rules                            |   5 +-
- ...estore_directory_and_appointments.rules.test.js | 167 ++++++++++++++-------
- 2 files changed, 116 insertions(+), 56 deletions(-)
-```
-   - **Newly Denied Client Write:** Pharmacy delivery updates modifying keys outside the strict allowlist (`status`, `viewedAt`, `dispensedAt`, `dispensingNotes`, `medicineLines`, `updatedAt`).
+| Commit | Denied Client Write (Removed Rules Lines) | Denied-Side Flutter Call Site at Parent (`<app-commit>^`) | Compliant Call Site at HEAD | First Compliant App Commit |
+| :--- | :--- | :--- | :--- | :--- |
+| **`5cad719`** | `git show 5cad719 -- backend/firestore.rules`:<br>```text<br>- // Clinic walk-in: doctor creates appointment with generated patientId (wi…), not auth uid.<br>- return isVerifiedDoctor()<br>- && data.doctorId == myDoctorId()<br>- && data.keys().hasAll(['doctorId', 'patientId', 'appointmentId', 'dateTime'])<br>- && data.doctorId is string<br>- && data.patientId is string<br>- && data.patientId.matches('^wi\\d+$')<br>- && data.dateTime is timestamp;<br>- function appointmentIdsImmutable() {<br>- return request.resource.data.patientId == resource.data.patientId<br>- && request.resource.data.doctorId == resource.data.doctorId;<br>- }<br>``` | `0bf62c7^:frontend/lib/core/data/shared_appointments_store.dart:742`:<br>```dart<br>await FirestoreService.instance.appointment.save(<br>  record,<br>  patientId: resolvedPatientId.isNotEmpty ? resolvedPatientId : null,<br>);<br>``` | `frontend/lib/core/data/shared_appointments_store.dart:624, 654-666` (`bookPatientViaCallable`) / `frontend/lib/features/patient/booking/booking_flow_screen.dart:691` | `0bf62c7` (Thu Oct 8 12:55:33 2026 +0530 `fix(audit): phase 3 H-1 H-2 H-5 M-5`) |
+| **`e999302`** | `git show e999302 -- backend/firestore.rules`:<br>```text<br>- function appointmentPatientUpdateKeys() {<br>- 'cancellationReason',<br>- 'doctorStatus',<br>- 'hasReview',<br>- 'reviewRating',<br>- 'reviewId',<br>- 'reviewCreatedAt',<br>- && (!changed.hasAny(['doctorStatus']) || request.resource.data.doctorStatus != 'completed');<br>- function appointmentDoctorUpdateKeys() {<br>- return request.resource.data.diff(resource.data).affectedKeys().hasOnly([<br>- ]);<br>- (isPatient() && resource.data.patientId == myPatientId() && appointmentPatientUpdateKeys())<br>- || (isVerifiedDoctor() && resource.data.doctorId == myDoctorId() && appointmentDoctorUpdateKeys())<br>``` | `0bf62c7^:frontend/lib/core/data/shared_appointments_store.dart:873-885, 945`:<br>Direct `_updateRecordAtIndex` writes without pinned status validation | `frontend/lib/core/data/shared_appointments_store.dart:916` (doctor reschedule) and `:939` (doctor cancel) | `0bf62c7` (Thu Oct 8 12:55:33 2026 +0530 `fix(audit): phase 3 H-1 H-2 H-5 M-5`) |
+| **`401ac69`** | `git show 401ac69 -- backend/firestore.rules`:<br>```text<br>- // reschedulePatient writes dateTime, slotLabel, confirmed statuses, wasRescheduled (:875-883).<br>- // tokenNumber at :878 is not allowed. See appointmentClientImmutable.<br>- function appointmentPatientReschedule() {<br>- let changed = request.resource.data.diff(resource.data).affectedKeys();<br>- return changed.hasOnly([<br>- 'dateTime',<br>- 'slotLabel',<br>- 'patientStatus',<br>- 'doctorStatus',<br>- 'wasRescheduled',<br>- 'updatedAt'<br>- ])<br>- && request.resource.data.patientStatus == 'confirmed'<br>- && request.resource.data.doctorStatus == 'confirmed'<br>- && request.resource.data.wasRescheduled == true;<br>- }<br>- || appointmentPatientReschedule()<br>``` | `5a3ee54^:frontend/lib/core/data/shared_appointments_store.dart:883`:<br>```dart<br>await _updateRecordAtIndex(<br>  i,<br>  old.copyWith(<br>    dateTime: newDateTime,<br>    slotLabel: trimmedSlot,<br>    tokenNumber: newToken ?? old.tokenNumber,<br>    patientStatus: PatientBookingStatus.confirmed,<br>    doctorStatus: AppointmentStatus.confirmed,<br>    cancellationReason: null,<br>    wasRescheduled: true,<br>  ),<br>  patientId: old.patientId,<br>);<br>``` | `frontend/lib/core/data/shared_appointments_store.dart:898`:<br>```dart<br>final result = await _callRescheduleAppointment({<br>  'appointmentId': appointmentId,<br>  'dateTime': newDateTime.toIso8601String(),<br>  'slotLabel': trimmedSlot,<br>});<br>``` *(Note: :898 is the callable compliant side)* | `5a3ee54` (Thu Oct 8 17:41:12 2026 +0530 `feat(booking): rescheduleAppointment callable`) |
+| **`ea7c130`** | `git show ea7c130 -- backend/firestore.rules`:<br>```text<br>- return isDoctor()<br>- && doctorProfileExists()<br>- && doctorProfileDoc().get('verified', false) == true;<br>- return isSignedIn() && (<br>- (isVerifiedDoctor() && resource.data.doctorId == myDoctorId()) ||<br>- (isPatient() && resource.data.patientId == myPatientId())<br>- );<br>- allow read: if isSignedIn() && (<br>- (isVerifiedDoctor() && resource.data.doctorId == myDoctorId()) ||<br>- (isMedicalStore() && resource.data.storeId == myStoreId()) ||<br>- (isPatient() && resource.data.patientId == myPatientId())<br>- allow update: if isSignedIn() && (<br>- (isVerifiedDoctor()<br>- && resource.data.doctorId == myDoctorId()<br>- && request.resource.data.doctorId == resource.data.doctorId<br>- && request.resource.data.patientId == resource.data.patientId) ||<br>- (isMedicalStore()<br>- && resource.data.storeId == myStoreId()<br>- && request.resource.data.doctorId == resource.data.doctorId<br>- && request.resource.data.patientId == resource.data.patientId<br>- && request.resource.data.storeId == resource.data.storeId)<br>``` | **UNVERIFIED** (Legacy client updates prior to prescription and store delivery link checks) | `frontend/lib/features/doctor/clinical/data/clinical_prescription_store.dart:340` and `frontend/lib/features/pharmacy/presentation/stores/pharmacy_prescription_store.dart:180` | `0bf62c7` (Thu Oct 8 12:55:33 2026 +0530 `fix(audit): phase 3 H-1 H-2 H-5 M-5`) |
+| **`a1e1a91`** | `git show a1e1a91 -- backend/firestore.rules`:<br>```text<br>- && request.resource.data.keys().hasAll(['name', 'dosageUnit', 'form', 'addedByDoctorId'])<br>- && request.resource.data.name.size() > 0;<br>- && request.resource.data.keys().hasAll(['text', 'addedByDoctorId'])<br>- && request.resource.data.text.size() > 0;<br>- && request.resource.data.keys().hasAll(['name', 'group', 'addedByDoctorId'])<br>- && request.resource.data.name.size() > 0;<br>``` | **UNVERIFIED** (Root commit `8f4fda6` has no parent in repository history) | `frontend/lib/features/doctor/clinical/data/community_medicine_repository.dart:178-187` and `community_diagnosis_repository.dart:130-134` | `8f4fda6` (Sat Oct 3 23:46:41 2026 +0530 `sarvesh`) |
+| **`c892590`** | `git show c892590 -- backend/firestore.rules`:<br>```text<br>- && request.resource.data.get('storeId', '') == resource.data.get('storeId', '')<br>``` | **UNVERIFIED** (Root commit `8f4fda6` has no parent in repository history) | `frontend/lib/features/pharmacy/presentation/stores/pharmacy_prescription_store.dart:180` | `8f4fda6` (Sat Oct 3 23:46:41 2026 +0530 `sarvesh`) |
 
 ### 5.2 Force-Update, Minimum-Version & Maintenance Checks in Flutter
 - **Minimum-Version / Force-Update Implementation:**
@@ -3337,7 +3292,117 @@ Date:   Fri Oct 2 16:58:52 2026 +0530
 - Across the citation reconciliation table, the 15 foreign key constraints from Section 3.2 were previously listed twice (once under Addendum 2 and once under Addendum 3 D8).
 - **Total Unique Citations Audited:** **71 unique citations** (41 MATCH, 30 MISMATCH). All 30 mismatches have been reconciled with active line numbers.
 
-### 7.2 Reconciliation of Users Table Line (:31 vs :61)
+### 7.2 Behavior When REDIS Secrets Are Not Bound (abuse_rate_limit.js Quoted Code & Analysis)
+
+```javascript
+// backend/functions/abuse_rate_limit.js:165-260
+} = {}) {
+  const limits = LIMITS[category];
+  if (!limits) {
+    throw new HttpsError('internal', `Unknown abuse category: ${category}`);
+  }
+
+  const ip = clientIpFromRequest(request);
+  const uid = request?.auth?.uid || '';
+  const useRedis = getRateLimitBackend() === 'redis';
+  let redisClient = null;
+  if (useRedis) {
+    try {
+      const { redis } = require('./redis');
+      redisClient = redis;
+    } catch (_) {}
+  }
+
+  try {
+    if (limits.ip) {
+      await assertBucketUnified({
+        db,
+        redisClient,
+        useRedis,
+        bucket: `${category}_ip_${hashKey(ip)}`,
+        redisKey: `ratelimit:${category}:${hashKey(`ip:${ip}`)}`,
+        windowMs: limits.ip.windowMs,
+        maxAttempts: limits.ip.max,
+        message,
+      });
+    }
+    if (limits.uid && uid) {
+      await assertBucketUnified({
+        db,
+        redisClient,
+        useRedis,
+        bucket: `${category}_uid_${hashKey(uid)}`,
+        redisKey: `ratelimit:${category}:${hashKey(`uid:${uid}`)}`,
+        windowMs: limits.uid.windowMs,
+        maxAttempts: limits.uid.max,
+        message,
+      });
+    }
+    if (limits.id && identifier) {
+      await assertBucketUnified({
+        db,
+        redisClient,
+        useRedis,
+        bucket: `${category}_id_${hashKey(String(identifier).toLowerCase())}`,
+        redisKey: `ratelimit:${category}:${hashKey(String(identifier).toLowerCase())}`,
+        windowMs: limits.id.windowMs,
+        maxAttempts: limits.id.max,
+        message,
+      });
+    }
+  } catch (err) {
+    if (err?.code === 'resource-exhausted') {
+      logUnusualTraffic(request, {
+        pattern: 'rate_limit',
+        detail: `abuse:${category}`,
+        identifier: identifier || uid || ip,
+      });
+    }
+    throw err;
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Require a valid App Check token when enforcement is enabled.
+ */
+function assertAppCheck(request, { enforce = true } = {}) {
+  const enabled = enforce
+    && String(process.env.ENFORCE_ABUSE_APP_CHECK || process.env.ENFORCE_OTP_APP_CHECK || 'true')
+      .trim()
+      .toLowerCase() !== 'false';
+
+  if (!enabled) return;
+  if (request.app) return;
+
+  logUnusualTraffic(request, {
+    pattern: 'app_check_missing',
+    detail: 'callable_missing_app_check',
+  });
+  throw new HttpsError(
+    'failed-precondition',
+    'App integrity check required. Update the app and try again.',
+  );
+}
+
+/**
+ * Wrap an onCall handler with App Check + category rate limits.
+ */
+function withAbuseProtection(dbFactory, {
+  category = 'api',
+  enforceAppCheck = true,
+  identifierFromRequest,
+  message,
+} = {}, handler) {
+```
+
+**Corrected Finding (Strictly Based on Lines 165–260 Quoted Above):**
+- **Safe Redis Resolution (Lines 173–180):** When `useRedis` is active (`getRateLimitBackend() === 'redis'`), loading `./redis` is wrapped in `try { const { redis } = require('./redis'); redisClient = redis; } catch (_) {}`. If secrets are unbound and resolving them throws, the error is swallowed and `redisClient` remains `null`.
+- **Fallback to Firestore (Lines 182–218):** `assertBucketUnified` receives `redisClient` and `useRedis`. If `redisClient` is null or Redis encounters an error other than `resource-exhausted`, it logs a warning and falls back to `await assertBucket(db, ...)` (Firestore atomic transaction).
+- **No Unhandled Crashes:** All unverified claims about function process termination, deployment rejections, or unhandled exceptions occurring when REDIS secrets are not bound are removed; the code demonstrates a non-fatal fallback to Firestore atomic rate limiting.
+
+### 7.3 Reconciliation of Users Table Line (:31 vs :61)
 In `backend/supabase/migrations/20260923000001_doctornect_schema.sql`:
 - **Line 31:** `CREATE TABLE IF NOT EXISTS facilities (`
 - **Line 61:** `CREATE TABLE IF NOT EXISTS users (`
