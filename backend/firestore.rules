@@ -351,12 +351,12 @@ service cloud.firestore {
     }
 
     // Walk-in only. Patient creates stay on the bookAppointment Admin SDK path.
-    // doctorId must be the signed-in uid. createdVia is server-only.
+    // doctorId must match myDoctorId() (the doctor profileId). createdVia is server-only.
     function walkInAppointmentCreateValid() {
       let data = request.resource.data;
       return isDoctor()
         && data.get('source', '') == 'walkin'
-        && data.get('doctorId', '') == request.auth.uid
+        && data.get('doctorId', '') == myDoctorId()
         && !data.keys().hasAny(['createdVia']);
     }
 

@@ -328,7 +328,7 @@ describe('patient appointment create', () => {
     await assertSucceeds(
       db.collection('appointments').doc('wi_appt').set({
         appointmentId: 'wi_appt',
-        doctorId: DOCTOR_UID,
+        doctorId: DOCTOR_ID,
         patientId: 'wi1710000000000',
         source: 'walkin',
         dateTime: new Date('2026-10-11T04:30:00.000Z'),
@@ -503,12 +503,18 @@ describe('tightened appointment rules', () => {
     }, { merge: true }));
   });
 
-  test('doctor walk-in create is allowed only for their uid and without createdVia', async () => {
+  test('doctor walk-in create is allowed only for their profileId (when uid != profileId) and without createdVia', async () => {
+    assert.notEqual(DOCTOR_UID, DOCTOR_ID, 'DOCTOR_UID must differ from DOCTOR_ID to verify profileId matching');
     const db = testEnv.authenticatedContext(DOCTOR_UID).firestore();
     await assertSucceeds(db.collection('appointments').doc('wi_ok').set({
       source: 'walkin',
-      doctorId: DOCTOR_UID,
+      doctorId: DOCTOR_ID,
       patientId: 'wi1',
+    }));
+    await assertFails(db.collection('appointments').doc('wi_wrong_uid').set({
+      source: 'walkin',
+      doctorId: DOCTOR_UID,
+      patientId: 'wi_uid_fail',
     }));
     await assertFails(db.collection('appointments').doc('wi_other').set({
       source: 'walkin',
@@ -517,7 +523,7 @@ describe('tightened appointment rules', () => {
     }));
     await assertFails(db.collection('appointments').doc('wi_via').set({
       source: 'walkin',
-      doctorId: DOCTOR_UID,
+      doctorId: DOCTOR_ID,
       patientId: 'wi3',
       createdVia: 'bookAppointment',
     }));
