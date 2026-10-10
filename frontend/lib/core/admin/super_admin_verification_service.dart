@@ -43,10 +43,14 @@ class VerificationApplicant {
     final roleStr = data['role'] as String? ?? 'patient';
     final role = switch (roleStr.toLowerCase()) {
       'doctor' => UserType.doctor,
-      'medicalstore' || 'pharmacy' => UserType.medicalStore,
+      'medicalstore' ||
+      'medical_store' ||
+      'pharmacy' ||
+      'medical' =>
+        UserType.medicalStore,
       'lab' => UserType.lab,
       'ambulance' => UserType.ambulance,
-      'super_admin' || 'superadmin' => UserType.superAdmin,
+      'super_admin' || 'superadmin' || 'admin' => UserType.superAdmin,
       _ => UserType.patient,
     };
 
@@ -77,35 +81,73 @@ class VerificationApplicant {
   }
 }
 
+/// Result holder for cursor-based paginated applicant queries.
+class PaginatedApplicantsResult {
+  const PaginatedApplicantsResult({
+    required this.applicants,
+    required this.lastDocument,
+    required this.hasMore,
+  });
+
+  final List<VerificationApplicant> applicants;
+  final DocumentSnapshot<Map<String, dynamic>>? lastDocument;
+  final bool hasMore;
+}
+
 /// Service handling Super Admin verification workflows.
 class SuperAdminVerificationService {
-  SuperAdminVerificationService._();
+  SuperAdminVerificationService({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   static final SuperAdminVerificationService instance =
-      SuperAdminVerificationService._();
+      SuperAdminVerificationService();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
 
-  /// Stream list of non-patient accounts for verification.
+  /// Stream list of pending verification applicants (the verification queue).
+  ///
+  /// Uses a server-side where-filter on [verificationStatus] so that ALL pending
+  /// applicants are returned regardless of total user count in the collection.
+  /// Patient and Admin/Super Admin accounts are never returned as applicants.
   Stream<List<VerificationApplicant>> streamApplicants({
     UserType? roleFilter,
     VerificationStage? stageFilter,
-    int limit = 150,
   }) {
-    return _firestore
-        .collection(FirestorePaths.users)
-        .limit(limit)
-        .snapshots()
-        .map((
-      snapshot,
-    ) {
+    Query<Map<String, dynamic>> query =
+        _firestore.collection(FirestorePaths.users);
+
+    if (stageFilter == null ||
+        stageFilter == VerificationStage.submittedForVerification) {
+      // Pending verification queue: server-side where-filter, NO blanket limit.
+      query = query.where(
+        'verificationStatus',
+        whereIn: const [
+          'submitted_for_verification',
+          'pending_review',
+          'pending',
+        ],
+      );
+    } else if (stageFilter == VerificationStage.registered) {
+      query = query.where(
+        'verificationStatus',
+        whereIn: const ['registered', 'profile_incomplete'],
+      );
+    } else {
+      query = query.where(
+        'verificationStatus',
+        isEqualTo: stageFilter.wireValue,
+      );
+    }
+
+    return query.snapshots().map((snapshot) {
       final list = <VerificationApplicant>[];
       for (final doc in snapshot.docs) {
         final data = doc.data();
-        final roleStr = data['role'] as String? ?? '';
-        if (roleStr.toLowerCase() == 'patient') continue;
-
         final applicant = VerificationApplicant.fromMap(doc.id, data);
+        if (applicant.role == UserType.patient ||
+            applicant.role == UserType.superAdmin) {
+          continue;
+        }
         if (roleFilter != null && applicant.role != roleFilter) {
           continue;
         }
@@ -126,6 +168,110 @@ class SuperAdminVerificationService {
 
       return list;
     });
+  }
+
+  /// Cursor-based paginated fetch of applicants (page size 50 by default).
+  /// Used for non-pending queues (already verified, rejected, history, etc.).
+  Future<PaginatedApplicantsResult> fetchApplicantsPage({
+    UserType? roleFilter,
+    VerificationStage? stageFilter,
+    DocumentSnapshot<Map<String, dynamic>>? startAfterDocument,
+    int pageSize = 50,
+  }) async {
+    Query<Map<String, dynamic>> query =
+        _firestore.collection(FirestorePaths.users);
+
+    if (stageFilter != null) {
+      if (stageFilter == VerificationStage.submittedForVerification) {
+        query = query.where(
+          'verificationStatus',
+          whereIn: const [
+            'submitted_for_verification',
+            'pending_review',
+            'pending',
+          ],
+        );
+      } else if (stageFilter == VerificationStage.registered) {
+        query = query.where(
+          'verificationStatus',
+          whereIn: const ['registered', 'profile_incomplete'],
+        );
+      } else {
+        query = query.where(
+          'verificationStatus',
+          isEqualTo: stageFilter.wireValue,
+        );
+      }
+    } else {
+      // History / All Statuses: Filter by professional roles when no role filter is set
+      if (roleFilter == null) {
+        query = query.where(
+          'role',
+          whereIn: const [
+            'doctor',
+            'medicalstore',
+            'medicalStore',
+            'pharmacy',
+            'medical',
+            'lab',
+            'ambulance',
+          ],
+        );
+      }
+    }
+
+    if (roleFilter != null) {
+      final roleKey = switch (roleFilter) {
+        UserType.doctor => 'doctor',
+        UserType.lab => 'lab',
+        UserType.ambulance => 'ambulance',
+        _ => null,
+      };
+      if (roleKey != null) {
+        query = query.where('role', isEqualTo: roleKey);
+      }
+    }
+
+    if (startAfterDocument != null) {
+      query = query.startAfterDocument(startAfterDocument);
+    }
+
+    final snap = await query.limit(pageSize).get();
+
+    final applicants = <VerificationApplicant>[];
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final applicant = VerificationApplicant.fromMap(doc.id, data);
+      if (applicant.role == UserType.patient ||
+          applicant.role == UserType.superAdmin) {
+        continue;
+      }
+      if (roleFilter != null && applicant.role != roleFilter) {
+        continue;
+      }
+      if (stageFilter != null) {
+        final matches = stageFilter.isIncomplete
+            ? applicant.verificationStatus.isIncomplete
+            : applicant.verificationStatus == stageFilter;
+        if (!matches) continue;
+      }
+      applicants.add(applicant);
+    }
+
+    applicants.sort((a, b) {
+      final aTime = a.submittedAt ?? a.createdAt ?? DateTime(2000);
+      final bTime = b.submittedAt ?? b.createdAt ?? DateTime(2000);
+      return bTime.compareTo(aTime);
+    });
+
+    final lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
+    final hasMore = snap.docs.length >= pageSize;
+
+    return PaginatedApplicantsResult(
+      applicants: applicants,
+      lastDocument: lastDoc,
+      hasMore: hasMore,
+    );
   }
 
   /// Fetches role-specific doc data (e.g., license, council numbers) for review modal.

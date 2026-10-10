@@ -24,6 +24,9 @@ import '../ambulance/data/ambulance_store.dart';
 import '../auth/widgets/auth_brand_components.dart';
 import '../doctor/profile/data/doctor_profile_store.dart';
 import '../patient/profile/data/patient_profile_mock.dart';
+import '../../core/constants/app_constants.dart';
+import '../../widgets/qualification_selector.dart';
+import '../../widgets/searchable_dropdown_form_field.dart';
 
 /// Full-screen app-level overlay for completing or editing profile across ALL 6 roles.
 ///
@@ -82,6 +85,13 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
   final _genderController = TextEditingController();
   final _bloodGroupController = TextEditingController();
   final _vehicleNumberController = TextEditingController();
+
+  final _customSpecializationController = TextEditingController();
+  final _customExperienceController = TextEditingController();
+  final _customGenderController = TextEditingController();
+  bool _specializationIsOther = false;
+  String? _selectedExperienceOption;
+  String? _selectedGenderOption;
 
   bool _loading = true;
   bool _saving = false;
@@ -146,6 +156,9 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
     _genderController.dispose();
     _bloodGroupController.dispose();
     _vehicleNumberController.dispose();
+    _customSpecializationController.dispose();
+    _customExperienceController.dispose();
+    _customGenderController.dispose();
     super.dispose();
   }
 
@@ -717,19 +730,9 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
 
           // Role-specific fields
           if (widget.role == UserType.doctor) ...[
-            _buildField(
-              controller: _specializationController,
-              label: 'Specialization',
-              hint: 'e.g. Cardiologist, General Physician',
-              icon: Icons.local_hospital_outlined,
-            ),
+            _buildSpecializationField(),
             const SizedBox(height: 16),
-            _buildField(
-              controller: _qualificationController,
-              label: 'Qualifications',
-              hint: 'e.g. MBBS, MD (Medicine)',
-              icon: Icons.school_outlined,
-            ),
+            _buildDoctorQualificationField(),
             const SizedBox(height: 16),
             _buildField(
               controller: _regNumberController,
@@ -745,30 +748,14 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
               icon: Icons.domain_outlined,
             ),
             const SizedBox(height: 16),
-            _buildField(
-              controller: _experienceController,
-              label: 'Experience (Years)',
-              hint: 'e.g. 8',
-              icon: Icons.timeline_outlined,
-              keyboardType: TextInputType.number,
-            ),
+            _buildExperienceField(),
             const SizedBox(height: 16),
           ],
 
           if (widget.role == UserType.patient) ...[
-            _buildField(
-              controller: _genderController,
-              label: 'Gender',
-              hint: 'Male, Female, or Other',
-              icon: Icons.transgender_outlined,
-            ),
+            _buildPatientGenderField(),
             const SizedBox(height: 16),
-            _buildField(
-              controller: _bloodGroupController,
-              label: 'Blood Group',
-              hint: 'e.g. O+, A+, B+, AB+',
-              icon: Icons.bloodtype_outlined,
-            ),
+            _buildPatientBloodGroupField(),
             const SizedBox(height: 16),
           ],
 
@@ -860,6 +847,376 @@ class _ProfileCompletionModalState extends State<ProfileCompletionModal> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSpecializationField() {
+    final specializations = [
+      ...AppConstants.allSpecializations,
+      'Other',
+    ];
+    final currentVal = _specializationController.text.trim();
+    final isInList = specializations.contains(currentVal);
+    final isOtherSelected =
+        _specializationIsOther || (!isInList && currentVal.isNotEmpty);
+    if (!isInList &&
+        currentVal.isNotEmpty &&
+        _customSpecializationController.text.isEmpty) {
+      _customSpecializationController.text = currentVal;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SearchableDropdownFormField(
+          title: 'Specialization',
+          value: isOtherSelected ? 'Other' : (isInList ? currentVal : null),
+          items: specializations,
+          decoration: InputDecoration(
+            labelText: 'Specialization *',
+            hintText: 'Select your medical specialization',
+            prefixIcon: Icon(
+              Icons.medical_services_outlined,
+              size: 20,
+              color: _accentColor,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _accentColor, width: 2),
+            ),
+          ),
+          onChanged: (val) {
+            setState(() {
+              if (val == 'Other') {
+                _specializationIsOther = true;
+                _specializationController.text =
+                    _customSpecializationController.text.trim();
+              } else {
+                _specializationIsOther = false;
+                _specializationController.text = val ?? '';
+              }
+            });
+            _scheduleDraftSave();
+          },
+          validator: (val) {
+            if (_specializationController.text.trim().isEmpty) {
+              return 'Specialization is required';
+            }
+            return null;
+          },
+        ),
+        if (isOtherSelected) ...[
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _customSpecializationController,
+            textCapitalization: TextCapitalization.words,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 15,
+              color: AppColors.textPrimaryOf(context),
+            ),
+            decoration: InputDecoration(
+              labelText: 'Specify Specialization *',
+              hintText: 'Enter your specialization',
+              prefixIcon:
+                  Icon(Icons.edit_outlined, size: 20, color: _accentColor),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: _accentColor, width: 2),
+              ),
+            ),
+            onChanged: (text) {
+              _specializationController.text = text.trim();
+              _scheduleDraftSave();
+            },
+            validator: (val) {
+              if (val == null || val.trim().isEmpty) {
+                return 'Please enter your specialization';
+              }
+              return null;
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDoctorQualificationField() {
+    return QualificationSelector(
+      initialValue: _qualificationController.text.isNotEmpty
+          ? _qualificationController.text
+          : null,
+      label: 'Highest Qualification',
+      isRequired: true,
+      accentColor: _accentColor,
+      prefixIcon: Icon(Icons.school_outlined, size: 20, color: _accentColor),
+      onChanged: (val) {
+        _qualificationController.text = val ?? '';
+        _scheduleDraftSave();
+      },
+    );
+  }
+
+  Widget _buildExperienceField() {
+    const expList = [
+      '0',
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      '10',
+      '12',
+      '15',
+      '20',
+      '25',
+      '30+',
+      'Other',
+    ];
+    final currentText = _experienceController.text.trim();
+    String? matchedOption;
+    if (expList.contains(currentText)) {
+      matchedOption = currentText;
+    } else if (currentText.isNotEmpty) {
+      matchedOption = 'Other';
+      if (_customExperienceController.text.isEmpty) {
+        _customExperienceController.text = currentText;
+      }
+    } else if (_selectedExperienceOption != null) {
+      matchedOption = _selectedExperienceOption;
+    }
+
+    final isOther = matchedOption == 'Other';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: matchedOption,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'Years of Experience',
+            hintText: 'Select years of experience',
+            prefixIcon: Icon(
+              Icons.work_history_outlined,
+              size: 20,
+              color: _accentColor,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _accentColor, width: 2),
+            ),
+          ),
+          items: expList.map((e) {
+            final label = switch (e) {
+              '0' => '0 years (Fresher / Resident)',
+              '1' => '1 year',
+              'Other' => 'Other (Specify)',
+              _ => '$e years',
+            };
+            return DropdownMenuItem<String>(
+              value: e,
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  color: AppColors.textPrimaryOf(context),
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() {
+              _selectedExperienceOption = val;
+              if (val == 'Other') {
+                _experienceController.text =
+                    _customExperienceController.text.trim();
+              } else {
+                _experienceController.text = val ?? '';
+              }
+            });
+            _scheduleDraftSave();
+          },
+        ),
+        if (isOther) ...[
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _customExperienceController,
+            keyboardType: TextInputType.number,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 15,
+              color: AppColors.textPrimaryOf(context),
+            ),
+            decoration: InputDecoration(
+              labelText: 'Specify Experience (Years)',
+              hintText: 'e.g. 14',
+              prefixIcon:
+                  Icon(Icons.edit_outlined, size: 20, color: _accentColor),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: _accentColor, width: 2),
+              ),
+            ),
+            onChanged: (val) {
+              _experienceController.text = val.trim();
+              _scheduleDraftSave();
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPatientGenderField() {
+    final genderList = AppConstants.genders;
+    final currentText = _genderController.text.trim();
+    String? matchedOption;
+    if (genderList.contains(currentText)) {
+      matchedOption = currentText;
+    } else if (currentText.isNotEmpty) {
+      matchedOption = 'Other';
+      if (_customGenderController.text.isEmpty) {
+        _customGenderController.text = currentText;
+      }
+    } else if (_selectedGenderOption != null) {
+      matchedOption = _selectedGenderOption;
+    }
+
+    final isOther = matchedOption == 'Other';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: matchedOption,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'Gender',
+            hintText: 'Select gender',
+            prefixIcon: Icon(Icons.wc_rounded, size: 20, color: _accentColor),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _accentColor, width: 2),
+            ),
+          ),
+          items: genderList.map((g) {
+            return DropdownMenuItem<String>(
+              value: g,
+              child: Text(
+                g,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  color: AppColors.textPrimaryOf(context),
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: (val) {
+            setState(() {
+              _selectedGenderOption = val;
+              if (val == 'Other' &&
+                  _customGenderController.text.trim().isNotEmpty) {
+                _genderController.text = _customGenderController.text.trim();
+              } else {
+                _genderController.text = val ?? '';
+              }
+            });
+            _scheduleDraftSave();
+          },
+        ),
+        if (isOther) ...[
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _customGenderController,
+            textCapitalization: TextCapitalization.words,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 15,
+              color: AppColors.textPrimaryOf(context),
+            ),
+            decoration: InputDecoration(
+              labelText: 'Specify Gender (Optional)',
+              hintText: 'e.g. Non-binary, Prefer not to say',
+              prefixIcon:
+                  Icon(Icons.edit_outlined, size: 20, color: _accentColor),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: _accentColor, width: 2),
+              ),
+            ),
+            onChanged: (val) {
+              final trimmed = val.trim();
+              _genderController.text = trimmed.isNotEmpty ? trimmed : 'Other';
+              _scheduleDraftSave();
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPatientBloodGroupField() {
+    final bloodGroups = [...AppConstants.bloodGroups, 'Other'];
+    final currentText = _bloodGroupController.text.trim();
+    String? matchedOption;
+    if (bloodGroups.contains(currentText)) {
+      matchedOption = currentText;
+    } else if (currentText.isNotEmpty) {
+      matchedOption = 'Other';
+    }
+
+    return DropdownButtonFormField<String>(
+      initialValue: matchedOption,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: 'Blood Group',
+        hintText: 'Select blood group',
+        prefixIcon:
+            Icon(Icons.bloodtype_outlined, size: 20, color: _accentColor),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _accentColor, width: 2),
+        ),
+      ),
+      items: bloodGroups.map((bg) {
+        return DropdownMenuItem<String>(
+          value: bg,
+          child: Text(
+            bg,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 15,
+              color: AppColors.textPrimaryOf(context),
+            ),
+          ),
+        );
+      }).toList(),
+      onChanged: (val) {
+        setState(() {
+          _bloodGroupController.text = val ?? '';
+        });
+        _scheduleDraftSave();
+      },
     );
   }
 

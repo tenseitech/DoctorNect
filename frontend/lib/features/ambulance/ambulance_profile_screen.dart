@@ -706,6 +706,7 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
               padding: const EdgeInsets.only(bottom: 12),
               child: DropdownButtonFormField<AmbulanceType>(
                 initialValue: _ambulanceType,
+                isExpanded: true,
                 decoration: _inputDecoration(
                   'Ambulance type',
                   Icons.medical_services_outlined,
@@ -714,7 +715,10 @@ class _AmbulanceProfileScreenState extends State<AmbulanceProfileScreen> {
                     .map(
                       (t) => DropdownMenuItem(
                         value: t,
-                        child: Text(_typeLabel(t)),
+                        child: Text(
+                          _typeLabel(t),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     )
                     .toList(),

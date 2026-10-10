@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medibond/core/theme/app_colors.dart';
 import 'package:medibond/core/theme/app_theme.dart';
@@ -18,23 +17,23 @@ void main() {
         label: 'Home',
       ),
       NavigationDestination(
-        icon: Icon(TablerIcons.users, size: 22),
-        selectedIcon: Icon(TablerIcons.users, size: 22),
+        icon: Icon(Icons.people_alt_outlined, size: 22),
+        selectedIcon: Icon(Icons.people_alt_rounded, size: 22),
         label: 'Patients',
       ),
       NavigationDestination(
-        icon: Icon(TablerIcons.calendar, size: 22),
-        selectedIcon: Icon(TablerIcons.calendar_filled, size: 22),
+        icon: Icon(Icons.calendar_today_outlined, size: 22),
+        selectedIcon: Icon(Icons.calendar_month_rounded, size: 22),
         label: 'Appointments',
       ),
       NavigationDestination(
-        icon: Icon(TablerIcons.pill, size: 22),
-        selectedIcon: Icon(TablerIcons.pill_filled, size: 22),
+        icon: Icon(Icons.medication_outlined, size: 22),
+        selectedIcon: Icon(Icons.medication_rounded, size: 22),
         label: 'Medical Store',
       ),
       NavigationDestination(
-        icon: Icon(TablerIcons.flask, size: 22),
-        selectedIcon: Icon(TablerIcons.flask_filled, size: 22),
+        icon: Icon(Icons.science_outlined, size: 22),
+        selectedIcon: Icon(Icons.science_rounded, size: 22),
         label: 'Labs',
       ),
     ];

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/country_phone_codes.dart';
 import '../../../core/enums/user_type.dart';
 import '../../../core/legal/medibond_legal_content.dart';
@@ -175,6 +176,15 @@ class _SimpleRoleRegistrationFormState
     }
   }
 
+  List<String> get _roleQualifications => switch (widget.role) {
+        UserType.medical ||
+        UserType.medicalStore =>
+          AppConstants.pharmacyQualifications,
+        UserType.lab => AppConstants.labQualifications,
+        UserType.ambulance => AppConstants.ambulanceQualifications,
+        _ => AppConstants.doctorQualifications,
+      };
+
   LegalAudience get _legalAudience => switch (widget.role) {
         UserType.doctor => LegalAudience.doctor,
         UserType.medicalStore => LegalAudience.pharmacy,
@@ -241,6 +251,7 @@ class _SimpleRoleRegistrationFormState
                     ] else ...[
                       QualificationSelector(
                         initialValue: _qualification,
+                        items: _roleQualifications,
                         onChanged: (v) => setState(() => _qualification = v),
                         accentColor: widget.accentColor,
                         registrationStyle: true,

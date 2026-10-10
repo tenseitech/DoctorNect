@@ -32,7 +32,7 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
   final _emailFocus = FocusNode();
 
   late final _name = TextEditingController(text: _p.fullName);
-  late final String _gender = AppConstants.normalizeGender(_p.gender);
+  late String _gender = AppConstants.normalizeGender(_p.gender);
   late final _mobileParsed = FormValidators.parsePhone(_p.mobile);
   late final _mobile = TextEditingController(text: _mobileParsed.localNumber);
   late final String _mobileDialCode = _mobileParsed.dialCode;
@@ -325,11 +325,19 @@ class _PersonalInfoSectionState extends State<PersonalInfoSection> {
                                   .map(
                                     (g) => DropdownMenuItem(
                                       value: g,
-                                      child: Text(g),
+                                      child: Text(
+                                        g,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   )
                                   .toList(),
-                              onChanged: null,
+                              onChanged: (v) {
+                                if (v != null) {
+                                  setState(() => _gender = v);
+                                  _markDirty();
+                                }
+                              },
                             ),
                             const SizedBox(height: 12),
                             PhoneNumberField(

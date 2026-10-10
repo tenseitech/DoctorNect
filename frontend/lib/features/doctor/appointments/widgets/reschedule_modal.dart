@@ -295,7 +295,12 @@ class _RescheduleModalState extends State<RescheduleModal> {
               ),
             ),
             items: RescheduleModal.rescheduleReasons
-                .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                .map(
+                  (r) => DropdownMenuItem(
+                    value: r,
+                    child: Text(r, overflow: TextOverflow.ellipsis),
+                  ),
+                )
                 .toList(),
             onChanged: (v) => setState(() => _reason = v),
           ),

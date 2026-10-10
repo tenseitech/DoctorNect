@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/theme/app_colors.dart';
-import '../features/ambulance/ambulance_booking_screen.dart';
-import '../features/ambulance/models/ambulance_models.dart';
+import '../features/ambulance/ambulance_booking_screen.dart'
+    deferred as amb_booking;
+import '../features/ambulance/models/ambulance_models.dart'
+    deferred as amb_models;
 import '../core/theme/app_typography.dart';
 
 /// SOS Emergency Sheet for instant 108 Ambulance Hotline and Emergency Trauma Dispatch.
@@ -171,16 +173,20 @@ class EmergencySosSheet extends StatelessWidget {
             const SizedBox(height: 14),
             // Book Ambulance Quick Dispatch Button
             OutlinedButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AmbulanceBookingScreen(
-                      bookedByRole: AmbulanceBookedByRole.patient,
+                await amb_booking.loadLibrary();
+                await amb_models.loadLibrary();
+                if (context.mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => amb_booking.AmbulanceBookingScreen(
+                        bookedByRole: amb_models.AmbulanceBookedByRole.patient,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
               },
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),

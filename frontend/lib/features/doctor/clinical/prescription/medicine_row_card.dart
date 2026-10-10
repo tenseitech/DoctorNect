@@ -252,7 +252,12 @@ class MedicineRowCard extends StatelessWidget {
                   isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Unit'),
                   items: _mergedDosageUnits(entry.dosageUnit)
-                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                      .map(
+                        (u) => DropdownMenuItem(
+                          value: u,
+                          child: Text(u, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) {
@@ -269,7 +274,12 @@ class MedicineRowCard extends StatelessWidget {
                   isExpanded: true,
                   decoration: const InputDecoration(labelText: 'Form'),
                   items: _mergedMedicineForms(entry.form)
-                      .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                      .map(
+                        (f) => DropdownMenuItem(
+                          value: f,
+                          child: Text(f, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) {
@@ -355,10 +365,13 @@ class MedicineRowCard extends StatelessWidget {
                   items: [
                     const DropdownMenuItem<String>(
                       value: '',
-                      child: Text('None'),
+                      child: Text('None', overflow: TextOverflow.ellipsis),
                     ),
                     ...ClinicalMockData.instructionOptions.map(
-                      (i) => DropdownMenuItem(value: i, child: Text(i)),
+                      (i) => DropdownMenuItem(
+                        value: i,
+                        child: Text(i, overflow: TextOverflow.ellipsis),
+                      ),
                     ),
                   ],
                   onChanged: (v) {
@@ -388,7 +401,12 @@ class MedicineRowCard extends StatelessWidget {
                   isExpanded: true,
                   decoration: const InputDecoration(labelText: ' '),
                   items: ClinicalMockData.durationUnits
-                      .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                      .map(
+                        (d) => DropdownMenuItem(
+                          value: d,
+                          child: Text(d, overflow: TextOverflow.ellipsis),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) {

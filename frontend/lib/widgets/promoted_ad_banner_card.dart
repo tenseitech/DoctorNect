@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import '../features/promoted_ads/screens/promoted_ads_management_screen.dart';
 import '../core/theme/app_typography.dart';
 
@@ -87,7 +86,7 @@ class PromotedAdBannerCard extends StatelessWidget {
                         ),
                       ),
                       child: const Icon(
-                        TablerIcons.speakerphone,
+                        Icons.campaign_rounded,
                         color: Colors.white,
                         size: 20,
                       ),
@@ -199,7 +198,7 @@ class PromotedAdBannerCard extends StatelessWidget {
                         ),
                       ),
                       child: const Icon(
-                        TablerIcons.speakerphone,
+                        Icons.campaign_rounded,
                         color: Colors.white,
                         size: 24,
                       ),

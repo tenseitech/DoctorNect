@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -21,7 +22,19 @@ class SuperAdminVerificationScreen extends StatefulWidget {
 class _SuperAdminVerificationScreenState
     extends State<SuperAdminVerificationScreen> {
   UserType? _selectedRoleFilter;
-  VerificationStage? _selectedStageFilter;
+  VerificationStage? _selectedStageFilter =
+      VerificationStage.submittedForVerification;
+
+  // Pagination state for non-pending queues (already verified, rejected, history, etc.)
+  final List<VerificationApplicant> _paginatedApplicants = [];
+  DocumentSnapshot<Map<String, dynamic>>? _lastDoc;
+  bool _isLoadingFirstPage = false;
+  bool _isLoadingMore = false;
+  bool _hasMore = false;
+  String? _paginationError;
+
+  bool get _isPendingQueue =>
+      _selectedStageFilter == VerificationStage.submittedForVerification;
 
   final _roleTabs = const [
     (null, 'All Roles', Icons.apps_rounded),
@@ -32,13 +45,80 @@ class _SuperAdminVerificationScreenState
   ];
 
   final _stageFilters = const [
-    (null, 'All Statuses'),
     (VerificationStage.submittedForVerification, 'In Review'),
+    (null, 'All Statuses'),
     (VerificationStage.registered, 'Incomplete'),
     (VerificationStage.revisionRequested, 'Revision Requested'),
     (VerificationStage.verified, 'Verified'),
     (VerificationStage.rejected, 'Rejected'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_isPendingQueue) {
+      _loadFirstPage();
+    }
+  }
+
+  Future<void> _loadFirstPage() async {
+    setState(() {
+      _isLoadingFirstPage = true;
+      _paginationError = null;
+      _paginatedApplicants.clear();
+      _lastDoc = null;
+      _hasMore = false;
+    });
+
+    try {
+      final res =
+          await SuperAdminVerificationService.instance.fetchApplicantsPage(
+        roleFilter: _selectedRoleFilter,
+        stageFilter: _selectedStageFilter,
+        pageSize: 50,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _isLoadingFirstPage = false;
+        _paginatedApplicants.addAll(res.applicants);
+        _lastDoc = res.lastDocument;
+        _hasMore = res.hasMore;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingFirstPage = false;
+        _paginationError = e.toString();
+      });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+
+    try {
+      final res =
+          await SuperAdminVerificationService.instance.fetchApplicantsPage(
+        roleFilter: _selectedRoleFilter,
+        stageFilter: _selectedStageFilter,
+        startAfterDocument: _lastDoc,
+        pageSize: 50,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _isLoadingMore = false;
+        _paginatedApplicants.addAll(res.applicants);
+        _lastDoc = res.lastDocument;
+        _hasMore = res.hasMore;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingMore = false);
+    }
+  }
 
   void _openReviewModal(
     BuildContext context,
@@ -48,13 +128,17 @@ class _SuperAdminVerificationScreenState
         .fetchRoleDetails(applicant.role, applicant.profileId);
     if (!context.mounted) return;
 
-    showModalBottomSheet<void>(
+    final changed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) =>
           _ApplicantReviewSheet(applicant: applicant, roleDetails: roleDetails),
     );
+
+    if (changed == true && !_isPendingQueue) {
+      _loadFirstPage();
+    }
   }
 
   @override
@@ -151,8 +235,12 @@ class _SuperAdminVerificationScreenState
                           ? Colors.white
                           : AppColors.textPrimaryOf(context),
                     ),
-                    onSelected: (_) =>
-                        setState(() => _selectedRoleFilter = tab.$1),
+                    onSelected: (_) {
+                      setState(() => _selectedRoleFilter = tab.$1);
+                      if (!_isPendingQueue) {
+                        _loadFirstPage();
+                      }
+                    },
                   ),
                 );
               }).toList(),
@@ -182,8 +270,14 @@ class _SuperAdminVerificationScreenState
                           ? const Color(0xFF4F46E5)
                           : AppColors.textSecondaryOf(context),
                     ),
-                    onSelected: (_) =>
-                        setState(() => _selectedStageFilter = sf.$1),
+                    onSelected: (_) {
+                      final newStage = sf.$1;
+                      setState(() => _selectedStageFilter = newStage);
+                      if (newStage !=
+                          VerificationStage.submittedForVerification) {
+                        _loadFirstPage();
+                      }
+                    },
                   ),
                 );
               }).toList(),
@@ -191,79 +285,154 @@ class _SuperAdminVerificationScreenState
           ),
           const Divider(height: 1),
           Expanded(
-            child: StreamBuilder<List<VerificationApplicant>>(
-              stream: SuperAdminVerificationService.instance.streamApplicants(
-                roleFilter: _selectedRoleFilter,
-                stageFilter: _selectedStageFilter,
-              ),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Error loading applications: ${snapshot.error}',
+            child: _isPendingQueue
+                ? StreamBuilder<List<VerificationApplicant>>(
+                    stream:
+                        SuperAdminVerificationService.instance.streamApplicants(
+                      roleFilter: _selectedRoleFilter,
+                      stageFilter: _selectedStageFilter,
                     ),
-                  );
-                }
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text(
+                            'Error loading applications: ${snapshot.error}',
+                          ),
+                        );
+                      }
 
-                final applicants = snapshot.data ?? [];
-                if (applicants.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.inbox_outlined,
-                            size: 56,
-                            color: AppColors.textSecondaryOf(context),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No applications found',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: AppTypography.headlineSmall,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimaryOf(context),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Try selecting another role or status filter above.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: AppTypography.bodySmall,
-                              color: AppColors.textSecondaryOf(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
+                      final applicants = snapshot.data ?? [];
+                      if (applicants.isEmpty) {
+                        return _buildEmptyState(context);
+                      }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: applicants.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) {
-                    final app = applicants[i];
-                    return _ApplicantCard(
-                      applicant: app,
-                      onReview: () => _openReviewModal(context, app),
-                    );
-                  },
-                );
-              },
-            ),
+                      return ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: applicants.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, i) {
+                          final app = applicants[i];
+                          return _ApplicantCard(
+                            applicant: app,
+                            onReview: () => _openReviewModal(context, app),
+                          );
+                        },
+                      );
+                    },
+                  )
+                : _buildPaginatedList(context),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 56,
+              color: AppColors.textSecondaryOf(context),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No applications found',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: AppTypography.headlineSmall,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimaryOf(context),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Try selecting another role or status filter above.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: AppTypography.bodySmall,
+                color: AppColors.textSecondaryOf(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaginatedList(BuildContext context) {
+    if (_isLoadingFirstPage) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_paginationError != null) {
+      return Center(
+        child: Text(
+          'Error loading applications: $_paginationError',
+        ),
+      );
+    }
+    if (_paginatedApplicants.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
+    final totalCount = _paginatedApplicants.length + (_hasMore ? 1 : 0);
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: totalCount,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, i) {
+        if (i < _paginatedApplicants.length) {
+          final app = _paginatedApplicants[i];
+          return _ApplicantCard(
+            applicant: app,
+            onReview: () => _openReviewModal(context, app),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Center(
+            child: _isLoadingMore
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _loadMore,
+                    icon: const Icon(Icons.expand_more_rounded, size: 18),
+                    label: const Text(
+                      'Load more',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      side: BorderSide(color: AppColors.borderOf(context)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 }
@@ -490,7 +659,7 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
     setState(() => _acting = false);
     if (ok) {
       AppToast.info(context, 'Account approved successfully!');
-      Navigator.pop(context);
+      Navigator.pop(context, true);
     } else {
       AppToast.error(context, 'Failed to approve account.');
     }
@@ -568,7 +737,7 @@ class _ApplicantReviewSheetState extends State<_ApplicantReviewSheet> {
           context,
           isRevision ? 'Revision requested.' : 'Application rejected.',
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } else {
         AppToast.error(context, 'Action failed. Please try again.');
       }

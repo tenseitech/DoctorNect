@@ -18,7 +18,6 @@ import 'core/system/edge_to_edge_bootstrap.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_controller.dart';
-import 'features/doctor/clinical/data/symptoms_database.dart';
 import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
@@ -71,7 +70,6 @@ void _schedulePostFrameServices() {
           debugPrint('[main] SupabaseBootstrap initialization caught: $e');
         }
       }
-      await SymptomsDatabase.instance.ensureLoaded();
     }());
   });
 }

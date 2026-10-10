@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 import '../../../core/constants/app_icons.dart';
 import '../../../core/layout/responsive_layout.dart';
@@ -46,18 +45,18 @@ const pharmacyNavTabs = [
     label: 'Prescriptions',
   ),
   PharmacyNavTab(
-    icon: TablerIcons.link,
-    selectedIcon: TablerIcons.link,
+    icon: Icons.link_rounded,
+    selectedIcon: Icons.link_rounded,
     label: 'Connect',
   ),
   PharmacyNavTab(
-    icon: TablerIcons.bell,
-    selectedIcon: TablerIcons.bell_filled,
+    icon: Icons.notifications_none_rounded,
+    selectedIcon: Icons.notifications_rounded,
     label: 'Notifications',
   ),
   PharmacyNavTab(
-    icon: TablerIcons.user,
-    selectedIcon: TablerIcons.user_filled,
+    icon: Icons.person_outline_rounded,
+    selectedIcon: Icons.person_rounded,
     label: 'Profile',
   ),
 ];

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/media/gallery_image_picker.dart';
 
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import '../../../core/constants/indian_cities.dart';
 import '../../../core/notifications/app_toast.dart';
 import '../../../core/services/promoted_ads_service.dart';
@@ -558,7 +557,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                       ),
                       child: const Center(
                         child: Icon(
-                          TablerIcons.speakerphone,
+                          Icons.campaign_rounded,
                           color: Colors.white,
                           size: 28,
                         ),
@@ -585,7 +584,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                 child: Row(
                   children: [
                     _buildWhyPromoteCard(
-                      icon: TablerIcons.eye,
+                      icon: Icons.visibility_rounded,
                       iconBg: isDark
                           ? const Color(0xFF3B0764)
                           : const Color(0xFFF3E8FF),
@@ -598,7 +597,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     ),
                     const SizedBox(width: 12),
                     _buildWhyPromoteCard(
-                      icon: TablerIcons.users,
+                      icon: Icons.groups_rounded,
                       iconBg: isDark
                           ? const Color(0xFF3B0764)
                           : const Color(0xFFF3E8FF),
@@ -611,7 +610,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                     ),
                     const SizedBox(width: 12),
                     _buildWhyPromoteCard(
-                      icon: TablerIcons.bolt,
+                      icon: Icons.bolt_rounded,
                       iconBg: isDark
                           ? const Color(0xFF451A03)
                           : const Color(0xFFFEF3C7),
@@ -640,7 +639,7 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
               const SizedBox(height: 12),
               _buildOptionCard(
                 id: 'banner',
-                icon: TablerIcons.speakerphone,
+                icon: Icons.campaign_rounded,
                 iconColor: const Color(0xFF10B981),
                 iconBg:
                     isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5),
@@ -1203,7 +1202,8 @@ class _CreatePromotedAdScreenState extends State<CreatePromotedAdScreen> {
                               items: allStates.map((st) {
                                 return DropdownMenuItem<String>(
                                   value: st,
-                                  child: Text(st),
+                                  child:
+                                      Text(st, overflow: TextOverflow.ellipsis),
                                 );
                               }).toList(),
                               onChanged: (newSt) {
