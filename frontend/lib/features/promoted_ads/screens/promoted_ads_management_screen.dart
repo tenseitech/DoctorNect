@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import '../../../core/widgets/s3_aware_network_image.dart';
 import '../../../core/models/promoted_ad_model.dart';
 import '../../../core/services/promoted_ads_service.dart';
@@ -300,7 +299,7 @@ class PromotedAdsManagementScreen extends StatelessWidget {
                                 ),
                                 child: Center(
                                   child: Icon(
-                                    TablerIcons.speakerphone,
+                                    Icons.campaign_rounded,
                                     size: 44,
                                     color: isDark
                                         ? const Color(0xFFC7D2FE)

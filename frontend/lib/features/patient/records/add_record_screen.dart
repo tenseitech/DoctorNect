@@ -310,7 +310,12 @@ class _AddRecordScreenState extends State<AddRecordScreen> {
               isExpanded: true,
               decoration: const InputDecoration(labelText: 'Record type'),
               items: _types
-                  .map((t) => DropdownMenuItem(value: t.$1, child: Text(t.$2)))
+                  .map(
+                    (t) => DropdownMenuItem(
+                      value: t.$1,
+                      child: Text(t.$2, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _type = v!),
             ),

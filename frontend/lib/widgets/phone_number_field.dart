@@ -112,7 +112,7 @@ class _PhoneNumberFieldState extends State<PhoneNumberField> {
           onTap: widget.enabled && !widget.readOnly ? _pickCountryCode : null,
           borderRadius: BorderRadius.circular(8),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

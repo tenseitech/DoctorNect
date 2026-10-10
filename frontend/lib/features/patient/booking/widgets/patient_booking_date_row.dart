@@ -160,6 +160,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                     DropdownButtonFormField<int>(
                       key: ValueKey(year),
                       initialValue: year,
+                      isExpanded: true,
                       decoration: InputDecoration(
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: 12,
@@ -184,6 +185,7 @@ class _PatientBookingDateRowState extends State<PatientBookingDateRow> {
                               value: y,
                               child: Text(
                                 '$y',
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: AppTypography.bodyMedium,

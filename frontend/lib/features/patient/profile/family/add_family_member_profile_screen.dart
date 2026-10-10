@@ -257,7 +257,10 @@ class _AddFamilyMemberProfileScreenState
                                 .map(
                                   (r) => DropdownMenuItem(
                                     value: r,
-                                    child: Text(_relationLabel(r)),
+                                    child: Text(
+                                      _relationLabel(r),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 )
                                 .toList(),

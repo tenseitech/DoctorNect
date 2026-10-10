@@ -146,6 +146,7 @@ abstract final class MedicationTimeSlots {
                         Expanded(
                           child: DropdownButtonFormField<int>(
                             initialValue: selected.hour,
+                            isExpanded: true,
                             decoration: const InputDecoration(
                               labelText: 'Hour',
                             ),
@@ -153,7 +154,10 @@ abstract final class MedicationTimeSlots {
                               for (final hour in hours)
                                 DropdownMenuItem(
                                   value: hour,
-                                  child: Text(_formatHour(hour)),
+                                  child: Text(
+                                    _formatHour(hour),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                             ],
                             onChanged: (hour) {
@@ -171,6 +175,7 @@ abstract final class MedicationTimeSlots {
                         Expanded(
                           child: DropdownButtonFormField<int>(
                             initialValue: selected.minute,
+                            isExpanded: true,
                             decoration: const InputDecoration(
                               labelText: 'Minute',
                             ),
@@ -180,6 +185,7 @@ abstract final class MedicationTimeSlots {
                                   value: minute,
                                   child: Text(
                                     minute.toString().padLeft(2, '0'),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                             ],

@@ -227,7 +227,12 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
                         LengthLimitingTextInputFormatter(3),
                       ],
                       decoration: RequiredFieldLabels.decorate(
-                        const InputDecoration(),
+                        const InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                        ),
                         'Age',
                         isRequired: true,
                       ),
@@ -238,8 +243,22 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       initialValue: _gender,
+                      isExpanded: true,
+                      hint: Text(
+                        'Select gender',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          color: AppColors.textSecondaryOf(context),
+                        ),
+                      ),
                       decoration: RequiredFieldLabels.decorate(
-                        const InputDecoration(),
+                        const InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                        ),
                         'Gender',
                         isRequired: true,
                       ),
@@ -247,7 +266,10 @@ class _WalkInPatientSheetState extends State<WalkInPatientSheet> {
                           .map(
                             (gender) => DropdownMenuItem(
                               value: gender,
-                              child: Text(gender),
+                              child: Text(
+                                gender,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           )
                           .toList(),

@@ -358,7 +358,7 @@ class _RegistrationMobileOtpSectionState
             style: _primaryButtonStyle,
             child: _sending
                 ? _loadingIndicator(color: AppColors.surfaceOf(context))
-                : const Text('Verify OTP'),
+                : const Text('Verify & Continue'),
           ),
           const SizedBox(height: 4),
           Align(

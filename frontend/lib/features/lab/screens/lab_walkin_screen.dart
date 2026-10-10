@@ -152,10 +152,15 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
               constraints: const BoxConstraints(maxWidth: 800),
               child: ListView(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
+                  SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        Text(
                           'Walk-in Patient',
                           style: TextStyle(
                             fontFamily: 'Inter',
@@ -163,30 +168,29 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const LabAllPatientsScreen(),
+                        FilledButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LabAllPatientsScreen(),
+                              ),
+                            );
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _labPurple,
+                          ),
+                          child: Text(
+                            'View all patients',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: AppTypography.bodySmall,
+                              fontWeight: FontWeight.w600,
                             ),
-                          );
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _labPurple,
-                        ),
-                        child: Text(
-                          'View all patients',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: AppTypography.bodySmall,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -237,6 +241,10 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                   InputDecoration(
                                     filled: true,
                                     fillColor: AppColors.surfaceOf(context),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 14,
+                                    ),
                                   ),
                                   'Age',
                                   isRequired: true,
@@ -244,12 +252,14 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                 validator: FormValidators.walkInAge,
                               ),
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: DropdownButtonFormField<String>(
                                 initialValue: _gender,
+                                isExpanded: true,
                                 hint: Text(
                                   'Select gender',
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontFamily: 'Inter',
                                     color: AppColors.textSecondaryOf(context),
@@ -259,6 +269,10 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                   InputDecoration(
                                     filled: true,
                                     fillColor: AppColors.surfaceOf(context),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 14,
+                                    ),
                                   ),
                                   'Gender',
                                   isRequired: true,
@@ -267,7 +281,10 @@ class _LabWalkInScreenState extends State<LabWalkInScreen> {
                                     .map(
                                       (gender) => DropdownMenuItem(
                                         value: gender,
-                                        child: Text(gender),
+                                        child: Text(
+                                          gender,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
                                     )
                                     .toList(),

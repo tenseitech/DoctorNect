@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 import '../../../core/constants/app_icons.dart';
 import '../../../core/constants/specialty_categories.dart';
@@ -142,7 +141,7 @@ class PatientMockData {
   static const services = [
     ServiceItem(
       label: 'Medical Record',
-      icon: TablerIcons.file_description,
+      icon: Icons.description_outlined,
       route: 'records',
       assetPath: 'assets/images/services/records.png',
     ),

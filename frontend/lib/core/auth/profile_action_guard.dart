@@ -10,11 +10,15 @@ import '../session/lab_session.dart';
 import '../session/medical_store_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../../features/ambulance/ambulance_profile_screen.dart';
+import '../../features/ambulance/ambulance_profile_screen.dart'
+    deferred as amb_prof;
 import '../../features/doctor/profile/data/doctor_profile_store.dart';
-import '../../features/doctor/profile/doctor_profile_screen.dart';
-import '../../features/lab/screens/lab_profile_screen.dart';
-import '../../features/pharmacy/screens/store_profile_screen.dart';
+import '../../features/doctor/profile/doctor_profile_screen.dart'
+    deferred as doc_prof;
+import '../../features/lab/screens/lab_profile_screen.dart'
+    deferred as lab_prof;
+import '../../features/pharmacy/screens/store_profile_screen.dart'
+    deferred as store_prof;
 import 'demo_auth_config.dart';
 import 'verification_lifecycle.dart';
 
@@ -149,27 +153,33 @@ class _ProfileVerificationDialog extends StatelessWidget {
   Future<void> _navigateToProfile(BuildContext context) async {
     switch (role) {
       case UserType.doctor:
-        await DoctorProfileScreen.open(context);
+        await doc_prof.loadLibrary();
+        if (context.mounted) {
+          await doc_prof.DoctorProfileScreen.open(context);
+        }
       case UserType.medicalStore:
+        await store_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
-            MaterialPageRoute(builder: (_) => const StoreProfileScreen()),
+            MaterialPageRoute(builder: (_) => store_prof.StoreProfileScreen()),
           );
         }
       case UserType.lab:
+        await lab_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
-            MaterialPageRoute(builder: (_) => const LabProfileScreen()),
+            MaterialPageRoute(builder: (_) => lab_prof.LabProfileScreen()),
           );
         }
       case UserType.ambulance:
+        await amb_prof.loadLibrary();
         if (context.mounted) {
           await Navigator.push<void>(
             context,
             MaterialPageRoute(
-              builder: (_) => AmbulanceProfileScreen(
+              builder: (_) => amb_prof.AmbulanceProfileScreen(
                 ambulanceId: AmbulanceSession.loggedInAmbulanceId,
               ),
             ),

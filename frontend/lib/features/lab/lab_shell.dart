@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 import '../../core/auth/profile_completion_service.dart';
 import '../../core/auth/role_session_guard.dart';
@@ -156,35 +155,35 @@ class _LabShellState extends State<LabShell> {
 
           final navItems = [
             RoleNavItem(
-              icon: TablerIcons.flask,
-              selectedIcon: TablerIcons.flask,
+              icon: Icons.science_outlined,
+              selectedIcon: Icons.science_rounded,
               label: 'Orders',
               mobileLabel: 'Orders',
               badgeCount: ordersBadge > 0 ? ordersBadge : null,
             ),
             const RoleNavItem(
-              icon: TablerIcons.user_plus,
-              selectedIcon: TablerIcons.user_plus,
+              icon: Icons.person_add_rounded,
+              selectedIcon: Icons.person_add_rounded,
               label: 'Walk-in',
               mobileLabel: 'Walk-in',
             ),
             RoleNavItem(
-              icon: TablerIcons.link,
-              selectedIcon: TablerIcons.link,
+              icon: Icons.link_rounded,
+              selectedIcon: Icons.link_rounded,
               label: 'Connect',
               mobileLabel: 'Connect',
               showDotBadge: connectPending,
             ),
             RoleNavItem(
-              icon: TablerIcons.bell,
-              selectedIcon: TablerIcons.bell_filled,
+              icon: Icons.notifications_none_rounded,
+              selectedIcon: Icons.notifications_rounded,
               label: 'Notifications',
               mobileLabel: 'Alerts',
               badgeCount: unreadAlerts > 0 ? unreadAlerts : null,
             ),
             const RoleNavItem(
-              icon: TablerIcons.user,
-              selectedIcon: TablerIcons.user_filled,
+              icon: Icons.person_outline_rounded,
+              selectedIcon: Icons.person_rounded,
               label: 'Profile',
               mobileLabel: 'Profile',
             ),
@@ -196,7 +195,7 @@ class _LabShellState extends State<LabShell> {
             roleTitle: 'Diagnostic Lab',
             entityName: displayName,
             isVerified: lab?.verified ?? false,
-            entityIcon: TablerIcons.flask,
+            entityIcon: Icons.biotech_rounded,
             accentColor: AppColors.labPurple,
             accentGradientEnd: const Color(0xFF7C3AED),
             sidebarWidth: 268.0,

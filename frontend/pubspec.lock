@@ -281,6 +281,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.2"
+  cupertino_icons:
+    dependency: "direct main"
+    description:
+      name: cupertino_icons
+      sha256: "41e005c33bd814be4d3096aff55b1908d419fde52ca656c8c47719ec745873cd"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.9"
   dart_jsonwebtoken:
     dependency: transitive
     description:
@@ -707,14 +715,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.3"
-  flutter_tabler_icons:
-    dependency: "direct main"
-    description:
-      name: flutter_tabler_icons
-      sha256: "657c2201e12fa9121a12ddb4edb74d69290f803868eb6526f04102e6d49ec882"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.43.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1253,14 +1253,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
-  pin_input_text_field:
-    dependency: transitive
+  pinput:
+    dependency: "direct main"
     description:
-      name: pin_input_text_field
-      sha256: c2a32d26f0447da0c4bd246625363d91c00d2d51e8148dd3053c448488057c31
+      name: pinput
+      sha256: "7bf9aa7d0eeb3da9f7d49d2087c7bc7d36cd277d2e94cc31c6da52e1ebb048d0"
       url: "https://pub.dev"
     source: hosted
-    version: "4.5.3"
+    version: "5.0.0"
   platform:
     dependency: transitive
     description:
@@ -1450,14 +1450,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  sms_autofill:
+  smart_auth:
     dependency: "direct main"
     description:
-      name: sms_autofill
-      sha256: "5c6c5569a310fce12117eaefab5be6e29cc676b635e43be8b70b1946ec21ae91"
+      name: smart_auth
+      sha256: a536423c50d71e9a311d16027346634d0deadd07dafc5b5606b46719cf6fb2b6
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "3.2.0"
   source_span:
     dependency: transitive
     description:
@@ -1610,6 +1610,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.1"
+  universal_platform:
+    dependency: transitive
+    description:
+      name: universal_platform
+      sha256: "64e16458a0ea9b99260ceb5467a214c1f298d647c659af1bff6d3bf82536b1ec"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   url_launcher:
     dependency: "direct main"
     description:

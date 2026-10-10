@@ -18,6 +18,8 @@ const Set<String> kWebpAssets = {
   'assets/icons/doctor/refer.webp',
   'assets/icons/doctor/review.webp',
   'assets/icons/doctor/today_queue.webp',
+  'assets/images/adaptive_foreground.webp',
+  'assets/images/adaptive_monochrome.webp',
   'assets/images/app_icon.webp',
   'assets/images/bone_joint.webp',
   'assets/images/bone_joint_icon.webp',

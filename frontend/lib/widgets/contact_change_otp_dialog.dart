@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../core/auth/contact_change_otp_service.dart';
+import '../core/constants/app_constants.dart';
 import '../core/theme/app_colors.dart';
 import 'otp_input.dart';
 import 'overflow_safe_layout.dart';
@@ -46,10 +49,14 @@ class _ContactChangeOtpDialog extends StatefulWidget {
 }
 
 class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
+  final _otpInputKey = GlobalKey<OtpInputState>();
   bool _otpSent = false;
   bool _sending = false;
   String _otp = '';
   String? _error;
+  int _resendCooldown = 0;
+  Timer? _cooldownTimer;
+  DateTime? _cooldownEnd;
 
   String get _codeTypeLabel => switch (widget.channel) {
         ContactVerificationChannel.mobile => 'OTP',
@@ -61,11 +68,45 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
         ContactVerificationChannel.email => 'Email Address',
       };
 
+  @override
+  void dispose() {
+    _cooldownTimer?.cancel();
+    _cooldownEnd = null;
+    super.dispose();
+  }
+
+  void _startResendCooldown() {
+    _cooldownTimer?.cancel();
+    _cooldownEnd = DateTime.now().add(
+      const Duration(seconds: AppConstants.otpResendCooldownSeconds),
+    );
+    setState(() => _resendCooldown = AppConstants.otpResendCooldownSeconds);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      final remaining = _cooldownEnd?.difference(DateTime.now()).inSeconds ?? 0;
+      setState(() {
+        if (remaining <= 0) {
+          _resendCooldown = 0;
+          _cooldownEnd = null;
+          t.cancel();
+        } else {
+          _resendCooldown = remaining;
+        }
+      });
+    });
+  }
+
   Future<void> _sendOtp() async {
+    if (_resendCooldown > 0) return;
     setState(() {
       _sending = true;
       _error = null;
+      _otp = '';
     });
+    _otpInputKey.currentState?.clearAndFocusFirst();
 
     final error = await ContactChangeOtpService.sendOtp(
       channel: widget.channel,
@@ -78,6 +119,9 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
       _otpSent = error == null;
       _error = error;
     });
+    if (error == null) {
+      _startResendCooldown();
+    }
   }
 
   Future<void> _verify() async {
@@ -106,7 +150,8 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         'Verify $_channelLabel',
-        style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+        style:
+            const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
       ),
       content: scrollableDialogContent(
         context: context,
@@ -127,7 +172,7 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
             ),
             const SizedBox(height: 16),
             OutlinedButton(
-              onPressed: _sending ? null : _sendOtp,
+              onPressed: (_sending || _resendCooldown > 0) ? null : _sendOtp,
               child: _sending
                   ? const SizedBox(
                       width: 20,
@@ -136,7 +181,9 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
                     )
                   : Text(
                       _otpSent
-                          ? 'Resend $_codeTypeLabel'
+                          ? (_resendCooldown > 0
+                              ? 'Resend $_codeTypeLabel in ${_resendCooldown}s'
+                              : 'Resend $_codeTypeLabel')
                           : 'Send $_codeTypeLabel',
                     ),
             ),
@@ -157,6 +204,7 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
               ),
               const SizedBox(height: 8),
               OtpInput(
+                key: _otpInputKey,
                 initialValue: _otp,
                 accentColor: widget.accentColor,
                 onChanged: (value) => setState(() {
@@ -194,7 +242,7 @@ class _ContactChangeOtpDialogState extends State<_ContactChangeOtpDialog> {
           FilledButton(
             onPressed: _otp.length == 6 ? _verify : null,
             style: FilledButton.styleFrom(backgroundColor: widget.accentColor),
-            child: const Text('Verify'),
+            child: const Text('Verify & Continue'),
           ),
       ],
     );

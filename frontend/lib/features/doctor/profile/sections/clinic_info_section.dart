@@ -445,12 +445,18 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                               decoration: const InputDecoration(
                                 labelText: 'Country (optional)',
                               ),
-                              hint: const Text('Select country'),
+                              hint: const Text(
+                                'Select country',
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               items: _countryOptions
                                   .map(
                                     (c) => DropdownMenuItem(
                                       value: c,
-                                      child: Text(c),
+                                      child: Text(
+                                        c,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   )
                                   .toList(),
@@ -475,12 +481,18 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                 decoration: const InputDecoration(
                                   labelText: 'State / Province (optional)',
                                 ),
-                                hint: const Text('Select state / province'),
+                                hint: const Text(
+                                  'Select state / province',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                                 items: _stateOptions
                                     .map(
                                       (s) => DropdownMenuItem(
                                         value: s,
-                                        child: Text(s),
+                                        child: Text(
+                                          s,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
                                     )
                                     .toList(),
@@ -507,12 +519,16 @@ class _ClinicInfoSectionState extends State<ClinicInfoSection> {
                                   _state == null
                                       ? 'Select state first'
                                       : 'Select city',
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 items: _cityOptions
                                     .map(
                                       (c) => DropdownMenuItem(
                                         value: c,
-                                        child: Text(c),
+                                        child: Text(
+                                          c,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
                                     )
                                     .toList(),

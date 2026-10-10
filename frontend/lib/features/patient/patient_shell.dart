@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 import '../../core/auth/role_session_guard.dart';
 import '../../core/enums/user_type.dart';
@@ -264,14 +263,14 @@ class _PatientShellState extends State<PatientShell> {
       shortLabel: 'Appointment',
     ),
     const PatientTabItem(
-      outlinedIcon: TablerIcons.flask,
-      filledIcon: TablerIcons.flask_filled,
+      outlinedIcon: Icons.science_outlined,
+      filledIcon: Icons.science_rounded,
       label: 'My Labs',
       shortLabel: 'Labs',
     ),
     const PatientTabItem(
-      outlinedIcon: TablerIcons.ambulance,
-      filledIcon: TablerIcons.ambulance,
+      outlinedIcon: Icons.emergency_rounded,
+      filledIcon: Icons.emergency_rounded,
       label: 'Ambulance',
     ),
     PatientTabItem(
@@ -307,9 +306,6 @@ class _PatientShellState extends State<PatientShell> {
   Future<void> _startPatientNotifications() async {
     final patientId = PatientSession.loggedInPatientId;
     final uid = FirebaseAuthService.instance.currentUser?.uid;
-    if (uid != null && uid.isNotEmpty) {
-      await PatientInAppNotificationSync.start(uid);
-    }
     if (patientId.isNotEmpty) {
       PatientNotificationPrefsSync.start(patientId);
     }
@@ -317,7 +313,13 @@ class _PatientShellState extends State<PatientShell> {
     PatientNotificationScheduler.instance.start();
     PatientPushService.onAppointmentPushOpened = _handleAppointmentPushOpen;
     PatientPushService.onPrescriptionPushOpened = _handlePrescriptionPushOpen;
-    await _refreshSessionData();
+
+    await Future.wait([
+      if (uid != null && uid.isNotEmpty)
+        PatientInAppNotificationSync.start(uid),
+      _refreshSessionData(),
+    ]);
+
     if (patientId.isNotEmpty) {
       await PatientPushService.registerPatient(patientId);
       PatientLabBookingWatcher.start(patientId);
@@ -329,11 +331,13 @@ class _PatientShellState extends State<PatientShell> {
   Future<void> _refreshSessionData() async {
     final patientId = PatientSession.loggedInPatientId;
     if (patientId.isEmpty) return;
-    await SharedAppointmentsStore.instance.refreshForPatient(patientId);
-    await PatientLabBookingStore.instance.refreshForPatient(
-      patientId,
-      preferCache: true,
-    );
+    await Future.wait([
+      SharedAppointmentsStore.instance.refreshForPatient(patientId),
+      PatientLabBookingStore.instance.refreshForPatient(
+        patientId,
+        preferCache: true,
+      ),
+    ]);
   }
 
   void _openFromPushIfNeeded() {

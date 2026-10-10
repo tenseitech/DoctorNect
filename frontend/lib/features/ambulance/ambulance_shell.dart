@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/auth/profile_action_guard.dart';
@@ -26,6 +25,8 @@ import 'ambulance_driver_home_screen.dart';
 import 'ambulance_profile_screen.dart';
 import 'data/ambulance_store.dart';
 import 'models/ambulance_models.dart';
+export 'data/ambulance_store.dart';
+export 'models/ambulance_models.dart';
 import 'screens/ambulance_notifications_screen.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -45,9 +46,9 @@ class _AmbulanceShellState extends State<AmbulanceShell> {
   final _requestsKey = GlobalKey<AmbulanceDriverHomeScreenState>();
 
   static const _tabs = [
-    (icon: TablerIcons.ambulance, label: 'Requests'),
-    (icon: TablerIcons.bell, label: 'Notifications'),
-    (icon: TablerIcons.user, label: 'Profile'),
+    (icon: Icons.emergency_rounded, label: 'Requests'),
+    (icon: Icons.notifications_none_rounded, label: 'Notifications'),
+    (icon: Icons.person_outline_rounded, label: 'Profile'),
   ];
 
   @override

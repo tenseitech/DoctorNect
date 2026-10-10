@@ -10,8 +10,8 @@ abstract final class AppConstants {
   static const int splashDurationSeconds = 0;
   static const int otpLength = 6;
 
-  /// Client OTP resend cooldown. Backend [RESEND_COOLDOWN_MS] is 60s.
-  static const int otpResendCooldownSeconds = 60;
+  /// Client OTP resend cooldown (30s timer).
+  static const int otpResendCooldownSeconds = 30;
 
   /// Shown on registration OTP UI so testers can confirm which app build is installed.
   static const registrationBuildFingerprint = 'H7-fix-20260723';
@@ -323,6 +323,61 @@ abstract final class AppConstants {
     'DNB',
     'FRCS',
     'MRCP',
+    otherDoctorQualification,
+  ];
+
+  static const List<String> pharmacyQualifications = [
+    'B.Pharm',
+    'D.Pharm',
+    'M.Pharm',
+    'Pharm.D',
+    'Diploma in Pharmacy',
+    'B.Sc',
+    otherDoctorQualification,
+  ];
+
+  static const List<String> labQualifications = [
+    'DMLT',
+    'B.Sc MLT',
+    'M.Sc MLT',
+    'MD (Pathology)',
+    'MD (Microbiology)',
+    'MD (Biochemistry)',
+    'Ph.D',
+    otherDoctorQualification,
+  ];
+
+  static const List<String> ambulanceQualifications = [
+    'EMT-Basic',
+    'EMT-Advanced',
+    'EMT-Paramedic',
+    'First Aid & CPR Certified',
+    'Commercial Heavy Driving License',
+    otherDoctorQualification,
+  ];
+
+  static const List<String> commonDoctorSpecializations = [
+    'General Physician',
+    'Cardiologist',
+    'Dermatologist',
+    'Pediatrician',
+    'Orthopedic',
+    'Gynecologist',
+    'ENT Specialist',
+    'Neurologist',
+    'Psychiatrist',
+    'Dentist',
+    'Ophthalmologist',
+    'General Surgeon',
+    'Gastroenterologist',
+    'Pulmonologist',
+    'Urologist',
+    'Nephrologist',
+    'Oncologist',
+    'Endocrinologist',
+    'Radiologist',
+    'Anesthesiologist',
+    'Pathologist',
     otherDoctorQualification,
   ];
 

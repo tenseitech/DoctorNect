@@ -18,7 +18,6 @@ import 'core/system/edge_to_edge_bootstrap.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_theme_controller.dart';
-import 'features/doctor/clinical/data/symptoms_database.dart';
 import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
@@ -34,34 +33,18 @@ Future<void> main() async {
 
   PendingInviteStore.captureFromUri(Uri.base);
 
-  // Essential startup only — parallelize initialization.
+  // Essential startup only — minimal needed for first screen.
   await Future.wait<void>([
     FirebaseBootstrap.initialize(),
-    () async {
-      try {
-        await SupabaseBootstrap.initialize();
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('[main] SupabaseBootstrap initialization caught: $e');
-        }
-      }
-    }(),
     AppThemeController.instance.init(),
   ]);
-
-  // Wire up the auth-state listener now that Supabase is ready.
-  // SupabaseAuthService._() calls _initAuthStateListener() but silently
-  // no-ops when isReady is false — touching the singleton here guarantees
-  // it runs after SupabaseBootstrap.initialize() has set isReady = true.
-  if (SupabaseBootstrap.isReady) {
-    SupabaseAuthService.instance; // ignore: unnecessary_statements
-  }
 
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(ambulancePushBackgroundHandler);
   }
-  // Non-critical: load after first frame / in background.
-  unawaited(SymptomsDatabase.instance.ensureLoaded());
+
+  // Non-critical startup services scheduled after first frame (not blocking runApp).
+  _schedulePostFrameServices();
 
   // On web, resolve the initial destination screen directly so no splash screen is shown.
   final Widget? webInitialScreen = kIsWeb
@@ -72,6 +55,23 @@ Future<void> main() async {
     FlutterNativeSplash.remove();
   }
   runApp(DoctorNectApp(initialScreen: webInitialScreen));
+}
+
+void _schedulePostFrameServices() {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(() async {
+      try {
+        await SupabaseBootstrap.initialize();
+        if (SupabaseBootstrap.isReady) {
+          SupabaseAuthService.instance; // ignore: unnecessary_statements
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[main] SupabaseBootstrap initialization caught: $e');
+        }
+      }
+    }());
+  });
 }
 
 class DoctorNectApp extends StatelessWidget {

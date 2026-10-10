@@ -47,6 +47,8 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _relationController = TextEditingController();
+  final _customRelationController = TextEditingController();
+  String? _selectedRelationOption;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -54,6 +56,7 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
     _nameController.dispose();
     _ageController.dispose();
     _relationController.dispose();
+    _customRelationController.dispose();
     super.dispose();
   }
 
@@ -146,67 +149,68 @@ class _AddFamilyMemberSheetState extends State<AddFamilyMemberSheet> {
                   validator: FormValidators.age,
                 ),
                 const SizedBox(height: 12),
-                Autocomplete<String>(
-                  optionsBuilder: (value) => _relationSuggestions(value.text),
-                  onSelected: (selection) =>
-                      _relationController.text = selection,
-                  optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        elevation: 4,
-                        borderRadius: BorderRadius.circular(8),
-                        clipBehavior: Clip.antiAlias,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxHeight: 180,
-                            maxWidth: 280,
-                          ),
-                          child: ListView.separated(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: options.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final option = options.elementAt(index);
-                              return ListTile(
-                                dense: true,
-                                title: Text(
-                                  option,
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: AppTypography.bodyMedium,
-                                  ),
-                                ),
-                                onTap: () => onSelected(option),
-                              );
-                            },
+                DropdownButtonFormField<String>(
+                  initialValue:
+                      _relationOptions.contains(_relationController.text.trim())
+                          ? _relationController.text.trim()
+                          : (_relationController.text.trim().isNotEmpty
+                              ? 'Other'
+                              : null),
+                  isExpanded: true,
+                  decoration: RequiredFieldLabels.decorate(
+                    const InputDecoration(
+                      hintText: 'Select relation',
+                    ),
+                    'Relation',
+                    isRequired: true,
+                  ),
+                  items: _relationOptions
+                      .map(
+                        (r) => DropdownMenuItem(
+                          value: r,
+                          child: Text(
+                            r,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: AppTypography.bodyMedium,
+                            ),
                           ),
                         ),
-                      ),
-                    );
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    setState(() {
+                      _selectedRelationOption = v;
+                      if (v != 'Other') {
+                        _relationController.text = v ?? '';
+                      } else {
+                        _relationController.text =
+                            _customRelationController.text.trim();
+                      }
+                    });
                   },
-                  fieldViewBuilder:
-                      (context, controller, focusNode, onFieldSubmitted) {
-                    return TextFormField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: RequiredFieldLabels.decorate(
-                        const InputDecoration(
-                          hintText: 'Select or type',
-                          suffixIcon: Icon(Icons.arrow_drop_down),
-                        ),
-                        'Relation',
-                        isRequired: true,
-                      ),
-                      validator: (v) =>
-                          FormValidators.tagText(v, field: 'Relation'),
-                      onChanged: (v) => _relationController.text = v,
-                      onFieldSubmitted: (_) => onFieldSubmitted(),
-                    );
-                  },
+                  validator: (_) => FormValidators.tagText(
+                    _relationController.text,
+                    field: 'Relation',
+                  ),
                 ),
+                if (_selectedRelationOption == 'Other') ...[
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _customRelationController,
+                    decoration: RequiredFieldLabels.decorate(
+                      const InputDecoration(
+                        hintText: 'e.g. Guardian, Caregiver',
+                      ),
+                      'Specify relation',
+                      isRequired: true,
+                    ),
+                    validator: (v) =>
+                        FormValidators.tagText(v, field: 'Relation'),
+                    onChanged: (v) => _relationController.text = v.trim(),
+                  ),
+                ],
               ],
             ),
           ),

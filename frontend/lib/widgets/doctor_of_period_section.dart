@@ -7,9 +7,11 @@ import 'package:medibond/core/session/doctor_session.dart';
 import 'package:medibond/core/theme/app_colors.dart';
 import 'package:medibond/features/doctor/profile/data/doctor_profile_store.dart';
 import 'package:medibond/core/auth/patient_details_guard.dart';
-import 'package:medibond/features/patient/booking/booking_flow_screen.dart';
+import 'package:medibond/features/patient/booking/booking_flow_screen.dart'
+    deferred as patient_booking;
 import 'package:medibond/features/patient/data/featured_doctors_service.dart';
-import 'package:medibond/features/patient/doctor_profile/patient_doctor_profile_screen.dart';
+import 'package:medibond/features/patient/doctor_profile/patient_doctor_profile_screen.dart'
+    deferred as patient_doc_profile;
 import 'package:medibond/features/patient/models/patient_models.dart';
 import 'package:medibond/core/theme/app_typography.dart';
 import '../../core/widgets/s3_aware_network_image.dart';
@@ -73,13 +75,17 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
     });
   }
 
-  void _openProfile(DoctorListing doctor) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PatientDoctorProfileScreen(doctorId: doctor.id),
-      ),
-    );
+  Future<void> _openProfile(DoctorListing doctor) async {
+    await patient_doc_profile.loadLibrary();
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => patient_doc_profile.PatientDoctorProfileScreen(
+              doctorId: doctor.id),
+        ),
+      );
+    }
   }
 
   static List<FeaturedDoctorEntry> _demoEntries() {
@@ -317,14 +323,20 @@ class _DoctorOfPeriodSectionState extends State<DoctorOfPeriodSection> {
                                 IconButton(
                                   onPressed: () => PatientDetailsGuard.run(
                                     context,
-                                    () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => BookingFlowScreen(
-                                          doctorId: doctor.id,
-                                        ),
-                                      ),
-                                    ),
+                                    () async {
+                                      await patient_booking.loadLibrary();
+                                      if (context.mounted) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => patient_booking
+                                                .BookingFlowScreen(
+                                              doctorId: doctor.id,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
                                   ),
                                   icon: const Icon(
                                     Icons.calendar_month,

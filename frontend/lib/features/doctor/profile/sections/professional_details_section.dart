@@ -6,6 +6,7 @@ import 'package:medibond/features/doctor/profile/models/doctor_profile_data.dart
 import '../../../../widgets/doctor_credentials_editor.dart';
 import '../../../../widgets/labeled_add_button.dart';
 import '../../../../widgets/required_field_label.dart';
+import '../../../../widgets/searchable_dropdown_form_field.dart';
 
 import '../../../../core/constants/indian_states.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -53,6 +54,7 @@ class _ProfessionalDetailsSectionState
   late final bool _consultsAdultsOnly = _p.consultsAdultsOnly;
   final _certInput = TextEditingController();
   final _pubInput = TextEditingController();
+  bool _manualSuperSpec = false;
   bool _dirty = false;
 
   DoctorProfileData get _p => DoctorProfileStore.instance.profile;
@@ -204,61 +206,116 @@ class _ProfessionalDetailsSectionState
                             ),
                             const SizedBox(height: 12),
                             Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Expanded(
-                                  child: Autocomplete<String>(
-                                    optionsBuilder: (TextEditingValue tv) {
-                                      if (tv.text.isEmpty)
-                                        return AppConstants.specializations;
-                                      return AppConstants.specializations.where(
-                                        (s) => s.toLowerCase().contains(
-                                              tv.text.toLowerCase(),
-                                            ),
-                                      );
-                                    },
-                                    onSelected: (String selection) {
-                                      _superSpecInput.text = selection;
-                                      _markDirty();
-                                    },
-                                    fieldViewBuilder: (
-                                      context,
-                                      controller,
-                                      focusNode,
-                                      onFieldSubmitted,
-                                    ) {
-                                      controller.addListener(() {
-                                        if (controller.text !=
-                                            _superSpecInput.text) {
-                                          _superSpecInput.text =
-                                              controller.text;
-                                        }
-                                      });
-                                      return TextFormField(
-                                        controller: controller,
-                                        focusNode: focusNode,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Super-specialization',
-                                        ),
-                                      );
-                                    },
+                                Text(
+                                  'Super-specialization',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: AppTypography.bodySmall,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondaryOf(context),
                                   ),
                                 ),
-                                LabeledAddButton(
-                                  label: '+ Add',
+                                TextButton.icon(
                                   onPressed: () {
-                                    final val = _superSpecInput.text.trim();
-                                    if (val.isEmpty) return;
-                                    if (_superSpecs.contains(val)) return;
-                                    setState(() {
-                                      _superSpecs.add(val);
-                                      _superSpecInput.clear();
-                                    });
-                                    _markDirty();
+                                    setState(() =>
+                                        _manualSuperSpec = !_manualSuperSpec);
                                   },
+                                  icon: Icon(
+                                    _manualSuperSpec
+                                        ? Icons.list_rounded
+                                        : Icons.edit_outlined,
+                                    size: 16,
+                                  ),
+                                  label: Text(
+                                    _manualSuperSpec
+                                        ? 'Select from list'
+                                        : 'Enter manually',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: AppTypography.labelSmall,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppColors.doctorBlue,
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                  ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 6),
+                            if (!_manualSuperSpec)
+                              SearchableDropdownFormField(
+                                title: 'Super-specialization',
+                                hintText: 'Tap to select super-specialization',
+                                value: null,
+                                items: AppConstants.allSpecializations,
+                                decoration: const InputDecoration(
+                                  labelText: 'Select super-specialization',
+                                  prefixIcon: Icon(
+                                    Icons.school_outlined,
+                                    size: 20,
+                                  ),
+                                ),
+                                onChanged: (selection) {
+                                  if (selection != null &&
+                                      selection.trim().isNotEmpty) {
+                                    final val = selection.trim();
+                                    if (!_superSpecs.contains(val)) {
+                                      setState(() {
+                                        _superSpecs.add(val);
+                                      });
+                                      _markDirty();
+                                    }
+                                  }
+                                },
+                              )
+                            else
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _superSpecInput,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Enter super-specialization',
+                                        hintText: 'e.g. Pediatric Cardiology',
+                                        prefixIcon: Icon(
+                                          Icons.edit_outlined,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      onFieldSubmitted: (v) {
+                                        final val = v.trim();
+                                        if (val.isEmpty) return;
+                                        if (_superSpecs.contains(val)) return;
+                                        setState(() {
+                                          _superSpecs.add(val);
+                                          _superSpecInput.clear();
+                                        });
+                                        _markDirty();
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  LabeledAddButton(
+                                    label: '+ Add',
+                                    onPressed: () {
+                                      final val = _superSpecInput.text.trim();
+                                      if (val.isEmpty) return;
+                                      if (_superSpecs.contains(val)) return;
+                                      setState(() {
+                                        _superSpecs.add(val);
+                                        _superSpecInput.clear();
+                                      });
+                                      _markDirty();
+                                    },
+                                  ),
+                                ],
+                              ),
                             ..._superSpecs.map(
                               (s) => ListTile(
                                 contentPadding: EdgeInsets.zero,
@@ -386,12 +443,18 @@ class _ProfessionalDetailsSectionState
                                 isRequired: true,
                               ),
                               isExpanded: true,
-                              hint: const Text('Select state'),
+                              hint: const Text(
+                                'Select state',
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               items: _stateOptions
                                   .map(
                                     (s) => DropdownMenuItem(
                                       value: s,
-                                      child: Text(s),
+                                      child: Text(
+                                        s,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                   )
                                   .toList(),

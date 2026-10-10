@@ -350,7 +350,10 @@ class _LabTestOrderScreenState extends State<LabTestOrderScreen> {
                       .map(
                         (l) => DropdownMenuItem(
                           value: l.name,
-                          child: Text(l.name),
+                          child: Text(
+                            l.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       )
                       .toList(),

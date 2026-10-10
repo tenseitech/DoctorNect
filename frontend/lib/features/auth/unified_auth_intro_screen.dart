@@ -6,7 +6,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme_controller.dart';
 import '../../core/utils/asset_resolver.dart';
 import '../../widgets/medibond_logo.dart';
-import '../patient/profile/support/help_support_screen.dart';
+import '../patient/profile/support/help_support_screen.dart'
+    deferred as patient_help;
 import 'unified_auth_expand_route.dart';
 import 'unified_mobile_auth_screen.dart';
 import 'widgets/auth_layout.dart';
@@ -158,11 +159,15 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => _WelcomeHelpBottomSheet(
-        onOpenSupport: () {
+        onOpenSupport: () async {
           Navigator.pop(ctx);
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
-          );
+          await patient_help.loadLibrary();
+          if (context.mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                  builder: (_) => patient_help.HelpSupportScreen()),
+            );
+          }
         },
       ),
     );
