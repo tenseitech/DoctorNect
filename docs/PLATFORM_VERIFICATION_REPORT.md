@@ -3397,10 +3397,48 @@ function withAbuseProtection(dbFactory, {
 } = {}, handler) {
 ```
 
-**Corrected Finding (Strictly Based on Lines 165–260 Quoted Above):**
-- **Safe Redis Resolution (Lines 173–180):** When `useRedis` is active (`getRateLimitBackend() === 'redis'`), loading `./redis` is wrapped in `try { const { redis } = require('./redis'); redisClient = redis; } catch (_) {}`. If secrets are unbound and resolving them throws, the error is swallowed and `redisClient` remains `null`.
-- **Fallback to Firestore (Lines 182–218):** `assertBucketUnified` receives `redisClient` and `useRedis`. If `redisClient` is null or Redis encounters an error other than `resource-exhausted`, it logs a warning and falls back to `await assertBucket(db, ...)` (Firestore atomic transaction).
-- **No Unhandled Crashes:** All unverified claims about function process termination, deployment rejections, or unhandled exceptions occurring when REDIS secrets are not bound are removed; the code demonstrates a non-fatal fallback to Firestore atomic rate limiting.
+**Corrected Finding (Try/Catch Analysis at Call Time):**
+- **Within `abuse_rate_limit.js:165–260`:** There is **NO** try/catch that catches a missing-secret failure at CALL time.
+  - Lines 176–179 (`try { const { redis } = require('./redis'); redisClient = redis; } catch (_) {}`) only execute at module require time. Because `redis` is an exported `Proxy` (`src/config/redis.js:268–282`), `require('./redis')` creates the proxy object and does **not** evaluate secrets or throw.
+  - Lines 219–228 (`catch (err) { if (err?.code === 'resource-exhausted') { ... } throw err; }`) intercept errors solely to log rate-limiting patterns and **re-throw unconditionally** (`throw err`).
+- **Exact Call-Time Try/Catch for Unbound Secrets (`src/config/redis.js:37–44`):**
+  When a Redis operation is invoked at call time, the `Proxy` getter triggers `getRedisClient() -> createRedisClient() -> buildRedisOptions() -> resolveSecretValue()`. The exact try/catch catching `secretParam.value()` throwing when unbound in Cloud Functions v2 is in `src/config/redis.js:37–44`:
+  ```javascript
+  if (secretParam && typeof secretParam.value === 'function') {
+    try {
+      const val = secretParam.value();
+      if (val !== undefined && val !== null && String(val).trim().length > 0) {
+        return String(val).trim();
+      }
+    } catch (_) {
+      // Ignored: Not in Cloud Functions execution context with bound secrets
+    }
+  }
+  ```
+  This catches the missing-secret error and falls back to `process.env.REDIS_HOST` or `'127.0.0.1'`.
+- **Exact Call-Time Try/Catch for Redis Fallback (`abuse_rate_limit.js:140–154`):**
+  When connection to the fallback endpoint (`127.0.0.1:6379`) fails or times out, the error is caught by `assertBucketUnified` in `abuse_rate_limit.js:140–154` (prior to line 165):
+  ```javascript
+  if (useRedis && redisClient) {
+    try {
+      await assertBucketRedis(redisClient, {
+        key: redisKey,
+        windowMs,
+        maxAttempts,
+        message,
+      });
+      return;
+    } catch (err) {
+      if (err instanceof HttpsError && err.code === 'resource-exhausted') {
+        throw err;
+      }
+      console.warn(`[abuse_rate_limit] Redis rate limit check failed (${err?.message || err}), falling back to Firestore`);
+    }
+  }
+  await assertBucket(db, { bucket, windowMs, maxAttempts, message });
+  ```
+  This logs a warning and falls back to `assertBucket(db, ...)` (Firestore atomic transaction).
+- **Conclusion:** Missing-secret protection does not reside in `abuse_rate_limit.js:165–260`; it relies on the dual safety net of `src/config/redis.js:37–44` (catching secret evaluation) and `abuse_rate_limit.js:140–154` (catching Redis failure and executing Firestore fallback).
 
 ### 7.3 Reconciliation of Users Table Line (:31 vs :61)
 In `backend/supabase/migrations/20260923000001_doctornect_schema.sql`:
