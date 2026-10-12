@@ -3469,3 +3469,39 @@ index dc4cbbe..bb833bf 100644
  # OTP Redis mirror is off by default. Set to `on` only if Memorystore should cache OTP challenges.
  # When unset/off, OTP send/verify never loads Redis and REDIS_SECRETS are not bound.
 ```
+
+---
+
+## 9. App Check Defaults & Historical Old-Build (741cb46) Audit Corrections
+
+### 9.1 `verifyAmbulanceDriverLoginHttp` App Check Default Verification
+- **Code Reference:** `backend/functions/http_endpoint_security.js:62-66`
+```javascript
+function isAmbulanceHttpAppCheckEnforced(env = process.env) {
+  return String(env.ENFORCE_AMBULANCE_HTTP_APP_CHECK || 'false')
+    .trim()
+    .toLowerCase() === 'true';
+}
+```
+- **Correction:** The environment variable `ENFORCE_AMBULANCE_HTTP_APP_CHECK` defaults strictly to `'false'`.
+- **Runtime Effect:** App Check is **not enforced by default** on `verifyAmbulanceDriverLoginHttp`. Calls lacking the `X-Firebase-AppCheck` header bypass integrity checks and proceed directly to PIN validation unless `ENFORCE_AMBULANCE_HTTP_APP_CHECK=true` is explicitly configured.
+
+### 9.2 Old-Build (`741cb46`) Directory Structure and Code Audit
+Earlier audit queries restricted search paths to `frontend/lib`, which yielded false negatives because prior to commit `230d96f` the Flutter client resided at the repository root (`lib/` and `pubspec.yaml`). Auditing the exact tree at `741cb46`:
+1. **App Check in `741cb46`:**
+   - `pubspec.yaml:30` specifies `firebase_app_check: ^0.4.7`.
+   - `lib/core/firebase/firebase_bootstrap.dart:43` unconditionally invokes `_activateAppCheck()`.
+   - On Android: Activates `AndroidPlayIntegrityProvider()` (or `AndroidDebugProvider` in debug/token modes).
+   - On iOS: Activates `AppleDeviceCheckProvider()`.
+   - On Web: Activates `ReCaptchaV3Provider(siteKey)` if `RECAPTCHA_SITE_KEY` is provided via dart-define; skipped if empty.
+   - `741cb46` is descended from `716b8e3` and `df8926f` (`git merge-base --is-ancestor` exits 0), verifying that App Check activation was introduced in early commits and is present in build `741cb46`.
+2. **Ambulance Auth Linking and Resync in `741cb46`:**
+   - `lib/core/firebase/repositories/ambulance_repository.dart` contains:
+     - `linkDriverAuth` (lines 76, 680, 1220, 1322)
+     - `resyncDriverAuth` (lines 96, 111)
+     - `AmbulanceCallableClient.call('resyncAmbulanceAuthUid', ...)` (line 119)
+   - Call sites exist across `ambulance_driver_home_screen.dart`, `ambulance_invite_setup_screen.dart`, `ambulance_login_screen.dart`, `ambulance_shell.dart`, and `ambulance_shell_auto.dart`.
+   - The fallback to server callable `resyncAmbulanceAuthUid` existed in `741cb46`.
+3. **Minimum Build Gate in `741cb46`:**
+   - `MinimumBuildGate` (`MinimumBuildHost`) was introduced in commit `230d96f` (`feat(app): minimum supported build gate`, Thu Oct 8 16:11:14 2026 +0530).
+   - `230d96f` is NOT an ancestor of `741cb46` (`git merge-base --is-ancestor 230d96f 741cb46` exits 1). Therefore, `741cb46` (`version: 1.0.2+5`) does **not** contain the minimum build gate.
