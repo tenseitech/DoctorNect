@@ -40,6 +40,22 @@ function isProduction() {
     && String(process.env.OTP_TEST_MODE || '').toLowerCase() !== 'true';
 }
 
+/** Resolves Supabase Service Role Key from canonical secret or legacy aliases. */
+function readSupabaseServiceRoleKey({ required = false } = {}) {
+  const value = String(
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_SERVICE_KEY ||
+      process.env.SUPABASE_SECRET_KEY ||
+      '',
+  ).trim();
+  if (required && !value) {
+    const err = new Error('Missing required secret: SUPABASE_SERVICE_ROLE_KEY');
+    err.code = 'failed-precondition';
+    throw err;
+  }
+  return value || null;
+}
+
 function assertProductionSecrets() {
   if (String(process.env.OTP_TEST_MODE || '').trim().toLowerCase() === 'true') {
     console.warn(JSON.stringify({
@@ -64,6 +80,7 @@ function assertProductionSecrets() {
 module.exports = {
   readSecret,
   readMsg91AuthKey,
+  readSupabaseServiceRoleKey,
   isProduction,
   assertProductionSecrets,
 };

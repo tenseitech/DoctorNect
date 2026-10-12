@@ -22,7 +22,7 @@ const crypto = require('crypto');
 // Resolve Supabase config from environment or Firebase functions config
 function getSupabaseConfig() {
   const url = process.env.SUPABASE_URL || process.env.STAGING_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY;
   return { url, key };
 }
 

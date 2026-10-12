@@ -61,9 +61,9 @@ app.post('/otp', async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields: mobile, otp, template_id' });
   }
 
-  const authKey = String(process.env.MSG91_AUTH_KEY || '').trim();
+  const authKey = String(process.env.MSG91_AUTHKEY || process.env.MSG91_AUTH_KEY || '').trim();
   if (!authKey) {
-    console.error('[gcp-msg91-proxy] Missing MSG91_AUTH_KEY secret in environment');
+    console.error('[gcp-msg91-proxy] Missing MSG91_AUTHKEY / MSG91_AUTH_KEY secret in environment');
     return res.status(500).json({ error: 'Configuration Error: Missing MSG91 credentials' });
   }
 
