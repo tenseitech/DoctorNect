@@ -718,9 +718,10 @@ async function upsertMergeRow(pool, table, conflictColumn, payload) {
   const cols = Object.keys(payload).filter((col) => /^[a-z_]+$/.test(col));
   if (!cols.includes(conflictColumn)) throw new Error('Upsert payload missing conflict column');
   const assignments = cols
-    .filter((col) => col !== conflictColumn)
+    .filter((col) => col !== conflictColumn && col !== 'id' && col !== 'created_at')
     .map((col) => `${col} = EXCLUDED.${col}`);
-  const sql = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')}) ON CONFLICT (${conflictColumn}) DO UPDATE SET ${assignments.join(', ')}`;
+  const action = assignments.length > 0 ? `DO UPDATE SET ${assignments.join(', ')}` : 'DO NOTHING';
+  const sql = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')}) ON CONFLICT (${conflictColumn}) ${action}`;
   await pool.query(sql, cols.map((col) => payload[col]));
 }
 
@@ -4230,7 +4231,265 @@ async function syncFirestoreAmbulanceInviteToSupabase(event) {
   }
 }
 
+function normalizeRole(role) {
+  const raw = String(role || '').trim();
+  const lower = raw.toLowerCase();
+  if (lower === 'patient') return 'patient';
+  if (lower === 'doctor') return 'doctor';
+  if (lower === 'medical' || lower === 'medicalstore' || lower === 'medical_store' || lower === 'pharmacy') return 'medicalStore';
+  if (lower === 'lab') return 'lab';
+  if (lower === 'ambulance') return 'ambulance';
+  if (lower === 'superadmin' || lower === 'super_admin') return 'superAdmin';
+  if (lower === 'admin') return 'admin';
+  return raw;
+}
+
+function buildUserSupabasePayload(uid, docData) {
+  const doc = docData || {};
+  const normalizedUid = String(uid || '').trim();
+  if (!normalizedUid) {
+    return { skip: true, reason: 'user_uid_missing' };
+  }
+
+  const role = normalizeRole(doc.role || 'patient');
+  const profileId = firstText(doc.profileId, doc.profile_id, doc.id, normalizedUid);
+  if (!profileId) {
+    return { skip: true, reason: 'user_profile_id_missing' };
+  }
+
+  const rawEmail = firstText(doc.email);
+  const rawMobile = firstText(doc.mobile, doc.phone);
+  let mobile = rawMobile ? String(rawMobile).replace(/\D/g, '') : null;
+  if (mobile && mobile.length === 12 && mobile.startsWith('91')) {
+    mobile = mobile.slice(2);
+  } else if (mobile && mobile.length === 11 && mobile.startsWith('0')) {
+    mobile = mobile.slice(1);
+  }
+  const email = (rawEmail || `${mobile || normalizedUid}@signup.doctornect.app`).toLowerCase();
+  const displayName = firstText(doc.displayName, doc.name, 'User');
+  const profileCompleted = typeof doc.profileCompleted === 'boolean' ? doc.profileCompleted : false;
+  const verified = typeof doc.verified === 'boolean' ? doc.verified : false;
+  const status = firstText(doc.status, 'approved');
+  const photoUrl = firstText(doc.photoUrl, doc.photo_url) || null;
+  const createdAt = toIsoTimestamp(doc.createdAt) || new Date().toISOString();
+  const updatedAt = toIsoTimestamp(doc.updatedAt) || new Date().toISOString();
+  const verifiedAt = toIsoTimestamp(doc.verifiedAt) || null;
+  const deactivated = Boolean(doc.deactivated);
+
+  const row = {
+    firebase_uid: normalizedUid,
+    role,
+    profile_id: profileId,
+    display_name: displayName,
+    email,
+    mobile: mobile || null,
+    profile_completed: profileCompleted,
+    verified,
+    status,
+    deactivated,
+    updated_at: updatedAt,
+  };
+  if (photoUrl) row.photo_url = photoUrl;
+  if (verifiedAt) row.verified_at = verifiedAt;
+
+  return {
+    skip: false,
+    row,
+    createdAt,
+  };
+}
+
+/**
+ * Sync Firestore users/{uid} to Supabase public.users
+ * Keyed on firebase_uid. Idempotent. Handles creates, updates, role changes, and deletes.
+ */
+async function syncFirestoreUserToSupabase(event) {
+  const change = event.data;
+  if (!change) return;
+
+  const uid = event.params?.uid || change.after?.id || change.before?.id;
+  if (!uid) return;
+
+  // 1. Loop Prevention Check
+  const afterData = change.after?.exists ? change.after.data() : null;
+  if (afterData && (afterData.syncedBy === 'supabase_bridge' || afterData.syncedBy === 'reconciler_bot')) {
+    return;
+  }
+
+  const { url, key } = getSupabaseConfig();
+  const pool = getPgPool();
+
+  if ((!url || !key) && !pool) {
+    console.warn('[SyncBridge] Supabase credentials not configured in Cloud Functions. Skipping user sync.');
+    return;
+  }
+
+  // 2. Handle document deletion: follow deleteMyAccount cleanup policy
+  if (!change.after || !change.after.exists) {
+    const beforeData = change.before?.exists ? change.before.data() : {};
+    const role = beforeData.role ? normalizeRole(beforeData.role) : undefined;
+    const profileId = beforeData.profileId || beforeData.profile_id;
+    try {
+      await executeWithRetry(
+        async () => {
+          const { cleanupUserSupabaseRows } = require('./delete_my_account');
+          const res = await cleanupUserSupabaseRows({ uid, role, profileId });
+          if (res && res.failedSupabaseTables && res.failedSupabaseTables.length > 0) {
+            throw new Error(`Failed to cleanup Supabase tables: ${res.failedSupabaseTables.join(', ')}`);
+          }
+        },
+        { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'user', entityId: uid, action: 'delete' } }
+      );
+    } catch (err) {
+      await recordDlqFailure({
+        direction: 'firestore_to_supabase',
+        entityType: 'user',
+        entityId: uid,
+        payload: { uid, action: 'delete' },
+        errorMessage: err.message,
+        errorStack: err.stack,
+        retryCount: err.retryCount || 3,
+      });
+      throw err;
+    }
+    return;
+  }
+
+  // 3. Monotonic compare-and-skip
+  const localMs = firestoreTimestampMs(afterData.updatedAt);
+  let remoteMs = null;
+  try {
+    remoteMs = await readRemoteUpdatedAtMs({
+      url,
+      key,
+      pool,
+      table: 'users',
+      idColumn: 'firebase_uid',
+      id: uid,
+    });
+  } catch (err) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'user',
+      entityId: uid,
+      payload: { reason: 'compare_and_skip_read_failed' },
+      errorMessage: err.message,
+      errorStack: err.stack,
+    });
+    return;
+  }
+  if (remoteMs != null && (localMs == null || localMs <= remoteMs)) {
+    console.info(`[SyncBridge] Skipping stale user snapshot ${uid}`);
+    return;
+  }
+
+  // 4. Build payload
+  const built = buildUserSupabasePayload(uid, afterData);
+  if (built.skip) {
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'user',
+      entityId: uid,
+      payload: { uid },
+      errorMessage: `Skipped user sync: ${built.reason}`,
+      retryCount: 0,
+    });
+    return;
+  }
+
+  const { row, createdAt } = built;
+
+  // 5. Execute upsert with retry
+  try {
+    await executeWithRetry(
+      async () => {
+        if (url && key) {
+          const checkResp = await fetch(
+            `${url.replace(/\/+$/, '')}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id&limit=1`,
+            {
+              method: 'GET',
+              headers: {
+                apikey: key,
+                Authorization: `Bearer ${key}`,
+              },
+            }
+          );
+          const existingRows = checkResp.ok ? await checkResp.json() : [];
+          if (Array.isArray(existingRows) && existingRows.length > 0) {
+            // Row already exists - update via PATCH keyed on firebase_uid
+            const patchResp = await fetch(
+              `${url.replace(/\/+$/, '')}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}`,
+              {
+                method: 'PATCH',
+                headers: {
+                  apikey: key,
+                  Authorization: `Bearer ${key}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'return=minimal',
+                },
+                body: JSON.stringify(row),
+              }
+            );
+            if (!patchResp.ok) {
+              const errBody = await patchResp.text();
+              throw new Error(`Supabase PostgREST user update error (${patchResp.status}): ${errBody}`);
+            }
+          } else {
+            // Row does not exist - insert with generated UUID and on_conflict=firebase_uid
+            const insertPayload = {
+              id: crypto.randomUUID(),
+              created_at: createdAt,
+              ...row,
+            };
+            const postResp = await fetch(
+              `${url.replace(/\/+$/, '')}/rest/v1/users?on_conflict=firebase_uid`,
+              {
+                method: 'POST',
+                headers: {
+                  apikey: key,
+                  Authorization: `Bearer ${key}`,
+                  'Content-Type': 'application/json',
+                  Prefer: 'resolution=merge-duplicates,return=minimal',
+                },
+                body: JSON.stringify(insertPayload),
+              }
+            );
+            if (!postResp.ok) {
+              const errBody = await postResp.text();
+              throw new Error(`Supabase PostgREST user insert error (${postResp.status}): ${errBody}`);
+            }
+          }
+        } else if (pool) {
+          const insertPayload = {
+            id: crypto.randomUUID(),
+            created_at: createdAt,
+            ...row,
+          };
+          await upsertMergeRow(pool, 'users', 'firebase_uid', insertPayload);
+        }
+      },
+      { maxRetries: 3, baseDelayMs: 200, context: { entityType: 'user', entityId: uid } }
+    );
+  } catch (err) {
+    const retryCount = err.retryCount || 3;
+    const actualErr = err.originalError || err;
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'user',
+      entityId: uid,
+      payload: row,
+      errorMessage: actualErr.message,
+      errorStack: actualErr.stack,
+      retryCount,
+    });
+    throw actualErr;
+  }
+}
+
 module.exports = {
+  syncFirestoreUserToSupabase,
+  buildUserSupabasePayload,
+  normalizeRole,
   syncFirestoreAppointmentToSupabase,
   syncFirestorePrescriptionToSupabase,
   syncFirestoreDoctorToSupabase,

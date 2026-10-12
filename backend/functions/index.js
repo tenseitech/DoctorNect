@@ -1942,6 +1942,7 @@ exports.sendMsg91EmailCallable = onCall(
 // CROSS-ROLE STAGED SYNC BRIDGE (Doctor/Firestore -> Patient/Supabase)
 // ----------------------------------------------------------------------------
 const {
+  syncFirestoreUserToSupabase,
   syncFirestoreAppointmentToSupabase,
   syncFirestorePrescriptionToSupabase,
   syncFirestoreDoctorToSupabase,
@@ -1965,6 +1966,13 @@ const {
 const SYNC_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 
 if (ENABLE_SUPABASE_SYNC) {
+exports.syncUserToSupabase = onDocumentWritten({
+  document: 'users/{uid}',
+  region: FIRESTORE_TRIGGER_REGION,
+  retry: true,
+  secrets: SYNC_SECRETS,
+}, syncFirestoreUserToSupabase);
+
 exports.syncAppointmentToSupabase = onDocumentWritten({
   document: 'appointments/{appointmentId}',
   region: FIRESTORE_TRIGGER_REGION,
