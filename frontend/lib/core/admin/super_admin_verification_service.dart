@@ -84,13 +84,19 @@ class SuperAdminVerificationService {
   static final SuperAdminVerificationService instance =
       SuperAdminVerificationService._();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+
+  @visibleForTesting
+  static Stream<List<VerificationApplicant>>? debugApplicantsStreamOverride;
 
   /// Stream list of non-patient accounts for verification.
   Stream<List<VerificationApplicant>> streamApplicants({
     UserType? roleFilter,
     VerificationStage? stageFilter,
   }) {
+    if (debugApplicantsStreamOverride != null) {
+      return debugApplicantsStreamOverride!;
+    }
     return _firestore.collection(FirestorePaths.users).snapshots().map((
       snapshot,
     ) {
