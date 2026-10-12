@@ -1004,3 +1004,174 @@ describe('741cb46 Client Payload Replay Suite on Real Baseline (HEAD vs Live)', 
     }
   });
 });
+
+// 4. Baseline Comparison: WITHOUT createdVia (6532271) vs WITH createdVia under HEAD rules
+describe('Baseline Comparison: WITHOUT createdVia (6532271) vs WITH createdVia under HEAD rules', () => {
+  async function seedDoc(withCreatedVia, overrides = {}) {
+    await testEnvHead.withSecurityRulesDisabled(async (ctx) => {
+      const doc = buildCallableBaselineAppointment(overrides);
+      if (!withCreatedVia) {
+        delete doc.createdVia;
+      }
+      await ctx.firestore().collection('appointments').doc(APPT_ID).set(doc);
+    });
+  }
+
+  const patientCancelPayload = {
+    appointmentId: APPT_ID,
+    doctorId: DOCTOR_ID,
+    doctorName: 'Dr. Doctor',
+    specialization: 'Cardiology',
+    patientId: PATIENT_ID,
+    patientName: 'John Doe',
+    patientAge: 30,
+    patientGender: 'Male',
+    dateTime: new Date('2026-10-15T04:30:00.000Z'),
+    slotLabel: '10:00 AM',
+    tokenNumber: 1,
+    visitType: 'newVisit',
+    patientStatus: 'confirmed',
+    doctorStatus: 'cancelled',
+    cancellationReason: 'Feeling better',
+    hasPrescription: false,
+    hasReport: false,
+    hasReview: false,
+    labReports: [],
+    chiefComplaints: [],
+    symptoms: [],
+    observations: [],
+    wasRescheduled: false,
+    updatedAt: new Date(),
+  };
+
+  const doctorCancelPayload = {
+    appointmentId: APPT_ID,
+    doctorId: DOCTOR_ID,
+    doctorName: 'Dr. Doctor',
+    specialization: 'Cardiology',
+    patientId: PATIENT_ID,
+    patientName: 'John Doe',
+    patientAge: 30,
+    patientGender: 'Male',
+    dateTime: new Date('2026-10-15T04:30:00.000Z'),
+    slotLabel: '10:00 AM',
+    tokenNumber: 1,
+    visitType: 'newVisit',
+    patientStatus: 'confirmed',
+    doctorStatus: 'cancelled',
+    cancellationReason: 'Doctor emergency',
+    hasPrescription: false,
+    hasReport: false,
+    hasReview: false,
+    labReports: [],
+    chiefComplaints: [],
+    symptoms: [],
+    observations: [],
+    wasRescheduled: false,
+    updatedAt: new Date(),
+  };
+
+  const doctorReschedulePayload = {
+    appointmentId: APPT_ID,
+    doctorId: DOCTOR_ID,
+    doctorName: 'Dr. Doctor',
+    specialization: 'Cardiology',
+    patientId: PATIENT_ID,
+    patientName: 'John Doe',
+    patientAge: 30,
+    patientGender: 'Male',
+    dateTime: new Date('2026-10-16T04:30:00.000Z'),
+    slotLabel: '11:00 AM',
+    tokenNumber: 1,
+    visitType: 'newVisit',
+    patientStatus: 'confirmed',
+    doctorStatus: 'confirmed',
+    hasPrescription: false,
+    hasReport: false,
+    hasReview: false,
+    labReports: [],
+    chiefComplaints: [],
+    symptoms: [],
+    observations: [],
+    wasRescheduled: true,
+    updatedAt: new Date(),
+  };
+
+  const doctorCompletePayload = {
+    appointmentId: APPT_ID,
+    doctorId: DOCTOR_ID,
+    doctorName: 'Dr. Doctor',
+    specialization: 'Cardiology',
+    patientId: PATIENT_ID,
+    patientName: 'John Doe',
+    patientAge: 30,
+    patientGender: 'Male',
+    dateTime: new Date('2026-10-15T04:30:00.000Z'),
+    slotLabel: '10:00 AM',
+    tokenNumber: 1,
+    visitType: 'newVisit',
+    patientStatus: 'confirmed',
+    doctorStatus: 'completed',
+    diagnosis: 'Mild hypertension',
+    clinicalNotes: 'Take meds regularly',
+    hasPrescription: true,
+    hasReport: false,
+    hasReview: false,
+    labReports: [],
+    chiefComplaints: [],
+    symptoms: [],
+    observations: [],
+    wasRescheduled: false,
+    updatedAt: new Date(),
+  };
+
+  // Group A: Baseline WITHOUT createdVia (live 6532271 key set)
+  test('A1. baseline WITHOUT createdVia: patient cancel succeeds under HEAD rules', async () => {
+    await seedDoc(false);
+    const db = testEnvHead.authenticatedContext(PATIENT_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc(APPT_ID).set(patientCancelPayload, { merge: true }));
+  });
+
+  test('A2. baseline WITHOUT createdVia: doctor cancel succeeds under HEAD rules', async () => {
+    await seedDoc(false);
+    const db = testEnvHead.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc(APPT_ID).set(doctorCancelPayload, { merge: true }));
+  });
+
+  test('A3. baseline WITHOUT createdVia: doctor reschedule succeeds under HEAD rules', async () => {
+    await seedDoc(false);
+    const db = testEnvHead.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc(APPT_ID).set(doctorReschedulePayload, { merge: true }));
+  });
+
+  test('A4. baseline WITHOUT createdVia: doctor complete succeeds under HEAD rules', async () => {
+    await seedDoc(false);
+    const db = testEnvHead.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc(APPT_ID).set(doctorCompletePayload, { merge: true }));
+  });
+
+  // Group B: Baseline WITH createdVia (HEAD callable key set)
+  test('B1. baseline WITH createdVia: patient cancel succeeds under HEAD rules', async () => {
+    await seedDoc(true);
+    const db = testEnvHead.authenticatedContext(PATIENT_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc(APPT_ID).set(patientCancelPayload, { merge: true }));
+  });
+
+  test('B2. baseline WITH createdVia: doctor cancel succeeds under HEAD rules', async () => {
+    await seedDoc(true);
+    const db = testEnvHead.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc(APPT_ID).set(doctorCancelPayload, { merge: true }));
+  });
+
+  test('B3. baseline WITH createdVia: doctor reschedule succeeds under HEAD rules', async () => {
+    await seedDoc(true);
+    const db = testEnvHead.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc(APPT_ID).set(doctorReschedulePayload, { merge: true }));
+  });
+
+  test('B4. baseline WITH createdVia: doctor complete succeeds under HEAD rules', async () => {
+    await seedDoc(true);
+    const db = testEnvHead.authenticatedContext(DOCTOR_UID).firestore();
+    await assertSucceeds(db.collection('appointments').doc(APPT_ID).set(doctorCompletePayload, { merge: true }));
+  });
+});
