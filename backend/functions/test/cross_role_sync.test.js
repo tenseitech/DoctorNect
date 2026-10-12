@@ -106,6 +106,50 @@ test('missing age, token, and slot are omitted from the appointment payload', ()
   assert.notEqual(payload.slot_label, '10:00 AM');
 });
 
+test('Appointment sync: missing age/token does not write placeholder values in live sync', async () => {
+  const calls = [];
+  await withFakeSupabase(async () => {
+    global.fetch = async (url, opts) => {
+      const u = String(url);
+      const method = (opts && opts.method) || 'GET';
+      const body = opts && opts.body ? JSON.parse(opts.body) : null;
+      calls.push({ url: u, method, body });
+      if (u.includes('select=updated_at')) {
+        return { ok: true, json: async () => [] };
+      }
+      return { ok: true, json: async () => [], text: async () => '' };
+    };
+
+    await syncFirestoreAppointmentToSupabase({
+      params: { appointmentId: 'apt-no-placeholders' },
+      data: {
+        after: {
+          exists: true,
+          id: 'apt-no-placeholders',
+          data: () => ({
+            doctorId: 'doc-valid-1',
+            patientId: 'pat-valid-1',
+            doctorName: 'Dr. John',
+            patientName: 'Jane Doe',
+            syncOrigin: 'doctor_firestore',
+            updatedAt: '2026-06-01T00:00:00.000Z',
+            // patientAge and tokenNumber intentionally omitted
+          }),
+        },
+      },
+    });
+  });
+
+  const postCall = calls.find((c) => c.method === 'POST' && c.url.includes('/rest/v1/appointments'));
+  assert.ok(postCall, 'Must perform POST /rest/v1/appointments');
+  assert.equal(postCall.body.patient_age, undefined);
+  assert.equal(Object.hasOwn(postCall.body, 'patient_age'), false);
+  assert.notEqual(postCall.body.patient_age, 30);
+  assert.equal(postCall.body.token_number, undefined);
+  assert.equal(Object.hasOwn(postCall.body, 'token_number'), false);
+  assert.notEqual(postCall.body.token_number, 1);
+});
+
 test('present age, token, and slot are copied and patient origin is not retagged', () => {
   assert.equal(resolveWriterSyncOrigin({ syncOrigin: 'patient_supabase' }), 'patient_supabase');
   assert.equal(resolveWriterSyncOrigin({ createdBy: 'patient' }), 'patient_firestore');

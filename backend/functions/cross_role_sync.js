@@ -638,33 +638,43 @@ function buildAppointmentSupabasePayload(after, appointmentId, syncOrigin) {
     const missing = [];
     if (!doctorName) missing.push('doctor_name');
     if (!patientName) missing.push('patient_name');
+    console.warn(JSON.stringify({
+      severity: 'WARNING',
+      event: 'SYNC_BRIDGE_PAYLOAD_VALIDATION_FAILED',
+      entityType: 'appointment',
+      entityId: appointmentId,
+      documentPath: `appointments/${appointmentId}`,
+      missingFields: missing,
+    }));
     return { skip: true, reason: `appointment_required_missing:${missing.join(',')}` };
   }
 
-  const dateTimeIso = after.dateTime?.toDate?.()
-    ? after.dateTime.toDate().toISOString()
-    : (after.dateTime ? new Date(after.dateTime).toISOString() : new Date().toISOString());
+  const dateTimeRaw = after.dateTime;
+  const dateTimeIso = dateTimeRaw?.toDate?.()
+    ? dateTimeRaw.toDate().toISOString()
+    : (dateTimeRaw ? toIsoTimestamp(dateTimeRaw) : undefined);
 
   const payload = {
     appointment_id: appointmentId,
-    doctor_id: after.doctorId || 'doc-unknown',
-    patient_id: after.patientId || null,
     doctor_name: doctorName,
-    specialization: after.specialization || 'General',
     patient_name: patientName,
-    patient_gender: after.patientGender || 'Other',
-    date_time: dateTimeIso,
-    visit_type: after.visitType || 'newVisit',
-    patient_status: after.patientStatus || 'confirmed',
-    doctor_status: after.doctorStatus || 'pendingRequest',
-    clinic_name: after.clinicName || null,
-    clinic_address: after.clinicAddress || null,
-    cancellation_reason: after.cancellationReason || null,
-    diagnosis: after.diagnosis || null,
     has_prescription: Boolean(after.hasPrescription),
     sync_origin: syncOrigin,
     synced_by: 'firestore_cloud_function',
   };
+
+  putText(payload, 'doctor_id', after.doctorId);
+  putText(payload, 'patient_id', after.patientId);
+  putText(payload, 'specialization', after.specialization);
+  putText(payload, 'patient_gender', after.patientGender);
+  if (dateTimeIso) payload.date_time = dateTimeIso;
+  putText(payload, 'visit_type', after.visitType);
+  putText(payload, 'patient_status', after.patientStatus);
+  putText(payload, 'doctor_status', after.doctorStatus);
+  putText(payload, 'clinic_name', after.clinicName);
+  putText(payload, 'clinic_address', after.clinicAddress);
+  putText(payload, 'cancellation_reason', after.cancellationReason);
+  putText(payload, 'diagnosis', after.diagnosis);
 
   const age = optionalFiniteNumber(after.patientAge);
   if (age !== undefined) payload.patient_age = age;
@@ -2163,10 +2173,37 @@ async function syncFirestorePharmacyConnectionToSupabase(event) {
 
   const doctorId = after.doctorId;
   const storeId = after.medicalStoreId || after.storeId;
+  const doctorName = firstText(after.doctorName);
+  const storeName = firstText(after.storeName);
+
+  if (!doctorId || !storeId || !doctorName || !storeName) {
+    const missing = [];
+    if (!doctorId) missing.push('doctor_id');
+    if (!storeId) missing.push('medical_store_id');
+    if (!doctorName) missing.push('doctor_name');
+    if (!storeName) missing.push('store_name');
+    console.warn(JSON.stringify({
+      severity: 'WARNING',
+      event: 'SYNC_BRIDGE_PAYLOAD_VALIDATION_FAILED',
+      entityType: 'pharmacy_connection',
+      entityId: connectionId,
+      documentPath: `pharmacy_connections/${connectionId}`,
+      missingFields: missing,
+    }));
+    await recordDlqFailure({
+      direction: 'firestore_to_supabase',
+      entityType: 'pharmacy_connection',
+      entityId: connectionId,
+      payload: { connection_id: connectionId },
+      errorMessage: `Skipped pharmacy connection sync: ${missing.join(', ')} required.`,
+      retryCount: 0,
+    });
+    return;
+  }
 
   // Self-healing foreign keys
   await ensureDoctorExistsInPostgres(doctorId, { url, key, pool });
-  await ensureMedicalStoreExistsInPostgres(storeId, { storeName: after.storeName }, { url, key, pool });
+  await ensureMedicalStoreExistsInPostgres(storeId, { storeName }, { url, key, pool });
 
   const rawStatus = after.status || 'pending';
   const status = ['pending', 'active', 'rejected', 'removed'].includes(rawStatus) ? rawStatus : 'pending';
@@ -2177,8 +2214,8 @@ async function syncFirestorePharmacyConnectionToSupabase(event) {
     connection_id: connectionId,
     doctor_id: doctorId,
     medical_store_id: storeId,
-    doctor_name: after.doctorName || 'Doctor',
-    store_name: after.storeName || 'Medical Store',
+    doctor_name: doctorName,
+    store_name: storeName,
     status: status,
     requested_by: requestedBy,
     requested_at: toIsoTimestamp(after.requestedAt) || new Date().toISOString(),
