@@ -39,6 +39,41 @@ if (!EMULATOR_RUNNING) {
           profileId: 'doc_123',
           mobile: '7666892394',
         });
+        await db.collection('users').doc('other_provider_uid_2').set({
+          role: 'doctor',
+          profileId: 'doc_456',
+          mobile: '7666892395',
+        });
+        await db.collection('users').doc('super_admin_uid').set({
+          role: 'super_admin',
+          profileId: 'admin_1',
+        });
+
+        // Seed sample ads for read access testing
+        await db.collection('promotedAds').doc('ad_active_sample').set({
+          adId: 'ad_active_sample',
+          providerType: 'doctor',
+          providerId: PROVIDER_UID,
+          title: 'Active Banner',
+          status: 'active',
+          paymentStatus: 'verified',
+        });
+        await db.collection('promotedAds').doc('ad_pending_sample').set({
+          adId: 'ad_pending_sample',
+          providerType: 'doctor',
+          providerId: PROVIDER_UID,
+          title: 'Pending Banner',
+          status: 'pending_approval',
+          paymentStatus: 'verified',
+        });
+        await db.collection('promotedAds').doc('ad_draft_sample').set({
+          adId: 'ad_draft_sample',
+          providerType: 'doctor',
+          providerId: PROVIDER_UID,
+          title: 'Draft Banner',
+          status: 'draft',
+          paymentStatus: 'pending',
+        });
       });
     });
 
@@ -190,6 +225,56 @@ if (!EMULATOR_RUNNING) {
 
       await assertFails(
         providerCtx.firestore().collection('razorpayPayments').doc(ledgerId).delete()
+      );
+    });
+
+    test('Unauthenticated read of an active ad is allowed', async () => {
+      const unauthCtx = testEnv.unauthenticatedContext();
+      await assertSucceeds(
+        unauthCtx.firestore().collection('promotedAds').doc('ad_active_sample').get()
+      );
+    });
+
+    test('Unauthenticated read of a draft or pending ad is denied', async () => {
+      const unauthCtx = testEnv.unauthenticatedContext();
+      await assertFails(
+        unauthCtx.firestore().collection('promotedAds').doc('ad_pending_sample').get()
+      );
+      await assertFails(
+        unauthCtx.firestore().collection('promotedAds').doc('ad_draft_sample').get()
+      );
+    });
+
+    test('Owner read of own pending or draft ad is allowed', async () => {
+      const ownerCtx = testEnv.authenticatedContext(PROVIDER_UID);
+      await assertSucceeds(
+        ownerCtx.firestore().collection('promotedAds').doc('ad_pending_sample').get()
+      );
+      await assertSucceeds(
+        ownerCtx.firestore().collection('promotedAds').doc('ad_draft_sample').get()
+      );
+    });
+
+    test('Other provider read of someone else pending or draft ad is denied', async () => {
+      const otherCtx = testEnv.authenticatedContext('other_provider_uid_2');
+      await assertFails(
+        otherCtx.firestore().collection('promotedAds').doc('ad_pending_sample').get()
+      );
+      await assertFails(
+        otherCtx.firestore().collection('promotedAds').doc('ad_draft_sample').get()
+      );
+    });
+
+    test('Super admin read of any ad (active, pending, draft) is allowed', async () => {
+      const adminCtx = testEnv.authenticatedContext('super_admin_uid');
+      await assertSucceeds(
+        adminCtx.firestore().collection('promotedAds').doc('ad_active_sample').get()
+      );
+      await assertSucceeds(
+        adminCtx.firestore().collection('promotedAds').doc('ad_pending_sample').get()
+      );
+      await assertSucceeds(
+        adminCtx.firestore().collection('promotedAds').doc('ad_draft_sample').get()
       );
     });
   });

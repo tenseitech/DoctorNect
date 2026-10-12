@@ -1334,10 +1334,10 @@ service cloud.firestore {
       // Active ads are public for the Citywide banner. Drafts and unpaid or
       // unapproved ads are visible only to the owner and super admins.
       allow read: if resource.data.status == 'active'
-        || isSuperAdmin()
         || (isSignedIn()
             && (resource.data.providerId == request.auth.uid
-                || (myProfileId() != '' && resource.data.providerId == myProfileId())));
+                || (myProfileId() != '' && resource.data.providerId == myProfileId())))
+        || isSuperAdmin();
 
       // Creation: Logged-in provider can create draft/pending_payment ads OR Super Admin
       // Disallows server-controlled payment/activation fields on creation (razorpay IDs, start/end times)
