@@ -2511,6 +2511,12 @@ async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unk
     );
   }
 
+  if (found.data?.authUid !== auth.uid) {
+    await db.collection('ambulances').doc(found.id).set({
+      authUid: auth.uid,
+    }, { merge: true });
+  }
+
   const username = String(found.data.username || '').trim().toLowerCase();
   if (username) {
     try {
