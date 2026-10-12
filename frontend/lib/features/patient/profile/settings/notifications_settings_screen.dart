@@ -41,180 +41,19 @@ class _NotificationsSettingsScreenState
     }
   }
 
-  void _addMedication() {
-    final formKey = GlobalKey<FormState>();
-    String? morningTime;
-    String? afternoonTime;
-    String? eveningTime;
-    String? nightTime;
-
-    final nameCtrl = TextEditingController();
-    showDialog(
+  Future<void> _addMedication() async {
+    final reminder = await showDialog<MedicationReminder>(
       context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            Widget buildTimeRow(
-              MedicationTimeSlot slot,
-              String? time,
-              ValueChanged<String?> onChanged,
-            ) {
-              final title = MedicationTimeSlots.label(slot);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Checkbox(
-                      value: time != null,
-                      onChanged: (checked) {
-                        if (checked == true) {
-                          onChanged(
-                            MedicationTimeSlots.defaultTime(slot)
-                                .format(context),
-                          );
-                        } else {
-                          onChanged(null);
-                        }
-                      },
-                      activeColor: AppColors.patientTeal,
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: AppTypography.bodyMedium,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            MedicationTimeSlots.rangeLabel(slot),
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: AppTypography.labelSmall,
-                              color: AppColors.textSecondaryOf(context),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (time != null)
-                      TextButton(
-                        onPressed: () async {
-                          final picked = await MedicationTimeSlots.pickTime(
-                            context,
-                            slot,
-                            current: time,
-                          );
-                          if (picked != null) onChanged(picked);
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.patientTeal,
-                        ),
-                        child: Text(
-                          time,
-                          style: TextStyle(
-                              fontFamily: 'Inter', fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            }
-
-            return AlertDialog(
-              title: const Text('Add medicine'),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: nameCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Medicine name',
-                        ),
-                        validator: (v) =>
-                            FormValidators.tagText(v, field: 'Medicine name'),
-                      ),
-                      const SizedBox(height: 16),
-                      buildTimeRow(
-                        MedicationTimeSlot.morning,
-                        morningTime,
-                        (t) => setStateDialog(() => morningTime = t),
-                      ),
-                      buildTimeRow(
-                        MedicationTimeSlot.afternoon,
-                        afternoonTime,
-                        (t) => setStateDialog(() => afternoonTime = t),
-                      ),
-                      buildTimeRow(
-                        MedicationTimeSlot.evening,
-                        eveningTime,
-                        (t) => setStateDialog(() => eveningTime = t),
-                      ),
-                      buildTimeRow(
-                        MedicationTimeSlot.night,
-                        nightTime,
-                        (t) => setStateDialog(() => nightTime = t),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.textSecondaryOf(context),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    if (!formKey.currentState!.validate()) return;
-                    if (morningTime == null &&
-                        afternoonTime == null &&
-                        eveningTime == null &&
-                        nightTime == null) {
-                      AppToast.info(
-                        context,
-                        'Please select at least one time.',
-                      );
-                      return;
-                    }
-                    setState(() {
-                      _p.medications.add(
-                        MedicationReminder(
-                          name: nameCtrl.text.trim(),
-                          morningTime: morningTime,
-                          afternoonTime: afternoonTime,
-                          eveningTime: eveningTime,
-                          nightTime: nightTime,
-                        ),
-                      );
-                    });
-                    _persist();
-                    Navigator.pop(ctx);
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.patientTeal,
-                    foregroundColor: AppColors.white,
-                  ),
-                  child: const Text('Add'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).whenComplete(nameCtrl.dispose);
+      builder: (ctx) => const _AddMedicationDialog(),
+    );
+    if (reminder != null && mounted) {
+      setState(() {
+        _p.medications.add(reminder);
+      });
+      _persist();
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -375,6 +214,195 @@ class _NotificationsSettingsScreenState
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AddMedicationDialog extends StatefulWidget {
+  const _AddMedicationDialog();
+
+  @override
+  State<_AddMedicationDialog> createState() => _AddMedicationDialogState();
+}
+
+class _AddMedicationDialogState extends State<_AddMedicationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameCtrl;
+  String? _morningTime;
+  String? _afternoonTime;
+  String? _eveningTime;
+  String? _nightTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  Widget _buildTimeRow(
+    BuildContext context,
+    MedicationTimeSlot slot,
+    String? time,
+    ValueChanged<String?> onChanged,
+  ) {
+    final title = MedicationTimeSlots.label(slot);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Checkbox(
+            value: time != null,
+            onChanged: (checked) {
+              if (checked == true) {
+                onChanged(
+                  MedicationTimeSlots.defaultTime(slot).format(context),
+                );
+              } else {
+                onChanged(null);
+              }
+            },
+            activeColor: AppColors.patientTeal,
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: AppTypography.bodyMedium,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  MedicationTimeSlots.rangeLabel(slot),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: AppTypography.labelSmall,
+                    color: AppColors.textSecondaryOf(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (time != null)
+            TextButton(
+              onPressed: () async {
+                final picked = await MedicationTimeSlots.pickTime(
+                  context,
+                  slot,
+                  current: time,
+                );
+                if (picked != null) onChanged(picked);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.patientTeal,
+              ),
+              child: Text(
+                time,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add medicine'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Medicine name',
+                ),
+                validator: (v) =>
+                    FormValidators.tagText(v, field: 'Medicine name'),
+              ),
+              const SizedBox(height: 16),
+              _buildTimeRow(
+                context,
+                MedicationTimeSlot.morning,
+                _morningTime,
+                (t) => setState(() => _morningTime = t),
+              ),
+              _buildTimeRow(
+                context,
+                MedicationTimeSlot.afternoon,
+                _afternoonTime,
+                (t) => setState(() => _afternoonTime = t),
+              ),
+              _buildTimeRow(
+                context,
+                MedicationTimeSlot.evening,
+                _eveningTime,
+                (t) => setState(() => _eveningTime = t),
+              ),
+              _buildTimeRow(
+                context,
+                MedicationTimeSlot.night,
+                _nightTime,
+                (t) => setState(() => _nightTime = t),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.textSecondaryOf(context),
+          ),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (!_formKey.currentState!.validate()) return;
+            if (_morningTime == null &&
+                _afternoonTime == null &&
+                _eveningTime == null &&
+                _nightTime == null) {
+              AppToast.info(
+                context,
+                'Please select at least one time.',
+              );
+              return;
+            }
+            final reminder = MedicationReminder(
+              name: _nameCtrl.text.trim(),
+              morningTime: _morningTime,
+              afternoonTime: _afternoonTime,
+              eveningTime: _eveningTime,
+              nightTime: _nightTime,
+            );
+            Navigator.pop(context, reminder);
+          },
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.patientTeal,
+            foregroundColor: AppColors.white,
+          ),
+          child: const Text('Add'),
+        ),
+      ],
     );
   }
 }
