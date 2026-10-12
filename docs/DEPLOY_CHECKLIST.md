@@ -7,6 +7,7 @@ Project: `medibond-45fad`. Run commands from the repo root.
 ## Never
 
 - Do not run an unqualified `firebase deploy --only functions`. The CLI will ask to delete functions that are not in this source tree. **Answer No.** That question is what protects the web service `ssrmedibond45fad` (`us-central1`), which is not part of `backend/functions`.
+- Do not run `backend/tool/deploy-backend.ps1` for this staged rollout. It deploys rules, storage, and functions together (`firebase deploy --only firestore:rules,storage,functions`) and must not be used because Firestore rules must not be deployed until the new client build that calls `bookAppointment` is already in users' hands.
 - Do not delete `ssrmedibond45fad`.
 - Do not set `ENABLE_SUPABASE_SYNC=on` for a deploy until the sync payload rules in `backend/functions/cross_role_sync.js` have been reviewed. With the variable unset, `sync*ToSupabase` functions are not registered.
 - Do not set `ENABLE_SUPABASE=1` on a release build.
@@ -16,16 +17,22 @@ Project: `medibond-45fad`. Run commands from the repo root.
 
 ## Order
 
-1. Create `RAZORPAY_WEBHOOK_SECRET` out of band (value from the Razorpay dashboard, never pasted here):
+1. **Reconcile live env names with `.env`** before deploying any function that reads env (OTP, login, email, S3, sync). Address naming drift and secret overlaps:
+   - `MSG91_AUTHKEY` vs `MSG91_AUTH_KEY`: Live and local `.env` set `MSG91_AUTH_KEY`; `secure_config.js` falls back to `MSG91_AUTH_KEY`.
+   - `SUPABASE_SECRET_KEY` (in live/.env) vs `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_SERVICE_KEY` expected by `cross_role_sync.js` and `delete_my_account.js`.
+   - `SUPABASE_URL` and `REDIS_*` in `.env`: If deploying `deleteMyAccount`, `sync*ToSupabase` (`ENABLE_SUPABASE_SYNC=on`), or OTP callables with `OTP_REDIS_MIRROR=on`, remove duplicate keys from `.env` before deploy or Cloud Run / CLI will abort with "secret overlaps non-secret env".
+   - `RAZORPAY_WEBHOOK_SECRET` must be set via Secret Manager (step 2), not in `.env`.
+
+2. Create `RAZORPAY_WEBHOOK_SECRET` out of band (value from the Razorpay dashboard, never pasted here):
 
    ```powershell
    firebase functions:secrets:set RAZORPAY_WEBHOOK_SECRET --project medibond-45fad
    ```
 
-2. Deploy functions **by name** only, after that secret exists. These were not in the 2026-10-08 live list. `rescheduleAppointment` is new and must be included before the app build that calls it is rolled out:
+3. Deploy functions **by name** only. In the 2026-10-12 `firebase functions:list`, `reviewPromotedAd` and `razorpayWebhook` are already live; only `rescheduleAppointment` is missing. Deploy `rescheduleAppointment` by name before the app build that calls it is rolled out:
 
    ```powershell
-   firebase deploy --project medibond-45fad --only functions:reviewPromotedAd,functions:razorpayWebhook,functions:rescheduleAppointment
+   firebase deploy --project medibond-45fad --only functions:rescheduleAppointment
    ```
 
    The repo does not record the last deployed commit. `origin/main` is `4fc3a6b` and is not proof of what is live. Confirm the deployed commit before using the comparison below.
