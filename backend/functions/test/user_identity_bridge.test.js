@@ -476,3 +476,69 @@ test('User Bridge: Two sequential invocations for the same firebase_uid never cr
   assert.equal(mockDatabase.get(targetUid).display_name, 'Updated Sync Name', 'Second invocation must update data');
 });
 
+test('TASK 2b: syncFirestoreUserToSupabase handles email conflict on insert by retrying with synthetic email', async () => {
+  const targetUid = 'uid_email_conflict_user';
+  const expectedUuid = toUserUuid(targetUid);
+
+  const mockDatabase = new Map();
+  const recordedCalls = [];
+  let postAttempts = 0;
+
+  await withFakeSupabase(async () => {
+    global.fetch = async (url, opts) => {
+      const u = String(url);
+      const method = (opts && opts.method) || 'GET';
+      const body = opts && opts.body ? JSON.parse(opts.body) : null;
+      recordedCalls.push({ url: u, method, body });
+
+      if (u.includes('select=updated_at') || u.includes('select=id')) {
+        return { ok: true, json: async () => [] };
+      }
+
+      if (u.includes('/rest/v1/users') && method === 'POST') {
+        postAttempts++;
+        // First attempt with real email fails with 409 users_email_key
+        if (postAttempts === 1) {
+          return {
+            ok: false,
+            status: 409,
+            text: async () => 'duplicate key value violates unique constraint "users_email_key"',
+          };
+        }
+        // Second attempt with synthetic email succeeds
+        mockDatabase.set(targetUid, body);
+        return { ok: true, text: async () => JSON.stringify(body) };
+      }
+
+      return { ok: true, json: async () => [], text: async () => '' };
+    };
+
+    const event = {
+      params: { uid: targetUid },
+      data: {
+        after: {
+          exists: true,
+          id: targetUid,
+          data: () => ({
+            role: 'patient',
+            profileId: 'pat_conflict',
+            name: 'Conflict Patient',
+            email: 'duplicate_patient@realcorp.com',
+            mobile: '9876543299',
+            createdAt: '2026-06-01T10:00:00.000Z',
+            updatedAt: '2026-06-01T10:00:00.000Z',
+          }),
+        },
+      },
+    };
+
+    await syncFirestoreUserToSupabase(event);
+  });
+
+  assert.equal(postAttempts, 2, 'Should retry POST after 409 email conflict');
+  const insertedRow = mockDatabase.get(targetUid);
+  assert.ok(insertedRow);
+  assert.equal(insertedRow.id, expectedUuid);
+  assert.equal(insertedRow.email, 'uid_email_conflict_user@signup.doctornect.app', 'Should use synthetic fallback email');
+});
+

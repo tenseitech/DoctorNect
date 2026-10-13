@@ -18,7 +18,7 @@
 
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const crypto = require('crypto');
-const { toUserUuid } = require('./user_id_bridge');
+const { toUserUuid, executeUserSyncWithEmailFallback } = require('./user_id_bridge');
 
 // Resolve Supabase config from environment or Firebase functions config
 function getSupabaseConfig() {
@@ -4443,7 +4443,7 @@ async function syncFirestoreUserToSupabase(event) {
       async () => {
         if (url && key) {
           const checkResp = await fetch(
-            `${url.replace(/\/+$/, '')}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id&limit=1`,
+            `${url.replace(/\/+$/, '')}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id,email&limit=1`,
             {
               method: 'GET',
               headers: {
@@ -4453,8 +4453,9 @@ async function syncFirestoreUserToSupabase(event) {
             }
           );
           const existingRows = checkResp.ok ? await checkResp.json() : [];
-          if (Array.isArray(existingRows) && existingRows.length > 0) {
-            // Row already exists - update via PATCH keyed on firebase_uid
+          const existingUser = (Array.isArray(existingRows) && existingRows.length > 0) ? existingRows[0] : null;
+
+          const patchFn = async (patchPayload) => {
             const patchResp = await fetch(
               `${url.replace(/\/+$/, '')}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}`,
               {
@@ -4465,20 +4466,19 @@ async function syncFirestoreUserToSupabase(event) {
                   'Content-Type': 'application/json',
                   Prefer: 'return=minimal',
                 },
-                body: JSON.stringify(row),
+                body: JSON.stringify(patchPayload),
               }
             );
             if (!patchResp.ok) {
               const errBody = await patchResp.text();
-              throw new Error(`Supabase PostgREST user update error (${patchResp.status}): ${errBody}`);
+              const err = new Error(`Supabase PostgREST user update error (${patchResp.status}): ${errBody}`);
+              err.status = patchResp.status;
+              err.body = errBody;
+              throw err;
             }
-          } else {
-            // Row does not exist - insert with deterministic UUID from firebase_uid and on_conflict=firebase_uid
-            const insertPayload = {
-              id: toUserUuid(uid),
-              created_at: createdAt,
-              ...row,
-            };
+          };
+
+          const postFn = async (insertPayload) => {
             const postResp = await fetch(
               `${url.replace(/\/+$/, '')}/rest/v1/users?on_conflict=firebase_uid`,
               {
@@ -4494,9 +4494,30 @@ async function syncFirestoreUserToSupabase(event) {
             );
             if (!postResp.ok) {
               const errBody = await postResp.text();
-              throw new Error(`Supabase PostgREST user insert error (${postResp.status}): ${errBody}`);
+              const err = new Error(`Supabase PostgREST user insert error (${postResp.status}): ${errBody}`);
+              err.status = postResp.status;
+              err.body = errBody;
+              throw err;
             }
-          }
+          };
+
+          await executeUserSyncWithEmailFallback({
+            uid,
+            row,
+            createdAt,
+            deterministicId: toUserUuid(uid),
+            existingUser,
+            patchFn,
+            postFn,
+            logger: (msg) => {
+              try {
+                const parsed = typeof msg === 'string' ? JSON.parse(msg) : msg;
+                console.warn('[SyncBridge User Email Fallback]', parsed);
+              } catch (_) {
+                console.warn(msg);
+              }
+            },
+          });
         } else if (pool) {
           const insertPayload = {
             id: toUserUuid(uid),

@@ -85,6 +85,18 @@ function createMockSupabase() {
           text: async () => 'duplicate key value violates unique constraint "users_pkey"',
         };
       }
+      if (body.email) {
+        const emailCollision = Array.from(store.values()).find(
+          (r) => r.email && r.email.toLowerCase() === body.email.toLowerCase()
+        );
+        if (emailCollision) {
+          return {
+            ok: false,
+            status: 409,
+            text: async () => 'duplicate key value violates unique constraint "users_email_key"',
+          };
+        }
+      }
       store.set(body.id, body);
       return { ok: true, status: 201, text: async () => JSON.stringify(body) };
     }
@@ -94,6 +106,18 @@ function createMockSupabase() {
       const match = url.match(/firebase_uid=eq\.([^&]+)/);
       const uid = match ? decodeURIComponent(match[1]) : '';
       const found = Array.from(store.values()).find((r) => r.firebase_uid === uid);
+      if (body.email) {
+        const emailCollision = Array.from(store.values()).find(
+          (r) => r.firebase_uid !== uid && r.email && r.email.toLowerCase() === body.email.toLowerCase()
+        );
+        if (emailCollision) {
+          return {
+            ok: false,
+            status: 409,
+            text: async () => 'duplicate key value violates unique constraint "users_email_key"',
+          };
+        }
+      }
       if (found) {
         Object.assign(found, body);
       }
@@ -105,6 +129,18 @@ function createMockSupabase() {
       const match = url.match(/id=eq\.([^&]+)/);
       const id = match ? decodeURIComponent(match[1]) : '';
       const found = store.get(id);
+      if (body.email) {
+        const emailCollision = Array.from(store.values()).find(
+          (r) => r.id !== id && r.email && r.email.toLowerCase() === body.email.toLowerCase()
+        );
+        if (emailCollision) {
+          return {
+            ok: false,
+            status: 409,
+            text: async () => 'duplicate key value violates unique constraint "users_email_key"',
+          };
+        }
+      }
       if (found) {
         Object.assign(found, body);
       }
@@ -486,5 +522,184 @@ test('Backfill: Counts email collisions in dry-run without printing emails', asy
   assert.ok(fullLog.includes('Email Collisions: 1'));
   assert.doesNotMatch(fullLog, /duplicate@example\.com/);
   assert.doesNotMatch(fullLog, /doctor@example\.com/);
+});
+
+test('TASK 2b: Duplicate real email on insert falls back to synthetic email and batch continues', async () => {
+  const testDocs = [
+    {
+      id: 'uid_first_user',
+      data: () => ({
+        role: 'patient',
+        email: 'alice@medicaltest.com',
+        mobile: '9876500010',
+      }),
+    },
+    {
+      id: 'uid_second_user',
+      data: () => ({
+        role: 'patient',
+        email: 'alice@medicaltest.com', // Duplicate real email
+        mobile: '9876500011',
+      }),
+    },
+    {
+      id: 'uid_third_user',
+      data: () => ({
+        role: 'doctor',
+        email: 'charlie@medicaltest.com',
+        mobile: '9876500012',
+      }),
+    },
+  ];
+
+  const mockDb = createMockFirestore(testDocs);
+  const mockSupa = createMockSupabase();
+  const logs = [];
+
+  const counts = await runBackfill({
+    apply: true,
+    project: 'demo-medibond-test',
+    adminApp: { options: { projectId: 'demo-medibond-test' } },
+    firestoreDb: mockDb,
+    supabaseConfig: { url: 'https://mock.supabase.co', key: 'service-key' },
+    fetch: mockSupa.fakeFetch,
+    logger: (msg) => logs.push(String(msg)),
+  });
+
+  assert.equal(counts.scanned, 3);
+  assert.equal(counts.created, 3);
+  assert.equal(counts.failed, 0);
+  assert.equal(counts.emailFallbackSynthetic, 1);
+
+  // First user has real email
+  const firstRow = Array.from(mockSupa.store.values()).find((r) => r.firebase_uid === 'uid_first_user');
+  assert.equal(firstRow.email, 'alice@medicaltest.com');
+
+  // Second user got synthetic fallback email
+  const secondRow = Array.from(mockSupa.store.values()).find((r) => r.firebase_uid === 'uid_second_user');
+  assert.equal(secondRow.email, 'uid_second_user@signup.doctornect.app');
+
+  // Third user has normal email
+  const thirdRow = Array.from(mockSupa.store.values()).find((r) => r.firebase_uid === 'uid_third_user');
+  assert.equal(thirdRow.email, 'charlie@medicaltest.com');
+
+  // Privacy guarantee: Zero raw emails in any log output
+  const fullLog = logs.join('\n');
+  assert.doesNotMatch(fullLog, /alice@medicaltest\.com/);
+  assert.doesNotMatch(fullLog, /charlie@medicaltest\.com/);
+  assert.ok(fullLog.includes('Email Fallback Synthetic: 1'));
+});
+
+test('TASK 2b: Synthetic email collision on insert falls back to UUID-based synthetic email', async () => {
+  const { toUserUuid } = require('../user_id_bridge');
+  const uidSecond = 'uid_dup_target';
+  const expectedUuidEmail = `${toUserUuid(uidSecond)}@signup.doctornect.app`;
+
+  const testDocs = [
+    {
+      id: uidSecond,
+      data: () => ({
+        role: 'patient',
+        email: 'colliding@medicaltest.com',
+        mobile: '9876500020',
+      }),
+    },
+  ];
+
+  const mockDb = createMockFirestore(testDocs);
+  const mockSupa = createMockSupabase();
+
+  // Pre-populate store with BOTH the real email AND the primary synthetic email
+  mockSupa.store.set('pre_existing_real', {
+    id: 'pre_existing_real',
+    firebase_uid: 'uid_other_1',
+    email: 'colliding@medicaltest.com',
+  });
+  mockSupa.store.set('pre_existing_synth', {
+    id: 'pre_existing_synth',
+    firebase_uid: 'uid_other_2',
+    email: `${uidSecond}@signup.doctornect.app`,
+  });
+
+  const logs = [];
+  const counts = await runBackfill({
+    apply: true,
+    project: 'demo-medibond-test',
+    adminApp: { options: { projectId: 'demo-medibond-test' } },
+    firestoreDb: mockDb,
+    supabaseConfig: { url: 'https://mock.supabase.co', key: 'service-key' },
+    fetch: mockSupa.fakeFetch,
+    logger: (msg) => logs.push(String(msg)),
+  });
+
+  assert.equal(counts.scanned, 1);
+  assert.equal(counts.created, 1);
+  assert.equal(counts.failed, 0);
+  assert.equal(counts.emailFallbackSynthetic, 1);
+
+  const insertedRow = Array.from(mockSupa.store.values()).find((r) => r.firebase_uid === uidSecond);
+  assert.ok(insertedRow);
+  assert.equal(insertedRow.email, expectedUuidEmail);
+
+  const fullLog = logs.join('\n');
+  assert.doesNotMatch(fullLog, /colliding@medicaltest\.com/);
+});
+
+test('TASK 2b: Update path preserves existing email on collision or when new email is synthetic', async () => {
+  const testDocs = [
+    {
+      id: 'uid_existing_user',
+      data: () => ({
+        role: 'doctor',
+        email: 'taken@medicaltest.com', // Would collide with another row in Supabase
+        mobile: '9876500030',
+        displayName: 'Updated Doctor',
+      }),
+    },
+  ];
+
+  const mockDb = createMockFirestore(testDocs);
+  const mockSupa = createMockSupabase();
+
+  // Pre-populate target user row with old email
+  mockSupa.store.set('existing_doc_id', {
+    id: 'existing_doc_id',
+    firebase_uid: 'uid_existing_user',
+    email: 'original_doctor@medicaltest.com',
+    role: 'doctor',
+  });
+
+  // Pre-populate another user row with 'taken@medicaltest.com'
+  mockSupa.store.set('other_doc_id', {
+    id: 'other_doc_id',
+    firebase_uid: 'uid_someone_else',
+    email: 'taken@medicaltest.com',
+    role: 'doctor',
+  });
+
+  const logs = [];
+  const counts = await runBackfill({
+    apply: true,
+    project: 'demo-medibond-test',
+    adminApp: { options: { projectId: 'demo-medibond-test' } },
+    firestoreDb: mockDb,
+    supabaseConfig: { url: 'https://mock.supabase.co', key: 'service-key' },
+    fetch: mockSupa.fakeFetch,
+    logger: (msg) => logs.push(String(msg)),
+  });
+
+  assert.equal(counts.scanned, 1);
+  assert.equal(counts.updated, 1);
+  assert.equal(counts.failed, 0);
+  assert.equal(counts.emailKeptOnUpdate, 1);
+
+  const updatedRow = mockSupa.store.get('existing_doc_id');
+  assert.equal(updatedRow.email, 'original_doctor@medicaltest.com'); // Kept existing email!
+  assert.equal(updatedRow.display_name, 'Updated Doctor'); // Updated other fields!
+
+  const fullLog = logs.join('\n');
+  assert.doesNotMatch(fullLog, /original_doctor@medicaltest\.com/);
+  assert.doesNotMatch(fullLog, /taken@medicaltest\.com/);
+  assert.ok(fullLog.includes('Email Kept On Update: 1'));
 });
 

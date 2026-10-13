@@ -32,7 +32,7 @@ if (fs.existsSync(loadEnvPath)) {
 }
 
 // Load shared helpers from backend/functions
-const { toUserUuid } = require('../functions/user_id_bridge');
+const { toUserUuid, executeUserSyncWithEmailFallback } = require('../functions/user_id_bridge');
 const { buildUserSupabasePayload, normalizeRole } = require('../functions/cross_role_sync');
 
 // Graceful Firebase Admin loader
@@ -159,6 +159,8 @@ async function runBackfill(options = {}) {
     skipped: 0,
     failed: 0,
     emailCollisions: 0,
+    emailFallbackSynthetic: 0,
+    emailKeptOnUpdate: 0,
   };
 
   if (!firestoreDb) {
@@ -240,7 +242,7 @@ async function runBackfill(options = {}) {
 
       const { row, createdAt } = built;
       const candidateEmail = String(row?.email || '').trim().toLowerCase();
-      if (candidateEmail) {
+      if (!apply && candidateEmail) {
         if (seenEmails.has(candidateEmail)) {
           counts.emailCollisions++;
         } else {
@@ -281,92 +283,85 @@ async function runBackfill(options = {}) {
 
             // 1. Check if row exists by firebase_uid
             const checkByUidResp = await customFetch(
-              `${url}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id,firebase_uid`,
+              `${url}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}&select=id,firebase_uid,email`,
               { method: 'GET', headers }
             );
             const byUidRows = checkByUidResp.ok ? await checkByUidResp.json() : [];
+            let existingUser = (Array.isArray(byUidRows) && byUidRows.length > 0) ? byUidRows[0] : null;
 
-            if (Array.isArray(byUidRows) && byUidRows.length > 0) {
-              // Existing row keyed on firebase_uid -> PATCH update
+            if (!existingUser) {
+              // 2. Check if a row already exists with the deterministic ID
+              const checkByIdResp = await customFetch(
+                `${url}/rest/v1/users?id=eq.${encodeURIComponent(deterministicId)}&select=id,firebase_uid,email`,
+                { method: 'GET', headers }
+              );
+              const byIdRows = checkByIdResp.ok ? await checkByIdResp.json() : [];
+              if (Array.isArray(byIdRows) && byIdRows.length > 0) {
+                existingUser = byIdRows[0];
+              }
+            }
+
+            const patchFn = async (patchPayload) => {
+              const targetUrl = existingUser?.firebase_uid
+                ? `${url}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}`
+                : `${url}/rest/v1/users?id=eq.${encodeURIComponent(deterministicId)}`;
               const patchResp = await customFetch(
-                `${url}/rest/v1/users?firebase_uid=eq.${encodeURIComponent(uid)}`,
+                targetUrl,
                 {
                   method: 'PATCH',
                   headers: { ...headers, Prefer: 'return=minimal' },
-                  body: JSON.stringify(row),
+                  body: JSON.stringify(patchPayload),
                 }
               );
               if (!patchResp.ok) {
                 const errText = await patchResp.text();
-                throw new Error(`Update failed (${patchResp.status}): ${errText}`);
+                const err = new Error(`Update failed (${patchResp.status}): ${errText}`);
+                err.status = patchResp.status;
+                err.body = errText;
+                throw err;
               }
-              counts.updated++;
-            } else {
-              // 2. Check if a row already exists with the deterministic ID (created by earlier migration script)
-              const checkByIdResp = await customFetch(
-                `${url}/rest/v1/users?id=eq.${encodeURIComponent(deterministicId)}&select=id,firebase_uid`,
-                { method: 'GET', headers }
-              );
-              const byIdRows = checkByIdResp.ok ? await checkByIdResp.json() : [];
+            };
 
-              if (Array.isArray(byIdRows) && byIdRows.length > 0) {
-                // Conflict handling: deterministic ID already exists with missing/different firebase_uid
-                // Update by ID to link firebase_uid and refresh fields without primary key collision
-                const patchByIdResp = await customFetch(
-                  `${url}/rest/v1/users?id=eq.${encodeURIComponent(deterministicId)}`,
-                  {
-                    method: 'PATCH',
-                    headers: { ...headers, Prefer: 'return=minimal' },
-                    body: JSON.stringify(row),
-                  }
-                );
-                if (!patchByIdResp.ok) {
-                  const errText = await patchByIdResp.text();
-                  throw new Error(`Conflict resolution update failed (${patchByIdResp.status}): ${errText}`);
+            const postFn = async (insertPayload) => {
+              const postResp = await customFetch(
+                `${url}/rest/v1/users?on_conflict=firebase_uid`,
+                {
+                  method: 'POST',
+                  headers: {
+                    ...headers,
+                    Prefer: 'resolution=merge-duplicates,return=minimal',
+                  },
+                  body: JSON.stringify(insertPayload),
                 }
-                counts.updated++;
-              } else {
-                // 3. New record: Insert with deterministic id and on_conflict=firebase_uid
-                const insertPayload = {
-                  id: deterministicId,
-                  created_at: createdAt,
-                  ...row,
-                };
-                const postResp = await customFetch(
-                  `${url}/rest/v1/users?on_conflict=firebase_uid`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      ...headers,
-                      Prefer: 'resolution=merge-duplicates,return=minimal',
-                    },
-                    body: JSON.stringify(insertPayload),
-                  }
-                );
-                if (!postResp.ok) {
-                  // Fallback: If 409 conflict occurred on primary key (users_pkey), update by id
-                  if (postResp.status === 409) {
-                    const fallbackPatch = await customFetch(
-                      `${url}/rest/v1/users?id=eq.${encodeURIComponent(deterministicId)}`,
-                      {
-                        method: 'PATCH',
-                        headers: { ...headers, Prefer: 'return=minimal' },
-                        body: JSON.stringify(row),
-                      }
-                    );
-                    if (!fallbackPatch.ok) {
-                      const errText = await fallbackPatch.text();
-                      throw new Error(`Insert fallback update failed (${fallbackPatch.status}): ${errText}`);
-                    }
-                    counts.updated++;
-                  } else {
-                    const errText = await postResp.text();
-                    throw new Error(`Insert failed (${postResp.status}): ${errText}`);
-                  }
-                } else {
-                  counts.created++;
-                }
+              );
+              if (!postResp.ok) {
+                const errText = await postResp.text();
+                const err = new Error(`Insert failed (${postResp.status}): ${errText}`);
+                err.status = postResp.status;
+                err.body = errText;
+                throw err;
               }
+            };
+
+            const syncResult = await executeUserSyncWithEmailFallback({
+              uid,
+              row,
+              createdAt,
+              deterministicId,
+              existingUser,
+              patchFn,
+              postFn,
+              logger: (msg) => {
+                // Structured warnings contain uidHash and reason only; safe to log
+                logger(msg);
+              },
+              counts,
+            });
+
+            if (syncResult.action === 'created' || syncResult.action === 'inserted') {
+              counts.created++;
+            } else if (syncResult.action === 'updated') {
+              counts.updated++;
             }
           }
         } catch (_) {
@@ -394,6 +389,8 @@ async function runBackfill(options = {}) {
   logger(`[Backfill Users] Skipped: ${counts.skipped}`);
   logger(`[Backfill Users] Failed: ${counts.failed}`);
   logger(`[Backfill Users] Email Collisions: ${counts.emailCollisions}`);
+  logger(`[Backfill Users] Email Fallback Synthetic: ${counts.emailFallbackSynthetic}`);
+  logger(`[Backfill Users] Email Kept On Update: ${counts.emailKeptOnUpdate}`);
   logger('========================================');
 
   return counts;
