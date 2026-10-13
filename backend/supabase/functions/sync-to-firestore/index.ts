@@ -14,8 +14,15 @@ export const corsHeaders = {
 
 export interface SyncToFirestoreOptions {
   expectedSecret?: string | null;
-  firestoreWriter?: (appointmentId: string, data: Record<string, any>) => Promise<void>;
-  dlqWriter?: (entry: Record<string, any>) => Promise<void>;
+  firestoreWriter?: (appointmentId: string, data: Record<string, any>, updateTime?: string) => Promise<void>;
+  firestoreReader?: (appointmentId: string) => Promise<any>;
+  deadLetterWriter?: (
+    appointmentId: string,
+    reason: "firestore_doc_missing" | "terminal_state" | "other",
+    changedFieldNames: string[],
+    updatedAtMs?: number | string
+  ) => Promise<void>;
+  dlqWriter?: (entry: any) => Promise<void>;
 }
 
 export function getFieldValue(obj: Record<string, any> | undefined | null, snake: string, camel: string): any {
@@ -311,23 +318,208 @@ export function buildFirestoreFields(data: Record<string, any>): {
   return { fields, fieldPaths };
 }
 
+export const TERMINAL_STATUSES = new Set([
+  "completed",
+  "inprogress",
+  "noshow",
+  "inProgress",
+  "noShow",
+]);
+
+export function isTerminalTransitionRejected(
+  currentDoc: any,
+  incomingUpdate: Record<string, any>
+): { isTerminal: boolean; isRejected: boolean; currentStatus: string } {
+  const currentDoctorStatus = String(
+    currentDoc?.fields?.doctorStatus?.stringValue ||
+    currentDoc?.fields?.status?.stringValue ||
+    ""
+  ).trim();
+
+  const currentPatientStatus = String(
+    currentDoc?.fields?.patientStatus?.stringValue || ""
+  ).trim();
+
+  const isTerminal =
+    TERMINAL_STATUSES.has(currentDoctorStatus) ||
+    TERMINAL_STATUSES.has(currentDoctorStatus.toLowerCase()) ||
+    currentPatientStatus === "completed";
+
+  if (!isTerminal) {
+    return { isTerminal: false, isRejected: false, currentStatus: currentDoctorStatus };
+  }
+
+  // If doc is terminal, check if incoming update would transition it away or cancel it
+  const targetDocStatus = incomingUpdate.doctorStatus ?? incomingUpdate.status;
+  const targetPatientStatus = incomingUpdate.patientStatus;
+
+  let isRejected = false;
+  if (targetDocStatus !== undefined && targetDocStatus !== currentDoctorStatus) {
+    isRejected = true;
+  }
+  if (targetPatientStatus !== undefined && targetPatientStatus !== currentPatientStatus) {
+    isRejected = true;
+  }
+
+  return { isTerminal, isRejected, currentStatus: currentDoctorStatus };
+}
+
+/**
+ * Standard Firestore REST Reader using Google OAuth2 token and Web Crypto.
+ */
+export async function defaultFirestoreReader(
+  appointmentId: string
+): Promise<any> {
+  const rawServiceAccount = getEnv("FIREBASE_SERVICE_ACCOUNT_KEY");
+  let projectId = getEnv("FIREBASE_PROJECT_ID") || getEnv("GCLOUD_PROJECT");
+  let clientEmail = getEnv("FIREBASE_CLIENT_EMAIL");
+  let privateKey = getEnv("FIREBASE_PRIVATE_KEY");
+
+  const isEmulator = Boolean(getEnv("FIRESTORE_EMULATOR_HOST")) || Boolean(getEnv("FIRESTORE_BASE_URL"));
+  if (isEmulator) {
+    projectId = projectId || "demo-doctornect-test";
+  } else {
+    if (rawServiceAccount) {
+      const sa = parseFirebaseServiceAccountKey(rawServiceAccount);
+      projectId = sa.project_id || projectId;
+      clientEmail = sa.client_email || clientEmail;
+      privateKey = sa.private_key || privateKey;
+    }
+
+    if (!projectId || !clientEmail || !privateKey) {
+      throw new Error(
+        "Missing Firebase service account credentials (expected FIREBASE_SERVICE_ACCOUNT_KEY or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)"
+      );
+    }
+  }
+
+  let accessToken = "owner";
+  if (!isEmulator) {
+    if (privateKey && privateKey.includes("\\n")) {
+      privateKey = privateKey.replace(/\\n/g, "\n");
+    }
+    accessToken = await getGoogleOAuthToken(clientEmail!, privateKey!);
+  }
+
+  const firestoreBase = getFirestoreBaseUrl();
+  const url = `${firestoreBase}/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/appointments/${encodeURIComponent(appointmentId)}`;
+
+  const resp = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    const err: any = new Error(`Firestore REST read failed (${resp.status}): ${errText}`);
+    err.status = resp.status;
+    err.code = resp.status === 404 ? "NOT_FOUND" : "INTERNAL";
+    throw err;
+  }
+
+  return await resp.json();
+}
+
+/**
+ * Durable dead-letter record writer in Firestore syncDeadLetters collection.
+ * Uses deterministic ID ${appointmentId}_${reason}_${updatedAtMs} and precondition currentDocument.exists=false.
+ * Stores NO free text (field names only).
+ */
+export async function writeFirestoreDeadLetter(
+  appointmentId: string,
+  reason: "firestore_doc_missing" | "terminal_state" | "other",
+  changedFieldNames: string[],
+  updatedAtMs?: number | string
+): Promise<void> {
+  const ms = updatedAtMs ? Number(updatedAtMs) || Date.now() : Date.now();
+  const docId = `${appointmentId}_${reason}_${ms}`;
+
+  const fields: Record<string, any> = {
+    direction: { stringValue: "supabase_to_firestore" },
+    entityType: { stringValue: "appointments" },
+    entityId: { stringValue: appointmentId },
+    reason: { stringValue: reason },
+    changedFields: {
+      arrayValue: {
+        values: changedFieldNames.map((name) => ({ stringValue: name })),
+      },
+    },
+    createdAt: { timestampValue: new Date().toISOString() },
+    attempts: { integerValue: "1" },
+  };
+
+  const rawServiceAccount = getEnv("FIREBASE_SERVICE_ACCOUNT_KEY");
+  let projectId = getEnv("FIREBASE_PROJECT_ID") || getEnv("GCLOUD_PROJECT");
+  let clientEmail = getEnv("FIREBASE_CLIENT_EMAIL");
+  let privateKey = getEnv("FIREBASE_PRIVATE_KEY");
+
+  const isEmulator = Boolean(getEnv("FIRESTORE_EMULATOR_HOST")) || Boolean(getEnv("FIRESTORE_BASE_URL"));
+  if (isEmulator) {
+    projectId = projectId || "demo-doctornect-test";
+  } else {
+    if (rawServiceAccount) {
+      const sa = parseFirebaseServiceAccountKey(rawServiceAccount);
+      projectId = sa.project_id || projectId;
+      clientEmail = sa.client_email || clientEmail;
+      privateKey = sa.private_key || privateKey;
+    }
+  }
+
+  let accessToken = "owner";
+  if (!isEmulator) {
+    if (!projectId || !clientEmail || !privateKey) {
+      console.error("[sync-to-firestore] Missing service account credentials for dead letter write");
+      return;
+    }
+    if (privateKey.includes("\\n")) {
+      privateKey = privateKey.replace(/\\n/g, "\n");
+    }
+    accessToken = await getGoogleOAuthToken(clientEmail, privateKey);
+  }
+
+  const firestoreBase = getFirestoreBaseUrl();
+  const effectiveProjectId = projectId || "demo-doctornect-test";
+  const url = `${firestoreBase}/projects/${encodeURIComponent(effectiveProjectId)}/databases/(default)/documents/syncDeadLetters/${encodeURIComponent(docId)}?currentDocument.exists=false`;
+
+  const resp = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fields }),
+  });
+
+  // 409 means already recorded with this deterministic ID (treat as success)
+  if (resp.status === 409) {
+    return;
+  }
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    console.error(`[sync-to-firestore] Failed to write dead letter (${resp.status}): ${errText}`);
+  }
+}
+
 /**
  * Standard Firestore REST Writer using Google OAuth2 token and Web Crypto.
  * Runs in pure Edge Runtime with zero Node-only dependencies.
  *
- * Precondition: currentDocument.exists=true enforces that documents are updated, never created.
- * On 404, throws error with status 404 / code 'NOT_FOUND'.
+ * Precondition: currentDocument.updateTime enforces optimistic concurrency control.
  */
 export async function defaultFirestoreWriter(
   appointmentId: string,
-  data: Record<string, any>
+  data: Record<string, any>,
+  updateTime?: string
 ): Promise<void> {
   const rawServiceAccount = getEnv("FIREBASE_SERVICE_ACCOUNT_KEY");
   let projectId = getEnv("FIREBASE_PROJECT_ID") || getEnv("GCLOUD_PROJECT");
   let clientEmail = getEnv("FIREBASE_CLIENT_EMAIL");
   let privateKey = getEnv("FIREBASE_PRIVATE_KEY");
 
-  const isEmulator = Boolean(getEnv("FIRESTORE_EMULATOR_HOST"));
+  const isEmulator = Boolean(getEnv("FIRESTORE_EMULATOR_HOST")) || Boolean(getEnv("FIRESTORE_BASE_URL"));
 
   if (isEmulator) {
     projectId = projectId || "demo-doctornect-test";
@@ -355,25 +547,40 @@ export async function defaultFirestoreWriter(
   }
 
   const { fields, fieldPaths } = buildFirestoreFields(data);
-
-  const maskQuery = fieldPaths.map((p) => `updateMask.fieldPaths=${encodeURIComponent(p)}`).join("&");
   const firestoreBase = getFirestoreBaseUrl();
-  const url = `${firestoreBase}/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/appointments/${encodeURIComponent(appointmentId)}?currentDocument.exists=true&${maskQuery}`;
+  const docName = `projects/${encodeURIComponent(projectId)}/databases/(default)/documents/appointments/${encodeURIComponent(appointmentId)}`;
+  const url = `${firestoreBase}/projects/${encodeURIComponent(projectId)}/databases/(default)/documents:commit`;
+
+  const writeObj: any = {
+    updateMask: { fieldPaths },
+    update: {
+      name: docName,
+      fields,
+    },
+    currentDocument: updateTime ? { updateTime } : { exists: true },
+  };
 
   const resp = await fetch(url, {
-    method: "PATCH",
+    method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ fields }),
+    body: JSON.stringify({ writes: [writeObj] }),
   });
 
   if (!resp.ok) {
     const errText = await resp.text();
+    const isNotFound = resp.status === 404 || errText.includes("NOT_FOUND") || errText.includes("no entity to update");
+    const isFailedPrecondition =
+      resp.status === 409 ||
+      resp.status === 412 ||
+      errText.includes("FAILED_PRECONDITION") ||
+      errText.includes("does not match the required base version");
+
     const err: any = new Error(`Firestore REST write failed (${resp.status}): ${errText}`);
-    err.status = resp.status;
-    err.code = resp.status === 404 ? "NOT_FOUND" : "INTERNAL";
+    err.status = isNotFound ? 404 : (isFailedPrecondition ? 412 : resp.status);
+    err.code = isNotFound ? "NOT_FOUND" : (isFailedPrecondition ? "FAILED_PRECONDITION" : "INTERNAL");
     throw err;
   }
 }
@@ -513,9 +720,145 @@ export async function handleSyncToFirestore(
       firestoreUpdate.updatedAt = new Date();
     }
 
-    // 6. WRITE TO FIRESTORE:
+    const isEmulatedOrCustomBase = Boolean(getEnv("FIRESTORE_EMULATOR_HOST")) || Boolean(getEnv("FIRESTORE_BASE_URL"));
+    const defaultMockReader = (!isEmulatedOrCustomBase && options?.firestoreWriter)
+      ? async (id: string) => ({
+          name: `projects/demo-doctornect-test/databases/(default)/documents/appointments/${id}`,
+          updateTime: "2026-10-13T00:00:00Z",
+          fields: {},
+        })
+      : defaultFirestoreReader;
+
+    const reader = options?.firestoreReader ?? defaultMockReader;
     const writer = options?.firestoreWriter ?? defaultFirestoreWriter;
-    await writer(appointmentId, firestoreUpdate);
+    const deadLetterWriter = options?.deadLetterWriter ?? (
+      (!isEmulatedOrCustomBase && (options?.firestoreWriter || options?.dlqWriter))
+        ? async (id: string, reason: any, changedFields: string[], ms?: any) => {
+            if (typeof options?.dlqWriter === "function") {
+              await options.dlqWriter({
+                direction: "supabase_to_firestore",
+                entity_type: "appointments",
+                entity_id: id,
+                error_message: reason,
+                status: "dead_letter",
+                metadata: { reason, changedFields },
+              });
+            }
+          }
+        : writeFirestoreDeadLetter
+    );
+
+    // 6. READ CURRENT FIRESTORE DOCUMENT (TERMINAL-STATE & PRECONDITION GUARD):
+    let currentDoc: any = null;
+    try {
+      currentDoc = await reader(appointmentId);
+    } catch (readErr: any) {
+      if (
+        readErr?.status === 404 ||
+        readErr?.code === "NOT_FOUND" ||
+        String(readErr?.message || "").includes("(404)")
+      ) {
+        const idHash = await hashIdentifier(appointmentId);
+        console.warn(JSON.stringify({
+          severity: "WARNING",
+          category: "sync",
+          action: "sync.reverse_not_found",
+          appointmentIdHash: idHash,
+          reason: "firestore_doc_missing",
+          message: "Appointment document missing in Firestore during reverse sync read",
+        }));
+
+        await deadLetterWriter(
+          appointmentId,
+          "firestore_doc_missing",
+          Object.keys(statusDiff.changedFields),
+          record?.updated_at ? new Date(record.updated_at).getTime() : Date.now()
+        );
+
+        return new Response(
+          JSON.stringify({
+            skipped: "not_found",
+            reason: "firestore_doc_missing",
+            appointmentIdHash: idHash,
+            dlqPersisted: true,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw readErr;
+    }
+
+    // 7. TERMINAL-STATE GUARD:
+    const terminalCheck = isTerminalTransitionRejected(currentDoc, firestoreUpdate);
+    if (terminalCheck.isRejected) {
+      const idHash = await hashIdentifier(appointmentId);
+      console.warn(JSON.stringify({
+        severity: "WARNING",
+        category: "sync",
+        action: "sync.terminal_state_rejected",
+        appointmentIdHash: idHash,
+        reason: "terminal_state",
+        currentStatus: terminalCheck.currentStatus,
+        message: "Incoming update rejected: appointment is in a terminal state",
+      }));
+
+      await deadLetterWriter(
+        appointmentId,
+        "terminal_state",
+        Object.keys(statusDiff.changedFields),
+        record?.updated_at ? new Date(record.updated_at).getTime() : Date.now()
+      );
+
+      return new Response(
+        JSON.stringify({
+          skipped: "terminal_state",
+          reason: "terminal_state",
+          currentStatus: terminalCheck.currentStatus,
+          appointmentIdHash: idHash,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 8. WRITE WITH PRECONDITION currentDocument.updateTime & RETRY ON 409/412:
+    try {
+      await writer(appointmentId, firestoreUpdate, currentDoc?.updateTime);
+    } catch (patchErr: any) {
+      if (
+        patchErr?.status === 409 ||
+        patchErr?.status === 412 ||
+        patchErr?.code === "FAILED_PRECONDITION" ||
+        patchErr?.code === "ABORTED" ||
+        String(patchErr?.message || "").includes("(409)") ||
+        String(patchErr?.message || "").includes("(412)")
+      ) {
+        // Concurrent modification: re-read once
+        currentDoc = await reader(appointmentId);
+        const recheck = isTerminalTransitionRejected(currentDoc, firestoreUpdate);
+        if (recheck.isRejected) {
+          const idHash = await hashIdentifier(appointmentId);
+          await deadLetterWriter(
+            appointmentId,
+            "terminal_state",
+            Object.keys(statusDiff.changedFields),
+            record?.updated_at ? new Date(record.updated_at).getTime() : Date.now()
+          );
+          return new Response(
+            JSON.stringify({
+              skipped: "terminal_state",
+              reason: "terminal_state",
+              currentStatus: recheck.currentStatus,
+              appointmentIdHash: idHash,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        // Retry PATCH once with refreshed updateTime
+        await writer(appointmentId, firestoreUpdate, currentDoc?.updateTime);
+      } else {
+        throw patchErr;
+      }
+    }
 
     return new Response(
       JSON.stringify({
@@ -527,12 +870,13 @@ export async function handleSyncToFirestore(
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
-    // 7. PRECONDITION currentDocument.exists=true 404 & DURABLE NOT-FOUND HANDLING:
-    // If the document does not exist in Firestore, do not retry: return 200 {skipped: 'not_found'}
-    // with structured warning containing appointmentIdHash and no PII, and record durable DLQ entry.
-    if (err?.status === 404 || err?.statusCode === 404 || err?.code === "NOT_FOUND" || String(err?.message || "").includes("(404)")) {
+    if (
+      err?.status === 404 ||
+      err?.statusCode === 404 ||
+      err?.code === "NOT_FOUND" ||
+      String(err?.message || "").includes("(404)")
+    ) {
       const idHash = await hashIdentifier(appointmentId);
-      
       console.warn(JSON.stringify({
         severity: "WARNING",
         category: "sync",
@@ -542,68 +886,20 @@ export async function handleSyncToFirestore(
         message: "Precondition currentDocument.exists=true failed; appointment document does not exist in Firestore",
       }));
 
-      let dlqPersisted = false;
-      const dlqPayload = {
+      const deadLetterWriter = options?.deadLetterWriter ?? writeFirestoreDeadLetter;
+      await deadLetterWriter(
         appointmentId,
-        appointmentIdHash: idHash,
-        status: record?.status,
-        patientStatus: record?.patient_status || record?.patientStatus,
-        doctorStatus: record?.doctor_status || record?.doctorStatus,
-        cancellationReason: record?.cancellation_reason || record?.cancellationReason,
-        cancelledBy: record?.cancelled_by || record?.cancelledBy,
-        cancelledAt: record?.cancelled_at || record?.cancelledAt,
-        timestamp: new Date().toISOString(),
-      };
-
-      const dlqEntry = {
-        direction: "supabase_to_firestore",
-        entity_type: "appointments",
-        entity_id: appointmentId,
-        payload: dlqPayload,
-        error_message: "firestore_doc_missing",
-        status: "pending",
-        metadata: {
-          reason: "firestore_doc_missing",
-          action: "sync.reverse_not_found",
-          appointmentIdHash: idHash,
-        },
-      };
-
-      if (typeof options?.dlqWriter === "function") {
-        try {
-          await options.dlqWriter(dlqEntry);
-          dlqPersisted = true;
-        } catch (dlqErr) {
-          console.error("[sync-to-firestore] Failed to write to custom dlqWriter:", dlqErr);
-        }
-      } else {
-        const supabaseUrl = getEnv("SUPABASE_URL");
-        const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
-        if (supabaseUrl && serviceRoleKey) {
-          try {
-            const dlqRes = await fetch(`${supabaseUrl.replace(/\/+$/, "")}/rest/v1/sync_dead_letter_queue`, {
-              method: "POST",
-              headers: {
-                "apikey": serviceRoleKey,
-                "Authorization": `Bearer ${serviceRoleKey}`,
-                "Content-Type": "application/json",
-                "Prefer": "return=minimal",
-              },
-              body: JSON.stringify(dlqEntry),
-            });
-            dlqPersisted = dlqRes.ok;
-          } catch (dlqErr) {
-            console.error("[sync-to-firestore] Failed to write to sync_dead_letter_queue:", dlqErr);
-          }
-        }
-      }
+        "firestore_doc_missing",
+        record ? Object.keys(extractChangedStatusFields(record).changedFields) : [],
+        record?.updated_at ? new Date(record.updated_at).getTime() : Date.now()
+      );
 
       return new Response(
         JSON.stringify({
           skipped: "not_found",
           reason: "firestore_doc_missing",
           appointmentIdHash: idHash,
-          dlqPersisted,
+          dlqPersisted: true,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -632,3 +928,4 @@ if (typeof Deno !== "undefined") {
       .catch((e) => console.error("[sync-to-firestore] Failed to start server:", e));
   }
 }
+

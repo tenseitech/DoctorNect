@@ -1388,6 +1388,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ─── Sync Bridge Dead-Letter Queue (Super Admin read-only, no client writes) ───
+
+    match /syncDeadLetters/{deadLetterId} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+
     // ─── Trigger Email Extension (mail queue) ──────────────────────────────
 
     match /mail/{mailId} {
