@@ -18,6 +18,7 @@
 
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const crypto = require('crypto');
+const { toUserUuid } = require('./user_id_bridge');
 
 // Resolve Supabase config from environment or Firebase functions config
 function getSupabaseConfig() {
@@ -4472,9 +4473,9 @@ async function syncFirestoreUserToSupabase(event) {
               throw new Error(`Supabase PostgREST user update error (${patchResp.status}): ${errBody}`);
             }
           } else {
-            // Row does not exist - insert with generated UUID and on_conflict=firebase_uid
+            // Row does not exist - insert with deterministic UUID from firebase_uid and on_conflict=firebase_uid
             const insertPayload = {
-              id: crypto.randomUUID(),
+              id: toUserUuid(uid),
               created_at: createdAt,
               ...row,
             };
@@ -4498,7 +4499,7 @@ async function syncFirestoreUserToSupabase(event) {
           }
         } else if (pool) {
           const insertPayload = {
-            id: crypto.randomUUID(),
+            id: toUserUuid(uid),
             created_at: createdAt,
             ...row,
           };
@@ -4527,6 +4528,7 @@ module.exports = {
   syncFirestoreUserToSupabase,
   buildUserSupabasePayload,
   normalizeRole,
+  toUserUuid,
   syncFirestoreAppointmentToSupabase,
   syncFirestorePrescriptionToSupabase,
   syncFirestoreDoctorToSupabase,

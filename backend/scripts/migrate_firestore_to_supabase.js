@@ -12,13 +12,10 @@ require('./load_env').loadEnv();
 const admin = require('firebase-admin');
 const { createClient } = require('@supabase/supabase-js');
 const { Client } = require('pg');
-const { v5: uuidv5 } = require('uuid');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-
-// Fixed UUID namespace for DoctorNect deterministic UUID v5 generation
-const DOCTORNECT_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+const { toUserUuid, DOCTORNECT_NAMESPACE } = require('../functions/user_id_bridge');
 
 // Demo accounts metadata (Google Play Store review accounts)
 const DEMO_PHONES = {
@@ -97,11 +94,7 @@ function toIso(val) {
   return null;
 }
 
-// Helper: Deterministic User UUID from Firebase UID
-function toUserUuid(firebaseUid) {
-  if (!firebaseUid) return null;
-  return uuidv5(String(firebaseUid), DOCTORNECT_NAMESPACE);
-}
+// (toUserUuid and DOCTORNECT_NAMESPACE imported from shared helper ../functions/user_id_bridge)
 
 // In-Memory ID Tracking for Referential Integrity Validation
 const knownIds = {
@@ -1298,4 +1291,11 @@ async function runMigration() {
   }
 }
 
-runMigration();
+if (require.main === module) {
+  runMigration();
+}
+
+module.exports = {
+  toUserUuid,
+  DOCTORNECT_NAMESPACE,
+};

@@ -2,11 +2,15 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
 const {
   syncFirestoreUserToSupabase,
   buildUserSupabasePayload,
   normalizeRole,
+  toUserUuid: crossRoleToUserUuid,
 } = require('../cross_role_sync');
+const { toUserUuid, DOCTORNECT_NAMESPACE } = require('../user_id_bridge');
 
 const realFetch = global.fetch;
 
@@ -140,6 +144,7 @@ test('User Bridge: Create inserts new public.users row with UUID and firebase_ui
   assert.equal(postCall.body.display_name, 'Priya Sharma');
   assert.equal(postCall.body.mobile, '9876543210');
   assert.ok(postCall.body.id, 'Must generate id UUID on insert');
+  assert.equal(postCall.body.id, toUserUuid('uid_create_123'), 'Must use deterministic toUserUuid');
   assert.match(
     postCall.body.id,
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
@@ -338,3 +343,136 @@ test('User Bridge: Repeated invocation is idempotent (skips stale or identical u
   const writeCalls = calls.filter((c) => c.method === 'POST' || c.method === 'PATCH');
   assert.equal(writeCalls.length, 0, 'No write should happen for stale or already applied snapshot');
 });
+
+test('User ID Bridge: toUserUuid produces deterministic RFC 4122 v5 UUID and parity with migration script', () => {
+  const uid1 = 'sample_firebase_uid_12345';
+  const uuid1 = toUserUuid(uid1);
+  const uuid2 = toUserUuid(uid1);
+
+  // Determinism
+  assert.equal(uuid1, uuid2, 'Repeated calls with same uid must produce identical UUID');
+  assert.match(
+    uuid1,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    'Must be valid RFC 4122 UUID v5 (version 5, variant 1)'
+  );
+
+  // Parity with cross_role_sync exported helper
+  assert.equal(crossRoleToUserUuid(uid1), uuid1, 'cross_role_sync toUserUuid must produce identical UUID');
+
+  // Verify migration script imports and uses the shared helper
+  const migrateScriptPath = path.resolve(__dirname, '../../scripts/migrate_firestore_to_supabase.js');
+  const scriptContent = fs.readFileSync(migrateScriptPath, 'utf8');
+  assert.ok(
+    scriptContent.includes("require('../functions/user_id_bridge')"),
+    'migrate_firestore_to_supabase.js must require user_id_bridge'
+  );
+
+  // Edge cases
+  assert.equal(toUserUuid(''), null);
+  assert.equal(toUserUuid(null), null);
+  assert.equal(toUserUuid(undefined), null);
+});
+
+test('User Bridge: Two sequential invocations for the same firebase_uid never create two rows', async () => {
+  const targetUid = 'uid_double_invocation_test';
+  const expectedUuid = toUserUuid(targetUid);
+
+  // Mock database storage
+  const mockDatabase = new Map();
+  const recordedCalls = [];
+
+  await withFakeSupabase(async () => {
+    global.fetch = async (url, opts) => {
+      const u = String(url);
+      const method = (opts && opts.method) || 'GET';
+      const body = opts && opts.body ? JSON.parse(opts.body) : null;
+      recordedCalls.push({ url: u, method, body });
+
+      if (u.includes('select=updated_at')) {
+        const existing = mockDatabase.get(targetUid);
+        if (existing) {
+          return { ok: true, json: async () => [{ updated_at: existing.updated_at }] };
+        }
+        return { ok: true, json: async () => [] };
+      }
+
+      if (u.includes('select=id')) {
+        const existing = mockDatabase.get(targetUid);
+        if (existing) {
+          return { ok: true, json: async () => [{ id: existing.id }] };
+        }
+        return { ok: true, json: async () => [] };
+      }
+
+      if (u.includes('/rest/v1/users') && method === 'POST') {
+        assert.ok(u.includes('on_conflict=firebase_uid'), 'POST must specify on_conflict=firebase_uid');
+        assert.equal(opts.headers.Prefer, 'resolution=merge-duplicates,return=minimal');
+        mockDatabase.set(targetUid, body);
+        return { ok: true, text: async () => JSON.stringify(body) };
+      }
+
+      if (u.includes('/rest/v1/users') && method === 'PATCH') {
+        assert.ok(u.includes(`firebase_uid=eq.${targetUid}`), 'PATCH must target firebase_uid');
+        const existing = mockDatabase.get(targetUid) || {};
+        const updated = { ...existing, ...body };
+        mockDatabase.set(targetUid, updated);
+        return { ok: true, text: async () => JSON.stringify(updated) };
+      }
+
+      return { ok: true, json: async () => [], text: async () => '' };
+    };
+
+    // First invocation: User does not exist in Supabase yet (initial creation)
+    const eventCreate = {
+      params: { uid: targetUid },
+      data: {
+        after: {
+          exists: true,
+          id: targetUid,
+          data: () => ({
+            role: 'patient',
+            profileId: 'pat_initial',
+            name: 'First Sync',
+            mobile: '9876543210',
+            createdAt: '2026-06-01T10:00:00.000Z',
+            updatedAt: '2026-06-01T10:00:00.000Z',
+          }),
+        },
+      },
+    };
+    await syncFirestoreUserToSupabase(eventCreate);
+
+    // Second invocation: User is updated in Firestore (profile update with newer updatedAt)
+    const eventUpdate = {
+      params: { uid: targetUid },
+      data: {
+        after: {
+          exists: true,
+          id: targetUid,
+          data: () => ({
+            role: 'patient',
+            profileId: 'pat_initial',
+            name: 'Updated Sync Name',
+            mobile: '9876543210',
+            createdAt: '2026-06-01T10:00:00.000Z',
+            updatedAt: '2026-06-01T11:00:00.000Z',
+          }),
+        },
+      },
+    };
+    await syncFirestoreUserToSupabase(eventUpdate);
+  });
+
+  const postCalls = recordedCalls.filter((c) => c.method === 'POST');
+  const patchCalls = recordedCalls.filter((c) => c.method === 'PATCH');
+
+  // Verify: Exactly 1 POST and 1 PATCH, NEVER 2 POSTs (never creates 2 rows)
+  assert.equal(postCalls.length, 1, 'First invocation must perform exactly one POST');
+  assert.equal(patchCalls.length, 1, 'Second invocation must perform PATCH, not a second POST');
+  assert.equal(postCalls[0].body.id, expectedUuid, 'Insert row must use deterministic toUserUuid');
+  assert.equal(mockDatabase.size, 1, 'Database must contain exactly 1 row for this user');
+  assert.equal(mockDatabase.get(targetUid).id, expectedUuid, 'Stored user ID must remain the deterministic UUID');
+  assert.equal(mockDatabase.get(targetUid).display_name, 'Updated Sync Name', 'Second invocation must update data');
+});
+
