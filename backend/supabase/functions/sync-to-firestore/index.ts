@@ -14,7 +14,11 @@ export const corsHeaders = {
 
 export interface SyncToFirestoreOptions {
   expectedSecret?: string | null;
-  firestoreWriter?: (appointmentId: string, data: Record<string, any>, updateTime?: string) => Promise<void>;
+  firestoreWriter?: (
+    appointmentId: string,
+    data: Record<string, any>,
+    precondition?: string | { updateTime?: string; exists?: boolean }
+  ) => Promise<void>;
   firestoreReader?: (appointmentId: string) => Promise<any>;
   deadLetterWriter?: (
     appointmentId: string,
@@ -308,6 +312,28 @@ export function buildFirestoreFields(data: Record<string, any>): {
       }
     } else if (val instanceof Date) {
       fields[key] = { timestampValue: val.toISOString() };
+    } else if (Array.isArray(val)) {
+      fields[key] = {
+        arrayValue: {
+          values: val.map((item) => {
+            if (item === null || item === undefined) {
+              return { nullValue: null };
+            }
+            if (typeof item === "boolean") {
+              return { booleanValue: item };
+            }
+            if (typeof item === "number") {
+              return Number.isInteger(item)
+                ? { integerValue: String(item) }
+                : { doubleValue: item };
+            }
+            if (item instanceof Date) {
+              return { timestampValue: item.toISOString() };
+            }
+            return { stringValue: String(item) };
+          }),
+        },
+      };
     } else if (typeof val === "string") {
       fields[key] = { stringValue: val };
     } else {
@@ -316,6 +342,128 @@ export function buildFirestoreFields(data: Record<string, any>): {
   }
 
   return { fields, fieldPaths };
+}
+
+/**
+ * Maps a Supabase public.appointments row to a full Firestore appointment document payload,
+ * matching the exact contract of the bookAppointment callable and AppointmentFirestoreMapper.
+ * Injects syncedBy: 'supabase_bridge' to prevent feedback loops.
+ */
+export function buildFirestoreAppointmentFromSupabaseRow(
+  record: Record<string, any>
+): Record<string, any> {
+  const appointmentId = String(record.appointment_id || record.appointmentId || record.id || "").trim();
+  const doctorId = String(record.doctor_id || record.doctorId || "").trim();
+  const doctorName = String(record.doctor_name || record.doctorName || "").trim();
+  const specialization = String(record.specialization || "").trim();
+  const patientId = String(record.patient_id || record.patientId || "").trim();
+  const patientName = String(record.patient_name || record.patientName || "").trim();
+  const patientAge = Number(record.patient_age ?? record.patientAge) || 0;
+  const patientGender = String(record.patient_gender || record.patientGender || "Male").trim();
+  const dateTime = record.date_time
+    ? new Date(record.date_time)
+    : (record.dateTime ? new Date(record.dateTime) : new Date());
+  const slotLabel = String(record.slot_label || record.slotLabel || "").trim();
+  const tokenNumber = Number(record.token_number ?? record.tokenNumber) || 0;
+  const visitType = String(record.visit_type || record.visitType || "newVisit").trim();
+  const patientStatus = String(record.patient_status || record.patientStatus || "pending").trim();
+  const doctorStatus = String(record.doctor_status || record.doctorStatus || "pendingRequest").trim();
+  const hasPrescription = Boolean(record.has_prescription ?? record.hasPrescription ?? false);
+  const hasReport = Boolean(record.has_report ?? record.hasReport ?? false);
+  const hasReview = Boolean(record.has_review ?? record.hasReview ?? false);
+  const wasRescheduled = Boolean(record.was_rescheduled ?? record.wasRescheduled ?? false);
+
+  const labReports = Array.isArray(record.lab_reports || record.labReports)
+    ? (record.lab_reports || record.labReports)
+    : [];
+  const chiefComplaints = Array.isArray(record.chief_complaints || record.chiefComplaints)
+    ? (record.chief_complaints || record.chiefComplaints)
+    : [];
+  const symptoms = Array.isArray(record.symptoms) ? record.symptoms : [];
+  const observations = Array.isArray(record.observations) ? record.observations : [];
+
+  const createdAt = record.created_at
+    ? new Date(record.created_at)
+    : (record.createdAt ? new Date(record.createdAt) : new Date());
+  const updatedAt = record.updated_at
+    ? new Date(record.updated_at)
+    : (record.updatedAt ? new Date(record.updatedAt) : new Date());
+
+  const doc: Record<string, any> = {
+    appointmentId,
+    doctorId,
+    doctorName,
+    specialization,
+    patientId,
+    patientName,
+    patientAge,
+    patientGender,
+    dateTime,
+    slotLabel,
+    tokenNumber,
+    visitType,
+    patientStatus,
+    doctorStatus,
+    hasPrescription,
+    hasReport,
+    hasReview,
+    labReports,
+    chiefComplaints,
+    symptoms,
+    observations,
+    wasRescheduled,
+    createdAt,
+    updatedAt,
+    syncedBy: "supabase_bridge",
+  };
+
+  const clinicName = record.clinic_name ?? record.clinicName;
+  if (clinicName) doc.clinicName = String(clinicName);
+
+  const clinicAddress = record.clinic_address ?? record.clinicAddress;
+  if (clinicAddress) doc.clinicAddress = String(clinicAddress);
+
+  const mapsUrl = record.maps_url ?? record.mapsUrl;
+  if (mapsUrl) doc.mapsUrl = String(mapsUrl);
+
+  const cancellationReason = record.cancellation_reason ?? record.cancellationReason;
+  if (cancellationReason) doc.cancellationReason = String(cancellationReason);
+
+  const diagnosis = record.diagnosis;
+  if (diagnosis) doc.diagnosis = String(diagnosis);
+
+  const reviewRating = record.review_rating ?? record.reviewRating;
+  if (reviewRating !== undefined && reviewRating !== null) {
+    doc.reviewRating = Number(reviewRating);
+  }
+
+  const reviewId = record.review_id ?? record.reviewId;
+  if (reviewId) doc.reviewId = String(reviewId);
+
+  const reviewCreatedAt = record.review_created_at ?? record.reviewCreatedAt;
+  if (reviewCreatedAt) {
+    doc.reviewCreatedAt = new Date(reviewCreatedAt);
+  }
+
+  const clinicalNotes = record.clinical_notes ?? record.clinicalNotes;
+  if (clinicalNotes) doc.clinicalNotes = String(clinicalNotes);
+
+  const contactNumber = record.contact_number ?? record.contactNumber;
+  if (contactNumber) doc.contactNumber = String(contactNumber);
+
+  const source = record.source;
+  if (source) doc.source = String(source);
+
+  const bookedByName = record.booked_by_name ?? record.bookedByName;
+  if (bookedByName) doc.bookedByName = String(bookedByName);
+
+  const patientRelation = record.patient_relation ?? record.patientRelation;
+  if (patientRelation) doc.patientRelation = String(patientRelation);
+
+  const slotShareReason = record.slot_share_reason ?? record.slotShareReason;
+  if (slotShareReason) doc.slotShareReason = String(slotShareReason);
+
+  return doc;
 }
 
 export const TERMINAL_STATUSES = new Set([
@@ -512,7 +660,7 @@ export async function writeFirestoreDeadLetter(
 export async function defaultFirestoreWriter(
   appointmentId: string,
   data: Record<string, any>,
-  updateTime?: string
+  precondition?: string | { updateTime?: string; exists?: boolean }
 ): Promise<void> {
   const rawServiceAccount = getEnv("FIREBASE_SERVICE_ACCOUNT_KEY");
   let projectId = getEnv("FIREBASE_PROJECT_ID") || getEnv("GCLOUD_PROJECT");
@@ -551,14 +699,24 @@ export async function defaultFirestoreWriter(
   const docName = `projects/${encodeURIComponent(projectId)}/databases/(default)/documents/appointments/${encodeURIComponent(appointmentId)}`;
   const url = `${firestoreBase}/projects/${encodeURIComponent(projectId)}/databases/(default)/documents:commit`;
 
+  let currentDocument: any = { exists: true };
+  if (typeof precondition === "string") {
+    currentDocument = { updateTime: precondition };
+  } else if (precondition && typeof precondition === "object") {
+    currentDocument = precondition;
+  }
+
   const writeObj: any = {
-    updateMask: { fieldPaths },
     update: {
       name: docName,
       fields,
     },
-    currentDocument: updateTime ? { updateTime } : { exists: true },
+    currentDocument,
   };
+
+  if (currentDocument?.exists !== false) {
+    writeObj.updateMask = { fieldPaths };
+  }
 
   const resp = await fetch(url, {
     method: "POST",
@@ -572,15 +730,20 @@ export async function defaultFirestoreWriter(
   if (!resp.ok) {
     const errText = await resp.text();
     const isNotFound = resp.status === 404 || errText.includes("NOT_FOUND") || errText.includes("no entity to update");
+    const isAlreadyExists =
+      resp.status === 409 ||
+      errText.includes("ALREADY_EXISTS") ||
+      /already exists/i.test(errText);
     const isFailedPrecondition =
       resp.status === 409 ||
       resp.status === 412 ||
       errText.includes("FAILED_PRECONDITION") ||
-      errText.includes("does not match the required base version");
+      errText.includes("does not match the required base version") ||
+      isAlreadyExists;
 
     const err: any = new Error(`Firestore REST write failed (${resp.status}): ${errText}`);
-    err.status = isNotFound ? 404 : (isFailedPrecondition ? 412 : resp.status);
-    err.code = isNotFound ? "NOT_FOUND" : (isFailedPrecondition ? "FAILED_PRECONDITION" : "INTERNAL");
+    err.status = isNotFound ? 404 : (isAlreadyExists ? 409 : (isFailedPrecondition ? 412 : resp.status));
+    err.code = isNotFound ? "NOT_FOUND" : (isAlreadyExists ? "ALREADY_EXISTS" : (isFailedPrecondition ? "FAILED_PRECONDITION" : "INTERNAL"));
     throw err;
   }
 }
@@ -641,9 +804,12 @@ export async function handleSyncToFirestore(
     record = payload?.record;
     const oldRecord = payload?.old_record || payload?.oldRecord;
 
+    const isUpdate = eventType === "UPDATE";
+    const isInsert = eventType === "INSERT";
+
     // 2. EVENT FILTERING:
-    // Only act on type UPDATE for schema public, table appointments; anything else returns 200 {ignored: true}
-    if (eventType !== "UPDATE" || table !== "appointments" || schema !== "public") {
+    // Only act on type UPDATE or INSERT for schema public, table appointments; anything else returns 200 {ignored: true}
+    if ((!isUpdate && !isInsert) || table !== "appointments" || schema !== "public") {
       return new Response(
         JSON.stringify({
           ignored: true,
@@ -686,38 +852,12 @@ export async function handleSyncToFirestore(
       );
     }
 
-    // 4. REAL STATUS / CANCELLATION CHANGE FILTER:
-    // Act only when the UPDATE actually changed a status or cancellation field.
-    // If none changed, return 200 { ignored: "no_status_change" }
-    const statusDiff = extractChangedStatusFields(record, oldRecord);
-    if (!statusDiff.hasChanged) {
-      return new Response(
-        JSON.stringify({
-          ignored: "no_status_change",
-          reason: "No status or cancellation field was changed in UPDATE",
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     appointmentId = String(record.appointment_id || record.appointmentId || record.id || "").trim();
     if (!appointmentId) {
       return new Response(
         JSON.stringify({ error: "bad_request", message: "Missing appointment_id in record" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
-    }
-
-    // 5. WRITE ONLY CHANGED STATUS / CANCELLATION FIELDS, ALWAYS WITH syncedBy: 'supabase_bridge':
-    const firestoreUpdate: Record<string, any> = {
-      syncedBy: "supabase_bridge",
-      ...statusDiff.changedFields,
-    };
-
-    if (record.updated_at || record.updatedAt) {
-      firestoreUpdate.updatedAt = new Date(record.updated_at || record.updatedAt);
-    } else {
-      firestoreUpdate.updatedAt = new Date();
     }
 
     const isEmulatedOrCustomBase = Boolean(getEnv("FIRESTORE_EMULATOR_HOST")) || Boolean(getEnv("FIRESTORE_BASE_URL"));
@@ -747,6 +887,68 @@ export async function handleSyncToFirestore(
           }
         : writeFirestoreDeadLetter
     );
+
+    // 4. INSERT HANDLING (CREATE ONLY IF ABSENT):
+    if (isInsert) {
+      const firestoreDoc = buildFirestoreAppointmentFromSupabaseRow(record);
+      try {
+        await writer(appointmentId, firestoreDoc, { exists: false });
+      } catch (writeErr: any) {
+        const isAlreadyExists =
+          writeErr?.status === 409 ||
+          writeErr?.code === "ALREADY_EXISTS" ||
+          (writeErr?.code === "FAILED_PRECONDITION" && /already exists/i.test(String(writeErr?.message)));
+
+        if (isAlreadyExists) {
+          return new Response(
+            JSON.stringify({
+              ignored: "already_exists",
+              appointmentId,
+              reason: "Appointment document already exists in Firestore; INSERT did not overwrite",
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw writeErr;
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          action: "created",
+          appointmentId,
+          syncedBy: "supabase_bridge",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 5. UPDATE HANDLING:
+    // REAL STATUS / CANCELLATION CHANGE FILTER:
+    // Act only when the UPDATE actually changed a status or cancellation field.
+    // If none changed, return 200 { ignored: "no_status_change" }
+    const statusDiff = extractChangedStatusFields(record, oldRecord);
+    if (!statusDiff.hasChanged) {
+      return new Response(
+        JSON.stringify({
+          ignored: "no_status_change",
+          reason: "No status or cancellation field was changed in UPDATE",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // WRITE ONLY CHANGED STATUS / CANCELLATION FIELDS, ALWAYS WITH syncedBy: 'supabase_bridge':
+    const firestoreUpdate: Record<string, any> = {
+      syncedBy: "supabase_bridge",
+      ...statusDiff.changedFields,
+    };
+
+    if (record.updated_at || record.updatedAt) {
+      firestoreUpdate.updatedAt = new Date(record.updated_at || record.updatedAt);
+    } else {
+      firestoreUpdate.updatedAt = new Date();
+    }
 
     // 6. READ CURRENT FIRESTORE DOCUMENT (TERMINAL-STATE & PRECONDITION GUARD):
     let currentDoc: any = null;

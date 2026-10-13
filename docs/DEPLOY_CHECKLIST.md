@@ -75,7 +75,7 @@ Suggested threshold, adjust it if you want: deploy the rules when count A is und
 
 Supabase, only if a build is intentionally compiled with `ENABLE_SUPABASE=1` (release scripts still leave that unset):
 
-- Apply `backend/supabase/migrations/20261008000001_firebase_uid_identity.sql` on DRNECT-DB. Do not point a database webhook at `sync-to-firestore` until that function actually writes Firestore.
+- Apply `backend/supabase/migrations/20261008000001_firebase_uid_identity.sql` on DRNECT-DB. Configure the Supabase Database Webhook on `public.appointments` for both `INSERT` and `UPDATE` events pointing to `sync-to-firestore`.
 - Enable Firebase third-party auth on the hosted Supabase project for Firebase project `medibond-45fad`. The local `config.toml` already sets `enabled = true`. The custom token claim `role` is `authenticated`; the app role is `app_role`.
 
 Indexes, if needed, are separate and come before the rules change that depends on them:

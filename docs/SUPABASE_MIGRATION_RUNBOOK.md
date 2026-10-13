@@ -118,6 +118,44 @@ Configure these secrets in Supabase via `supabase secrets set`:
 > [!WARNING]
 > **Strict Zero-Secret Policy**: Never print, echo, commit, or hardcode private keys or webhook secrets into repository source code or terminal histories.
 
+### 3b. Supabase Database Webhook Configuration (`sync-to-firestore`)
+
+To support live reverse synchronization of appointment status updates, cancellations, and fallback creation:
+- **Target Table**: `public.appointments`
+- **Events**: Must be configured for **BOTH `INSERT` and `UPDATE`** (not just `UPDATE`).
+- **Webhook Target**: `POST https://<project-ref>.supabase.co/functions/v1/sync-to-firestore`
+- **HTTP Headers**:
+  - `Content-Type: application/json`
+  - `x-webhook-secret: <SYNC_TO_FIRESTORE_SECRET>`
+
+#### Event Semantics & Loop Prevention:
+1. **Loop Prevention Filter**: Any `INSERT` or `UPDATE` where `sync_origin` or `synced_by` indicates Firestore origin (`doctor_firestore`, `patient_firestore`, `reconciler_bot`, `firestore_cloud_function`, `firestore`, `supabase_bridge`) is immediately dropped with HTTP `200 { ignored: true }`.
+2. **`INSERT` Handling (Create-Only Guard)**:
+   - When an appointment is inserted into Supabase, `sync-to-firestore` maps the row into a full Firestore appointment document matching the `bookAppointment` and `AppointmentFirestoreMapper` contract and injects `syncedBy: 'supabase_bridge'`.
+   - The write enforces precondition `currentDocument.exists = false`.
+   - If the document already exists in Firestore (e.g. from client-side dual-write), Firestore returns `409 ALREADY_EXISTS`. The Edge Function catches this and returns `200 { ignored: 'already_exists' }`, guaranteeing it **never overwrites** an existing document on `INSERT`.
+3. **`UPDATE` Handling**:
+   - Compares changed fields (`status`, `patient_status`, `doctor_status`, `cancellation_reason`, `cancelled_by`, `cancelled_at`).
+   - Rejects transitions out of terminal states (`completed`, `inProgress`, `noShow`) with `200 { skipped: 'terminal_state' }` and records a durable dead letter in Firestore's `syncDeadLetters` collection (deterministic ID, zero free text).
+   - Non-terminal updates write strictly changed fields with precondition `currentDocument.updateTime`, retrying once on concurrent modification (409/412).
+
+### 3c. Sync Parity Audit & Weekly Verification Procedure
+
+During the dual-run and staging window, cross-system consistency must be audited weekly:
+```bash
+node scripts/check_sync_parity.js --audit
+```
+#### Parity Verification Coverage:
+1. **Appointments Existence**:
+   - `inPgNotFs`: Appointments present in Supabase PostgreSQL but missing in Firestore.
+   - `inFsNotPg`: Appointments present in Firestore but missing in Supabase PostgreSQL.
+2. **Status Parity**:
+   - `mismatched`: Compares `doctor_status` vs `doctorStatus` and `patient_status` vs `patientStatus`.
+3. **Weekly Procedure**:
+   - Run audit every Monday or post-migration window.
+   - Zero tolerance for `inPgNotFs` or `mismatched` on active appointments.
+   - If any `inPgNotFs` or `mismatched` are detected, inspect Firestore collection `syncDeadLetters` by `entityId` to identify root cause (`firestore_doc_missing`, `terminal_state`).
+   - Run reconciliation in dry-run mode first: `node scripts/check_sync_parity.js --reconcile --dry-run` before applying reconciliations.
 
 ---
 

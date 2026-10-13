@@ -124,7 +124,7 @@ test('Edge Function Auth: Accepts valid secret via x-webhook-secret or Bearer to
   assert.equal(writtenData.id, 'apt-valid-2');
 });
 
-test('Edge Function Event Filter: Ignores non-UPDATE types, other tables, or other schemas with 200 {ignored: true}', async () => {
+test('Edge Function Event Filter: Ignores non-INSERT/UPDATE types, other tables, or other schemas with 200 {ignored: true}', async () => {
   const handleSyncToFirestore = await loadEdgeFunction();
   let writeCalled = false;
   const mockWriter = async () => {
@@ -132,9 +132,10 @@ test('Edge Function Event Filter: Ignores non-UPDATE types, other tables, or oth
   };
 
   const ignoredEvents = [
-    { type: 'INSERT', table: 'appointments', schema: 'public' },
     { type: 'DELETE', table: 'appointments', schema: 'public' },
+    { type: 'TRUNCATE', table: 'appointments', schema: 'public' },
     { type: 'UPDATE', table: 'patients', schema: 'public' },
+    { type: 'INSERT', table: 'patients', schema: 'public' },
     { type: 'UPDATE', table: 'users', schema: 'public' },
     { type: 'UPDATE', table: 'appointments', schema: 'private' },
   ];
@@ -648,6 +649,76 @@ test('TASK 3d: Terminal document is skipped, writes dead letter, and returns 200
   assert.ok(!capturedDeadLetter.changedFields.includes('Trying to cancel completed visit'));
 });
 
+test('TASK 3d: Terminal-state guard rejects transitions across all terminal status fields (doctorStatus, status, patientStatus)', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { isTerminalTransitionRejected, handleSyncToFirestore } = edgeModule;
+
+  // 1. Direct unit verification of isTerminalTransitionRejected for each field
+  // a) doctorStatus inProgress
+  const inProgressCheck = isTerminalTransitionRejected(
+    { fields: { doctorStatus: { stringValue: 'inProgress' } } },
+    { doctorStatus: 'cancelled' }
+  );
+  assert.equal(inProgressCheck.isTerminal, true);
+  assert.equal(inProgressCheck.isRejected, true);
+  assert.equal(inProgressCheck.currentStatus, 'inProgress');
+
+  // b) doctorStatus noShow
+  const noShowCheck = isTerminalTransitionRejected(
+    { fields: { doctorStatus: { stringValue: 'noShow' } } },
+    { doctorStatus: 'cancelled' }
+  );
+  assert.equal(noShowCheck.isTerminal, true);
+  assert.equal(noShowCheck.isRejected, true);
+
+  // c) status field completed (legacy)
+  const legacyStatusCheck = isTerminalTransitionRejected(
+    { fields: { status: { stringValue: 'completed' } } },
+    { doctorStatus: 'cancelled' }
+  );
+  assert.equal(legacyStatusCheck.isTerminal, true);
+  assert.equal(legacyStatusCheck.isRejected, true);
+
+  // d) patientStatus completed
+  const patientCompletedCheck = isTerminalTransitionRejected(
+    { fields: { doctorStatus: { stringValue: 'confirmed' }, patientStatus: { stringValue: 'completed' } } },
+    { patientStatus: 'cancelled' }
+  );
+  assert.equal(patientCompletedCheck.isTerminal, true);
+  assert.equal(patientCompletedCheck.isRejected, true);
+
+  // 2. Integration verification through handleSyncToFirestore with doctorStatus: inProgress
+  let dlReason = null;
+  const res = await handleSyncToFirestore(
+    new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-webhook-secret': 'sec' },
+      body: JSON.stringify({
+        type: 'UPDATE',
+        table: 'appointments',
+        schema: 'public',
+        record: { appointment_id: 'apt-inprogress-1', doctor_status: 'cancelled' },
+        old_record: { appointment_id: 'apt-inprogress-1', doctor_status: 'inProgress' },
+      }),
+    }),
+    {
+      expectedSecret: 'sec',
+      firestoreReader: async () => ({
+        fields: { doctorStatus: { stringValue: 'inProgress' } },
+        updateTime: '2026-10-13T00:00:00Z',
+      }),
+      deadLetterWriter: async (id, reason) => {
+        dlReason = reason;
+      },
+    }
+  );
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.skipped, 'terminal_state');
+  assert.equal(dlReason, 'terminal_state');
+});
+
 test('TASK 3d: Non-terminal document is updated with precondition updateTime', async () => {
   const handleSyncToFirestore = await loadEdgeFunction();
 
@@ -1057,6 +1128,256 @@ test('Emulator Protocol: Verified against local HTTP server simulating Firestore
     if (originalBase) process.env.FIRESTORE_BASE_URL = originalBase;
     else delete process.env.FIRESTORE_BASE_URL;
     server.close();
+  }
+});
+
+test('TASK 4: buildFirestoreAppointmentFromSupabaseRow maps public.appointments row matching Step 0 contract', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { buildFirestoreAppointmentFromSupabaseRow, buildFirestoreFields } = edgeModule;
+
+  const sampleRow = {
+    appointment_id: 'apt-contract-001',
+    doctor_id: 'doc-123',
+    patient_id: 'pat-456',
+    doctor_name: 'Dr. Sarah Connor',
+    specialization: 'Cardiology',
+    patient_name: 'John Connor',
+    patient_age: 35,
+    patient_gender: 'Male',
+    date_time: '2026-10-15T14:30:00.000Z',
+    slot_label: '14:30 - 15:00',
+    token_number: 4,
+    visit_type: 'followUp',
+    patient_status: 'confirmed',
+    doctor_status: 'confirmed',
+    clinic_name: 'Heart Health Clinic',
+    clinic_address: '101 Medical Plaza',
+    maps_url: 'https://maps.google.com/?q=HeartClinic',
+    cancellation_reason: null,
+    diagnosis: 'Arrhythmia review',
+    has_prescription: true,
+    has_report: false,
+    has_review: false,
+    review_rating: null,
+    review_id: null,
+    review_created_at: null,
+    clinical_notes: 'Patient reports mild palpitations',
+    contact_number: '+919876543210',
+    source: 'app',
+    booked_by_name: 'John Connor',
+    patient_relation: 'Self',
+    slot_share_reason: null,
+    was_rescheduled: false,
+    chief_complaints: ['Palpitations', 'Chest tightness'],
+    symptoms: ['Fatigue'],
+    observations: ['BP 120/80'],
+    lab_reports: ['report-001.pdf'],
+    created_at: '2026-10-13T10:00:00.000Z',
+    updated_at: '2026-10-13T10:05:00.000Z',
+  };
+
+  const doc = buildFirestoreAppointmentFromSupabaseRow(sampleRow);
+
+  // 1. Core and required fields verification matching Step 0 contract
+  assert.equal(doc.appointmentId, 'apt-contract-001');
+  assert.equal(doc.doctorId, 'doc-123');
+  assert.equal(doc.patientId, 'pat-456');
+  assert.equal(doc.doctorName, 'Dr. Sarah Connor');
+  assert.equal(doc.specialization, 'Cardiology');
+  assert.equal(doc.patientName, 'John Connor');
+  assert.equal(doc.patientAge, 35);
+  assert.equal(doc.patientGender, 'Male');
+  assert.equal(doc.slotLabel, '14:30 - 15:00');
+  assert.equal(doc.tokenNumber, 4);
+  assert.equal(doc.visitType, 'followUp');
+  assert.equal(doc.patientStatus, 'confirmed');
+  assert.equal(doc.doctorStatus, 'confirmed');
+  assert.equal(doc.hasPrescription, true);
+  assert.equal(doc.hasReport, false);
+  assert.equal(doc.hasReview, false);
+  assert.equal(doc.wasRescheduled, false);
+  assert.deepEqual(doc.chiefComplaints, ['Palpitations', 'Chest tightness']);
+  assert.deepEqual(doc.symptoms, ['Fatigue']);
+  assert.deepEqual(doc.observations, ['BP 120/80']);
+  assert.deepEqual(doc.labReports, ['report-001.pdf']);
+  assert.equal(doc.syncedBy, 'supabase_bridge');
+  assert.equal(doc.clinicName, 'Heart Health Clinic');
+  assert.equal(doc.clinicAddress, '101 Medical Plaza');
+  assert.equal(doc.mapsUrl, 'https://maps.google.com/?q=HeartClinic');
+  assert.equal(doc.diagnosis, 'Arrhythmia review');
+  assert.equal(doc.clinicalNotes, 'Patient reports mild palpitations');
+  assert.equal(doc.contactNumber, '+919876543210');
+  assert.equal(doc.source, 'app');
+  assert.equal(doc.bookedByName, 'John Connor');
+  assert.equal(doc.patientRelation, 'Self');
+
+  // 2. Typed REST serialization verification matching Step 0 contract
+  const { fields, fieldPaths } = buildFirestoreFields(doc);
+  assert.equal(fields.appointmentId.stringValue, 'apt-contract-001');
+  assert.equal(fields.patientAge.integerValue, '35');
+  assert.equal(fields.tokenNumber.integerValue, '4');
+  assert.equal(fields.hasPrescription.booleanValue, true);
+  assert.equal(fields.syncedBy.stringValue, 'supabase_bridge');
+  assert.deepEqual(fields.chiefComplaints.arrayValue.values, [
+    { stringValue: 'Palpitations' },
+    { stringValue: 'Chest tightness' },
+  ]);
+  assert.deepEqual(fields.labReports.arrayValue.values, [
+    { stringValue: 'report-001.pdf' },
+  ]);
+  assert.equal(fields.dateTime.timestampValue, '2026-10-15T14:30:00.000Z');
+  assert.ok(fieldPaths.includes('syncedBy'));
+  assert.ok(fieldPaths.includes('chiefComplaints'));
+});
+
+test('TASK 4: INSERT creates document when absent with currentDocument.exists=false precondition', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  let writtenId = null;
+  let writtenData = null;
+  let capturedPrecondition = null;
+
+  const mockWriter = async (id, data, precondition) => {
+    writtenId = id;
+    writtenData = data;
+    capturedPrecondition = precondition;
+  };
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'sec-insert',
+    },
+    body: JSON.stringify({
+      type: 'INSERT',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-ins-new-1',
+        doctor_id: 'doc-1',
+        patient_id: 'pat-1',
+        doctor_name: 'Dr. Test',
+        specialization: 'General',
+        patient_name: 'Patient Test',
+        patient_age: 40,
+        patient_gender: 'Female',
+        date_time: '2026-10-14T09:00:00Z',
+        slot_label: '09:00 - 09:15',
+        token_number: 1,
+        visit_type: 'newVisit',
+        patient_status: 'confirmed',
+        doctor_status: 'pendingRequest',
+        sync_origin: 'patient_supabase',
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'sec-insert',
+    firestoreWriter: mockWriter,
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.success, true);
+  assert.equal(body.action, 'created');
+  assert.equal(body.appointmentId, 'apt-ins-new-1');
+  assert.equal(body.syncedBy, 'supabase_bridge');
+
+  // Verify write details
+  assert.equal(writtenId, 'apt-ins-new-1');
+  assert.equal(writtenData.appointmentId, 'apt-ins-new-1');
+  assert.equal(writtenData.syncedBy, 'supabase_bridge');
+  assert.equal(writtenData.doctorName, 'Dr. Test');
+  assert.deepEqual(capturedPrecondition, { exists: false });
+});
+
+test('TASK 4: INSERT returns 200 { ignored: "already_exists" } when document already exists (never overwrites)', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  const failingWriter = async (id, data, precondition) => {
+    const err = new Error('Document already exists: projects/p/databases/(default)/documents/appointments/' + id);
+    err.status = 409;
+    err.code = 'ALREADY_EXISTS';
+    throw err;
+  };
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'sec-insert',
+    },
+    body: JSON.stringify({
+      type: 'INSERT',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-ins-exists-1',
+        doctor_id: 'doc-1',
+        patient_id: 'pat-1',
+        doctor_name: 'Dr. Test',
+        specialization: 'General',
+        patient_name: 'Patient Test',
+        date_time: '2026-10-14T09:00:00Z',
+        sync_origin: 'patient_supabase',
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'sec-insert',
+    firestoreWriter: failingWriter,
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ignored, 'already_exists');
+  assert.equal(body.appointmentId, 'apt-ins-exists-1');
+  assert.ok(body.reason.includes('already exists in Firestore; INSERT did not overwrite'));
+});
+
+test('TASK 4: INSERT drops Firestore-originated records via loop prevention', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  let writerCalled = false;
+  const mockWriter = async () => {
+    writerCalled = true;
+  };
+
+  const origins = ['doctor_firestore', 'patient_firestore', 'reconciler_bot', 'firestore_cloud_function', 'firestore'];
+  for (const origin of origins) {
+    const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'sec-insert',
+      },
+      body: JSON.stringify({
+        type: 'INSERT',
+        table: 'appointments',
+        schema: 'public',
+        record: {
+          appointment_id: 'apt-loop-test',
+          sync_origin: origin,
+        },
+      }),
+    });
+
+    const res = await handleSyncToFirestore(req, {
+      expectedSecret: 'sec-insert',
+      firestoreWriter: mockWriter,
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ignored, true);
+    assert.ok(body.reason.includes('Loop prevented'));
+    assert.equal(writerCalled, false);
   }
 });
 

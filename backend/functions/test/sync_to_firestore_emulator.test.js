@@ -250,3 +250,152 @@ test('Real Firestore Emulator: Terminal document update is skipped and records s
   assert.ok(changedFieldValues.includes('cancellationReason'));
   assert.ok(!changedFieldValues.includes('Doctor emergency attempt after completion'), 'Must not store patient-entered text');
 });
+
+test('Real Firestore Emulator: INSERT creates appointment doc when absent and writes Step 0 fields', async () => {
+  const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
+  if (!emulatorHost) {
+    console.log('Skipping real emulator test: FIRESTORE_EMULATOR_HOST not set');
+    return;
+  }
+
+  const projectId = 'demo-doctornect-test';
+  const newAptId = 'apt-emu-insert-new-001';
+  const baseUrl = `http://${emulatorHost}/v1/projects/${projectId}/databases/(default)/documents/appointments/${newAptId}`;
+
+  // Ensure document does not exist prior to test
+  await fetch(baseUrl, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer owner' },
+  });
+
+  const handleSyncToFirestore = await loadEdgeFunction();
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'emulator-test-secret',
+    },
+    body: JSON.stringify({
+      type: 'INSERT',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: newAptId,
+        doctor_id: 'doc-emu-1',
+        patient_id: 'pat-emu-1',
+        doctor_name: 'Dr. Jane Roe',
+        specialization: 'Neurology',
+        patient_name: 'Patient Smith',
+        patient_age: 45,
+        patient_gender: 'Female',
+        date_time: '2026-10-20T11:00:00Z',
+        slot_label: '11:00 - 11:30',
+        token_number: 3,
+        visit_type: 'newVisit',
+        patient_status: 'confirmed',
+        doctor_status: 'pendingRequest',
+        chief_complaints: ['Headache', 'Dizziness'],
+        symptoms: ['Migraine'],
+        observations: ['Normal reflexes'],
+        sync_origin: 'patient_supabase',
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'emulator-test-secret',
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.success, true);
+  assert.equal(body.action, 'created');
+  assert.equal(body.appointmentId, newAptId);
+  assert.equal(body.syncedBy, 'supabase_bridge');
+
+  // Verify document in emulator
+  const getRes = await fetch(baseUrl, {
+    headers: { 'Authorization': 'Bearer owner' },
+  });
+  assert.equal(getRes.status, 200);
+  const doc = await getRes.json();
+  assert.equal(doc.fields.appointmentId.stringValue, newAptId);
+  assert.equal(doc.fields.doctorName.stringValue, 'Dr. Jane Roe');
+  assert.equal(doc.fields.patientAge.integerValue, '45');
+  assert.equal(doc.fields.syncedBy.stringValue, 'supabase_bridge');
+  assert.deepEqual(doc.fields.chiefComplaints.arrayValue.values, [
+    { stringValue: 'Headache' },
+    { stringValue: 'Dizziness' },
+  ]);
+});
+
+test('Real Firestore Emulator: INSERT returns 200 { ignored: "already_exists" } and does not overwrite existing doc', async () => {
+  const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
+  if (!emulatorHost) {
+    console.log('Skipping real emulator test: FIRESTORE_EMULATOR_HOST not set');
+    return;
+  }
+
+  const projectId = 'demo-doctornect-test';
+  const existingAptId = 'apt-emu-insert-already-exists-002';
+  const baseUrl = `http://${emulatorHost}/v1/projects/${projectId}/databases/(default)/documents/appointments/${existingAptId}`;
+
+  // 1. Pre-create document in emulator
+  const setupRes = await fetch(`${baseUrl}?updateMask.fieldPaths=doctorName&updateMask.fieldPaths=patientStatus`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer owner',
+    },
+    body: JSON.stringify({
+      fields: {
+        doctorName: { stringValue: 'Original Doctor' },
+        patientStatus: { stringValue: 'pending' },
+      },
+    }),
+  });
+  assert.equal(setupRes.status, 200);
+
+  const handleSyncToFirestore = await loadEdgeFunction();
+
+  // 2. Attempt INSERT of existing appointment
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'emulator-test-secret',
+    },
+    body: JSON.stringify({
+      type: 'INSERT',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: existingAptId,
+        doctor_id: 'doc-emu-2',
+        doctor_name: 'Overwriting Doctor Attempt',
+        patient_status: 'confirmed',
+        sync_origin: 'patient_supabase',
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'emulator-test-secret',
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ignored, 'already_exists');
+  assert.equal(body.appointmentId, existingAptId);
+  assert.ok(body.reason.includes('already exists in Firestore; INSERT did not overwrite'));
+
+  // 3. Verify original document was NOT overwritten
+  const getRes = await fetch(baseUrl, {
+    headers: { 'Authorization': 'Bearer owner' },
+  });
+  assert.equal(getRes.status, 200);
+  const doc = await getRes.json();
+  assert.equal(doc.fields.doctorName.stringValue, 'Original Doctor', 'Must preserve original doc untouched');
+  assert.equal(doc.fields.patientStatus.stringValue, 'pending');
+});
