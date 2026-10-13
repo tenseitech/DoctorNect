@@ -7,6 +7,36 @@
 
 ---
 
+## Remediation Status (2026-10-13)
+
+> [!NOTE]
+> **User-Reported Deployment Notice (2026-10-13):**
+> The following deployments to Firebase project `medibond-45fad` were reported by the user as completed (not independently verified by agent static analysis):
+> - `firestore:rules` (restricted `promotedAds` read access deployed)
+> - `functions:rescheduleAppointment` (deployed)
+> - `functions:completeAmbulanceMobileOtpLogin` (deployed with server-side `authUid` binding)
+> - `RAZORPAY_WEBHOOK_SECRET` secret configured in Google Cloud Secret Manager
+> - `functions:razorpayWebhook` (deployed)
+
+| Finding ID | Severity | Area | Status | Fixing Commit SHA | Remaining Manual / Operational Action |
+|:---|:---|:---|:---|:---|:---|
+| **C-1** | Critical | Identity | Implemented, not enabled, not staging-verified | `039aef6` | Keep `ENABLE_SUPABASE` unset in release configs until full staging integration testing is conducted. |
+| **C-2** | Critical | Sync | Implemented, not enabled, not staging-verified | `79ed234` | Deploy `sync-to-firestore` Edge Function to Supabase project `DRNECT-DB` and verify end-to-end appointment cancellation reverse-sync in staging. |
+| **C-3** | Critical | Sync | Implemented, not enabled, not staging-verified | `9a37e96` | Sync triggers remain gated under `ENABLE_SUPABASE_SYNC=on`. Require staging verification before enabling in production. |
+| **H-1** | High | Functions | Resolved (Code in place; User-Reported Deployed) | N/A (`appointment_slots.js`) | User reported `rescheduleAppointment` deployed to `medibond-45fad` on 2026-10-13. |
+| **H-2** | High | Auth | Resolved (Fixed in code; User-Reported Deployed) | `5936b7f` | User reported `completeAmbulanceMobileOtpLogin` deployed to `medibond-45fad` on 2026-10-13. |
+| **H-3** | High | Payments | Fixed | `0a7c968` | None. `PromotedAdReviewScreen` wired into Super Admin AppBar and action card; widget test passing. |
+| **H-4** | High | Rules | Resolved (Fixed in code; User-Reported Deployed) | `97ccbd0` | User reported `firestore:rules` deployed to `medibond-45fad` on 2026-10-13 (verified 403 Forbidden on unauthenticated HTTP read). |
+| **H-5** | High | Secrets | Resolved (User-Reported Configured & Deployed) | N/A (`promoted_ads.js`) | User reported `RAZORPAY_WEBHOOK_SECRET` secret created in Secret Manager and `razorpayWebhook` deployed to `medibond-45fad` on 2026-10-13. |
+| **M-1** | Medium | Config Drift | Fixed | `7324fe9` | None. Standardized canonical names (`MSG91_AUTHKEY`, `SUPABASE_SERVICE_ROLE_KEY`) with transparent fallback to legacy aliases in `secure_config.js` and `.env.example`. |
+| **M-2** | Medium | Storage | By Design / Advisory | N/A (`s3_storage.js`) | Keep `use_s3_storage` disabled in Remote Config until all provider KYC purposes are deployed and validated. |
+| **M-3** | Medium | Security | Open (DB Ops) | N/A (`20261008000002_...sql`) | Execute SQL migration `20261008000002_super_admin_from_admin_users.sql` on hosted Supabase instance `DRNECT-DB`. |
+| **M-4** | Medium | Performance | Open (Backlog) | N/A | Implement deferred module imports and WebP image optimization in web release pipeline. |
+| **L-1** | Low | UI / Leaks | Fixed | `8337810` | None. Converted dialog in `notifications_settings_screen.dart` to `StatefulWidget` and properly disposed `TextEditingController`. |
+| **L-2** | Low | Code Health | Fixed | `542ea9b` | None. Unused support placeholder constants (`supportPhone`, `supportWhatsApp`) removed from `patient_profile_mock.dart`. |
+
+---
+
 ## 1. Executive Summary
 
 ### Overall Health Score: **6 / 10**
