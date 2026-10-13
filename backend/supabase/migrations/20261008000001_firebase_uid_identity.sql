@@ -1,20 +1,21 @@
--- Firebase third-party identity.
--- auth.uid() is null for Firebase UIDs (they are not UUIDs). Identity is
--- public.users.firebase_uid = auth.jwt() ->> 'sub'.
---
--- Manual checks, not run in CI and not run against production:
--- 1. With no JWT sub, book_appointment_atomic raises 42501 UNAUTHORIZED.
--- 2. With jwt sub equal to public.users.firebase_uid, private.current_profile_id()
---    returns that row's profile_id and the same call is allowed for that patient.
--- 3. With a jwt sub and no matching users row, the call raises PROFILE_NOT_FOUND.
--- Identity is NOT verified in production by this migration.
+-- ============================================================================
+-- DoctorNect — Firebase Third-Party Identity Migration
+-- Migration: 20261008000001_firebase_uid_identity.sql
+-- ============================================================================
+-- Firebase third-party identity:
+-- auth.uid() is null or throws 22P02 for Firebase UIDs (they are alphanumeric strings, not UUIDs).
+-- Identity is public.users.firebase_uid = auth.jwt() ->> 'sub'.
+-- Internal foreign keys referencing public.users(id) use private.current_user_id() (UUID).
+-- Text profile foreign keys use private.current_profile_id() (TEXT).
+-- ============================================================================
 
+-- 1. Helper Functions
 CREATE OR REPLACE FUNCTION private.current_firebase_uid()
 RETURNS TEXT
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT NULLIF(auth.jwt() ->> 'sub', '');
 $$;
@@ -22,32 +23,55 @@ $$;
 REVOKE ALL ON FUNCTION private.current_firebase_uid() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION private.current_firebase_uid() TO authenticated, service_role;
 
+
+CREATE OR REPLACE FUNCTION private.current_user_id()
+RETURNS UUID
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT id FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
+$$;
+
+REVOKE ALL ON FUNCTION private.current_user_id() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.current_user_id() TO authenticated, service_role;
+
+
 CREATE OR REPLACE FUNCTION private.current_user_role()
 RETURNS TEXT
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT role FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
 $$;
+
+REVOKE ALL ON FUNCTION private.current_user_role() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.current_user_role() TO authenticated, service_role;
+
 
 CREATE OR REPLACE FUNCTION private.current_profile_id()
 RETURNS TEXT
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT profile_id FROM public.users WHERE firebase_uid = private.current_firebase_uid() LIMIT 1;
 $$;
+
+REVOKE ALL ON FUNCTION private.current_profile_id() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.current_profile_id() TO authenticated, service_role;
+
 
 CREATE OR REPLACE FUNCTION private.is_profile_completed()
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
   SELECT COALESCE(profile_completed, FALSE)
   FROM public.users
@@ -55,14 +79,54 @@ AS $$
   LIMIT 1;
 $$;
 
-REVOKE ALL ON FUNCTION private.current_user_role() FROM PUBLIC, anon;
-REVOKE ALL ON FUNCTION private.current_profile_id() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION private.is_profile_completed() FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION private.current_user_role() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION private.current_profile_id() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION private.is_profile_completed() TO authenticated, service_role;
 
 
+-- Redirect legacy/public helper functions to the Firebase-aware private implementations
+CREATE OR REPLACE FUNCTION public.current_user_role()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT private.current_user_role();
+$$;
+
+CREATE OR REPLACE FUNCTION public.current_profile_id()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT private.current_profile_id();
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_profile_completed()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT private.is_profile_completed();
+$$;
+
+REVOKE ALL ON FUNCTION public.current_user_role() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.current_profile_id() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.is_profile_completed() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.current_user_role() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.current_profile_id() TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_profile_completed() TO authenticated, service_role;
+
+
+-- Drop DEFAULT auth.uid() from patients.owner_uid so inserts without owner_uid do not throw 22P02
+ALTER TABLE public.patients ALTER COLUMN owner_uid DROP DEFAULT;
+
+
+-- 2. Atomic Appointment Booking Function
 CREATE OR REPLACE FUNCTION public.book_appointment_atomic(
     p_appointment_id VARCHAR(64),
     p_doctor_id VARCHAR(64),
@@ -106,7 +170,7 @@ BEGIN
             USING ERRCODE = '22004';
     END IF;
 
-    -- 1. Caller Authorization Check (defense-in-depth with strict NULL guards)
+    -- 1. Caller Authorization Check
     v_caller_profile_id := private.current_profile_id();
     v_is_admin := COALESCE(private.is_super_admin(), FALSE);
 
@@ -126,7 +190,6 @@ BEGIN
     END IF;
 
     -- 2. Acquire Transaction-Level Advisory Lock on (doctor_id, epoch seconds)
-    -- Epoch timestamp ensures the advisory lock key is immutable regardless of session TimeZone settings
     v_lock_key1 := hashtext(p_doctor_id);
     v_lock_key2 := hashtext(extract(epoch from p_date_time)::text);
     PERFORM pg_advisory_xact_lock(v_lock_key1, v_lock_key2);
@@ -225,6 +288,8 @@ GRANT EXECUTE ON FUNCTION public.book_appointment_atomic(
     VARCHAR, TEXT, VARCHAR
 ) TO authenticated, service_role;
 
+
+-- 3. Trigger Functions (Lock Columns & Users Integrity)
 CREATE OR REPLACE FUNCTION private.lock_columns()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -256,6 +321,8 @@ BEGIN
     RETURN NEW;
 END;
 $$;
+
+
 CREATE OR REPLACE FUNCTION private.enforce_users_integrity()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -265,7 +332,7 @@ AS $$
 DECLARE
     v_caller_is_admin BOOLEAN := COALESCE(private.is_super_admin(), FALSE);
 BEGIN
-    -- Bypass for super admins or internal service_role / postgres callers (private.current_firebase_uid() IS NULL)
+    -- Bypass for super admins or internal service_role / postgres callers
     IF v_caller_is_admin OR private.current_firebase_uid() IS NULL THEN
         RETURN NEW;
     END IF;
@@ -291,22 +358,22 @@ BEGIN
                 OLD.profile_id, NEW.profile_id
                 USING ERRCODE = '42501';
         END IF;
-
-        -- Allowed fields (display_name, photo_url, photo_key, photo_storage, profile_completed)
-        -- proceed smoothly and are protected by column-level grants.
     END IF;
 
     RETURN NEW;
 END;
 $$;
--- Policies that compared auth.uid() now compare the Firebase subject.
-DROP POLICY IF EXISTS "users_select_owner_or_admin" ON users;
-CREATE POLICY "users_select_owner_or_admin" ON users
+
+
+-- 4. Row Level Security Policies
+-- Users
+DROP POLICY IF EXISTS "users_select_owner_or_admin" ON public.users;
+CREATE POLICY "users_select_owner_or_admin" ON public.users
     FOR SELECT TO authenticated
     USING (firebase_uid = private.current_firebase_uid() OR is_super_admin());
 
-DROP POLICY IF EXISTS "users_insert_self_or_admin" ON users;
-CREATE POLICY "users_insert_self_or_admin" ON users
+DROP POLICY IF EXISTS "users_insert_self_or_admin" ON public.users;
+CREATE POLICY "users_insert_self_or_admin" ON public.users
     FOR INSERT TO authenticated
     WITH CHECK (firebase_uid = private.current_firebase_uid() OR is_super_admin());
 
@@ -324,10 +391,11 @@ CREATE POLICY "users_update_owner_or_admin" ON public.users
         )
     );
 
-DROP POLICY IF EXISTS "doctors_select" ON doctors;
-CREATE POLICY "doctors_select" ON doctors
+-- Doctors (owner_uid is UUID -> compare with private.current_user_id())
+DROP POLICY IF EXISTS "doctors_select" ON public.doctors;
+CREATE POLICY "doctors_select" ON public.doctors
     FOR SELECT TO authenticated
-    USING (verified = TRUE OR owner_uid = private.current_firebase_uid() OR is_super_admin());
+    USING (verified = TRUE OR owner_uid = private.current_user_id() OR is_super_admin());
 
 DROP POLICY IF EXISTS "doctors_insert" ON public.doctors;
 CREATE POLICY "doctors_insert" ON public.doctors
@@ -335,7 +403,7 @@ CREATE POLICY "doctors_insert" ON public.doctors
     WITH CHECK (
         private.is_super_admin()
         OR (
-            owner_uid = private.current_firebase_uid()
+            owner_uid = private.current_user_id()
             AND doctor_id = private.current_profile_id()
             AND verified = FALSE
             AND verified_at IS NULL
@@ -350,26 +418,32 @@ DROP POLICY IF EXISTS "doctors_update" ON public.doctors;
 CREATE POLICY "doctors_update" ON public.doctors
     FOR UPDATE TO authenticated
     USING (
-        owner_uid = private.current_firebase_uid()
+        owner_uid = private.current_user_id()
         OR doctor_id = private.current_profile_id()
         OR private.is_super_admin()
     )
     WITH CHECK (
-        owner_uid = private.current_firebase_uid()
+        owner_uid = private.current_user_id()
         OR doctor_id = private.current_profile_id()
         OR private.is_super_admin()
     );
 
+-- Patients (owner_uid is UUID -> compare with private.current_user_id())
 DROP POLICY IF EXISTS "patients_select" ON public.patients;
 CREATE POLICY "patients_select" ON public.patients
     FOR SELECT TO authenticated
-    USING (owner_uid = private.current_firebase_uid() OR patient_id = current_profile_id() OR doctor_can_access_patient(patient_id::text) OR is_super_admin());
+    USING (
+        owner_uid = private.current_user_id() 
+        OR patient_id = private.current_profile_id() 
+        OR doctor_can_access_patient(patient_id::text) 
+        OR is_super_admin()
+    );
 
 DROP POLICY IF EXISTS "patients_insert" ON public.patients;
 CREATE POLICY "patients_insert" ON public.patients
     FOR INSERT TO authenticated
     WITH CHECK (
-        (owner_uid = private.current_firebase_uid() AND patient_id = private.current_profile_id())
+        (owner_uid = private.current_user_id() AND patient_id = private.current_profile_id())
         OR private.is_super_admin()
     );
 
@@ -377,20 +451,21 @@ DROP POLICY IF EXISTS "patients_update" ON public.patients;
 CREATE POLICY "patients_update" ON public.patients
     FOR UPDATE TO authenticated
     USING (
-        owner_uid = private.current_firebase_uid()
+        owner_uid = private.current_user_id()
         OR patient_id = private.current_profile_id()
         OR private.is_super_admin()
     )
     WITH CHECK (
-        owner_uid = private.current_firebase_uid()
+        owner_uid = private.current_user_id()
         OR patient_id = private.current_profile_id()
         OR private.is_super_admin()
     );
 
-DROP POLICY IF EXISTS "medical_stores_select" ON medical_stores;
-CREATE POLICY "medical_stores_select" ON medical_stores
+-- Medical Stores (owner_uid is UUID -> compare with private.current_user_id())
+DROP POLICY IF EXISTS "medical_stores_select" ON public.medical_stores;
+CREATE POLICY "medical_stores_select" ON public.medical_stores
     FOR SELECT TO authenticated
-    USING (verified = TRUE OR owner_uid = private.current_firebase_uid() OR is_super_admin());
+    USING (verified = TRUE OR owner_uid = private.current_user_id() OR is_super_admin());
 
 DROP POLICY IF EXISTS "medical_stores_insert" ON public.medical_stores;
 CREATE POLICY "medical_stores_insert" ON public.medical_stores
@@ -398,7 +473,7 @@ CREATE POLICY "medical_stores_insert" ON public.medical_stores
     WITH CHECK (
         private.is_super_admin()
         OR (
-            owner_uid = private.current_firebase_uid()
+            owner_uid = private.current_user_id()
             AND store_id = private.current_profile_id()
             AND verified = FALSE
             AND verified_at IS NULL
@@ -410,20 +485,21 @@ DROP POLICY IF EXISTS "medical_stores_update" ON public.medical_stores;
 CREATE POLICY "medical_stores_update" ON public.medical_stores
     FOR UPDATE TO authenticated
     USING (
-        owner_uid = private.current_firebase_uid()
+        owner_uid = private.current_user_id()
         OR store_id = private.current_profile_id()
         OR private.is_super_admin()
     )
     WITH CHECK (
-        owner_uid = private.current_firebase_uid()
+        owner_uid = private.current_user_id()
         OR store_id = private.current_profile_id()
         OR private.is_super_admin()
     );
 
-DROP POLICY IF EXISTS "labs_select" ON labs;
-CREATE POLICY "labs_select" ON labs
+-- Labs (owner_uid is UUID -> compare with private.current_user_id())
+DROP POLICY IF EXISTS "labs_select" ON public.labs;
+CREATE POLICY "labs_select" ON public.labs
     FOR SELECT TO authenticated
-    USING (verified = TRUE OR owner_uid = private.current_firebase_uid() OR is_super_admin());
+    USING (verified = TRUE OR owner_uid = private.current_user_id() OR is_super_admin());
 
 DROP POLICY IF EXISTS "labs_insert" ON public.labs;
 CREATE POLICY "labs_insert" ON public.labs
@@ -431,7 +507,7 @@ CREATE POLICY "labs_insert" ON public.labs
     WITH CHECK (
         private.is_super_admin()
         OR (
-            owner_uid = private.current_firebase_uid()
+            owner_uid = private.current_user_id()
             AND lab_id = private.current_profile_id()
             AND verified = FALSE
             AND verified_at IS NULL
@@ -444,21 +520,22 @@ DROP POLICY IF EXISTS "labs_update" ON public.labs;
 CREATE POLICY "labs_update" ON public.labs
     FOR UPDATE TO authenticated
     USING (
-        owner_uid = private.current_firebase_uid()
+        owner_uid = private.current_user_id()
         OR lab_id = private.current_profile_id()
         OR private.is_super_admin()
     )
     WITH CHECK (
-        owner_uid = private.current_firebase_uid()
+        owner_uid = private.current_user_id()
         OR lab_id = private.current_profile_id()
         OR private.is_super_admin()
     );
 
-DROP POLICY IF EXISTS "ambulances_select" ON ambulances;
-CREATE POLICY "ambulances_select" ON ambulances
+-- Ambulances (auth_uid is UUID -> compare with private.current_user_id())
+DROP POLICY IF EXISTS "ambulances_select" ON public.ambulances;
+CREATE POLICY "ambulances_select" ON public.ambulances
     FOR SELECT TO authenticated
     USING (
-        auth_uid = private.current_firebase_uid() 
+        auth_uid = private.current_user_id() 
         OR (is_available = TRUE AND verified = TRUE)
         OR is_super_admin()
     );
@@ -469,7 +546,7 @@ CREATE POLICY "ambulances_insert" ON public.ambulances
     WITH CHECK (
         private.is_super_admin()
         OR (
-            auth_uid = private.current_firebase_uid()
+            auth_uid = private.current_user_id()
             AND verified = FALSE
             AND total_rating = 0.00
             AND rating_count = 0
@@ -480,48 +557,79 @@ DROP POLICY IF EXISTS "ambulances_update" ON public.ambulances;
 CREATE POLICY "ambulances_update" ON public.ambulances
     FOR UPDATE TO authenticated
     USING (
-        auth_uid = private.current_firebase_uid()
+        auth_uid = private.current_user_id()
         OR ambulance_id = private.current_profile_id()
         OR private.is_super_admin()
     )
     WITH CHECK (
-        auth_uid = private.current_firebase_uid()
+        auth_uid = private.current_user_id()
         OR ambulance_id = private.current_profile_id()
         OR private.is_super_admin()
     );
 
-DROP POLICY IF EXISTS "promoted_ads_insert" ON promoted_ads;
-CREATE POLICY "promoted_ads_insert" ON promoted_ads
+-- Promoted Ads (provider_id is VARCHAR(64) -> compare with private.current_profile_id())
+DROP POLICY IF EXISTS "promoted_ads_insert" ON public.promoted_ads;
+CREATE POLICY "promoted_ads_insert" ON public.promoted_ads
     FOR INSERT TO authenticated
     WITH CHECK (
-        provider_id = (SELECT profile_id FROM users WHERE firebase_uid = private.current_firebase_uid())
+        provider_id = private.current_profile_id()
         AND status IN ('draft', 'pending_payment')
         AND payment_status = 'pending'
     );
 
-DROP POLICY IF EXISTS "promoted_ads_update" ON promoted_ads;
-CREATE POLICY "promoted_ads_update" ON promoted_ads
+DROP POLICY IF EXISTS "promoted_ads_update" ON public.promoted_ads;
+CREATE POLICY "promoted_ads_update" ON public.promoted_ads
     FOR UPDATE TO authenticated
     USING (
-        (provider_id = (SELECT profile_id FROM users WHERE firebase_uid = private.current_firebase_uid()) AND status IN ('draft', 'pending_payment'))
+        (provider_id = private.current_profile_id() AND status IN ('draft', 'pending_payment'))
         OR is_super_admin()
     );
 
-DROP POLICY IF EXISTS "promoted_ads_delete" ON promoted_ads;
-CREATE POLICY "promoted_ads_delete" ON promoted_ads
+DROP POLICY IF EXISTS "promoted_ads_delete" ON public.promoted_ads;
+CREATE POLICY "promoted_ads_delete" ON public.promoted_ads
     FOR DELETE TO authenticated
     USING (
-        provider_id = (SELECT profile_id FROM users WHERE firebase_uid = private.current_firebase_uid())
+        provider_id = private.current_profile_id()
         OR is_super_admin()
     );
 
-DROP POLICY IF EXISTS "notifications_select" ON in_app_notifications;
-CREATE POLICY "notifications_select" ON in_app_notifications
+-- In-App Notifications (recipient_uid is UUID -> compare with private.current_user_id())
+DROP POLICY IF EXISTS "notifications_select" ON public.in_app_notifications;
+CREATE POLICY "notifications_select" ON public.in_app_notifications
     FOR SELECT TO authenticated
-    USING (recipient_uid = private.current_firebase_uid());
+    USING (recipient_uid = private.current_user_id());
 
-DROP POLICY IF EXISTS "notifications_update" ON in_app_notifications;
-CREATE POLICY "notifications_update" ON in_app_notifications
+DROP POLICY IF EXISTS "notifications_update" ON public.in_app_notifications;
+CREATE POLICY "notifications_update" ON public.in_app_notifications
     FOR UPDATE TO authenticated
-    USING (recipient_uid = private.current_firebase_uid())
-    WITH CHECK (recipient_uid = private.current_firebase_uid());
+    USING (recipient_uid = private.current_user_id())
+    WITH CHECK (recipient_uid = private.current_user_id());
+
+-- Appointments & Clinical Links (re-pointed to private.current_profile_id())
+DROP POLICY IF EXISTS "appointments_select" ON public.appointments;
+CREATE POLICY "appointments_select" ON public.appointments
+    FOR SELECT TO authenticated
+    USING (
+        is_super_admin()
+        OR (
+            private.is_profile_completed()
+            AND (
+                patient_id = private.current_profile_id()
+                OR (doctor_id = private.current_profile_id() AND private.is_verified_doctor())
+            )
+        )
+    );
+
+DROP POLICY IF EXISTS "doc_links_insert" ON public.patient_doctor_links;
+CREATE POLICY "doc_links_insert" ON public.patient_doctor_links
+    FOR INSERT TO authenticated
+    WITH CHECK (
+        patient_id = private.current_profile_id()
+        OR (private.is_verified_doctor() AND source = 'referral' AND from_doctor_id = private.current_profile_id())
+    );
+
+DROP POLICY IF EXISTS "family_members_owner_only" ON public.family_members;
+CREATE POLICY "family_members_owner_only" ON public.family_members
+    FOR ALL TO authenticated
+    USING (patient_id = private.current_profile_id())
+    WITH CHECK (patient_id = private.current_profile_id());

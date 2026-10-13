@@ -77,3 +77,69 @@ test('Migration 20261008000003: Safely drops users_id_fkey without destructive s
   assert.doesNotMatch(activeSql, /\bDROP\s+DATABASE\b/, 'Must NOT contain DROP DATABASE');
   assert.doesNotMatch(activeSql, /\bDROP\s+COLUMN\b/, 'Must NOT contain DROP COLUMN');
 });
+
+test('Migration 20261008000001: Firebase identity functions and policies are type-correct (TASK 1d)', () => {
+  const migrationPath = path.resolve(
+    __dirname,
+    '../../supabase/migrations/20261008000001_firebase_uid_identity.sql'
+  );
+
+  assert.ok(fs.existsSync(migrationPath), 'Migration 20261008000001 must exist');
+  const content = fs.readFileSync(migrationPath, 'utf8');
+
+  // Must define private.current_user_id() returns uuid
+  assert.match(
+    content,
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+private\.current_user_id\(\)\s*RETURNS\s+UUID/i,
+    'Must define private.current_user_id() returning UUID'
+  );
+
+  // Must redirect public helper functions to private implementations
+  assert.match(
+    content,
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.current_user_role\(\)[\s\S]*SELECT\s+private\.current_user_role\(\);/i,
+    'Must redirect public.current_user_role() to private.current_user_role()'
+  );
+  assert.match(
+    content,
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.current_profile_id\(\)[\s\S]*SELECT\s+private\.current_profile_id\(\);/i,
+    'Must redirect public.current_profile_id() to private.current_profile_id()'
+  );
+  assert.match(
+    content,
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.is_profile_completed\(\)[\s\S]*SELECT\s+private\.is_profile_completed\(\);/i,
+    'Must redirect public.is_profile_completed() to private.is_profile_completed()'
+  );
+
+  // Must drop DEFAULT auth.uid() on patients.owner_uid
+  assert.match(
+    content,
+    /ALTER\s+TABLE\s+public\.patients\s+ALTER\s+COLUMN\s+owner_uid\s+DROP\s+DEFAULT/i,
+    'Must drop DEFAULT on public.patients.owner_uid to prevent 22P02'
+  );
+
+  // Must NOT compare UUID owner columns directly to private.current_firebase_uid() (which caused 42883)
+  assert.doesNotMatch(
+    content,
+    /owner_uid\s*=\s*private\.current_firebase_uid\(\)/i,
+    'Must NOT compare owner_uid (UUID) to private.current_firebase_uid() (TEXT)'
+  );
+  assert.doesNotMatch(
+    content,
+    /auth_uid\s*=\s*private\.current_firebase_uid\(\)/i,
+    'Must NOT compare auth_uid (UUID) to private.current_firebase_uid() (TEXT)'
+  );
+  assert.doesNotMatch(
+    content,
+    /recipient_uid\s*=\s*private\.current_firebase_uid\(\)/i,
+    'Must NOT compare recipient_uid (UUID) to private.current_firebase_uid() (TEXT)'
+  );
+
+  // Must use private.current_user_id() for owner comparisons
+  assert.match(
+    content,
+    /owner_uid\s*=\s*private\.current_user_id\(\)/i,
+    'Must compare owner_uid to private.current_user_id()'
+  );
+});
+
