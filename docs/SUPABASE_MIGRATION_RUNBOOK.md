@@ -75,7 +75,49 @@ supabase functions deploy auth-otp --no-verify-jwt
 
 # Deploy razorpay-payments (handles order creation, verification, and webhooks)
 supabase functions deploy razorpay-payments --no-verify-jwt
+
+# Deploy sync-to-firestore (handles reverse sync of cancellations/status changes to Firestore)
+supabase functions deploy sync-to-firestore --no-verify-jwt
 ```
+
+### 3. Dedicated Service Account Setup (`sync-to-firestore`)
+
+To maintain least-privilege isolation, the `sync-to-firestore` Edge Function must not share administrative service accounts. It requires a dedicated GCP service account restricted to `roles/datastore.user`.
+
+#### Creation Commands (gcloud):
+```bash
+# 1. Create dedicated service account
+gcloud iam service-accounts create doctornect-sync-to-firestore \
+  --description="Service account for Supabase sync-to-firestore reverse bridge" \
+  --display-name="DoctorNect Sync To Firestore"
+
+# 2. Grant least-privilege Firestore / Datastore user role ONLY
+gcloud projects add-iam-policy-binding <GCP_PROJECT_ID> \
+  --member="serviceAccount:doctornect-sync-to-firestore@<GCP_PROJECT_ID>.iam.gserviceaccount.com" \
+  --role="roles/datastore.user"
+
+# 3. Generate key file securely (store in secure credential vault, never commit to git)
+gcloud iam service-accounts keys create sa-key.json \
+  --iam-account="doctornect-sync-to-firestore@<GCP_PROJECT_ID>.iam.gserviceaccount.com"
+```
+
+#### Required Environment Variable Names for Edge Function:
+Configure these secrets in Supabase via `supabase secrets set`:
+- `SYNC_TO_FIRESTORE_SECRET`: Shared webhook authentication secret verified via constant-time comparison.
+- **Either** full JSON key:
+  - `FIREBASE_SERVICE_ACCOUNT_KEY`: Raw or base64-encoded JSON key file from `sa-key.json`.
+- **Or** individual environment variables:
+  - `FIREBASE_PROJECT_ID`: GCP / Firebase Project ID.
+  - `FIREBASE_CLIENT_EMAIL`: Service account email (`doctornect-sync-to-firestore@<project>.iam.gserviceaccount.com`).
+  - `FIREBASE_PRIVATE_KEY`: PKCS#8 PEM private key (including `-----BEGIN PRIVATE KEY-----`).
+- **Optional Overrides** (for local emulator or staging endpoints):
+  - `FIRESTORE_BASE_URL`: Overrides `https://firestore.googleapis.com/v1`.
+  - `FIRESTORE_EMULATOR_HOST`: Point to local emulator (e.g. `127.0.0.1:8080`).
+  - `GOOGLE_OAUTH_TOKEN_URL`: Overrides `https://oauth2.googleapis.com/token`.
+
+> [!WARNING]
+> **Strict Zero-Secret Policy**: Never print, echo, commit, or hardcode private keys or webhook secrets into repository source code or terminal histories.
+
 
 ---
 

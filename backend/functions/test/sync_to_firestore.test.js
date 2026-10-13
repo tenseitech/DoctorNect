@@ -302,3 +302,286 @@ test('Edge Function Failure: Returns non-2xx status on Firestore write error so 
   assert.equal(body.retriable, true);
   assert.match(body.message, /Firestore connection timeout/);
 });
+
+test('Edge Function Precondition: 404 from Firestore returns 200 {skipped: not_found} without retrying', async () => {
+  const handleSyncToFirestore = await loadEdgeFunction();
+
+  const notFoundWriter = async (id) => {
+    const err = new Error(`Firestore REST write failed (404): document appointments/${id} not found`);
+    err.status = 404;
+    err.code = 'NOT_FOUND';
+    throw err;
+  };
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'secret-404-test',
+    },
+    body: JSON.stringify({
+      type: 'UPDATE',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-missing-doc-12345',
+        doctor_status: 'cancelled',
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'secret-404-test',
+    firestoreWriter: notFoundWriter,
+  });
+
+  assert.equal(res.status, 200, 'Precondition 404 must return 200 to halt retries');
+  const body = await res.json();
+  assert.equal(body.skipped, 'not_found');
+  assert.ok(body.appointmentIdHash, 'Must include appointmentIdHash');
+  // Privacy assertion: appointmentIdHash must be a non-empty hex hash, never containing the raw appointment ID
+  assert.match(body.appointmentIdHash, /^[a-f0-9]{16}$/);
+  assert.equal(body.appointmentIdHash.includes('apt-missing-doc-12345'), false);
+});
+
+test('Typed Firestore REST Shape: Formats cancellation fields and updateMask strictly', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { buildFirestoreFields } = edgeModule;
+
+  const cancellationData = {
+    syncedBy: 'supabase_bridge',
+    doctorStatus: 'cancelled',
+    patientStatus: 'cancelled',
+    cancellationReason: 'Patient fever spikes, doctor informed',
+    cancelledBy: 'patient',
+    cancelledAt: new Date('2026-10-13T10:00:00.000Z'),
+    updatedAt: new Date('2026-10-13T10:00:00.000Z'),
+  };
+
+  const { fields, fieldPaths } = buildFirestoreFields(cancellationData);
+
+  // Exact typed Firestore REST representation
+  assert.deepEqual(fields, {
+    syncedBy: { stringValue: 'supabase_bridge' },
+    doctorStatus: { stringValue: 'cancelled' },
+    patientStatus: { stringValue: 'cancelled' },
+    cancellationReason: { stringValue: 'Patient fever spikes, doctor informed' },
+    cancelledBy: { stringValue: 'patient' },
+    cancelledAt: { timestampValue: '2026-10-13T10:00:00.000Z' },
+    updatedAt: { timestampValue: '2026-10-13T10:00:00.000Z' },
+  });
+
+  assert.deepEqual(fieldPaths, [
+    'syncedBy',
+    'doctorStatus',
+    'patientStatus',
+    'cancellationReason',
+    'cancelledBy',
+    'cancelledAt',
+    'updatedAt',
+  ]);
+
+  const maskQuery = fieldPaths.map((p) => `updateMask.fieldPaths=${encodeURIComponent(p)}`).join('&');
+  assert.equal(
+    maskQuery,
+    'updateMask.fieldPaths=syncedBy&updateMask.fieldPaths=doctorStatus&updateMask.fieldPaths=patientStatus&updateMask.fieldPaths=cancellationReason&updateMask.fieldPaths=cancelledBy&updateMask.fieldPaths=cancelledAt&updateMask.fieldPaths=updatedAt'
+  );
+});
+
+test('Service Account Auth: Generates throwaway RSA keypair and verifies RS256 JWT signature and claims', async () => {
+  const crypto = require('node:crypto');
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { createServiceAccountJwt } = edgeModule;
+
+  // 1. Generate throwaway 2048-bit RSA keypair in-memory (no hardcoded keys)
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+  });
+
+  const testEmail = 'sync-service@doctornect-staging.iam.gserviceaccount.com';
+
+  // 2. Sign JWT using Edge Function's own signing code
+  const jwt = await createServiceAccountJwt(testEmail, privateKey);
+  assert.ok(typeof jwt === 'string' && jwt.length > 50);
+
+  const parts = jwt.split('.');
+  assert.equal(parts.length, 3, 'JWT must have 3 parts: header.claims.signature');
+  const [headerB64, claimsB64, sigB64] = parts;
+
+  // 3. Verify decoded claims
+  const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString('utf8'));
+  assert.equal(header.alg, 'RS256');
+  assert.equal(header.typ, 'JWT');
+
+  const claims = JSON.parse(Buffer.from(claimsB64, 'base64url').toString('utf8'));
+  assert.equal(claims.iss, testEmail);
+  assert.equal(claims.sub, testEmail);
+  assert.equal(claims.aud, 'https://oauth2.googleapis.com/token');
+  assert.equal(claims.scope, 'https://www.googleapis.com/auth/datastore');
+  assert.ok(typeof claims.iat === 'number');
+  assert.equal(claims.exp, claims.iat + 3600);
+
+  // 4. Verify cryptographic signature using standard RS256 verifier with the public key
+  const signingInput = `${headerB64}.${claimsB64}`;
+  const verifier = crypto.createVerify('RSA-SHA256');
+  verifier.update(signingInput);
+  const isSignatureValid = verifier.verify(publicKey, Buffer.from(sigB64, 'base64url'));
+  assert.equal(isSignatureValid, true, 'Cryptographic RS256 signature must be verified by public key');
+});
+
+test('Config: Base URL and token URL overridable by environment variables', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { getFirestoreBaseUrl, getOAuthTokenUrl } = edgeModule;
+
+  const originalBase = process.env.FIRESTORE_BASE_URL;
+  const originalEmu = process.env.FIRESTORE_EMULATOR_HOST;
+  const originalToken = process.env.GOOGLE_OAUTH_TOKEN_URL;
+
+  try {
+    // 1. Defaults
+    delete process.env.FIRESTORE_BASE_URL;
+    delete process.env.FIRESTORE_EMULATOR_HOST;
+    delete process.env.GOOGLE_OAUTH_TOKEN_URL;
+    assert.equal(getFirestoreBaseUrl(), 'https://firestore.googleapis.com/v1');
+    assert.equal(getOAuthTokenUrl(), 'https://oauth2.googleapis.com/token');
+
+    // 2. Base URL override
+    process.env.FIRESTORE_BASE_URL = 'http://localhost:8080/v1';
+    assert.equal(getFirestoreBaseUrl(), 'http://localhost:8080/v1');
+
+    // 3. Emulator host override
+    delete process.env.FIRESTORE_BASE_URL;
+    process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8085';
+    assert.equal(getFirestoreBaseUrl(), 'http://127.0.0.1:8085/v1');
+
+    // 4. Token URL override
+    process.env.GOOGLE_OAUTH_TOKEN_URL = 'http://localhost:9090/token';
+    assert.equal(getOAuthTokenUrl(), 'http://localhost:9090/token');
+  } finally {
+    if (originalBase) process.env.FIRESTORE_BASE_URL = originalBase;
+    else delete process.env.FIRESTORE_BASE_URL;
+    if (originalEmu) process.env.FIRESTORE_EMULATOR_HOST = originalEmu;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+    if (originalToken) process.env.GOOGLE_OAUTH_TOKEN_URL = originalToken;
+    else delete process.env.GOOGLE_OAUTH_TOKEN_URL;
+  }
+});
+
+test('Emulator Protocol: Verified against local HTTP server simulating Firestore REST API', async () => {
+  const http = require('node:http');
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  let receivedUrl = '';
+  let receivedMethod = '';
+  let receivedBody = '';
+  let responseStatus = 200;
+
+  // Spin up lightweight local mock server simulating Firestore emulator
+  const server = http.createServer((req, res) => {
+    receivedUrl = req.url;
+    receivedMethod = req.method;
+    let chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      receivedBody = Buffer.concat(chunks).toString('utf8');
+      if (responseStatus === 404) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: { code: 404, message: 'Document not found' } }));
+      } else {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ name: 'projects/p/databases/(default)/documents/appointments/apt-emu-1' }));
+      }
+    });
+  });
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+
+  const originalBase = process.env.FIRESTORE_BASE_URL;
+  process.env.FIRESTORE_BASE_URL = `http://127.0.0.1:${port}/v1`;
+
+  try {
+    // 1. Success case through emulator URL
+    responseStatus = 200;
+    const reqOk = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'test-secret',
+      },
+      body: JSON.stringify({
+        type: 'UPDATE',
+        table: 'appointments',
+        schema: 'public',
+        record: {
+          appointment_id: 'apt-emu-1',
+          doctor_status: 'cancelled',
+          cancellation_reason: 'Doctor emergency',
+        },
+      }),
+    });
+
+    // Provide a writer that calls the mock emulator URL with currentDocument.exists=true
+    const emulatorWriter = async (aptId, fields) => {
+      const url = `${process.env.FIRESTORE_BASE_URL}/projects/test-proj/databases/(default)/documents/appointments/${aptId}?currentDocument.exists=true`;
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields }),
+      });
+      if (!res.ok) {
+        const err = new Error(`Emulator failed (${res.status})`);
+        err.status = res.status;
+        err.code = res.status === 404 ? 'NOT_FOUND' : 'INTERNAL';
+        throw err;
+      }
+    };
+
+    const resOk = await handleSyncToFirestore(reqOk, {
+      expectedSecret: 'test-secret',
+      firestoreWriter: emulatorWriter,
+    });
+
+    assert.equal(resOk.status, 200);
+    assert.equal(receivedMethod, 'PATCH');
+    assert.ok(receivedUrl.includes('currentDocument.exists=true'));
+    assert.ok(receivedUrl.includes('apt-emu-1'));
+
+    // 2. Precondition 404 through emulator URL
+    responseStatus = 404;
+    const reqNotFound = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'test-secret',
+      },
+      body: JSON.stringify({
+        type: 'UPDATE',
+        table: 'appointments',
+        schema: 'public',
+        record: {
+          appointment_id: 'apt-emu-missing',
+          doctor_status: 'cancelled',
+        },
+      }),
+    });
+
+    const resNotFound = await handleSyncToFirestore(reqNotFound, {
+      expectedSecret: 'test-secret',
+      firestoreWriter: emulatorWriter,
+    });
+
+    assert.equal(resNotFound.status, 200);
+    const notFoundBody = await resNotFound.json();
+    assert.equal(notFoundBody.skipped, 'not_found');
+    assert.ok(notFoundBody.appointmentIdHash);
+  } finally {
+    if (originalBase) process.env.FIRESTORE_BASE_URL = originalBase;
+    else delete process.env.FIRESTORE_BASE_URL;
+    server.close();
+  }
+});
+

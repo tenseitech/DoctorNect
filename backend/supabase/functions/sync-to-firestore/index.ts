@@ -17,7 +17,7 @@ export interface SyncToFirestoreOptions {
   firestoreWriter?: (appointmentId: string, data: Record<string, any>) => Promise<void>;
 }
 
-function getEnv(k: string): string | undefined {
+export function getEnv(k: string): string | undefined {
   if (typeof Deno !== "undefined" && Deno.env) {
     return Deno.env.get(k);
   }
@@ -25,6 +25,26 @@ function getEnv(k: string): string | undefined {
     return process.env[k];
   }
   return undefined;
+}
+
+export function getOAuthTokenUrl(): string {
+  return (
+    getEnv("GOOGLE_OAUTH_TOKEN_URL") ||
+    getEnv("OAUTH_TOKEN_URL") ||
+    "https://oauth2.googleapis.com/token"
+  );
+}
+
+export function getFirestoreBaseUrl(): string {
+  const emulatorHost = getEnv("FIRESTORE_EMULATOR_HOST");
+  if (emulatorHost) {
+    const host = emulatorHost.startsWith("http") ? emulatorHost : `http://${emulatorHost}`;
+    return host.replace(/\/+$/, "") + "/v1";
+  }
+  return (
+    getEnv("FIRESTORE_BASE_URL") ||
+    "https://firestore.googleapis.com/v1"
+  );
 }
 
 function extractSecretFromRequest(req: Request): string | null {
@@ -47,7 +67,7 @@ function extractSecretFromRequest(req: Request): string | null {
  * Constant-time string comparison to prevent timing attacks.
  * Never uses === on secrets.
  */
-function timingSafeEqualStr(a: string, b: string): boolean {
+export function timingSafeEqualStr(a: string, b: string): boolean {
   if (typeof a !== "string" || typeof b !== "string") return false;
   const enc = new TextEncoder();
   const bufA = enc.encode(a);
@@ -58,6 +78,14 @@ function timingSafeEqualStr(a: string, b: string): boolean {
     result |= bufA[i] ^ bufB[i];
   }
   return result === 0;
+}
+
+export async function hashIdentifier(str: string): Promise<string> {
+  if (!str) return "";
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf).slice(0, 8))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function parseFirebaseServiceAccountKey(raw: string): any {
@@ -87,7 +115,7 @@ function base64UrlEncode(data: string | Uint8Array): string {
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-async function createServiceAccountJwt(
+export async function createServiceAccountJwt(
   clientEmail: string,
   privateKeyPem: string
 ): Promise<string> {
@@ -114,7 +142,7 @@ async function createServiceAccountJwt(
   const claims = {
     iss: clientEmail,
     sub: clientEmail,
-    aud: "https://oauth2.googleapis.com/token",
+    aud: getOAuthTokenUrl(),
     iat: now,
     exp: now + 3600,
     scope: "https://www.googleapis.com/auth/datastore",
@@ -136,7 +164,7 @@ async function createServiceAccountJwt(
 
 let _cachedOAuthToken: { token: string; expiresAt: number } | null = null;
 
-async function getGoogleOAuthToken(
+export async function getGoogleOAuthToken(
   clientEmail: string,
   privateKeyPem: string
 ): Promise<string> {
@@ -151,7 +179,8 @@ async function getGoogleOAuthToken(
     assertion: jwtAssertion,
   });
 
-  const res = await fetch("https://oauth2.googleapis.com/token", {
+  const tokenUrl = getOAuthTokenUrl();
+  const res = await fetch(tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: bodyParams.toString(),
@@ -171,10 +200,48 @@ async function getGoogleOAuthToken(
 }
 
 /**
+ * Builds typed Firestore REST document fields and updateMask fieldPaths.
+ */
+export function buildFirestoreFields(data: Record<string, any>): {
+  fields: Record<string, any>;
+  fieldPaths: string[];
+} {
+  const fields: Record<string, any> = {};
+  const fieldPaths: string[] = [];
+
+  for (const [key, val] of Object.entries(data)) {
+    if (val === undefined) continue;
+    fieldPaths.push(key);
+    if (val === null) {
+      fields[key] = { nullValue: null };
+    } else if (typeof val === "boolean") {
+      fields[key] = { booleanValue: val };
+    } else if (typeof val === "number") {
+      if (Number.isInteger(val)) {
+        fields[key] = { integerValue: String(val) };
+      } else {
+        fields[key] = { doubleValue: val };
+      }
+    } else if (val instanceof Date) {
+      fields[key] = { timestampValue: val.toISOString() };
+    } else if (typeof val === "string") {
+      fields[key] = { stringValue: val };
+    } else {
+      fields[key] = { stringValue: String(val) };
+    }
+  }
+
+  return { fields, fieldPaths };
+}
+
+/**
  * Standard Firestore REST Writer using Google OAuth2 token and Web Crypto.
  * Runs in pure Edge Runtime with zero Node-only dependencies.
+ *
+ * Precondition: currentDocument.exists=true enforces that documents are updated, never created.
+ * On 404, throws error with status 404 / code 'NOT_FOUND'.
  */
-async function defaultFirestoreWriter(
+export async function defaultFirestoreWriter(
   appointmentId: string,
   data: Record<string, any>
 ): Promise<void> {
@@ -201,35 +268,11 @@ async function defaultFirestoreWriter(
   }
 
   const accessToken = await getGoogleOAuthToken(clientEmail, privateKey);
-
-  // Convert payload into Firestore REST fields format and updateMask
-  const fields: Record<string, any> = {};
-  const fieldPaths: string[] = [];
-
-  for (const [key, val] of Object.entries(data)) {
-    if (val === undefined) continue;
-    fieldPaths.push(key);
-    if (val === null) {
-      fields[key] = { nullValue: null };
-    } else if (typeof val === "boolean") {
-      fields[key] = { booleanValue: val };
-    } else if (typeof val === "number") {
-      if (Number.isInteger(val)) {
-        fields[key] = { integerValue: String(val) };
-      } else {
-        fields[key] = { doubleValue: val };
-      }
-    } else if (val instanceof Date) {
-      fields[key] = { timestampValue: val.toISOString() };
-    } else if (typeof val === "string") {
-      fields[key] = { stringValue: val };
-    } else {
-      fields[key] = { stringValue: String(val) };
-    }
-  }
+  const { fields, fieldPaths } = buildFirestoreFields(data);
 
   const maskQuery = fieldPaths.map((p) => `updateMask.fieldPaths=${encodeURIComponent(p)}`).join("&");
-  const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/appointments/${encodeURIComponent(appointmentId)}?${maskQuery}`;
+  const firestoreBase = getFirestoreBaseUrl();
+  const url = `${firestoreBase}/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/appointments/${encodeURIComponent(appointmentId)}?currentDocument.exists=true&${maskQuery}`;
 
   const resp = await fetch(url, {
     method: "PATCH",
@@ -242,7 +285,10 @@ async function defaultFirestoreWriter(
 
   if (!resp.ok) {
     const errText = await resp.text();
-    throw new Error(`Firestore REST write failed (${resp.status}): ${errText}`);
+    const err: any = new Error(`Firestore REST write failed (${resp.status}): ${errText}`);
+    err.status = resp.status;
+    err.code = resp.status === 404 ? "NOT_FOUND" : "INTERNAL";
+    throw err;
   }
 }
 
@@ -291,6 +337,8 @@ export async function handleSyncToFirestore(
     );
   }
 
+  let appointmentId = "";
+
   try {
     const payload = await req.json();
     const eventType = String(payload?.type || "").toUpperCase();
@@ -326,8 +374,11 @@ export async function handleSyncToFirestore(
       syncOrigin === "doctor_firestore" ||
       syncOrigin === "patient_firestore" ||
       syncOrigin === "reconciler_bot" ||
+      syncOrigin === "firestore_cloud_function" ||
+      syncOrigin === "firestore" ||
       syncedBy === "firestore_cloud_function" ||
-      syncedBy === "supabase_bridge"
+      syncedBy === "supabase_bridge" ||
+      syncedBy === "reconciler_bot"
     ) {
       return new Response(
         JSON.stringify({
@@ -340,7 +391,7 @@ export async function handleSyncToFirestore(
       );
     }
 
-    const appointmentId = String(record.appointment_id || record.appointmentId || record.id || "").trim();
+    appointmentId = String(record.appointment_id || record.appointmentId || record.id || "").trim();
     if (!appointmentId) {
       return new Response(
         JSON.stringify({ error: "bad_request", message: "Missing appointment_id in record" }),
@@ -391,6 +442,27 @@ export async function handleSyncToFirestore(
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
+    // 6. PRECONDITION currentDocument.exists=true 404 HANDLING:
+    // If the document does not exist in Firestore, do not retry: return 200 {skipped: 'not_found'}
+    // with structured warning containing appointmentIdHash and no PII.
+    if (err?.status === 404 || err?.statusCode === 404 || err?.code === "NOT_FOUND" || String(err?.message || "").includes("(404)")) {
+      const idHash = await hashIdentifier(appointmentId);
+      console.warn(JSON.stringify({
+        severity: "WARNING",
+        category: "sync",
+        action: "appointment_not_found_in_firestore",
+        appointmentIdHash: idHash,
+        reason: "Precondition currentDocument.exists=true failed; appointment document does not exist in Firestore",
+      }));
+      return new Response(
+        JSON.stringify({
+          skipped: "not_found",
+          appointmentIdHash: idHash,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     console.error("[sync-to-firestore] Write failed:", err);
     // Non-2xx status code signals failure so Supabase Database Webhook retries
     return new Response(
