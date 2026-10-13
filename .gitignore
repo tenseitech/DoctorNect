@@ -98,6 +98,8 @@ android/key.properties
 
 # Temporary and scratch folders
 scratch/
+backend/supabase/.temp/
+**/supabase/.temp/
 supabase/.temp/
 
 # Debug and output files
