@@ -213,6 +213,229 @@ test('Edge Function Loop Prevention: Drops writes originating from Firestore, Re
   }
 });
 
+test('TASK 3c: Token-only update is ignored with 200 { ignored: "no_status_change" }', async () => {
+  const handleSyncToFirestore = await loadEdgeFunction();
+  let writeCalled = false;
+  const mockWriter = async () => {
+    writeCalled = true;
+  };
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'secret-xyz',
+    },
+    body: JSON.stringify({
+      type: 'UPDATE',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-token-1',
+        token_number: 10,
+        patient_status: 'confirmed',
+        doctor_status: 'confirmed',
+      },
+      old_record: {
+        appointment_id: 'apt-token-1',
+        token_number: 9,
+        patient_status: 'confirmed',
+        doctor_status: 'confirmed',
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'secret-xyz',
+    firestoreWriter: mockWriter,
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ignored, 'no_status_change');
+  assert.equal(writeCalled, false, 'Writer must NOT be called for token-only updates');
+});
+
+test('TASK 3c: Status change written to Firestore with only changed fields', async () => {
+  const handleSyncToFirestore = await loadEdgeFunction();
+  let writtenId = null;
+  let writtenPayload = null;
+
+  const mockWriter = async (id, data) => {
+    writtenId = id;
+    writtenPayload = data;
+  };
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'secret-xyz',
+    },
+    body: JSON.stringify({
+      type: 'UPDATE',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-status-change-1',
+        doctor_status: 'confirmed',
+        patient_status: 'confirmed',
+        token_number: 12,
+      },
+      old_record: {
+        appointment_id: 'apt-status-change-1',
+        doctor_status: 'pendingRequest',
+        patient_status: 'confirmed',
+        token_number: 12,
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'secret-xyz',
+    firestoreWriter: mockWriter,
+  });
+
+  assert.equal(res.status, 200);
+  const resBody = await res.json();
+  assert.equal(resBody.success, true);
+  assert.equal(writtenId, 'apt-status-change-1');
+  assert.equal(writtenPayload.doctorStatus, 'confirmed');
+  assert.equal(writtenPayload.syncedBy, 'supabase_bridge');
+  assert.ok(writtenPayload.updatedAt instanceof Date);
+
+  // Unchanged fields must NOT be included in written payload
+  assert.equal(writtenPayload.patientStatus, undefined, 'Unchanged patientStatus must not be written');
+  assert.equal(writtenPayload.cancellationReason, undefined);
+  assert.equal(writtenPayload.token_number, undefined);
+});
+
+test('TASK 3c: Cancellation writes only cancellation fields and adjusts updateMask', async () => {
+  const handleSyncToFirestore = await loadEdgeFunction();
+  let writtenId = null;
+  let writtenPayload = null;
+
+  const mockWriter = async (id, data) => {
+    writtenId = id;
+    writtenPayload = data;
+  };
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'secret-xyz',
+    },
+    body: JSON.stringify({
+      type: 'UPDATE',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-cancel-fields-1',
+        patient_status: 'cancelled',
+        cancellation_reason: 'High fever',
+        cancelled_by: 'patient',
+        cancelled_at: '2026-10-13T10:00:00.000Z',
+        doctor_status: 'confirmed', // unchanged
+        token_number: 5,
+      },
+      old_record: {
+        appointment_id: 'apt-cancel-fields-1',
+        patient_status: 'confirmed',
+        cancellation_reason: null,
+        cancelled_by: null,
+        cancelled_at: null,
+        doctor_status: 'confirmed', // unchanged
+        token_number: 5,
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'secret-xyz',
+    firestoreWriter: mockWriter,
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(writtenId, 'apt-cancel-fields-1');
+  assert.equal(writtenPayload.patientStatus, 'cancelled');
+  assert.equal(writtenPayload.cancellationReason, 'High fever');
+  assert.equal(writtenPayload.cancelledBy, 'patient');
+  assert.ok(writtenPayload.cancelledAt instanceof Date);
+  assert.equal(writtenPayload.doctorStatus, undefined, 'Unchanged doctorStatus must not be in payload');
+});
+
+test('TASK 3c: Missing old_record uses safe fallback (propagates defined status fields, skips when none)', async () => {
+  const handleSyncToFirestore = await loadEdgeFunction();
+  let writtenPayload = null;
+
+  const mockWriter = async (id, data) => {
+    writtenPayload = data;
+  };
+
+  // Case 1: old_record missing but record has cancellation fields -> writes defined fields safely
+  const reqWithStatus = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'secret-xyz',
+    },
+    body: JSON.stringify({
+      type: 'UPDATE',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-safe-fallback-1',
+        patient_status: 'cancelled',
+        cancellation_reason: 'Emergency hospital visit',
+      },
+      // old_record deliberately omitted
+    }),
+  });
+
+  const resWithStatus = await handleSyncToFirestore(reqWithStatus, {
+    expectedSecret: 'secret-xyz',
+    firestoreWriter: mockWriter,
+  });
+
+  assert.equal(resWithStatus.status, 200);
+  assert.equal(writtenPayload.patientStatus, 'cancelled');
+  assert.equal(writtenPayload.cancellationReason, 'Emergency hospital visit');
+
+  // Case 2: old_record missing and record has NO status/cancellation fields -> ignored as no_status_change
+  let writeCalled2 = false;
+  const mockWriter2 = async () => {
+    writeCalled2 = true;
+  };
+
+  const reqWithoutStatus = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'secret-xyz',
+    },
+    body: JSON.stringify({
+      type: 'UPDATE',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-safe-fallback-2',
+        token_number: 44,
+      },
+    }),
+  });
+
+  const resWithoutStatus = await handleSyncToFirestore(reqWithoutStatus, {
+    expectedSecret: 'secret-xyz',
+    firestoreWriter: mockWriter2,
+  });
+
+  assert.equal(resWithoutStatus.status, 200);
+  const bodyWithoutStatus = await resWithoutStatus.json();
+  assert.equal(bodyWithoutStatus.ignored, 'no_status_change');
+  assert.equal(writeCalled2, false);
+});
+
 test('Edge Function Execution: Writes appointment status changes and cancellations to Firestore', async () => {
   const handleSyncToFirestore = await loadEdgeFunction();
   let writtenId = null;
@@ -303,7 +526,7 @@ test('Edge Function Failure: Returns non-2xx status on Firestore write error so 
   assert.match(body.message, /Firestore connection timeout/);
 });
 
-test('Edge Function Precondition: 404 from Firestore returns 200 {skipped: not_found} without retrying', async () => {
+test('TASK 3c: 404 from Firestore emits structured warning (sync.reverse_not_found) and persists DLQ record', async () => {
   const handleSyncToFirestore = await loadEdgeFunction();
 
   const notFoundWriter = async (id) => {
@@ -311,6 +534,11 @@ test('Edge Function Precondition: 404 from Firestore returns 200 {skipped: not_f
     err.status = 404;
     err.code = 'NOT_FOUND';
     throw err;
+  };
+
+  let capturedDlqEntry = null;
+  const mockDlqWriter = async (entry) => {
+    capturedDlqEntry = entry;
   };
 
   const req = new Request('https://edge.supabase.com/sync-to-firestore', {
@@ -325,7 +553,9 @@ test('Edge Function Precondition: 404 from Firestore returns 200 {skipped: not_f
       schema: 'public',
       record: {
         appointment_id: 'apt-missing-doc-12345',
-        doctor_status: 'cancelled',
+        patient_status: 'cancelled',
+        cancellation_reason: 'Doctor absent',
+        cancelled_by: 'patient',
       },
     }),
   });
@@ -333,15 +563,28 @@ test('Edge Function Precondition: 404 from Firestore returns 200 {skipped: not_f
   const res = await handleSyncToFirestore(req, {
     expectedSecret: 'secret-404-test',
     firestoreWriter: notFoundWriter,
+    dlqWriter: mockDlqWriter,
   });
 
   assert.equal(res.status, 200, 'Precondition 404 must return 200 to halt retries');
   const body = await res.json();
   assert.equal(body.skipped, 'not_found');
+  assert.equal(body.reason, 'firestore_doc_missing');
+  assert.equal(body.dlqPersisted, true);
   assert.ok(body.appointmentIdHash, 'Must include appointmentIdHash');
-  // Privacy assertion: appointmentIdHash must be a non-empty hex hash, never containing the raw appointment ID
   assert.match(body.appointmentIdHash, /^[a-f0-9]{16}$/);
-  assert.equal(body.appointmentIdHash.includes('apt-missing-doc-12345'), false);
+
+  // Assert DLQ entry content
+  assert.ok(capturedDlqEntry, 'DLQ writer must be called');
+  assert.equal(capturedDlqEntry.direction, 'supabase_to_firestore');
+  assert.equal(capturedDlqEntry.entity_type, 'appointments');
+  assert.equal(capturedDlqEntry.entity_id, 'apt-missing-doc-12345');
+  assert.equal(capturedDlqEntry.error_message, 'firestore_doc_missing');
+  assert.equal(capturedDlqEntry.status, 'pending');
+  assert.equal(capturedDlqEntry.payload.patientStatus, 'cancelled');
+  assert.equal(capturedDlqEntry.payload.cancellationReason, 'Doctor absent');
+  assert.equal(capturedDlqEntry.metadata.action, 'sync.reverse_not_found');
+  assert.equal(capturedDlqEntry.metadata.reason, 'firestore_doc_missing');
 });
 
 test('Typed Firestore REST Shape: Formats cancellation fields and updateMask strictly', async () => {

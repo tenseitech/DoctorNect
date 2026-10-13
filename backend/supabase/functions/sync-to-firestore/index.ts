@@ -15,6 +15,83 @@ export const corsHeaders = {
 export interface SyncToFirestoreOptions {
   expectedSecret?: string | null;
   firestoreWriter?: (appointmentId: string, data: Record<string, any>) => Promise<void>;
+  dlqWriter?: (entry: Record<string, any>) => Promise<void>;
+}
+
+export function getFieldValue(obj: Record<string, any> | undefined | null, snake: string, camel: string): any {
+  if (!obj || typeof obj !== "object") return undefined;
+  if (obj[snake] !== undefined) return obj[snake];
+  if (obj[camel] !== undefined) return obj[camel];
+  return undefined;
+}
+
+export function areFieldValuesEqual(valA: any, valB: any): boolean {
+  if (valA === valB) return true;
+  if ((valA === null || valA === undefined || valA === "") && (valB === null || valB === undefined || valB === "")) {
+    return true;
+  }
+  if (valA && valB) {
+    const timeA = new Date(valA).getTime();
+    const timeB = new Date(valB).getTime();
+    if (!Number.isNaN(timeA) && !Number.isNaN(timeB)) {
+      return timeA === timeB;
+    }
+  }
+  return false;
+}
+
+export interface StatusDiff {
+  hasChanged: boolean;
+  changedFields: Record<string, any>;
+}
+
+export function extractChangedStatusFields(
+  record: Record<string, any>,
+  oldRecord?: Record<string, any> | null
+): StatusDiff {
+  const isOldRecordMissing = !oldRecord || typeof oldRecord !== "object";
+  const changedFields: Record<string, any> = {};
+  let hasChanged = false;
+
+  const fieldDefs: Array<{
+    snake: string;
+    camel: string;
+    firestoreKey: string;
+    isDate?: boolean;
+  }> = [
+    { snake: "status", camel: "status", firestoreKey: "status" },
+    { snake: "patient_status", camel: "patientStatus", firestoreKey: "patientStatus" },
+    { snake: "doctor_status", camel: "doctorStatus", firestoreKey: "doctorStatus" },
+    { snake: "cancellation_reason", camel: "cancellationReason", firestoreKey: "cancellationReason" },
+    { snake: "cancelled_by", camel: "cancelledBy", firestoreKey: "cancelledBy" },
+    { snake: "cancelled_at", camel: "cancelledAt", firestoreKey: "cancelledAt", isDate: true },
+  ];
+
+  for (const def of fieldDefs) {
+    const newRaw = getFieldValue(record, def.snake, def.camel);
+    if (newRaw === undefined) continue;
+
+    if (isOldRecordMissing) {
+      hasChanged = true;
+      if (def.isDate) {
+        changedFields[def.firestoreKey] = newRaw ? new Date(newRaw) : null;
+      } else {
+        changedFields[def.firestoreKey] = newRaw;
+      }
+    } else {
+      const oldRaw = getFieldValue(oldRecord, def.snake, def.camel);
+      if (!areFieldValuesEqual(newRaw, oldRaw)) {
+        hasChanged = true;
+        if (def.isDate) {
+          changedFields[def.firestoreKey] = newRaw ? new Date(newRaw) : null;
+        } else {
+          changedFields[def.firestoreKey] = newRaw;
+        }
+      }
+    }
+  }
+
+  return { hasChanged, changedFields };
 }
 
 export function getEnv(k: string): string | undefined {
@@ -250,24 +327,33 @@ export async function defaultFirestoreWriter(
   let clientEmail = getEnv("FIREBASE_CLIENT_EMAIL");
   let privateKey = getEnv("FIREBASE_PRIVATE_KEY");
 
-  if (rawServiceAccount) {
-    const sa = parseFirebaseServiceAccountKey(rawServiceAccount);
-    projectId = sa.project_id || projectId;
-    clientEmail = sa.client_email || clientEmail;
-    privateKey = sa.private_key || privateKey;
+  const isEmulator = Boolean(getEnv("FIRESTORE_EMULATOR_HOST"));
+
+  if (isEmulator) {
+    projectId = projectId || "demo-doctornect-test";
+  } else {
+    if (rawServiceAccount) {
+      const sa = parseFirebaseServiceAccountKey(rawServiceAccount);
+      projectId = sa.project_id || projectId;
+      clientEmail = sa.client_email || clientEmail;
+      privateKey = sa.private_key || privateKey;
+    }
+
+    if (!projectId || !clientEmail || !privateKey) {
+      throw new Error(
+        "Missing Firebase service account credentials (expected FIREBASE_SERVICE_ACCOUNT_KEY or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)"
+      );
+    }
   }
 
-  if (!projectId || !clientEmail || !privateKey) {
-    throw new Error(
-      "Missing Firebase service account credentials (expected FIREBASE_SERVICE_ACCOUNT_KEY or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY)"
-    );
+  let accessToken = "owner";
+  if (!isEmulator) {
+    if (privateKey && privateKey.includes("\\n")) {
+      privateKey = privateKey.replace(/\\n/g, "\n");
+    }
+    accessToken = await getGoogleOAuthToken(clientEmail!, privateKey!);
   }
 
-  if (privateKey.includes("\\n")) {
-    privateKey = privateKey.replace(/\\n/g, "\n");
-  }
-
-  const accessToken = await getGoogleOAuthToken(clientEmail, privateKey);
   const { fields, fieldPaths } = buildFirestoreFields(data);
 
   const maskQuery = fieldPaths.map((p) => `updateMask.fieldPaths=${encodeURIComponent(p)}`).join("&");
@@ -338,13 +424,15 @@ export async function handleSyncToFirestore(
   }
 
   let appointmentId = "";
+  let record: any = null;
 
   try {
     const payload = await req.json();
     const eventType = String(payload?.type || "").toUpperCase();
     const table = String(payload?.table || "").toLowerCase();
     const schema = String(payload?.schema || "public").toLowerCase();
-    const record = payload?.record;
+    record = payload?.record;
+    const oldRecord = payload?.old_record || payload?.oldRecord;
 
     // 2. EVENT FILTERING:
     // Only act on type UPDATE for schema public, table appointments; anything else returns 200 {ignored: true}
@@ -391,6 +479,20 @@ export async function handleSyncToFirestore(
       );
     }
 
+    // 4. REAL STATUS / CANCELLATION CHANGE FILTER:
+    // Act only when the UPDATE actually changed a status or cancellation field.
+    // If none changed, return 200 { ignored: "no_status_change" }
+    const statusDiff = extractChangedStatusFields(record, oldRecord);
+    if (!statusDiff.hasChanged) {
+      return new Response(
+        JSON.stringify({
+          ignored: "no_status_change",
+          reason: "No status or cancellation field was changed in UPDATE",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     appointmentId = String(record.appointment_id || record.appointmentId || record.id || "").trim();
     if (!appointmentId) {
       return new Response(
@@ -399,37 +501,19 @@ export async function handleSyncToFirestore(
       );
     }
 
-    // 4. WRITE ONLY STATUS / CANCELLATION FIELDS, ALWAYS WITH syncedBy: 'supabase_bridge':
+    // 5. WRITE ONLY CHANGED STATUS / CANCELLATION FIELDS, ALWAYS WITH syncedBy: 'supabase_bridge':
     const firestoreUpdate: Record<string, any> = {
       syncedBy: "supabase_bridge",
+      ...statusDiff.changedFields,
     };
 
-    if (record.status !== undefined) {
-      firestoreUpdate.status = record.status;
-    }
-    if (record.patient_status !== undefined || record.patientStatus !== undefined) {
-      firestoreUpdate.patientStatus = record.patient_status !== undefined ? record.patient_status : record.patientStatus;
-    }
-    if (record.doctor_status !== undefined || record.doctorStatus !== undefined) {
-      firestoreUpdate.doctorStatus = record.doctor_status !== undefined ? record.doctor_status : record.doctorStatus;
-    }
-    if (record.cancellation_reason !== undefined || record.cancellationReason !== undefined) {
-      firestoreUpdate.cancellationReason = record.cancellation_reason !== undefined ? record.cancellation_reason : record.cancellationReason;
-    }
-    if (record.cancelled_by !== undefined || record.cancelledBy !== undefined) {
-      firestoreUpdate.cancelledBy = record.cancelled_by !== undefined ? record.cancelled_by : record.cancelledBy;
-    }
-    if (record.cancelled_at !== undefined || record.cancelledAt !== undefined) {
-      const rawCancelledAt = record.cancelled_at !== undefined ? record.cancelled_at : record.cancelledAt;
-      firestoreUpdate.cancelledAt = rawCancelledAt ? new Date(rawCancelledAt) : null;
-    }
     if (record.updated_at || record.updatedAt) {
       firestoreUpdate.updatedAt = new Date(record.updated_at || record.updatedAt);
     } else {
       firestoreUpdate.updatedAt = new Date();
     }
 
-    // 5. WRITE TO FIRESTORE:
+    // 6. WRITE TO FIRESTORE:
     const writer = options?.firestoreWriter ?? defaultFirestoreWriter;
     await writer(appointmentId, firestoreUpdate);
 
@@ -438,26 +522,88 @@ export async function handleSyncToFirestore(
         success: true,
         appointmentId,
         syncedBy: "supabase_bridge",
+        changedFields: Object.keys(statusDiff.changedFields),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
-    // 6. PRECONDITION currentDocument.exists=true 404 HANDLING:
+    // 7. PRECONDITION currentDocument.exists=true 404 & DURABLE NOT-FOUND HANDLING:
     // If the document does not exist in Firestore, do not retry: return 200 {skipped: 'not_found'}
-    // with structured warning containing appointmentIdHash and no PII.
+    // with structured warning containing appointmentIdHash and no PII, and record durable DLQ entry.
     if (err?.status === 404 || err?.statusCode === 404 || err?.code === "NOT_FOUND" || String(err?.message || "").includes("(404)")) {
       const idHash = await hashIdentifier(appointmentId);
+      
       console.warn(JSON.stringify({
         severity: "WARNING",
         category: "sync",
-        action: "appointment_not_found_in_firestore",
+        action: "sync.reverse_not_found",
         appointmentIdHash: idHash,
-        reason: "Precondition currentDocument.exists=true failed; appointment document does not exist in Firestore",
+        reason: "firestore_doc_missing",
+        message: "Precondition currentDocument.exists=true failed; appointment document does not exist in Firestore",
       }));
+
+      let dlqPersisted = false;
+      const dlqPayload = {
+        appointmentId,
+        appointmentIdHash: idHash,
+        status: record?.status,
+        patientStatus: record?.patient_status || record?.patientStatus,
+        doctorStatus: record?.doctor_status || record?.doctorStatus,
+        cancellationReason: record?.cancellation_reason || record?.cancellationReason,
+        cancelledBy: record?.cancelled_by || record?.cancelledBy,
+        cancelledAt: record?.cancelled_at || record?.cancelledAt,
+        timestamp: new Date().toISOString(),
+      };
+
+      const dlqEntry = {
+        direction: "supabase_to_firestore",
+        entity_type: "appointments",
+        entity_id: appointmentId,
+        payload: dlqPayload,
+        error_message: "firestore_doc_missing",
+        status: "pending",
+        metadata: {
+          reason: "firestore_doc_missing",
+          action: "sync.reverse_not_found",
+          appointmentIdHash: idHash,
+        },
+      };
+
+      if (typeof options?.dlqWriter === "function") {
+        try {
+          await options.dlqWriter(dlqEntry);
+          dlqPersisted = true;
+        } catch (dlqErr) {
+          console.error("[sync-to-firestore] Failed to write to custom dlqWriter:", dlqErr);
+        }
+      } else {
+        const supabaseUrl = getEnv("SUPABASE_URL");
+        const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+        if (supabaseUrl && serviceRoleKey) {
+          try {
+            const dlqRes = await fetch(`${supabaseUrl.replace(/\/+$/, "")}/rest/v1/sync_dead_letter_queue`, {
+              method: "POST",
+              headers: {
+                "apikey": serviceRoleKey,
+                "Authorization": `Bearer ${serviceRoleKey}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal",
+              },
+              body: JSON.stringify(dlqEntry),
+            });
+            dlqPersisted = dlqRes.ok;
+          } catch (dlqErr) {
+            console.error("[sync-to-firestore] Failed to write to sync_dead_letter_queue:", dlqErr);
+          }
+        }
+      }
+
       return new Response(
         JSON.stringify({
           skipped: "not_found",
+          reason: "firestore_doc_missing",
           appointmentIdHash: idHash,
+          dlqPersisted,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
