@@ -157,7 +157,7 @@ test('Real Firestore Emulator: PATCH of missing doc returns 404, triggers skip a
   assert.equal(matchingDl.fields.entityType?.stringValue, 'appointments');
   // Confirm NO patient free text stored in dead letter
   const changedFieldValues = (matchingDl.fields.changedFields?.arrayValue?.values || []).map((v) => v.stringValue);
-  assert.ok(changedFieldValues.includes('patientStatus'));
+  assert.ok(changedFieldValues.includes('cancellationReason') || changedFieldValues.includes('wasCancelled'));
   assert.ok(!changedFieldValues.includes('Patient changed mind'), 'Must not store patient-entered text');
 });
 
@@ -373,8 +373,15 @@ test('Real Firestore Emulator: INSERT returns 200 { ignored: "already_exists" } 
       record: {
         appointment_id: existingAptId,
         doctor_id: 'doc-emu-2',
+        patient_id: 'pat-emu-2',
         doctor_name: 'Overwriting Doctor Attempt',
+        patient_name: 'Patient Test',
+        date_time: '2026-10-14T09:00:00Z',
+        slot_label: '09:00 AM',
+        token_number: 1,
         patient_status: 'confirmed',
+        doctor_status: 'confirmed',
+        visit_type: 'newVisit',
         sync_origin: 'patient_supabase',
       },
     }),

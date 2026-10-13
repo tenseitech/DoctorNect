@@ -22,11 +22,15 @@ export interface SyncToFirestoreOptions {
   firestoreReader?: (appointmentId: string) => Promise<any>;
   deadLetterWriter?: (
     appointmentId: string,
-    reason: "firestore_doc_missing" | "terminal_state" | "other",
+    reason:
+      | "firestore_doc_missing"
+      | "terminal_state"
+      | "invalid_status_value"
+      | "missing_required_fields"
+      | "other",
     changedFieldNames: string[],
     updatedAtMs?: number | string
   ) => Promise<void>;
-  dlqWriter?: (entry: any) => Promise<void>;
 }
 
 export function getFieldValue(obj: Record<string, any> | undefined | null, snake: string, camel: string): any {
@@ -51,9 +55,38 @@ export function areFieldValuesEqual(valA: any, valB: any): boolean {
   return false;
 }
 
+export const ALLOWED_PATIENT_STATUS_SQL = new Set([
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+]);
+
+export const ALLOWED_PATIENT_STATUS_FIRESTORE = new Set([
+  "pending",
+  "confirmed",
+]);
+
+export const ALLOWED_DOCTOR_STATUS = new Set([
+  "pendingRequest",
+  "confirmed",
+  "inProgress",
+  "completed",
+  "cancelled",
+  "noShow",
+  "waiting",
+]);
+
+export const ALLOWED_VISIT_TYPE = new Set([
+  "newVisit",
+  "followUp",
+  "returning",
+]);
+
 export interface StatusDiff {
   hasChanged: boolean;
   changedFields: Record<string, any>;
+  invalidFields?: string[];
 }
 
 export function extractChangedStatusFields(
@@ -62,6 +95,7 @@ export function extractChangedStatusFields(
 ): StatusDiff {
   const isOldRecordMissing = !oldRecord || typeof oldRecord !== "object";
   const changedFields: Record<string, any> = {};
+  const invalidFields: string[] = [];
   let hasChanged = false;
 
   const fieldDefs: Array<{
@@ -70,7 +104,6 @@ export function extractChangedStatusFields(
     firestoreKey: string;
     isDate?: boolean;
   }> = [
-    { snake: "status", camel: "status", firestoreKey: "status" },
     { snake: "patient_status", camel: "patientStatus", firestoreKey: "patientStatus" },
     { snake: "doctor_status", camel: "doctorStatus", firestoreKey: "doctorStatus" },
     { snake: "cancellation_reason", camel: "cancellationReason", firestoreKey: "cancellationReason" },
@@ -82,9 +115,28 @@ export function extractChangedStatusFields(
     const newRaw = getFieldValue(record, def.snake, def.camel);
     if (newRaw === undefined) continue;
 
+    // Validate enum values if applicable
+    if (def.snake === "patient_status") {
+      const pVal = String(newRaw).trim();
+      if (!ALLOWED_PATIENT_STATUS_SQL.has(pVal)) {
+        invalidFields.push("patient_status");
+      }
+    } else if (def.snake === "doctor_status") {
+      const dVal = String(newRaw).trim();
+      if (!ALLOWED_DOCTOR_STATUS.has(dVal)) {
+        invalidFields.push("doctor_status");
+      }
+    }
+
     if (isOldRecordMissing) {
       hasChanged = true;
-      if (def.isDate) {
+      if (def.snake === "patient_status") {
+        const pVal = String(newRaw).trim();
+        // If changed to 'completed' or 'cancelled', do NOT write patientStatus to Firestore
+        if (pVal === "pending" || pVal === "confirmed") {
+          changedFields[def.firestoreKey] = pVal;
+        }
+      } else if (def.isDate) {
         changedFields[def.firestoreKey] = newRaw ? new Date(newRaw) : null;
       } else {
         changedFields[def.firestoreKey] = newRaw;
@@ -93,7 +145,13 @@ export function extractChangedStatusFields(
       const oldRaw = getFieldValue(oldRecord, def.snake, def.camel);
       if (!areFieldValuesEqual(newRaw, oldRaw)) {
         hasChanged = true;
-        if (def.isDate) {
+        if (def.snake === "patient_status") {
+          const pVal = String(newRaw).trim();
+          // If changed to 'completed' or 'cancelled', do NOT write patientStatus to Firestore
+          if (pVal === "pending" || pVal === "confirmed") {
+            changedFields[def.firestoreKey] = pVal;
+          }
+        } else if (def.isDate) {
           changedFields[def.firestoreKey] = newRaw ? new Date(newRaw) : null;
         } else {
           changedFields[def.firestoreKey] = newRaw;
@@ -102,7 +160,11 @@ export function extractChangedStatusFields(
     }
   }
 
-  return { hasChanged, changedFields };
+  return {
+    hasChanged,
+    changedFields,
+    invalidFields: invalidFields.length > 0 ? invalidFields : undefined,
+  };
 }
 
 export function getEnv(k: string): string | undefined {
@@ -345,6 +407,75 @@ export function buildFirestoreFields(data: Record<string, any>): {
 }
 
 /**
+ * Validates required fields and enum values on an INSERT payload.
+ *
+ * Required fields per Step 0 / TASK 4 contract:
+ * doctorId, patientId, doctorName, patientName, dateTime, slotLabel, tokenNumber, patientStatus, doctorStatus, visitType.
+ *
+ * If patient_status is omitted (undefined), defaults to 'pending' per TASK 4b.
+ * If explicitly null, empty, or an unknown enum value (e.g. cancelled/completed), it fails validation.
+ */
+export function validateInsertPayload(record: Record<string, any>): {
+  isValid: boolean;
+  missingFields: string[];
+  invalidFields: string[];
+} {
+  const missingFields: string[] = [];
+  const invalidFields: string[] = [];
+
+  const requiredDefs: Array<{ name: string; val: any }> = [
+    { name: "doctorId", val: record.doctor_id ?? record.doctorId },
+    { name: "patientId", val: record.patient_id ?? record.patientId },
+    { name: "doctorName", val: record.doctor_name ?? record.doctorName },
+    { name: "patientName", val: record.patient_name ?? record.patientName },
+    { name: "dateTime", val: record.date_time ?? record.dateTime },
+    { name: "slotLabel", val: record.slot_label ?? record.slotLabel },
+    { name: "tokenNumber", val: record.token_number ?? record.tokenNumber },
+    { name: "doctorStatus", val: record.doctor_status ?? record.doctorStatus },
+    { name: "visitType", val: record.visit_type ?? record.visitType },
+  ];
+
+  for (const def of requiredDefs) {
+    if (def.val === undefined || def.val === null) {
+      missingFields.push(def.name);
+    } else if (typeof def.val === "string" && !def.val.trim()) {
+      missingFields.push(def.name);
+    }
+  }
+
+  // patientStatus requirement and default handling:
+  const rawPatientStatus = record.patient_status !== undefined ? record.patient_status : record.patientStatus;
+  if (rawPatientStatus === null || (typeof rawPatientStatus === "string" && !rawPatientStatus.trim())) {
+    missingFields.push("patientStatus");
+  } else if (rawPatientStatus !== undefined) {
+    const pVal = String(rawPatientStatus).trim();
+    if (!ALLOWED_PATIENT_STATUS_FIRESTORE.has(pVal)) {
+      invalidFields.push("patient_status");
+    }
+  }
+
+  // Enum validations:
+  const rawDoctorStatus = record.doctor_status ?? record.doctorStatus;
+  if (rawDoctorStatus !== undefined && rawDoctorStatus !== null && String(rawDoctorStatus).trim()) {
+    const dVal = String(rawDoctorStatus).trim();
+    if (!ALLOWED_DOCTOR_STATUS.has(dVal)) {
+      invalidFields.push("doctor_status");
+    }
+  }
+
+  const rawVisitType = record.visit_type ?? record.visitType;
+  if (rawVisitType !== undefined && rawVisitType !== null && String(rawVisitType).trim()) {
+    const vVal = String(rawVisitType).trim();
+    if (!ALLOWED_VISIT_TYPE.has(vVal)) {
+      invalidFields.push("visit_type");
+    }
+  }
+
+  const isValid = missingFields.length === 0 && invalidFields.length === 0;
+  return { isValid, missingFields, invalidFields };
+}
+
+/**
  * Maps a Supabase public.appointments row to a full Firestore appointment document payload,
  * matching the exact contract of the bookAppointment callable and AppointmentFirestoreMapper.
  * Injects syncedBy: 'supabase_bridge' to prevent feedback loops.
@@ -479,9 +610,7 @@ export function isTerminalTransitionRejected(
   incomingUpdate: Record<string, any>
 ): { isTerminal: boolean; isRejected: boolean; currentStatus: string } {
   const currentDoctorStatus = String(
-    currentDoc?.fields?.doctorStatus?.stringValue ||
-    currentDoc?.fields?.status?.stringValue ||
-    ""
+    currentDoc?.fields?.doctorStatus?.stringValue || ""
   ).trim();
 
   const currentPatientStatus = String(
@@ -498,7 +627,7 @@ export function isTerminalTransitionRejected(
   }
 
   // If doc is terminal, check if incoming update would transition it away or cancel it
-  const targetDocStatus = incomingUpdate.doctorStatus ?? incomingUpdate.status;
+  const targetDocStatus = incomingUpdate.doctorStatus;
   const targetPatientStatus = incomingUpdate.patientStatus;
 
   let isRejected = false;
@@ -577,7 +706,12 @@ export async function defaultFirestoreReader(
  */
 export async function writeFirestoreDeadLetter(
   appointmentId: string,
-  reason: "firestore_doc_missing" | "terminal_state" | "other",
+  reason:
+    | "firestore_doc_missing"
+    | "terminal_state"
+    | "invalid_status_value"
+    | "missing_required_fields"
+    | "other",
   changedFieldNames: string[],
   updatedAtMs?: number | string
 ): Promise<void> {
@@ -729,21 +863,49 @@ export async function defaultFirestoreWriter(
 
   if (!resp.ok) {
     const errText = await resp.text();
-    const isNotFound = resp.status === 404 || errText.includes("NOT_FOUND") || errText.includes("no entity to update");
-    const isAlreadyExists =
-      resp.status === 409 ||
-      errText.includes("ALREADY_EXISTS") ||
-      /already exists/i.test(errText);
-    const isFailedPrecondition =
-      resp.status === 409 ||
-      resp.status === 412 ||
-      errText.includes("FAILED_PRECONDITION") ||
-      errText.includes("does not match the required base version") ||
-      isAlreadyExists;
+    let parsedStatus: string | undefined;
+    let parsedMessage: string | undefined;
+    try {
+      const errJson = JSON.parse(errText);
+      if (errJson?.error) {
+        parsedStatus = errJson.error.status;
+        parsedMessage = errJson.error.message;
+      }
+    } catch (_) {}
 
-    const err: any = new Error(`Firestore REST write failed (${resp.status}): ${errText}`);
-    err.status = isNotFound ? 404 : (isAlreadyExists ? 409 : (isFailedPrecondition ? 412 : resp.status));
-    err.code = isNotFound ? "NOT_FOUND" : (isAlreadyExists ? "ALREADY_EXISTS" : (isFailedPrecondition ? "FAILED_PRECONDITION" : "INTERNAL"));
+    const isNotFound =
+      parsedStatus === "NOT_FOUND" ||
+      resp.status === 404 ||
+      errText.includes("no entity to update");
+
+    const isAlreadyExists =
+      parsedStatus === "ALREADY_EXISTS" ||
+      (resp.status === 409 && (parsedStatus === "ALREADY_EXISTS" || /already exists/i.test(errText)));
+
+    const isFailedPrecondition =
+      parsedStatus === "FAILED_PRECONDITION" ||
+      parsedStatus === "ABORTED" ||
+      resp.status === 412 ||
+      (resp.status === 409 && !isAlreadyExists && /precondition|base version/i.test(errText));
+
+    const isInvalidArgument =
+      parsedStatus === "INVALID_ARGUMENT" ||
+      (resp.status === 400 && parsedStatus !== "FAILED_PRECONDITION");
+
+    const err: any = new Error(
+      `Firestore REST write failed (${resp.status}): ${parsedMessage || errText}`
+    );
+    err.status = resp.status;
+    err.code = isNotFound
+      ? "NOT_FOUND"
+      : isAlreadyExists
+      ? "ALREADY_EXISTS"
+      : isFailedPrecondition
+      ? (parsedStatus || "FAILED_PRECONDITION")
+      : isInvalidArgument
+      ? "INVALID_ARGUMENT"
+      : (parsedStatus || "INTERNAL");
+    err.grpcStatus = parsedStatus;
     throw err;
   }
 }
@@ -872,29 +1034,56 @@ export async function handleSyncToFirestore(
     const reader = options?.firestoreReader ?? defaultMockReader;
     const writer = options?.firestoreWriter ?? defaultFirestoreWriter;
     const deadLetterWriter = options?.deadLetterWriter ?? (
-      (!isEmulatedOrCustomBase && (options?.firestoreWriter || options?.dlqWriter))
-        ? async (id: string, reason: any, changedFields: string[], ms?: any) => {
-            if (typeof options?.dlqWriter === "function") {
-              await options.dlqWriter({
-                direction: "supabase_to_firestore",
-                entity_type: "appointments",
-                entity_id: id,
-                error_message: reason,
-                status: "dead_letter",
-                metadata: { reason, changedFields },
-              });
-            }
+      (!isEmulatedOrCustomBase && options?.firestoreWriter)
+        ? async (_id: string, _reason: any, _changedFields: string[], _ms?: any) => {
+            // In-memory test hook when firestoreWriter is mocked in tests
           }
         : writeFirestoreDeadLetter
     );
 
     // 4. INSERT HANDLING (CREATE ONLY IF ABSENT):
     if (isInsert) {
+      const validation = validateInsertPayload(record);
+      if (validation.missingFields.length > 0) {
+        await deadLetterWriter(
+          appointmentId,
+          "missing_required_fields",
+          validation.missingFields,
+          record?.updated_at ? new Date(record.updated_at).getTime() : Date.now()
+        );
+        return new Response(
+          JSON.stringify({
+            skipped: "missing_required_fields",
+            appointmentId,
+            missingFields: validation.missingFields,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (validation.invalidFields.length > 0) {
+        await deadLetterWriter(
+          appointmentId,
+          "invalid_status_value",
+          validation.invalidFields,
+          record?.updated_at ? new Date(record.updated_at).getTime() : Date.now()
+        );
+        return new Response(
+          JSON.stringify({
+            skipped: "invalid_status_value",
+            appointmentId,
+            invalidFields: validation.invalidFields,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const firestoreDoc = buildFirestoreAppointmentFromSupabaseRow(record);
       try {
         await writer(appointmentId, firestoreDoc, { exists: false });
       } catch (writeErr: any) {
         const isAlreadyExists =
+          writeErr?.grpcStatus === "ALREADY_EXISTS" ||
           writeErr?.status === 409 ||
           writeErr?.code === "ALREADY_EXISTS" ||
           (writeErr?.code === "FAILED_PRECONDITION" && /already exists/i.test(String(writeErr?.message)));
@@ -928,11 +1117,29 @@ export async function handleSyncToFirestore(
     // Act only when the UPDATE actually changed a status or cancellation field.
     // If none changed, return 200 { ignored: "no_status_change" }
     const statusDiff = extractChangedStatusFields(record, oldRecord);
-    if (!statusDiff.hasChanged) {
+
+    if (statusDiff.invalidFields && statusDiff.invalidFields.length > 0) {
+      await deadLetterWriter(
+        appointmentId,
+        "invalid_status_value",
+        statusDiff.invalidFields,
+        record?.updated_at ? new Date(record.updated_at).getTime() : Date.now()
+      );
+      return new Response(
+        JSON.stringify({
+          skipped: "invalid_status_value",
+          appointmentId,
+          invalidFields: statusDiff.invalidFields,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!statusDiff.hasChanged || Object.keys(statusDiff.changedFields).length === 0) {
       return new Response(
         JSON.stringify({
           ignored: "no_status_change",
-          reason: "No status or cancellation field was changed in UPDATE",
+          reason: "No writable status or cancellation field was changed in UPDATE",
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -1026,14 +1233,17 @@ export async function handleSyncToFirestore(
     try {
       await writer(appointmentId, firestoreUpdate, currentDoc?.updateTime);
     } catch (patchErr: any) {
-      if (
-        patchErr?.status === 409 ||
-        patchErr?.status === 412 ||
+      const isRetryableConflict =
+        patchErr?.grpcStatus === "FAILED_PRECONDITION" ||
+        patchErr?.grpcStatus === "ABORTED" ||
         patchErr?.code === "FAILED_PRECONDITION" ||
         patchErr?.code === "ABORTED" ||
-        String(patchErr?.message || "").includes("(409)") ||
-        String(patchErr?.message || "").includes("(412)")
-      ) {
+        patchErr?.status === 412 ||
+        (patchErr?.status === 409 &&
+          patchErr?.code !== "ALREADY_EXISTS" &&
+          patchErr?.grpcStatus !== "ALREADY_EXISTS");
+
+      if (isRetryableConflict) {
         // Concurrent modification: re-read once
         currentDoc = await reader(appointmentId);
         const recheck = isTerminalTransitionRejected(currentDoc, firestoreUpdate);
