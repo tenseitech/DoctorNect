@@ -152,23 +152,21 @@ To support live reverse synchronization of appointment status updates, cancellat
    - Rejects transitions out of terminal states (`completed`, `inProgress`, `noShow`) with `200 { skipped: 'terminal_state' }` and records a durable dead letter in Firestore's `syncDeadLetters` collection (deterministic ID, zero free text).
    - Non-terminal updates write strictly changed fields with precondition `currentDocument.updateTime`, retrying once on concurrent modification (409/412).
 
-### 3c. Sync Parity Audit & Weekly Verification Procedure
+### 3c. Sync Parity Audit & Observability Reference
 
-During the dual-run and staging window, cross-system consistency must be audited weekly:
+During the dual-run and staging window, cross-system consistency must be audited weekly using the read-only parity auditor:
 ```bash
 node scripts/check_sync_parity.js --audit
 ```
 #### Parity Verification Coverage:
 1. **Appointments Existence**:
-   - `inPgNotFs`: Appointments present in Supabase PostgreSQL but missing in Firestore.
-   - `inFsNotPg`: Appointments present in Firestore but missing in Supabase PostgreSQL.
-2. **Status Parity**:
-   - `mismatched`: Compares `doctor_status` vs `doctorStatus` and `patient_status` vs `patientStatus`.
-3. **Weekly Procedure**:
-   - Run audit every Monday or post-migration window.
-   - Zero tolerance for `inPgNotFs` or `mismatched` on active appointments.
-   - If any `inPgNotFs` or `mismatched` are detected, inspect Firestore collection `syncDeadLetters` by `entityId` to identify root cause (`firestore_doc_missing`, `terminal_state`).
-   - Run reconciliation in dry-run mode first: `node scripts/check_sync_parity.js --reconcile --dry-run` before applying reconciliations.
+   - `inPgNotFs`: Count of appointments present in Supabase PostgreSQL but missing in Firestore.
+   - `inFsNotPg`: Count of appointments present in Firestore but missing in Supabase PostgreSQL.
+2. **Effective Status Parity**:
+   - `mismatched`: Compares effective state (`doctor_status` vs `doctorStatus`, accounting for terminal state propagation where `patientStatus` is maintained as pending/confirmed).
+3. **Weekly Observability & Alerting Manual**:
+   For the complete operational guide covering skip/dead-letter dictionaries, GCP log metrics, Supabase Logs Explorer queries, and dead-letter replay procedures (re-reading from SoR), refer directly to:
+   👉 **[SUPABASE_SYNC_OBSERVABILITY.md](SUPABASE_SYNC_OBSERVABILITY.md)**.
 
 ---
 
