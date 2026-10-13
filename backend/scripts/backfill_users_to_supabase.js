@@ -158,6 +158,7 @@ async function runBackfill(options = {}) {
     updated: 0,
     skipped: 0,
     failed: 0,
+    emailCollisions: 0,
   };
 
   if (!firestoreDb) {
@@ -167,6 +168,7 @@ async function runBackfill(options = {}) {
   let currentStartAfter = startAfterUid;
   let hasMore = true;
   let totalProcessed = 0;
+  const seenEmails = new Set();
 
   while (hasMore) {
     const currentBatchLimit = maxLimit ? Math.min(batchSize, maxLimit - totalProcessed) : batchSize;
@@ -237,6 +239,14 @@ async function runBackfill(options = {}) {
       }
 
       const { row, createdAt } = built;
+      const candidateEmail = String(row?.email || '').trim().toLowerCase();
+      if (candidateEmail) {
+        if (seenEmails.has(candidateEmail)) {
+          counts.emailCollisions++;
+        } else {
+          seenEmails.add(candidateEmail);
+        }
+      }
       const deterministicId = toUserUuid(uid);
 
       if (!apply) {
@@ -377,12 +387,13 @@ async function runBackfill(options = {}) {
 
   // Print counts ONLY. Strictly no PII, emails, phones, names or uids.
   logger('========================================');
-  logger(`[Backfill Users] Mode:    ${apply ? 'APPLY' : 'DRY-RUN'}`);
+  logger(`[Backfill Users] Mode: ${apply ? 'APPLY' : 'DRY-RUN'}`);
   logger(`[Backfill Users] Scanned: ${counts.scanned}`);
   logger(`[Backfill Users] Created: ${counts.created}`);
   logger(`[Backfill Users] Updated: ${counts.updated}`);
   logger(`[Backfill Users] Skipped: ${counts.skipped}`);
-  logger(`[Backfill Users] Failed:  ${counts.failed}`);
+  logger(`[Backfill Users] Failed: ${counts.failed}`);
+  logger(`[Backfill Users] Email Collisions: ${counts.emailCollisions}`);
   logger('========================================');
 
   return counts;

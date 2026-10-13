@@ -439,3 +439,52 @@ test('Backfill: Privacy guarantee - Zero PII, emails, phones, names or uids in l
   assert.doesNotMatch(fullLog, /secret_patient@confidential\.com/);
   assert.doesNotMatch(fullLog, /pat_sensitive/);
 });
+
+test('Backfill: Counts email collisions in dry-run without printing emails', async () => {
+  const testDocs = [
+    {
+      id: 'uid_dup_1',
+      data: () => ({
+        role: 'patient',
+        email: 'duplicate@example.com',
+        mobile: '9876500001',
+      }),
+    },
+    {
+      id: 'uid_dup_2',
+      data: () => ({
+        role: 'patient',
+        email: 'duplicate@example.com',
+        mobile: '9876500002',
+      }),
+    },
+    {
+      id: 'uid_unique',
+      data: () => ({
+        role: 'doctor',
+        email: 'doctor@example.com',
+        mobile: '9876500003',
+      }),
+    },
+  ];
+
+  const mockDb = createMockFirestore(testDocs);
+  const logs = [];
+
+  const counts = await runBackfill({
+    apply: false, // Dry-run mode
+    project: 'demo-medibond-test',
+    adminApp: { options: { projectId: 'demo-medibond-test' } },
+    firestoreDb: mockDb,
+    logger: (msg) => logs.push(String(msg)),
+  });
+
+  assert.equal(counts.scanned, 3);
+  assert.equal(counts.emailCollisions, 1);
+
+  const fullLog = logs.join('\n');
+  assert.ok(fullLog.includes('Email Collisions: 1'));
+  assert.doesNotMatch(fullLog, /duplicate@example\.com/);
+  assert.doesNotMatch(fullLog, /doctor@example\.com/);
+});
+
