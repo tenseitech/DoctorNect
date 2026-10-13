@@ -1381,6 +1381,13 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ─── Razorpay Webhook Dead-Letter & Rejection Log (Super Admin read-only) ───
+
+    match /razorpayWebhookRejections/{rejectionId} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+
     // ─── Trigger Email Extension (mail queue) ──────────────────────────────
 
     match /mail/{mailId} {

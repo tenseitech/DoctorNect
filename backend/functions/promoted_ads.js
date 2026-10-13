@@ -610,9 +610,16 @@ async function razorpayWebhookHandler(req, res, db) {
     return;
   }
 
+  const eventId = String(req.headers['x-razorpay-event-id'] || '').trim();
   const eventPayload = event?.payload || {};
   const paymentEntity = eventPayload?.payment?.entity;
   const orderEntity = eventPayload?.order?.entity;
+
+  // Extract payment/order metadata early for dead-letter context
+  const paymentId = paymentEntity?.id;
+  const orderId = orderEntity?.id || paymentEntity?.order_id;
+  const amountPaise = paymentEntity?.amount ?? orderEntity?.amount;
+  const currency = paymentEntity?.currency || orderEntity?.currency;
 
   // Extract order notes (strictly from order/payment notes, never from request query)
   const notes = orderEntity?.notes || paymentEntity?.notes || {};
@@ -620,52 +627,90 @@ async function razorpayWebhookHandler(req, res, db) {
   const providerUid = typeof notes.providerUid === 'string' ? notes.providerUid.trim() : null;
   const durationHours = notes.durationHours ? parseInt(notes.durationHours, 10) : null;
 
+  const firestore = db || getFirestore();
+
   if (!adId || !providerUid || !durationHours) {
-    console.warn('[razorpayWebhook] Permanently invalid event: order notes missing adId, providerUid, or durationHours');
-    res.status(200).json({ status: 'rejected', reason: 'order_notes_missing' });
-    return;
+    return recordWebhookRejection(firestore, {
+      res,
+      eventId,
+      paymentId,
+      orderId,
+      adId,
+      reason: 'order_notes_missing',
+      amountPaise,
+      currency,
+    });
   }
 
-  const paymentId = paymentEntity?.id;
-  const orderId = orderEntity?.id || paymentEntity?.order_id;
-  const amountPaise = paymentEntity?.amount ?? orderEntity?.amount;
-  const currency = paymentEntity?.currency || orderEntity?.currency;
-
   if (!paymentId || !orderId) {
-    console.warn('[razorpayWebhook] Permanently invalid event: missing paymentId or orderId');
-    res.status(200).json({ status: 'rejected', reason: 'missing_identifiers' });
-    return;
+    return recordWebhookRejection(firestore, {
+      res,
+      eventId,
+      paymentId,
+      orderId,
+      adId,
+      reason: 'missing_identifiers',
+      amountPaise,
+      currency,
+    });
   }
 
   if (currency !== 'INR') {
-    console.warn(`[razorpayWebhook] Permanently invalid event: currency must be INR (received: ${currency})`);
-    res.status(200).json({ status: 'rejected', reason: 'currency_mismatch' });
-    return;
+    return recordWebhookRejection(firestore, {
+      res,
+      eventId,
+      paymentId,
+      orderId,
+      adId,
+      reason: 'currency_mismatch',
+      amountPaise,
+      currency,
+    });
   }
 
   const expectedPriceINR = AD_PRICING_TABLE[durationHours];
   if (!expectedPriceINR || amountPaise !== expectedPriceINR * 100) {
-    console.warn('[razorpayWebhook] Permanently invalid event: amount mismatch against pricing table');
-    res.status(200).json({ status: 'rejected', reason: 'amount_mismatch' });
-    return;
+    return recordWebhookRejection(firestore, {
+      res,
+      eventId,
+      paymentId,
+      orderId,
+      adId,
+      reason: 'amount_mismatch',
+      amountPaise,
+      currency,
+    });
   }
 
-  const firestore = db || getFirestore();
   const adRef = firestore.collection('promotedAds').doc(adId);
   const adSnap = await adRef.get();
 
   if (!adSnap.exists) {
-    console.warn('[razorpayWebhook] Permanently invalid event: promoted ad not found');
-    res.status(200).json({ status: 'rejected', reason: 'ad_not_found' });
-    return;
+    return recordWebhookRejection(firestore, {
+      res,
+      eventId,
+      paymentId,
+      orderId,
+      adId,
+      reason: 'ad_not_found',
+      amountPaise,
+      currency,
+    });
   }
 
   const adData = adSnap.data() || {};
   const expectedOrderId = String(adData.razorpayOrderId || '').trim();
   if (!expectedOrderId || expectedOrderId !== orderId) {
-    console.warn('[razorpayWebhook] Permanently invalid event: razorpayOrderId mismatch with ad doc');
-    res.status(200).json({ status: 'rejected', reason: 'order_id_mismatch' });
-    return;
+    return recordWebhookRejection(firestore, {
+      res,
+      eventId,
+      paymentId,
+      orderId,
+      adId,
+      reason: 'order_id_mismatch',
+      amountPaise,
+      currency,
+    });
   }
 
   try {
@@ -677,7 +722,7 @@ async function razorpayWebhookHandler(req, res, db) {
       durationHours,
       amountPaise,
       currency,
-      eventId: String(req.headers['x-razorpay-event-id'] || '').trim(),
+      eventId,
     });
 
     console.info(`[razorpayWebhook] Successfully processed ${eventType} for ad ${adId} (idempotent: ${activation.idempotent})`);
@@ -689,9 +734,16 @@ async function razorpayWebhookHandler(req, res, db) {
   } catch (err) {
     if (err instanceof HttpsError) {
       if (err.code === 'already-exists') {
-        console.warn(`[razorpayWebhook] Permanently invalid event: payment ${paymentId} already used for another ad`);
-        res.status(200).json({ status: 'rejected', reason: 'payment_already_used' });
-        return;
+        return recordWebhookRejection(firestore, {
+          res,
+          eventId,
+          paymentId,
+          orderId,
+          adId,
+          reason: 'payment_already_used',
+          amountPaise,
+          currency,
+        });
       }
       if (
         err.code === 'failed-precondition' ||
@@ -699,15 +751,94 @@ async function razorpayWebhookHandler(req, res, db) {
         err.code === 'permission-denied' ||
         err.code === 'invalid-argument'
       ) {
-        console.warn(`[razorpayWebhook] Permanently invalid event: ${err.message}`);
-        res.status(200).json({ status: 'rejected', reason: err.code });
-        return;
+        return recordWebhookRejection(firestore, {
+          res,
+          eventId,
+          paymentId,
+          orderId,
+          adId,
+          reason: err.code,
+          amountPaise,
+          currency,
+        });
       }
     }
 
     console.error('[razorpayWebhook] Transient error committing activation transaction:', err.message);
     res.status(500).send('Internal Server Error');
   }
+}
+
+/**
+ * Writes a dead-letter rejection document to razorpayWebhookRejections/{docId} using Admin SDK
+ * and logs structured warning JSON. If the Firestore write fails, returns HTTP 500 so Razorpay retries.
+ */
+async function recordWebhookRejection(firestore, {
+  res,
+  eventId,
+  paymentId,
+  orderId,
+  adId,
+  reason,
+  amountPaise,
+  currency,
+}) {
+  const safeEventId = typeof eventId === 'string' && eventId.trim().length > 0 ? eventId.trim() : null;
+  const safePaymentId = typeof paymentId === 'string' && paymentId.trim().length > 0 ? paymentId.trim() : null;
+  const safeOrderId = typeof orderId === 'string' && orderId.trim().length > 0 ? orderId.trim() : null;
+  const safeAdId = typeof adId === 'string' && adId.trim().length > 0 ? adId.trim() : null;
+  const safeCurrency = typeof currency === 'string' && currency.trim().length > 0 ? currency.trim() : null;
+  const safeAmountPaise = typeof amountPaise === 'number' && Number.isFinite(amountPaise) ? amountPaise : null;
+
+  const docId = safeEventId || `${safePaymentId || 'unknown'}_${reason}`;
+
+  console.warn(JSON.stringify({
+    severity: 'WARNING',
+    category: 'payments',
+    action: 'razorpay.webhook_rejected',
+    reason,
+    paymentId: safePaymentId,
+    adId: safeAdId,
+  }));
+
+  try {
+    const docRef = firestore.collection('razorpayWebhookRejections').doc(docId);
+    const existingSnap = await docRef.get();
+    const serverNow = FieldValue.serverTimestamp();
+
+    if (!existingSnap.exists) {
+      await docRef.set({
+        eventId: safeEventId,
+        paymentId: safePaymentId,
+        orderId: safeOrderId,
+        adId: safeAdId,
+        reason,
+        amountPaise: safeAmountPaise,
+        currency: safeCurrency,
+        createdAt: serverNow,
+        lastSeenAt: serverNow,
+        attempts: 1,
+      });
+    } else {
+      await docRef.set({
+        eventId: safeEventId,
+        paymentId: safePaymentId,
+        orderId: safeOrderId,
+        adId: safeAdId,
+        reason,
+        amountPaise: safeAmountPaise,
+        currency: safeCurrency,
+        lastSeenAt: serverNow,
+        attempts: FieldValue.increment(1),
+      }, { merge: true });
+    }
+  } catch (err) {
+    console.error('[razorpayWebhook] Failed to write rejection document:', err.message);
+    res.status(500).send('Internal Server Error');
+    return;
+  }
+
+  res.status(200).json({ status: 'rejected', reason });
 }
 
 /**
@@ -891,4 +1022,5 @@ module.exports = {
   razorpayWebhook,
   razorpayWebhookHandler,
   razorpayWebhookSecret,
+  recordWebhookRejection,
 };

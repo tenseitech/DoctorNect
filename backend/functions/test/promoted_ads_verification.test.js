@@ -228,6 +228,41 @@ if (!EMULATOR_RUNNING) {
       );
     });
 
+    test('razorpayWebhookRejections denies client writes, anonymous reads, and regular/provider reads, but allows super admin reads', async () => {
+      const rejId = 'evt_test_rej_123';
+      const unauthCtx = testEnv.unauthenticatedContext();
+      const patientCtx = testEnv.authenticatedContext('patient_uid_1', { role: 'patient' });
+      const providerCtx = testEnv.authenticatedContext(PROVIDER_UID);
+      const adminCtx = testEnv.authenticatedContext('super_admin_uid');
+
+      // Seed a rejection document via admin context
+      await testEnv.withSecurityRulesDisabled(async (adminDb) => {
+        await adminDb.firestore().collection('razorpayWebhookRejections').doc(rejId).set({
+          eventId: rejId,
+          reason: 'amount_mismatch',
+          amountPaise: 50000,
+        });
+      });
+
+      // Anonymous denied read and write
+      await assertFails(unauthCtx.firestore().collection('razorpayWebhookRejections').doc(rejId).get());
+      await assertFails(unauthCtx.firestore().collection('razorpayWebhookRejections').doc(rejId).set({ reason: 'hacked' }));
+
+      // Signed-in patient denied read and write
+      await assertFails(patientCtx.firestore().collection('razorpayWebhookRejections').doc(rejId).get());
+      await assertFails(patientCtx.firestore().collection('razorpayWebhookRejections').doc(rejId).set({ reason: 'hacked' }));
+
+      // Provider denied read and write
+      await assertFails(providerCtx.firestore().collection('razorpayWebhookRejections').doc(rejId).get());
+      await assertFails(providerCtx.firestore().collection('razorpayWebhookRejections').doc(rejId).set({ reason: 'hacked' }));
+
+      // Super admin can read
+      await assertSucceeds(adminCtx.firestore().collection('razorpayWebhookRejections').doc(rejId).get());
+
+      // Super admin cannot write (write: if false)
+      await assertFails(adminCtx.firestore().collection('razorpayWebhookRejections').doc(rejId).set({ reason: 'modified' }));
+    });
+
     test('Unauthenticated read of an active ad is allowed', async () => {
       const unauthCtx = testEnv.unauthenticatedContext();
       await assertSucceeds(
@@ -309,6 +344,20 @@ process.env.RAZORPAY_KEY_SECRET = TEST_KEY_SECRET;
 // In-memory Firestore mock store
 let mockFirestoreStore = new Map();
 let mockFirestoreWrites = [];
+let mockFirestoreSetError = null;
+
+function resolveFieldValue(val, prevVal) {
+  if (val && typeof val === 'object' && val.constructor) {
+    if (val.constructor.name === 'NumericIncrementTransform') {
+      const base = typeof prevVal === 'number' ? prevVal : 0;
+      return base + (val.operand !== undefined ? val.operand : 1);
+    }
+    if (val.constructor.name === 'ServerTimestampTransform') {
+      return new Date();
+    }
+  }
+  return val !== undefined ? JSON.parse(JSON.stringify(val)) : undefined;
+}
 
 function createMockFirestore() {
   function getDocRef(collectionName, docId) {
@@ -329,11 +378,32 @@ function createMockFirestore() {
         if (!mockFirestoreStore.has(docPath)) {
           throw new Error(`Document not found: ${docPath}`);
         }
-        mockFirestoreStore.set(docPath, { ...mockFirestoreStore.get(docPath), ...updates });
+        const prev = mockFirestoreStore.get(docPath) || {};
+        const merged = { ...prev };
+        for (const [k, v] of Object.entries(updates)) {
+          merged[k] = resolveFieldValue(v, prev[k]);
+        }
+        mockFirestoreStore.set(docPath, merged);
       },
-      set: async (data) => {
-        mockFirestoreWrites.push({ type: 'set', docPath, data });
-        mockFirestoreStore.set(docPath, JSON.parse(JSON.stringify(data)));
+      set: async (data, options) => {
+        if (mockFirestoreSetError) {
+          throw mockFirestoreSetError;
+        }
+        mockFirestoreWrites.push({ type: 'set', docPath, data, options });
+        if (options && options.merge) {
+          const prev = mockFirestoreStore.get(docPath) || {};
+          const merged = { ...prev };
+          for (const [k, v] of Object.entries(data)) {
+            merged[k] = resolveFieldValue(v, prev[k]);
+          }
+          mockFirestoreStore.set(docPath, merged);
+        } else {
+          const stored = {};
+          for (const [k, v] of Object.entries(data)) {
+            stored[k] = resolveFieldValue(v, undefined);
+          }
+          mockFirestoreStore.set(docPath, stored);
+        }
       },
     };
   }
@@ -1378,6 +1448,13 @@ describe('razorpayWebhook: real function unit tests', () => {
     const adDoc = mockFirestoreStore.get(`promotedAds/${AD_ID}`);
     assert.equal(adDoc.status, 'pending_payment');
     assert.equal(mockFirestoreStore.has(`razorpayPayments/${PAYMENT_ID}`), false);
+
+    // Verify durable rejection document written
+    const rejDoc = mockFirestoreStore.get(`razorpayWebhookRejections/${PAYMENT_ID}_amount_mismatch`);
+    assert.ok(rejDoc, 'Rejection document must be written for amount_mismatch');
+    assert.equal(rejDoc.reason, 'amount_mismatch');
+    assert.equal(rejDoc.paymentId, PAYMENT_ID);
+    assert.equal(rejDoc.amountPaise, 50000);
   });
 
   test('7. order notes missing rejected: returns 200 with rejection reason', async () => {
@@ -1406,6 +1483,10 @@ describe('razorpayWebhook: real function unit tests', () => {
 
     const adDoc = mockFirestoreStore.get(`promotedAds/${AD_ID}`);
     assert.equal(adDoc.status, 'pending_payment');
+
+    const rejDoc = mockFirestoreStore.get(`razorpayWebhookRejections/${PAYMENT_ID}_order_notes_missing`);
+    assert.ok(rejDoc, 'Rejection document must be written for order_notes_missing');
+    assert.equal(rejDoc.reason, 'order_notes_missing');
   });
 
   test('8. non-handled event ignored with 200', async () => {
@@ -1469,6 +1550,168 @@ describe('razorpayWebhook: real function unit tests', () => {
 
     const adDoc = mockFirestoreStore.get(`promotedAds/${AD_ID}`);
     assert.equal(adDoc.status, 'pending_payment');
+
+    const rejDoc = mockFirestoreStore.get(`razorpayWebhookRejections/${PAYMENT_ID}_payment_already_used`);
+    assert.ok(rejDoc, 'Rejection document must be written for payment_already_used');
+    assert.equal(rejDoc.reason, 'payment_already_used');
+  });
+
+  test('10. each rejection reason writes a document: missing_identifiers, currency_mismatch, ad_not_found, order_id_mismatch', async () => {
+    // 10a. missing_identifiers
+    const noIdsPayload = buildWebhookPayload();
+    delete noIdsPayload.payload.payment.entity.id;
+    delete noIdsPayload.payload.order.entity.id;
+    const rawNoIds = JSON.stringify(noIdsPayload);
+    const { req: reqA, res: resA } = mockHttpCall({
+      headers: { 'x-razorpay-signature': computeWebhookSignature(rawNoIds) },
+      rawBody: rawNoIds,
+      body: noIdsPayload,
+    });
+    await razorpayWebhookHandler(reqA, resA, firestoreModule.getFirestore());
+    assert.equal(resA.getStatusCode(), 200);
+    assert.equal(resA.getResponseBody()?.reason, 'missing_identifiers');
+    assert.ok(mockFirestoreStore.has('razorpayWebhookRejections/unknown_missing_identifiers'));
+
+    // 10b. currency_mismatch
+    const usdPayload = buildWebhookPayload({ currency: 'USD' });
+    const rawUsd = JSON.stringify(usdPayload);
+    const { req: reqB, res: resB } = mockHttpCall({
+      headers: { 'x-razorpay-signature': computeWebhookSignature(rawUsd) },
+      rawBody: rawUsd,
+      body: usdPayload,
+    });
+    await razorpayWebhookHandler(reqB, resB, firestoreModule.getFirestore());
+    assert.equal(resB.getStatusCode(), 200);
+    assert.equal(resB.getResponseBody()?.reason, 'currency_mismatch');
+    const rejUsd = mockFirestoreStore.get(`razorpayWebhookRejections/${PAYMENT_ID}_currency_mismatch`);
+    assert.ok(rejUsd);
+    assert.equal(rejUsd.currency, 'USD');
+
+    // 10c. ad_not_found (ad does not exist in Firestore)
+    const adNotFoundPayload = buildWebhookPayload({ adId: 'ad_ghost_nonexistent' });
+    const rawNotFound = JSON.stringify(adNotFoundPayload);
+    const { req: reqC, res: resC } = mockHttpCall({
+      headers: { 'x-razorpay-signature': computeWebhookSignature(rawNotFound) },
+      rawBody: rawNotFound,
+      body: adNotFoundPayload,
+    });
+    await razorpayWebhookHandler(reqC, resC, firestoreModule.getFirestore());
+    assert.equal(resC.getStatusCode(), 200);
+    assert.equal(resC.getResponseBody()?.reason, 'ad_not_found');
+    const rejNotFound = mockFirestoreStore.get(`razorpayWebhookRejections/${PAYMENT_ID}_ad_not_found`);
+    assert.ok(rejNotFound);
+    assert.equal(rejNotFound.adId, 'ad_ghost_nonexistent');
+
+    // 10d. order_id_mismatch (ad exists, but razorpayOrderId differs)
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: UID,
+      status: 'pending_payment',
+      razorpayOrderId: 'order_different_555',
+    });
+    const orderMismatchPayload = buildWebhookPayload();
+    const rawMismatch = JSON.stringify(orderMismatchPayload);
+    const { req: reqD, res: resD } = mockHttpCall({
+      headers: { 'x-razorpay-signature': computeWebhookSignature(rawMismatch) },
+      rawBody: rawMismatch,
+      body: orderMismatchPayload,
+    });
+    await razorpayWebhookHandler(reqD, resD, firestoreModule.getFirestore());
+    assert.equal(resD.getStatusCode(), 200);
+    assert.equal(resD.getResponseBody()?.reason, 'order_id_mismatch');
+    const rejMismatch = mockFirestoreStore.get(`razorpayWebhookRejections/${PAYMENT_ID}_order_id_mismatch`);
+    assert.ok(rejMismatch);
+    assert.equal(rejMismatch.orderId, ORDER_ID);
+  });
+
+  test('11. repeated event uses eventId docId and merges without creating duplicate document', async () => {
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: UID,
+      status: 'pending_payment',
+      razorpayOrderId: ORDER_ID,
+    });
+
+    const EVENT_ID = 'evt_retry_test_888';
+    const payloadObj = buildWebhookPayload({ amount: 99999 }); // triggers amount_mismatch
+    const rawBody = JSON.stringify(payloadObj);
+    const signature = computeWebhookSignature(rawBody);
+
+    const call1 = mockHttpCall({
+      headers: {
+        'x-razorpay-signature': signature,
+        'x-razorpay-event-id': EVENT_ID,
+      },
+      rawBody,
+      body: payloadObj,
+    });
+
+    await razorpayWebhookHandler(call1.req, call1.res, firestoreModule.getFirestore());
+    assert.equal(call1.res.getStatusCode(), 200);
+    assert.equal(call1.res.getResponseBody()?.reason, 'amount_mismatch');
+
+    const firstDoc = mockFirestoreStore.get(`razorpayWebhookRejections/${EVENT_ID}`);
+    assert.ok(firstDoc, 'Document keyed on eventId must exist');
+    assert.equal(firstDoc.eventId, EVENT_ID);
+    assert.equal(firstDoc.paymentId, PAYMENT_ID);
+    assert.equal(firstDoc.reason, 'amount_mismatch');
+    assert.ok(firstDoc.createdAt, 'createdAt must be recorded on initial creation');
+    assert.equal(firstDoc.attempts, 1, 'Initial attempt count must be 1');
+    const originalCreatedAt = firstDoc.createdAt;
+
+    // Repeated webhook with same eventId
+    const call2 = mockHttpCall({
+      headers: {
+        'x-razorpay-signature': signature,
+        'x-razorpay-event-id': EVENT_ID,
+      },
+      rawBody,
+      body: payloadObj,
+    });
+
+    await razorpayWebhookHandler(call2.req, call2.res, firestoreModule.getFirestore());
+    assert.equal(call2.res.getStatusCode(), 200);
+
+    // Verify exactly one document exists for EVENT_ID
+    const updatedDoc = mockFirestoreStore.get(`razorpayWebhookRejections/${EVENT_ID}`);
+    assert.ok(updatedDoc);
+    assert.deepEqual(updatedDoc.createdAt, originalCreatedAt, 'createdAt must remain unchanged after replay');
+    assert.equal(updatedDoc.attempts, 2, 'attempts must be incremented to 2 on replay');
+    assert.ok(updatedDoc.lastSeenAt, 'lastSeenAt must be maintained');
+
+    // Count total rejection documents
+    let rejCount = 0;
+    for (const key of mockFirestoreStore.keys()) {
+      if (key.startsWith('razorpayWebhookRejections/')) rejCount++;
+    }
+    assert.equal(rejCount, 1, 'Repeated event must merge into same document and not create duplicate');
+  });
+
+  test('12. failed rejection write returns HTTP 500 so Razorpay retries', async () => {
+    mockFirestoreStore.set(`promotedAds/${AD_ID}`, {
+      adId: AD_ID,
+      providerId: UID,
+      status: 'pending_payment',
+      razorpayOrderId: ORDER_ID,
+    });
+
+    // Simulate database write failure
+    mockFirestoreSetError = new Error('Simulated Firestore connection timeout');
+
+    const payloadObj = buildWebhookPayload({ amount: 99999 }); // amount mismatch
+    const rawBody = JSON.stringify(payloadObj);
+    const signature = computeWebhookSignature(rawBody);
+
+    const { req, res } = mockHttpCall({
+      headers: { 'x-razorpay-signature': signature },
+      rawBody,
+      body: payloadObj,
+    });
+
+    await razorpayWebhookHandler(req, res, firestoreModule.getFirestore());
+
+    assert.equal(res.getStatusCode(), 500, 'Must return 500 on write failure');
+    assert.equal(res.getResponseBody(), 'Internal Server Error');
   });
 });
 
