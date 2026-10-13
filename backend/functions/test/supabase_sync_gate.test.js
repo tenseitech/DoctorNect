@@ -4,19 +4,59 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
+const { isSyncFlagEnabled, isSupabaseSyncEnabled } = require('../sync_flags');
 
 test('ENABLE_SUPABASE_SYNC defaults off and sync exports are registered only inside that gate', () => {
   const src = fs.readFileSync(path.join(__dirname, '../index.js'), 'utf8');
   assert.match(
     src,
-    /const ENABLE_SUPABASE_SYNC = String\(process\.env\.ENABLE_SUPABASE_SYNC \|\| ''\)\.trim\(\)\.toLowerCase\(\) === 'on'/,
+    /const ENABLE_SUPABASE_SYNC = isSupabaseSyncEnabled\(\)/,
   );
 
-  const enabled = (value) => String(value || '').trim().toLowerCase() === 'on';
-  assert.equal(enabled(undefined), false);
-  assert.equal(enabled(''), false);
-  assert.equal(enabled('off'), false);
-  assert.equal(enabled('on'), true);
+  // Requirement: unset, empty, '0', 'false', 'off', 'on' -> dormant; '1', 'true', 'TRUE' -> enabled
+  assert.equal(isSyncFlagEnabled(undefined), false);
+  assert.equal(isSyncFlagEnabled(null), false);
+  assert.equal(isSyncFlagEnabled(''), false);
+  assert.equal(isSyncFlagEnabled('0'), false);
+  assert.equal(isSyncFlagEnabled('false'), false);
+  assert.equal(isSyncFlagEnabled('off'), false);
+  assert.equal(isSyncFlagEnabled('on'), false);
+
+  assert.equal(isSyncFlagEnabled('1'), true);
+  assert.equal(isSyncFlagEnabled('true'), true);
+  assert.equal(isSyncFlagEnabled('TRUE'), true);
+  assert.equal(isSyncFlagEnabled('  True  '), true);
+
+  // Environment binding test
+  const originalEnv = process.env.ENABLE_SUPABASE_SYNC;
+  try {
+    delete process.env.ENABLE_SUPABASE_SYNC;
+    assert.equal(isSupabaseSyncEnabled(), false);
+
+    process.env.ENABLE_SUPABASE_SYNC = '0';
+    assert.equal(isSupabaseSyncEnabled(), false);
+
+    process.env.ENABLE_SUPABASE_SYNC = 'off';
+    assert.equal(isSupabaseSyncEnabled(), false);
+
+    process.env.ENABLE_SUPABASE_SYNC = 'on';
+    assert.equal(isSupabaseSyncEnabled(), false);
+
+    process.env.ENABLE_SUPABASE_SYNC = '1';
+    assert.equal(isSupabaseSyncEnabled(), true);
+
+    process.env.ENABLE_SUPABASE_SYNC = 'true';
+    assert.equal(isSupabaseSyncEnabled(), true);
+
+    process.env.ENABLE_SUPABASE_SYNC = 'TRUE';
+    assert.equal(isSupabaseSyncEnabled(), true);
+  } finally {
+    if (originalEnv !== undefined) {
+      process.env.ENABLE_SUPABASE_SYNC = originalEnv;
+    } else {
+      delete process.env.ENABLE_SUPABASE_SYNC;
+    }
+  }
 
   let depth = 0;
   let gateDepth = null;

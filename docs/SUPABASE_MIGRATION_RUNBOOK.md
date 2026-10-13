@@ -21,7 +21,20 @@ cp .env.migration.example .env.migration
 > **Zero Plaintext Credentials Policy:**
 > All migration and rollback scripts (`migrate_firestore_to_supabase.js`, `reverse_sync_supabase_to_firestore.js`, `test_rls_policies.js`) automatically load credentials from `.env.migration` via `scripts/load_env.js`.
 > **NEVER pass connection strings inline in CLI commands or PowerShell `$env:` one-liners**, as this permanently exposes credentials in terminal transcripts and shell history.
-```
+
+### Sync Feature Switches & Strict Flag Parsing Contract
+
+All sync enablement switches adhere to a strict boolean parsing policy (`backend/functions/sync_flags.js`):
+- **Accepted Truthy Values**: strictly `'1'` and `'true'` (case-insensitive, trimmed).
+- **Dormant Values (Default)**: unset, empty string (`""`), `'0'`, `'false'`, `'off'`, `'on'`.
+- **Target Switches**:
+  | Switch | Scope | Truthy Values | Behavior When Dormant (Default) |
+  |---|---|---|---|
+  | `ENABLE_SUPABASE_SYNC` | Cloud Functions (`backend/functions/index.js`) | `'1'`, `'true'` (case-insensitive) | Zero sync triggers are exported (`sync*ToSupabase` stay unexported). |
+  | `ENABLE_SUPABASE` | Flutter build scripts (`release_build.sh`, `release_build.ps1`) | `'1'` | Omits `SUPABASE_URL` and `SUPABASE_ANON_KEY` dart-defines; app client stays 100% on Firebase. |
+
+> [!CAUTION]
+> **Production Safety Invariant**: **DO NOT enable `ENABLE_SUPABASE` or `ENABLE_SUPABASE_SYNC` in production** until staging cutover and parity audits are 100% verified.
 
 ---
 

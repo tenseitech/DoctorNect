@@ -119,8 +119,9 @@ const CALLABLE_REGION = 'asia-south1';
 
 /** Redis secrets are bound to OTP callables only when the OTP Redis mirror is enabled. */
 const OTP_REDIS_MIRROR_ON = String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() === 'on';
-/** Firestore→Supabase triggers stay unregistered unless this is exactly `on`. */
-const ENABLE_SUPABASE_SYNC = String(process.env.ENABLE_SUPABASE_SYNC || '').trim().toLowerCase() === 'on';
+const { isSupabaseSyncEnabled } = require('./sync_flags');
+/** Firestore→Supabase triggers stay unregistered unless this is strictly '1' or 'true'. */
+const ENABLE_SUPABASE_SYNC = isSupabaseSyncEnabled();
 const OTP_REDIS_SECRET_OPTIONS = OTP_REDIS_MIRROR_ON
   ? { secrets: require('./redis').REDIS_SECRETS }
   : {};
