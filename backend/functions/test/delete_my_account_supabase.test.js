@@ -95,3 +95,60 @@ test('cleanupUserSupabaseRows records table failures without throwing', async ()
   assert.equal(result.skipped, false);
   assert.ok(result.failedSupabaseTables.length > 0);
 });
+
+test('TASK 1e: deletes auth.users row via dedicated admin fetch on success', async () => {
+  const { toUserUuid } = require('../user_id_bridge');
+  const expectedUuid = toUserUuid(UID);
+  const calls = [];
+
+  setSupabaseFetchForTesting(async (url, options) => {
+    calls.push({ url, method: options.method, headers: options.headers });
+    if (url.includes('/auth/v1/admin/users/')) {
+      return { ok: true, status: 200, text: async () => '{}' };
+    }
+    return { ok: true, status: 200, text: async () => '[]' };
+  });
+
+  const result = await cleanupUserSupabaseRows({ uid: UID, role: 'patient', profileId: PATIENT_ID });
+  assert.equal(result.skipped, false);
+  assert.ok(!result.failedSupabaseTables.includes('auth.users'), 'auth.users should not be in failedSupabaseTables on success');
+
+  const authCall = calls.find((c) => c.url.includes('/auth/v1/admin/users/'));
+  assert.ok(authCall, 'Dedicated fetch to /auth/v1/admin/users/ must be made');
+  assert.equal(authCall.method, 'DELETE');
+  assert.equal(authCall.url, `https://example.supabase.co/auth/v1/admin/users/${expectedUuid}`);
+  assert.equal(authCall.headers.Authorization, 'Bearer service-role-test');
+});
+
+test('TASK 1e: treats 404 on auth.users deletion as success (user without auth row)', async () => {
+  const { toUserUuid } = require('../user_id_bridge');
+  const expectedUuid = toUserUuid(UID);
+  let authCalled = false;
+
+  setSupabaseFetchForTesting(async (url, options) => {
+    if (url.includes('/auth/v1/admin/users/')) {
+      authCalled = true;
+      return { ok: false, status: 404, text: async () => '{"message":"User not found"}' };
+    }
+    return { ok: true, status: 200, text: async () => '[]' };
+  });
+
+  const result = await cleanupUserSupabaseRows({ uid: UID, role: 'patient', profileId: PATIENT_ID });
+  assert.equal(result.skipped, false);
+  assert.equal(authCalled, true);
+  assert.ok(!result.failedSupabaseTables.includes('auth.users'), '404 must be treated as success, not failure');
+});
+
+test('TASK 1e: surfaces 500 on auth.users deletion in failedSupabaseTables', async () => {
+  setSupabaseFetchForTesting(async (url, options) => {
+    if (url.includes('/auth/v1/admin/users/')) {
+      return { ok: false, status: 500, text: async () => '{"message":"Internal Server Error"}' };
+    }
+    return { ok: true, status: 200, text: async () => '[]' };
+  });
+
+  const result = await cleanupUserSupabaseRows({ uid: UID, role: 'patient', profileId: PATIENT_ID });
+  assert.equal(result.skipped, false);
+  assert.ok(result.failedSupabaseTables.includes('auth.users'), '500 on auth.users must be surfaced in failedSupabaseTables');
+});
+

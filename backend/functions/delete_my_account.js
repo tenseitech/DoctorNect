@@ -7,6 +7,8 @@ const { getStorage } = require('firebase-admin/storage');
 const { logger } = require('firebase-functions');
 const { HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
+const { toUserUuid } = require('./user_id_bridge');
+const { readSupabaseServiceRoleKey } = require('./secure_config');
 
 const supabaseUrl = defineSecret('SUPABASE_URL');
 const supabaseServiceRoleKey = defineSecret('SUPABASE_SERVICE_ROLE_KEY');
@@ -644,8 +646,9 @@ function readBoundSecret(secret, envName) {
 }
 
 function getSupabaseServiceConfig() {
-  const url = readBoundSecret(supabaseUrl, 'SUPABASE_URL').replace(/\/+$/, '');
+  const url = (readBoundSecret(supabaseUrl, 'SUPABASE_URL') || String(process.env.SUPABASE_URL || '')).replace(/\/+$/, '');
   const key = readBoundSecret(supabaseServiceRoleKey, 'SUPABASE_SERVICE_ROLE_KEY') ||
+    readSupabaseServiceRoleKey({ required: false }) ||
     String(process.env.SUPABASE_SECRET_KEY || '').trim() ||
     String(process.env.SUPABASE_SERVICE_KEY || '').trim();
   if (!url || !key) return null;
@@ -706,7 +709,7 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     failedSupabaseTables.push(table);
     logger.warn('deleteMyAccount supabase cleanup failed', {
       table,
-      uid,
+      uidHash: hashKey(uid).slice(0, 16),
       status: err?.status || 'unknown',
     });
   };
@@ -843,6 +846,38 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
       );
     } catch (patchErr) {
       recordFailure('users', patchErr || deleteErr);
+    }
+  }
+
+  // TASK 1e: Delete auth.users row via dedicated admin fetch to remove PII
+  const userUuid = toUserUuid(uid);
+  if (userUuid) {
+    try {
+      const doFetch = _testingSupabaseFetch || fetch;
+      const authUrl = `${config.url}/auth/v1/admin/users/${encodeURIComponent(userUuid)}`;
+      const authResp = await doFetch(authUrl, {
+        method: 'DELETE',
+        headers: {
+          apikey: config.key,
+          Authorization: `Bearer ${config.key}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // 404 is treated as success (users without auth.users row)
+      if (!authResp.ok && authResp.status !== 404) {
+        recordFailure('auth.users', { status: authResp.status });
+        logger.warn('deleteMyAccount: Failed to delete auth.users row', {
+          uidHash: hashKey(uid).slice(0, 16),
+          status: authResp.status,
+        });
+      }
+    } catch (authErr) {
+      recordFailure('auth.users', authErr);
+      logger.warn('deleteMyAccount: Failed to delete auth.users row', {
+        uidHash: hashKey(uid).slice(0, 16),
+        error: authErr?.message || 'unknown',
+      });
     }
   }
 
