@@ -98,6 +98,30 @@ test('Parity Auditor: isStatusMismatch compares effective status correctly', () 
   );
 });
 
+test('Parity Auditor: Supabase patient_status=cancelled counts as doctor-cancelled without doctor_status update in Postgres', () => {
+  // When patient cancels in Supabase, Postgres only updates patient_status to 'cancelled'.
+  // doctor_status remains 'confirmed'. Firestore doc has doctorStatus 'cancelled'.
+  // This must NOT show as a mismatch.
+  assert.equal(
+    isStatusMismatch(
+      { doctor_status: 'confirmed', patient_status: 'cancelled' },
+      { doctorStatus: 'cancelled', patientStatus: 'confirmed' }
+    ),
+    false,
+    'Supabase patient_status=cancelled with unchanged Postgres doctor_status=confirmed must match Firestore doctorStatus=cancelled'
+  );
+
+  // If Firestore has NOT yet synced the cancellation, it MUST show as a mismatch
+  assert.equal(
+    isStatusMismatch(
+      { doctor_status: 'confirmed', patient_status: 'cancelled' },
+      { doctorStatus: 'confirmed', patientStatus: 'confirmed' }
+    ),
+    true,
+    'Unsynchronized cancellation must be flagged as a mismatch'
+  );
+});
+
 test('Parity Auditor: auditFirestoreDeadLetters aggregates dead letter counts by reason (read-only)', async () => {
   const mockDocs = [
     { id: 'dl-1', data: () => ({ reason: 'terminal_state' }) },

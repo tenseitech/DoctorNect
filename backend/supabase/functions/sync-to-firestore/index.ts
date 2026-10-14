@@ -134,6 +134,16 @@ export function extractChangedStatusFields(
         // If changed to 'completed' or 'cancelled', do NOT write patientStatus to Firestore
         if (pVal === "pending" || pVal === "confirmed") {
           changedFields[def.firestoreKey] = pVal;
+        } else if (pVal === "cancelled") {
+          changedFields.doctorStatus = "cancelled";
+          const cancelReason = getFieldValue(record, "cancellation_reason", "cancellationReason");
+          if (cancelReason !== undefined && cancelReason !== null) {
+            changedFields.cancellationReason = String(cancelReason);
+          }
+        }
+      } else if (def.snake === "doctor_status") {
+        if (changedFields.doctorStatus !== "cancelled") {
+          changedFields[def.firestoreKey] = newRaw;
         }
       } else if (def.isDate) {
         changedFields[def.firestoreKey] = newRaw ? new Date(newRaw) : null;
@@ -149,6 +159,16 @@ export function extractChangedStatusFields(
           // If changed to 'completed' or 'cancelled', do NOT write patientStatus to Firestore
           if (pVal === "pending" || pVal === "confirmed") {
             changedFields[def.firestoreKey] = pVal;
+          } else if (pVal === "cancelled") {
+            changedFields.doctorStatus = "cancelled";
+            const cancelReason = getFieldValue(record, "cancellation_reason", "cancellationReason");
+            if (cancelReason !== undefined && cancelReason !== null) {
+              changedFields.cancellationReason = String(cancelReason);
+            }
+          }
+        } else if (def.snake === "doctor_status") {
+          if (changedFields.doctorStatus !== "cancelled") {
+            changedFields[def.firestoreKey] = newRaw;
           }
         } else if (def.isDate) {
           changedFields[def.firestoreKey] = newRaw ? new Date(newRaw) : null;
@@ -990,19 +1010,28 @@ export async function handleSyncToFirestore(
 
     // 3. INFINITE LOOP PREVENTION:
     // If mutation originated from Firestore, Reconciler, or Supabase Bridge itself, DROP IT.
+    // However, mutations originating from Supabase clients (e.g. sync_origin: 'patient_supabase')
+    // must NOT be dropped simply because synced_by on the row still holds 'firestore_cloud_function'.
     const syncOrigin = String(record?.sync_origin || record?.syncOrigin || "").trim().toLowerCase();
     const syncedBy = String(record?.synced_by || record?.syncedBy || "").trim().toLowerCase();
 
-    if (
-      syncOrigin === "doctor_firestore" ||
-      syncOrigin === "patient_firestore" ||
-      syncOrigin === "reconciler_bot" ||
-      syncOrigin === "firestore_cloud_function" ||
-      syncOrigin === "firestore" ||
-      syncedBy === "firestore_cloud_function" ||
-      syncedBy === "supabase_bridge" ||
-      syncedBy === "reconciler_bot"
-    ) {
+    const isSupabaseOrigin =
+      syncOrigin === "patient_supabase" ||
+      syncOrigin === "doctor_supabase" ||
+      syncOrigin.endsWith("_supabase");
+
+    const isLoopOrigin =
+      !isSupabaseOrigin &&
+      (syncOrigin === "doctor_firestore" ||
+        syncOrigin === "patient_firestore" ||
+        syncOrigin === "reconciler_bot" ||
+        syncOrigin === "firestore_cloud_function" ||
+        syncOrigin === "firestore" ||
+        syncedBy === "firestore_cloud_function" ||
+        syncedBy === "supabase_bridge" ||
+        syncedBy === "reconciler_bot");
+
+    if (isLoopOrigin) {
       return new Response(
         JSON.stringify({
           ignored: true,

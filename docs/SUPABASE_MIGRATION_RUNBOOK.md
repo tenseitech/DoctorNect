@@ -142,12 +142,12 @@ To support live reverse synchronization of appointment status updates, cancellat
   - `x-webhook-secret: <SYNC_TO_FIRESTORE_SECRET>`
 
 #### Event Semantics & Loop Prevention:
-1. **Loop Prevention Filter**: Any `INSERT` or `UPDATE` where `sync_origin` or `synced_by` indicates Firestore origin (`doctor_firestore`, `patient_firestore`, `reconciler_bot`, `firestore_cloud_function`, `firestore`, `supabase_bridge`) is immediately dropped with HTTP `200 { ignored: true }`.
+1. **Loop Prevention Filter**: Any `INSERT` or `UPDATE` where `sync_origin` indicates Firestore origin (`doctor_firestore`, `patient_firestore`, `reconciler_bot`, `firestore_cloud_function`, `firestore`) or was replicated by `synced_by` (`supabase_bridge`, `firestore_cloud_function`, `reconciler_bot`) is dropped with HTTP `200 { ignored: true }`. However, mutations authored in Supabase (`sync_origin = 'patient_supabase'` or `'doctor_supabase'`) are never dropped simply because `synced_by` holds a previous replication marker.
 2. **`INSERT` Handling (Create-Only Guard)**:
    - When an appointment is inserted into Supabase, `sync-to-firestore` maps the row into a full Firestore appointment document matching the `bookAppointment` and `AppointmentFirestoreMapper` contract and injects `syncedBy: 'supabase_bridge'`.
    - The write enforces precondition `currentDocument.exists = false`.    - If the document already exists in Firestore (e.g. from client-side dual-write), Firestore reports `ALREADY_EXISTS` (unverified, see verification procedure). The Edge Function catches this and returns `200 { ignored: 'already_exists' }`, guaranteeing it **never overwrites** an existing document on `INSERT`.
 3. **`UPDATE` Handling**:
-   - Compares changed status and cancellation fields (`patient_status`, `doctor_status`, `cancellation_reason`).
+   - Compares changed status and cancellation fields (`patient_status`, `doctor_status`, `cancellation_reason`). When an `UPDATE` changes `patient_status` to `'cancelled'`, also writes `doctorStatus: 'cancelled'` and `cancellationReason` (Firestore `patientStatus` is never written as `'cancelled'`).
    - Rejects transitions out of terminal states (`completed`, `inProgress`, `noShow`) with `200 { skipped: 'terminal_state' }` and records a durable dead letter in Firestore's `syncDeadLetters` collection (deterministic ID, zero free text).
    - Non-terminal updates write strictly changed fields with precondition `currentDocument.updateTime`, retrying once on concurrent modification / conflict (unverified, see verification procedure).
 

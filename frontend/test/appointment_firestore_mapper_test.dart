@@ -84,5 +84,52 @@ void main() {
         debugPrint = originalDebugPrint;
       }
     });
+
+    test('Contract: bridge patient-cancellation output merged over Firestore fixture resolves doctorStatus to cancelled', () {
+      // 1. Existing base Firestore fixture before patient cancellation
+      final firestoreFixture = <String, dynamic>{
+        'appointmentId': 'apt-cancel-contract-1',
+        'doctorId': 'doc-123',
+        'doctorName': 'Dr. Sharma',
+        'specialization': 'Cardiology',
+        'patientId': 'pat-456',
+        'patientName': 'Rahul Verma',
+        'patientAge': 32,
+        'patientGender': 'Male',
+        'dateTime': Timestamp.fromDate(DateTime(2026, 10, 15, 10, 0)),
+        'slotLabel': '10:00 AM',
+        'tokenNumber': 5,
+        'visitType': 'newVisit',
+        'patientStatus': 'confirmed',
+        'doctorStatus': 'confirmed',
+      };
+
+      // Initial state: doctorStatus is confirmed
+      final initialRecord = AppointmentFirestoreMapper.fromMap('apt-cancel-contract-1', firestoreFixture);
+      expect(initialRecord, isNotNull);
+      expect(initialRecord!.doctorStatus, AppointmentStatus.confirmed);
+      expect(initialRecord.cancellationReason, isNull);
+
+      // 2. The exact output emitted by sync-to-firestore bridge on patient cancellation
+      // (patientStatus omitted; doctorStatus: cancelled; cancellationReason set; syncedBy: supabase_bridge)
+      final bridgeUpdate = <String, dynamic>{
+        'syncedBy': 'supabase_bridge',
+        'doctorStatus': 'cancelled',
+        'cancellationReason': 'Patient emergency - unable to attend',
+      };
+
+      // 3. Merge bridge output over Firestore fixture (mirroring Firestore merge / document update)
+      final mergedData = Map<String, dynamic>.from(firestoreFixture)..addAll(bridgeUpdate);
+
+      // 4. Feed merged document to AppointmentFirestoreMapper
+      final updatedRecord = AppointmentFirestoreMapper.fromMap('apt-cancel-contract-1', mergedData);
+
+      // 5. Assert contract resolution: doctorStatus resolves to cancelled without parse error
+      expect(updatedRecord, isNotNull);
+      expect(updatedRecord!.id, 'apt-cancel-contract-1');
+      expect(updatedRecord.doctorStatus, AppointmentStatus.cancelled);
+      expect(updatedRecord.cancellationReason, 'Patient emergency - unable to attend');
+      expect(updatedRecord.patientStatus, PatientBookingStatus.confirmed);
+    });
   });
 }

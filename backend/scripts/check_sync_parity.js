@@ -114,17 +114,18 @@ Options:
 function isStatusMismatch(pgRow, fsDoc) {
   if (!pgRow || !fsDoc) return true;
 
-  // 1. Primary lifecycle check
-  if (fsDoc.doctorStatus !== pgRow.doctor_status) {
-    return true;
-  }
-
-  // 2. Effective patient status comparison
+  // 1. Effective patient status comparison
+  // Supabase patient_status='cancelled' counts as doctor-cancelled (patient cancel only sets patient_status in Postgres)
   if (pgRow.patient_status === 'cancelled') {
     return fsDoc.doctorStatus !== 'cancelled';
   }
   if (pgRow.patient_status === 'completed') {
     return fsDoc.doctorStatus !== 'completed';
+  }
+
+  // 2. Primary lifecycle check
+  if (fsDoc.doctorStatus !== pgRow.doctor_status) {
+    return true;
   }
 
   return fsDoc.patientStatus !== pgRow.patient_status;
