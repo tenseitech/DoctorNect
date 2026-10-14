@@ -82,9 +82,15 @@ abstract final class AppointmentSupabaseMapper {
         if (parsed != null) reviewCreatedAt = parsed.toLocal();
       }
 
-      final cancellationReason = row['cancellation_reason'] as String?;
+      final patientStatusRaw =
+          (row['patient_status'] as String?)?.trim().toLowerCase();
       var doctorStatus = _parseDoctorStatus(row['doctor_status'] as String?);
-      if (cancellationReason != null && cancellationReason.trim().isNotEmpty) {
+      final isCancelled = patientStatusRaw == 'cancelled' ||
+          doctorStatus == AppointmentStatus.cancelled;
+      final cancellationReason = isCancelled
+          ? (row['cancellation_reason'] as String?)
+          : null;
+      if (patientStatusRaw == 'cancelled') {
         doctorStatus = AppointmentStatus.cancelled;
       }
 

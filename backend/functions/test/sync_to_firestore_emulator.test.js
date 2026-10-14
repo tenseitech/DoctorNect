@@ -9,11 +9,10 @@ async function loadEdgeFunction() {
   return edgeModule.handleSyncToFirestore;
 }
 
-test('Real Firestore Emulator: PATCH of existing doc succeeds and updates fields with precondition', async () => {
+test('Real Firestore Emulator: PATCH of existing doc succeeds and updates fields with precondition', async (t) => {
   const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
   if (!emulatorHost) {
-    // If running outside emulator test script, skip
-    console.log('Skipping real emulator test: FIRESTORE_EMULATOR_HOST not set');
+    t.skip('FIRESTORE_EMULATOR_HOST not set');
     return;
   }
 
@@ -83,10 +82,10 @@ test('Real Firestore Emulator: PATCH of existing doc succeeds and updates fields
   assert.equal(doc.fields.syncedBy.stringValue, 'supabase_bridge');
 });
 
-test('Real Firestore Emulator: PATCH of missing doc returns 404, triggers skip and creates no document', async () => {
+test('Real Firestore Emulator: PATCH of missing doc returns 404, triggers skip and creates no document', async (t) => {
   const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
   if (!emulatorHost) {
-    console.log('Skipping real emulator test: FIRESTORE_EMULATOR_HOST not set');
+    t.skip('FIRESTORE_EMULATOR_HOST not set');
     return;
   }
 
@@ -161,10 +160,10 @@ test('Real Firestore Emulator: PATCH of missing doc returns 404, triggers skip a
   assert.ok(!changedFieldValues.includes('Patient changed mind'), 'Must not store patient-entered text');
 });
 
-test('Real Firestore Emulator: Terminal document update is skipped and records syncDeadLetters dead letter', async () => {
+test('Real Firestore Emulator: Terminal document update is skipped and records syncDeadLetters dead letter', async (t) => {
   const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
   if (!emulatorHost) {
-    console.log('Skipping real emulator test: FIRESTORE_EMULATOR_HOST not set');
+    t.skip('FIRESTORE_EMULATOR_HOST not set');
     return;
   }
 
@@ -251,10 +250,10 @@ test('Real Firestore Emulator: Terminal document update is skipped and records s
   assert.ok(!changedFieldValues.includes('Doctor emergency attempt after completion'), 'Must not store patient-entered text');
 });
 
-test('Real Firestore Emulator: INSERT creates appointment doc when absent and writes Step 0 fields', async () => {
+test('Real Firestore Emulator: INSERT creates appointment doc when absent and writes Step 0 fields', async (t) => {
   const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
   if (!emulatorHost) {
-    console.log('Skipping real emulator test: FIRESTORE_EMULATOR_HOST not set');
+    t.skip('FIRESTORE_EMULATOR_HOST not set');
     return;
   }
 
@@ -330,10 +329,10 @@ test('Real Firestore Emulator: INSERT creates appointment doc when absent and wr
   ]);
 });
 
-test('Real Firestore Emulator: INSERT returns 200 { ignored: "already_exists" } and does not overwrite existing doc', async () => {
+test('Real Firestore Emulator: INSERT returns 200 { ignored: "already_exists" } and does not overwrite existing doc', async (t) => {
   const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
   if (!emulatorHost) {
-    console.log('Skipping real emulator test: FIRESTORE_EMULATOR_HOST not set');
+    t.skip('FIRESTORE_EMULATOR_HOST not set');
     return;
   }
 
