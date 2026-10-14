@@ -108,8 +108,6 @@ export function extractChangedStatusFields(
     { snake: "patient_status", camel: "patientStatus", firestoreKey: "patientStatus" },
     { snake: "doctor_status", camel: "doctorStatus", firestoreKey: "doctorStatus" },
     { snake: "cancellation_reason", camel: "cancellationReason", firestoreKey: "cancellationReason" },
-    { snake: "cancelled_by", camel: "cancelledBy", firestoreKey: "cancelledBy" },
-    { snake: "cancelled_at", camel: "cancelledAt", firestoreKey: "cancelledAt", isDate: true },
   ];
 
   for (const def of fieldDefs) {
@@ -782,8 +780,7 @@ export async function writeFirestoreDeadLetter(
   }
 
   if (!resp.ok) {
-    const errText = await resp.text();
-    console.error(`[sync-to-firestore] Failed to write dead letter (${resp.status}): ${errText}`);
+    console.error(`[sync-to-firestore] Failed to write dead letter: status=${resp.status}`);
   }
 }
 
@@ -1172,12 +1169,9 @@ export async function handleSyncToFirestore(
       ) {
         const idHash = await hashIdentifier(appointmentId);
         console.warn(JSON.stringify({
-          severity: "WARNING",
-          category: "sync",
-          action: "sync.reverse_not_found",
+          status: 404,
+          code: "NOT_FOUND",
           appointmentIdHash: idHash,
-          reason: "firestore_doc_missing",
-          message: "Appointment document missing in Firestore during reverse sync read",
         }));
 
         await deadLetterWriter(
@@ -1205,13 +1199,9 @@ export async function handleSyncToFirestore(
     if (terminalCheck.isRejected) {
       const idHash = await hashIdentifier(appointmentId);
       console.warn(JSON.stringify({
-        severity: "WARNING",
-        category: "sync",
-        action: "sync.terminal_state_rejected",
+        status: 409,
+        code: "TERMINAL_STATE",
         appointmentIdHash: idHash,
-        reason: "terminal_state",
-        currentStatus: terminalCheck.currentStatus,
-        message: "Incoming update rejected: appointment is in a terminal state",
       }));
 
       await deadLetterWriter(
@@ -1252,6 +1242,11 @@ export async function handleSyncToFirestore(
         const recheck = isTerminalTransitionRejected(currentDoc, firestoreUpdate);
         if (recheck.isRejected) {
           const idHash = await hashIdentifier(appointmentId);
+          console.warn(JSON.stringify({
+            status: 409,
+            code: "TERMINAL_STATE",
+            appointmentIdHash: idHash,
+          }));
           await deadLetterWriter(
             appointmentId,
             "terminal_state",
@@ -1293,12 +1288,9 @@ export async function handleSyncToFirestore(
     ) {
       const idHash = await hashIdentifier(appointmentId);
       console.warn(JSON.stringify({
-        severity: "WARNING",
-        category: "sync",
-        action: "sync.reverse_not_found",
+        status: 404,
+        code: "NOT_FOUND",
         appointmentIdHash: idHash,
-        reason: "firestore_doc_missing",
-        message: "Precondition currentDocument.exists=true failed; appointment document does not exist in Firestore",
       }));
 
       const deadLetterWriter = options?.deadLetterWriter ?? writeFirestoreDeadLetter;
@@ -1327,12 +1319,9 @@ export async function handleSyncToFirestore(
     if (isInvalidArgument) {
       const idHash = await hashIdentifier(appointmentId);
       console.warn(JSON.stringify({
-        severity: "WARNING",
-        category: "sync",
-        action: "sync.invalid_argument",
+        status: 400,
+        code: "INVALID_ARGUMENT",
         appointmentIdHash: idHash,
-        reason: "invalid_argument",
-        message: err?.message || "Invalid argument sent to Firestore REST API",
       }));
 
       const deadLetterWriter = options?.deadLetterWriter ?? writeFirestoreDeadLetter;
@@ -1356,12 +1345,19 @@ export async function handleSyncToFirestore(
       );
     }
 
-    console.error("[sync-to-firestore] Write failed:", err);
+    const idHash = appointmentId ? await hashIdentifier(appointmentId) : "unknown";
+    console.error(JSON.stringify({
+      status: err?.status || 500,
+      code: err?.code || "INTERNAL",
+      appointmentIdHash: idHash,
+    }));
     // Non-2xx status code signals failure so Supabase Database Webhook retries
     return new Response(
       JSON.stringify({
         error: "internal_error",
         message: err?.message || "Failed to sync to Firestore",
+        status: err?.status || 500,
+        code: err?.code || "INTERNAL",
         retriable: true,
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -1376,7 +1372,7 @@ if (typeof Deno !== "undefined") {
   } else {
     import("https://deno.land/std@0.168.0/http/server.ts")
       .then(({ serve }) => serve((req: Request) => handleSyncToFirestore(req)))
-      .catch((e) => console.error("[sync-to-firestore] Failed to start server:", e));
+      .catch(() => console.error("[sync-to-firestore] Failed to start server"));
   }
 }
 

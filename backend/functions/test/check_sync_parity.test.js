@@ -7,6 +7,7 @@ const path = require('path');
 const {
   parseCliArgs,
   isStatusMismatch,
+  auditFirestoreDeadLetters,
 } = require('../../scripts/check_sync_parity');
 
 test('Parity Auditor: parseCliArgs parses --audit by default or when specified', () => {
@@ -96,3 +97,33 @@ test('Parity Auditor: isStatusMismatch compares effective status correctly', () 
     true
   );
 });
+
+test('Parity Auditor: auditFirestoreDeadLetters aggregates dead letter counts by reason (read-only)', async () => {
+  const mockDocs = [
+    { id: 'dl-1', data: () => ({ reason: 'terminal_state' }) },
+    { id: 'dl-2', data: () => ({ reason: 'firestore_doc_missing' }) },
+    { id: 'dl-3', data: () => ({ reason: 'terminal_state' }) },
+    { id: 'dl-4', data: () => ({ reason: 'invalid_argument' }) },
+  ];
+
+  const mockFirestore = {
+    collection: (colName) => {
+      assert.equal(colName, 'staging_syncDeadLetters');
+      return {
+        get: async () => ({
+          size: mockDocs.length,
+          docs: mockDocs,
+        }),
+      };
+    },
+  };
+
+  const result = await auditFirestoreDeadLetters(mockFirestore, { prefix: 'staging_' });
+  assert.equal(result.total, 4);
+  assert.deepEqual(result.reasonCounts, {
+    terminal_state: 2,
+    firestore_doc_missing: 1,
+    invalid_argument: 1,
+  });
+});
+

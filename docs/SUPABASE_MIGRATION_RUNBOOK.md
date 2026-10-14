@@ -147,7 +147,7 @@ To support live reverse synchronization of appointment status updates, cancellat
    - When an appointment is inserted into Supabase, `sync-to-firestore` maps the row into a full Firestore appointment document matching the `bookAppointment` and `AppointmentFirestoreMapper` contract and injects `syncedBy: 'supabase_bridge'`.
    - The write enforces precondition `currentDocument.exists = false`.    - If the document already exists in Firestore (e.g. from client-side dual-write), Firestore reports `ALREADY_EXISTS` (unverified, see verification procedure). The Edge Function catches this and returns `200 { ignored: 'already_exists' }`, guaranteeing it **never overwrites** an existing document on `INSERT`.
 3. **`UPDATE` Handling**:
-   - Compares changed fields (`patient_status`, `doctor_status`, `cancellation_reason`, `cancelled_by`, `cancelled_at`).
+   - Compares changed status and cancellation fields (`patient_status`, `doctor_status`, `cancellation_reason`).
    - Rejects transitions out of terminal states (`completed`, `inProgress`, `noShow`) with `200 { skipped: 'terminal_state' }` and records a durable dead letter in Firestore's `syncDeadLetters` collection (deterministic ID, zero free text).
    - Non-terminal updates write strictly changed fields with precondition `currentDocument.updateTime`, retrying once on concurrent modification / conflict (unverified, see verification procedure).
 

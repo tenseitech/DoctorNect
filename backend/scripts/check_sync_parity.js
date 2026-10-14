@@ -248,17 +248,41 @@ async function auditPrescriptions(pgClient, firestore, { prefix = '' } = {}) {
   };
 }
 
+async function auditFirestoreDeadLetters(firestore, { prefix = '' } = {}) {
+  console.log(`\n--- [3/4] Auditing Firestore Dead-Letter Records (Firestore: ${prefix}syncDeadLetters) ---`);
+  const snap = await firestore.collection(`${prefix}syncDeadLetters`).get();
+  const reasonCounts = {};
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    const reason = data.reason || 'unknown';
+    reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+  }
+
+  const rows = Object.entries(reasonCounts).map(([reason, count]) => ({ reason, count }));
+  console.log(`Total Firestore Dead Letters: ${snap.size}`);
+  if (rows.length === 0) {
+    console.log('  PASS: syncDeadLetters collection is completely empty (0 failures recorded).');
+  } else {
+    console.table(rows);
+  }
+
+  return {
+    total: snap.size,
+    reasonCounts,
+  };
+}
+
 async function checkDlqHealth(pgClient) {
-  console.log(`\n--- [3/3] Checking Dead-Letter Queue (DLQ) Health ---`);
+  console.log(`\n--- [4/4] Checking Supabase Dead-Letter Queue (DLQ) Health ---`);
   const dlqRes = await pgClient.query(`
     SELECT status, count(*) AS count 
     FROM sync_dead_letter_queue 
     GROUP BY status;
   `);
 
-  console.log('Dead-Letter Queue status breakdown:');
+  console.log('Supabase Dead-Letter Queue status breakdown:');
   if (dlqRes.rows.length === 0) {
-    console.log('  PASS: DLQ is completely empty (0 failures recorded).');
+    console.log('  PASS: Supabase DLQ is completely empty (0 failures recorded).');
   } else {
     console.table(dlqRes.rows);
   }
@@ -294,6 +318,7 @@ async function main() {
 
     const aptResult = await auditAppointments(pgClient, firestore, { prefix: cli.prefix });
     const rxResult = await auditPrescriptions(pgClient, firestore, { prefix: cli.prefix });
+    const fsDlqResult = await auditFirestoreDeadLetters(firestore, { prefix: cli.prefix });
     await checkDlqHealth(pgClient);
 
     console.log('\n================================================================');
@@ -302,6 +327,7 @@ async function main() {
     console.table([
       { Entity: 'Appointments', PostgresCount: aptResult.pgCount, FirestoreCount: aptResult.fsCount, Divergence: aptResult.inPgNotFs + aptResult.inFsNotPg + aptResult.mismatched },
       { Entity: 'Prescriptions', PostgresCount: rxResult.pgCount, FirestoreCount: rxResult.fsCount, Divergence: rxResult.inFsNotPg },
+      { Entity: 'Firestore DeadLetters', PostgresCount: '-', FirestoreCount: fsDlqResult.total, Divergence: fsDlqResult.total },
     ]);
   } catch (err) {
     console.error('Parity auditor failed:', err);
@@ -319,6 +345,7 @@ module.exports = {
   isStatusMismatch,
   auditAppointments,
   auditPrescriptions,
+  auditFirestoreDeadLetters,
   checkDlqHealth,
 };
 

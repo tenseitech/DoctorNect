@@ -120,4 +120,4 @@ Every Monday or during the cutover window:
 3. **Resolve the Underlying Cause**:
    - If `firestore_doc_missing`: Verify if the appointment was created directly in Supabase without initial Firestore sync; run targeted single-document sync from Postgres row.
    - If `missing_required_fields`: Verify why required fields were omitted in the application client; patch the missing columns in Postgres before re-triggering.
-4. **Issue Forward Update**: Trigger a clean forward update with `syncedBy: 'reconciler_bot'` to propagate the latest valid state without triggering recursion loops.
+4. **Issue Forward Update**: Trigger a clean forward update with `syncedBy: 'supabase_bridge'` to propagate the latest valid state without triggering recursion loops.

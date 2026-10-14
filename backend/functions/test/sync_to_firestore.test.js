@@ -177,8 +177,11 @@ test('Edge Function Loop Prevention: Drops writes originating from Firestore, Re
     { sync_origin: 'doctor_firestore' },
     { sync_origin: 'patient_firestore' },
     { sync_origin: 'reconciler_bot' },
+    { sync_origin: 'firestore_cloud_function' },
+    { sync_origin: 'firestore' },
     { synced_by: 'firestore_cloud_function' },
     { synced_by: 'supabase_bridge' },
+    { synced_by: 'reconciler_bot' },
   ];
 
   for (const originMarker of loopOrigins) {
@@ -361,8 +364,8 @@ test('TASK 3c: Cancellation writes only cancellation fields and adjusts updateMa
   assert.equal(writtenId, 'apt-cancel-fields-1');
   assert.equal(writtenPayload.patientStatus, undefined, 'Terminal patient_status must not be written to Firestore');
   assert.equal(writtenPayload.cancellationReason, 'High fever');
-  assert.equal(writtenPayload.cancelledBy, 'patient');
-  assert.ok(writtenPayload.cancelledAt instanceof Date);
+  assert.equal(writtenPayload.cancelledBy, undefined, 'cancelledBy is not read by clients and must not be written');
+  assert.equal(writtenPayload.cancelledAt, undefined, 'cancelledAt is not read by clients and must not be written');
   assert.equal(writtenPayload.doctorStatus, undefined, 'Unchanged doctorStatus must not be in payload');
 });
 
@@ -486,8 +489,8 @@ test('Edge Function Execution: Writes appointment status changes and cancellatio
   assert.equal(writtenPayload.doctorStatus, 'cancelled');
   assert.equal(writtenPayload.patientStatus, undefined, 'Terminal patient_status must not be written to Firestore');
   assert.equal(writtenPayload.cancellationReason, 'Patient fever spikes, doctor informed');
-  assert.equal(writtenPayload.cancelledBy, 'patient');
-  assert.ok(writtenPayload.cancelledAt instanceof Date);
+  assert.equal(writtenPayload.cancelledBy, undefined, 'cancelledBy must not be written');
+  assert.equal(writtenPayload.cancelledAt, undefined, 'cancelledAt must not be written');
   assert.ok(writtenPayload.updatedAt instanceof Date);
 });
 
@@ -578,7 +581,7 @@ test('TASK 3d: 404 from Firestore emits structured warning and writes Firestore 
   assert.equal(capturedDeadLetter.reason, 'firestore_doc_missing');
   assert.ok(Array.isArray(capturedDeadLetter.changedFields));
   assert.ok(capturedDeadLetter.changedFields.includes('cancellationReason'));
-  assert.ok(capturedDeadLetter.changedFields.includes('cancelledBy'));
+  assert.ok(!capturedDeadLetter.changedFields.includes('cancelledBy'), 'cancelledBy is not tracked or written');
   assert.ok(!capturedDeadLetter.changedFields.includes('Doctor absent'), 'Must not store patient-entered text');
 });
 
@@ -1408,8 +1411,17 @@ test('TASK 4: INSERT drops Firestore-originated records via loop prevention', as
     writerCalled = true;
   };
 
-  const origins = ['doctor_firestore', 'patient_firestore', 'reconciler_bot', 'firestore_cloud_function', 'firestore'];
-  for (const origin of origins) {
+  const loopMarkers = [
+    { sync_origin: 'doctor_firestore' },
+    { sync_origin: 'patient_firestore' },
+    { sync_origin: 'reconciler_bot' },
+    { sync_origin: 'firestore_cloud_function' },
+    { sync_origin: 'firestore' },
+    { synced_by: 'firestore_cloud_function' },
+    { synced_by: 'supabase_bridge' },
+    { synced_by: 'reconciler_bot' },
+  ];
+  for (const marker of loopMarkers) {
     const req = new Request('https://edge.supabase.com/sync-to-firestore', {
       method: 'POST',
       headers: {
@@ -1422,7 +1434,7 @@ test('TASK 4: INSERT drops Firestore-originated records via loop prevention', as
         schema: 'public',
         record: {
           appointment_id: 'apt-loop-test',
-          sync_origin: origin,
+          ...marker,
         },
       }),
     });
@@ -1562,7 +1574,7 @@ test('TASK 4b: patient_status cancelled UPDATE writes doctorStatus and cancellat
   assert.ok(writtenData, 'Writer must be called');
   assert.equal(writtenData.doctorStatus, 'cancelled');
   assert.equal(writtenData.cancellationReason, 'Doctor unavailable');
-  assert.equal(writtenData.cancelledBy, 'doctor');
+  assert.equal(writtenData.cancelledBy, undefined);
   assert.equal(writtenData.syncedBy, 'supabase_bridge');
   // CRITICAL: patientStatus must NOT be written to Firestore
   assert.equal(writtenData.patientStatus, undefined, 'patientStatus must NOT be written on cancelled update');
@@ -2195,6 +2207,127 @@ test('handleSyncToFirestore with defaultFirestoreWriter & stubbed fetch: 404 NOT
     else delete process.env.FIRESTORE_EMULATOR_HOST;
   }
 });
+
+test('TASK 7: Logging Security: Stubbed error message with patient-like string does not appear in captured logs', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  const capturedLogs = [];
+  const origWarn = console.warn;
+  const origError = console.error;
+
+  console.warn = (...args) => {
+    capturedLogs.push(args.map(String).join(' '));
+  };
+  console.error = (...args) => {
+    capturedLogs.push(args.map(String).join(' '));
+  };
+
+  const sensitivePatientString = 'PatientSSN-999-00-1234-MedicalDiagnosis-Cancer';
+
+  try {
+    // 1. Test INVALID_ARGUMENT error carrying sensitive patient string
+    const reqInvalid = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'sec-log-test',
+      },
+      body: JSON.stringify({
+        type: 'UPDATE',
+        table: 'appointments',
+        schema: 'public',
+        old_record: { appointment_id: 'apt-sec-1', doctor_status: 'confirmed' },
+        record: { appointment_id: 'apt-sec-1', doctor_status: 'inProgress' },
+      }),
+    });
+
+    const mockWriterThrows = async () => {
+      const err = new Error(`Validation failed for ${sensitivePatientString}`);
+      err.status = 400;
+      err.code = 'INVALID_ARGUMENT';
+      throw err;
+    };
+
+    let deadLetterDoc = null;
+    const mockDlq = async (id, reason, fields) => {
+      deadLetterDoc = { id, reason, fields };
+    };
+
+    const res = await handleSyncToFirestore(reqInvalid, {
+      expectedSecret: 'sec-log-test',
+      firestoreWriter: mockWriterThrows,
+      deadLetterWriter: mockDlq,
+      firestoreReader: async () => ({
+        fields: { doctorStatus: { stringValue: 'confirmed' } },
+        updateTime: '2026-10-15T00:00:00Z',
+      }),
+    });
+
+    assert.equal(res.status, 200);
+
+    // 2. Test 500 internal error carrying sensitive patient string
+    const reqInternal = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'sec-log-test',
+      },
+      body: JSON.stringify({
+        type: 'UPDATE',
+        table: 'appointments',
+        schema: 'public',
+        old_record: { appointment_id: 'apt-sec-2', doctor_status: 'confirmed' },
+        record: { appointment_id: 'apt-sec-2', doctor_status: 'inProgress' },
+      }),
+    });
+
+    const mockWriterInternalThrows = async () => {
+      const err = new Error(`Internal DB corruption: ${sensitivePatientString}`);
+      err.status = 500;
+      err.code = 'INTERNAL';
+      throw err;
+    };
+
+    const resInternal = await handleSyncToFirestore(reqInternal, {
+      expectedSecret: 'sec-log-test',
+      firestoreWriter: mockWriterInternalThrows,
+      deadLetterWriter: mockDlq,
+      firestoreReader: async () => ({
+        fields: { doctorStatus: { stringValue: 'confirmed' } },
+        updateTime: '2026-10-15T00:00:00Z',
+      }),
+    });
+
+    assert.equal(resInternal.status, 500);
+
+    // Verify logs were captured
+    assert.ok(capturedLogs.length > 0, 'Logs must have been emitted');
+
+    // CRITICAL ASSERTION: Sensitive patient string must NOT appear in ANY captured log
+    for (const log of capturedLogs) {
+      assert.equal(
+        log.includes(sensitivePatientString),
+        false,
+        `Sensitive patient string leaked into log: ${log}`
+      );
+      // Verify log only contains status, code, and appointmentIdHash
+      const parsed = JSON.parse(log);
+      assert.ok(parsed.status !== undefined, 'Log must contain status');
+      assert.ok(parsed.code !== undefined, 'Log must contain code');
+      assert.ok(parsed.appointmentIdHash !== undefined, 'Log must contain appointmentIdHash');
+      assert.equal(parsed.message, undefined, 'Log must NOT contain message');
+    }
+
+    // Also verify dead letter contains no sensitive error text
+    assert.deepEqual(deadLetterDoc.fields, ['doctorStatus']);
+    assert.equal(deadLetterDoc.reason, 'invalid_argument');
+  } finally {
+    console.warn = origWarn;
+    console.error = origError;
+  }
+});
+
 
 
 
