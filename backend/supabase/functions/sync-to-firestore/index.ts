@@ -27,6 +27,7 @@ export interface SyncToFirestoreOptions {
       | "terminal_state"
       | "invalid_status_value"
       | "missing_required_fields"
+      | "invalid_argument"
       | "other",
     changedFieldNames: string[],
     updatedAtMs?: number | string
@@ -711,6 +712,7 @@ export async function writeFirestoreDeadLetter(
     | "terminal_state"
     | "invalid_status_value"
     | "missing_required_fields"
+    | "invalid_argument"
     | "other",
   changedFieldNames: string[],
   updatedAtMs?: number | string
@@ -957,6 +959,7 @@ export async function handleSyncToFirestore(
 
   let appointmentId = "";
   let record: any = null;
+  let isInsert = false;
 
   try {
     const payload = await req.json();
@@ -967,7 +970,7 @@ export async function handleSyncToFirestore(
     const oldRecord = payload?.old_record || payload?.oldRecord;
 
     const isUpdate = eventType === "UPDATE";
-    const isInsert = eventType === "INSERT";
+    isInsert = eventType === "INSERT";
 
     // 2. EVENT FILTERING:
     // Only act on type UPDATE or INSERT for schema public, table appointments; anything else returns 200 {ignored: true}
@@ -1229,7 +1232,7 @@ export async function handleSyncToFirestore(
       );
     }
 
-    // 8. WRITE WITH PRECONDITION currentDocument.updateTime & RETRY ON 409/412:
+    // 8. WRITE WITH PRECONDITION currentDocument.updateTime & RETRY ON CONFLICT (unverified, see verification procedure):
     try {
       await writer(appointmentId, firestoreUpdate, currentDoc?.updateTime);
     } catch (patchErr: any) {
@@ -1310,6 +1313,42 @@ export async function handleSyncToFirestore(
         JSON.stringify({
           skipped: "not_found",
           reason: "firestore_doc_missing",
+          appointmentIdHash: idHash,
+          dlqPersisted: true,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const isInvalidArgument =
+      err?.code === "INVALID_ARGUMENT" ||
+      err?.grpcStatus === "INVALID_ARGUMENT";
+
+    if (isInvalidArgument) {
+      const idHash = await hashIdentifier(appointmentId);
+      console.warn(JSON.stringify({
+        severity: "WARNING",
+        category: "sync",
+        action: "sync.invalid_argument",
+        appointmentIdHash: idHash,
+        reason: "invalid_argument",
+        message: err?.message || "Invalid argument sent to Firestore REST API",
+      }));
+
+      const deadLetterWriter = options?.deadLetterWriter ?? writeFirestoreDeadLetter;
+      await deadLetterWriter(
+        appointmentId,
+        "invalid_argument",
+        isInsert
+          ? Object.keys(buildFirestoreAppointmentFromSupabaseRow(record))
+          : (record ? Object.keys(extractChangedStatusFields(record).changedFields) : []),
+        record?.updated_at ? new Date(record.updated_at).getTime() : Date.now()
+      );
+
+      return new Response(
+        JSON.stringify({
+          skipped: "invalid_argument",
+          reason: "invalid_argument",
           appointmentIdHash: idHash,
           dlqPersisted: true,
         }),

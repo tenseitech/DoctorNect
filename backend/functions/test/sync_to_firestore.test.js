@@ -1761,53 +1761,440 @@ test('TASK 4b: required-field INSERT checks report missing_required_fields', asy
   assert.equal(capturedDeadLetter.reason, 'missing_required_fields');
 });
 
-test('TASK 4b: 400 INVALID_ARGUMENT from Firestore returns non-2xx without retry', async () => {
+test('defaultFirestoreWriter stubbed fetch: 400 FAILED_PRECONDITION parses error and sets code/grpcStatus', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { defaultFirestoreWriter } = edgeModule;
+
+  const originalFetch = globalThis.fetch;
+  const originalHost = process.env.FIRESTORE_EMULATOR_HOST;
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+
+  try {
+    globalThis.fetch = async () => new Response(
+      JSON.stringify({
+        error: {
+          code: 400,
+          message: 'The stored document version does not match the version specified in the update request.',
+          status: 'FAILED_PRECONDITION',
+        },
+      }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+
+    let thrownErr;
+    try {
+      await defaultFirestoreWriter('apt-prec-1', { doctorStatus: 'confirmed' }, '2026-10-14T00:00:00Z');
+    } catch (err) {
+      thrownErr = err;
+    }
+
+    assert.ok(thrownErr, 'Must throw error on 400 FAILED_PRECONDITION');
+    assert.equal(thrownErr.status, 400);
+    assert.equal(thrownErr.code, 'FAILED_PRECONDITION');
+    assert.equal(thrownErr.grpcStatus, 'FAILED_PRECONDITION');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalHost) process.env.FIRESTORE_EMULATOR_HOST = originalHost;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+  }
+});
+
+test('defaultFirestoreWriter stubbed fetch: 400 INVALID_ARGUMENT parses error and sets code/grpcStatus', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { defaultFirestoreWriter } = edgeModule;
+
+  const originalFetch = globalThis.fetch;
+  const originalHost = process.env.FIRESTORE_EMULATOR_HOST;
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+
+  try {
+    globalThis.fetch = async () => new Response(
+      JSON.stringify({
+        error: {
+          code: 400,
+          message: 'Invalid value at appointment.tokenNumber: Expected integer',
+          status: 'INVALID_ARGUMENT',
+        },
+      }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+
+    let thrownErr;
+    try {
+      await defaultFirestoreWriter('apt-inv-1', { tokenNumber: 'invalid' });
+    } catch (err) {
+      thrownErr = err;
+    }
+
+    assert.ok(thrownErr, 'Must throw error on 400 INVALID_ARGUMENT');
+    assert.equal(thrownErr.status, 400);
+    assert.equal(thrownErr.code, 'INVALID_ARGUMENT');
+    assert.equal(thrownErr.grpcStatus, 'INVALID_ARGUMENT');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalHost) process.env.FIRESTORE_EMULATOR_HOST = originalHost;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+  }
+});
+
+test('defaultFirestoreWriter stubbed fetch: 409 ALREADY_EXISTS parses error and sets code/grpcStatus', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { defaultFirestoreWriter } = edgeModule;
+
+  const originalFetch = globalThis.fetch;
+  const originalHost = process.env.FIRESTORE_EMULATOR_HOST;
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+
+  try {
+    globalThis.fetch = async () => new Response(
+      JSON.stringify({
+        error: {
+          code: 409,
+          message: 'Document already exists: projects/p/databases/(default)/documents/appointments/apt-exist-1',
+          status: 'ALREADY_EXISTS',
+        },
+      }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } }
+    );
+
+    let thrownErr;
+    try {
+      await defaultFirestoreWriter('apt-exist-1', { doctorStatus: 'pendingRequest' }, { exists: false });
+    } catch (err) {
+      thrownErr = err;
+    }
+
+    assert.ok(thrownErr, 'Must throw error on 409 ALREADY_EXISTS');
+    assert.equal(thrownErr.status, 409);
+    assert.equal(thrownErr.code, 'ALREADY_EXISTS');
+    assert.equal(thrownErr.grpcStatus, 'ALREADY_EXISTS');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalHost) process.env.FIRESTORE_EMULATOR_HOST = originalHost;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+  }
+});
+
+test('defaultFirestoreWriter stubbed fetch: 404 NOT_FOUND parses error and sets code/grpcStatus', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { defaultFirestoreWriter } = edgeModule;
+
+  const originalFetch = globalThis.fetch;
+  const originalHost = process.env.FIRESTORE_EMULATOR_HOST;
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+
+  try {
+    globalThis.fetch = async () => new Response(
+      JSON.stringify({
+        error: {
+          code: 404,
+          message: 'Document not found: projects/p/databases/(default)/documents/appointments/apt-missing-1',
+          status: 'NOT_FOUND',
+        },
+      }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } }
+    );
+
+    let thrownErr;
+    try {
+      await defaultFirestoreWriter('apt-missing-1', { doctorStatus: 'confirmed' }, '2026-10-14T00:00:00Z');
+    } catch (err) {
+      thrownErr = err;
+    }
+
+    assert.ok(thrownErr, 'Must throw error on 404 NOT_FOUND');
+    assert.equal(thrownErr.status, 404);
+    assert.equal(thrownErr.code, 'NOT_FOUND');
+    assert.equal(thrownErr.grpcStatus, 'NOT_FOUND');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalHost) process.env.FIRESTORE_EMULATOR_HOST = originalHost;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+  }
+});
+
+test('handleSyncToFirestore with defaultFirestoreWriter & stubbed fetch: 400 FAILED_PRECONDITION retries once and succeeds', async () => {
   const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
   const { handleSyncToFirestore } = edgeModule;
 
-  let writeCalls = 0;
-  const failingWriter = async () => {
-    writeCalls++;
-    const err = new Error('Invalid value at appointment.tokenNumber: Expected integer');
-    err.status = 400;
-    err.code = 'INVALID_ARGUMENT';
-    err.grpcStatus = 'INVALID_ARGUMENT';
-    throw err;
-  };
+  const originalFetch = globalThis.fetch;
+  const originalHost = process.env.FIRESTORE_EMULATOR_HOST;
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 
-  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-webhook-secret': 'sec',
-    },
-    body: JSON.stringify({
-      type: 'UPDATE',
-      table: 'appointments',
-      schema: 'public',
-      old_record: {
-        appointment_id: 'apt-inv-arg-1',
-        doctor_status: 'confirmed',
+  let fetchCalls = 0;
+  try {
+    globalThis.fetch = async (url, options) => {
+      fetchCalls++;
+      if (fetchCalls === 1) {
+        // First attempt fails with 400 FAILED_PRECONDITION
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: 400,
+              message: 'Precondition updateTime mismatch',
+              status: 'FAILED_PRECONDITION',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      // Retry attempt succeeds
+      return new Response(
+        JSON.stringify({
+          writeResults: [{ updateTime: '2026-10-15T12:00:00Z' }],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    };
+
+    let readerCalls = 0;
+    const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'sec-fetch-test',
       },
-      record: {
-        appointment_id: 'apt-inv-arg-1',
-        doctor_status: 'inProgress',
+      body: JSON.stringify({
+        type: 'UPDATE',
+        table: 'appointments',
+        schema: 'public',
+        old_record: {
+          appointment_id: 'apt-fetch-retry-1',
+          doctor_status: 'confirmed',
+        },
+        record: {
+          appointment_id: 'apt-fetch-retry-1',
+          doctor_status: 'inProgress',
+        },
+      }),
+    });
+
+    const res = await handleSyncToFirestore(req, {
+      expectedSecret: 'sec-fetch-test',
+      firestoreReader: async () => {
+        readerCalls++;
+        return {
+          fields: { doctorStatus: { stringValue: 'confirmed' } },
+          updateTime: '2026-10-15T12:00:00Z',
+        };
       },
-    }),
-  });
+    });
 
-  const res = await handleSyncToFirestore(req, {
-    expectedSecret: 'sec',
-    firestoreWriter: failingWriter,
-    firestoreReader: async () => ({
-      fields: { doctorStatus: { stringValue: 'confirmed' } },
-      updateTime: '2026-10-15T10:00:00Z',
-    }),
-  });
-
-  // Must return non-2xx (500)
-  assert.equal(res.status, 500, '400 INVALID_ARGUMENT must produce non-2xx so caller/Supabase retries');
-  assert.equal(writeCalls, 1, '400 INVALID_ARGUMENT must NOT trigger internal retry loop');
+    assert.equal(res.status, 200, 'Must return 200 on successful retry');
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(fetchCalls, 2, 'Must have retried fetch exactly once');
+    assert.equal(readerCalls, 2, 'Must re-read document before retry');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalHost) process.env.FIRESTORE_EMULATOR_HOST = originalHost;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+  }
 });
+
+test('handleSyncToFirestore with defaultFirestoreWriter & stubbed fetch: 400 INVALID_ARGUMENT writes dead letter and returns 200 skipped without retry', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  const originalFetch = globalThis.fetch;
+  const originalHost = process.env.FIRESTORE_EMULATOR_HOST;
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+
+  let fetchCalls = 0;
+  let capturedDeadLetter = null;
+
+  try {
+    globalThis.fetch = async () => {
+      fetchCalls++;
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: 400,
+            message: 'Invalid value at appointment.tokenNumber: Expected integer',
+            status: 'INVALID_ARGUMENT',
+          },
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    };
+
+    const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'sec-fetch-test',
+      },
+      body: JSON.stringify({
+        type: 'UPDATE',
+        table: 'appointments',
+        schema: 'public',
+        old_record: {
+          appointment_id: 'apt-fetch-inv-1',
+          doctor_status: 'confirmed',
+        },
+        record: {
+          appointment_id: 'apt-fetch-inv-1',
+          doctor_status: 'inProgress',
+        },
+      }),
+    });
+
+    const res = await handleSyncToFirestore(req, {
+      expectedSecret: 'sec-fetch-test',
+      firestoreReader: async () => ({
+        fields: { doctorStatus: { stringValue: 'confirmed' } },
+        updateTime: '2026-10-15T10:00:00Z',
+      }),
+      deadLetterWriter: async (id, reason, changedFields) => {
+        capturedDeadLetter = { id, reason, changedFields };
+      },
+    });
+
+    assert.equal(res.status, 200, 'Non-retriable INVALID_ARGUMENT must return 200 { skipped: "invalid_argument" }');
+    const body = await res.json();
+    assert.equal(body.skipped, 'invalid_argument');
+    assert.equal(body.reason, 'invalid_argument');
+    assert.equal(fetchCalls, 1, 'INVALID_ARGUMENT must NOT trigger retry');
+    assert.ok(capturedDeadLetter, 'Must record dead letter');
+    assert.equal(capturedDeadLetter.reason, 'invalid_argument');
+    assert.deepEqual(capturedDeadLetter.changedFields, ['doctorStatus']);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalHost) process.env.FIRESTORE_EMULATOR_HOST = originalHost;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+  }
+});
+
+test('handleSyncToFirestore with defaultFirestoreWriter & stubbed fetch: 409 ALREADY_EXISTS on INSERT returns 200 ignored: already_exists', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  const originalFetch = globalThis.fetch;
+  const originalHost = process.env.FIRESTORE_EMULATOR_HOST;
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+
+  try {
+    globalThis.fetch = async () => new Response(
+      JSON.stringify({
+        error: {
+          code: 409,
+          message: 'Document already exists',
+          status: 'ALREADY_EXISTS',
+        },
+      }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } }
+    );
+
+    const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'sec-fetch-test',
+      },
+      body: JSON.stringify({
+        type: 'INSERT',
+        table: 'appointments',
+        schema: 'public',
+        record: {
+          appointment_id: 'apt-fetch-ins-exists-1',
+          doctor_id: 'doc-1',
+          patient_id: 'pat-1',
+          doctor_name: 'Dr. Test',
+          specialization: 'General',
+          patient_name: 'Patient Test',
+          date_time: '2026-10-14T09:00:00Z',
+          slot_label: '09:00 AM',
+          token_number: 1,
+          patient_status: 'confirmed',
+          doctor_status: 'confirmed',
+          visit_type: 'newVisit',
+          sync_origin: 'patient_supabase',
+        },
+      }),
+    });
+
+    const res = await handleSyncToFirestore(req, {
+      expectedSecret: 'sec-fetch-test',
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ignored, 'already_exists');
+    assert.equal(body.appointmentId, 'apt-fetch-ins-exists-1');
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalHost) process.env.FIRESTORE_EMULATOR_HOST = originalHost;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+  }
+});
+
+test('handleSyncToFirestore with defaultFirestoreWriter & stubbed fetch: 404 NOT_FOUND on UPDATE writes dead letter and returns 200 skipped: not_found', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  const originalFetch = globalThis.fetch;
+  const originalHost = process.env.FIRESTORE_EMULATOR_HOST;
+  process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+
+  let capturedDeadLetter = null;
+
+  try {
+    globalThis.fetch = async () => new Response(
+      JSON.stringify({
+        error: {
+          code: 404,
+          message: 'Document not found',
+          status: 'NOT_FOUND',
+        },
+      }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } }
+    );
+
+    const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-webhook-secret': 'sec-fetch-test',
+      },
+      body: JSON.stringify({
+        type: 'UPDATE',
+        table: 'appointments',
+        schema: 'public',
+        old_record: {
+          appointment_id: 'apt-fetch-404-1',
+          doctor_status: 'confirmed',
+        },
+        record: {
+          appointment_id: 'apt-fetch-404-1',
+          doctor_status: 'inProgress',
+        },
+      }),
+    });
+
+    const res = await handleSyncToFirestore(req, {
+      expectedSecret: 'sec-fetch-test',
+      firestoreReader: async () => ({
+        fields: { doctorStatus: { stringValue: 'confirmed' } },
+        updateTime: '2026-10-15T10:00:00Z',
+      }),
+      deadLetterWriter: async (id, reason, changedFields) => {
+        capturedDeadLetter = { id, reason, changedFields };
+      },
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.skipped, 'not_found');
+    assert.equal(body.reason, 'firestore_doc_missing');
+    assert.ok(capturedDeadLetter);
+    assert.equal(capturedDeadLetter.reason, 'firestore_doc_missing');
+    assert.deepEqual(capturedDeadLetter.changedFields, ['doctorStatus']);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalHost) process.env.FIRESTORE_EMULATOR_HOST = originalHost;
+    else delete process.env.FIRESTORE_EMULATOR_HOST;
+  }
+});
+
 
 

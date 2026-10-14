@@ -145,12 +145,11 @@ To support live reverse synchronization of appointment status updates, cancellat
 1. **Loop Prevention Filter**: Any `INSERT` or `UPDATE` where `sync_origin` or `synced_by` indicates Firestore origin (`doctor_firestore`, `patient_firestore`, `reconciler_bot`, `firestore_cloud_function`, `firestore`, `supabase_bridge`) is immediately dropped with HTTP `200 { ignored: true }`.
 2. **`INSERT` Handling (Create-Only Guard)**:
    - When an appointment is inserted into Supabase, `sync-to-firestore` maps the row into a full Firestore appointment document matching the `bookAppointment` and `AppointmentFirestoreMapper` contract and injects `syncedBy: 'supabase_bridge'`.
-   - The write enforces precondition `currentDocument.exists = false`.
-   - If the document already exists in Firestore (e.g. from client-side dual-write), Firestore returns `409 ALREADY_EXISTS`. The Edge Function catches this and returns `200 { ignored: 'already_exists' }`, guaranteeing it **never overwrites** an existing document on `INSERT`.
+   - The write enforces precondition `currentDocument.exists = false`.    - If the document already exists in Firestore (e.g. from client-side dual-write), Firestore reports `ALREADY_EXISTS` (unverified, see verification procedure). The Edge Function catches this and returns `200 { ignored: 'already_exists' }`, guaranteeing it **never overwrites** an existing document on `INSERT`.
 3. **`UPDATE` Handling**:
-   - Compares changed fields (`status`, `patient_status`, `doctor_status`, `cancellation_reason`, `cancelled_by`, `cancelled_at`).
+   - Compares changed fields (`patient_status`, `doctor_status`, `cancellation_reason`, `cancelled_by`, `cancelled_at`).
    - Rejects transitions out of terminal states (`completed`, `inProgress`, `noShow`) with `200 { skipped: 'terminal_state' }` and records a durable dead letter in Firestore's `syncDeadLetters` collection (deterministic ID, zero free text).
-   - Non-terminal updates write strictly changed fields with precondition `currentDocument.updateTime`, retrying once on concurrent modification (409/412).
+   - Non-terminal updates write strictly changed fields with precondition `currentDocument.updateTime`, retrying once on concurrent modification / conflict (unverified, see verification procedure).
 
 ### 3c. Sync Parity Audit & Observability Reference
 
@@ -167,6 +166,91 @@ node scripts/check_sync_parity.js --audit
 3. **Weekly Observability & Alerting Manual**:
    For the complete operational guide covering skip/dead-letter dictionaries, GCP log metrics, Supabase Logs Explorer queries, and dead-letter replay procedures (re-reading from SoR), refer directly to:
    👉 **[SUPABASE_SYNC_OBSERVABILITY.md](SUPABASE_SYNC_OBSERVABILITY.md)**.
+
+### 3d. Precondition Status Code Verification Procedure (Real Firestore Project)
+
+> **Notice**: All HTTP status code claims for Cloud Firestore REST preconditions are **unverified on production; verify on a real project** using the throwaway test procedure below before cutover.
+
+#### Setup:
+Obtain an OAuth2 access token for a Google Cloud project with Cloud Datastore User role:
+```bash
+export ACCESS_TOKEN=$(gcloud auth print-access-token)
+export PROJECT_ID="<your-throwaway-or-staging-project>"
+export BASE_URL="https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents"
+export COMMIT_URL="${BASE_URL}:commit"
+```
+
+#### Test Case 1: Precondition `currentDocument.exists = true` against non-existent document
+```bash
+# Attempt to PATCH document 'test-missing-doc-999' requiring exists=true
+curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST "${COMMIT_URL}" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "writes": [{
+      "update": {
+        "name": "projects/'"${PROJECT_ID}"'/databases/(default)/documents/appointments/test-missing-doc-999",
+        "fields": { "doctorStatus": { "stringValue": "confirmed" } }
+      },
+      "currentDocument": { "exists": true }
+    }]
+  }'
+# Expected observation:
+# Record exact HTTP_STATUS and response JSON (specifically error.code, error.status, error.message).
+# Does it return HTTP 404 with status NOT_FOUND, or HTTP 400 with status FAILED_PRECONDITION?
+```
+
+#### Test Case 2: Precondition `currentDocument.exists = false` against existing document
+```bash
+# 1. Create document first
+curl -s -X PATCH "${BASE_URL}/appointments/test-existing-doc-111" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{ "fields": { "doctorStatus": { "stringValue": "pendingRequest" } } }'
+
+# 2. Attempt INSERT with exists=false
+curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST "${COMMIT_URL}" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "writes": [{
+      "update": {
+        "name": "projects/'"${PROJECT_ID}"'/databases/(default)/documents/appointments/test-existing-doc-111",
+        "fields": { "doctorStatus": { "stringValue": "confirmed" } }
+      },
+      "currentDocument": { "exists": false }
+    }]
+  }'
+# Expected observation:
+# Record exact HTTP_STATUS and response JSON (specifically error.code, error.status, error.message).
+# Does it return HTTP 409 with status ALREADY_EXISTS, or HTTP 400 with status FAILED_PRECONDITION?
+```
+
+#### Test Case 3: Precondition `currentDocument.updateTime` mismatch (Stale Concurrency Token)
+```bash
+# Attempt update with a deliberately stale / mismatched RFC 3339 updateTime
+curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST "${COMMIT_URL}" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "writes": [{
+      "update": {
+        "name": "projects/'"${PROJECT_ID}"'/databases/(default)/documents/appointments/test-existing-doc-111",
+        "fields": { "doctorStatus": { "stringValue": "confirmed" } }
+      },
+      "currentDocument": { "updateTime": "2020-01-01T00:00:00Z" }
+    }]
+  }'
+# Expected observation:
+# Record exact HTTP_STATUS and response JSON (specifically error.code, error.status, error.message).
+# Does it return HTTP 412, HTTP 409, or HTTP 400 with status FAILED_PRECONDITION / ABORTED?
+```
+
+#### Cleanup:
+```bash
+curl -s -X DELETE "${BASE_URL}/appointments/test-existing-doc-111" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}"
+```
 
 ---
 
