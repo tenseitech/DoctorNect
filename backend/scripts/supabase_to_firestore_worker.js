@@ -1,15 +1,14 @@
 /**
  * DoctorNect: Supabase -> Firestore Sync Bridge Worker
  * 
- * Synchronizes Patient-authored records (Appointments, Patients, Reviews)
- * from Supabase PostgreSQL to Firestore so that Doctors and Clinics
- * (who remain on Firebase) can see them in real time (< 1.5s).
- * 
- * Features:
- * - Loop prevention: Ignores records with sync_origin = 'doctor_firestore' or 'reconciler_bot'
- * - Dead-Letter Queue (DLQ): Logs exhausted failures to sync_dead_letter_queue
- * - Can run as a webhook handler or a polling daemon during the staged cutover window
+ * DEPRECATED AND PERMANENTLY DEACTIVATED:
+ * Superseded by the sync-to-firestore Edge Function.
  */
+
+console.error(
+  'ERROR: supabase_to_firestore_worker.js is superseded by the sync-to-firestore Edge Function and has been permanently deactivated. It is unsafe to execute (no terminal guard, writes patientStatus terminal values, leaks payloads to the DLQ).'
+);
+process.exit(1);
 
 require('./load_env').loadEnv();
 

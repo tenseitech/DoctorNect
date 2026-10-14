@@ -133,7 +133,7 @@ Standalone operational scripts used for migrations, backfills, diagnostics, and 
 | `backend/scripts/load_env.js` | 138 | **`NOT-READ`** | 0/138 | Local environment loader helper. |
 | `backend/scripts/migrate_firestore_to_supabase.js` | 1,302 | **`NOT-READ`** | 0/1,302 | Large-scale offline data migration pipeline. |
 | `backend/scripts/reverse_sync_supabase_to_firestore.js` | 367 | **`NOT-READ`** | 0/367 | Reverse sync reconciliation script. |
-| `backend/scripts/supabase_to_firestore_worker.js` | 351 | **`NOT-READ`** | 0/351 | Background worker for reverse synchronization. |
+| `backend/scripts/supabase_to_firestore_worker.js` | 351 | **`DEPRECATED`** | 0/351 | Superseded by sync-to-firestore Edge Function; deactivated. |
 | `backend/scripts/test_rls_policies.js` | 320 | **`NOT-READ`** | 0/320 | Supabase PostgreSQL RLS automated validator. |
 | `backend/scripts/verify_production_build_config.js` | 284 | **`NOT-READ`** | 0/284 | Build artifact consistency checker. |
 | `backend/scripts/verify_staging_and_rollback.js` | 357 | **`NOT-READ`** | 0/357 | Staging deployment and rollback validator. |

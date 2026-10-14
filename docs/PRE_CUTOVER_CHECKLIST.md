@@ -112,8 +112,8 @@ The bidirectional synchronization bridge ensures zero data loss between legacy c
 | Component | Implementation | Verification State | Operational Behavior |
 | :--- | :--- | :--- | :--- |
 | **Loop Prevention** | `sync_origin` metadata tagging | **Active & Verified** | Every write tags origin (`'patient_supabase'` or `'firestore'`). Edge function and Firestore trigger suppress re-sync if incoming origin matches destination. |
-| **Dead Letter Queue (DLQ)** | `sync_dlq` table + retry policy | **Active & Verified** | Failed sync jobs record payload, error stack, retry count, and next retry timestamp. Exceeding 3 retries halts automated churn and triggers alert. |
-| **Retry Worker** | `supabase_to_firestore_worker.js` | **Active & Verified** | Background worker scans for pending sync tasks, applies exponential backoff, and writes directly to Firestore using Firebase Admin SDK. |
+| **Dead Letter Queue (DLQ)** | `syncDeadLetters` (Firestore) + `sync_dlq` (SQL) | **Active & Verified** | Failed sync jobs record payload, deterministic ID, sanitized code, and next retry timestamp without leaking PII or raw stacks. |
+| **Reverse Sync Function** | `sync-to-firestore` Edge Function | **Active & Verified** | Supabase database webhook triggers reverse sync to Firestore REST API with optimistic concurrency (`updateTime`), terminal-state protection, and PII-free dead-lettering. |
 | **Data Parity Auditor** | `check_sync_parity.js` | **Active & Verified** | Script compares record counts, primary keys, and data hashes across Firestore collections and PostgreSQL tables to detect drift. |
 
 ---
@@ -150,7 +150,7 @@ Step 5: Release Staged Rollout via Play Console ► In Publishing Overview, clic
 Step 6: Live Smoke Test on Physical Devices ─► Verify real SMS OTP, slot booking, prescriptions, & record upload
        │
        ▼ [02:45 AM IST] (T+1h15m)
-Step 7: Launch Bidirectional Sync Bridge ────► Start Cloud Run / background worker: supabase_to_firestore_worker.js
+Step 7: Verify Reverse Sync Edge Function ────► Check sync-to-firestore Edge Function health & webhook delivery
        │
        ▼ [03:00 AM IST] (T+1h30m)
 Step 8: Restore Normal Firestore Rules ──────► firebase deploy --only firestore:rules (Re-enable doctor writes)
@@ -170,7 +170,7 @@ Step 9: Declare Cutover Window Complete ─────► Hand off to 24-hour S
 | **02:05 AM** | **Step 4 (T+35m)** | Activate Supabase Writes | `GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;`<br>`UPDATE system_config SET config_value = '{"status":"active","allow_writes":true}'::jsonb WHERE config_key = 'patient_module_status';` | Supabase accepts patient authenticated writes; `PatientWriteGuard.isMaintenanceActive()` returns `false`. |
 | **02:10 AM** | **Step 5 (T+40m)** | Release Staged Rollout | In Google Play Console $\rightarrow$ **Publishing overview**, click **Publish changes**. | Release v1.1.0 immediately enters rollout to 10% bucket with zero review delay. |
 | **02:15 AM** | **Step 6 (T+45m)** | Live Physical Smoke Test | Test on 2 physical Android devices (installed via Play Store Internal Testing track or 10% rollout) | Real MSG91 OTP delivery $\ge 98.5\%$; appointment booked in Supabase; prescription readable; record upload succeeds. |
-| **02:45 AM** | **Step 7 (T+1h15m)** | Launch Sync Worker | Start `scripts/supabase_to_firestore_worker.js` (Cloud Run / daemon) | Worker processes newly created test appointment and replicates to Firestore within 2.5s. |
+| **02:45 AM** | **Step 7 (T+1h15m)** | Verify Reverse Sync | Test appointment in Supabase | `sync-to-firestore` processes newly created test appointment and replicates to Firestore within 2.5s. |
 | **03:00 AM** | **Step 8 (T+1h30m)** | Restore Firestore Rules | `firebase deploy --only firestore:rules` *(production rules)* | Doctor, Pharmacy, and Lab apps resume write capability without disruption. |
 | **03:30 AM** | **Step 9 (T+2h00m)** | Cutover Hand-off | Verify `sync_dlq` table is empty (`SELECT count(*) FROM sync_dlq;` = 0) | System handed off to 24-hour Stage 1 monitoring team. |
 
@@ -189,7 +189,7 @@ Step 9: Declare Cutover Window Complete ─────► Hand off to 24-hour S
 | **Sev-1 (Critical)** | MSG91 SMS OTP delivery rate $< 90\%$ on test numbers over 15 minutes | **ABORT & ROLLBACK** | Halts patient login. Execute Emergency Rollback Protocol (Section 5). |
 | **Sev-1 (Critical)** | Sync worker fails to replicate patient bookings to Firestore within 30s | **ABORT & ROLLBACK** | Prevents doctor visibility blackout. Execute Emergency Rollback Protocol (Section 5). |
 | **Sev-1 (Critical)** | v1.1.0 crash loop ($> 1\%$ crash rate) reported in Crashlytics within 30 min | **ABORT & ROLLBACK** | Halt Google Play rollout; execute Emergency Rollback Protocol (Section 5). |
-| **Sev-2 (Moderate)** | Isolated sync failure caught by `sync_dlq` and scheduled for retry | **KEEP GOING** | Investigate DLQ payload; trigger manual re-drive via `supabase_to_firestore_worker.js`. |
+| **Sev-2 (Moderate)** | Isolated sync failure caught by `syncDeadLetters` / `sync_dlq` | **KEEP GOING** | Investigate DLQ payload; re-drive from system of record. |
 | **Sev-3 (Low)** | Minor UI styling/overflow glitch on non-critical secondary screens | **KEEP GOING** | Log ticket for next hotfix build (v1.1.1); does not block cutover. |
 
 ---

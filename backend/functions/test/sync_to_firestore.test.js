@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs');
 
 // Dynamically import the ES module under test
 async function loadEdgeFunction() {
@@ -2361,7 +2362,7 @@ test('Cancellation: patient-cancel UPDATE writes doctorStatus cancelled and canc
       record: {
         appointment_id: 'apt-pat-cancel-1',
         patient_status: 'cancelled',
-        cancellation_reason: 'Patient unwell',
+        cancellation_reason: 'Patient emergency - unable to attend',
         doctor_status: 'confirmed',
         sync_origin: 'patient_supabase',
       },
@@ -2385,9 +2386,14 @@ test('Cancellation: patient-cancel UPDATE writes doctorStatus cancelled and canc
   const body = await res.json();
   assert.equal(body.success, true);
   assert.equal(writeCalled, true, 'Writer must be called');
-  assert.equal(writtenData.doctorStatus, 'cancelled', 'Must write doctorStatus cancelled');
-  assert.equal(writtenData.cancellationReason, 'Patient unwell', 'Must write cancellationReason');
-  assert.equal(writtenData.syncedBy, 'supabase_bridge');
+
+  // Verify against shared JSON fixture read by Dart contract test
+  const expectedFixture = JSON.parse(
+    fs.readFileSync(path.join(__dirname, 'fixtures/cancel_bridge_output.json'), 'utf8')
+  );
+  assert.equal(writtenData.doctorStatus, expectedFixture.doctorStatus);
+  assert.equal(writtenData.cancellationReason, expectedFixture.cancellationReason);
+  assert.equal(writtenData.syncedBy, expectedFixture.syncedBy);
   assert.equal(writtenData.patientStatus, undefined, 'Must NOT write patientStatus to Firestore');
   assert.equal(capturedPrecondition, '2026-10-15T09:30:00Z', 'Must enforce updateTime precondition');
 });
@@ -2510,6 +2516,112 @@ test('Loop Prevention: sync_origin patient_supabase with synced_by firestore_clo
   assert.equal(writeCalled, true, 'Writer must be invoked for patient_supabase write');
   assert.equal(writtenData.doctorStatus, 'cancelled');
   assert.equal(writtenData.syncedBy, 'supabase_bridge');
+});
+
+test('Cancellation: patient-cancel UPDATE with null/missing reason writes doctorStatus cancelled and omits cancellationReason', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  let writeCalled = false;
+  let writtenData = null;
+
+  const mockWriter = async (id, data) => {
+    writeCalled = true;
+    writtenData = data;
+  };
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'sec-cancel-test',
+    },
+    body: JSON.stringify({
+      type: 'UPDATE',
+      table: 'appointments',
+      schema: 'public',
+      old_record: {
+        appointment_id: 'apt-pat-cancel-no-reason',
+        patient_status: 'confirmed',
+        doctor_status: 'confirmed',
+        cancellation_reason: null,
+      },
+      record: {
+        appointment_id: 'apt-pat-cancel-no-reason',
+        patient_status: 'cancelled',
+        cancellation_reason: null,
+        doctor_status: 'confirmed',
+        sync_origin: 'patient_supabase',
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'sec-cancel-test',
+    firestoreWriter: mockWriter,
+    firestoreReader: async (id) => ({
+      name: `projects/demo/databases/(default)/documents/appointments/${id}`,
+      updateTime: '2026-10-15T09:30:00Z',
+      fields: {
+        doctorStatus: { stringValue: 'confirmed' },
+        patientStatus: { stringValue: 'confirmed' },
+      },
+    }),
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.success, true);
+  assert.equal(writeCalled, true);
+  // Exactly what Firestore receives:
+  assert.equal(writtenData.doctorStatus, 'cancelled');
+  assert.equal(writtenData.syncedBy, 'supabase_bridge');
+  assert.equal(writtenData.cancellationReason, undefined, 'cancellationReason must not be set when reason is null');
+  assert.equal(writtenData.patientStatus, undefined);
+});
+
+test('Loop Prevention: Forward-sync written row (sync_origin: patient_firestore, synced_by: firestore_cloud_function) is dropped', async () => {
+  const edgeModule = await import('../../supabase/functions/sync-to-firestore/index.ts');
+  const { handleSyncToFirestore } = edgeModule;
+
+  let writeCalled = false;
+
+  const mockWriter = async () => {
+    writeCalled = true;
+  };
+
+  const req = new Request('https://edge.supabase.com/sync-to-firestore', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-webhook-secret': 'sec-forward-sync-test',
+    },
+    body: JSON.stringify({
+      type: 'INSERT',
+      table: 'appointments',
+      schema: 'public',
+      record: {
+        appointment_id: 'apt-fwd-sync-1',
+        doctor_id: 'doc-1',
+        patient_id: 'pat-1',
+        doctor_name: 'Dr. Test',
+        patient_name: 'Patient Test',
+        sync_origin: 'patient_firestore',
+        synced_by: 'firestore_cloud_function',
+      },
+    }),
+  });
+
+  const res = await handleSyncToFirestore(req, {
+    expectedSecret: 'sec-forward-sync-test',
+    firestoreWriter: mockWriter,
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ignored, true);
+  assert.match(body.reason, /Loop prevented/);
+  assert.equal(writeCalled, false, 'Writer must NEVER be called for forward-sync-written row');
 });
 
 

@@ -117,7 +117,9 @@ class DoctorNectAppointmentRecord {
   final String? slotShareReason;
   final bool wasRescheduled;
 
-  bool get isCancelled => cancellationReason != null;
+  bool get isCancelled =>
+      doctorStatus == AppointmentStatus.cancelled ||
+      (cancellationReason != null && cancellationReason!.trim().isNotEmpty);
 
   DoctorNectAppointmentRecord copyWith({
     DateTime? dateTime,
