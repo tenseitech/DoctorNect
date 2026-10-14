@@ -935,7 +935,9 @@ class _PatientAppointmentDetailScreen extends StatelessWidget {
     return appointment;
   }
 
-  bool _isCancelled(PatientAppointment a) => a.cancellationReason != null;
+  bool _isCancelled(PatientAppointment a) =>
+      a.doctorStatus == AppointmentStatus.cancelled ||
+      (a.cancellationReason != null && a.cancellationReason!.trim().isNotEmpty);
 
   bool _isUpcoming(PatientAppointment a) =>
       !_isCancelled(a) &&

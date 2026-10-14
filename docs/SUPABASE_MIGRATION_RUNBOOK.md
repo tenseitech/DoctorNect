@@ -143,6 +143,8 @@ To support live reverse synchronization of appointment status updates, cancellat
 
 #### Event Semantics & Loop Prevention:
 1. **Loop Prevention Filter**: Any `INSERT` or `UPDATE` where `sync_origin` indicates Firestore origin (`doctor_firestore`, `patient_firestore`, `reconciler_bot`, `firestore_cloud_function`, `firestore`) or was replicated by `synced_by` (`supabase_bridge`, `firestore_cloud_function`, `reconciler_bot`) is dropped with HTTP `200 { ignored: true }`. However, mutations authored in Supabase (`sync_origin = 'patient_supabase'` or `'doctor_supabase'`) are never dropped simply because `synced_by` holds a previous replication marker.
+   > [!IMPORTANT]
+   > **Manual or Support-Tool Updates**: Any manual SQL or support-tool `UPDATE` on `public.appointments` must explicitly set `sync_origin = 'patient_supabase'`, otherwise rows originally created by the forward sync (which hold `sync_origin = 'patient_firestore'` or `synced_by = 'firestore_cloud_function'`) will be evaluated as loop traffic and dropped by the `sync-to-firestore` Edge Function.
 2. **`INSERT` Handling (Create-Only Guard)**:
    - When an appointment is inserted into Supabase, `sync-to-firestore` maps the row into a full Firestore appointment document matching the `bookAppointment` and `AppointmentFirestoreMapper` contract and injects `syncedBy: 'supabase_bridge'`.
    - The write enforces precondition `currentDocument.exists = false`.    - If the document already exists in Firestore (e.g. from client-side dual-write), Firestore reports `ALREADY_EXISTS` (unverified, see verification procedure). The Edge Function catches this and returns `200 { ignored: 'already_exists' }`, guaranteeing it **never overwrites** an existing document on `INSERT`.

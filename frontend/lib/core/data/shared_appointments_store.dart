@@ -1278,6 +1278,7 @@ class SharedAppointmentsStore extends ChangeNotifier {
       labReports: r.labReports,
       clinicalNotes: r.clinicalNotes,
       reasonForVisit: r.chiefComplaintsLabel,
+      doctorStatus: r.doctorStatus,
     );
   }
 

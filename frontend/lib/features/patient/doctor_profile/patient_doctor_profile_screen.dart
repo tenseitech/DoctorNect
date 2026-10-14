@@ -77,7 +77,7 @@ class _PatientDoctorProfileScreenState extends State<PatientDoctorProfileScreen>
   PatientAppointment? _reviewableVisit() {
     for (final a in SharedAppointmentsStore.instance.patientAppointments()) {
       if (a.doctorId != widget.doctorId) continue;
-      if (a.cancellationReason != null) continue;
+      if (a.isCancelled) continue;
       if (a.hasReview) continue;
       if (a.dateTime.isBefore(
         DateTime.now().subtract(const Duration(hours: 1)),

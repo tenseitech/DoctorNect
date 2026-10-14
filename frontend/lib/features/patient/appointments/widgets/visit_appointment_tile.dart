@@ -183,7 +183,7 @@ class _VisitAppointmentTileState extends State<VisitAppointmentTile> {
   }
 
   ({String label, Color color}) _statusStyle(PatientAppointment appointment) {
-    if (appointment.cancellationReason != null) {
+    if (appointment.isCancelled) {
       return (label: 'Cancelled', color: const Color(0xFFDC2626));
     }
     if (appointment.status == PatientBookingStatus.confirmed) {
