@@ -1966,6 +1966,37 @@ const {
 
 const SYNC_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 
+const { getAuth } = require('firebase-admin/auth');
+
+/**
+ * Propagates user role into Firebase Auth custom claims
+ * (role="authenticated", app_role="...", user_role="...") whenever
+ * users/{uid} is created or updated. Ensures all signup paths
+ * (email/password, OAuth, OTP) maintain claims for Supabase Third-Party Auth.
+ */
+exports.syncUserClaimsOnProfileWrite = onDocumentWritten(
+  {
+    document: 'users/{uid}',
+    region: FIRESTORE_TRIGGER_REGION,
+  },
+  async (event) => {
+    const snap = event.data?.after;
+    if (!snap || !snap.exists) return;
+    const data = snap.data() || {};
+    const uid = event.params.uid;
+    const role = data.role;
+    if (!uid || !role) return;
+
+    try {
+      const claims = supabaseCompatibleCustomClaims(role);
+      await getAuth().setCustomUserClaims(uid, claims);
+      console.info(`[syncUserClaimsOnProfileWrite] Synced claims for user ${uid} (role: ${role})`);
+    } catch (err) {
+      console.error(`[syncUserClaimsOnProfileWrite] Failed to set claims for user ${uid}:`, err?.message || err);
+    }
+  }
+);
+
 if (ENABLE_SUPABASE_SYNC) {
 exports.syncUserToSupabase = onDocumentWritten({
   document: 'users/{uid}',
@@ -2117,3 +2148,120 @@ exports.syncAmbulanceInviteToSupabase = onDocumentWritten({
   secrets: SYNC_SECRETS,
 }, syncFirestoreAmbulanceInviteToSupabase);
 }
+
+/**
+ * HTTPS webhook endpoint receiving database events from Supabase.
+ * Verifies shared secret in header `x-supabase-webhook-secret` against SUPABASE_WEBHOOK_SECRET.
+ * Dispatches FCM push notifications for appointments and referrals.
+ */
+exports.supabaseDatabaseWebhook = onRequest(
+  {
+    region: FIRESTORE_TRIGGER_REGION,
+    secrets: ['SUPABASE_WEBHOOK_SECRET'],
+  },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const providedSecret = req.headers['x-supabase-webhook-secret'];
+    const expectedSecret = process.env.SUPABASE_WEBHOOK_SECRET;
+
+    if (!expectedSecret || !providedSecret || providedSecret !== expectedSecret) {
+      console.warn('[supabaseDatabaseWebhook] Unauthorized webhook request: missing or invalid secret');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const payload = req.body;
+    if (!payload || typeof payload !== 'object') {
+      return res.status(400).json({ error: 'Invalid payload' });
+    }
+
+    const { type, table, record, old_record: oldRecord } = payload;
+    const db = getFirestore();
+
+    try {
+      if (table === 'appointments') {
+        if (type === 'INSERT' && record) {
+          const doctorId = record.doctor_id;
+          const patientName = String(record.patient_name || 'Patient').trim();
+          const appointmentId = record.appointment_id;
+
+          if (doctorId) {
+            await sendFcmIfTokenExists(db, {
+              collection: 'doctors',
+              docId: doctorId,
+              title: 'New Appointment Booked',
+              body: `${patientName} booked an appointment for ${record.slot_label || 'upcoming slot'}.`,
+              data: {
+                type: 'appointment_new',
+                appointmentId: String(appointmentId),
+                patientName,
+                doctorTrigger: 'newAppointmentBooked',
+              },
+              androidChannelId: 'doctor_appointments',
+              logLabel: `doctor ${doctorId} supabase appointment ${appointmentId}`,
+            });
+          }
+        } else if (type === 'UPDATE' && record && oldRecord) {
+          if (record.doctor_status !== oldRecord.doctor_status) {
+            const patientId = record.patient_id;
+            const doctorName = String(record.doctor_name || 'Doctor').trim();
+            const appointmentId = record.appointment_id;
+            const status = record.doctor_status === 'confirmed' ? 'confirmed' : 'cancelled';
+            const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Declined';
+            const body = status === 'confirmed'
+              ? `Dr. ${doctorName} confirmed your appointment.`
+              : `Dr. ${doctorName} could not accept your appointment.`;
+
+            if (patientId) {
+              await sendFcmIfTokenExists(db, {
+                collection: 'patients',
+                docId: patientId,
+                title,
+                body,
+                data: {
+                  type: 'appointment_status_update',
+                  appointmentId: String(appointmentId),
+                  status,
+                  doctorName,
+                  patientTrigger: status === 'confirmed' ? 'appointmentConfirmedByDoctor' : 'appointmentDeclinedByDoctor',
+                },
+                androidChannelId: 'patient_appointments',
+                logLabel: `patient ${patientId} supabase appointment ${appointmentId}`,
+              });
+            }
+          }
+        }
+      } else if (table === 'referrals') {
+        if (type === 'INSERT' && record) {
+          const toDoctorId = record.to_doctor_id;
+          const referringDoctor = String(record.from_doctor_name || 'A doctor').trim();
+          const referralId = record.referral_id;
+
+          if (toDoctorId) {
+            await sendFcmIfTokenExists(db, {
+              collection: 'doctors',
+              docId: toDoctorId,
+              title: 'New Patient Referral',
+              body: `${referringDoctor} referred a patient to you.`,
+              data: {
+                type: 'referral_received',
+                referralId: String(referralId),
+                doctorTrigger: 'patientReferredToMe',
+              },
+              androidChannelId: 'doctor_appointments',
+              logLabel: `doctor ${toDoctorId} supabase referral ${referralId}`,
+            });
+          }
+        }
+      }
+
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('[supabaseDatabaseWebhook] Error processing webhook event:', err?.message || err);
+      return res.status(500).json({ error: 'Internal processing error' });
+    }
+  }
+);
+

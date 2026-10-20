@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../../features/patient/data/registered_doctors_store.dart';
 import '../../../features/patient/doctor_profile/models/doctor_profile_detail.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_review_repository.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../firestore_read_helper.dart';
@@ -19,6 +21,12 @@ class ReviewRepository {
     required String patientId,
     required String doctorId,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance.fetchReviewForPatientAndDoctor(
+        patientId: patientId,
+        doctorId: doctorId,
+      );
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty || doctorId.isEmpty) {
       return null;
     }
@@ -63,6 +71,10 @@ class ReviewRepository {
   /// Recalculates local cache only — doctor rating aggregates are updated by
   /// Cloud Functions (Admin SDK). Clients must not write doctors.rating.
   Future<void> recalculateDoctorRating(String doctorId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance
+          .recalculateDoctorRating(doctorId);
+    }
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return;
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -104,6 +116,16 @@ class ReviewRepository {
     required String comment,
     required String patientName,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance.submitReview(
+        patientId: patientId,
+        doctorId: doctorId,
+        appointmentId: appointmentId,
+        rating: rating,
+        comment: comment,
+        patientName: patientName,
+      );
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty || doctorId.isEmpty) {
       return null;
     }
@@ -157,6 +179,14 @@ class ReviewRepository {
     required int rating,
     required String comment,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance.updateReview(
+        reviewId: reviewId,
+        patientId: patientId,
+        rating: rating,
+        comment: comment,
+      );
+    }
     if (!FirebaseBootstrap.isReady || reviewId.isEmpty || patientId.isEmpty) {
       return false;
     }
@@ -198,6 +228,12 @@ class ReviewRepository {
     required String appointmentId,
     required String patientId,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance.findReviewIdForAppointment(
+        appointmentId: appointmentId,
+        patientId: patientId,
+      );
+    }
     if (!FirebaseBootstrap.isReady ||
         appointmentId.isEmpty ||
         patientId.isEmpty) {
@@ -226,6 +262,9 @@ class ReviewRepository {
   }
 
   Future<PatientDoctorReview?> fetchReview(String reviewId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance.fetchReview(reviewId);
+    }
     if (!FirebaseBootstrap.isReady || reviewId.isEmpty) return null;
     try {
       final docRef = FirebaseFirestore.instance
@@ -245,6 +284,10 @@ class ReviewRepository {
     String doctorId, {
     int limit = 50,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance
+          .fetchForDoctor(doctorId, limit: limit);
+    }
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return const [];
 
     try {
@@ -316,6 +359,12 @@ class ReviewRepository {
     required String reviewId,
     required String patientId,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance.toggleHelpfulVote(
+        reviewId: reviewId,
+        patientId: patientId,
+      );
+    }
     if (!FirebaseBootstrap.isReady || reviewId.isEmpty || patientId.isEmpty) {
       return null;
     }
@@ -356,6 +405,12 @@ class ReviewRepository {
     required String patientId,
     required List<String> reviewIds,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReviewRepository.instance.likedReviewIdsForPatient(
+        patientId: patientId,
+        reviewIds: reviewIds,
+      );
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty || reviewIds.isEmpty) {
       return const {};
     }

@@ -26,8 +26,11 @@ abstract final class SupabaseBootstrap {
   static Future<String?> Function()? debugAccessTokenOverride;
 
   /// Firebase ID token for Supabase third-party auth (`accessToken`).
+  /// Pass [forceRefresh] = true to force Firebase to mint a fresh token (e.g. after custom claim updates).
   /// Returns null when Firebase has no signed-in user.
-  static Future<String?> currentFirebaseAccessToken() async {
+  static Future<String?> currentFirebaseAccessToken({
+    bool forceRefresh = false,
+  }) async {
     if (debugAccessTokenOverride != null) {
       return debugAccessTokenOverride!();
     }
@@ -35,10 +38,45 @@ abstract final class SupabaseBootstrap {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
     try {
-      return await user.getIdToken();
+      return await user.getIdToken(forceRefresh);
     } catch (_) {
       return null;
     }
+  }
+
+  /// Explicitly forces a token refresh via `getIdToken(true)` and verifies that
+  /// the token carries the mandatory Supabase third-party auth claim `role: "authenticated"`.
+  /// Throws [MissingSupabaseClaimException] if missing, preventing silent empty query results.
+  static Future<String?> refreshAndVerifySession({bool forceRefresh = true}) async {
+    if (debugAccessTokenOverride != null) {
+      return debugAccessTokenOverride!();
+    }
+    if (Firebase.apps.isEmpty) return null;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final tokenResult = await user.getIdTokenResult(forceRefresh);
+    final role = tokenResult.claims?['role'];
+    if (role != 'authenticated') {
+      throw MissingSupabaseClaimException(
+        'Firebase ID token for UID "${user.uid}" is missing custom claim role="authenticated". '
+        'Ensure backend claims backfill or syncUserClaimsOnProfileWrite has run.',
+      );
+    }
+
+    final token = tokenResult.token;
+    if (token != null && token.isNotEmpty && isReady) {
+      try {
+        client.realtime.setAuth(token);
+      } catch (_) {}
+    }
+    return token;
+  }
+
+  /// Explicitly refreshes the Firebase ID token and returns the new token,
+  /// ensuring Supabase PostgREST and Realtime have access to freshly minted custom claims.
+  static Future<String?> refreshSession() async {
+    return refreshAndVerifySession(forceRefresh: true);
   }
 
   static bool get isSupabaseAuthEnabled =>
@@ -171,6 +209,35 @@ abstract final class SupabaseBootstrap {
       );
 
       isReady = true;
+
+      // Ensure Realtime WebSocket connection is authenticated with initial token
+      final initialToken = await currentFirebaseAccessToken();
+      if (initialToken != null && initialToken.isNotEmpty) {
+        try {
+          client.realtime.setAuth(initialToken);
+        } catch (_) {}
+      }
+
+      // Automatically sync Realtime auth state on re-login or ID token refresh
+      if (Firebase.apps.isNotEmpty) {
+        FirebaseAuth.instance.idTokenChanges().listen((user) async {
+          if (user != null && isReady) {
+            try {
+              final token = await user.getIdToken();
+              if (token != null && token.isNotEmpty) {
+                client.realtime.setAuth(token);
+              }
+            } catch (e) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[SupabaseBootstrap] Failed to set realtime auth on token change: $e',
+                );
+              }
+            }
+          }
+        });
+      }
+
       if (kDebugMode) {
         debugPrint(
           '[SupabaseBootstrap] Supabase initialized successfully on ${defaultTargetPlatform.name}',
@@ -187,3 +254,14 @@ abstract final class SupabaseBootstrap {
     }
   }
 }
+
+/// Thrown when a Firebase ID token lacks the required Supabase third-party custom claim (`role: "authenticated"`).
+class MissingSupabaseClaimException implements Exception {
+  const MissingSupabaseClaimException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'MissingSupabaseClaimException: $message';
+}
+

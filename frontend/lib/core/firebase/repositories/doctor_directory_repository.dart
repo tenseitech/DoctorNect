@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../features/patient/models/patient_models.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../location/location_match.dart';
+import '../../supabase/repositories/supabase_doctor_repository.dart';
 import '../firestore_paths.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_query_limits.dart';
 import '../firestore_read_helper.dart';
-import '../../location/location_match.dart';
 
 class DoctorDirectoryRepository {
   DoctorDirectoryRepository._();
@@ -21,6 +23,10 @@ class DoctorDirectoryRepository {
   Future<List<DoctorListing>> fetchAllDoctors({
     bool verifiedOnly = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseDoctorRepository.instance
+          .fetchAllDoctors(verifiedOnly: verifiedOnly);
+    }
     if (!FirebaseBootstrap.isReady) return const [];
 
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
@@ -42,6 +48,10 @@ class DoctorDirectoryRepository {
 
   /// Real-time stream of all doctors — automatically re-emits on Firestore changes.
   Stream<List<DoctorListing>> streamAllDoctors({bool verifiedOnly = true}) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseDoctorRepository.instance
+          .streamAllDoctors(verifiedOnly: verifiedOnly);
+    }
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
     Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(

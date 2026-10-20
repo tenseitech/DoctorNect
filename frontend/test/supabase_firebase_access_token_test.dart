@@ -15,5 +15,11 @@ void main() {
 
   test('bootstrap access token is null when no override and Firebase is not started', () async {
     expect(await SupabaseBootstrap.currentFirebaseAccessToken(), isNull);
+    expect(await SupabaseBootstrap.refreshSession(), isNull);
+  });
+
+  test('refreshSession delegates to currentFirebaseAccessToken with forceRefresh', () async {
+    SupabaseBootstrap.debugAccessTokenOverride = () async => 'refreshed-firebase-id-token';
+    expect(await SupabaseBootstrap.refreshSession(), 'refreshed-firebase-id-token');
   });
 }

@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
 import '../../data/shared_appointments_store.dart';
+import '../../supabase/repositories/supabase_appointment_repository.dart';
 import '../firestore_paths.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_query_limits.dart';
@@ -18,6 +20,10 @@ class AppointmentRepository {
     DoctorNectAppointmentRecord record, {
     String? patientId,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseAppointmentRepository.instance
+          .save(record, patientId: patientId);
+    }
     if (!FirebaseBootstrap.isReady) return;
 
     // H3 debug-only write failure simulation. kDebugMode is false in release/profile
@@ -69,6 +75,10 @@ class AppointmentRepository {
     String doctorId, {
     bool preferCache = false,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseAppointmentRepository.instance
+          .fetchForDoctor(doctorId, preferCache: preferCache);
+    }
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
@@ -82,6 +92,9 @@ class AppointmentRepository {
 
   /// Real-time appointment stream for the signed-in doctor's queue.
   Stream<List<DoctorNectAppointmentRecord>> watchForDoctor(String doctorId) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseAppointmentRepository.instance.watchForDoctor(doctorId);
+    }
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) {
       return const Stream.empty();
     }
@@ -93,6 +106,9 @@ class AppointmentRepository {
 
   /// Real-time appointment stream for the signed-in patient's bookings.
   Stream<List<DoctorNectAppointmentRecord>> watchForPatient(String patientId) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseAppointmentRepository.instance.watchForPatient(patientId);
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) {
       return const Stream.empty();
     }
@@ -133,6 +149,10 @@ class AppointmentRepository {
     String patientId, {
     bool preferCache = false,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseAppointmentRepository.instance
+          .fetchForPatient(patientId, preferCache: preferCache);
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(

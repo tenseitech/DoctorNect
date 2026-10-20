@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../features/patient/records/data/health_record_file_store.dart';
 import '../../../features/patient/records/models/health_record_models.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_health_records_repository.dart';
+import '../../supabase/repositories/supabase_patient_profile_repository.dart';
 import '../firestore_paths.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_read_helper.dart';
@@ -100,6 +103,10 @@ class PatientProfileRepository {
     String patientId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePatientProfileRepository.instance
+          .fetchPatientDocument(patientId);
+    }
     if (!FirebaseBootstrap.isReady) return null;
     try {
       final snap = await FirestoreReadHelper.getDocument(
@@ -123,6 +130,15 @@ class PatientProfileRepository {
     String? fromDoctorId,
     String? referralId,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePatientProfileRepository.instance.ensureDoctorPatientLink(
+        patientId: patientId,
+        doctorId: doctorId,
+        source: source,
+        fromDoctorId: fromDoctorId,
+        referralId: referralId,
+      );
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty || doctorId.isEmpty)
       return false;
     if (!isRegisteredPatientId(patientId)) return false;
@@ -153,6 +169,13 @@ class PatientProfileRepository {
     required String patientId,
     required String doctorId,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePatientProfileRepository.instance
+          .grantDoctorCareTeamAccess(
+        patientId: patientId,
+        doctorId: doctorId,
+      );
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty || doctorId.isEmpty)
       return false;
     if (isWalkInPatientId(patientId)) return false;
@@ -175,6 +198,10 @@ class PatientProfileRepository {
     String patientId,
     Map<String, dynamic> data,
   ) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePatientProfileRepository.instance
+          .savePatientDocument(patientId, data);
+    }
     if (!FirebaseBootstrap.isReady) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.patients)
@@ -187,6 +214,10 @@ class PatientProfileRepository {
   }
 
   Future<List<HealthRecord>> fetchHealthRecords(String patientId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseHealthRecordsRepository.instance
+          .fetchForPatient(patientId);
+    }
     if (!FirebaseBootstrap.isReady) return const [];
 
     try {
@@ -255,6 +286,10 @@ class PatientProfileRepository {
   }
 
   Future<void> saveHealthRecord(String patientId, HealthRecord record) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseHealthRecordsRepository.instance
+          .save(record, patientId: patientId);
+    }
     if (!FirebaseBootstrap.isReady) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.healthRecords)
@@ -283,6 +318,10 @@ class PatientProfileRepository {
   }
 
   Future<void> deleteHealthRecord(String recordId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseHealthRecordsRepository.instance
+          .delete(recordId, patientId: '');
+    }
     if (!FirebaseBootstrap.isReady || recordId.isEmpty) return;
 
     final ref = FirebaseFirestore.instance

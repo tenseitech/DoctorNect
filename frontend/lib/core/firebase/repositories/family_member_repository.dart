@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../features/patient/profile/models/patient_profile_models.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_family_member_repository.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../firestore_read_helper.dart';
@@ -11,6 +13,9 @@ class FamilyMemberRepository {
   static final FamilyMemberRepository instance = FamilyMemberRepository._();
 
   Future<List<FamilyProfileMember>> fetchForPatient(String patientId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseFamilyMemberRepository.instance.fetchForPatient(patientId);
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
@@ -24,6 +29,10 @@ class FamilyMemberRepository {
   }
 
   Future<void> saveMember(String patientId, FamilyProfileMember member) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseFamilyMemberRepository.instance
+          .saveMember(patientId, member);
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) return;
 
     await FirebaseFirestore.instance
@@ -48,6 +57,9 @@ class FamilyMemberRepository {
   }
 
   Future<void> deleteMember(String memberId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseFamilyMemberRepository.instance.deleteMember(memberId);
+    }
     if (!FirebaseBootstrap.isReady || memberId.isEmpty) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.familyMembers)

@@ -5,8 +5,10 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../../core/firebase/firebase_bootstrap.dart';
 import '../../../../core/firebase/firestore_paths.dart';
+import '../../../../core/supabase/repositories/supabase_patient_profile_repository.dart';
 import '../../../../core/supabase/supabase_bootstrap.dart';
 import '../../../../core/supabase/supabase_patient_repository.dart';
 import '../../../../core/notifications/in_app_notification_service.dart';
@@ -73,8 +75,7 @@ class PatientProfileMock {
   static String? _notificationPrefsLoadedForPatientId;
   static Future<void>? _notificationPrefsLoadFuture;
 
-  static StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-      _patientSub;
+  static StreamSubscription<dynamic>? _patientSub;
 
   static void reset() {
     _patientSub?.cancel();
@@ -136,8 +137,42 @@ class PatientProfileMock {
   }
 
   static void listenToPatientDocument(String patientId) {
-    if (patientId.isEmpty || !FirebaseBootstrap.isReady) return;
+    if (patientId.isEmpty) return;
     _patientSub?.cancel();
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      _patientSub = SupabasePatientProfileRepository.instance
+          .watchPatientDocument(patientId)
+          .listen((data) {
+        if (data == null) return;
+        _applyFromSupabase(data);
+        final url =
+            (data['photo_url'] as String?) ?? (data['photoUrl'] as String?);
+        final key =
+            (data['photo_key'] as String?) ?? (data['photoKey'] as String?);
+        final storage = (data['photo_storage'] as String?) ??
+            (data['photoStorage'] as String?);
+        bool changed = false;
+        if (url != profile.photoUrl) {
+          profile.photoUrl = url;
+          changed = true;
+        }
+        if (key != profile.photoKey) {
+          profile.photoKey = key;
+          changed = true;
+        }
+        if (storage != profile.photoStorage) {
+          profile.photoStorage = storage;
+          changed = true;
+        }
+        if (changed) {
+          notifyProfileUpdated();
+        }
+      });
+      return;
+    }
+
+    if (!FirebaseBootstrap.isReady) return;
     _patientSub = FirebaseFirestore.instance
         .collection(FirestorePaths.patients)
         .doc(patientId)

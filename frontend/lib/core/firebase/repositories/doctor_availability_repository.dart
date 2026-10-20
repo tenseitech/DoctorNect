@@ -2,7 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 import '../../../features/patient/booking/models/booking_models.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
 import '../../data/shared_appointments_store.dart';
+import '../../supabase/repositories/supabase_doctor_availability_repository.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../firestore_read_helper.dart';
@@ -21,6 +23,10 @@ class DoctorAvailabilityRepository {
     String doctorId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseDoctorAvailabilityRepository.instance
+          .fetch(doctorId, preferCache: preferCache);
+    }
     if (!FirebaseBootstrap.isReady) return null;
 
     final snap = await FirestoreReadHelper.getDocument(
@@ -34,6 +40,10 @@ class DoctorAvailabilityRepository {
   }
 
   Future<void> save(String doctorId, DoctorAvailability schedule) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseDoctorAvailabilityRepository.instance
+          .save(doctorId, schedule);
+    }
     if (!FirebaseBootstrap.isReady) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.doctorAvailability)

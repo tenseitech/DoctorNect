@@ -553,6 +553,50 @@ test('super admin allowlisted email with email_verified=false is denied admin by
   );
 });
 
+test('claim-based admin bypass allows download regardless of non-allowlisted email when email_verified=true', async () => {
+  const db = createMockDb({
+    users: {
+      uid_claim_admin: { role: 'admin', profileId: 'adm_001' },
+    },
+  });
+
+  const auth = {
+    uid: 'uid_claim_admin',
+    token: {
+      email: 'custom_ops_staff@external-domain.org',
+      email_verified: true,
+      user_role: 'admin',
+    },
+  };
+  const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+});
+
+test('claim-based admin bypass is denied when email_verified=false', async () => {
+  const db = createMockDb({
+    users: {
+      uid_claim_unverified: { role: 'admin', profileId: 'adm_002' },
+    },
+  });
+
+  const auth = {
+    uid: 'uid_claim_unverified',
+    token: {
+      email: 'custom_ops_staff@external-domain.org',
+      email_verified: false,
+      user_role: 'admin',
+    },
+  };
+  const data = { objectKey: 'health_records/p_99/hr_99/secret.pdf' };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
+});
+
 // ----------------------------------------------------------------------------
 // 5. BATCH DOWNLOAD (getS3DownloadUrls)
 // ----------------------------------------------------------------------------

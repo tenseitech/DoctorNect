@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../../auth/demo_auth_config.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_doctor_repository.dart';
 import 'doctor_account_repository.dart';
 
 /// Real-time doctor admin-approval status for the verification gate.
@@ -47,6 +49,12 @@ class DoctorVerificationRepository {
       return debugWatchVerifiedOverride!(doctorId);
     }
 
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseDoctorRepository.instance
+          .watchDoctor(doctorId)
+          .map(parseVerifiedFromDoctorData);
+    }
+
     if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
         doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
       return Stream<bool>.value(true);
@@ -67,6 +75,9 @@ class DoctorVerificationRepository {
   }
 
   Future<bool> fetchVerified(String doctorId, {bool preferCache = false}) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseDoctorRepository.instance.isDoctorVerified(doctorId);
+    }
     if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
         doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
       return Future<bool>.value(true);

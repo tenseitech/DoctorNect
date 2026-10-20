@@ -14,6 +14,8 @@ import '../mappers/prescription_firestore_mapper.dart';
 
 import '../models/firestore_page.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_prescription_repository.dart';
 import 'patient_profile_repository.dart';
 
 class PrescriptionRepository {
@@ -26,6 +28,10 @@ class PrescriptionRepository {
     String doctorId, {
     bool isNewRecord = false,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePrescriptionRepository.instance
+          .save(draft, doctorId, isNewRecord: isNewRecord);
+    }
     if (!FirebaseBootstrap.isReady) {
       throw StateError('Firebase is not available.');
     }
@@ -59,6 +65,14 @@ class PrescriptionRepository {
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePrescriptionRepository.instance.fetchForDoctor(
+        doctorId,
+        startAfter: startAfter,
+        limit: limit,
+        preferCache: preferCache,
+      );
+    }
     return _fetchPage(
       FirebaseFirestore.instance
           .collection(FirestorePaths.prescriptions)
@@ -79,6 +93,14 @@ class PrescriptionRepository {
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePrescriptionRepository.instance.fetchForPatient(
+        patientId,
+        startAfter: startAfter,
+        limit: limit,
+        preferCache: preferCache,
+      );
+    }
     return _fetchPage(
       FirebaseFirestore.instance
           .collection(FirestorePaths.prescriptions)
@@ -99,6 +121,14 @@ class PrescriptionRepository {
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePrescriptionRepository.instance.fetchForPatientForDoctor(
+        patientId,
+        startAfter: startAfter,
+        limit: limit,
+        preferCache: preferCache,
+      );
+    }
     if (!await PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
       patientId,
@@ -121,6 +151,14 @@ class PrescriptionRepository {
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePrescriptionRepository.instance.fetchForDoctorAndPatient(
+        doctorId,
+        patientId,
+        limit: limit,
+        preferCache: preferCache,
+      );
+    }
     return _fetchPage(
       FirebaseFirestore.instance
           .collection(FirestorePaths.prescriptions)
@@ -140,6 +178,15 @@ class PrescriptionRepository {
     int limit = FirestoreQueryLimits.prescriptionsPage,
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePrescriptionRepository.instance
+          .fetchForDoctorAndPatientForDoctor(
+        doctorId,
+        patientId,
+        limit: limit,
+        preferCache: preferCache,
+      );
+    }
     if (!await PatientProfileRepository.instance
         .isPatientSharingClinicalDataWithDoctors(
       patientId,

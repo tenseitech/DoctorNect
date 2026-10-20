@@ -2343,9 +2343,15 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
         await ensureRoleFullVerified(db, search.uid, role, search.data?.profileId, { mobile: digits });
       }
     }
+    const claims = supabaseCompatibleCustomClaims(role);
+    try {
+      await getAuth().setCustomUserClaims(search.uid, claims);
+    } catch (claimErr) {
+      console.warn('[verifyUserRegistrationOtp] Failed to set permanent custom claims:', claimErr?.message || claimErr);
+    }
     const customToken = await getAuth().createCustomToken(
       search.uid,
-      supabaseCompatibleCustomClaims(role),
+      claims,
     );
     console.info('[verifyUserRegistrationOtp] Login OTP verified successfully, customToken minted', {
       role,
@@ -2515,6 +2521,17 @@ async function completeAmbulanceMobileOtpLogin(db, data, auth, { clientIp = 'unk
     await db.collection('ambulances').doc(found.id).set({
       authUid: auth.uid,
     }, { merge: true });
+  }
+
+  if (auth?.uid) {
+    try {
+      await getAuth().setCustomUserClaims(
+        auth.uid,
+        supabaseCompatibleCustomClaims('ambulance'),
+      );
+    } catch (claimErr) {
+      console.warn('[completeAmbulanceMobileOtpLogin] Failed to set custom claims:', claimErr?.message || claimErr);
+    }
   }
 
   const username = String(found.data.username || '').trim().toLowerCase();
@@ -3108,9 +3125,15 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     }
   }
 
+  const claims = supabaseCompatibleCustomClaims(role, { loginMethod: 'mobile_otp' });
+  try {
+    await getAuth().setCustomUserClaims(authUid, claims);
+  } catch (claimErr) {
+    console.warn('[completeMobileOtpLogin] Failed to set permanent custom claims:', claimErr?.message || claimErr);
+  }
   const customToken = await getAuth().createCustomToken(
     authUid,
-    supabaseCompatibleCustomClaims(role, { loginMethod: 'mobile_otp' }),
+    claims,
   );
   return { ok: true, customToken, uid: authUid };
 }
@@ -3209,12 +3232,16 @@ async function lookupMobileRegistration(db, data) {
  * users/{uid}.role, not this claim.
  */
 function supabaseCompatibleCustomClaims(appRole, extra) {
-  const normalized = (appRole === 'superAdmin' || appRole === 'super_admin')
-    ? 'super_admin'
-    : appRole;
+  let normalized = appRole;
+  if (appRole === 'superAdmin' || appRole === 'super_admin' || appRole === 'admin') {
+    normalized = 'super_admin';
+  } else if (appRole === 'medicalStore' || appRole === 'medical') {
+    normalized = 'pharmacy';
+  }
   return {
     role: 'authenticated',
     app_role: normalized,
+    user_role: normalized,
     ...(extra || {}),
   };
 }

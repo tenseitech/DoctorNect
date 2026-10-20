@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_referral_repository.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../firestore_query_limits.dart';
@@ -15,6 +17,9 @@ class ReferralRepository {
   static final ReferralRepository instance = ReferralRepository._();
 
   Future<void> save(DoctorReferral referral) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReferralRepository.instance.save(referral);
+    }
     if (!FirebaseBootstrap.isReady) return;
 
     await FirebaseFirestore.instance
@@ -51,6 +56,10 @@ class ReferralRepository {
     String referralId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReferralRepository.instance
+          .fetchById(referralId, preferCache: preferCache);
+    }
     if (!FirebaseBootstrap.isReady || referralId.isEmpty) return null;
 
     try {
@@ -72,6 +81,10 @@ class ReferralRepository {
     String doctorId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReferralRepository.instance
+          .fetchSentByDoctor(doctorId, preferCache: preferCache);
+    }
     return _fetchForDoctorField(
       field: 'fromDoctorId',
       doctorId: doctorId,
@@ -83,6 +96,10 @@ class ReferralRepository {
     String doctorId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseReferralRepository.instance
+          .fetchReceivedByDoctor(doctorId, preferCache: preferCache);
+    }
     return _fetchForDoctorField(
       field: 'toDoctorId',
       doctorId: doctorId,

@@ -145,4 +145,55 @@ abstract final class AppointmentSupabaseMapper {
       return null;
     }
   }
+
+  /// Maps a [DoctorNectAppointmentRecord] to a PostgreSQL row for table `public.appointments`.
+  static Map<String, dynamic> toRow(
+    DoctorNectAppointmentRecord record, {
+    String? patientId,
+  }) {
+    final resolvedPatientId = patientId ?? record.patientId ?? '';
+    return <String, dynamic>{
+      'appointment_id': record.id,
+      'doctor_id': record.doctorId,
+      'patient_id': resolvedPatientId,
+      'doctor_name': record.doctorName,
+      'specialization': record.specialization,
+      'patient_name': record.patientName,
+      'patient_age': record.patientAge,
+      'patient_gender': record.patientGender,
+      'date_time': record.dateTime.toIso8601String(),
+      'slot_label': record.slotLabel,
+      'token_number': record.tokenNumber,
+      'visit_type': record.visitType.name,
+      'patient_status': record.patientStatus.name,
+      'doctor_status': record.doctorStatus.name,
+      if (record.clinicName != null) 'clinic_name': record.clinicName,
+      if (record.clinicAddress != null) 'clinic_address': record.clinicAddress,
+      if (record.mapsUrl != null) 'maps_url': record.mapsUrl,
+      if (record.cancellationReason != null)
+        'cancellation_reason': record.cancellationReason,
+      if (record.diagnosis != null) 'diagnosis': record.diagnosis,
+      'has_prescription': record.hasPrescription,
+      'has_report': record.hasReport,
+      'has_review': record.hasReview,
+      if (record.reviewRating != null) 'review_rating': record.reviewRating,
+      if (record.reviewId != null) 'review_id': record.reviewId,
+      if (record.reviewCreatedAt != null)
+        'review_created_at': record.reviewCreatedAt!.toIso8601String(),
+      'lab_reports': record.labReports,
+      if (record.clinicalNotes != null) 'clinical_notes': record.clinicalNotes,
+      if (record.contactNumber != null) 'contact_number': record.contactNumber,
+      'chief_complaints': record.chiefComplaints,
+      if (record.source != null) 'source': record.source,
+      'symptoms': record.symptoms,
+      'observations': record.observations,
+      if (record.bookedByName != null) 'booked_by_name': record.bookedByName,
+      if (record.patientRelation != null)
+        'patient_relation': record.patientRelation,
+      if (record.slotShareReason != null)
+        'slot_share_reason': record.slotShareReason,
+      'was_rescheduled': record.wasRescheduled,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+  }
 }
