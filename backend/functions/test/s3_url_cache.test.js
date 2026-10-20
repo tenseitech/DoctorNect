@@ -49,6 +49,11 @@ function createMockDb(initialData = {}) {
   return {
     collection(collName) {
       return {
+        async add(data) {
+          const autoId = `auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          store.set(`${collName}/${autoId}`, data);
+          return { id: autoId };
+        },
         doc(docId) {
           const key = `${collName}/${docId}`;
           return {
@@ -59,6 +64,14 @@ function createMockDb(initialData = {}) {
                 exists: data !== undefined,
                 data: () => data || null,
               };
+            },
+            async set(data, options = {}) {
+              if (options.merge) {
+                const existing = store.get(key) || {};
+                store.set(key, { ...existing, ...data });
+              } else {
+                store.set(key, { ...data });
+              }
             },
           };
         },
@@ -143,7 +156,7 @@ test('Flag off -> zero Redis calls on download or upload', async () => {
   const res = await getS3DownloadUrlHandler({ objectKey }, auth, db);
   assert.ok(res.url);
   assert.equal(res.cached, undefined);
-  assert.equal(res.expiresIn, 600);
+  assert.equal(res.expiresIn, 300);
   assert.equal(mockRedis.calls.get.length, 0);
   assert.equal(mockRedis.calls.set.length, 0);
 });

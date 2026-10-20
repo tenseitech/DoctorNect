@@ -1,0 +1,23 @@
+[
+  {
+    "AllowedHeaders": [
+      "*"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "PUT",
+      "HEAD"
+    ],
+    "AllowedOrigins": [
+      "https://doctornect.com",
+      "https://app.doctornect.com",
+      "http://localhost:3000",
+      "http://localhost:5000"
+    ],
+    "ExposeHeaders": [
+      "ETag",
+      "x-amz-server-side-encryption"
+    ],
+    "MaxAgeSeconds": 3000
+  }
+]

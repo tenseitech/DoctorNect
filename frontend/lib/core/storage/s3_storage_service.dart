@@ -74,6 +74,20 @@ class S3StorageService implements StorageService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         onProgress?.call(totalBytes, totalBytes);
+
+        // Confirm upload via backend S3 HeadObject check and persist DB row
+        try {
+          await _api.confirmUpload(
+            objectKey: creds.objectKey,
+            purpose: purpose,
+            recordId: parentId,
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[S3StorageService] confirmUpload notice: $e');
+          }
+        }
+
         return StorageUploadResult(
           objectKey: creds.objectKey,
           downloadUrl: null,
@@ -187,4 +201,16 @@ class S3StorageService implements StorageService {
       return false;
     }
   }
+
+  /// Explicitly confirms direct-to-S3 upload with backend validation.
+  Future<Map<String, dynamic>> confirmUpload({
+    required String objectKey,
+    required String purpose,
+    String? recordId,
+  }) =>
+      _api.confirmUpload(
+        objectKey: objectKey,
+        purpose: purpose,
+        recordId: recordId,
+      );
 }

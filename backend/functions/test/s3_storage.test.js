@@ -9,6 +9,8 @@ const {
   getS3DownloadUrlHandler,
   getS3DownloadUrlsHandler,
   deleteS3ObjectHandler,
+  confirmS3UploadHandler,
+  logStorageAccess,
   setS3ClientForTesting,
   validateContentTypeAndSize,
   extractExtension,
@@ -19,6 +21,7 @@ const {
  */
 function createMockDb(initialData = {}) {
   const store = new Map();
+  const added = [];
 
   for (const [coll, docs] of Object.entries(initialData)) {
     for (const [id, data] of Object.entries(docs)) {
@@ -27,8 +30,17 @@ function createMockDb(initialData = {}) {
   }
 
   return {
+    _store: store,
+    _added: added,
     collection(collName) {
       return {
+        async add(data) {
+          const autoId = `auto_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          const key = `${collName}/${autoId}`;
+          store.set(key, data);
+          added.push({ collection: collName, id: autoId, data });
+          return { id: autoId };
+        },
         doc(docId) {
           const key = `${collName}/${docId}`;
           return {
@@ -39,6 +51,21 @@ function createMockDb(initialData = {}) {
                 exists: data !== undefined,
                 data: () => data || null,
               };
+            },
+            async set(data, options = {}) {
+              if (options.merge) {
+                const existing = store.get(key) || {};
+                store.set(key, { ...existing, ...data });
+              } else {
+                store.set(key, { ...data });
+              }
+            },
+            async update(data) {
+              const existing = store.get(key) || {};
+              store.set(key, { ...existing, ...data });
+            },
+            async delete() {
+              store.delete(key);
             },
           };
         },
@@ -94,7 +121,7 @@ const { S3Client } = require('@aws-sdk/client-s3');
 /**
  * Mock S3 Client with mock credentials for local SigV4 presigning without network calls.
  */
-function createMockS3Client() {
+function createMockS3Client(mockHead = null) {
   const client = new S3Client({
     region: 'ap-south-1',
     credentials: {
@@ -104,7 +131,15 @@ function createMockS3Client() {
     requestChecksumCalculation: 'WHEN_REQUIRED',
     responseChecksumValidation: 'WHEN_REQUIRED',
   });
-  client.send = async () => ({});
+  client.send = async (cmd) => {
+    if (cmd && cmd.constructor && cmd.constructor.name === 'HeadObjectCommand') {
+      if (typeof mockHead === 'function') {
+        return mockHead(cmd);
+      }
+      return mockHead || { ContentType: 'application/pdf', ContentLength: 2048 };
+    }
+    return {};
+  };
   return client;
 }
 
@@ -488,7 +523,7 @@ test('verified doctor with care relationship allowed to download shared record',
   const data = { objectKey: 'health_records/p_1/hr_1/file123.pdf' };
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
-  assert.equal(res.expiresIn, 600);
+  assert.equal(res.expiresIn, 300);
   assert.ok(res.url);
 });
 
@@ -503,7 +538,7 @@ test('patient owner allowed to download their own health record', async () => {
   const data = { objectKey: 'health_records/p_1/hr_1/uuid123.pdf' };
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
-  assert.equal(res.expiresIn, 600);
+  assert.equal(res.expiresIn, 300);
   assert.ok(res.url);
 });
 
@@ -899,7 +934,7 @@ test('patient owner allowed to download lab_order report', async () => {
 
   const res = await getS3DownloadUrlHandler(data, auth, db);
   assert.ok(res.url);
-  assert.equal(res.expiresIn, 600);
+  assert.equal(res.expiresIn, 300);
 });
 
 test('unrelated patient blocked from downloading lab_order report', async () => {
@@ -1028,3 +1063,287 @@ test('wrong lab blocked from deleting lab_order report', async () => {
     /You do not have permission to delete this file/,
   );
 });
+
+// ----------------------------------------------------------------------------
+// 10. CONFIRM S3 UPLOAD (Step 3: HeadObject verification & DB persistence)
+// ----------------------------------------------------------------------------
+test('confirmS3Upload verifies S3 HeadObject and persists s3_key in DB', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+    health_records: {
+      rec_1: { title: 'Blood Report' },
+    },
+  });
+
+  // Configure mock S3 client with valid HeadObject response
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/pdf',
+    ContentLength: 4096,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  const res = await confirmS3UploadHandler(data, auth, db);
+  assert.equal(res.success, true);
+  assert.equal(res.contentLength, 4096);
+  assert.equal(res.contentType, 'application/pdf');
+
+  // Verify DB record was updated with S3 metadata
+  const doc = await db.collection('health_records').doc('rec_1').get();
+  assert.equal(doc.data().s3Key, 'health_records/p_1/rec_1/uuid123.pdf');
+  assert.equal(doc.data().fileSizeBytes, 4096);
+  assert.equal(doc.data().mimeType, 'application/pdf');
+  assert.equal(doc.data().storageProvider, 's3');
+  assert.ok(doc.data().uploadConfirmedAt);
+});
+
+test('confirmS3Upload rejects when caller is not the owner (403)', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p2: { role: 'patient', profileId: 'p_2' },
+    },
+  });
+
+  const auth = { uid: 'uid_p2' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler(data, auth, db),
+    /You do not have permission to confirm this upload/,
+  );
+});
+
+test('confirmS3Upload rejects when S3 HeadObject throws not-found (404)', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+  });
+
+  // Mock S3 client where HeadObject throws NoSuchKey
+  const client = createMockS3Client();
+  client.send = async (cmd) => {
+    if (cmd?.constructor?.name === 'HeadObjectCommand') {
+      const err = new Error('NotFound');
+      err.name = 'NotFound';
+      throw err;
+    }
+    return {};
+  };
+  setS3ClientForTesting(client);
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler(data, auth, db),
+    /Uploaded file was not found in S3/,
+  );
+});
+
+test('confirmS3Upload rejects when S3 HeadObject size exceeds limit', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+  });
+
+  // Mock S3 client where file size is 25 MB (exceeds 15 MB doc limit)
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/pdf',
+    ContentLength: 25 * 1024 * 1024,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.pdf',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler(data, auth, db),
+    /exceeds limit/,
+  );
+});
+
+test('confirmS3Upload rejects invalid Content-Type in S3 HeadObject', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+  });
+
+  // Mock S3 client with unallowed mime type
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/x-executable',
+    ContentLength: 1024,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+  const data = {
+    objectKey: 'health_records/p_1/rec_1/uuid123.exe',
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  };
+
+  await assert.rejects(
+    async () => confirmS3UploadHandler(data, auth, db),
+    /Invalid S3 object Content-Type/,
+  );
+});
+
+// ----------------------------------------------------------------------------
+// 11. AUDIT LOGGING (Step 3: storage_audit_logs verification)
+// ----------------------------------------------------------------------------
+test('storage operations record immutable rows in storage_audit_logs', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1', profileCompleted: true },
+    },
+    health_records: {
+      rec_1: {},
+    },
+  });
+
+  setS3ClientForTesting(createMockS3Client({
+    ContentType: 'application/pdf',
+    ContentLength: 1024,
+  }));
+
+  const auth = { uid: 'uid_p1' };
+
+  // 1. Upload presigned
+  const uploadRes = await getS3UploadUrlHandler({
+    purpose: 'health_records',
+    parentId: 'p_1/rec_1',
+    fileName: 'lab_scan.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 1024,
+  }, auth, db);
+  assert.ok(uploadRes.uploadUrl);
+
+  // 2. Download presigned
+  const dlRes = await getS3DownloadUrlHandler({
+    objectKey: uploadRes.objectKey,
+  }, auth, db);
+  assert.ok(dlRes.url);
+
+  // 3. Confirm upload
+  await confirmS3UploadHandler({
+    objectKey: uploadRes.objectKey,
+    purpose: 'health_records',
+    recordId: 'rec_1',
+  }, auth, db);
+
+  // 4. Delete object
+  await deleteS3ObjectHandler({
+    objectKey: uploadRes.objectKey,
+  }, auth, db);
+
+  // Verify all 4 audit log entries were recorded
+  const auditLogs = db._added.filter(entry => entry.collection === 'storage_audit_logs');
+  assert.ok(auditLogs.length >= 4, `Expected at least 4 audit logs, got ${auditLogs.length}`);
+
+  const actions = auditLogs.map(l => l.data.action);
+  assert.ok(actions.includes('upload_presigned'));
+  assert.ok(actions.includes('download_presigned'));
+  assert.ok(actions.includes('upload_confirmed'));
+  assert.ok(actions.includes('delete'));
+
+  for (const log of auditLogs) {
+    assert.equal(log.data.who, 'uid_p1');
+    assert.equal(log.data.role, 'patient');
+    assert.equal(log.data.status, 'success');
+    assert.ok(log.data.when);
+  }
+});
+
+// ----------------------------------------------------------------------------
+// 12. PRESCRIPTIONS ACCESS CONTROL (Step 3: doctor, patient, assigned pharmacy)
+// ----------------------------------------------------------------------------
+test('prescriptions: patient owner allowed to download prescription', async () => {
+  const db = createMockDb({
+    users: {
+      uid_p1: { role: 'patient', profileId: 'p_1' },
+    },
+  });
+
+  const auth = { uid: 'uid_p1' };
+  const data = { objectKey: 'prescriptions/p_1/rx_100/file.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+  assert.equal(res.expiresIn, 300);
+});
+
+test('prescriptions: author doctor allowed to download prescription', async () => {
+  const db = createMockDb({
+    users: {
+      uid_doc1: { role: 'doctor', profileId: 'doc_1' },
+    },
+    prescriptions: {
+      rx_100: { doctorId: 'doc_1', patientId: 'p_1' },
+    },
+  });
+
+  const auth = { uid: 'uid_doc1' };
+  const data = { objectKey: 'prescriptions/p_1/rx_100/file.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+  assert.equal(res.expiresIn, 300);
+});
+
+test('prescriptions: assigned pharmacy allowed to download prescription', async () => {
+  const db = createMockDb({
+    users: {
+      uid_store1: { role: 'medicalStore', profileId: 'store_1' },
+    },
+    pharmacy_deliveries: {
+      del_1: { prescriptionId: 'rx_100', storeId: 'store_1' },
+    },
+  });
+
+  const auth = { uid: 'uid_store1' };
+  const data = { objectKey: 'prescriptions/p_1/rx_100/file.pdf' };
+
+  const res = await getS3DownloadUrlHandler(data, auth, db);
+  assert.ok(res.url);
+  assert.equal(res.expiresIn, 300);
+});
+
+test('prescriptions: unrelated pharmacy blocked from downloading prescription (403)', async () => {
+  const db = createMockDb({
+    users: {
+      uid_store2: { role: 'medicalStore', profileId: 'store_2' },
+    },
+    pharmacy_deliveries: {
+      del_1: { prescriptionId: 'rx_100', storeId: 'store_other' },
+    },
+  });
+
+  const auth = { uid: 'uid_store2' };
+  const data = { objectKey: 'prescriptions/p_1/rx_100/file.pdf' };
+
+  await assert.rejects(
+    async () => getS3DownloadUrlHandler(data, auth, db),
+    /You do not have permission to access this file/,
+  );
+});
+

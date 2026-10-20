@@ -8,6 +8,7 @@ const {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
@@ -269,6 +270,26 @@ function normalizePurpose(raw) {
 }
 
 /**
+ * Records an immutable access audit log row in storage_audit_logs collection.
+ */
+async function logStorageAccess(db, { who, role, what, action, status = 'success', metadata = {} }) {
+  try {
+    if (!db) return;
+    await db.collection('storage_audit_logs').add({
+      who: String(who || '').trim(),
+      role: String(role || '').trim(),
+      what: String(what || '').trim(),
+      action: String(action || '').trim(),
+      status: String(status || '').trim(),
+      when: new Date().toISOString(),
+      metadata,
+    });
+  } catch (err) {
+    console.error('[StorageAudit] Failed to record audit log:', err?.message || err);
+  }
+}
+
+/**
  * 1. getS3UploadUrl core handler.
  */
 async function getS3UploadUrlHandler(data, auth, db) {
@@ -473,6 +494,20 @@ async function getS3UploadUrlHandler(data, auth, db) {
   // Invalidate cached download URL on upload URL request to guard against serving stale content on overwrite
   await invalidateS3DownloadUrlCache(objectKey);
 
+  // Record upload presigned audit log
+  await logStorageAccess(db, {
+    who: auth.uid,
+    role: caller.role,
+    what: objectKey,
+    action: 'upload_presigned',
+    status: 'success',
+    metadata: {
+      purpose,
+      sizeBytes,
+      contentType,
+    },
+  });
+
   return {
     uploadUrl,
     objectKey,
@@ -570,6 +605,40 @@ async function authorizeRead(objectKey, caller, auth, db) {
         }
       }
       return false;
+    }
+
+    return false;
+  }
+
+  if (prefix === 'prescriptions') {
+    // prescriptions/{patientId}/{prescriptionId}/{fileName}
+    const patientId = parts[1];
+    const prescriptionId = parts[2];
+
+    if (caller.role === 'patient' && caller.profileId === patientId) {
+      return true;
+    }
+
+    if (caller.role === 'doctor') {
+      const rxDoc = await db.collection('prescriptions').doc(prescriptionId).get();
+      if (rxDoc.exists && rxDoc.data()?.doctorId === caller.profileId) {
+        return true;
+      }
+    }
+
+    if (caller.role === 'medicalStore' || caller.role === 'medical') {
+      const delQuery = await db
+        .collection('pharmacy_deliveries')
+        .where('prescriptionId', '==', prescriptionId)
+        .where('storeId', '==', caller.profileId)
+        .limit(1)
+        .get();
+      if (!delQuery.empty) return true;
+
+      const orderDoc = await db.collection('orders').doc(prescriptionId).get();
+      if (orderDoc.exists && (orderDoc.data()?.storeId === caller.profileId || orderDoc.data()?.pharmacyId === caller.profileId)) {
+        return true;
+      }
     }
 
     return false;
@@ -751,7 +820,7 @@ async function getS3DownloadUrlHandler(data, auth, db) {
   });
 
   const isCacheOn = getS3UrlCacheConfig() === 'on';
-  const expiresIn = isCacheOn ? 3600 : 600;
+  const expiresIn = isCacheOn ? 3600 : 300;
   const url = await getSignedUrl(s3, command, { expiresIn });
 
   if (isCacheOn) {
@@ -759,6 +828,15 @@ async function getS3DownloadUrlHandler(data, auth, db) {
     const cacheTtlSec = Math.max(1, expiresIn - 900);
     await setCachedDownloadUrl(objectKey, url, cacheTtlSec);
   }
+
+  // Record download audit log
+  await logStorageAccess(db, {
+    who: auth.uid,
+    role: caller.role,
+    what: objectKey,
+    action: 'download_presigned',
+    status: 'success',
+  });
 
   return {
     url,
@@ -835,6 +913,19 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
     }
   }
 
+  // Record batch download audit log
+  await logStorageAccess(db, {
+    who: auth.uid,
+    role: caller.role,
+    what: `${Object.keys(urls).length}/${objectKeys.length} keys`,
+    action: 'batch_download_presigned',
+    status: 'success',
+    metadata: {
+      requestedCount: objectKeys.length,
+      resolvedCount: Object.keys(urls).length,
+    },
+  });
+
   return { urls };
 }
 
@@ -865,9 +956,165 @@ async function deleteS3ObjectHandler(data, auth, db) {
   // Invalidate cached download URL on object delete
   await invalidateS3DownloadUrlCache(objectKey);
 
+  // Record delete audit log
+  await logStorageAccess(db, {
+    who: auth.uid,
+    role: caller.role,
+    what: objectKey,
+    action: 'delete',
+    status: 'success',
+  });
+
   return {
     success: true,
     objectKey,
+  };
+}
+
+/**
+ * 5. confirmS3Upload core handler.
+ * Verifies object existence, Content-Length, and Content-Type via S3 HEAD before linking s3_key in DB.
+ */
+async function confirmS3UploadHandler(data, auth, db) {
+  const objectKey = String(data?.objectKey || '').trim();
+  const recordId = String(data?.recordId || '').trim();
+  const purpose = normalizePurpose(data?.purpose);
+
+  if (!objectKey) {
+    throw new HttpsError('invalid-argument', 'objectKey is required.');
+  }
+  assertValidObjectKey(objectKey, 'objectKey');
+
+  if (!purpose) {
+    throw new HttpsError('invalid-argument', 'purpose is required.');
+  }
+
+  const caller = await resolveCallerUser(db, auth.uid);
+  const isAdmin = isSuperAdmin(auth, caller);
+
+  // Authorize upload confirmation: caller must own the target prefix
+  const parts = objectKey.split('/');
+  const prefix = parts[0];
+
+  if (prefix === 'health_records') {
+    const patientId = parts[1];
+    if (!isAdmin && (caller.role !== 'patient' || caller.profileId !== patientId)) {
+      throw new HttpsError('permission-denied', 'You do not have permission to confirm this upload.');
+    }
+  } else if (prefix === 'lab_reports') {
+    if (!isAdmin && caller.role !== 'lab') {
+      throw new HttpsError('permission-denied', 'Only diagnostic labs can confirm lab reports.');
+    }
+  } else if (prefix === 'patients') {
+    const patientId = parts[1];
+    if (!isAdmin && (caller.role !== 'patient' || caller.profileId !== patientId)) {
+      throw new HttpsError('permission-denied', 'You can only confirm your own profile photo.');
+    }
+  } else if (prefix === 'doctor_profiles') {
+    const doctorId = parts[1];
+    if (!isAdmin && (caller.role !== 'doctor' || caller.profileId !== doctorId)) {
+      throw new HttpsError('permission-denied', 'You can only confirm your own doctor profile photo.');
+    }
+  }
+
+  // Verify object in S3 via HeadObjectCommand
+  const s3 = getS3Client();
+  let head;
+  try {
+    head = await s3.send(
+      new HeadObjectCommand({
+        Bucket: S3_BUCKET,
+        Key: objectKey,
+      }),
+    );
+  } catch (err) {
+    await logStorageAccess(db, {
+      who: auth.uid,
+      role: caller.role,
+      what: objectKey,
+      action: 'upload_confirm_failed',
+      status: 'head_not_found',
+      metadata: { error: err.message },
+    });
+    throw new HttpsError('not-found', 'Uploaded file was not found in S3 or is inaccessible.');
+  }
+
+  const contentType = String(head.ContentType || '').toLowerCase();
+  const contentLength = Number(head.ContentLength || 0);
+
+  // Enforce content-type allowlist
+  if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
+    throw new HttpsError('failed-precondition', `Invalid S3 object Content-Type: ${contentType}`);
+  }
+
+  // Enforce max size limits
+  const isImagePurpose =
+    purpose === 'patient_profile' ||
+    purpose === 'doctor_profile' ||
+    purpose === 'promoted_ads';
+
+  const maxAllowedBytes = isImagePurpose ? MAX_IMAGE_BYTES : MAX_DOC_BYTES;
+  if (contentLength <= 0 || contentLength > maxAllowedBytes) {
+    throw new HttpsError('failed-precondition', `S3 object size ${contentLength} bytes exceeds limit of ${maxAllowedBytes} bytes.`);
+  }
+
+  // Update DB row if recordId is provided
+  if (recordId) {
+    if (purpose === 'health_records') {
+      await db.collection('health_records').doc(recordId).set({
+        s3Key: objectKey,
+        s3Bucket: S3_BUCKET,
+        storageProvider: 's3',
+        fileSizeBytes: contentLength,
+        mimeType: contentType,
+        uploadConfirmedAt: new Date().toISOString(),
+      }, { merge: true });
+    } else if (purpose === 'lab_reports') {
+      await db.collection('lab_bookings').doc(recordId).set({
+        reportS3Key: objectKey,
+        reportS3Bucket: S3_BUCKET,
+        storageProvider: 's3',
+        reportFileSizeBytes: contentLength,
+        reportMimeType: contentType,
+        reportUploadedAt: new Date().toISOString(),
+      }, { merge: true }).catch(() => {});
+    } else if (purpose === 'patient_profile') {
+      await db.collection('patients').doc(caller.profileId || recordId).set({
+        photoS3Key: objectKey,
+        photoS3Bucket: S3_BUCKET,
+        photoStorageProvider: 's3',
+        photoUpdatedAt: new Date().toISOString(),
+      }, { merge: true });
+    } else if (purpose === 'doctor_profile') {
+      await db.collection('doctors').doc(caller.profileId || recordId).set({
+        photoS3Key: objectKey,
+        photoS3Bucket: S3_BUCKET,
+        photoStorageProvider: 's3',
+        photoUpdatedAt: new Date().toISOString(),
+      }, { merge: true });
+    }
+  }
+
+  // Record audit log
+  await logStorageAccess(db, {
+    who: auth.uid,
+    role: caller.role,
+    what: objectKey,
+    action: 'upload_confirmed',
+    status: 'success',
+    metadata: {
+      contentLength,
+      contentType,
+      recordId,
+      purpose,
+    },
+  });
+
+  return {
+    success: true,
+    objectKey,
+    contentLength,
+    contentType,
   };
 }
 
@@ -909,6 +1156,13 @@ exports.deleteS3Object = onCall(CALLABLE_OPTIONS, async (request) => {
   return deleteS3ObjectHandler(request.data, request.auth, db);
 });
 
+exports.confirmS3Upload = onCall(CALLABLE_OPTIONS, async (request) => {
+  requireAuth(request);
+  const db = getFirestore();
+  await enforceAbuseLimit(db, request, 'api');
+  return confirmS3UploadHandler(request.data, request.auth, db);
+});
+
 exports.awsAccessKeyId = awsAccessKeyId;
 exports.awsSecretAccessKey = awsSecretAccessKey;
 
@@ -925,6 +1179,8 @@ exports._test = {
   getS3DownloadUrlHandler,
   getS3DownloadUrlsHandler,
   deleteS3ObjectHandler,
+  confirmS3UploadHandler,
+  logStorageAccess,
   setS3ClientForTesting,
   validateContentTypeAndSize,
   extractExtension,

@@ -1402,6 +1402,13 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ─── Storage Audit Logs (Server-only writes, Super Admin read-only) ────
+
+    match /storage_audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+
     // ─── Default deny ──────────────────────────────────────────────────────
 
     match /{document=**} {

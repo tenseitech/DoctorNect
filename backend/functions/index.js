@@ -2064,12 +2064,14 @@ const {
   getS3DownloadUrl,
   getS3DownloadUrls,
   deleteS3Object,
+  confirmS3Upload,
 } = require('./s3_storage');
 
 exports.getS3UploadUrl = getS3UploadUrl;
 exports.getS3DownloadUrl = getS3DownloadUrl;
 exports.getS3DownloadUrls = getS3DownloadUrls;
 exports.deleteS3Object = deleteS3Object;
+exports.confirmS3Upload = confirmS3Upload;
 
 if (ENABLE_SUPABASE_SYNC) {
 exports.syncDoctorToSupabase = onDocumentWritten({

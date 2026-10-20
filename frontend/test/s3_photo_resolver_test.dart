@@ -60,6 +60,18 @@ class FakeS3PresignApi implements S3PresignApi {
     deleteObjectCalls++;
     return true;
   }
+
+  @override
+  Future<Map<String, dynamic>> confirmUpload({
+    required String objectKey,
+    required String purpose,
+    String? recordId,
+  }) async {
+    return {
+      'success': true,
+      'objectKey': objectKey,
+    };
+  }
 }
 
 class FakeHttpClient extends http.BaseClient {
