@@ -25,11 +25,7 @@ class SupabaseDoctorRepository {
     if (!SupabaseBootstrap.isReady) return const [];
 
     try {
-      final query = verifiedOnly
-          ? _client.from('doctor_directory').select()
-          : _client.from('doctors').select();
-
-      final res = await query.limit(50);
+      final res = await _client.from('doctor_directory').select().limit(50);
       final rows = List<Map<String, dynamic>>.from(res as List);
       return rows
           .map((row) => _fromRow(row['doctor_id'] as String? ?? '', row))
@@ -40,48 +36,105 @@ class SupabaseDoctorRepository {
     }
   }
 
-  /// Real-time stream of doctors.
-  /// Converted from Firestore: uses single .eq('verified', true) stream when verifiedOnly is true.
+  /// Real-time stream of doctors from safe public view `doctor_directory`.
+  /// Subscribes to `doctor_directory_updates` CDC as change signal and refetches
+  /// from `doctor_directory` so sensitive base columns are never sent over Realtime.
   Stream<List<DoctorListing>> streamAllDoctors({bool verifiedOnly = true}) {
     if (!SupabaseBootstrap.isReady) return const Stream.empty();
 
-    if (verifiedOnly) {
-      return _client
-          .from('doctors')
-          .stream(primaryKey: ['doctor_id'])
-          .eq('verified', true)
-          .limit(50)
-          .map((rows) => rows
-              .map((row) => _fromRow(row['doctor_id'] as String? ?? '', row))
-              .whereType<DoctorListing>()
-              .toList());
-    } else {
-      return _client
-          .from('doctors')
-          .stream(primaryKey: ['doctor_id'])
-          .limit(50)
-          .map((rows) => rows
-              .map((row) => _fromRow(row['doctor_id'] as String? ?? '', row))
-              .whereType<DoctorListing>()
-              .toList());
+    late final StreamController<List<DoctorListing>> controller;
+    RealtimeChannel? channel;
+
+    Future<void> refetch() async {
+      try {
+        final list = await fetchAllDoctors(verifiedOnly: verifiedOnly);
+        if (!controller.isClosed) {
+          controller.add(list);
+        }
+      } catch (e, st) {
+        if (!controller.isClosed) {
+          controller.addError(e, st);
+        }
+      }
     }
+
+    controller = StreamController<List<DoctorListing>>.broadcast(
+      onListen: () async {
+        // Initial fetch from safe doctor_directory view
+        await refetch();
+
+        // Listen for change signal on doctor_directory_updates
+        channel = _client.channel('public:doctor_directory_updates')
+          ..onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'doctor_directory_updates',
+            callback: (_) async {
+              await refetch();
+            },
+          )
+          ..subscribe();
+      },
+      onCancel: () async {
+        if (channel != null) {
+          await _client.removeChannel(channel!);
+        }
+      },
+    );
+
+    return controller.stream;
   }
 
-  /// Real-time stream for a single doctor's profile.
-  /// Uses a single `.eq('doctor_id', doctorId)` filter.
+  /// Real-time stream for a single doctor's public directory profile.
+  /// Refetches from safe `doctor_directory` view on change signal.
   Stream<Map<String, dynamic>?> watchDoctor(String doctorId) {
     if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
       return const Stream.empty();
     }
 
-    return _client
-        .from('doctors')
-        .stream(primaryKey: ['doctor_id'])
-        .eq('doctor_id', doctorId)
-        .map((rows) {
-          if (rows.isEmpty) return null;
-          return rows.first;
-        });
+    late final StreamController<Map<String, dynamic>?> controller;
+    RealtimeChannel? channel;
+
+    Future<void> refetch() async {
+      try {
+        final res = await _client
+            .from('doctor_directory')
+            .select()
+            .eq('doctor_id', doctorId)
+            .maybeSingle();
+        if (!controller.isClosed) {
+          controller.add(res);
+        }
+      } catch (e, st) {
+        if (!controller.isClosed) {
+          controller.addError(e, st);
+        }
+      }
+    }
+
+    controller = StreamController<Map<String, dynamic>?>.broadcast(
+      onListen: () async {
+        await refetch();
+
+        channel = _client.channel('public:doctor_directory_updates:$doctorId')
+          ..onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'doctor_directory_updates',
+            callback: (_) async {
+              await refetch();
+            },
+          )
+          ..subscribe();
+      },
+      onCancel: () async {
+        if (channel != null) {
+          await _client.removeChannel(channel!);
+        }
+      },
+    );
+
+    return controller.stream;
   }
 
   Future<bool> isDoctorVerified(

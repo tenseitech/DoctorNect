@@ -45,6 +45,82 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE SCHEMA IF NOT EXISTS private;
 
 -- ============================================================================
+-- MIGRATION CHAIN RECONCILIATION: UUID -> TEXT (FIREBASE UID)
+-- ============================================================================
+-- Converts users.id and all referencing foreign key columns from UUID to TEXT
+-- so that migrations applied sequentially from 20260923000001 work seamlessly.
+
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    -- Drop old function signatures that had RETURNS UUID
+    DROP FUNCTION IF EXISTS private.current_user_id() CASCADE;
+    DROP FUNCTION IF EXISTS private.current_firebase_uid() CASCADE;
+    DROP FUNCTION IF EXISTS private.current_user_role() CASCADE;
+    DROP FUNCTION IF EXISTS private.current_profile_id() CASCADE;
+    DROP FUNCTION IF EXISTS private.is_super_admin() CASCADE;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'id' AND data_type = 'uuid'
+    ) THEN
+        -- Dynamically drop all foreign key constraints referencing public.users(id)
+        FOR r IN (
+            SELECT tc.table_schema, tc.table_name, tc.constraint_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+            WHERE tc.constraint_type = 'FOREIGN KEY' AND ccu.table_schema = 'public' AND ccu.table_name = 'users' AND ccu.column_name = 'id'
+        ) LOOP
+            EXECUTE format('ALTER TABLE %I.%I DROP CONSTRAINT IF EXISTS %I', r.table_schema, r.table_name, r.constraint_name);
+        END LOOP;
+
+        -- Also drop any self/admin references
+        ALTER TABLE IF EXISTS private.admin_users DROP CONSTRAINT IF EXISTS admin_users_user_id_fkey;
+        ALTER TABLE IF EXISTS private.admin_users DROP CONSTRAINT IF EXISTS admin_users_granted_by_fkey;
+
+        -- Alter column types from UUID to TEXT
+        ALTER TABLE public.users ALTER COLUMN id TYPE TEXT USING id::TEXT;
+        ALTER TABLE public.users ALTER COLUMN firebase_uid TYPE TEXT USING firebase_uid::TEXT;
+        ALTER TABLE IF EXISTS public.doctors ALTER COLUMN owner_uid TYPE TEXT USING owner_uid::TEXT;
+        ALTER TABLE IF EXISTS public.patients ALTER COLUMN owner_uid TYPE TEXT USING owner_uid::TEXT;
+        ALTER TABLE IF EXISTS public.medical_stores ALTER COLUMN owner_uid TYPE TEXT USING owner_uid::TEXT;
+        ALTER TABLE IF EXISTS public.labs ALTER COLUMN owner_uid TYPE TEXT USING owner_uid::TEXT;
+        ALTER TABLE IF EXISTS public.ambulances ALTER COLUMN auth_uid TYPE TEXT USING auth_uid::TEXT;
+        ALTER TABLE IF EXISTS public.in_app_notifications ALTER COLUMN recipient_uid TYPE TEXT USING recipient_uid::TEXT;
+        ALTER TABLE IF EXISTS public.admin_audit_logs ALTER COLUMN admin_uid TYPE TEXT USING admin_uid::TEXT;
+        ALTER TABLE IF EXISTS public.security_events ALTER COLUMN uid TYPE TEXT USING uid::TEXT;
+        ALTER TABLE IF EXISTS public.appointments ADD COLUMN IF NOT EXISTS booked_by_uid TEXT REFERENCES public.users(id) ON DELETE SET NULL;
+        ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_s3_key TEXT;
+        ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_s3_bucket TEXT;
+        ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_storage_provider VARCHAR(32) DEFAULT 's3';
+        ALTER TABLE IF EXISTS public.patients ADD COLUMN IF NOT EXISTS photo_s3_key TEXT;
+        ALTER TABLE IF EXISTS public.patients ADD COLUMN IF NOT EXISTS photo_s3_bucket TEXT;
+        ALTER TABLE IF EXISTS public.patients ADD COLUMN IF NOT EXISTS photo_storage_provider VARCHAR(32) DEFAULT 's3';
+        ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS photo_s3_key TEXT;
+        ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS photo_s3_bucket TEXT;
+        ALTER TABLE IF EXISTS public.users ADD COLUMN IF NOT EXISTS photo_storage_provider VARCHAR(32) DEFAULT 's3';
+        ALTER TABLE IF EXISTS public.health_records ADD COLUMN IF NOT EXISTS s3_key TEXT;
+        ALTER TABLE IF EXISTS public.health_records ADD COLUMN IF NOT EXISTS s3_bucket TEXT;
+        ALTER TABLE IF EXISTS private.admin_users ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
+        ALTER TABLE IF EXISTS private.admin_users ALTER COLUMN granted_by TYPE TEXT USING granted_by::TEXT;
+
+        -- Re-add foreign key constraints pointing to public.users(id)
+        ALTER TABLE IF EXISTS public.doctors ADD CONSTRAINT doctors_owner_uid_fkey FOREIGN KEY (owner_uid) REFERENCES public.users(id) ON DELETE SET NULL;
+        ALTER TABLE IF EXISTS public.patients ADD CONSTRAINT patients_owner_uid_fkey FOREIGN KEY (owner_uid) REFERENCES public.users(id) ON DELETE SET NULL;
+        ALTER TABLE IF EXISTS public.medical_stores ADD CONSTRAINT medical_stores_owner_uid_fkey FOREIGN KEY (owner_uid) REFERENCES public.users(id) ON DELETE SET NULL;
+        ALTER TABLE IF EXISTS public.labs ADD CONSTRAINT labs_owner_uid_fkey FOREIGN KEY (owner_uid) REFERENCES public.users(id) ON DELETE SET NULL;
+        ALTER TABLE IF EXISTS public.ambulances ADD CONSTRAINT ambulances_auth_uid_fkey FOREIGN KEY (auth_uid) REFERENCES public.users(id) ON DELETE SET NULL;
+        ALTER TABLE IF EXISTS public.in_app_notifications ADD CONSTRAINT in_app_notifications_recipient_uid_fkey FOREIGN KEY (recipient_uid) REFERENCES public.users(id) ON DELETE CASCADE;
+        ALTER TABLE IF EXISTS public.admin_audit_logs ADD CONSTRAINT admin_audit_logs_admin_uid_fkey FOREIGN KEY (admin_uid) REFERENCES public.users(id) ON DELETE SET NULL;
+        ALTER TABLE IF EXISTS public.security_events ADD CONSTRAINT security_events_uid_fkey FOREIGN KEY (uid) REFERENCES public.users(id) ON DELETE SET NULL;
+        ALTER TABLE IF EXISTS private.admin_users ADD CONSTRAINT admin_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+        ALTER TABLE IF EXISTS private.admin_users ADD CONSTRAINT admin_users_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES public.users(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+
+-- ============================================================================
 -- 0. CORE UTILITY TRIGGERS
 -- ============================================================================
 
@@ -1171,6 +1247,7 @@ AS $$
     SELECT NULLIF(auth.jwt() ->> 'sub', '');
 $$;
 
+DROP FUNCTION IF EXISTS private.current_user_id() CASCADE;
 -- Returns the authenticated caller's user id (which is the Firebase UID)
 CREATE OR REPLACE FUNCTION private.current_user_id()
 RETURNS TEXT

@@ -1,29 +1,59 @@
 -- ============================================================================
 -- Migration: 20261020000002_phase_c_doctor_patient_cutover.sql
 -- Description: Phase C Doctor & Patient Cutover
---   1. Realtime publication registration for all Doctor & Patient tables
---   2. Public doctor directory view (safe columns only)
---   3. Atomic prescription creation RPC (create_prescription_atomic)
---   4. Hardened column immutability locks on users.role, doctors.verified/rating
+--   1. Realtime publication registration (safe tables only, replica identity full)
+--   2. Public doctor directory view (safe columns only) & directory update signal
+--   3. Hardened column immutability locks with aggregate sync bypass
+--   4. Atomic prescription creation RPC (create_prescription_atomic with ownership validation)
 --   5. Hardened book_appointment_atomic (derives patient_id from auth.jwt()->>'sub',
 --      slot advisory locking, idempotency check)
 --   6. Native Postgres triggers for doctor review rating aggregation & review_public sync
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 1. REALTIME PUBLICATION REGISTRATION
+-- 1. DIRECTORY CHANGE SIGNAL TABLE & REALTIME PUBLICATION REGISTRATION
 -- ----------------------------------------------------------------------------
--- Ensures CDC logical replication is active for all Doctor & Patient tables.
--- Supabase Realtime only works on concrete base tables, not views.
+-- Base tables with sensitive data (phone, email, FCM token, license) like `doctors`
+-- and `patients` are NEVER exposed directly in the Supabase Realtime publication.
+-- Instead, safe tables and change signal tables are registered.
+
+CREATE TABLE IF NOT EXISTS public.doctor_directory_updates (
+    id TEXT PRIMARY KEY DEFAULT 'directory',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+DROP POLICY IF EXISTS "doctor_directory_updates_select" ON public.doctor_directory_updates;
+CREATE POLICY "doctor_directory_updates_select" ON public.doctor_directory_updates FOR SELECT TO authenticated USING (TRUE);
+REVOKE ALL ON public.doctor_directory_updates FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.doctor_directory_updates TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.fn_touch_doctor_directory()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+    INSERT INTO public.doctor_directory_updates (id, updated_at)
+    VALUES ('directory', CURRENT_TIMESTAMP)
+    ON CONFLICT (id) DO UPDATE SET updated_at = EXCLUDED.updated_at;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_touch_doctor_directory ON public.doctors;
+CREATE TRIGGER trg_touch_doctor_directory
+    AFTER INSERT OR UPDATE OR DELETE ON public.doctors
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_touch_doctor_directory();
+
+-- Register publication for safe realtime tables
 DO $$
 DECLARE
     t TEXT;
     target_tables TEXT[] := ARRAY[
         'appointments',
-        'doctors',
         'doctor_availability',
         'doctor_blocked_dates',
-        'patients',
         'family_members',
         'health_records',
         'prescriptions',
@@ -32,7 +62,8 @@ DECLARE
         'prescription_referrals',
         'referrals',
         'reviews',
-        'review_public'
+        'review_public',
+        'doctor_directory_updates'
     ];
 BEGIN
     FOREACH t IN ARRAY target_tables LOOP
@@ -44,19 +75,43 @@ BEGIN
                 EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
             EXCEPTION
                 WHEN duplicate_object THEN
-                    -- Table already in publication, ignore
                     NULL;
             END;
         END IF;
     END LOOP;
 END $$;
 
+-- Enforce REPLICA IDENTITY FULL so DELETE CDC payloads carry previous row state
+ALTER TABLE public.appointments REPLICA IDENTITY FULL;
+ALTER TABLE public.prescriptions REPLICA IDENTITY FULL;
+ALTER TABLE public.reviews REPLICA IDENTITY FULL;
+ALTER TABLE public.referrals REPLICA IDENTITY FULL;
+ALTER TABLE public.review_public REPLICA IDENTITY FULL;
+ALTER TABLE public.doctor_directory_updates REPLICA IDENTITY FULL;
+
 -- ----------------------------------------------------------------------------
 -- 2. PUBLIC DOCTOR DIRECTORY (SAFE COLUMNS ONLY)
 -- ----------------------------------------------------------------------------
 -- Strips sensitive data: phone, email, state council number, owner_uid, fcm_token.
 -- Exposes only verified, non-deactivated doctors.
-CREATE OR REPLACE VIEW public.doctor_directory AS
+-- Uses security_invoker = false (definer view owned by db owner) with explicit GRANT
+-- to serve as an immutable projection firewall.
+ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_s3_key TEXT;
+ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_s3_bucket TEXT;
+ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_storage_provider VARCHAR(32) DEFAULT 's3';
+
+DROP POLICY IF EXISTS doctors_select ON public.doctors;
+CREATE POLICY doctors_select ON public.doctors
+    FOR SELECT TO authenticated
+    USING (
+        (verified = TRUE AND deactivated = FALSE)
+        OR (owner_uid = (auth.jwt() ->> 'sub'))
+        OR private.is_super_admin()
+    );
+
+CREATE OR REPLACE VIEW public.doctor_directory 
+WITH (security_invoker = true)
+AS
 SELECT
     doctor_id,
     name,
@@ -84,13 +139,51 @@ SELECT
 FROM public.doctors
 WHERE verified = TRUE AND deactivated = FALSE;
 
-GRANT SELECT ON public.doctor_directory TO authenticated, anon;
+REVOKE ALL ON public.doctor_directory FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.doctor_directory TO authenticated, service_role;
 
 -- ----------------------------------------------------------------------------
--- 3. COLUMN IMMUTABILITY LOCKS (users.role, doctors.verified, ratings, counters)
+-- 3. COLUMN IMMUTABILITY LOCKS WITH AGGREGATE TRIGGER BYPASS
 -- ----------------------------------------------------------------------------
--- Ensures client JWT cannot alter critical columns directly.
--- Only service_role or database triggers may alter them.
+
+CREATE OR REPLACE FUNCTION private.lock_columns()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+    v_col TEXT;
+    v_old_val TEXT;
+    v_new_val TEXT;
+    v_is_admin BOOLEAN := COALESCE(private.is_super_admin(), FALSE);
+    v_is_aggregate_sync BOOLEAN := (current_setting('doctornect.internal_aggregate_sync', true) = 'on');
+BEGIN
+    IF v_is_admin OR private.current_firebase_uid() IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    FOR i IN 0 .. (TG_NARGS - 1) LOOP
+        v_col := TG_ARGV[i];
+
+        -- Allow internal aggregate sync to update rating and review_count
+        IF v_is_aggregate_sync AND v_col IN ('rating', 'review_count', 'total_rating', 'rating_count') THEN
+            CONTINUE;
+        END IF;
+
+        v_old_val := to_jsonb(OLD) ->> v_col;
+        v_new_val := to_jsonb(NEW) ->> v_col;
+
+        IF v_new_val IS DISTINCT FROM v_old_val THEN
+            RAISE EXCEPTION 'FORBIDDEN: Modifying column "%" on table "%" is not permitted (Current: %, Requested: %)',
+                v_col, TG_TABLE_NAME, v_old_val, v_new_val
+                USING ERRCODE = '42501';
+        END IF;
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$;
 
 DROP TRIGGER IF EXISTS trg_users_lock_role ON public.users;
 CREATE TRIGGER trg_users_lock_role
@@ -113,38 +206,65 @@ CREATE TRIGGER trg_patients_lock_verification
 -- ----------------------------------------------------------------------------
 -- 4. ATOMIC PRESCRIPTION CREATION RPC (create_prescription_atomic)
 -- ----------------------------------------------------------------------------
--- Persists prescription header, medicines, investigations, and referrals
--- in a single atomic database transaction.
--- Derives doctor_id directly from auth.jwt()->>'sub'.
+-- Enforces:
+-- 1. Caller must be an authenticated doctor.
+-- 2. Prescription ownership: Doctor A cannot overwrite Doctor B's prescription.
+-- 3. Appointment ownership: Referenced appointment must belong to this doctor and patient.
+-- 4. SET search_path = '' for security definer hardening.
+
 CREATE OR REPLACE FUNCTION public.create_prescription_atomic(
     payload JSONB
 )
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
+    v_caller_uid TEXT;
     v_doctor_id TEXT;
     v_prescription_id TEXT;
     v_patient_id TEXT;
+    v_appointment_id TEXT;
+    v_appt_doctor_id TEXT;
+    v_appt_patient_id TEXT;
+    v_existing_doc_id TEXT;
+    v_is_admin BOOLEAN;
     v_med JSONB;
     v_inv JSONB;
     v_ref JSONB;
-    v_existing_id TEXT;
-    v_is_admin BOOLEAN;
 BEGIN
     -- 1. Derive & verify caller
-    v_doctor_id := COALESCE(auth.jwt()->>'sub', current_setting('request.jwt.claims', true)::jsonb->>'sub');
-    IF v_doctor_id IS NULL THEN
+    v_caller_uid := NULLIF(COALESCE(
+        auth.jwt()->>'sub',
+        current_setting('request.jwt.claims', true)::jsonb->>'sub'
+    ), '');
+
+    IF v_caller_uid IS NULL THEN
         RAISE EXCEPTION 'UNAUTHORIZED: Authentication required to create prescription.'
             USING ERRCODE = '42501';
     END IF;
 
     v_is_admin := COALESCE(private.is_super_admin(), FALSE);
 
+    -- Resolve doctor_id for caller
+    SELECT doctor_id INTO v_doctor_id 
+    FROM public.doctors 
+    WHERE owner_uid = v_caller_uid OR doctor_id = v_caller_uid
+    LIMIT 1;
+
+    IF v_doctor_id IS NULL AND NOT v_is_admin THEN
+        RAISE EXCEPTION 'FORBIDDEN: Caller "%" is not a registered doctor.', v_caller_uid
+            USING ERRCODE = '42501';
+    END IF;
+
+    IF v_is_admin AND v_doctor_id IS NULL THEN
+        v_doctor_id := trim(payload->>'doctor_id');
+    END IF;
+
     v_prescription_id := trim(payload->>'prescription_id');
     v_patient_id := trim(payload->>'patient_id');
+    v_appointment_id := trim(payload->>'appointment_id');
 
     IF v_prescription_id IS NULL OR v_prescription_id = '' THEN
         RAISE EXCEPTION 'BAD_REQUEST: prescription_id is required.'
@@ -156,14 +276,39 @@ BEGIN
             USING ERRCODE = '22004';
     END IF;
 
-    -- If prescription already exists, verify doctor ownership
-    SELECT doctor_id INTO v_existing_id FROM public.prescriptions WHERE prescription_id = v_prescription_id;
-    IF v_existing_id IS NOT NULL AND NOT v_is_admin AND v_existing_id != v_doctor_id THEN
+    -- 2. Verify prescription ownership if prescription already exists
+    SELECT doctor_id INTO v_existing_doc_id 
+    FROM public.prescriptions 
+    WHERE prescription_id = v_prescription_id;
+
+    IF v_existing_doc_id IS NOT NULL AND NOT v_is_admin AND v_existing_doc_id != v_doctor_id THEN
         RAISE EXCEPTION 'FORBIDDEN: Cannot overwrite prescription belonging to another doctor.'
             USING ERRCODE = '42501';
     END IF;
 
-    -- 2. Upsert prescription header
+    -- 3. Verify appointment ownership and patient consistency if appointment_id is provided
+    IF v_appointment_id IS NOT NULL AND v_appointment_id != '' THEN
+        SELECT doctor_id, patient_id INTO v_appt_doctor_id, v_appt_patient_id
+        FROM public.appointments
+        WHERE appointment_id = v_appointment_id;
+
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'NOT_FOUND: Referenced appointment "%" does not exist.', v_appointment_id
+                USING ERRCODE = '23503';
+        END IF;
+
+        IF NOT v_is_admin AND v_appt_doctor_id != v_doctor_id THEN
+            RAISE EXCEPTION 'FORBIDDEN: Doctor "%" does not own appointment "%".', v_doctor_id, v_appointment_id
+                USING ERRCODE = '42501';
+        END IF;
+
+        IF NOT v_is_admin AND v_appt_patient_id != v_patient_id THEN
+            RAISE EXCEPTION 'FORBIDDEN: Appointment "%" is for patient "%", not "%".', v_appointment_id, v_appt_patient_id, v_patient_id
+                USING ERRCODE = '42501';
+        END IF;
+    END IF;
+
+    -- 4. Upsert prescription header
     INSERT INTO public.prescriptions (
         prescription_id,
         doctor_id,
@@ -208,7 +353,7 @@ BEGIN
         v_prescription_id,
         v_doctor_id,
         v_patient_id,
-        payload->>'appointment_id',
+        v_appointment_id,
         COALESCE(payload->>'doctor_name', 'Doctor'),
         payload->>'doctor_specialization',
         payload->>'doctor_qualifications',
@@ -282,7 +427,7 @@ BEGIN
         next_visit = EXCLUDED.next_visit,
         updated_at = CURRENT_TIMESTAMP;
 
-    -- 3. Replace medicines atomically
+    -- 5. Replace medicines atomically
     DELETE FROM public.prescription_medicines WHERE prescription_id = v_prescription_id;
     IF payload ? 'medicines' AND jsonb_array_length(payload->'medicines') > 0 THEN
         FOR v_med IN SELECT * FROM jsonb_array_elements(payload->'medicines') LOOP
@@ -316,7 +461,7 @@ BEGIN
         END LOOP;
     END IF;
 
-    -- 4. Replace investigations atomically
+    -- 6. Replace investigations atomically
     DELETE FROM public.prescription_investigations WHERE prescription_id = v_prescription_id;
     IF payload ? 'investigations' AND jsonb_array_length(payload->'investigations') > 0 THEN
         FOR v_inv IN SELECT * FROM jsonb_array_elements(payload->'investigations') LOOP
@@ -336,7 +481,7 @@ BEGIN
         END LOOP;
     END IF;
 
-    -- 5. Replace referral links atomically
+    -- 7. Replace referral links atomically
     DELETE FROM public.prescription_referrals WHERE prescription_id = v_prescription_id;
     IF payload ? 'referrals' AND jsonb_array_length(payload->'referrals') > 0 THEN
         FOR v_ref IN SELECT * FROM jsonb_array_elements(payload->'referrals') LOOP
@@ -364,19 +509,20 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.create_prescription_atomic(JSONB) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.create_prescription_atomic(JSONB) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_prescription_atomic(JSONB) TO authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 5. ATOMIC APPOINTMENT BOOKING (book_appointment_atomic)
 -- ----------------------------------------------------------------------------
--- Strictly derives patient_id from auth.jwt()->>'sub'. Never trusts client parameter.
--- Idempotency: Returns existing appointment record if already booked.
--- Slot conflict: Transaction-level advisory lock prevents race conditions.
+
+DROP FUNCTION IF EXISTS public.book_appointment_atomic(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, INTEGER, VARCHAR, TIMESTAMPTZ, VARCHAR, VARCHAR, INTEGER, VARCHAR, TEXT, VARCHAR);
+DROP FUNCTION IF EXISTS public.book_appointment_atomic(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, INTEGER, VARCHAR, TIMESTAMPTZ, VARCHAR, VARCHAR, INTEGER, VARCHAR, TEXT, VARCHAR);
+DROP FUNCTION IF EXISTS public.book_appointment_atomic(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, INTEGER, VARCHAR, TIMESTAMPTZ, VARCHAR, VARCHAR, INTEGER, VARCHAR, TEXT, VARCHAR, VARCHAR);
+
 CREATE OR REPLACE FUNCTION public.book_appointment_atomic(
     p_appointment_id VARCHAR(64),
     p_doctor_id VARCHAR(64),
-    p_patient_id VARCHAR(64), -- Kept for backward compatibility, overridden by auth.jwt()->>'sub'
     p_doctor_name VARCHAR(255),
     p_specialization VARCHAR(128),
     p_patient_name VARCHAR(255),
@@ -388,14 +534,17 @@ CREATE OR REPLACE FUNCTION public.book_appointment_atomic(
     p_token_number INTEGER DEFAULT NULL,
     p_clinic_name VARCHAR(255) DEFAULT NULL,
     p_clinic_address TEXT DEFAULT NULL,
-    p_sync_origin VARCHAR(32) DEFAULT 'patient_supabase'
+    p_sync_origin VARCHAR(32) DEFAULT 'patient_supabase',
+    p_patient_id VARCHAR(64) DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
+    v_caller_uid TEXT;
+    v_caller_patient_id TEXT;
     v_patient_id TEXT;
     v_active_count INTEGER;
     v_token_number INTEGER;
@@ -404,14 +553,45 @@ DECLARE
     v_lock_key2 INTEGER;
     v_is_admin BOOLEAN;
 BEGIN
-    -- 0. Strictly derive patient_id from auth.jwt()->>'sub'
-    v_patient_id := COALESCE(auth.jwt()->>'sub', current_setting('request.jwt.claims', true)::jsonb->>'sub');
-    IF v_patient_id IS NULL THEN
+    -- 0. Strictly derive caller UID from auth.jwt()->>'sub'
+    v_caller_uid := NULLIF(COALESCE(
+        auth.jwt()->>'sub',
+        current_setting('request.jwt.claims', true)::jsonb->>'sub'
+    ), '');
+
+    IF v_caller_uid IS NULL THEN
         RAISE EXCEPTION 'UNAUTHORIZED: Authentication required to book an appointment.'
             USING ERRCODE = '42501';
     END IF;
 
     v_is_admin := COALESCE(private.is_super_admin(), FALSE);
+
+    -- Resolve caller's own patient profile_id
+    SELECT profile_id INTO v_caller_patient_id
+    FROM public.users
+    WHERE id = v_caller_uid
+    LIMIT 1;
+
+    IF v_caller_patient_id IS NULL THEN
+        v_caller_patient_id := v_caller_uid;
+    END IF;
+
+    -- Verify patient ownership: caller can only book for themselves or their owned family members
+    IF p_patient_id IS NOT NULL AND trim(p_patient_id) != '' THEN
+        v_patient_id := trim(p_patient_id);
+        IF NOT v_is_admin AND v_patient_id != v_caller_patient_id THEN
+            IF NOT EXISTS (
+                SELECT 1 FROM public.patients WHERE patient_id = v_patient_id AND owner_uid = v_caller_uid
+            ) AND NOT EXISTS (
+                SELECT 1 FROM public.family_members WHERE member_id = v_patient_id AND patient_id = v_caller_patient_id
+            ) THEN
+                RAISE EXCEPTION 'FORBIDDEN: Callers may only book appointments for their own patient profile.'
+                    USING ERRCODE = '42501';
+            END IF;
+        END IF;
+    ELSE
+        v_patient_id := v_caller_patient_id;
+    END IF;
 
     -- Validate required parameters
     IF p_appointment_id IS NULL OR p_doctor_id IS NULL OR p_date_time IS NULL THEN
@@ -426,9 +606,9 @@ BEGIN
     END IF;
 
     -- 2. Transaction Advisory Lock on doctor slot to serialize concurrent bookings
-    v_lock_key1 := hashtext(p_doctor_id);
-    v_lock_key2 := hashtext(extract(epoch from p_date_time)::text);
-    PERFORM pg_advisory_xact_lock(v_lock_key1, v_lock_key2);
+    v_lock_key1 := pg_catalog.hashtext(p_doctor_id);
+    v_lock_key2 := pg_catalog.hashtext(EXTRACT(epoch FROM p_date_time)::text);
+    PERFORM pg_catalog.pg_advisory_xact_lock(v_lock_key1, v_lock_key2);
 
     -- 3. Duplicate Active Booking check by same patient for this slot
     IF EXISTS (
@@ -478,12 +658,15 @@ BEGIN
         date_time,
         slot_label,
         visit_type,
-        patient_status,
-        doctor_status,
         token_number,
         clinic_name,
         clinic_address,
+        doctor_status,
+        patient_status,
+        payment_status,
+        consultation_fee,
         sync_origin,
+        booked_by_uid,
         created_at,
         updated_at
     ) VALUES (
@@ -498,14 +681,17 @@ BEGIN
         p_date_time,
         p_slot_label,
         COALESCE(p_visit_type, 'newVisit'),
-        'confirmed',
-        'pendingRequest',
         v_token_number,
         p_clinic_name,
         p_clinic_address,
+        'pendingRequest',
+        'pending',
+        'pending',
+        0.00,
         COALESCE(p_sync_origin, 'patient_supabase'),
-        NOW(),
-        NOW()
+        v_caller_uid,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
     )
     RETURNING * INTO v_appointment;
 
@@ -513,18 +699,166 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.book_appointment_atomic FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.book_appointment_atomic TO authenticated;
+REVOKE ALL ON FUNCTION public.book_appointment_atomic(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, INTEGER, VARCHAR, TIMESTAMPTZ, VARCHAR, VARCHAR, INTEGER, VARCHAR, TEXT, VARCHAR, VARCHAR) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.book_appointment_atomic(VARCHAR, VARCHAR, VARCHAR, VARCHAR, VARCHAR, INTEGER, VARCHAR, TIMESTAMPTZ, VARCHAR, VARCHAR, INTEGER, VARCHAR, TEXT, VARCHAR, VARCHAR) TO authenticated;
+
+-- Ensure remaining helper functions have search_path = '' and strict grants
+CREATE OR REPLACE FUNCTION private.doctor_has_relationship(p_patient_id TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+    SELECT (
+        private.is_verified_doctor()
+        AND (
+            EXISTS (
+                SELECT 1 FROM public.appointments a
+                WHERE a.patient_id = p_patient_id
+                  AND a.doctor_id = private.current_profile_id()
+                  AND a.doctor_status IS DISTINCT FROM 'cancelled'
+                  AND a.doctor_status IS DISTINCT FROM 'noShow'
+                  AND a.patient_status IS DISTINCT FROM 'cancelled'
+            )
+            OR EXISTS (
+                SELECT 1 FROM public.patient_doctor_links pdl
+                WHERE pdl.patient_id = p_patient_id
+                  AND pdl.doctor_id = private.current_profile_id()
+            )
+            OR EXISTS (
+                SELECT 1 FROM public.patients p
+                WHERE p.patient_id = p_patient_id
+                  AND (
+                      p.primary_doctor_id = private.current_profile_id()
+                      OR p.invited_doctor_id = private.current_profile_id()
+                      OR private.current_profile_id() = ANY(p.care_team_doctor_ids)
+                  )
+            )
+        )
+    );
+$$;
+REVOKE ALL ON FUNCTION private.doctor_has_relationship(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.doctor_has_relationship(TEXT) TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION private.is_walkin_stub(p_patient_id TEXT)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.patients p
+        WHERE p.patient_id = p_patient_id
+          AND p.owner_uid IS NULL
+          AND (
+            p.primary_doctor_id = private.current_profile_id()
+            OR EXISTS (
+                SELECT 1 FROM public.appointments a
+                WHERE a.patient_id = p_patient_id
+                  AND a.doctor_id = private.current_profile_id()
+                  AND a.doctor_status IS DISTINCT FROM 'cancelled'
+                  AND a.doctor_status IS DISTINCT FROM 'noShow'
+                  AND a.patient_status IS DISTINCT FROM 'cancelled'
+            )
+            OR EXISTS (
+                SELECT 1 FROM public.patient_doctor_links pdl
+                WHERE pdl.patient_id = p_patient_id
+                  AND pdl.doctor_id = private.current_profile_id()
+            )
+          )
+    );
+$$;
+REVOKE ALL ON FUNCTION private.is_walkin_stub(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.is_walkin_stub(TEXT) TO authenticated, service_role;
+
+CREATE OR REPLACE FUNCTION public.consume_otp_attempt(p_challenge_id TEXT)
+RETURNS TABLE(attempts INT)
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+    UPDATE public.otp_challenges
+    SET attempts = attempts + 1
+    WHERE challenge_id = p_challenge_id
+      AND attempts < 5
+    RETURNING attempts;
+$$;
+REVOKE ALL ON FUNCTION public.consume_otp_attempt(TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.consume_otp_attempt(TEXT) TO service_role;
+
+DROP FUNCTION IF EXISTS public.check_and_increment_rate_limit(TEXT, INT, INT, TEXT);
+CREATE OR REPLACE FUNCTION public.check_and_increment_rate_limit(
+    p_bucket TEXT,
+    p_max_count INT,
+    p_window_seconds INT,
+    p_category TEXT DEFAULT 'auth'
+)
+RETURNS TABLE(allowed BOOLEAN, current_count INT, reset_at TIMESTAMPTZ)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_window_start TIMESTAMPTZ;
+    v_current_count INT;
+    v_reset_at TIMESTAMPTZ;
+    v_now TIMESTAMPTZ := CURRENT_TIMESTAMP;
+BEGIN
+    SELECT window_start, count INTO v_window_start, v_current_count
+    FROM public.rate_limits
+    WHERE bucket = p_bucket AND category = p_category
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        INSERT INTO public.rate_limits (bucket, category, count, window_start)
+        VALUES (p_bucket, p_category, 1, v_now)
+        ON CONFLICT (bucket, category) DO UPDATE
+        SET count = public.rate_limits.count + 1
+        RETURNING count, window_start INTO v_current_count, v_window_start;
+        v_reset_at := v_window_start + (p_window_seconds || ' seconds')::INTERVAL;
+        RETURN QUERY SELECT TRUE, v_current_count, v_reset_at;
+        RETURN;
+    END IF;
+
+    IF v_now > v_window_start + (p_window_seconds || ' seconds')::INTERVAL THEN
+        UPDATE public.rate_limits
+        SET count = 1, window_start = v_now
+        WHERE bucket = p_bucket AND category = p_category;
+        v_reset_at := v_now + (p_window_seconds || ' seconds')::INTERVAL;
+        RETURN QUERY SELECT TRUE, 1, v_reset_at;
+        RETURN;
+    END IF;
+
+    IF v_current_count >= p_max_count THEN
+        v_reset_at := v_window_start + (p_window_seconds || ' seconds')::INTERVAL;
+        RETURN QUERY SELECT FALSE, v_current_count, v_reset_at;
+        RETURN;
+    END IF;
+
+    UPDATE public.rate_limits
+    SET count = count + 1
+    WHERE bucket = p_bucket AND category = p_category
+    RETURNING count, window_start INTO v_current_count, v_window_start;
+    v_reset_at := v_window_start + (p_window_seconds || ' seconds')::INTERVAL;
+    RETURN QUERY SELECT TRUE, v_current_count, v_reset_at;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.check_and_increment_rate_limit(TEXT, INT, INT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.check_and_increment_rate_limit(TEXT, INT, INT, TEXT) TO service_role;
 
 -- ----------------------------------------------------------------------------
 -- 6. NATIVE POSTGRES TRIGGERS FOR DOCTOR RATINGS & REVIEW_PUBLIC SYNC
 -- ----------------------------------------------------------------------------
 -- Automatically updates review_public and recalculates doctor rating & review_count.
+-- Uses internal_aggregate_sync config flag to bypass column lock during aggregate sync.
+
 CREATE OR REPLACE FUNCTION public.fn_sync_review_aggregates()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
     v_doctor_id VARCHAR(64);
@@ -532,6 +866,9 @@ DECLARE
     v_count INT;
     v_masked_name VARCHAR(64);
 BEGIN
+    -- Bypass column immutability locks on doctors.rating and review_count during aggregate recalculation
+    PERFORM pg_catalog.set_config('doctornect.internal_aggregate_sync', 'on', true);
+
     v_doctor_id := COALESCE(NEW.doctor_id, OLD.doctor_id);
 
     -- 1. Maintain review_public table
@@ -600,6 +937,9 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.fn_sync_review_aggregates() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.fn_sync_review_aggregates() TO authenticated, service_role;
+
 DROP TRIGGER IF EXISTS trg_reviews_aggregate_and_sync ON public.reviews;
 CREATE TRIGGER trg_reviews_aggregate_and_sync
     AFTER INSERT OR UPDATE OR DELETE ON public.reviews
@@ -611,7 +951,7 @@ CREATE OR REPLACE FUNCTION public.fn_sync_review_helpful_count()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
     v_review_id VARCHAR(128);
@@ -624,6 +964,9 @@ BEGIN
     RETURN NEW;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.fn_sync_review_helpful_count() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.fn_sync_review_helpful_count() TO authenticated, service_role;
 
 DROP TRIGGER IF EXISTS trg_review_votes_helpful_count ON public.review_votes;
 CREATE TRIGGER trg_review_votes_helpful_count

@@ -354,6 +354,217 @@ EXCEPTION
         INSERT INTO test_results VALUES (15, 'doctors.verified immutability (client cannot self-verify)', 'BLOCK', SQLERRM, 'FAIL');
 END $$;
 
+-- ============================================================================
+-- TEST 11: COLUMN IMMUTABILITY LOCK ON doctors.rating
+-- Direct client update to doctors.rating must be blocked
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_doc_001", "role": "authenticated", "user_role": "doctor", "app_role": "doctor"}', true);
+SET LOCAL ROLE authenticated;
+
+DO $$
+BEGIN
+    UPDATE public.doctors SET rating = 5.0 WHERE doctor_id = 'd_001';
+    INSERT INTO test_results VALUES (16, 'doctors.rating direct update blocked (42501)', 'BLOCK', 'ALLOWED', 'FAIL');
+EXCEPTION
+    WHEN SQLSTATE '42501' THEN
+        INSERT INTO test_results VALUES (16, 'doctors.rating direct update blocked (42501)', 'BLOCK', 'BLOCKED (42501)', 'PASS');
+    WHEN OTHERS THEN
+        INSERT INTO test_results VALUES (16, 'doctors.rating direct update blocked (42501)', 'BLOCK', SQLERRM, 'FAIL');
+END $$;
+
+-- ============================================================================
+-- TEST 12: REVIEW INSERTION UPDATES DOCTORS.RATING UNDER COLUMN LOCK
+-- Inserting a review updates rating & review_count via aggregate trigger bypass
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_001", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO public.reviews (review_id, patient_id, doctor_id, patient_name, rating, comment)
+VALUES ('rev_test_01', 'p_001', 'd_001', 'Patient One', 5, 'Excellent doctor!');
+
+RESET ROLE;
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    17,
+    'reviews trigger updates doctors.rating and review_count under column lock',
+    'rating=5.00, count=1',
+    'rating=' || rating::text || ', count=' || review_count::text,
+    CASE WHEN rating = 5.00 AND review_count = 1 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctors
+WHERE doctor_id = 'd_001';
+
+-- ============================================================================
+-- TEST 13: PRESCRIPTION OWNERSHIP IN create_prescription_atomic
+-- Doctor B cannot overwrite Doctor A's prescription or attach Doctor A's appointment
+-- ============================================================================
+RESET ROLE;
+INSERT INTO users (id, firebase_uid, role, profile_id, display_name, email, mobile, profile_completed, verified, status)
+VALUES ('fb_uid_doc_002', 'fb_uid_doc_002', 'doctor', 'd_002', 'Dr. Beta', 'doc2@test.com', '9800000008', TRUE, TRUE, 'approved')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO doctors (doctor_id, owner_uid, name, email, mobile, specialization, qualification, verified, deactivated, profile_completed)
+VALUES ('d_002', 'fb_uid_doc_002', 'Dr. Beta', 'doc2@test.com', '9800000008', 'Dermatology', 'MD', TRUE, FALSE, TRUE)
+ON CONFLICT (doctor_id) DO NOTHING;
+
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_doc_002", "role": "authenticated", "user_role": "doctor", "app_role": "doctor"}', true);
+SET LOCAL ROLE authenticated;
+
+-- Cannot overwrite Doctor A's prescription
+DO $$
+BEGIN
+    PERFORM public.create_prescription_atomic(jsonb_build_object(
+        'prescription_id', 'rx_test_01',
+        'patient_id', 'p_001',
+        'appointment_id', 'apt_test_01',
+        'primary_diagnosis', 'Hijacked diagnosis'
+    ));
+    INSERT INTO test_results VALUES (18, 'create_prescription_atomic: Doctor B cannot overwrite Doctor A prescription', 'BLOCK', 'ALLOWED', 'FAIL');
+EXCEPTION
+    WHEN SQLSTATE '42501' THEN
+        INSERT INTO test_results VALUES (18, 'create_prescription_atomic: Doctor B cannot overwrite Doctor A prescription', 'BLOCK', 'BLOCKED (42501)', 'PASS');
+    WHEN OTHERS THEN
+        INSERT INTO test_results VALUES (18, 'create_prescription_atomic: Doctor B cannot overwrite Doctor A prescription', 'BLOCK', SQLERRM, 'FAIL');
+END $$;
+
+-- Cannot attach appointment belonging to another doctor
+DO $$
+BEGIN
+    PERFORM public.create_prescription_atomic(jsonb_build_object(
+        'prescription_id', 'rx_test_doc2_new',
+        'patient_id', 'p_001',
+        'appointment_id', 'apt_test_01',
+        'primary_diagnosis', 'Valid diagnosis'
+    ));
+    INSERT INTO test_results VALUES (19, 'create_prescription_atomic: Doctor cannot attach appointment belonging to another doctor', 'BLOCK', 'ALLOWED', 'FAIL');
+EXCEPTION
+    WHEN SQLSTATE '42501' THEN
+        INSERT INTO test_results VALUES (19, 'create_prescription_atomic: Doctor cannot attach appointment belonging to another doctor', 'BLOCK', 'BLOCKED (42501)', 'PASS');
+    WHEN OTHERS THEN
+        INSERT INTO test_results VALUES (19, 'create_prescription_atomic: Doctor cannot attach appointment belonging to another doctor', 'BLOCK', SQLERRM, 'FAIL');
+END $$;
+
+-- ============================================================================
+-- TEST 14: PATIENT BOOKING IDENTITY VERIFICATION
+-- Patient cannot book appointment specifying another patient's ID
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_001", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+DO $$
+BEGIN
+    PERFORM public.book_appointment_atomic(
+        p_appointment_id := 'apt_spoof_01',
+        p_doctor_id := 'd_001',
+        p_doctor_name := 'Dr. Alpha',
+        p_specialization := 'Cardiology',
+        p_patient_name := 'Spoofed Patient',
+        p_patient_age := 30,
+        p_patient_gender := 'Male',
+        p_date_time := NOW() + interval '1 day',
+        p_slot_label := '11:00 AM',
+        p_patient_id := 'p_002'
+    );
+    INSERT INTO test_results VALUES (20, 'book_appointment_atomic: Patient cannot book as another patient', 'BLOCK', 'ALLOWED', 'FAIL');
+EXCEPTION
+    WHEN SQLSTATE '42501' THEN
+        INSERT INTO test_results VALUES (20, 'book_appointment_atomic: Patient cannot book as another patient', 'BLOCK', 'BLOCKED (42501)', 'PASS');
+    WHEN OTHERS THEN
+        INSERT INTO test_results VALUES (20, 'book_appointment_atomic: Patient cannot book as another patient', 'BLOCK', SQLERRM, 'FAIL');
+END $$;
+
+-- ============================================================================
+-- TEST 15: ANON RPC ACCESS LOCKDOWN
+-- Anon cannot invoke book_appointment_atomic or create_prescription_atomic
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{}', true);
+SET LOCAL ROLE anon;
+
+DO $$
+BEGIN
+    PERFORM public.book_appointment_atomic(
+        p_appointment_id := 'apt_anon_01',
+        p_doctor_id := 'd_001',
+        p_doctor_name := 'Dr. Alpha',
+        p_specialization := 'Cardiology',
+        p_patient_name := 'Anon Patient',
+        p_patient_age := 30,
+        p_patient_gender := 'Male',
+        p_date_time := NOW() + interval '2 days',
+        p_slot_label := '11:00 AM'
+    );
+    INSERT INTO test_results VALUES (21, 'anon cannot call book_appointment_atomic', 'BLOCK', 'ALLOWED', 'FAIL');
+EXCEPTION
+    WHEN SQLSTATE '42501' THEN
+        INSERT INTO test_results VALUES (21, 'anon cannot call book_appointment_atomic', 'BLOCK', 'BLOCKED (42501)', 'PASS');
+    WHEN OTHERS THEN
+        INSERT INTO test_results VALUES (21, 'anon cannot call book_appointment_atomic', 'BLOCK', SQLERRM, 'FAIL');
+END $$;
+
+DO $$
+BEGIN
+    PERFORM public.create_prescription_atomic(jsonb_build_object('prescription_id', 'rx_anon_01'));
+    INSERT INTO test_results VALUES (22, 'anon cannot call create_prescription_atomic', 'BLOCK', 'ALLOWED', 'FAIL');
+EXCEPTION
+    WHEN SQLSTATE '42501' THEN
+        INSERT INTO test_results VALUES (22, 'anon cannot call create_prescription_atomic', 'BLOCK', 'BLOCKED (42501)', 'PASS');
+    WHEN OTHERS THEN
+        INSERT INTO test_results VALUES (22, 'anon cannot call create_prescription_atomic', 'BLOCK', SQLERRM, 'FAIL');
+END $$;
+
+-- ============================================================================
+-- TEST 16: PATIENT ISOLATION ACROSS RECORDS & APPOINTMENTS
+-- Patient 1 cannot query Patient 2's health records or appointments
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_001", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    23,
+    'Patient cannot read another patient health records',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.health_records
+WHERE patient_id = 'p_002';
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    24,
+    'Patient cannot read another patient appointments',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.appointments
+WHERE patient_id = 'p_002';
+
+-- ============================================================================
+-- TEST 17: REVIEWS TABLE PRIVACY & ANONYMIZATION
+-- reviews table hides patient identity from other patients; review_public masks name
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_002", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    25,
+    'reviews table hides other patients reviews (0 rows returned to 3rd party)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.reviews
+WHERE patient_id = 'p_001';
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    26,
+    'review_public table exposes masked name without patient identity',
+    'Patient O.',
+    masked_name,
+    CASE WHEN masked_name = 'Patient O.' THEN 'PASS' ELSE 'FAIL' END
+FROM public.review_public
+WHERE review_id = 'rev_test_01';
+
 -- Reset role to print results
 RESET ROLE;
 

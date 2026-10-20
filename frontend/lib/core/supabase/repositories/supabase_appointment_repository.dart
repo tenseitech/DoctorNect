@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/shared_appointments_store.dart';
@@ -120,6 +121,7 @@ class SupabaseAppointmentRepository {
     Future<void> syncFromDatabase() async {
       try {
         final records = await fetchForDoctor(doctorId);
+        recordsMap.clear();
         for (final r in records) {
           recordsMap[r.id] = r;
         }
@@ -128,11 +130,25 @@ class SupabaseAppointmentRepository {
             ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
           controller.add(sorted);
         }
-      } catch (_) {}
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('[SupabaseAppointmentRepository] sync error: $e\n$st');
+        }
+        if (!controller.isClosed) {
+          controller.addError(e, st);
+        }
+      }
     }
 
     controller = StreamController<List<DoctorNectAppointmentRecord>>.broadcast(
       onListen: () async {
+        // 0. Emit latest cached appointments immediately to new listeners
+        if (recordsMap.isNotEmpty && !controller.isClosed) {
+          final cached = recordsMap.values.toList()
+            ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+          controller.add(cached);
+        }
+
         // 1. Subscribe FIRST to the channel
         channel = _client.channel('public:appointments:doctor:$doctorId')
           ..onPostgresChanges(

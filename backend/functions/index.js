@@ -6,6 +6,33 @@ initializeApp();
 
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { sendFcmIfTokenExists, resolveAmbulanceDriverToken } = require('./fcm_push');
+const crypto = require('crypto');
+
+/**
+ * Constant-time string comparison preventing timing attacks on webhook secrets.
+ */
+function safeCompareSecrets(provided, expected) {
+  if (typeof provided !== 'string' || typeof expected !== 'string') return false;
+  const cleanP = provided.trim();
+  const cleanE = expected.trim();
+  if (cleanP.length === 0 || cleanE.length === 0) return false;
+  const pHash = crypto.createHash('sha256').update(cleanP).digest();
+  const eHash = crypto.createHash('sha256').update(cleanE).digest();
+  return crypto.timingSafeEqual(pHash, eHash);
+}
+
+/**
+ * Checks whether Supabase is primary for Doctor & Patient modules.
+ */
+function isDoctorPatientSupabasePrimary() {
+  const flag = String(
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT ||
+    process.env.CUTOVER_DOCTOR_PATIENT ||
+    ''
+  ).trim().toLowerCase();
+  return flag === 'true' || flag === '1' || flag === 'on';
+}
+
 const {
   RULES,
   VITAL_THRESHOLDS,
@@ -454,6 +481,9 @@ exports.markAmbulanceSiblingRequestsOnBroadcastCancelled = onDocumentUpdated(
 exports.notifyDoctorOnAppointmentCreated = onDocumentCreated(
   { document: 'appointments/{appointmentId}', region: FIRESTORE_TRIGGER_REGION },
   async (event) => {
+    // Gate old Firestore FCM triggers when Supabase is primary
+    if (isDoctorPatientSupabasePrimary()) return;
+
     const appointment = event.data?.data();
     if (!appointment) return;
 
@@ -507,6 +537,9 @@ exports.notifyDoctorOnAppointmentCreated = onDocumentCreated(
 exports.notifyDoctorOnReferralCreated = onDocumentCreated(
   { document: 'referrals/{referralId}', region: FIRESTORE_TRIGGER_REGION },
   async (event) => {
+    // Gate old Firestore FCM triggers when Supabase is primary
+    if (isDoctorPatientSupabasePrimary()) return;
+
     const referral = event.data?.data();
     if (!referral) return;
 
@@ -555,6 +588,9 @@ exports.notifyDoctorOnReferralCreated = onDocumentCreated(
 exports.notifyPatientOnAppointmentStatusChanged = onDocumentUpdated(
   { document: 'appointments/{appointmentId}', region: FIRESTORE_TRIGGER_REGION },
   async (event) => {
+    // Gate old Firestore FCM triggers when Supabase is primary
+    if (isDoctorPatientSupabasePrimary()) return;
+
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
     if (!before || !after) return;
@@ -2154,114 +2190,153 @@ exports.syncAmbulanceInviteToSupabase = onDocumentWritten({
  * Verifies shared secret in header `x-supabase-webhook-secret` against SUPABASE_WEBHOOK_SECRET.
  * Dispatches FCM push notifications for appointments and referrals.
  */
+async function supabaseDatabaseWebhookHandler(req, res, options = {}) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const providedSecret = req.headers['x-supabase-webhook-secret'] || req.headers['x-webhook-secret'];
+  const expectedSecret = options.expectedSecret !== undefined ? options.expectedSecret : process.env.SUPABASE_WEBHOOK_SECRET;
+
+  if (!safeCompareSecrets(providedSecret, expectedSecret)) {
+    console.warn('[supabaseDatabaseWebhook] Unauthorized webhook request: missing or invalid secret');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const payload = req.body;
+  if (!payload || typeof payload !== 'object') {
+    return res.status(400).json({ error: 'Invalid payload' });
+  }
+
+  const { type, table, record, old_record: oldRecord } = payload;
+  const db = options.db || getFirestore();
+  const fcmSender = options.sendFcm || sendFcmIfTokenExists;
+
+  try {
+    // Idempotency: Deduplicate by event / record ID + type + updated_at timestamp
+    const entityId = String(record?.appointment_id || record?.referral_id || record?.id || payload.id || 'event');
+    const eventTime = String(record?.updated_at || record?.created_at || payload.created_at || '');
+    const eventKey = `${table}:${type}:${entityId}:${eventTime}`;
+    const dedupeKey = crypto.createHash('sha256').update(eventKey).digest('hex');
+
+    const eventDocRef = db.collection('_webhook_processed_events').doc(dedupeKey);
+    const isDuplicate = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(eventDocRef);
+      if (snap.exists) return true;
+      tx.set(eventDocRef, {
+        eventKey,
+        table,
+        type,
+        entityId,
+        processedAt: FieldValue.serverTimestamp(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24-hour TTL
+      });
+      return false;
+    });
+
+    if (isDuplicate) {
+      return res.status(200).json({ success: true, duplicate: true });
+    }
+
+    if (table === 'appointments') {
+      if (type === 'INSERT' && record) {
+        const doctorId = record.doctor_id;
+        const patientName = String(record.patient_name || 'Patient').trim();
+        const appointmentId = record.appointment_id;
+
+        if (doctorId) {
+          await fcmSender(db, {
+            collection: 'doctors',
+            docId: doctorId,
+            title: 'New Appointment Booked',
+            body: `${patientName} booked an appointment for ${record.slot_label || 'upcoming slot'}.`,
+            data: {
+              type: 'appointment_new',
+              appointmentId: String(appointmentId),
+              patientName,
+              doctorTrigger: 'newAppointmentBooked',
+            },
+            androidChannelId: 'doctor_appointments',
+            logLabel: `doctor ${doctorId} supabase appointment ${appointmentId}`,
+          });
+        }
+      } else if (type === 'UPDATE' && record && oldRecord) {
+        if (record.doctor_status !== oldRecord.doctor_status) {
+          const patientId = record.patient_id;
+          const doctorName = String(record.doctor_name || 'Doctor').trim();
+          const appointmentId = record.appointment_id;
+          const status = record.doctor_status === 'confirmed' ? 'confirmed' : 'cancelled';
+          const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Declined';
+          const body = status === 'confirmed'
+            ? `Dr. ${doctorName} confirmed your appointment.`
+            : `Dr. ${doctorName} could not accept your appointment.`;
+
+          if (patientId) {
+            await fcmSender(db, {
+              collection: 'patients',
+              docId: patientId,
+              title,
+              body,
+              data: {
+                type: 'appointment_status_update',
+                appointmentId: String(appointmentId),
+                status,
+                doctorName,
+                patientTrigger: status === 'confirmed' ? 'appointmentConfirmedByDoctor' : 'appointmentDeclinedByDoctor',
+              },
+              androidChannelId: 'patient_appointments',
+              logLabel: `patient ${patientId} supabase appointment ${appointmentId}`,
+            });
+          }
+        }
+      }
+    } else if (table === 'referrals') {
+      if (type === 'INSERT' && record) {
+        const toDoctorId = record.to_doctor_id;
+        const referringDoctor = String(record.from_doctor_name || 'A doctor').trim();
+        const referralId = record.referral_id;
+
+        if (toDoctorId) {
+          await fcmSender(db, {
+            collection: 'doctors',
+            docId: toDoctorId,
+            title: 'New Patient Referral',
+            body: `${referringDoctor} referred a patient to you.`,
+            data: {
+              type: 'referral_received',
+              referralId: String(referralId),
+              doctorTrigger: 'patientReferredToMe',
+            },
+            androidChannelId: 'doctor_appointments',
+            logLabel: `doctor ${toDoctorId} supabase referral ${referralId}`,
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('[supabaseDatabaseWebhook] Error processing webhook event:', err?.message || err);
+    return res.status(500).json({ error: 'Internal processing error' });
+  }
+}
+
+/**
+ * HTTPS webhook endpoint receiving database events from Supabase.
+ * Verifies shared secret in header `x-supabase-webhook-secret` against SUPABASE_WEBHOOK_SECRET.
+ * Dispatches FCM push notifications for appointments and referrals.
+ */
 exports.supabaseDatabaseWebhook = onRequest(
   {
     region: FIRESTORE_TRIGGER_REGION,
     secrets: ['SUPABASE_WEBHOOK_SECRET'],
   },
-  async (req, res) => {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
-
-    const providedSecret = req.headers['x-supabase-webhook-secret'];
-    const expectedSecret = process.env.SUPABASE_WEBHOOK_SECRET;
-
-    if (!expectedSecret || !providedSecret || providedSecret !== expectedSecret) {
-      console.warn('[supabaseDatabaseWebhook] Unauthorized webhook request: missing or invalid secret');
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const payload = req.body;
-    if (!payload || typeof payload !== 'object') {
-      return res.status(400).json({ error: 'Invalid payload' });
-    }
-
-    const { type, table, record, old_record: oldRecord } = payload;
-    const db = getFirestore();
-
-    try {
-      if (table === 'appointments') {
-        if (type === 'INSERT' && record) {
-          const doctorId = record.doctor_id;
-          const patientName = String(record.patient_name || 'Patient').trim();
-          const appointmentId = record.appointment_id;
-
-          if (doctorId) {
-            await sendFcmIfTokenExists(db, {
-              collection: 'doctors',
-              docId: doctorId,
-              title: 'New Appointment Booked',
-              body: `${patientName} booked an appointment for ${record.slot_label || 'upcoming slot'}.`,
-              data: {
-                type: 'appointment_new',
-                appointmentId: String(appointmentId),
-                patientName,
-                doctorTrigger: 'newAppointmentBooked',
-              },
-              androidChannelId: 'doctor_appointments',
-              logLabel: `doctor ${doctorId} supabase appointment ${appointmentId}`,
-            });
-          }
-        } else if (type === 'UPDATE' && record && oldRecord) {
-          if (record.doctor_status !== oldRecord.doctor_status) {
-            const patientId = record.patient_id;
-            const doctorName = String(record.doctor_name || 'Doctor').trim();
-            const appointmentId = record.appointment_id;
-            const status = record.doctor_status === 'confirmed' ? 'confirmed' : 'cancelled';
-            const title = status === 'confirmed' ? 'Appointment Confirmed' : 'Appointment Declined';
-            const body = status === 'confirmed'
-              ? `Dr. ${doctorName} confirmed your appointment.`
-              : `Dr. ${doctorName} could not accept your appointment.`;
-
-            if (patientId) {
-              await sendFcmIfTokenExists(db, {
-                collection: 'patients',
-                docId: patientId,
-                title,
-                body,
-                data: {
-                  type: 'appointment_status_update',
-                  appointmentId: String(appointmentId),
-                  status,
-                  doctorName,
-                  patientTrigger: status === 'confirmed' ? 'appointmentConfirmedByDoctor' : 'appointmentDeclinedByDoctor',
-                },
-                androidChannelId: 'patient_appointments',
-                logLabel: `patient ${patientId} supabase appointment ${appointmentId}`,
-              });
-            }
-          }
-        }
-      } else if (table === 'referrals') {
-        if (type === 'INSERT' && record) {
-          const toDoctorId = record.to_doctor_id;
-          const referringDoctor = String(record.from_doctor_name || 'A doctor').trim();
-          const referralId = record.referral_id;
-
-          if (toDoctorId) {
-            await sendFcmIfTokenExists(db, {
-              collection: 'doctors',
-              docId: toDoctorId,
-              title: 'New Patient Referral',
-              body: `${referringDoctor} referred a patient to you.`,
-              data: {
-                type: 'referral_received',
-                referralId: String(referralId),
-                doctorTrigger: 'patientReferredToMe',
-              },
-              androidChannelId: 'doctor_appointments',
-              logLabel: `doctor ${toDoctorId} supabase referral ${referralId}`,
-            });
-          }
-        }
-      }
-
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error('[supabaseDatabaseWebhook] Error processing webhook event:', err?.message || err);
-      return res.status(500).json({ error: 'Internal processing error' });
-    }
-  }
+  supabaseDatabaseWebhookHandler,
 );
+
+// Helpers exported for unit testing
+exports._safeCompareSecrets = safeCompareSecrets;
+exports._isDoctorPatientSupabasePrimary = isDoctorPatientSupabasePrimary;
+exports._supabaseDatabaseWebhookHandler = supabaseDatabaseWebhookHandler;
+
 
