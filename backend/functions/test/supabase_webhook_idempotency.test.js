@@ -6,6 +6,8 @@ const {
   _safeCompareSecrets: safeCompareSecrets,
   _supabaseDatabaseWebhookHandler: supabaseDatabaseWebhookHandler,
   _isDoctorPatientSupabasePrimary: isDoctorPatientSupabasePrimary,
+  _resetRemoteConfigCache: resetRemoteConfigCache,
+  _setMockRemoteConfigTemplate: setMockRemoteConfigTemplate,
 } = require('../index');
 
 test('Timing-safe secret comparison (safeCompareSecrets)', () => {
@@ -225,55 +227,146 @@ test('Dual-write loop guard simulation: single write does not ping-pong', async 
   assert.equal(isLoopOrigin, true, 'Supabase reverse bridge must drop write originating from Firestore');
 });
 
-test('Single notification path routing: exactly one notification fires for ON and OFF cases', async () => {
-  const originalEnv = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+test('Cutover Flag: Reads Firebase Remote Config key use_supabase_db_doctor_patient (ON and OFF)', async () => {
+  resetRemoteConfigCache();
+  try {
+    // 1. Remote Config ON
+    setMockRemoteConfigTemplate(async () => ({
+      parameters: {
+        use_supabase_db_doctor_patient: {
+          defaultValue: { value: 'true' },
+        },
+      },
+    }));
+    resetRemoteConfigCache();
+    const primaryOn = await isDoctorPatientSupabasePrimary();
+    assert.equal(primaryOn, true, 'isDoctorPatientSupabasePrimary must return true when Remote Config is true');
 
+    // 2. Remote Config OFF
+    setMockRemoteConfigTemplate(async () => ({
+      parameters: {
+        use_supabase_db_doctor_patient: {
+          defaultValue: { value: 'false' },
+        },
+      },
+    }));
+    resetRemoteConfigCache();
+    const primaryOff = await isDoctorPatientSupabasePrimary();
+    assert.equal(primaryOff, false, 'isDoctorPatientSupabasePrimary must return false when Remote Config is false');
+  } finally {
+    setMockRemoteConfigTemplate(null);
+    resetRemoteConfigCache();
+  }
+});
+
+test('Cutover Flag: In-memory cache returns cached value without re-querying Remote Config', async () => {
+  resetRemoteConfigCache();
+  let queryCount = 0;
+  try {
+    setMockRemoteConfigTemplate(async () => {
+      queryCount++;
+      return {
+        parameters: {
+          use_supabase_db_doctor_patient: {
+            defaultValue: { value: 'true' },
+          },
+        },
+      };
+    });
+
+    const firstCall = await isDoctorPatientSupabasePrimary();
+    assert.equal(firstCall, true);
+    assert.equal(queryCount, 1, 'First call must fetch from Remote Config');
+
+    // Second call within 60s cache window
+    const secondCall = await isDoctorPatientSupabasePrimary();
+    assert.equal(secondCall, true);
+    assert.equal(queryCount, 1, 'Second call must hit in-memory cache without calling Remote Config again');
+  } finally {
+    setMockRemoteConfigTemplate(null);
+    resetRemoteConfigCache();
+  }
+});
+
+test('Cutover Flag: Falls back to environment variable when Remote Config is unreachable', async () => {
+  resetRemoteConfigCache();
+  const origEnv = process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
+  try {
+    // Remote Config throws network/permission error
+    setMockRemoteConfigTemplate(async () => {
+      throw new Error('Remote Config service unavailable');
+    });
+
+    // Fallback case 1: env is true
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
+    resetRemoteConfigCache();
+    const fallbackTrue = await isDoctorPatientSupabasePrimary();
+    assert.equal(fallbackTrue, true, 'Must fallback to env=true when Remote Config fails');
+
+    // Fallback case 2: env is false
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'false';
+    resetRemoteConfigCache();
+    const fallbackFalse = await isDoctorPatientSupabasePrimary();
+    assert.equal(fallbackFalse, false, 'Must fallback to env=false when Remote Config fails');
+  } finally {
+    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = origEnv;
+    setMockRemoteConfigTemplate(null);
+    resetRemoteConfigCache();
+  }
+});
+
+test('Single notification path routing: exactly one notification fires for ON and OFF cases', async () => {
+  resetRemoteConfigCache();
   try {
     // --- CASE 1: Cutover flag is ON (Supabase primary) ---
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
-    assert.equal(isDoctorPatientSupabasePrimary(), true, 'isDoctorPatientSupabasePrimary must return true when env is true');
+    setMockRemoteConfigTemplate(async () => ({
+      parameters: {
+        use_supabase_db_doctor_patient: { defaultValue: { value: 'true' } },
+      },
+    }));
+    resetRemoteConfigCache();
+    assert.equal(await isDoctorPatientSupabasePrimary(), true);
 
     let firestoreTriggerFired = false;
     let supabaseWebhookFired = false;
 
-    // Simulate Firestore trigger execution
-    if (!isDoctorPatientSupabasePrimary()) {
-      firestoreTriggerFired = true; // Would send FCM
+    if (!(await isDoctorPatientSupabasePrimary())) {
+      firestoreTriggerFired = true;
     }
-
-    // Simulate Supabase Webhook execution
-    if (isDoctorPatientSupabasePrimary()) {
-      supabaseWebhookFired = true; // Sends FCM
+    if (await isDoctorPatientSupabasePrimary()) {
+      supabaseWebhookFired = true;
     }
 
     assert.equal(firestoreTriggerFired, false, 'Firestore FCM trigger must be OFF when Supabase is primary');
     assert.equal(supabaseWebhookFired, true, 'Supabase webhook must send notification when Supabase is primary');
-    const totalNotificationsCase1 = (firestoreTriggerFired ? 1 : 0) + (supabaseWebhookFired ? 1 : 0);
-    assert.equal(totalNotificationsCase1, 1, 'Exactly one notification path must fire when cutover is ON');
+    assert.equal((firestoreTriggerFired ? 1 : 0) + (supabaseWebhookFired ? 1 : 0), 1);
 
     // --- CASE 2: Cutover flag is OFF (Firestore primary) ---
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'false';
-    assert.equal(isDoctorPatientSupabasePrimary(), false, 'isDoctorPatientSupabasePrimary must return false when env is false');
+    setMockRemoteConfigTemplate(async () => ({
+      parameters: {
+        use_supabase_db_doctor_patient: { defaultValue: { value: 'false' } },
+      },
+    }));
+    resetRemoteConfigCache();
+    assert.equal(await isDoctorPatientSupabasePrimary(), false);
 
     firestoreTriggerFired = false;
     supabaseWebhookFired = false;
 
-    // Simulate Firestore trigger execution
-    if (!isDoctorPatientSupabasePrimary()) {
-      firestoreTriggerFired = true; // Sends FCM
+    if (!(await isDoctorPatientSupabasePrimary())) {
+      firestoreTriggerFired = true;
     }
-
-    // Simulate Supabase Webhook execution
-    if (isDoctorPatientSupabasePrimary()) {
-      supabaseWebhookFired = true; // Would send FCM
+    if (await isDoctorPatientSupabasePrimary()) {
+      supabaseWebhookFired = true;
     }
 
     assert.equal(firestoreTriggerFired, true, 'Firestore FCM trigger must send notification when Firestore is primary');
     assert.equal(supabaseWebhookFired, false, 'Supabase webhook must not send notification when Firestore is primary');
-    const totalNotificationsCase2 = (firestoreTriggerFired ? 1 : 0) + (supabaseWebhookFired ? 1 : 0);
-    assert.equal(totalNotificationsCase2, 1, 'Exactly one notification path must fire when cutover is OFF');
+    assert.equal((firestoreTriggerFired ? 1 : 0) + (supabaseWebhookFired ? 1 : 0), 1);
   } finally {
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = originalEnv;
+    setMockRemoteConfigTemplate(null);
+    resetRemoteConfigCache();
   }
 });
+
 

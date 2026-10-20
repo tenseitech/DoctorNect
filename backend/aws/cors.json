@@ -9,10 +9,10 @@
       "HEAD"
     ],
     "AllowedOrigins": [
-      "https://doctornect.com",
-      "https://app.doctornect.com",
-      "http://localhost:3000",
-      "http://localhost:5000"
+      "${ALLOWED_ORIGIN_PROD}",
+      "${ALLOWED_ORIGIN_APP}",
+      "${ALLOWED_ORIGIN_LOCAL_1}",
+      "${ALLOWED_ORIGIN_LOCAL_2}"
     ],
     "ExposeHeaders": [
       "ETag",

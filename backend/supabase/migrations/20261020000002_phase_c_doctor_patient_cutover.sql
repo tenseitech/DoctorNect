@@ -33,10 +33,18 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
-    INSERT INTO public.doctor_directory_updates (id, updated_at)
-    VALUES ('directory', CURRENT_TIMESTAMP)
-    ON CONFLICT (id) DO UPDATE SET updated_at = EXCLUDED.updated_at;
-    RETURN NEW;
+    -- Only touch directory updates if the doctor is (or was) verified and active, or transitioning verified/active state
+    IF (TG_OP = 'DELETE' AND OLD.verified = TRUE AND OLD.deactivated = FALSE)
+       OR (TG_OP = 'INSERT' AND NEW.verified = TRUE AND NEW.deactivated = FALSE)
+       OR (TG_OP = 'UPDATE' AND (
+           (NEW.verified = TRUE AND NEW.deactivated = FALSE)
+           OR (OLD.verified = TRUE AND OLD.deactivated = FALSE)
+       )) THEN
+        INSERT INTO public.doctor_directory_updates (id, updated_at)
+        VALUES ('directory', CURRENT_TIMESTAMP)
+        ON CONFLICT (id) DO UPDATE SET updated_at = EXCLUDED.updated_at;
+    END IF;
+    RETURN COALESCE(NEW, OLD);
 END;
 $$;
 
@@ -92,10 +100,28 @@ ALTER TABLE public.doctor_directory_updates REPLICA IDENTITY FULL;
 -- ----------------------------------------------------------------------------
 -- 2. PUBLIC DOCTOR DIRECTORY (SAFE COLUMNS ONLY)
 -- ----------------------------------------------------------------------------
--- Strips sensitive data: phone, email, state council number, owner_uid, fcm_token.
--- Exposes only verified, non-deactivated doctors.
--- Uses security_invoker = false (definer view owned by db owner) with explicit GRANT
--- to serve as an immutable projection firewall.
+-- ----------------------------------------------------------------------------
+-- 2. DOCTOR DIRECTORY PROJECTION FIREWALL & DOCTORS TABLE RLS
+-- ----------------------------------------------------------------------------
+-- SECURITY ARCHITECTURE:
+-- 1. Base table `public.doctors` contains sensitive PII & credentials:
+--    mobile, email, state_council, council_number, fcm_token.
+--    Direct SELECT on `public.doctors` is restricted to:
+--    - Owner doctor (owner_uid = auth.jwt()->>'sub' OR doctor_id = private.current_profile_id())
+--    - Platform Super Admin (private.is_super_admin())
+--    - Patients who have a booked/confirmed appointment with this doctor
+--    - Other doctors with an active clinical referral or care link
+-- 2. `public.doctor_directory` is restored as a SECURITY DEFINER-style view
+--    (security_invoker = false, owned by db owner) with strict column filtering.
+--    It projects ONLY safe discovery columns (name, specialization, clinic, rating, etc.)
+--    and hardcodes WHERE verified = TRUE AND deactivated = FALSE.
+--    Authenticated users query this view for doctor directory discovery.
+-- 3. Supabase Security Advisor Accepted Exception:
+--    View public.doctor_directory intentionally runs with security_invoker = false (definer view)
+--    so authenticated clients can search and read verified doctor profiles without requiring direct
+--    SELECT privileges on sensitive clinical columns (mobile, email, state_council, council_number, fcm_token)
+--    in the underlying public.doctors table. The view query strictly filters by verified=true AND deactivated=false.
+
 ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_s3_key TEXT;
 ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_s3_bucket TEXT;
 ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_storage_provider VARCHAR(32) DEFAULT 's3';
@@ -104,13 +130,40 @@ DROP POLICY IF EXISTS doctors_select ON public.doctors;
 CREATE POLICY doctors_select ON public.doctors
     FOR SELECT TO authenticated
     USING (
-        (verified = TRUE AND deactivated = FALSE)
-        OR (owner_uid = (auth.jwt() ->> 'sub'))
+        -- 1. Doctor themselves (owner)
+        (owner_uid = (auth.jwt() ->> 'sub'))
+        OR (doctor_id = private.current_profile_id())
+        -- 2. Platform Admin
         OR private.is_super_admin()
+        -- 3. Patient with an appointment with this doctor
+        OR EXISTS (
+            SELECT 1 FROM public.appointments a
+            WHERE a.doctor_id = doctors.doctor_id
+              AND a.patient_id = private.current_profile_id()
+        )
+        -- 4. Another doctor with clinical care relationship (referral or shared link)
+        OR EXISTS (
+            SELECT 1 FROM public.patient_doctor_links pdl
+            WHERE pdl.doctor_id = doctors.doctor_id
+              AND pdl.patient_id = private.current_profile_id()
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.referrals dr
+            WHERE (dr.from_doctor_id = private.current_profile_id() AND dr.to_doctor_id = doctors.doctor_id)
+               OR (dr.to_doctor_id = private.current_profile_id() AND dr.from_doctor_id = doctors.doctor_id)
+        )
     );
 
-CREATE OR REPLACE VIEW public.doctor_directory 
-WITH (security_invoker = true)
+DROP POLICY IF EXISTS "doctors_update" ON public.doctors;
+CREATE POLICY "doctors_update" ON public.doctors
+    FOR UPDATE TO authenticated
+    USING (owner_uid = (auth.jwt() ->> 'sub') OR doctor_id = private.current_profile_id() OR private.is_super_admin())
+    WITH CHECK (owner_uid = (auth.jwt() ->> 'sub') OR doctor_id = private.current_profile_id() OR private.is_super_admin());
+
+-- Restore doctor_directory as SECURITY DEFINER-style view (security_invoker = false)
+DROP VIEW IF EXISTS public.doctor_directory;
+CREATE VIEW public.doctor_directory 
+WITH (security_invoker = false)
 AS
 SELECT
     doctor_id,
@@ -139,8 +192,47 @@ SELECT
 FROM public.doctors
 WHERE verified = TRUE AND deactivated = FALSE;
 
+ALTER VIEW public.doctor_directory OWNER TO postgres;
+
 REVOKE ALL ON public.doctor_directory FROM PUBLIC, anon, authenticated;
 GRANT SELECT ON public.doctor_directory TO authenticated, service_role;
+
+-- ----------------------------------------------------------------------------
+-- 2b. STORAGE AUDIT LOGS (PostgreSQL table for server-side audit logs)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.storage_audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    who TEXT NOT NULL,
+    role TEXT NOT NULL,
+    what TEXT NOT NULL,
+    action TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'success',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    metadata JSONB DEFAULT '{}'::jsonb
+);
+
+ALTER TABLE public.storage_audit_logs ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.storage_audit_logs FROM PUBLIC, anon, authenticated;
+GRANT ALL ON public.storage_audit_logs TO service_role;
+GRANT SELECT ON public.storage_audit_logs TO authenticated;
+
+DROP POLICY IF EXISTS "storage_audit_logs_admin_read" ON public.storage_audit_logs;
+CREATE POLICY "storage_audit_logs_admin_read" ON public.storage_audit_logs
+    FOR SELECT TO authenticated
+    USING (private.is_super_admin());
+
+ALTER TABLE IF EXISTS public.health_records ADD COLUMN IF NOT EXISTS file_size_bytes BIGINT;
+ALTER TABLE IF EXISTS public.health_records ADD COLUMN IF NOT EXISTS mime_type VARCHAR(128);
+ALTER TABLE IF EXISTS public.health_records ADD COLUMN IF NOT EXISTS upload_confirmed_at TIMESTAMPTZ;
+
+ALTER TABLE IF EXISTS public.lab_bookings ADD COLUMN IF NOT EXISTS report_s3_key TEXT;
+ALTER TABLE IF EXISTS public.lab_bookings ADD COLUMN IF NOT EXISTS report_s3_bucket TEXT;
+ALTER TABLE IF EXISTS public.lab_bookings ADD COLUMN IF NOT EXISTS report_file_size_bytes BIGINT;
+ALTER TABLE IF EXISTS public.lab_bookings ADD COLUMN IF NOT EXISTS report_mime_type VARCHAR(128);
+ALTER TABLE IF EXISTS public.lab_bookings ADD COLUMN IF NOT EXISTS report_uploaded_at TIMESTAMPTZ;
+
+ALTER TABLE IF EXISTS public.patients ADD COLUMN IF NOT EXISTS photo_updated_at TIMESTAMPTZ;
+ALTER TABLE IF EXISTS public.doctors ADD COLUMN IF NOT EXISTS photo_updated_at TIMESTAMPTZ;
 
 -- ----------------------------------------------------------------------------
 -- 3. COLUMN IMMUTABILITY LOCKS WITH AGGREGATE TRIGGER BYPASS

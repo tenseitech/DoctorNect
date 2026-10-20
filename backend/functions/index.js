@@ -21,17 +21,11 @@ function safeCompareSecrets(provided, expected) {
   return crypto.timingSafeEqual(pHash, eHash);
 }
 
-/**
- * Checks whether Supabase is primary for Doctor & Patient modules.
- */
-function isDoctorPatientSupabasePrimary() {
-  const flag = String(
-    process.env.USE_SUPABASE_DB_DOCTOR_PATIENT ||
-    process.env.CUTOVER_DOCTOR_PATIENT ||
-    ''
-  ).trim().toLowerCase();
-  return flag === 'true' || flag === '1' || flag === 'on';
-}
+const {
+  isDoctorPatientSupabasePrimary,
+  _resetRemoteConfigCache,
+  _setMockRemoteConfigTemplate,
+} = require('./sync_flags');
 
 const {
   RULES,
@@ -482,7 +476,7 @@ exports.notifyDoctorOnAppointmentCreated = onDocumentCreated(
   { document: 'appointments/{appointmentId}', region: FIRESTORE_TRIGGER_REGION },
   async (event) => {
     // Gate old Firestore FCM triggers when Supabase is primary
-    if (isDoctorPatientSupabasePrimary()) return;
+    if (await isDoctorPatientSupabasePrimary()) return;
 
     const appointment = event.data?.data();
     if (!appointment) return;
@@ -538,7 +532,7 @@ exports.notifyDoctorOnReferralCreated = onDocumentCreated(
   { document: 'referrals/{referralId}', region: FIRESTORE_TRIGGER_REGION },
   async (event) => {
     // Gate old Firestore FCM triggers when Supabase is primary
-    if (isDoctorPatientSupabasePrimary()) return;
+    if (await isDoctorPatientSupabasePrimary()) return;
 
     const referral = event.data?.data();
     if (!referral) return;
@@ -589,7 +583,7 @@ exports.notifyPatientOnAppointmentStatusChanged = onDocumentUpdated(
   { document: 'appointments/{appointmentId}', region: FIRESTORE_TRIGGER_REGION },
   async (event) => {
     // Gate old Firestore FCM triggers when Supabase is primary
-    if (isDoctorPatientSupabasePrimary()) return;
+    if (await isDoctorPatientSupabasePrimary()) return;
 
     const before = event.data?.before?.data();
     const after = event.data?.after?.data();
@@ -2339,6 +2333,8 @@ exports.supabaseDatabaseWebhook = onRequest(
 // Helpers exported for unit testing
 exports._safeCompareSecrets = safeCompareSecrets;
 exports._isDoctorPatientSupabasePrimary = isDoctorPatientSupabasePrimary;
+exports._resetRemoteConfigCache = _resetRemoteConfigCache;
+exports._setMockRemoteConfigTemplate = _setMockRemoteConfigTemplate;
 exports._supabaseDatabaseWebhookHandler = supabaseDatabaseWebhookHandler;
 
 

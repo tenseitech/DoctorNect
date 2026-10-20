@@ -8,7 +8,7 @@
         "s3:ListBucket",
         "s3:GetBucketLocation"
       ],
-      "Resource": "arn:aws:s3:::doctornect",
+      "Resource": "arn:aws:s3:::${S3_BUCKET}",
       "Condition": {
         "StringLike": {
           "s3:prefix": [
@@ -31,7 +31,7 @@
         "s3:HeadObject",
         "s3:DeleteObject"
       ],
-      "Resource": "arn:aws:s3:::doctornect/*"
+      "Resource": "arn:aws:s3:::${S3_BUCKET}/*"
     }
   ]
 }

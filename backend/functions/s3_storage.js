@@ -12,6 +12,8 @@ const {
   DeleteObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { createClient } = require('@supabase/supabase-js');
+const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 const { enforceAbuseLimit } = require('./abuse_rate_limit');
 
 // Firebase Secret Manager declarations
@@ -55,6 +57,36 @@ let _testingS3Client = null;
 
 function setS3ClientForTesting(client) {
   _testingS3Client = client;
+}
+
+let _testingSupabaseClient = null;
+
+function setSupabaseClientForTesting(client) {
+  _testingSupabaseClient = client;
+}
+
+function getSupabaseAdminClient() {
+  if (_testingSupabaseClient) return _testingSupabaseClient;
+  const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+async function resolveStorageContext(dbOrOptions) {
+  const db = (dbOrOptions && typeof dbOrOptions.collection === 'function')
+    ? dbOrOptions
+    : (dbOrOptions?.db || getFirestore());
+  const options = (dbOrOptions && typeof dbOrOptions.collection === 'function')
+    ? {}
+    : (dbOrOptions || {});
+  const isSupabase = options.isSupabasePrimary !== undefined
+    ? options.isSupabasePrimary
+    : await isDoctorPatientSupabasePrimary();
+  const supabase = options.supabaseClient || getSupabaseAdminClient();
+  return { db, options, isSupabase, supabase };
 }
 
 function getS3Client() {
@@ -217,9 +249,34 @@ function isPublicMediaKey(key) {
 }
 
 /**
- * Resolves caller profile from users/{uid}.
+ * Resolves caller profile from users/{uid} or Supabase public.users.
  */
-async function resolveCallerUser(db, uid) {
+async function resolveCallerUser(db, uid, ctx = {}) {
+  const isSupabase = ctx.isSupabase ?? false;
+  const supabase = ctx.supabase || null;
+
+  if (isSupabase && supabase) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle();
+    if (error || !data) {
+      throw new HttpsError('unauthenticated', 'User profile document not found.');
+    }
+    return {
+      id: data.id,
+      role: data.role,
+      profileId: data.profile_id,
+      profileCompleted: data.profile_completed,
+      verified: data.verified,
+      deactivated: data.deactivated,
+      email: data.email,
+      phone: data.mobile,
+      ...data,
+    };
+  }
+
   const userSnap = await db.collection('users').doc(uid).get();
   if (!userSnap.exists) {
     throw new HttpsError('unauthenticated', 'User profile document not found.');
@@ -270,10 +327,26 @@ function normalizePurpose(raw) {
 }
 
 /**
- * Records an immutable access audit log row in storage_audit_logs collection.
+ * Records an immutable access audit log row in storage_audit_logs table or collection.
  */
-async function logStorageAccess(db, { who, role, what, action, status = 'success', metadata = {} }) {
+async function logStorageAccess(db, { who, role, what, action, status = 'success', metadata = {} }, ctx = {}) {
   try {
+    const isSupabase = ctx.isSupabase ?? false;
+    const supabase = ctx.supabase || null;
+
+    if (isSupabase && supabase) {
+      await supabase.from('storage_audit_logs').insert({
+        who: String(who || '').trim(),
+        role: String(role || '').trim(),
+        what: String(what || '').trim(),
+        action: String(action || '').trim(),
+        status: String(status || '').trim(),
+        created_at: new Date().toISOString(),
+        metadata: metadata || {},
+      });
+      return;
+    }
+
     if (!db) return;
     await db.collection('storage_audit_logs').add({
       who: String(who || '').trim(),
@@ -292,7 +365,10 @@ async function logStorageAccess(db, { who, role, what, action, status = 'success
 /**
  * 1. getS3UploadUrl core handler.
  */
-async function getS3UploadUrlHandler(data, auth, db) {
+async function getS3UploadUrlHandler(data, auth, dbOrOptions) {
+  const ctx = await resolveStorageContext(dbOrOptions);
+  const { db, isSupabase, supabase } = ctx;
+
   const purpose = normalizePurpose(data?.purpose);
   const parentId = String(data?.parentId || '').trim();
   const fileName = String(data?.fileName || '').trim();
@@ -324,7 +400,7 @@ async function getS3UploadUrlHandler(data, auth, db) {
 
   validateContentTypeAndSize(purpose, contentType, sizeBytes);
 
-  const caller = await resolveCallerUser(db, auth.uid);
+  const caller = await resolveCallerUser(db, auth.uid, ctx);
   const isAdmin = isSuperAdmin(auth, caller);
   const uuid = crypto.randomUUID();
   const ext = extractExtension(fileName, contentType);
@@ -368,36 +444,79 @@ async function getS3UploadUrlHandler(data, auth, db) {
           throw new HttpsError('permission-denied', 'Only authorized diagnostic labs can upload lab reports.');
         }
 
-        // Verify lab booking or lab order ownership
-        let bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();
-        if (bookingDoc.exists) {
-          const bookingData = bookingDoc.data();
-          if (bookingData.status === 'cancelled') {
-            throw new HttpsError('failed-precondition', 'Cannot upload report for a cancelled booking.');
-          }
-          if (bookingData.labId !== caller.profileId) {
-            throw new HttpsError('permission-denied', 'This lab booking is not assigned to your laboratory.');
-          }
-          patientId = bookingData.patientId;
-        } else {
-          const orderDoc = await db.collection('lab_orders').doc(bookingId).get();
-          if (orderDoc.exists) {
-            const orderData = orderDoc.data();
-            if (orderData.status === 'cancelled') {
-              throw new HttpsError('failed-precondition', 'Cannot upload report for a cancelled lab order.');
+        if (isSupabase && supabase) {
+          const { data: booking } = await supabase
+            .from('lab_bookings')
+            .select('*')
+            .eq('booking_id', bookingId)
+            .maybeSingle();
+          if (booking) {
+            if (booking.status === 'cancelled') {
+              throw new HttpsError('failed-precondition', 'Cannot upload report for a cancelled booking.');
             }
-            if (orderData.labId !== caller.profileId) {
-              throw new HttpsError('permission-denied', 'This lab order is not assigned to your laboratory.');
+            if (booking.lab_id !== caller.profileId) {
+              throw new HttpsError('permission-denied', 'This lab booking is not assigned to your laboratory.');
             }
-            patientId = orderData.patientId;
+            patientId = booking.patient_id;
           } else {
-            throw new HttpsError('not-found', 'Lab booking or order not found.');
+            const { data: order } = await supabase
+              .from('lab_orders')
+              .select('*')
+              .eq('order_id', bookingId)
+              .maybeSingle();
+            if (order) {
+              if (order.status === 'cancelled') {
+                throw new HttpsError('failed-precondition', 'Cannot upload report for a cancelled lab order.');
+              }
+              if (order.lab_id !== caller.profileId) {
+                throw new HttpsError('permission-denied', 'This lab order is not assigned to your laboratory.');
+              }
+              patientId = order.patient_id;
+            } else {
+              throw new HttpsError('not-found', 'Lab booking or order not found.');
+            }
+          }
+        } else {
+          // Verify lab booking or lab order ownership in Firestore
+          let bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();
+          if (bookingDoc.exists) {
+            const bookingData = bookingDoc.data();
+            if (bookingData.status === 'cancelled') {
+              throw new HttpsError('failed-precondition', 'Cannot upload report for a cancelled booking.');
+            }
+            if (bookingData.labId !== caller.profileId) {
+              throw new HttpsError('permission-denied', 'This lab booking is not assigned to your laboratory.');
+            }
+            patientId = bookingData.patientId;
+          } else {
+            const orderDoc = await db.collection('lab_orders').doc(bookingId).get();
+            if (orderDoc.exists) {
+              const orderData = orderDoc.data();
+              if (orderData.status === 'cancelled') {
+                throw new HttpsError('failed-precondition', 'Cannot upload report for a cancelled lab order.');
+              }
+              if (orderData.labId !== caller.profileId) {
+                throw new HttpsError('permission-denied', 'This lab order is not assigned to your laboratory.');
+              }
+              patientId = orderData.patientId;
+            } else {
+              throw new HttpsError('not-found', 'Lab booking or order not found.');
+            }
           }
         }
       } else {
-        // Super admin upload: look up patientId from booking if exists, or fallback
-        const bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();
-        patientId = bookingDoc.exists ? bookingDoc.data().patientId : (parentId.includes('/') ? parentId.split('/')[0] : 'admin');
+        if (isSupabase && supabase) {
+          const { data: booking } = await supabase
+            .from('lab_bookings')
+            .select('patient_id')
+            .eq('booking_id', bookingId)
+            .maybeSingle();
+          patientId = booking?.patient_id || (parentId.includes('/') ? parentId.split('/')[0] : 'admin');
+        } else {
+          // Super admin upload: look up patientId from booking if exists, or fallback
+          const bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();
+          patientId = bookingDoc.exists ? bookingDoc.data().patientId : (parentId.includes('/') ? parentId.split('/')[0] : 'admin');
+        }
       }
 
       objectKey = `lab_reports/${patientId}/${bookingId}/${uuid}.${ext}`;
@@ -506,7 +625,7 @@ async function getS3UploadUrlHandler(data, auth, db) {
       sizeBytes,
       contentType,
     },
-  });
+  }, ctx);
 
   return {
     uploadUrl,
@@ -517,11 +636,13 @@ async function getS3UploadUrlHandler(data, auth, db) {
 /**
  * Authorizes read access to a given objectKey.
  */
-async function authorizeRead(objectKey, caller, auth, db) {
+async function authorizeRead(objectKey, caller, auth, db, ctx = {}) {
   if (isSuperAdmin(auth, caller)) return true;
 
   const parts = objectKey.split('/');
   const prefix = parts[0];
+  const isSupabase = ctx.isSupabase ?? false;
+  const supabase = ctx.supabase || null;
 
   // Public profiles and promoted ads can be read by any authenticated user
   if (prefix === 'patients' || prefix === 'doctor_profiles' || prefix === 'promoted_ads') {
@@ -538,6 +659,69 @@ async function authorizeRead(objectKey, caller, auth, db) {
     }
 
     if (caller.role === 'doctor') {
+      if (isSupabase && supabase) {
+        // 1. Doctor must be admin-verified and not deactivated
+        const { data: docData } = await supabase
+          .from('doctors')
+          .select('verified, deactivated')
+          .eq('doctor_id', caller.profileId || '')
+          .maybeSingle();
+        if (!docData || docData.verified !== true || docData.deactivated === true) {
+          return false;
+        }
+
+        // 2. Patient must allow record sharing
+        const { data: pData } = await supabase
+          .from('patients')
+          .select('share_records_with_doctors')
+          .eq('patient_id', patientId)
+          .maybeSingle();
+        if (!pData || pData.share_records_with_doctors === false) return false;
+
+        // 3. Doctor must have clinical care relationship (link, appointment, or referral)
+        const { data: linkRow } = await supabase
+          .from('patient_doctor_links')
+          .select('id')
+          .eq('patient_id', patientId)
+          .eq('doctor_id', caller.profileId)
+          .maybeSingle();
+
+        let hasRelationship = !!linkRow;
+        if (!hasRelationship) {
+          const { data: aptRow } = await supabase
+            .from('appointments')
+            .select('appointment_id')
+            .eq('patient_id', patientId)
+            .eq('doctor_id', caller.profileId)
+            .limit(1)
+            .maybeSingle();
+          hasRelationship = !!aptRow;
+        }
+        if (!hasRelationship) {
+          const { data: refRow } = await supabase
+            .from('referrals')
+            .select('referral_id')
+            .eq('patient_id', patientId)
+            .or(`from_doctor_id.eq.${caller.profileId},to_doctor_id.eq.${caller.profileId}`)
+            .limit(1)
+            .maybeSingle();
+          hasRelationship = !!refRow;
+        }
+        if (!hasRelationship) return false;
+
+        // 4. Record itself must have shared_with_doctors == true
+        const { data: recordRow } = await supabase
+          .from('health_records')
+          .select('shared_with_doctors')
+          .eq('record_id', recordId)
+          .maybeSingle();
+        if (recordRow && recordRow.shared_with_doctors === false) {
+          return false;
+        }
+
+        return true;
+      }
+
       // 1. Doctor must be admin-verified and not deactivated
       const doctorDoc = await db.collection('doctors').doc(caller.profileId || '').get();
       if (!doctorDoc.exists || doctorDoc.data()?.verified !== true || doctorDoc.data()?.deactivated === true) {
@@ -590,6 +774,26 @@ async function authorizeRead(objectKey, caller, auth, db) {
     }
 
     if (caller.role === 'lab') {
+      if (isSupabase && supabase) {
+        const { data: booking } = await supabase
+          .from('lab_bookings')
+          .select('lab_id, status')
+          .eq('booking_id', bookingId)
+          .maybeSingle();
+        if (booking && booking.lab_id === caller.profileId && booking.status !== 'cancelled') {
+          return true;
+        }
+        const { data: order } = await supabase
+          .from('lab_orders')
+          .select('lab_id, status')
+          .eq('order_id', bookingId)
+          .maybeSingle();
+        if (order && order.lab_id === caller.profileId && order.status !== 'cancelled') {
+          return true;
+        }
+        return false;
+      }
+
       const bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();
       if (bookingDoc.exists) {
         const bData = bookingDoc.data();
@@ -620,24 +824,46 @@ async function authorizeRead(objectKey, caller, auth, db) {
     }
 
     if (caller.role === 'doctor') {
-      const rxDoc = await db.collection('prescriptions').doc(prescriptionId).get();
-      if (rxDoc.exists && rxDoc.data()?.doctorId === caller.profileId) {
-        return true;
+      if (isSupabase && supabase) {
+        const { data: rx } = await supabase
+          .from('prescriptions')
+          .select('doctor_id')
+          .eq('prescription_id', prescriptionId)
+          .maybeSingle();
+        if (rx && rx.doctor_id === caller.profileId) {
+          return true;
+        }
+      } else {
+        const rxDoc = await db.collection('prescriptions').doc(prescriptionId).get();
+        if (rxDoc.exists && rxDoc.data()?.doctorId === caller.profileId) {
+          return true;
+        }
       }
     }
 
     if (caller.role === 'medicalStore' || caller.role === 'medical') {
-      const delQuery = await db
-        .collection('pharmacy_deliveries')
-        .where('prescriptionId', '==', prescriptionId)
-        .where('storeId', '==', caller.profileId)
-        .limit(1)
-        .get();
-      if (!delQuery.empty) return true;
+      if (isSupabase && supabase) {
+        const { data: deliv } = await supabase
+          .from('pharmacy_deliveries')
+          .select('delivery_id')
+          .eq('prescription_id', prescriptionId)
+          .eq('store_id', caller.profileId)
+          .limit(1)
+          .maybeSingle();
+        if (deliv) return true;
+      } else {
+        const delQuery = await db
+          .collection('pharmacy_deliveries')
+          .where('prescriptionId', '==', prescriptionId)
+          .where('storeId', '==', caller.profileId)
+          .limit(1)
+          .get();
+        if (!delQuery.empty) return true;
 
-      const orderDoc = await db.collection('orders').doc(prescriptionId).get();
-      if (orderDoc.exists && (orderDoc.data()?.storeId === caller.profileId || orderDoc.data()?.pharmacyId === caller.profileId)) {
-        return true;
+        const orderDoc = await db.collection('orders').doc(prescriptionId).get();
+        if (orderDoc.exists && (orderDoc.data()?.storeId === caller.profileId || orderDoc.data()?.pharmacyId === caller.profileId)) {
+          return true;
+        }
       }
     }
 
@@ -650,11 +876,13 @@ async function authorizeRead(objectKey, caller, auth, db) {
 /**
  * Authorizes delete access to a given objectKey (owner-only or super admin).
  */
-async function authorizeDelete(objectKey, caller, auth, db) {
+async function authorizeDelete(objectKey, caller, auth, db, ctx = {}) {
   if (isSuperAdmin(auth, caller)) return true;
 
   const parts = objectKey.split('/');
   const prefix = parts[0];
+  const isSupabase = ctx.isSupabase ?? false;
+  const supabase = ctx.supabase || null;
 
   if (prefix === 'health_records') {
     // health_records/{patientId}/{recordId}/{fileName}
@@ -666,6 +894,25 @@ async function authorizeDelete(objectKey, caller, auth, db) {
     // lab_reports/{patientId}/{bookingId}/{fileName}
     const bookingId = parts[2];
     if (caller.role === 'lab') {
+      if (isSupabase && supabase) {
+        const { data: booking } = await supabase
+          .from('lab_bookings')
+          .select('lab_id')
+          .eq('booking_id', bookingId)
+          .maybeSingle();
+        if (booking && booking.lab_id === caller.profileId) {
+          return true;
+        }
+        const { data: order } = await supabase
+          .from('lab_orders')
+          .select('lab_id')
+          .eq('order_id', bookingId)
+          .maybeSingle();
+        if (order && order.lab_id === caller.profileId) {
+          return true;
+        }
+        return false;
+      }
       const bookingDoc = await db.collection('lab_bookings').doc(bookingId).get();
       if (bookingDoc.exists && bookingDoc.data()?.labId === caller.profileId) {
         return true;
@@ -787,7 +1034,8 @@ async function invalidateS3DownloadUrlCacheBatch(objectKeys) {
 /**
  * 2. getS3DownloadUrl core handler.
  */
-async function getS3DownloadUrlHandler(data, auth, db) {
+async function getS3DownloadUrlHandler(data, auth, dbOrOptions) {
+  const ctx = await resolveStorageContext(dbOrOptions);
   const objectKey = String(data?.objectKey || '').trim();
   if (!objectKey) {
     throw new HttpsError('invalid-argument', 'objectKey is required.');
@@ -795,8 +1043,8 @@ async function getS3DownloadUrlHandler(data, auth, db) {
   assertValidObjectKey(objectKey, 'objectKey');
 
   // ORDER MATTERS: run authorization check on EVERY request first.
-  const caller = await resolveCallerUser(db, auth.uid);
-  const allowed = await authorizeRead(objectKey, caller, auth, db);
+  const caller = await resolveCallerUser(ctx.db, auth.uid, ctx);
+  const allowed = await authorizeRead(objectKey, caller, auth, ctx.db, ctx);
   if (!allowed) {
     throw new HttpsError('permission-denied', 'You do not have permission to access this file.');
   }
@@ -830,13 +1078,13 @@ async function getS3DownloadUrlHandler(data, auth, db) {
   }
 
   // Record download audit log
-  await logStorageAccess(db, {
+  await logStorageAccess(ctx.db, {
     who: auth.uid,
     role: caller.role,
     what: objectKey,
     action: 'download_presigned',
     status: 'success',
-  });
+  }, ctx);
 
   return {
     url,
@@ -852,7 +1100,8 @@ async function getS3DownloadUrlHandler(data, auth, db) {
  * - promoted_ads/...
  * Rejects health_records/, lab_reports/, and unknown prefixes with invalid-argument for the WHOLE request.
  */
-async function getS3DownloadUrlsHandler(data, auth, db) {
+async function getS3DownloadUrlsHandler(data, auth, dbOrOptions) {
+  const ctx = await resolveStorageContext(dbOrOptions);
   const objectKeys = data?.objectKeys;
   if (!Array.isArray(objectKeys) || objectKeys.length === 0) {
     throw new HttpsError('invalid-argument', 'objectKeys must be a non-empty array.');
@@ -876,7 +1125,7 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
     }
   }
 
-  const caller = await resolveCallerUser(db, auth.uid);
+  const caller = await resolveCallerUser(ctx.db, auth.uid, ctx);
   const s3 = getS3Client();
   const urls = {};
   const isCacheOn = getS3UrlCacheConfig() === 'on';
@@ -886,7 +1135,7 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
     const key = String(rawKey || '').trim();
 
     // ORDER MATTERS: authorize each key first
-    const allowed = await authorizeRead(key, caller, auth, db);
+    const allowed = await authorizeRead(key, caller, auth, ctx.db, ctx);
     if (!allowed) continue;
 
     if (isCacheOn) {
@@ -914,7 +1163,7 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
   }
 
   // Record batch download audit log
-  await logStorageAccess(db, {
+  await logStorageAccess(ctx.db, {
     who: auth.uid,
     role: caller.role,
     what: `${Object.keys(urls).length}/${objectKeys.length} keys`,
@@ -924,7 +1173,7 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
       requestedCount: objectKeys.length,
       resolvedCount: Object.keys(urls).length,
     },
-  });
+  }, ctx);
 
   return { urls };
 }
@@ -932,15 +1181,16 @@ async function getS3DownloadUrlsHandler(data, auth, db) {
 /**
  * 4. deleteS3Object core handler.
  */
-async function deleteS3ObjectHandler(data, auth, db) {
+async function deleteS3ObjectHandler(data, auth, dbOrOptions) {
+  const ctx = await resolveStorageContext(dbOrOptions);
   const objectKey = String(data?.objectKey || '').trim();
   if (!objectKey) {
     throw new HttpsError('invalid-argument', 'objectKey is required.');
   }
   assertValidObjectKey(objectKey, 'objectKey');
 
-  const caller = await resolveCallerUser(db, auth.uid);
-  const allowed = await authorizeDelete(objectKey, caller, auth, db);
+  const caller = await resolveCallerUser(ctx.db, auth.uid, ctx);
+  const allowed = await authorizeDelete(objectKey, caller, auth, ctx.db, ctx);
   if (!allowed) {
     throw new HttpsError('permission-denied', 'You do not have permission to delete this file.');
   }
@@ -957,13 +1207,13 @@ async function deleteS3ObjectHandler(data, auth, db) {
   await invalidateS3DownloadUrlCache(objectKey);
 
   // Record delete audit log
-  await logStorageAccess(db, {
+  await logStorageAccess(ctx.db, {
     who: auth.uid,
     role: caller.role,
     what: objectKey,
     action: 'delete',
     status: 'success',
-  });
+  }, ctx);
 
   return {
     success: true,
@@ -974,8 +1224,10 @@ async function deleteS3ObjectHandler(data, auth, db) {
 /**
  * 5. confirmS3Upload core handler.
  * Verifies object existence, Content-Length, and Content-Type via S3 HEAD before linking s3_key in DB.
+ * On failed validation (size/type/missing), deletes the uploaded object and records an audit log.
  */
-async function confirmS3UploadHandler(data, auth, db) {
+async function confirmS3UploadHandler(data, auth, dbOrOptions) {
+  const ctx = await resolveStorageContext(dbOrOptions);
   const objectKey = String(data?.objectKey || '').trim();
   const recordId = String(data?.recordId || '').trim();
   const purpose = normalizePurpose(data?.purpose);
@@ -989,7 +1241,7 @@ async function confirmS3UploadHandler(data, auth, db) {
     throw new HttpsError('invalid-argument', 'purpose is required.');
   }
 
-  const caller = await resolveCallerUser(db, auth.uid);
+  const caller = await resolveCallerUser(ctx.db, auth.uid, ctx);
   const isAdmin = isSuperAdmin(auth, caller);
 
   // Authorize upload confirmation: caller must own the target prefix
@@ -1028,14 +1280,15 @@ async function confirmS3UploadHandler(data, auth, db) {
       }),
     );
   } catch (err) {
-    await logStorageAccess(db, {
+    await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: objectKey })).catch(() => {});
+    await logStorageAccess(ctx.db, {
       who: auth.uid,
       role: caller.role,
       what: objectKey,
       action: 'upload_confirm_failed',
       status: 'head_not_found',
       metadata: { error: err.message },
-    });
+    }, ctx);
     throw new HttpsError('not-found', 'Uploaded file was not found in S3 or is inaccessible.');
   }
 
@@ -1044,6 +1297,15 @@ async function confirmS3UploadHandler(data, auth, db) {
 
   // Enforce content-type allowlist
   if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
+    await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: objectKey })).catch(() => {});
+    await logStorageAccess(ctx.db, {
+      who: auth.uid,
+      role: caller.role,
+      what: objectKey,
+      action: 'upload_confirm_failed',
+      status: 'invalid_content_type',
+      metadata: { contentType },
+    }, ctx);
     throw new HttpsError('failed-precondition', `Invalid S3 object Content-Type: ${contentType}`);
   }
 
@@ -1055,48 +1317,114 @@ async function confirmS3UploadHandler(data, auth, db) {
 
   const maxAllowedBytes = isImagePurpose ? MAX_IMAGE_BYTES : MAX_DOC_BYTES;
   if (contentLength <= 0 || contentLength > maxAllowedBytes) {
+    await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: objectKey })).catch(() => {});
+    await logStorageAccess(ctx.db, {
+      who: auth.uid,
+      role: caller.role,
+      what: objectKey,
+      action: 'upload_confirm_failed',
+      status: 'size_exceeded',
+      metadata: { contentLength, maxAllowedBytes },
+    }, ctx);
     throw new HttpsError('failed-precondition', `S3 object size ${contentLength} bytes exceeds limit of ${maxAllowedBytes} bytes.`);
   }
 
   // Update DB row if recordId is provided
   if (recordId) {
-    if (purpose === 'health_records') {
-      await db.collection('health_records').doc(recordId).set({
-        s3Key: objectKey,
-        s3Bucket: S3_BUCKET,
-        storageProvider: 's3',
-        fileSizeBytes: contentLength,
-        mimeType: contentType,
-        uploadConfirmedAt: new Date().toISOString(),
-      }, { merge: true });
-    } else if (purpose === 'lab_reports') {
-      await db.collection('lab_bookings').doc(recordId).set({
-        reportS3Key: objectKey,
-        reportS3Bucket: S3_BUCKET,
-        storageProvider: 's3',
-        reportFileSizeBytes: contentLength,
-        reportMimeType: contentType,
-        reportUploadedAt: new Date().toISOString(),
-      }, { merge: true }).catch(() => {});
-    } else if (purpose === 'patient_profile') {
-      await db.collection('patients').doc(caller.profileId || recordId).set({
-        photoS3Key: objectKey,
-        photoS3Bucket: S3_BUCKET,
-        photoStorageProvider: 's3',
-        photoUpdatedAt: new Date().toISOString(),
-      }, { merge: true });
-    } else if (purpose === 'doctor_profile') {
-      await db.collection('doctors').doc(caller.profileId || recordId).set({
-        photoS3Key: objectKey,
-        photoS3Bucket: S3_BUCKET,
-        photoStorageProvider: 's3',
-        photoUpdatedAt: new Date().toISOString(),
-      }, { merge: true });
+    if (ctx.isSupabase && ctx.supabase) {
+      if (purpose === 'health_records') {
+        await ctx.supabase
+          .from('health_records')
+          .update({
+            s3_key: objectKey,
+            s3_bucket: S3_BUCKET,
+            storage_key: objectKey,
+            storage_provider: 's3',
+            file_size_bytes: contentLength,
+            mime_type: contentType,
+            upload_confirmed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('record_id', recordId);
+      } else if (purpose === 'lab_reports') {
+        await ctx.supabase
+          .from('lab_bookings')
+          .update({
+            report_s3_key: objectKey,
+            report_s3_bucket: S3_BUCKET,
+            report_storage_key: objectKey,
+            report_storage_provider: 's3',
+            report_file_size_bytes: contentLength,
+            report_mime_type: contentType,
+            report_uploaded_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('booking_id', recordId);
+      } else if (purpose === 'patient_profile') {
+        const targetId = caller.profileId || recordId;
+        await ctx.supabase
+          .from('patients')
+          .update({
+            photo_s3_key: objectKey,
+            photo_s3_bucket: S3_BUCKET,
+            photo_storage_provider: 's3',
+            photo_updated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('patient_id', targetId);
+      } else if (purpose === 'doctor_profile') {
+        const targetId = caller.profileId || recordId;
+        await ctx.supabase
+          .from('doctors')
+          .update({
+            photo_s3_key: objectKey,
+            photo_s3_bucket: S3_BUCKET,
+            photo_storage_provider: 's3',
+            photo_updated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('doctor_id', targetId);
+      }
+    } else {
+      // Flag is OFF -> Firestore path
+      if (purpose === 'health_records') {
+        await ctx.db.collection('health_records').doc(recordId).set({
+          s3Key: objectKey,
+          s3Bucket: S3_BUCKET,
+          storageProvider: 's3',
+          fileSizeBytes: contentLength,
+          mimeType: contentType,
+          uploadConfirmedAt: new Date().toISOString(),
+        }, { merge: true });
+      } else if (purpose === 'lab_reports') {
+        await ctx.db.collection('lab_bookings').doc(recordId).set({
+          reportS3Key: objectKey,
+          reportS3Bucket: S3_BUCKET,
+          storageProvider: 's3',
+          reportFileSizeBytes: contentLength,
+          reportMimeType: contentType,
+          reportUploadedAt: new Date().toISOString(),
+        }, { merge: true }).catch(() => {});
+      } else if (purpose === 'patient_profile') {
+        await ctx.db.collection('patients').doc(caller.profileId || recordId).set({
+          photoS3Key: objectKey,
+          photoS3Bucket: S3_BUCKET,
+          photoStorageProvider: 's3',
+          photoUpdatedAt: new Date().toISOString(),
+        }, { merge: true });
+      } else if (purpose === 'doctor_profile') {
+        await ctx.db.collection('doctors').doc(caller.profileId || recordId).set({
+          photoS3Key: objectKey,
+          photoS3Bucket: S3_BUCKET,
+          photoStorageProvider: 's3',
+          photoUpdatedAt: new Date().toISOString(),
+        }, { merge: true });
+      }
     }
   }
 
   // Record audit log
-  await logStorageAccess(db, {
+  await logStorageAccess(ctx.db, {
     who: auth.uid,
     role: caller.role,
     what: objectKey,
@@ -1108,7 +1436,7 @@ async function confirmS3UploadHandler(data, auth, db) {
       recordId,
       purpose,
     },
-  });
+  }, ctx);
 
   return {
     success: true,
@@ -1182,6 +1510,7 @@ exports._test = {
   confirmS3UploadHandler,
   logStorageAccess,
   setS3ClientForTesting,
+  setSupabaseClientForTesting,
   validateContentTypeAndSize,
   extractExtension,
   authorizeRead,
@@ -1197,3 +1526,4 @@ exports._test = {
   invalidateS3DownloadUrlCacheBatch,
   getS3UrlCacheConfig,
 };
+

@@ -172,6 +172,15 @@ void main() {
         isNull,
       );
     });
+
+    test('watchForDoctor returns empty stream when Supabase is not ready or doctorId is empty', () {
+      SupabaseBootstrap.resetForTesting();
+      final stream1 = SupabaseAppointmentRepository.instance.watchForDoctor('');
+      expect(stream1, emitsDone);
+
+      final stream2 = SupabaseAppointmentRepository.instance.watchForDoctor('doc_123');
+      expect(stream2, emitsDone);
+    });
   });
 
   group('SupabasePrescriptionRepository', () {

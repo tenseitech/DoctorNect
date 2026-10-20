@@ -206,22 +206,25 @@ In the event of an unrecoverable failure during the live cutover window or early
 [Rollback Trigger Decision]
        │
        ▼ (T+0s, < 1s)
-Step 1: Soft Maintenance Kill-Switch ─────► UPDATE system_config SET config_value = '{"status":"maintenance","allow_writes":false}'
+Step 0: Remote Config Primary Cutover Switch ─► Firebase Console: Set `use_supabase_db_doctor_patient = false`
+       │                                       (Reverts Flutter client & Cloud Functions [~60s cache] to Firestore)
+       ▼ (T+0s, < 1s)
+Step 1: Soft Maintenance Kill-Switch ─────────► UPDATE system_config SET config_value = '{"status":"maintenance","allow_writes":false}'
        │
        ▼ (T+0s to T+30s)
-[30-Second Grace & Drain Window] ────────► Cache TTL (30s) drains in-flight requests; active v1.1.0 clients intercept writes
-       │                                   with friendly maintenance bottom sheet (zero app crashes)
+[30-Second Grace & Drain Window] ─────────────► Cache TTL (30s) drains in-flight requests; active v1.1.0 clients intercept writes
+       │                                        with friendly maintenance bottom sheet (zero app crashes)
        ▼ (T+30s, < 1s [Tested: 48ms])
-Step 2: Hard-Freeze Supabase DB Writes ──► REVOKE INSERT, UPDATE, DELETE FROM anon, authenticated (Airtight 42501 barrier)
+Step 2: Hard-Freeze Supabase DB Writes ───────► REVOKE INSERT, UPDATE, DELETE FROM anon, authenticated (Airtight 42501 barrier)
        │
        ▼ (T+1 min, ~1-2 min)
-Step 3: Halt Google Play Rollout ────────► Play Console -> Release -> Production -> Halt Rollout (Stops new downloads)
+Step 3: Halt Google Play Rollout ─────────────► Play Console -> Release -> Production -> Halt Rollout (Stops new downloads)
        │
        ▼ (T+2 min, ~3-5s [Tested: 1.34s])
-Step 4: Reverse Sync Supabase → Firestore ► node reverse_sync_supabase_to_firestore.js --live --since="<cutover_start>"
+Step 4: Reverse Sync Supabase → Firestore ────► node reverse_sync_supabase_to_firestore.js --live --since="<cutover_start>"
        │
        ▼ (T+3 min, ~20-30s)
-Step 5: Restore Firestore Security Rules ─► firebase deploy --only firestore:rules (Re-enables legacy writes)
+Step 5: Restore Firestore Security Rules ─────► firebase deploy --only firestore:rules (Re-enables legacy writes)
        │
        ▼ (T+4 min, Instant)
 Step 6: Production Resumption & Isolation:
@@ -230,6 +233,13 @@ Step 6: Production Resumption & Isolation:
 ```
 
 ### Step-by-Step Operational Procedure
+
+#### Step 0: Remote Config Unified Cutover Kill-Switch (T+0s, Duration: < 1s)
+- **Action:** Open Firebase Console -> Remote Config -> Update parameter `use_supabase_db_doctor_patient` to `false` and publish changes.
+- **Operational Impact:**
+  - **Flutter Client:** Both Doctor and Patient flows switch their runtime repository bindings back to Firestore repositories without binary rebuild.
+  - **Cloud Functions:** Serverless triggers and S3 storage handlers automatically fall back to Firestore paths after their ~60s in-memory cache TTL expires.
+  - **Fallback Safety:** `USE_SUPABASE_DB_DOCTOR_PATIENT` env var acts strictly as a fallback if Firebase Remote Config is unreachable.
 
 #### Step 1: Soft Maintenance Kill-Switch (T+0s, Duration: < 1s)
 - **Action:** Switch `patient_module_status` in `system_config` table to `maintenance`:

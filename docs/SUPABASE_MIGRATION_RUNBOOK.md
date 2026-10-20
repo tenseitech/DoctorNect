@@ -169,7 +169,47 @@ node scripts/check_sync_parity.js --audit
    For the complete operational guide covering skip/dead-letter dictionaries, GCP log metrics, Supabase Logs Explorer queries, and dead-letter replay procedures (re-reading from SoR), refer directly to:
    👉 **[SUPABASE_SYNC_OBSERVABILITY.md](SUPABASE_SYNC_OBSERVABILITY.md)**.
 
-### 3d. Precondition Status Code Verification Procedure (Real Firestore Project)
+### 3d. Supabase Database Webhook Configuration for Push Notifications (`supabaseDatabaseWebhook`)
+
+When Supabase is the primary database (`use_supabase_db_doctor_patient = true`), legacy Firestore FCM triggers are dormant. Database webhooks dispatched from Supabase notify Cloud Function `supabaseDatabaseWebhook` to deliver real-time FCM push notifications to doctors and patients.
+
+#### Supabase Database Webhook Mechanism
+- **What Supabase Actually Sends**: Supabase Database Webhooks (executed via `pg_net` background triggers) transmit **static HTTP headers only**. They do **not** generate dynamic per-request HMAC signatures.
+- **Authentication**: Auth is implemented via a static shared secret passed in the `x-webhook-secret` (or `x-supabase-webhook-secret`) HTTP header.
+- **Constant-Time Verification**: The Cloud Function hashes both the incoming header and `SUPABASE_WEBHOOK_SECRET` with SHA-256 before comparing them with `crypto.timingSafeEqual(hashA, hashB)`. This prevents timing attacks while guaranteeing uniform buffer lengths.
+
+#### Dashboard Configuration Steps:
+1. Open the Supabase Dashboard: `https://supabase.com/dashboard/project/<PROJECT_REF>`.
+2. Navigate to **Database** -> **Webhooks** (`https://supabase.com/dashboard/project/<PROJECT_REF>/database/hooks`).
+3. Click **Create a new webhook**.
+4. Configure the Appointment Notification Webhook:
+   - **Name**: `notify-appointment-events`
+   - **Table**: `public.appointments`
+   - **Events**: Check both **`Insert`** and **`Update`**
+   - **Type of webhook**: `HTTP Request`
+   - **Method**: `POST`
+   - **URL**: `https://asia-south1-<GCP_PROJECT_ID>.cloudfunctions.net/supabaseDatabaseWebhook`
+   - **HTTP Headers**:
+     - `Content-Type`: `application/json`
+     - `x-webhook-secret`: `<VALUE_OF_SUPABASE_WEBHOOK_SECRET>`
+5. Click **Create webhook**.
+6. Repeat for Referrals:
+   - **Name**: `notify-referral-events`
+   - **Table**: `public.referrals`
+   - **Events**: Check **`Insert`**
+   - **Type of webhook**: `HTTP Request`
+   - **Method**: `POST`
+   - **URL**: `https://asia-south1-<GCP_PROJECT_ID>.cloudfunctions.net/supabaseDatabaseWebhook`
+   - **HTTP Headers**:
+     - `Content-Type`: `application/json`
+     - `x-webhook-secret`: `<VALUE_OF_SUPABASE_WEBHOOK_SECRET>`
+7. Click **Create webhook**.
+
+#### Idempotency Guard
+Every webhook event is tracked in `_webhook_processed_events` using a deterministic SHA-256 hash of `table:type:entityId:timestamp`. Duplicate transmissions (e.g. from network retries) are recognized and skipped immediately without sending redundant push notifications.
+
+
+### 3e. Precondition Status Code Verification Procedure (Real Firestore Project)
 
 > **Notice**: All HTTP status code claims for Cloud Firestore REST preconditions are **unverified on production; verify on a real project** using the throwaway test procedure below before cutover.
 
@@ -324,6 +364,12 @@ WHERE ambulance_id = '9307583929';
 If a critical blocker is encountered during cutover, execute the rollback immediately. Total verified execution time is **~3 to 4 minutes** (contingent on Firebase CLI standing authentication pre-condition).
 
 ### Rollback Execution Steps:
+
+0. **Revert Remote Config Cutover Flag (T+0 min, Duration: < 1s):**
+   - In Firebase Console (or Firebase Admin API), set parameter `use_supabase_db_doctor_patient = false` and publish.
+   - Flutter clients revert back to Firestore repositories immediately on restart/refresh.
+   - Cloud Functions triggers & S3 storage handlers fall back to Firestore paths after their ~60s cache TTL expires.
+   - Env var `USE_SUPABASE_DB_DOCTOR_PATIENT` serves strictly as an emergency fallback if Remote Config is unreachable.
 
 1. **Freeze Supabase Client Writes (T+0 min, Duration: < 1s):**
    - Instantly revoke all write permissions from public client roles (`anon` and `authenticated`) to prevent new records from entering Supabase while or after reverse-sync runs:

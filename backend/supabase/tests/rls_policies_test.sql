@@ -565,6 +565,98 @@ SELECT
 FROM public.review_public
 WHERE review_id = 'rev_test_01';
 
+-- ============================================================================
+-- TEST 18: DOCTORS TABLE SENSITIVE DATA FIREWALL
+-- Patient 2 (no appointment with doc 1) CANNOT read doctors table
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_002", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    27,
+    'Unassigned patient cannot read doctors table directly (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctors
+WHERE doctor_id = 'd_001';
+
+-- ============================================================================
+-- TEST 19: UNRELATED DOCTOR SENSITIVE DATA FIREWALL
+-- Unverified/unrelated doctor cannot read another doctor directly
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_doc_unver", "role": "authenticated", "user_role": "doctor", "app_role": "doctor"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    28,
+    'Unrelated doctor cannot read another doctor sensitive data (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctors
+WHERE doctor_id = 'd_001';
+
+-- ============================================================================
+-- TEST 20: DOCTOR DIRECTORY PROJECTION (SECURITY DEFINER VIEW)
+-- Patient 2 CAN search doctor_directory and sees verified, active doctors
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_002", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    29,
+    'Patient can search doctor_directory (sees verified Dr. Alpha)',
+    '1',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 1 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctor_directory
+WHERE doctor_id = 'd_001';
+
+-- Patient 2 DOES NOT see unverified doctor in doctor_directory
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    30,
+    'doctor_directory excludes unverified doctors (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctor_directory
+WHERE doctor_id = 'd_unver';
+
+-- ============================================================================
+-- TEST 21: APPOINTMENT CARE RELATIONSHIP
+-- Patient 1 (has appointment with d_001) CAN read assigned doctor details
+-- ============================================================================
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_001", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    31,
+    'Patient with active appointment can read assigned doctor (1 row)',
+    '1',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 1 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctors
+WHERE doctor_id = 'd_001';
+
+-- ============================================================================
+-- TEST 22: STORAGE AUDIT LOGS CLIENT LOCKDOWN
+-- Authenticated client cannot read storage_audit_logs (blocked, 0 rows)
+-- ============================================================================
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    32,
+    'Authenticated client cannot read storage_audit_logs (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.storage_audit_logs;
+
 -- Reset role to print results
 RESET ROLE;
 
