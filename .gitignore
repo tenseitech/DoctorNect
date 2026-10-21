@@ -74,6 +74,10 @@ google-services.json
 **/google-services.json
 GoogleService-Info.plist
 **/GoogleService-Info.plist
+demo_phones.json
+**/demo_phones.json
+!demo_phones.example.json
+!**/demo_phones.example.json
 *-firebase-adminsdk-*.json
 service-account*.json
 backend/functions/secrets/

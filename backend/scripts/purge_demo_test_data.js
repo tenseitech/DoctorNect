@@ -8,6 +8,7 @@
  * 3. Never auto-runs; must be manually invoked by an authorized database administrator.
  * 4. All live deletions run inside a single PostgreSQL transaction (atomic commit or full rollback).
  * 5. Respects foreign key topological order to prevent constraint violations.
+ * 6. Phone targets are loaded dynamically from environment or gitignored config; zero hardcoded phones.
  *
  * Usage:
  *   # Dry run audit (safe, non-mutating preview):
@@ -19,22 +20,62 @@
 
 require('./load_env').loadEnv();
 const { Client } = require('pg');
+const fs = require('fs');
+const path = require('path');
 
-const DEMO_PHONES = [
-  '7666892394', // Doctor
-  '7058809803', // Patient
-  '9359503874', // Pharmacy / Medical Store
-  '9409858233', // Lab
-  '9307583929', // Ambulance
-  '9999988888', // Super Admin
-];
+function loadDemoPhones() {
+  // 1. Check DEMO_PHONES env (comma-separated list)
+  if (process.env.DEMO_PHONES) {
+    return process.env.DEMO_PHONES.split(',').map((p) => p.trim()).filter(Boolean);
+  }
 
+  // 2. Check DEMO_PHONES_CONFIG env (path to json file or inline JSON)
+  if (process.env.DEMO_PHONES_CONFIG) {
+    try {
+      const configPath = path.resolve(process.cwd(), process.env.DEMO_PHONES_CONFIG);
+      if (fs.existsSync(configPath)) {
+        const raw = fs.readFileSync(configPath, 'utf8');
+        const parsed = JSON.parse(raw);
+        const phones = parsed.demo_phones || parsed.phones || parsed;
+        if (Array.isArray(phones)) return phones.map((p) => String(p).trim()).filter(Boolean);
+      }
+      const inline = JSON.parse(process.env.DEMO_PHONES_CONFIG);
+      const phones = inline.demo_phones || inline.phones || inline;
+      if (Array.isArray(phones)) return phones.map((p) => String(p).trim()).filter(Boolean);
+    } catch (e) {
+      console.warn(`Warning: failed to parse DEMO_PHONES_CONFIG: ${e.message}`);
+    }
+  }
+
+  // 3. Check gitignored local config files
+  const candidatePaths = [
+    path.join(__dirname, 'demo_phones.json'),
+    path.join(__dirname, '../demo_phones.json'),
+    path.join(process.cwd(), 'demo_phones.json'),
+  ];
+  for (const candidate of candidatePaths) {
+    if (fs.existsSync(candidate)) {
+      try {
+        const raw = fs.readFileSync(candidate, 'utf8');
+        const parsed = JSON.parse(raw);
+        const phones = parsed.demo_phones || parsed.phones || parsed;
+        if (Array.isArray(phones)) return phones.map((p) => String(p).trim()).filter(Boolean);
+      } catch (e) {
+        console.warn(`Warning: failed to read ${candidate}: ${e.message}`);
+      }
+    }
+  }
+
+  return [];
+}
+
+const DEMO_PHONES = loadDemoPhones();
 const REQUIRED_CONFIRM_TOKEN = 'doctornect-production';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
-const hasLiveFlag = args.includes('--live') || args.some(a => a.startsWith('--confirm-prod-purge='));
-const confirmArg = args.find(a => a.startsWith('--confirm-prod-purge='));
+const hasLiveFlag = args.includes('--live') || args.some((a) => a.startsWith('--confirm-prod-purge='));
+const confirmArg = args.find((a) => a.startsWith('--confirm-prod-purge='));
 const confirmToken = confirmArg ? confirmArg.split('=')[1] : null;
 
 const isLive = hasLiveFlag && confirmToken === REQUIRED_CONFIRM_TOKEN;
@@ -62,14 +103,14 @@ if (!connectionString) {
 async function runPurge() {
   const client = new Client({
     connectionString,
-    ssl: connectionString.includes('localhost') ? false : { rejectUnauthorized: false },
+    ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1') ? false : { rejectUnauthorized: false },
   });
 
   await client.connect();
   console.log('================================================================');
   console.log('DOCTORNECT: PRODUCTION DEMO & TEST DATA PURGE');
   console.log(`MODE: ${isDryRun ? 'DRY-RUN (Audit only — zero mutations)' : '*** LIVE PURGE ***'}`);
-  console.log(`TARGET DEMO PHONES: ${DEMO_PHONES.join(', ')}`);
+  console.log(`TARGET DEMO PHONES: ${DEMO_PHONES.length > 0 ? DEMO_PHONES.join(', ') : '(None configured — matching synthetic IDs and test email patterns only)'}`);
   console.log('================================================================\n');
 
   try {
@@ -80,7 +121,7 @@ async function runPurge() {
     // 1. Identify Demo & Synthetic User IDs
     const userQuery = `
       SELECT id, role, profile_id FROM public.users
-      WHERE mobile = ANY($1)
+      WHERE (cardinality($1::text[]) > 0 AND mobile = ANY($1))
          OR id LIKE 'demo_%'
          OR id LIKE 'fb_uid_%'
          OR id LIKE 'test_%'
@@ -89,8 +130,8 @@ async function runPurge() {
          OR email LIKE 'demo.%@doctornect.com'
     `;
     const userRes = await client.query(userQuery, [DEMO_PHONES]);
-    const demoUids = userRes.rows.map(r => r.id);
-    const demoProfileIds = userRes.rows.map(r => r.profile_id).filter(Boolean);
+    const demoUids = userRes.rows.map((r) => r.id);
+    const demoProfileIds = userRes.rows.map((r) => r.profile_id).filter(Boolean);
 
     console.log(`Identified ${demoUids.length} synthetic / demo user accounts.`);
 
@@ -222,9 +263,9 @@ async function runPurge() {
       },
       {
         table: 'doctor_private',
-        query: `DELETE FROM public.doctor_private WHERE doctor_id = ANY($1) OR owner_uid = ANY($2)`,
-        countQuery: `SELECT count(*) FROM public.doctor_private WHERE doctor_id = ANY($1) OR owner_uid = ANY($2)`,
-        params: [demoProfileIds, demoUids],
+        query: `DELETE FROM public.doctor_private WHERE doctor_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.doctor_private WHERE doctor_id = ANY($1)`,
+        params: [demoProfileIds],
       },
       {
         table: 'doctor_availability',
@@ -240,8 +281,8 @@ async function runPurge() {
       },
       {
         table: 'ambulances',
-        query: `DELETE FROM public.ambulances WHERE ambulance_id = ANY($1) OR owner_uid = ANY($2)`,
-        countQuery: `SELECT count(*) FROM public.ambulances WHERE ambulance_id = ANY($1) OR owner_uid = ANY($2)`,
+        query: `DELETE FROM public.ambulances WHERE ambulance_id = ANY($1) OR auth_uid = ANY($2)`,
+        countQuery: `SELECT count(*) FROM public.ambulances WHERE ambulance_id = ANY($1) OR auth_uid = ANY($2)`,
         params: [demoProfileIds, demoUids],
       },
       {
@@ -282,35 +323,41 @@ async function runPurge() {
       },
     ];
 
-    console.log('--- PURGE BREAKDOWN BY TABLE ---');
+    console.log('--- PURGE AUDIT BREAKDOWN ---');
     for (const step of purgeSteps) {
       const countRes = await client.query(step.countQuery, step.params);
       const rowCount = parseInt(countRes.rows[0].count, 10);
-      if (isDryRun) {
-        console.log(`[DRY-RUN] ${step.table.padEnd(28)} : ${rowCount} matching rows`);
-      } else {
+      console.log(`[${step.table}] Target rows to remove: ${rowCount}`);
+
+      if (!isDryRun && rowCount > 0) {
         const delRes = await client.query(step.query, step.params);
-        console.log(`[PURGED]  ${step.table.padEnd(28)} : ${delRes.rowCount} rows deleted`);
+        console.log(`  -> DELETED ${delRes.rowCount} rows from ${step.table}`);
       }
     }
 
     if (!isDryRun) {
       await client.query('COMMIT');
       console.log('\n================================================================');
-      console.log('PURGE COMMITTED SUCCESSFULLY. Production database cleaned.');
+      console.log('SUCCESS: Production database purged of all test and demo data.');
+      console.log('Transaction committed successfully.');
       console.log('================================================================');
     } else {
       console.log('\n================================================================');
-      console.log('DRY-RUN COMPLETE. Zero rows were altered.');
-      console.log(`To execute live: node backend/scripts/purge_demo_test_data.js --confirm-prod-purge=${REQUIRED_CONFIRM_TOKEN}`);
+      console.log('DRY-RUN COMPLETE: Zero database mutations occurred.');
+      console.log('To execute live purge, run with:');
+      console.log(`  node backend/scripts/purge_demo_test_data.js --confirm-prod-purge=${REQUIRED_CONFIRM_TOKEN}`);
       console.log('================================================================');
     }
   } catch (err) {
     if (!isDryRun) {
-      await client.query('ROLLBACK');
-      console.error('\nPURGE FAILED. Transaction rolled back cleanly.');
+      try {
+        await client.query('ROLLBACK');
+        console.error('Transaction rolled back successfully.');
+      } catch (rbErr) {
+        console.error('Failed to rollback transaction:', rbErr.message);
+      }
     }
-    console.error('Error details:', err.message);
+    console.error('Purge script failed with error:', err.message);
     process.exit(1);
   } finally {
     await client.end();

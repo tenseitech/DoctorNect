@@ -26,11 +26,11 @@ const { toUserUuid, DOCTORNECT_NAMESPACE } = require('../functions/user_id_bridg
 
 // Demo accounts metadata (Google Play Store review accounts)
 const DEMO_PHONES = {
-  patient: '7058809803',
-  doctor: '7666892394',
-  medicalStore: '9359503874',
-  lab: '9409858233',
-  ambulance: '9307583929',
+  patient: process.env.DEMO_PATIENT_PHONE || '9999900001',
+  doctor: process.env.DEMO_DOCTOR_PHONE || '9999900002',
+  medicalStore: process.env.DEMO_STORE_PHONE || '9999900003',
+  lab: process.env.DEMO_LAB_PHONE || '9999900004',
+  ambulance: process.env.DEMO_AMBULANCE_PHONE || '9999900005',
 };
 
 // Parse CLI flags
