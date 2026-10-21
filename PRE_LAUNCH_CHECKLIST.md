@@ -225,28 +225,69 @@ flowchart TD
 #### 1. Flutter Code Analysis (`flutter analyze`):
 ```
 Analyzing frontend...                                           
-No issues found! (ran in 388.5s)
+No issues found! (ran in 188.3s)
 ```
 **Result:** `VERIFIED` - Zero errors, zero warnings, zero linter issues across entire `frontend/lib` and `frontend/test`.
 
 #### 2. Flutter Unit & Integration Tests (`flutter test`):
 ```
-04:14 +481: All tests passed!
+02:44 +481: All tests passed!
 ```
-**Result:** `VERIFIED` - 481 test cases passing, 0 failed. Covers all 5 watcher state machines, data mappers, cutover flag delegations, and UI widgets.
+**Result:** `VERIFIED` - 481 test cases passing, 0 failed. Covers all 5 watcher state machines, data mappers, cutover flag delegations, S3 storage migration flags, profile photo uploaders, and UI widgets.
 
 #### 3. Backend Cloud Functions Tests (`npm --prefix backend/functions test`):
 ```
-ℹ tests 426
-ℹ suites 6
-ℹ pass 410
+ℹ tests 437
+ℹ suites 9
+ℹ pass 421
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 16
 ℹ todo 0
-ℹ duration_ms 84902.4607
+ℹ duration_ms 39235.8713
 ```
-**Result:** `VERIFIED` - 410 test cases passing, 0 failed, 16 emulator-dependent tests skipped.
+**Result:** `VERIFIED` - 421 test cases passing, 0 failed, 16 emulator-dependent tests skipped. Includes:
+- Reviewer login bypass suite (`reviewer_login.test.js`): 6/6 PASS
+- Mail dispatcher suite (`mail_dispatcher.test.js`): 2/2 PASS
+- Razorpay webhook & Promoted Ads suite (`phase_e3_razorpay_ads.test.js`): 3/3 PASS
+- Ambulance PIN, rate limits, sync loop prevention, and validation rules suites.
+
+#### 4. PostgreSQL Database RLS Test Suites (100% Passing: 110 / 110 Tests):
+- **Core RLS & Security Advisor (`rls_policies_test.sql`):** 40 / 40 PASS
+  - Proves: Cross-role isolation, role & verification column locks, atomic stored procedures, doctor_directory masking, doctor_private and user_devices isolation.
+- **Phase D Core Modules (`phase_d_rls_test.sql`):** 39 / 39 PASS
+  - Proves: Cross-store pharmacy isolation, cross-lab booking & order isolation, ambulance private settings isolation, ambulance double-accept race lock (exactly 1 driver wins, siblings marked taken), location/phone visible only during active trip and cleared immediately on trip completion, anon blocked from all 10 RPCs.
+- **Phase E.1 Auth & Super Admin (`phase_e1_rls_test.sql`):** 5 / 5 PASS
+  - Proves: `is_super_admin()` enrollment, null/empty safety, client read denial on `super_admins`.
+- **Phase E.2 Support & Notifications (`phase_e2_rls_test.sql`):** 11 / 11 PASS
+  - Proves: Support ticket and ticket messages isolation, in-app notification isolation, client read denial on `mail_queue` and `security_events`, super-admin oversight.
+- **Phase E.3 Razorpay & Promoted Ads (`phase_e3_rls_test.sql`):** 15 / 15 PASS
+  - Proves: Promoted ad visibility (draft hidden from other users, active public), razorpay order insertion and isolation, client insert denial on payments and webhook events, idempotency and super-admin access.
+
+#### 5. PostgreSQL RLS & SECURITY DEFINER Lockdown:
+```sql
+SELECT relname FROM pg_class WHERE relkind='r' AND relnamespace='public'::regnamespace AND NOT relrowsecurity;
+-- Returns: (0 rows) -> 100% of public tables enforce Row-Level Security.
+
+SELECT p.proname, p.prosecdef, p.proconfig, p.proacl 
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace 
+WHERE n.nspname = 'public' AND p.prosecdef ORDER BY p.proname;
+-- Returns: 25 rows -> All 25 SECURITY DEFINER functions enforce fixed search_path ("search_path=\"\"" or explicit schemas) with zero search-path hijacking vectors.
+```
+
+#### 6. Reviewer Accounts for Play Store & App Store Review:
+- **Server-Side Bypass (`reviewer_login.js`):**
+  - Controlled strictly via environment variables: `REVIEW_TEST_NUMBERS`, `REVIEW_FIXED_OTP`, `REVIEW_ACCESS_UNTIL`.
+  - Non-allowlisted numbers CANNOT use fixed OTP.
+  - Expired date (`REVIEW_ACCESS_UNTIL < now`) disables fixed OTP automatically.
+  - Production default is strictly **OFF**.
+  - Rate limited (5 max attempts) and audit logged (`REVIEWER_LOGIN_SUCCESS` / `REVIEWER_LOGIN_FAILED`).
+  - Pre-approved reviewer dummy accounts seeded across 5 roles via `node backend/scripts/seed_reviewer_accounts.js`.
+
+#### 7. Production Database Demo Data Purge & Orphan Integrity Audit:
+- Extended script `backend/scripts/purge_demo_test_data.js` tested on local Docker DB with full dataset seeder `backend/scripts/seed_full_test_dataset.js`.
+- Verified cascading deletion across all 35 user-linked tables.
+- **Post-Purge Referential Integrity Audit:** 20 SQL foreign-key orphan queries executed; 0 orphan rows detected across all tables.
 
 ### 7.2 Compile-Time Demo Guard Verification
 **Command:**

@@ -136,6 +136,26 @@ Below is the complete, explicit inventory of all files to be deleted or changed 
 | 8 | `frontend/lib/core/notifications/patient_notification_prefs_sync.dart` | Remove cutover flag branching; sync preferences directly to Supabase `patients.notification_preferences`. |
 | 9 | `backend/firestore.rules` | Lock down all 5 module collections: `match /{document=**} { allow read, write: if false; }`. |
 
+### 4.3 External Consumer & Admin App Dependency Analysis
+
+Before executing the deletions or locking Firestore rules in Stage 2, evaluate the following external dependencies:
+
+1. **Separate Admin App / Portal:**
+   - **Doctor Verifications (`doctors` / `doctor_verification`):** If an external Admin portal currently verifies doctors by writing `{ verified: true }` directly to Firestore collection `doctors/{id}`, deleting `exports.syncDoctorsToSupabase` will stop those verifications from propagating to Supabase. The Admin portal must either:
+     - Connect directly to Supabase via PostgREST / Supabase Client using a Service Role key or `super_admins` credentials.
+     - Call an authenticated admin Cloud Function / RPC that updates PostgreSQL directly.
+   - **Promoted Ads Approval (`promoted_ads`):** The Admin portal must review and update ads in Supabase table `promoted_ads` (status transitions: `pending_approval` $\rightarrow$ `active` or `rejected`).
+   - **Support Tickets & System Alerts (`support_tickets`, `ticket_messages`):** Admin oversight must query PostgreSQL tables `support_tickets` and `mail_queue` (which enforce `is_super_admin(auth.jwt()->>'sub')`).
+
+2. **Firestore Rules Lockdown (`backend/firestore.rules`):**
+   - Setting `match /{document=**} { allow read, write: if false; }` blocks **all** web/mobile clients using the Firebase Client SDK.
+   - Backend services using the Firebase Admin SDK (Node.js) are **not** affected by Firestore rules (Admin SDK bypasses security rules).
+   - If an Admin Web Dashboard uses Firebase Client SDK with Firestore rules, it must be migrated to Supabase before locking rules.
+
+3. **Supabase $\rightarrow$ Firestore Sync Functions (`sync-to-firestore` Edge Function & Worker):**
+   - Deleting `sync-to-firestore` means Firestore will receive no new appointments, prescriptions, or patient data.
+   - Any analytics pipeline or third-party service reading from Firestore must be pointed to PostgreSQL / Supabase replicas.
+
 ---
 
 ## 5. Verification Checklist for Stage 2 Commit
