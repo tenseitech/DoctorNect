@@ -2308,6 +2308,119 @@ async function supabaseDatabaseWebhookHandler(req, res, options = {}) {
           });
         }
       }
+    } else if (table === 'pharmacy_deliveries') {
+      if (type === 'INSERT' && record) {
+        const storeId = record.store_id;
+        const patientName = String(record.patient_name || 'Patient').trim();
+        const doctorName = String(record.doctor_name || 'Doctor').trim();
+        const deliveryId = record.delivery_id;
+
+        if (storeId) {
+          await fcmSender(db, {
+            collection: 'medicalStores',
+            docId: storeId,
+            title: 'New Prescription Delivery Request',
+            body: `New prescription from Dr. ${doctorName} for ${patientName}.`,
+            data: {
+              type: 'pharmacy_delivery_new',
+              deliveryId: String(deliveryId),
+              prescriptionId: String(record.prescription_id || ''),
+            },
+            androidChannelId: 'pharmacy_orders',
+            logLabel: `pharmacy store ${storeId} delivery ${deliveryId}`,
+          });
+        }
+      } else if (type === 'UPDATE' && record && oldRecord) {
+        if (record.status === 'dispensed' && oldRecord.status !== 'dispensed') {
+          const patientId = record.patient_id;
+          const storeName = String(record.store_name || 'Pharmacy').trim();
+          const deliveryId = record.delivery_id;
+
+          if (patientId) {
+            await fcmSender(db, {
+              collection: 'patients',
+              docId: patientId,
+              title: 'Prescription Ready',
+              body: `${storeName} has dispensed your prescription.`,
+              data: {
+                type: 'pharmacy_delivery_update',
+                deliveryId: String(deliveryId),
+                status: 'dispensed',
+              },
+              androidChannelId: 'patient_pharmacy',
+              logLabel: `patient ${patientId} delivery ${deliveryId}`,
+            });
+          }
+        }
+      }
+    } else if (table === 'lab_bookings') {
+      if (type === 'INSERT' && record) {
+        const labId = record.lab_id;
+        const patientName = String(record.patient_name || 'Patient').trim();
+        const testName = String(record.test_name || 'Lab test').trim();
+        const bookingId = record.booking_id;
+
+        if (labId) {
+          await fcmSender(db, {
+            collection: 'labs',
+            docId: labId,
+            title: 'New Lab Booking',
+            body: `${patientName} booked ${testName}.`,
+            data: {
+              type: 'lab_booking_new',
+              bookingId: String(bookingId),
+            },
+            androidChannelId: 'lab_bookings',
+            logLabel: `lab ${labId} booking ${bookingId}`,
+          });
+        }
+      } else if (type === 'UPDATE' && record && oldRecord) {
+        if (record.status === 'completed' && oldRecord.status !== 'completed') {
+          const patientId = record.patient_id;
+          const labName = String(record.lab_name || 'Laboratory').trim();
+          const testName = String(record.test_name || 'test').trim();
+          const bookingId = record.booking_id;
+
+          if (patientId) {
+            await fcmSender(db, {
+              collection: 'patients',
+              docId: patientId,
+              title: 'Lab Report Ready',
+              body: `${labName} uploaded your report for ${testName}.`,
+              data: {
+                type: 'lab_report_ready',
+                bookingId: String(bookingId),
+                status: 'completed',
+              },
+              androidChannelId: 'patient_lab_bookings',
+              logLabel: `patient ${patientId} lab report ${bookingId}`,
+            });
+          }
+        }
+      }
+    } else if (table === 'ambulance_broadcasts') {
+      if (type === 'UPDATE' && record && oldRecord) {
+        if (record.status === 'accepted' && oldRecord.status !== 'accepted') {
+          const patientId = record.patient_id;
+          const broadcastId = record.broadcast_id;
+
+          if (patientId) {
+            await fcmSender(db, {
+              collection: 'patients',
+              docId: patientId,
+              title: 'Ambulance En Route',
+              body: 'An ambulance driver has accepted your emergency request and is en route.',
+              data: {
+                type: 'ambulance_accepted',
+                broadcastId: String(broadcastId),
+                status: 'accepted',
+              },
+              androidChannelId: 'patient_ambulance',
+              logLabel: `patient ${patientId} ambulance ${broadcastId}`,
+            });
+          }
+        }
+      }
     }
 
     return res.status(200).json({ success: true });

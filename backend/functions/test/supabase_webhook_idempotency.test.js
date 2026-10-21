@@ -370,3 +370,211 @@ test('Single notification path routing: exactly one notification fires for ON an
 });
 
 
+
+
+test('Phase D Webhooks: pharmacy_deliveries INSERT notifies store and UPDATE(dispensed) notifies patient', async () => {
+  const expectedSecret = 'test-secret';
+  const processedStore = new Map();
+  const mockDb = {
+    collection: (col) => ({ doc: (id) => ({ col, id }) }),
+    runTransaction: async (cb) => cb({
+      get: async (ref) => ({ exists: processedStore.has(ref.id) }),
+      set: (ref, data) => processedStore.set(ref.id, data),
+    }),
+  };
+
+  const sentFCM = [];
+  const mockSendFcm = async (_db, payload) => sentFCM.push(payload);
+
+  // 1. INSERT pharmacy delivery
+  const reqInsert = {
+    method: 'POST',
+    headers: { 'x-supabase-webhook-secret': expectedSecret },
+    body: {
+      type: 'INSERT',
+      table: 'pharmacy_deliveries',
+      record: {
+        delivery_id: 'del_101',
+        prescription_id: 'rx_202',
+        doctor_name: 'Dr. Sen',
+        patient_name: 'Amit',
+        store_id: 'store_303',
+        status: 'sent',
+      },
+    },
+  };
+  let resStatus = null;
+  const mockRes = {
+    status: (s) => { resStatus = s; return mockRes; },
+    json: () => mockRes,
+  };
+
+  await supabaseDatabaseWebhookHandler(reqInsert, mockRes, {
+    expectedSecret,
+    db: mockDb,
+    sendFcm: mockSendFcm,
+  });
+
+  assert.equal(resStatus, 200);
+  assert.equal(sentFCM.length, 1);
+  assert.equal(sentFCM[0].docId, 'store_303');
+  assert.equal(sentFCM[0].data.type, 'pharmacy_delivery_new');
+
+  // 2. UPDATE pharmacy delivery to dispensed
+  const reqUpdate = {
+    method: 'POST',
+    headers: { 'x-supabase-webhook-secret': expectedSecret },
+    body: {
+      type: 'UPDATE',
+      table: 'pharmacy_deliveries',
+      record: {
+        delivery_id: 'del_101',
+        patient_id: 'pat_404',
+        store_name: 'MedPlus',
+        status: 'dispensed',
+      },
+      old_record: {
+        delivery_id: 'del_101',
+        patient_id: 'pat_404',
+        status: 'viewed',
+      },
+    },
+  };
+
+  await supabaseDatabaseWebhookHandler(reqUpdate, mockRes, {
+    expectedSecret,
+    db: mockDb,
+    sendFcm: mockSendFcm,
+  });
+
+  assert.equal(sentFCM.length, 2);
+  assert.equal(sentFCM[1].docId, 'pat_404');
+  assert.equal(sentFCM[1].data.status, 'dispensed');
+});
+
+test('Phase D Webhooks: lab_bookings INSERT notifies lab and UPDATE(completed) notifies patient', async () => {
+  const expectedSecret = 'test-secret';
+  const processedStore = new Map();
+  const mockDb = {
+    collection: (col) => ({ doc: (id) => ({ col, id }) }),
+    runTransaction: async (cb) => cb({
+      get: async (ref) => ({ exists: processedStore.has(ref.id) }),
+      set: (ref, data) => processedStore.set(ref.id, data),
+    }),
+  };
+
+  const sentFCM = [];
+  const mockSendFcm = async (_db, payload) => sentFCM.push(payload);
+
+  // 1. INSERT lab booking
+  const reqInsert = {
+    method: 'POST',
+    headers: { 'x-supabase-webhook-secret': expectedSecret },
+    body: {
+      type: 'INSERT',
+      table: 'lab_bookings',
+      record: {
+        booking_id: 'bkg_501',
+        lab_id: 'lab_601',
+        patient_name: 'Sunita',
+        test_name: 'Lipid Profile',
+      },
+    },
+  };
+  let resStatus = null;
+  const mockRes = {
+    status: (s) => { resStatus = s; return mockRes; },
+    json: () => mockRes,
+  };
+
+  await supabaseDatabaseWebhookHandler(reqInsert, mockRes, {
+    expectedSecret,
+    db: mockDb,
+    sendFcm: mockSendFcm,
+  });
+
+  assert.equal(resStatus, 200);
+  assert.equal(sentFCM.length, 1);
+  assert.equal(sentFCM[0].docId, 'lab_601');
+  assert.equal(sentFCM[0].data.type, 'lab_booking_new');
+
+  // 2. UPDATE lab booking to completed
+  const reqUpdate = {
+    method: 'POST',
+    headers: { 'x-supabase-webhook-secret': expectedSecret },
+    body: {
+      type: 'UPDATE',
+      table: 'lab_bookings',
+      record: {
+        booking_id: 'bkg_501',
+        patient_id: 'pat_701',
+        lab_name: 'City Lab',
+        test_name: 'Lipid Profile',
+        status: 'completed',
+      },
+      old_record: {
+        booking_id: 'bkg_501',
+        status: 'sample_collected',
+      },
+    },
+  };
+
+  await supabaseDatabaseWebhookHandler(reqUpdate, mockRes, {
+    expectedSecret,
+    db: mockDb,
+    sendFcm: mockSendFcm,
+  });
+
+  assert.equal(sentFCM.length, 2);
+  assert.equal(sentFCM[1].docId, 'pat_701');
+  assert.equal(sentFCM[1].data.status, 'completed');
+});
+
+test('Phase D Webhooks: ambulance_broadcasts UPDATE(accepted) notifies patient', async () => {
+  const expectedSecret = 'test-secret';
+  const processedStore = new Map();
+  const mockDb = {
+    collection: (col) => ({ doc: (id) => ({ col, id }) }),
+    runTransaction: async (cb) => cb({
+      get: async (ref) => ({ exists: processedStore.has(ref.id) }),
+      set: (ref, data) => processedStore.set(ref.id, data),
+    }),
+  };
+
+  const sentFCM = [];
+  const mockSendFcm = async (_db, payload) => sentFCM.push(payload);
+
+  const reqUpdate = {
+    method: 'POST',
+    headers: { 'x-supabase-webhook-secret': expectedSecret },
+    body: {
+      type: 'UPDATE',
+      table: 'ambulance_broadcasts',
+      record: {
+        broadcast_id: 'bcast_801',
+        patient_id: 'pat_901',
+        status: 'accepted',
+      },
+      old_record: {
+        broadcast_id: 'bcast_801',
+        status: 'pending',
+      },
+    },
+  };
+  let resStatus = null;
+  const mockRes = {
+    status: (s) => { resStatus = s; return mockRes; },
+    json: () => mockRes,
+  };
+
+  await supabaseDatabaseWebhookHandler(reqUpdate, mockRes, {
+    expectedSecret,
+    db: mockDb,
+    sendFcm: mockSendFcm,
+  });
+
+  assert.equal(resStatus, 200);
+  assert.equal(sentFCM.length, 1);
+  assert.equal(sentFCM[0].docId, 'pat_901');
+  assert.equal(sentFCM[0].data.type, 'ambulance_accepted');
+});
