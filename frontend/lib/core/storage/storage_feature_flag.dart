@@ -1,6 +1,7 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/doctor_patient_cutover_flag.dart';
 import '../firebase/firebase_bootstrap.dart';
 
 /// Central feature flag manager for AWS S3 Storage rollout.
@@ -10,6 +11,7 @@ import '../firebase/firebase_bootstrap.dart';
 /// 1. Firebase Remote Config parameter: `use_s3_storage = true`
 /// 2. Compile-time flag: `--dart-define=USE_S3_STORAGE=true`
 /// 3. In-memory override for testing: `StorageFeatureFlag.debugOverride = true`
+/// 4. Synchronized with `DoctorPatientCutoverFlag.isEnabled`
 abstract final class StorageFeatureFlag {
   static const String flagKey = 'use_s3_storage';
 
@@ -59,6 +61,10 @@ abstract final class StorageFeatureFlag {
 
     if (_envOverride.isNotEmpty) {
       return _envOverride.toLowerCase() == 'true';
+    }
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return true;
     }
 
     if (!FirebaseBootstrap.isReady) return false;

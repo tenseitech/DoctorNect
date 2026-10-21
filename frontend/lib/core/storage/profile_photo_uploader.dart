@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/doctor_patient_cutover_flag.dart';
 import '../firebase/firebase_bootstrap.dart';
 import '../firebase/firestore_paths.dart';
+import '../supabase/supabase_bootstrap.dart';
 import 's3_storage_service.dart';
 import 'storage_feature_flag.dart';
 import '../data/local_avatar_store.dart';
@@ -92,16 +93,34 @@ class ProfilePhotoUploader {
         }, SetOptions(merge: true));
       }
 
-      // 3. Delete old S3 object ONLY after both upload and Firestore update succeeded
+      // 3. Supabase update behind cutover flag
+      if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+        try {
+          await SupabaseBootstrap.client.from('patients').update({
+            'photo_key': newObjectKey,
+            'photo_storage': 's3',
+            'photo_s3_key': newObjectKey,
+            'photo_storage_provider': 's3',
+            'photo_updated_at': DateTime.now().toUtc().toIso8601String(),
+          }).eq('patient_id', patientId);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[ProfilePhotoUploader] Supabase patient update: $e');
+          }
+        }
+      }
+
+      // 4. Delete old S3 object ONLY after both upload and Firestore update succeeded
       if (oldPhotoKey != null &&
           oldPhotoKey.trim().isNotEmpty &&
           oldPhotoKey.trim() != newObjectKey) {
         try {
           await _s3.deleteObject(oldPhotoKey.trim());
         } catch (e) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint(
                 '[ProfilePhotoUploader] failed to delete old S3 photo: $e');
+          }
         }
       }
 
@@ -137,13 +156,6 @@ class ProfilePhotoUploader {
           'photoURL': remoteUrl ?? finalUrl,
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-
-        try {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null && remoteUrl != null) {
-            await user.updatePhotoURL(remoteUrl);
-          }
-        } catch (_) {}
       }
 
       return ProfilePhotoUploadResult(
@@ -157,7 +169,7 @@ class ProfilePhotoUploader {
   /// Uploads doctor profile photo.
   /// When S3 is enabled:
   /// 1. Uploads bytes to S3 (purpose: 'doctor_profile', parentId: doctorId).
-  /// 2. Updates Firestore doctors/{doctorId} and users/{ownerUid or doctorId} docs.
+  /// 2. Updates Firestore doctors/{doctorId} and users/{targetUid} docs.
   /// 3. Deletes old S3 object ONLY after new upload AND Firestore updates succeeded.
   /// When S3 is disabled:
   /// Runs legacy upload / base64 fallback.
@@ -209,16 +221,34 @@ class ProfilePhotoUploader {
         }, SetOptions(merge: true));
       }
 
-      // 3. Delete old S3 object ONLY after both upload and Firestore update succeeded
+      // 3. Supabase update behind cutover flag
+      if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+        try {
+          await SupabaseBootstrap.client.from('doctors').update({
+            'photo_key': newObjectKey,
+            'photo_storage': 's3',
+            'photo_s3_key': newObjectKey,
+            'photo_storage_provider': 's3',
+            'photo_updated_at': DateTime.now().toUtc().toIso8601String(),
+          }).eq('doctor_id', doctorId);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[ProfilePhotoUploader] Supabase doctor update: $e');
+          }
+        }
+      }
+
+      // 4. Delete old S3 object ONLY after both upload and Firestore update succeeded
       if (oldPhotoKey != null &&
           oldPhotoKey.trim().isNotEmpty &&
           oldPhotoKey.trim() != newObjectKey) {
         try {
           await _s3.deleteObject(oldPhotoKey.trim());
         } catch (e) {
-          if (kDebugMode)
+          if (kDebugMode) {
             debugPrint(
                 '[ProfilePhotoUploader] failed to delete old S3 photo: $e');
+          }
         }
       }
 
@@ -296,6 +326,22 @@ class ProfilePhotoUploader {
       });
     }
 
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        await SupabaseBootstrap.client.from('patients').update({
+          'photo_key': null,
+          'photo_storage': null,
+          'photo_s3_key': null,
+          'photo_url': null,
+          'photo_updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('patient_id', patientId);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[ProfilePhotoUploader] Supabase patient photo clear: $e');
+        }
+      }
+    }
+
     if (currentPhotoKey != null && currentPhotoKey.trim().isNotEmpty) {
       try {
         await _s3.deleteObject(currentPhotoKey.trim());
@@ -328,6 +374,22 @@ class ProfilePhotoUploader {
         'photoURL': FieldValue.delete(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+    }
+
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        await SupabaseBootstrap.client.from('doctors').update({
+          'photo_key': null,
+          'photo_storage': null,
+          'photo_s3_key': null,
+          'photo_url': null,
+          'photo_updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('doctor_id', doctorId);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[ProfilePhotoUploader] Supabase doctor photo clear: $e');
+        }
+      }
     }
 
     if (currentPhotoKey != null && currentPhotoKey.trim().isNotEmpty) {
