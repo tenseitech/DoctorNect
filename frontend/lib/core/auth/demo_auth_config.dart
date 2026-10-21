@@ -5,7 +5,25 @@ import '../enums/user_type.dart';
 
 /// Demo mode is disabled for production. Firebase Auth is required.
 abstract final class DemoAuthConfig {
-  static const bool enabled = false;
+  static const bool enabled = bool.fromEnvironment(
+    'ENABLE_DEMO_AUTH',
+    defaultValue: false,
+  );
+
+  /// Compile-time safety guard evaluated at build time.
+  static const DemoAuthReleaseGuard buildTimeGuard = DemoAuthReleaseGuard();
+
+  /// Runtime verification called during main() initialization.
+  static void verifyReleaseBuildSafety() {
+    // Reference const build-time guard
+    const _ = buildTimeGuard;
+    if (kReleaseMode && (enabled || enableDemoSuperAdmin)) {
+      throw StateError(
+        'CRITICAL SECURITY ERROR: Demo auth configuration detected in release mode. '
+        'Release builds must never include demo auth config.',
+      );
+    }
+  }
 
   /// Demo Super Admin flag: enabled only when dev/demo flag is on (defaults to kDebugMode, false in prod release).
   static const bool enableDemoSuperAdmin = bool.fromEnvironment(
@@ -107,4 +125,16 @@ abstract final class DemoAuthConfig {
 
   static String trialLoginHint(UserType role) =>
       'Sign in with the email and password you used during registration.';
+}
+
+/// Compile-time guard: In release mode, const constructor assert fails build
+/// if demo authentication or demo super admin is enabled.
+class DemoAuthReleaseGuard {
+  const DemoAuthReleaseGuard()
+      : assert(
+          !kReleaseMode ||
+              (!DemoAuthConfig.enabled && !DemoAuthConfig.enableDemoSuperAdmin),
+          'FATAL: Demo auth is strictly prohibited in release builds! '
+          'Ensure DemoAuthConfig.enabled and ENABLE_DEMO_SUPER_ADMIN are false.',
+        );
 }

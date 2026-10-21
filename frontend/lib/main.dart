@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
+import 'core/auth/demo_auth_config.dart';
 import 'core/firebase/firebase_bootstrap.dart';
 import 'core/invite/pending_invite_store.dart';
 import 'core/media/gallery_image_picker.dart';
@@ -24,6 +25,7 @@ import 'features/splash/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  DemoAuthConfig.verifyReleaseBuildSafety();
 
   // Native splash is Android/iOS only (`web: false` in pubspec).
   if (!kIsWeb) {
