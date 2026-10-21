@@ -1,5 +1,12 @@
 /**
- * DoctorNect: Production Firestore → Supabase PostgreSQL Migration Script
+ * DoctorNect: Firestore → Supabase Data Seeding / Migration Utility
+ * 
+ * [OPTIONAL / TEST-DATA-ONLY UTILITY]
+ * NOTE: Production launch does NOT require live data migration because there are
+ * zero real production users in Cloud Firestore (current data is synthetic test data only).
+ * The current Supabase project directly becomes the production database.
+ * This script is retained in the repository exclusively for optional developer testing,
+ * local emulation, and synthetic test-data migration.
  * Usage:
  *   node scripts/migrate_firestore_to_supabase.js --dry-run
  *   node scripts/migrate_firestore_to_supabase.js --live
@@ -37,6 +44,7 @@ const SINCE_TIMESTAMP = sinceArg ? new Date(sinceArg.split('=')[1]) : null;
 
 console.log('================================================================');
 console.log(`DOCTORNECT DATA MIGRATION: FIRESTORE -> SUPABASE POSTGRESQL`);
+console.log(`[NOTICE] OPTIONAL / TEST-DATA-ONLY UTILITY — NOT REQUIRED FOR PROD CUTOVER`);
 console.log(`MODE: ${IS_DRY_RUN ? 'DRY-RUN (Simulation only — zero DB mutations)' : '*** LIVE MIGRATION ***'}`);
 if (AUTO_TOMBSTONE) console.log(`OPTION: Auto-synthesize Tombstones for Orphaned Foreign Keys`);
 if (TARGET_ROLE) console.log(`FILTER: Target Role = ${TARGET_ROLE}`);

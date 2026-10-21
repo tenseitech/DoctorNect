@@ -1248,9 +1248,14 @@ There are **38 Cloud Function triggers** on Firestore in [index.js](file:///c:/U
 
 ---
 
-## 3. PRODUCTION DATA MIGRATION SPECIFICATION
+## 3. PRODUCTION DATA MIGRATION SPECIFICATION (OPTIONAL / TEST DATA ONLY)
 
-Existing production data stored in Cloud Firestore must be extracted, validated, and loaded into Supabase PostgreSQL.
+> [!NOTE]
+> **PRE-LAUNCH ARCHITECTURAL UPDATE:**
+> There are **NO real users** on DoctorNect today; existing records in Cloud Firestore are developer test data only.
+> The **current Supabase project will become the production database directly**.
+> As a result, **no production data migration from Firestore to Supabase is required**, and temporary dual-write bridges are decommissioned.
+> The extraction specifications below and the utility script `backend/scripts/migrate_firestore_to_supabase.js` remain in the repository strictly as an **optional, test-data-only utility** for developer sandbox seeding and local test environments.
 
 ### 3.1 Foreign Key Dependency Graph & Load Order
 To prevent foreign key constraint violations during migration, data must be loaded in the following strict topological order:
@@ -1344,12 +1349,11 @@ graph TD
   - Supabase Third-Party Auth enabled.
   - Consolidated schema applied to PostgreSQL (`20261020000001_consolidated_firebase_schema_and_rls.sql`).
   - Backfill script run to assign `{ role: 'authenticated', user_role: '<role>' }` in Firebase Auth.
-- **Migration Steps:**
-  1. Run backfill: `node backend/scripts/backfill_users_to_supabase.js --apply --project medibond-45fad`.
-  2. Run doctor/patient migration: `node backend/scripts/migrate_firestore_to_supabase.js --live --role=doctor` and `--role=patient`.
-  3. Switch Flutter client flag: `--dart-define=USE_SUPABASE_AUTH=true`.
-  4. Verify doctor discovery screen and patient profile loads from Supabase.
-  5. S3 medical file presigned upload/download verified against Supabase `health_records`.
+- **Clean Enablement Steps (No Data Migration Required):**
+  1. Supabase Third-Party Auth configured for Firebase Auth JWT validation.
+  2. Switch Flutter client flag: `--dart-define=USE_SUPABASE_AUTH=true`.
+  3. Verify doctor discovery screen and patient profile loads from Supabase.
+  4. S3 medical file presigned upload/download verified against Supabase `health_records`.
 
 ---
 
