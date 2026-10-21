@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS public.doctor_directory_updates (
     id TEXT PRIMARY KEY DEFAULT 'directory',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE public.doctor_directory_updates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.doctor_directory_updates FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "doctor_directory_updates_select" ON public.doctor_directory_updates;
 CREATE POLICY "doctor_directory_updates_select" ON public.doctor_directory_updates FOR SELECT TO authenticated USING (TRUE);
 REVOKE ALL ON public.doctor_directory_updates FROM PUBLIC, anon, authenticated;
