@@ -215,3 +215,129 @@ flowchart TD
    If database corruption occurred, initiate PITR restore in Supabase Console to the exact minute prior to the incident timestamp ($T - 5\text{min}$).
 4. **Key Rotation Runbook:**
    Follow `docs/SECRET_ROTATION_CHECKLIST.md` if credentials were compromised.
+
+---
+
+## 7. Verification Evidence & Test Execution Results
+
+### 7.1 Full Test Suite Totals (Verified Oct 21, 2026)
+
+#### 1. Flutter Code Analysis (`flutter analyze`):
+```
+Analyzing frontend...                                           
+No issues found! (ran in 388.5s)
+```
+**Result:** `VERIFIED` - Zero errors, zero warnings, zero linter issues across entire `frontend/lib` and `frontend/test`.
+
+#### 2. Flutter Unit & Integration Tests (`flutter test`):
+```
+04:14 +481: All tests passed!
+```
+**Result:** `VERIFIED` - 481 test cases passing, 0 failed. Covers all 5 watcher state machines, data mappers, cutover flag delegations, and UI widgets.
+
+#### 3. Backend Cloud Functions Tests (`npm --prefix backend/functions test`):
+```
+ℹ tests 426
+ℹ suites 6
+ℹ pass 410
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 16
+ℹ todo 0
+ℹ duration_ms 84902.4607
+```
+**Result:** `VERIFIED` - 410 test cases passing, 0 failed, 16 emulator-dependent tests skipped.
+
+### 7.2 Compile-Time Demo Guard Verification
+**Command:**
+```bash
+flutter build apk --release --dart-define=ENABLE_DEMO_SUPER_ADMIN=true
+```
+**Output:**
+```
+lib/core/auth/demo_auth_config.dart:14:54: Error: Constant evaluation error:
+  static const DemoAuthReleaseGuard buildTimeGuard = DemoAuthReleaseGuard();
+                                                     ^
+lib/core/auth/demo_auth_config.dart:135:25: Context: This assertion failed with message: FATAL: Demo auth is strictly prohibited in release builds! Ensure DemoAuthConfig.enabled and ENABLE_DEMO_SUPER_ADMIN are false.
+          !kReleaseMode ||
+                        ^
+lib/core/auth/demo_auth_config.dart:14:37: Context: While analyzing:
+  static const DemoAuthReleaseGuard buildTimeGuard = DemoAuthReleaseGuard();
+                                    ^
+Target kernel_snapshot_program failed: Exception
+
+FAILURE: Build failed with an exception.
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+```
+**Result:** `VERIFIED` - Fails compile-time constant evaluation assert with zero possibility of releasing an APK containing demo admin credentials. Default value of `DemoAuthConfig.enabled` is `false`.
+
+### 7.3 Production Database Demo Purge Verification (Docker DB)
+
+#### Dry-Run Output:
+```
+================================================================
+DOCTORNECT: PRODUCTION DEMO & TEST DATA PURGE
+MODE: DRY-RUN (Audit only — zero mutations)
+TARGET DEMO PHONES: 9999900001, 9999900002, 9999900003, 9999900004, 9999900005
+================================================================
+
+Identified 5 synthetic / demo user accounts.
+--- PURGE AUDIT BREAKDOWN ---
+[ambulance_location_updates] Target rows to remove: 0
+[ambulance_locations] Target rows to remove: 0
+[ambulance_trip_contacts] Target rows to remove: 0
+[ambulance_requests] Target rows to remove: 0
+[ambulance_broadcasts] Target rows to remove: 0
+[pharmacy_delivery_medicines] Target rows to remove: 0
+[pharmacy_deliveries] Target rows to remove: 0
+[lab_bookings] Target rows to remove: 0
+[lab_orders] Target rows to remove: 0
+[prescription_medicines] Target rows to remove: 0
+[prescription_investigations] Target rows to remove: 0
+[prescriptions] Target rows to remove: 1
+[appointments] Target rows to remove: 1
+[health_records] Target rows to remove: 0
+[family_members] Target rows to remove: 0
+[doctor_private] Target rows to remove: 1
+[doctor_availability] Target rows to remove: 0
+[doctor_blocked_dates] Target rows to remove: 0
+[ambulances] Target rows to remove: 1
+[medical_stores] Target rows to remove: 1
+[labs] Target rows to remove: 1
+[doctors] Target rows to remove: 1
+[patients] Target rows to remove: 1
+[user_devices] Target rows to remove: 0
+[users] Target rows to remove: 5
+
+================================================================
+DRY-RUN COMPLETE: Zero database mutations occurred.
+================================================================
+```
+
+#### Live Purge Output:
+```
+================================================================
+DOCTORNECT: PRODUCTION DEMO & TEST DATA PURGE
+MODE: *** LIVE PURGE ***
+TARGET DEMO PHONES: 9999900001, 9999900002, 9999900003, 9999900004, 9999900005
+================================================================
+
+Identified 5 synthetic / demo user accounts.
+--- PURGE AUDIT BREAKDOWN ---
+  -> DELETED 1 rows from prescriptions
+  -> DELETED 1 rows from appointments
+  -> DELETED 1 rows from doctor_private
+  -> DELETED 1 rows from ambulances
+  -> DELETED 1 rows from medical_stores
+  -> DELETED 1 rows from labs
+  -> DELETED 1 rows from doctors
+  -> DELETED 1 rows from patients
+  -> DELETED 5 rows from users
+
+================================================================
+SUCCESS: Production database purged of all test and demo data.
+Transaction committed successfully.
+================================================================
+```
+**Result:** `VERIFIED` - Complete foreign-key cascaded deletion within a single ACID transaction. Post-purge dry-run confirms 0 demo accounts remain.
