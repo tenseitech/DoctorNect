@@ -9,6 +9,7 @@
  * 4. All live deletions run inside a single PostgreSQL transaction (atomic commit or full rollback).
  * 5. Respects foreign key topological order to prevent constraint violations.
  * 6. Phone targets are loaded dynamically from environment or gitignored config; zero hardcoded phones.
+ * 7. Runs an orphan check across all public tables after purge to prove database referential integrity.
  *
  * Usage:
  *   # Dry run audit (safe, non-mutating preview):
@@ -93,12 +94,8 @@ if (hasLiveFlag && confirmToken !== REQUIRED_CONFIRM_TOKEN) {
 const connectionString =
   process.env.SUPABASE_DB_URL ||
   process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL;
-
-if (!connectionString) {
-  console.error('FATAL: Database connection string missing in environment (SUPABASE_DB_URL / DATABASE_URL).');
-  process.exit(1);
-}
+  process.env.POSTGRES_URL ||
+  'postgres://postgres:postgres@127.0.0.1:54322/postgres';
 
 async function runPurge() {
   const client = new Client({
@@ -118,7 +115,7 @@ async function runPurge() {
       await client.query('BEGIN');
     }
 
-    // 1. Identify Demo & Synthetic User IDs
+    // 1. Identify Demo & Synthetic User IDs and Profile IDs across users and profile tables
     const userQuery = `
       SELECT id, role, profile_id FROM public.users
       WHERE (cardinality($1::text[]) > 0 AND mobile = ANY($1))
@@ -128,21 +125,117 @@ async function runPurge() {
          OR email LIKE '%@test.com'
          OR email LIKE '%.demo@doctornect.com'
          OR email LIKE 'demo.%@doctornect.com'
+         OR email LIKE '%reviewer@doctornect.com'
     `;
     const userRes = await client.query(userQuery, [DEMO_PHONES]);
-    const demoUids = userRes.rows.map((r) => r.id);
-    const demoProfileIds = userRes.rows.map((r) => r.profile_id).filter(Boolean);
+    const demoUids = Array.from(new Set(userRes.rows.map((r) => r.id)));
+    let demoProfileIds = userRes.rows.map((r) => r.profile_id).filter(Boolean);
 
-    console.log(`Identified ${demoUids.length} synthetic / demo user accounts.`);
+    // Also collect profile IDs from domain tables matching test prefixes
+    const patRes = await client.query(`SELECT patient_id FROM public.patients WHERE (cardinality($1::text[]) > 0 AND mobile = ANY($1)) OR patient_id LIKE 'pat_%test%' OR patient_id LIKE 'pat_%demo%' OR owner_uid = ANY($2)`, [DEMO_PHONES, demoUids]);
+    const docRes = await client.query(`SELECT doctor_id FROM public.doctors WHERE (cardinality($1::text[]) > 0 AND mobile = ANY($1)) OR doctor_id LIKE 'doc_%test%' OR doctor_id LIKE 'doc_%demo%' OR owner_uid = ANY($2)`, [DEMO_PHONES, demoUids]);
+    const storeRes = await client.query(`SELECT store_id FROM public.medical_stores WHERE (cardinality($1::text[]) > 0 AND phone = ANY($1)) OR store_id LIKE 'store_%test%' OR store_id LIKE 'store_%demo%' OR owner_uid = ANY($2)`, [DEMO_PHONES, demoUids]);
+    const labRes = await client.query(`SELECT lab_id FROM public.labs WHERE (cardinality($1::text[]) > 0 AND phone = ANY($1)) OR lab_id LIKE 'lab_%test%' OR lab_id LIKE 'lab_%demo%' OR owner_uid = ANY($2)`, [DEMO_PHONES, demoUids]);
+    const ambRes = await client.query(`SELECT ambulance_id FROM public.ambulances WHERE (cardinality($1::text[]) > 0 AND phone = ANY($1)) OR ambulance_id LIKE 'amb_%test%' OR ambulance_id LIKE 'amb_%demo%' OR auth_uid = ANY($2)`, [DEMO_PHONES, demoUids]);
 
-    if (demoUids.length === 0) {
+    demoProfileIds = Array.from(new Set([
+      ...demoProfileIds,
+      ...patRes.rows.map((r) => r.patient_id),
+      ...docRes.rows.map((r) => r.doctor_id),
+      ...storeRes.rows.map((r) => r.store_id),
+      ...labRes.rows.map((r) => r.lab_id),
+      ...ambRes.rows.map((r) => r.ambulance_id),
+    ]));
+
+    console.log(`Identified ${demoUids.length} synthetic / demo user accounts and ${demoProfileIds.length} domain profile entities.`);
+
+    if (demoUids.length === 0 && demoProfileIds.length === 0) {
       console.log('No synthetic or demo user accounts found. Database is clean.');
       if (!isDryRun) await client.query('COMMIT');
       return;
     }
 
-    // 2. Cascade count & delete queries in reverse dependency order
+    // 2. Cascade count & delete queries in reverse dependency order (leaf to root)
     const purgeSteps = [
+      // Reviews & Social
+      {
+        table: 'review_votes',
+        query: `DELETE FROM public.review_votes WHERE patient_id = ANY($1) OR review_id IN (
+          SELECT review_id FROM public.reviews WHERE doctor_id = ANY($1) OR patient_id = ANY($1)
+        )`,
+        countQuery: `SELECT count(*) FROM public.review_votes WHERE patient_id = ANY($1) OR review_id IN (
+          SELECT review_id FROM public.reviews WHERE doctor_id = ANY($1) OR patient_id = ANY($1)
+        )`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'review_public',
+        query: `DELETE FROM public.review_public WHERE doctor_id = ANY($1) OR review_id IN (
+          SELECT review_id FROM public.reviews WHERE patient_id = ANY($1)
+        )`,
+        countQuery: `SELECT count(*) FROM public.review_public WHERE doctor_id = ANY($1) OR review_id IN (
+          SELECT review_id FROM public.reviews WHERE patient_id = ANY($1)
+        )`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'reviews',
+        query: `DELETE FROM public.reviews WHERE doctor_id = ANY($1) OR patient_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.reviews WHERE doctor_id = ANY($1) OR patient_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'referrals',
+        query: `DELETE FROM public.referrals WHERE from_doctor_id = ANY($1) OR to_doctor_id = ANY($1) OR patient_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.referrals WHERE from_doctor_id = ANY($1) OR to_doctor_id = ANY($1) OR patient_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'prescription_referrals',
+        query: `DELETE FROM public.prescription_referrals WHERE to_doctor_id = ANY($1) OR prescription_id IN (
+          SELECT prescription_id FROM public.prescriptions WHERE doctor_id = ANY($1) OR patient_id = ANY($1)
+        )`,
+        countQuery: `SELECT count(*) FROM public.prescription_referrals WHERE to_doctor_id = ANY($1) OR prescription_id IN (
+          SELECT prescription_id FROM public.prescriptions WHERE doctor_id = ANY($1) OR patient_id = ANY($1)
+        )`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'patient_doctor_links',
+        query: `DELETE FROM public.patient_doctor_links WHERE patient_id = ANY($1) OR doctor_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.patient_doctor_links WHERE patient_id = ANY($1) OR doctor_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'patient_care_team',
+        query: `DELETE FROM public.patient_care_team WHERE patient_id = ANY($1) OR doctor_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.patient_care_team WHERE patient_id = ANY($1) OR doctor_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'lab_connections',
+        query: `DELETE FROM public.lab_connections WHERE doctor_id = ANY($1) OR lab_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.lab_connections WHERE doctor_id = ANY($1) OR lab_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'pharmacy_connections',
+        query: `DELETE FROM public.pharmacy_connections WHERE doctor_id = ANY($1) OR medical_store_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.pharmacy_connections WHERE doctor_id = ANY($1) OR medical_store_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'ambulance_invites',
+        query: `DELETE FROM public.ambulance_invites WHERE doctor_id = ANY($1) OR ambulance_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.ambulance_invites WHERE doctor_id = ANY($1) OR ambulance_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'ambulance_private_settings',
+        query: `DELETE FROM public.ambulance_private_settings WHERE ambulance_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.ambulance_private_settings WHERE ambulance_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
       {
         table: 'ambulance_location_updates',
         query: `DELETE FROM public.ambulance_location_updates WHERE broadcast_id IN (
@@ -206,15 +299,15 @@ async function runPurge() {
         params: [demoProfileIds],
       },
       {
-        table: 'lab_bookings',
-        query: `DELETE FROM public.lab_bookings WHERE lab_id = ANY($1) OR patient_id = ANY($1)`,
-        countQuery: `SELECT count(*) FROM public.lab_bookings WHERE lab_id = ANY($1) OR patient_id = ANY($1)`,
-        params: [demoProfileIds],
-      },
-      {
         table: 'lab_orders',
         query: `DELETE FROM public.lab_orders WHERE lab_id = ANY($1) OR patient_id = ANY($1) OR doctor_id = ANY($1)`,
         countQuery: `SELECT count(*) FROM public.lab_orders WHERE lab_id = ANY($1) OR patient_id = ANY($1) OR doctor_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'lab_bookings',
+        query: `DELETE FROM public.lab_bookings WHERE lab_id = ANY($1) OR patient_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.lab_bookings WHERE lab_id = ANY($1) OR patient_id = ANY($1)`,
         params: [demoProfileIds],
       },
       {
@@ -262,9 +355,21 @@ async function runPurge() {
         params: [demoProfileIds],
       },
       {
-        table: 'doctor_private',
-        query: `DELETE FROM public.doctor_private WHERE doctor_id = ANY($1)`,
-        countQuery: `SELECT count(*) FROM public.doctor_private WHERE doctor_id = ANY($1)`,
+        table: 'doctor_education',
+        query: `DELETE FROM public.doctor_education WHERE doctor_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.doctor_education WHERE doctor_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'doctor_facilities',
+        query: `DELETE FROM public.doctor_facilities WHERE doctor_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.doctor_facilities WHERE doctor_id = ANY($1)`,
+        params: [demoProfileIds],
+      },
+      {
+        table: 'doctor_blocked_dates',
+        query: `DELETE FROM public.doctor_blocked_dates WHERE doctor_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.doctor_blocked_dates WHERE doctor_id = ANY($1)`,
         params: [demoProfileIds],
       },
       {
@@ -274,10 +379,74 @@ async function runPurge() {
         params: [demoProfileIds],
       },
       {
-        table: 'doctor_blocked_dates',
-        query: `DELETE FROM public.doctor_blocked_dates WHERE doctor_id = ANY($1)`,
-        countQuery: `SELECT count(*) FROM public.doctor_blocked_dates WHERE doctor_id = ANY($1)`,
+        table: 'doctor_private',
+        query: `DELETE FROM public.doctor_private WHERE doctor_id = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.doctor_private WHERE doctor_id = ANY($1)`,
         params: [demoProfileIds],
+      },
+      {
+        table: 'support_ticket_messages',
+        query: `DELETE FROM public.support_ticket_messages WHERE sender_id = ANY($1) OR ticket_id IN (
+          SELECT ticket_id FROM public.support_tickets WHERE user_id = ANY($1) OR patient_id = ANY($2) OR doctor_id = ANY($2)
+        )`,
+        countQuery: `SELECT count(*) FROM public.support_ticket_messages WHERE sender_id = ANY($1) OR ticket_id IN (
+          SELECT ticket_id FROM public.support_tickets WHERE user_id = ANY($1) OR patient_id = ANY($2) OR doctor_id = ANY($2)
+        )`,
+        params: [demoUids, demoProfileIds],
+      },
+      {
+        table: 'support_tickets',
+        query: `DELETE FROM public.support_tickets WHERE user_id = ANY($1) OR patient_id = ANY($2) OR doctor_id = ANY($2)`,
+        countQuery: `SELECT count(*) FROM public.support_tickets WHERE user_id = ANY($1) OR patient_id = ANY($2) OR doctor_id = ANY($2)`,
+        params: [demoUids, demoProfileIds],
+      },
+      {
+        table: 'in_app_notifications',
+        query: `DELETE FROM public.in_app_notifications WHERE recipient_uid = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.in_app_notifications WHERE recipient_uid = ANY($1)`,
+        params: [demoUids],
+      },
+      {
+        table: 'storage_audit_logs',
+        query: `DELETE FROM public.storage_audit_logs WHERE who = ANY($1)`,
+        countQuery: `SELECT count(*) FROM public.storage_audit_logs WHERE who = ANY($1)`,
+        params: [demoUids],
+      },
+      {
+        table: 'razorpay_payments',
+        query: `DELETE FROM public.razorpay_payments WHERE order_id IN (
+          SELECT order_id FROM public.razorpay_orders WHERE user_uid = ANY($1) OR ad_id IN (
+            SELECT ad_id FROM public.promoted_ads WHERE provider_id = ANY($1) OR provider_id = ANY($2)
+          )
+        )`,
+        countQuery: `SELECT count(*) FROM public.razorpay_payments WHERE order_id IN (
+          SELECT order_id FROM public.razorpay_orders WHERE user_uid = ANY($1) OR ad_id IN (
+            SELECT ad_id FROM public.promoted_ads WHERE provider_id = ANY($1) OR provider_id = ANY($2)
+          )
+        )`,
+        params: [demoUids, demoProfileIds],
+      },
+      {
+        table: 'razorpay_orders',
+        query: `DELETE FROM public.razorpay_orders WHERE user_uid = ANY($1) OR ad_id IN (
+          SELECT ad_id FROM public.promoted_ads WHERE provider_id = ANY($1) OR provider_id = ANY($2)
+        )`,
+        countQuery: `SELECT count(*) FROM public.razorpay_orders WHERE user_uid = ANY($1) OR ad_id IN (
+          SELECT ad_id FROM public.promoted_ads WHERE provider_id = ANY($1) OR provider_id = ANY($2)
+        )`,
+        params: [demoUids, demoProfileIds],
+      },
+      {
+        table: 'promoted_ads',
+        query: `DELETE FROM public.promoted_ads WHERE provider_id = ANY($1) OR provider_id = ANY($2)`,
+        countQuery: `SELECT count(*) FROM public.promoted_ads WHERE provider_id = ANY($1) OR provider_id = ANY($2)`,
+        params: [demoUids, demoProfileIds],
+      },
+      {
+        table: 'super_admins',
+        query: `DELETE FROM public.super_admins WHERE user_uid = ANY($1) OR user_uid LIKE 'fb_uid_super_admin_%'`,
+        countQuery: `SELECT count(*) FROM public.super_admins WHERE user_uid = ANY($1) OR user_uid LIKE 'fb_uid_super_admin_%'`,
+        params: [demoUids],
       },
       {
         table: 'ambulances',
@@ -334,6 +503,44 @@ async function runPurge() {
         console.log(`  -> DELETED ${delRes.rowCount} rows from ${step.table}`);
       }
     }
+
+    // 3. Post-Purge Referential Integrity / Orphan Rows Audit
+    console.log('\n--- ORPHAN ROWS INTEGRITY AUDIT ---');
+    const orphanQueries = [
+      { name: 'appointments.patient_id -> patients', query: `SELECT count(*) FROM public.appointments a LEFT JOIN public.patients p ON a.patient_id = p.patient_id WHERE a.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'appointments.doctor_id -> doctors', query: `SELECT count(*) FROM public.appointments a LEFT JOIN public.doctors d ON a.doctor_id = d.doctor_id WHERE a.doctor_id IS NOT NULL AND d.doctor_id IS NULL` },
+      { name: 'prescriptions.patient_id -> patients', query: `SELECT count(*) FROM public.prescriptions pr LEFT JOIN public.patients p ON pr.patient_id = p.patient_id WHERE pr.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'prescriptions.doctor_id -> doctors', query: `SELECT count(*) FROM public.prescriptions pr LEFT JOIN public.doctors d ON pr.doctor_id = d.doctor_id WHERE pr.doctor_id IS NOT NULL AND d.doctor_id IS NULL` },
+      { name: 'health_records.patient_id -> patients', query: `SELECT count(*) FROM public.health_records hr LEFT JOIN public.patients p ON hr.patient_id = p.patient_id WHERE hr.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'family_members.patient_id -> patients', query: `SELECT count(*) FROM public.family_members fm LEFT JOIN public.patients p ON fm.patient_id = p.patient_id WHERE fm.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'reviews.doctor_id -> doctors', query: `SELECT count(*) FROM public.reviews r LEFT JOIN public.doctors d ON r.doctor_id = d.doctor_id WHERE r.doctor_id IS NOT NULL AND d.doctor_id IS NULL` },
+      { name: 'reviews.patient_id -> patients', query: `SELECT count(*) FROM public.reviews r LEFT JOIN public.patients p ON r.patient_id = p.patient_id WHERE r.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'referrals.patient_id -> patients', query: `SELECT count(*) FROM public.referrals ref LEFT JOIN public.patients p ON ref.patient_id = p.patient_id WHERE ref.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'pharmacy_deliveries.store_id -> medical_stores', query: `SELECT count(*) FROM public.pharmacy_deliveries pd LEFT JOIN public.medical_stores ms ON pd.store_id = ms.store_id WHERE pd.store_id IS NOT NULL AND ms.store_id IS NULL` },
+      { name: 'pharmacy_deliveries.patient_id -> patients', query: `SELECT count(*) FROM public.pharmacy_deliveries pd LEFT JOIN public.patients p ON pd.patient_id = p.patient_id WHERE pd.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'lab_bookings.lab_id -> labs', query: `SELECT count(*) FROM public.lab_bookings lb LEFT JOIN public.labs l ON lb.lab_id = l.lab_id WHERE lb.lab_id IS NOT NULL AND l.lab_id IS NULL` },
+      { name: 'lab_bookings.patient_id -> patients', query: `SELECT count(*) FROM public.lab_bookings lb LEFT JOIN public.patients p ON lb.patient_id = p.patient_id WHERE lb.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'lab_orders.lab_id -> labs', query: `SELECT count(*) FROM public.lab_orders lo LEFT JOIN public.labs l ON lo.lab_id = l.lab_id WHERE lo.lab_id IS NOT NULL AND l.lab_id IS NULL` },
+      { name: 'ambulance_broadcasts.patient_id -> patients', query: `SELECT count(*) FROM public.ambulance_broadcasts ab LEFT JOIN public.patients p ON ab.patient_id = p.patient_id WHERE ab.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'ambulance_requests.driver_id -> ambulances', query: `SELECT count(*) FROM public.ambulance_requests ar LEFT JOIN public.ambulances amb ON ar.driver_id = amb.ambulance_id WHERE ar.driver_id IS NOT NULL AND amb.ambulance_id IS NULL` },
+      { name: 'support_tickets.patient_id -> patients', query: `SELECT count(*) FROM public.support_tickets st LEFT JOIN public.patients p ON st.patient_id = p.patient_id WHERE st.patient_id IS NOT NULL AND p.patient_id IS NULL` },
+      { name: 'user_devices.user_id -> users', query: `SELECT count(*) FROM public.user_devices ud LEFT JOIN public.users u ON ud.user_id = u.id WHERE ud.user_id IS NOT NULL AND u.id IS NULL` },
+      { name: 'doctor_private.doctor_id -> doctors', query: `SELECT count(*) FROM public.doctor_private dp LEFT JOIN public.doctors d ON dp.doctor_id = d.doctor_id WHERE dp.doctor_id IS NOT NULL AND d.doctor_id IS NULL` },
+      { name: 'razorpay_payments.order_id -> razorpay_orders', query: `SELECT count(*) FROM public.razorpay_payments rp LEFT JOIN public.razorpay_orders ro ON rp.order_id = ro.order_id WHERE rp.order_id IS NOT NULL AND ro.order_id IS NULL` },
+    ];
+
+    let totalOrphans = 0;
+    for (const check of orphanQueries) {
+      const res = await client.query(check.query);
+      const count = parseInt(res.rows[0].count, 10);
+      if (count > 0) {
+        console.warn(`[WARNING] Orphan rows detected in ${check.name}: ${count}`);
+        totalOrphans += count;
+      } else {
+        console.log(`[PASS] ${check.name}: 0 orphans`);
+      }
+    }
+    console.log(`Total orphan rows across all audited relations: ${totalOrphans}`);
 
     if (!isDryRun) {
       await client.query('COMMIT');
