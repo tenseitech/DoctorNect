@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../features/ambulance/models/ambulance_models.dart';
+import '../mappers/ambulance_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_watcher_state_machine.dart';
 
 /// Supabase repository for Emergency Ambulance Dispatch & Live Tracking.
 class SupabaseAmbulanceRepository {
@@ -15,7 +18,7 @@ class SupabaseAmbulanceRepository {
   SupabaseClient get _client => SupabaseBootstrap.client;
 
   /// Fetches registered ambulance profile by [ambulanceId].
-  Future<Map<String, dynamic>?> fetchProfile(String ambulanceId) async {
+  Future<RegisteredAmbulance?> fetchProfile(String ambulanceId) async {
     if (!SupabaseBootstrap.isReady || ambulanceId.isEmpty) return null;
     try {
       final res = await _client
@@ -23,7 +26,8 @@ class SupabaseAmbulanceRepository {
           .select()
           .eq('ambulance_id', ambulanceId)
           .maybeSingle();
-      return res;
+      if (res == null) return null;
+      return AmbulanceSupabaseMapper.driverFromRow(res);
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseAmbulance] fetchProfile error: $e');
       return null;
@@ -31,7 +35,7 @@ class SupabaseAmbulanceRepository {
   }
 
   /// Lists currently available ambulance drivers optionally filtered by [city].
-  Future<List<Map<String, dynamic>>> fetchAvailableAmbulances({
+  Future<List<RegisteredAmbulance>> fetchAvailableAmbulances({
     String? city,
   }) async {
     if (!SupabaseBootstrap.isReady) return const [];
@@ -47,15 +51,23 @@ class SupabaseAmbulanceRepository {
       }
 
       final res = await query.order('rating', ascending: false).limit(100);
-      return List<Map<String, dynamic>>.from(res as List);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      return rows.map(AmbulanceSupabaseMapper.driverFromRow).toList();
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseAmbulance] fetchAvailable error: $e');
       return const [];
     }
   }
 
+  /// Saves or creates an emergency broadcast booking.
+  Future<void> saveBroadcast(AmbulanceBooking booking) async {
+    if (!SupabaseBootstrap.isReady) return;
+    final row = AmbulanceSupabaseMapper.bookingToRow(booking);
+    await _client.from('ambulance_broadcasts').upsert(row, onConflict: 'broadcast_id');
+  }
+
   /// Lists pending emergency broadcasts for driver dispatch.
-  Future<List<Map<String, dynamic>>> fetchPendingBroadcasts({
+  Future<List<AmbulanceBooking>> fetchPendingBroadcasts({
     String? city,
   }) async {
     if (!SupabaseBootstrap.isReady) return const [];
@@ -70,7 +82,11 @@ class SupabaseAmbulanceRepository {
       }
 
       final res = await query.order('created_at', ascending: false).limit(50);
-      return List<Map<String, dynamic>>.from(res as List);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      return rows
+          .map(AmbulanceSupabaseMapper.bookingFromRow)
+          .whereType<AmbulanceBooking>()
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseAmbulance] fetchPendingBroadcasts error: $e');
       return const [];
@@ -78,7 +94,7 @@ class SupabaseAmbulanceRepository {
   }
 
   /// Lists dispatch requests targeted to driver [driverId].
-  Future<List<Map<String, dynamic>>> fetchRequestsForDriver(
+  Future<List<AmbulanceRequest>> fetchRequestsForDriver(
     String driverId,
   ) async {
     if (!SupabaseBootstrap.isReady || driverId.isEmpty) return const [];
@@ -90,7 +106,11 @@ class SupabaseAmbulanceRepository {
           .eq('status', 'pending')
           .order('created_at', ascending: false)
           .limit(50);
-      return List<Map<String, dynamic>>.from(res as List);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      return rows
+          .map(AmbulanceSupabaseMapper.requestFromRow)
+          .whereType<AmbulanceRequest>()
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseAmbulance] fetchRequestsForDriver error: $e');
       return const [];
@@ -215,18 +235,83 @@ class SupabaseAmbulanceRepository {
   }
 
   /// Realtime stream of incoming dispatch requests for driver [driverId].
-  Stream<List<Map<String, dynamic>>> watchIncomingRequests(String driverId) {
+  Stream<List<AmbulanceRequest>> watchIncomingRequests(String driverId) {
     if (!SupabaseBootstrap.isReady || driverId.isEmpty) {
       return const Stream.empty();
     }
-    return _client
-        .from('ambulance_requests')
-        .stream(primaryKey: ['request_id'])
-        .eq('driver_id', driverId)
-        .order('created_at', ascending: false);
+    final watcher = SupabaseWatcherStateMachine<AmbulanceRequest>(
+      fetcher: () => fetchRequestsForDriver(driverId),
+      getId: (r) => r.id,
+      sort: (items) => items.sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
+    return watcher.stream();
+  }
+
+  /// Realtime stream of a patient's active broadcast booking.
+  Stream<AmbulanceBooking?> watchPatientBroadcast(String broadcastId) {
+    if (!SupabaseBootstrap.isReady || broadcastId.isEmpty) {
+      return const Stream.empty();
+    }
+    late final StreamController<AmbulanceBooking?> controller;
+    Timer? poller;
+
+    Future<void> fetchSingle() async {
+      try {
+        final res = await _client
+            .from('ambulance_broadcasts')
+            .select()
+            .eq('broadcast_id', broadcastId)
+            .maybeSingle();
+        if (!controller.isClosed) {
+          controller.add(
+            res != null ? AmbulanceSupabaseMapper.bookingFromRow(res) : null,
+          );
+        }
+      } catch (e, st) {
+        if (!controller.isClosed) controller.addError(e, st);
+      }
+    }
+
+    controller = StreamController<AmbulanceBooking?>.broadcast(
+      onListen: () {
+        fetchSingle();
+        poller = Timer.periodic(const Duration(seconds: 4), (_) => fetchSingle());
+      },
+      onCancel: () {
+        poller?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
+
+  /// Realtime stream of past ambulance broadcasts for [patientId].
+  Stream<List<AmbulanceBooking>> watchPatientHistory(String patientId) {
+    if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
+      return const Stream.empty();
+    }
+    final watcher = SupabaseWatcherStateMachine<AmbulanceBooking>(
+      fetcher: () async {
+        final res = await _client
+            .from('ambulance_broadcasts')
+            .select()
+            .eq('patient_id', patientId)
+            .order('created_at', ascending: false)
+            .limit(50);
+        final rows = List<Map<String, dynamic>>.from(res as List);
+        return rows
+            .map(AmbulanceSupabaseMapper.bookingFromRow)
+            .whereType<AmbulanceBooking>()
+            .toList();
+      },
+      getId: (b) => b.id,
+      sort: (items) => items.sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
+    return watcher.stream();
   }
 
   /// Realtime stream of location-update change signals (contains ZERO PII / coords).
+  /// Subscribed clients trigger [getTripLocation] upon receiving a signal.
   Stream<List<Map<String, dynamic>>> watchLocationSignals(String broadcastId) {
     if (!SupabaseBootstrap.isReady || broadcastId.isEmpty) {
       return const Stream.empty();

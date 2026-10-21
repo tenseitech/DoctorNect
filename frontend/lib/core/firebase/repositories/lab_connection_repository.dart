@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_lab_repository.dart';
 import '../../../features/lab/models/lab_connection_models.dart';
 import '../../../features/pharmacy/models/pharmacy_models.dart';
 import '../firebase_bootstrap.dart';
@@ -35,6 +37,10 @@ class LabConnectionRepository {
   Stream<List<LabConnection>> watchPendingConnectionsForDoctor(
     String doctorId,
   ) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance
+          .watchPendingConnectionsForDoctor(doctorId);
+    }
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
     return FirebaseFirestore.instance
@@ -47,6 +53,10 @@ class LabConnectionRepository {
   }
 
   Stream<List<LabConnection>> watchPendingConnectionsForLab(String labId) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance
+          .watchPendingConnectionsForLab(labId);
+    }
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
     return FirebaseFirestore.instance
@@ -64,6 +74,10 @@ class LabConnectionRepository {
     int limit = FirestoreQueryLimits.connectionsPage,
     bool preferCache = true,
   }) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance
+          .fetchActiveConnectionsForDoctor(doctorId, limit: limit);
+    }
     return _fetchConnections(
       doctorId: doctorId,
       status: ConnectionStatus.active,
@@ -79,6 +93,10 @@ class LabConnectionRepository {
     int limit = FirestoreQueryLimits.connectionsPage,
     bool preferCache = true,
   }) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance
+          .fetchActiveConnectionsForLab(labId, limit: limit);
+    }
     return _fetchConnections(
       labId: labId,
       status: ConnectionStatus.active,

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_pharmacy_repository.dart';
 import '../../../features/pharmacy/models/pharmacy_models.dart';
 import '../firestore_paths.dart';
 import '../firebase_bootstrap.dart';
@@ -12,6 +14,10 @@ class MedicalStoreRepository {
   static final MedicalStoreRepository instance = MedicalStoreRepository._();
 
   Future<bool> isStoreVerified(String storeId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      final store = await SupabasePharmacyRepository.instance.fetchMedicalStore(storeId);
+      return store?.verified ?? false;
+    }
     if (!FirebaseBootstrap.isReady) return false;
     final snap = await FirestoreReadHelper.getDocument(
       reference: FirebaseFirestore.instance
@@ -26,6 +32,9 @@ class MedicalStoreRepository {
   Future<List<MedicalStoreProfile>> fetchVerifiedStores({
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance.fetchVerifiedStores();
+    }
     if (!FirebaseBootstrap.isReady) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
@@ -34,7 +43,7 @@ class MedicalStoreRepository {
           .where(
             'verified',
             isEqualTo: true,
-          ) // FIXED: only surface admin-verified stores
+          )
           .limit(FirestoreQueryLimits.verifiedDirectoryListingCap),
       preferCache: preferCache,
     );
@@ -106,6 +115,9 @@ class MedicalStoreRepository {
   }
 
   Future<MedicalStoreProfile?> fetchStoreById(String storeId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance.fetchMedicalStore(storeId);
+    }
     if (!FirebaseBootstrap.isReady || storeId.isEmpty) return null;
 
     final snap = await FirestoreReadHelper.getDocument(

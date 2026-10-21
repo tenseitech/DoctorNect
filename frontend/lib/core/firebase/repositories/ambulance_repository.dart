@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_ambulance_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -250,6 +252,14 @@ class AmbulanceRepository {
   }
 
   Future<RegisteredAmbulance?> fetchAmbulanceById(String id) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      final profile =
+          await SupabaseAmbulanceRepository.instance.fetchProfile(id);
+      if (profile != null) {
+        AmbulanceStore.instance.registerAmbulance(profile);
+      }
+      return profile;
+    }
     if (id.isEmpty) return null;
 
     final cached = AmbulanceStore.instance.findAmbulance(id);
@@ -622,6 +632,21 @@ class AmbulanceRepository {
       return false;
     }
     final resolvedAmbulance = ambulance;
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      final existing = AmbulanceStore.instance.findBooking(broadcastId);
+      final ok = await SupabaseAmbulanceRepository.instance
+          .acceptAmbulanceRequest(
+        broadcastId: broadcastId,
+        requestId: existing?.firestoreRequestId,
+      );
+      if (ok) {
+        AmbulanceStore.instance.acceptBooking(
+          bookingId: broadcastId,
+          ambulanceId: driverId,
+        );
+      }
+      return ok;
+    }
 
     if (!FirebaseBootstrap.isReady) {
       return AmbulanceStore.instance.acceptBooking(

@@ -3,32 +3,68 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../core/firebase/ambulance_auth_helper.dart';
-
 import '../../../core/firebase/firebase_bootstrap.dart';
 import '../../../core/firebase/firestore_paths.dart';
+import '../../../core/supabase/repositories/supabase_ambulance_repository.dart';
 import '../models/ambulance_models.dart';
 import 'ambulance_store.dart';
 
-/// Keeps [AmbulanceStore] in sync with Firestore broadcast + request documents.
+/// Keeps [AmbulanceStore] in sync with Firestore/Supabase broadcast + request documents.
 class AmbulanceBookingSync {
   AmbulanceBookingSync._();
 
   static final AmbulanceBookingSync instance = AmbulanceBookingSync._();
 
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _driverSub;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _patientSub;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _patientHistorySub;
+  StreamSubscription? _driverSub;
+  StreamSubscription? _patientSub;
+  StreamSubscription? _patientHistorySub;
   String? _watchingDriverId;
   String? _watchingBroadcastId;
   String? _watchingPatientId;
 
   void watchDriverRequests(String driverId) {
-    if (!FirebaseBootstrap.isReady || driverId.isEmpty) return;
+    if (driverId.isEmpty) return;
     if (_watchingDriverId == driverId && _driverSub != null) return;
 
     _driverSub?.cancel();
     _watchingDriverId = driverId;
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      _driverSub = SupabaseAmbulanceRepository.instance
+          .watchIncomingRequests(driverId)
+          .listen(
+        (requests) {
+          final store = AmbulanceStore.instance;
+          for (final req in requests) {
+            final existing = store.findBooking(req.id);
+            final booking = AmbulanceBooking(
+              id: req.id,
+              patientName: req.pickupLocation.isNotEmpty
+                  ? req.pickupLocation
+                  : (existing?.patientName ?? 'Patient'),
+              pickupLocation: req.pickupLocation,
+              contactPhone: existing?.contactPhone ?? '',
+              bookedByRole: AmbulanceBookedByRole.patient,
+              bookedByName: existing?.bookedByName ?? 'Patient',
+              bookedById: req.patientId,
+              createdAt: req.createdAt,
+              status: req.status == AmbulanceRequestStatus.accepted
+                  ? AmbulanceBookingStatus.accepted
+                  : AmbulanceBookingStatus.pending,
+            );
+            store.upsertBooking(booking);
+          }
+        },
+        onError: (e, st) {
+          if (kDebugMode) debugPrint('Ambulance driver Supabase sync error: $e\n$st');
+        },
+      );
+      return;
+    }
+
+    if (!FirebaseBootstrap.isReady) return;
 
     _driverSub = FirebaseFirestore.instance
         .collection(FirestorePaths.ambulanceRequests)
@@ -43,7 +79,6 @@ class AmbulanceBookingSync {
       },
       onError: (e, st) {
         if (kDebugMode) debugPrint('Ambulance driver sync error: $e\n$st');
-        // Retry after ensuring auth is ready
         _driverSub?.cancel();
         _driverSub = null;
         _watchingDriverId = null;
@@ -56,11 +91,29 @@ class AmbulanceBookingSync {
   }
 
   void watchPatientBroadcast(String broadcastId) {
-    if (!FirebaseBootstrap.isReady || broadcastId.isEmpty) return;
+    if (broadcastId.isEmpty) return;
     if (_watchingBroadcastId == broadcastId && _patientSub != null) return;
 
     _patientSub?.cancel();
     _watchingBroadcastId = broadcastId;
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      _patientSub = SupabaseAmbulanceRepository.instance
+          .watchPatientBroadcast(broadcastId)
+          .listen(
+        (booking) {
+          if (booking != null) {
+            AmbulanceStore.instance.upsertBooking(booking);
+          }
+        },
+        onError: (e, st) {
+          if (kDebugMode) debugPrint('Ambulance patient Supabase sync error: $e\n$st');
+        },
+      );
+      return;
+    }
+
+    if (!FirebaseBootstrap.isReady) return;
 
     _patientSub = FirebaseFirestore.instance
         .collection(FirestorePaths.ambulanceBroadcasts)
@@ -79,11 +132,29 @@ class AmbulanceBookingSync {
   }
 
   void watchPatientHistory(String patientId) {
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty) return;
+    if (patientId.isEmpty) return;
     if (_watchingPatientId == patientId && _patientHistorySub != null) return;
 
     _patientHistorySub?.cancel();
     _watchingPatientId = patientId;
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      _patientHistorySub = SupabaseAmbulanceRepository.instance
+          .watchPatientHistory(patientId)
+          .listen(
+        (bookings) {
+          for (final b in bookings) {
+            AmbulanceStore.instance.upsertBooking(b);
+          }
+        },
+        onError: (e, st) {
+          if (kDebugMode) debugPrint('Ambulance history Supabase sync error: $e\n$st');
+        },
+      );
+      return;
+    }
+
+    if (!FirebaseBootstrap.isReady) return;
 
     _patientHistorySub = FirebaseFirestore.instance
         .collection(FirestorePaths.ambulanceBroadcasts)
@@ -96,8 +167,9 @@ class AmbulanceBookingSync {
         }
       },
       onError: (e, st) {
-        if (kDebugMode)
+        if (kDebugMode) {
           debugPrint('Ambulance patient history sync error: $e\n$st');
+        }
       },
     );
   }
@@ -178,13 +250,10 @@ class AmbulanceBookingSync {
           existing?.acceptedVehicleNumber,
       acceptedAmbulanceType: data['acceptedAmbulanceType'] as String? ??
           existing?.acceptedAmbulanceType,
-      acceptedAt: _parseDate(data['acceptedAt']),
+      acceptedAt: _parseDate(data['acceptedAt']) ?? existing?.acceptedAt,
       rating: (data['rating'] as num?)?.toInt() ?? existing?.rating,
       review: data['review'] as String? ?? existing?.review,
-      rawStatus:
-          (statusRaw == 'cancelled' && data['cancelledByRole'] == 'driver')
-              ? 'rejected'
-              : statusRaw,
+      rawStatus: statusRaw,
     );
 
     store.upsertBooking(booking);

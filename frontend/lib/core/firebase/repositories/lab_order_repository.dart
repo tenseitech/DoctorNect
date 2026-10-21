@@ -1,9 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:flutter/foundation.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_lab_repository.dart';
 import '../firebase_bootstrap.dart';
 import '../lab_report_file_store.dart';
 import '../../storage/storage_service.dart';
@@ -27,6 +28,9 @@ class LabOrderRepository {
       firestoreOverride ?? FirebaseFirestore.instance;
 
   Future<void> save(DoctorLabOrder order) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance.saveOrder(order);
+    }
     if (!FirebaseBootstrap.isReady) return;
 
     await FirebaseFirestore.instance
@@ -45,6 +49,10 @@ class LabOrderRepository {
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance
+          .fetchOrdersForDoctor(doctorId, limit: limit);
+    }
     if (!FirebaseBootstrap.isReady) {
       return const FirestorePage(items: [], hasMore: false);
     }
@@ -82,6 +90,10 @@ class LabOrderRepository {
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance
+          .fetchOrdersForPatient(patientId, limit: limit);
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) {
       return const FirestorePage(items: [], hasMore: false);
     }
@@ -112,47 +124,23 @@ class LabOrderRepository {
     );
   }
 
-  /// Doctor-facing fetch — empty when the patient has turned off sharing.
-  Future<FirestorePage<DoctorLabOrder>> fetchForPatientForDoctor(
-    String patientId, {
-    DocumentSnapshot<Map<String, dynamic>>? startAfter,
-    int limit = FirestoreQueryLimits.labOrdersPage,
-    bool preferCache = true,
-  }) async {
-    if (patientId.isEmpty) {
-      return const FirestorePage(items: [], hasMore: false);
-    }
-    if (!await PatientProfileRepository.instance
-        .isPatientSharingClinicalDataWithDoctors(
-      patientId,
-      preferCache: preferCache,
-    )) {
-      return const FirestorePage(items: [], hasMore: false);
-    }
-    return fetchForPatient(
-      patientId,
-      startAfter: startAfter,
-      limit: limit,
-      preferCache: preferCache,
-    );
-  }
-
   Future<FirestorePage<DoctorLabOrder>> fetchForLab(
     String labId, {
     DocumentSnapshot<Map<String, dynamic>>? startAfter,
     int limit = FirestoreQueryLimits.labOrdersPage,
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      final orders = await SupabaseLabRepository.instance.fetchOrdersForLab(labId);
+      return FirestorePage(items: orders, hasMore: false);
+    }
     if (!FirebaseBootstrap.isReady || labId.isEmpty) {
       return const FirestorePage(items: [], hasMore: false);
     }
 
     final baseQuery = FirebaseFirestore.instance
         .collection(FirestorePaths.labOrders)
-        .where(
-          'labId',
-          isEqualTo: labId,
-        ) // FIXED: lab operators only see orders addressed to them
+        .where('labId', isEqualTo: labId)
         .orderBy('createdAt', descending: true)
         .limit(limit);
 
@@ -177,8 +165,12 @@ class LabOrderRepository {
   }
 
   Stream<List<DoctorLabOrder>> watchForLab(String labId) {
-    if (!FirebaseBootstrap.isReady || labId.isEmpty)
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance.watchOrdersForLab(labId);
+    }
+    if (!FirebaseBootstrap.isReady || labId.isEmpty) {
       return const Stream.empty();
+    }
 
     return FirebaseFirestore.instance
         .collection(FirestorePaths.labOrders)
@@ -195,8 +187,12 @@ class LabOrderRepository {
   }
 
   Stream<List<DoctorLabOrder>> watchForDoctor(String doctorId) {
-    if (!FirebaseBootstrap.isReady || doctorId.isEmpty)
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance.watchOrdersForDoctor(doctorId);
+    }
+    if (!FirebaseBootstrap.isReady || doctorId.isEmpty) {
       return const Stream.empty();
+    }
 
     return FirebaseFirestore.instance
         .collection(FirestorePaths.labOrders)
@@ -218,6 +214,13 @@ class LabOrderRepository {
       watchForDoctor(doctorId);
 
   Future<void> updateOrderStatus(String orderId, String status) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      await SupabaseLabRepository.instance.updateLabOrderStatus(
+        orderId: orderId,
+        newStatus: status,
+      );
+      return;
+    }
     if (!FirebaseBootstrap.isReady || orderId.isEmpty) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.labOrders)
@@ -232,10 +235,8 @@ class LabOrderRepository {
     required Uint8List bytes,
     String? existingReportStorageKey,
   }) async {
-    if ((!FirebaseBootstrap.isReady && firestoreOverride == null) ||
-        orderId.isEmpty ||
-        patientId.isEmpty) {
-      throw StateError('Firebase is not ready');
+    if (orderId.isEmpty || patientId.isEmpty) {
+      throw ArgumentError('orderId and patientId are required');
     }
     if (bytes.isEmpty || bytes.length > LabReportFileStore.maxFileBytes) {
       throw ArgumentError('Invalid report file size');
@@ -243,7 +244,7 @@ class LabOrderRepository {
 
     final uploadResult = await LabReportFileStore.uploadReport(
       patientId: patientId,
-      bookingId: orderId, // We use orderId as the unique ID for storage
+      bookingId: orderId,
       fileName: fileName,
       bytes: bytes,
     );
@@ -260,6 +261,15 @@ class LabOrderRepository {
       bytes: bytes,
       storageKey: uploadResult.objectKey,
     );
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      await SupabaseLabRepository.instance.updateLabOrderStatus(
+        orderId: orderId,
+        newStatus: 'completed',
+        notes: uploadResult.objectKey,
+      );
+      return uploadResult;
+    }
 
     final updatePayload = <String, dynamic>{
       'status': 'completed',
@@ -278,7 +288,6 @@ class LabOrderRepository {
         .update(updatePayload)
         .timeout(const Duration(seconds: 20));
 
-    // Best-effort delete old S3 report ONLY after Firestore update succeeded
     if (existingReportStorageKey != null &&
         existingReportStorageKey.trim().isNotEmpty &&
         existingReportStorageKey != uploadResult.objectKey) {

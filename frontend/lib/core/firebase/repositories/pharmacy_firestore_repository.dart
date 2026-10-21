@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_pharmacy_repository.dart';
 import '../../../features/pharmacy/models/pharmacy_models.dart';
 import '../firestore_paths.dart';
 import '../firebase_bootstrap.dart';
@@ -15,6 +17,9 @@ class PharmacyFirestoreRepository {
       PharmacyFirestoreRepository._();
 
   Future<void> saveConnection(PharmacyConnection connection) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance.saveConnection(connection);
+    }
     if (!FirebaseBootstrap.isReady) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.pharmacyConnections)
@@ -34,6 +39,9 @@ class PharmacyFirestoreRepository {
   }
 
   Future<void> saveDelivery(PharmacyPrescriptionDelivery delivery) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance.saveDelivery(delivery);
+    }
     if (!FirebaseBootstrap.isReady) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.pharmacyDeliveries)
@@ -67,6 +75,9 @@ class PharmacyFirestoreRepository {
   }
 
   Future<void> updateDelivery(PharmacyPrescriptionDelivery delivery) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance.updateDelivery(delivery);
+    }
     if (!FirebaseBootstrap.isReady) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.pharmacyDeliveries)
@@ -100,60 +111,89 @@ class PharmacyFirestoreRepository {
         .toList();
   }
 
-  // FIXED: overlay persisted availability/substitute onto lines rebuilt from the draft
+  // FIXED: restore availability and substituteName into pre-built lines
   void _applyStoredMedicineLines(
     List<MedicineDispenseLine> lines,
-    dynamic raw,
+    dynamic rawStoredLines,
   ) {
-    if (raw is! List) return;
-    for (final entry in raw) {
-      if (entry is! Map) continue;
-      final map = Map<String, dynamic>.from(entry);
-      final id = map['medicineEntryId'] as String?;
-      if (id == null) continue;
-      for (final line in lines) {
-        if (line.medicineEntryId == id) {
-          line.availability = MedicineAvailability.values.byName(
-            map['availability'] as String? ?? MedicineAvailability.pending.name,
-          );
-          line.substituteName = map['substituteName'] as String? ?? '';
-          break;
+    if (rawStoredLines is! List) return;
+    final map = <String, Map<String, dynamic>>{};
+    for (final item in rawStoredLines) {
+      if (item is Map) {
+        final entryId = item['medicineEntryId'] as String?;
+        if (entryId != null) {
+          map[entryId] = Map<String, dynamic>.from(item);
         }
       }
     }
+    for (final line in lines) {
+      final stored = map[line.medicineEntryId];
+      if (stored != null) {
+        final availStr = stored['availability'] as String?;
+        if (availStr != null) {
+          try {
+            line.availability = MedicineAvailability.values.byName(availStr);
+          } catch (_) {}
+        }
+        line.substituteName = stored['substituteName'] as String? ?? '';
+      }
+    }
+  }
+
+  Future<PharmacyPrescriptionDelivery?> fetchDeliveryById(
+    String deliveryId, {
+    bool preferCache = true,
+  }) async {
+    if (!FirebaseBootstrap.isReady || deliveryId.isEmpty) return null;
+
+    final doc = await FirestoreReadHelper.getDocument(
+      reference: FirebaseFirestore.instance
+          .collection(FirestorePaths.pharmacyDeliveries)
+          .doc(deliveryId),
+      preferCache: preferCache,
+    );
+
+    final data = doc.data();
+    if (data == null) return null;
+    return _deliveryFromMap(doc.id, data);
+  }
+
+  Future<PharmacyPrescriptionDelivery?> fetchDeliveryByPrescriptionId(
+    String prescriptionId, {
+    bool preferCache = true,
+  }) async {
+    if (!FirebaseBootstrap.isReady || prescriptionId.isEmpty) return null;
+
+    final snapshot = await FirestoreReadHelper.getQuery(
+      query: FirebaseFirestore.instance
+          .collection(FirestorePaths.pharmacyDeliveries)
+          .where('prescriptionId', isEqualTo: prescriptionId)
+          .limit(1),
+      preferCache: preferCache,
+    );
+
+    if (snapshot.docs.isEmpty) return null;
+    final doc = snapshot.docs.first;
+    return _deliveryFromMap(doc.id, doc.data());
   }
 
   Future<List<PharmacyPrescriptionDelivery>> fetchDeliveriesForPatient(
     String patientId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .fetchDeliveriesForPatient(patientId);
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
       query: FirebaseFirestore.instance
           .collection(FirestorePaths.pharmacyDeliveries)
           .where('patientId', isEqualTo: patientId)
+          .orderBy('sentAt', descending: true)
           .limit(FirestoreQueryLimits.connectionsPage),
       preferCache: preferCache,
-    );
-
-    return snapshot.docs
-        .map((doc) => _deliveryFromMap(doc.id, doc.data()))
-        .whereType<PharmacyPrescriptionDelivery>()
-        .toList()
-      ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
-  }
-
-  Future<List<PharmacyPrescriptionDelivery>> fetchDeliveriesForStore(
-    String storeId,
-  ) async {
-    if (!FirebaseBootstrap.isReady) return const [];
-
-    final snapshot = await FirestoreReadHelper.getQuery(
-      query: FirebaseFirestore.instance
-          .collection(FirestorePaths.pharmacyDeliveries)
-          .where('storeId', isEqualTo: storeId)
-          .limit(FirestoreQueryLimits.connectionsPage),
     );
 
     return snapshot.docs
@@ -167,6 +207,10 @@ class PharmacyFirestoreRepository {
     String doctorId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .fetchDeliveriesForDoctor(doctorId);
+    }
     if (!FirebaseBootstrap.isReady || doctorId.isEmpty) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
@@ -185,10 +229,14 @@ class PharmacyFirestoreRepository {
       ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
   }
 
-  /// Real-time listener for a store's incoming deliveries. // FIXED: store dashboard now syncs live instead of one-time fetch
+  /// Real-time listener for a store's incoming deliveries.
   Stream<List<PharmacyPrescriptionDelivery>> watchDeliveriesForStore(
     String storeId,
   ) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .watchDeliveriesForStore(storeId);
+    }
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
     return FirebaseFirestore.instance
         .collection(FirestorePaths.pharmacyDeliveries)
@@ -207,8 +255,13 @@ class PharmacyFirestoreRepository {
   Stream<List<PharmacyPrescriptionDelivery>> watchDeliveriesForDoctor(
     String doctorId,
   ) {
-    if (!FirebaseBootstrap.isReady || doctorId.isEmpty)
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .watchDeliveriesForDoctor(doctorId);
+    }
+    if (!FirebaseBootstrap.isReady || doctorId.isEmpty) {
       return const Stream.empty();
+    }
     return FirebaseFirestore.instance
         .collection(FirestorePaths.pharmacyDeliveries)
         .where('doctorId', isEqualTo: doctorId)
@@ -235,10 +288,7 @@ class PharmacyFirestoreRepository {
       if (draft == null) return null;
 
       final lines = PharmacyPrescriptionDelivery.linesFromDraft(draft);
-      _applyStoredMedicineLines(
-        lines,
-        data['medicineLines'],
-      ); // FIXED: restore availability/substitute state
+      _applyStoredMedicineLines(lines, data['medicineLines']);
 
       return PharmacyPrescriptionDelivery(
         id: id,
@@ -256,7 +306,7 @@ class PharmacyFirestoreRepository {
         viewedAt: (data['viewedAt'] as Timestamp?)?.toDate(),
         dispensedAt: (data['dispensedAt'] as Timestamp?)?.toDate(),
         dispensingNotes: data['dispensingNotes'] as String? ?? '',
-        medicineLines: lines, // FIXED: lines now carry restored availability
+        medicineLines: lines,
       );
     } catch (_) {
       return null;
@@ -267,6 +317,10 @@ class PharmacyFirestoreRepository {
   Stream<List<PharmacyConnection>> watchPendingConnectionsForDoctor(
     String doctorId,
   ) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .watchPendingConnectionsForDoctor(doctorId);
+    }
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
     return FirebaseFirestore.instance
@@ -282,6 +336,10 @@ class PharmacyFirestoreRepository {
   Stream<List<PharmacyConnection>> watchPendingConnectionsForStore(
     String storeId,
   ) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .watchPendingConnectionsForStore(storeId);
+    }
     if (!FirebaseBootstrap.isReady) return const Stream.empty();
 
     return FirebaseFirestore.instance
@@ -300,6 +358,10 @@ class PharmacyFirestoreRepository {
     int limit = FirestoreQueryLimits.connectionsPage,
     bool preferCache = true,
   }) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .fetchActiveConnectionsForDoctor(doctorId, limit: limit);
+    }
     return _fetchConnections(
       doctorId: doctorId,
       status: ConnectionStatus.active,
@@ -316,6 +378,10 @@ class PharmacyFirestoreRepository {
     int limit = FirestoreQueryLimits.connectionsPage,
     bool preferCache = true,
   }) {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .fetchActiveConnectionsForStore(storeId, limit: limit);
+    }
     return _fetchConnections(
       storeId: storeId,
       status: ConnectionStatus.active,

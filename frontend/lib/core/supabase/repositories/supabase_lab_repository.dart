@@ -3,7 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../firebase/models/doctor_lab_order.dart';
+import '../../firebase/models/firestore_page.dart';
+import '../../firebase/repositories/lab_booking_repository.dart';
+import '../../../features/lab/models/lab_connection_models.dart';
+import '../../../features/patient/lab/models/lab_models.dart';
+import '../mappers/lab_supabase_mapper.dart';
 import '../supabase_bootstrap.dart';
+import '../supabase_watcher_state_machine.dart';
 
 /// Supabase repository for Diagnostic Laboratories (Bookings, Orders, Tests, Reports).
 class SupabaseLabRepository {
@@ -14,7 +21,7 @@ class SupabaseLabRepository {
   SupabaseClient get _client => SupabaseBootstrap.client;
 
   /// Fetches lab profile by [labId].
-  Future<Map<String, dynamic>?> fetchLabProfile(String labId) async {
+  Future<PartnerLab?> fetchLabProfile(String labId) async {
     if (!SupabaseBootstrap.isReady || labId.isEmpty) return null;
     try {
       final res = await _client
@@ -22,7 +29,8 @@ class SupabaseLabRepository {
           .select()
           .eq('lab_id', labId)
           .maybeSingle();
-      return res;
+      if (res == null) return null;
+      return LabSupabaseMapper.partnerLabFromRow(res);
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseLab] fetchLabProfile error: $e');
       return null;
@@ -30,7 +38,7 @@ class SupabaseLabRepository {
   }
 
   /// Lists verified labs optionally filtered by [city].
-  Future<List<Map<String, dynamic>>> fetchVerifiedLabs({String? city}) async {
+  Future<List<PartnerLab>> fetchVerifiedLabs({String? city}) async {
     if (!SupabaseBootstrap.isReady) return const [];
     try {
       var query = _client.from('labs').select().eq('verified', true);
@@ -38,7 +46,8 @@ class SupabaseLabRepository {
         query = query.ilike('city', '%${city.trim()}%');
       }
       final res = await query.order('lab_name', ascending: true).limit(100);
-      return List<Map<String, dynamic>>.from(res as List);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      return rows.map(LabSupabaseMapper.partnerLabFromRow).toList();
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseLab] fetchVerifiedLabs error: $e');
       return const [];
@@ -63,8 +72,15 @@ class SupabaseLabRepository {
     }
   }
 
+  /// Saves or creates a lab booking record.
+  Future<void> saveBooking(LabBookingRecord record) async {
+    if (!SupabaseBootstrap.isReady) return;
+    final row = LabSupabaseMapper.bookingToRow(record);
+    await _client.from('lab_bookings').upsert(row, onConflict: 'booking_id');
+  }
+
   /// Fetches direct patient lab bookings for [labId].
-  Future<List<Map<String, dynamic>>> fetchBookingsForLab(
+  Future<List<LabBookingRecord>> fetchBookingsForLab(
     String labId, {
     String? status,
   }) async {
@@ -75,7 +91,11 @@ class SupabaseLabRepository {
         query = query.eq('status', status);
       }
       final res = await query.order('date_time', ascending: false).limit(150);
-      return List<Map<String, dynamic>>.from(res as List);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      return rows
+          .map(LabSupabaseMapper.bookingFromRow)
+          .whereType<LabBookingRecord>()
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseLab] fetchBookingsForLab error: $e');
       return const [];
@@ -83,7 +103,7 @@ class SupabaseLabRepository {
   }
 
   /// Fetches lab bookings made by [patientId].
-  Future<List<Map<String, dynamic>>> fetchBookingsForPatient(
+  Future<List<LabBookingRecord>> fetchBookingsForPatient(
     String patientId,
   ) async {
     if (!SupabaseBootstrap.isReady || patientId.isEmpty) return const [];
@@ -94,7 +114,11 @@ class SupabaseLabRepository {
           .eq('patient_id', patientId)
           .order('date_time', ascending: false)
           .limit(100);
-      return List<Map<String, dynamic>>.from(res as List);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      return rows
+          .map(LabSupabaseMapper.bookingFromRow)
+          .whereType<LabBookingRecord>()
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseLab] fetchBookingsForPatient error: $e');
       return const [];
@@ -127,8 +151,15 @@ class SupabaseLabRepository {
     }
   }
 
+  /// Saves or creates a doctor lab order.
+  Future<void> saveOrder(DoctorLabOrder order) async {
+    if (!SupabaseBootstrap.isReady) return;
+    final row = LabSupabaseMapper.orderToRow(order);
+    await _client.from('lab_orders').upsert(row, onConflict: 'order_id');
+  }
+
   /// Fetches doctor-prescribed lab orders assigned to [labId].
-  Future<List<Map<String, dynamic>>> fetchOrdersForLab(
+  Future<List<DoctorLabOrder>> fetchOrdersForLab(
     String labId, {
     String? status,
   }) async {
@@ -139,10 +170,66 @@ class SupabaseLabRepository {
         query = query.eq('status', status);
       }
       final res = await query.order('created_at', ascending: false).limit(150);
-      return List<Map<String, dynamic>>.from(res as List);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      return rows
+          .map(LabSupabaseMapper.orderFromRow)
+          .whereType<DoctorLabOrder>()
+          .toList();
     } catch (e) {
       if (kDebugMode) debugPrint('[SupabaseLab] fetchOrdersForLab error: $e');
       return const [];
+    }
+  }
+
+  /// Fetches lab orders for a doctor.
+  Future<FirestorePage<DoctorLabOrder>> fetchOrdersForDoctor(
+    String doctorId, {
+    int limit = 50,
+  }) async {
+    if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
+    try {
+      final res = await _client
+          .from('lab_orders')
+          .select()
+          .eq('doctor_id', doctorId)
+          .order('created_at', ascending: false)
+          .limit(limit);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      final items = rows
+          .map(LabSupabaseMapper.orderFromRow)
+          .whereType<DoctorLabOrder>()
+          .toList();
+      return FirestorePage(items: items, hasMore: items.length == limit);
+    } catch (_) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
+  }
+
+  /// Fetches lab orders for a patient.
+  Future<FirestorePage<DoctorLabOrder>> fetchOrdersForPatient(
+    String patientId, {
+    int limit = 50,
+  }) async {
+    if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
+    try {
+      final res = await _client
+          .from('lab_orders')
+          .select()
+          .eq('patient_id', patientId)
+          .order('created_at', ascending: false)
+          .limit(limit);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      final items = rows
+          .map(LabSupabaseMapper.orderFromRow)
+          .whereType<DoctorLabOrder>()
+          .toList();
+      return FirestorePage(items: items, hasMore: items.length == limit);
+    } catch (_) {
+      return const FirestorePage(items: [], hasMore: false);
     }
   }
 
@@ -173,14 +260,165 @@ class SupabaseLabRepository {
   }
 
   /// Realtime stream of bookings for [labId].
-  Stream<List<Map<String, dynamic>>> watchBookingsForLab(String labId) {
+  Stream<List<LabBookingRecord>> watchBookingsForLab(String labId) {
     if (!SupabaseBootstrap.isReady || labId.isEmpty) {
       return const Stream.empty();
     }
-    return _client
-        .from('lab_bookings')
-        .stream(primaryKey: ['booking_id'])
-        .eq('lab_id', labId)
-        .order('date_time', ascending: false);
+    final watcher = SupabaseWatcherStateMachine<LabBookingRecord>(
+      fetcher: () => fetchBookingsForLab(labId),
+      getId: (b) => b.bookingId,
+      sort: (items) => items.sort((a, b) => b.dateTime.compareTo(a.dateTime)),
+    );
+    return watcher.stream();
+  }
+
+  /// Realtime stream of bookings for [patientId].
+  Stream<List<LabBookingRecord>> watchBookingsForPatient(String patientId) {
+    if (!SupabaseBootstrap.isReady || patientId.isEmpty) {
+      return const Stream.empty();
+    }
+    final watcher = SupabaseWatcherStateMachine<LabBookingRecord>(
+      fetcher: () => fetchBookingsForPatient(patientId),
+      getId: (b) => b.bookingId,
+      sort: (items) => items.sort((a, b) => b.dateTime.compareTo(a.dateTime)),
+    );
+    return watcher.stream();
+  }
+
+  /// Realtime stream of orders for [labId].
+  Stream<List<DoctorLabOrder>> watchOrdersForLab(String labId) {
+    if (!SupabaseBootstrap.isReady || labId.isEmpty) {
+      return const Stream.empty();
+    }
+    final watcher = SupabaseWatcherStateMachine<DoctorLabOrder>(
+      fetcher: () => fetchOrdersForLab(labId),
+      getId: (o) => o.orderId,
+      sort: (items) => items.sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
+    return watcher.stream();
+  }
+
+  /// Realtime stream of orders for [doctorId].
+  Stream<List<DoctorLabOrder>> watchOrdersForDoctor(String doctorId) {
+    if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
+      return const Stream.empty();
+    }
+    final watcher = SupabaseWatcherStateMachine<DoctorLabOrder>(
+      fetcher: () async {
+        final page = await fetchOrdersForDoctor(doctorId, limit: 100);
+        return page.items;
+      },
+      getId: (o) => o.orderId,
+      sort: (items) => items.sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
+    return watcher.stream();
+  }
+
+  /// Realtime stream of pending connections for [doctorId].
+  Stream<List<LabConnection>> watchPendingConnectionsForDoctor(
+    String doctorId,
+  ) {
+    if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
+      return const Stream.empty();
+    }
+    final watcher = SupabaseWatcherStateMachine<LabConnection>(
+      fetcher: () async {
+        final res = await _client
+            .from('lab_connections')
+            .select()
+            .eq('doctor_id', doctorId)
+            .eq('status', 'pending')
+            .order('requested_at', ascending: false)
+            .limit(50);
+        final rows = List<Map<String, dynamic>>.from(res as List);
+        return rows
+            .map(LabSupabaseMapper.connectionFromRow)
+            .whereType<LabConnection>()
+            .toList();
+      },
+      getId: (c) => c.id,
+      sort: (items) => items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
+    );
+    return watcher.stream();
+  }
+
+  /// Realtime stream of pending connections for [labId].
+  Stream<List<LabConnection>> watchPendingConnectionsForLab(String labId) {
+    if (!SupabaseBootstrap.isReady || labId.isEmpty) {
+      return const Stream.empty();
+    }
+    final watcher = SupabaseWatcherStateMachine<LabConnection>(
+      fetcher: () async {
+        final res = await _client
+            .from('lab_connections')
+            .select()
+            .eq('lab_id', labId)
+            .eq('status', 'pending')
+            .order('requested_at', ascending: false)
+            .limit(50);
+        final rows = List<Map<String, dynamic>>.from(res as List);
+        return rows
+            .map(LabSupabaseMapper.connectionFromRow)
+            .whereType<LabConnection>()
+            .toList();
+      },
+      getId: (c) => c.id,
+      sort: (items) => items.sort((a, b) => b.requestedAt.compareTo(a.requestedAt)),
+    );
+    return watcher.stream();
+  }
+
+  /// One-time fetch for active connections for doctor.
+  Future<FirestorePage<LabConnection>> fetchActiveConnectionsForDoctor(
+    String doctorId, {
+    int limit = 50,
+  }) async {
+    if (!SupabaseBootstrap.isReady || doctorId.isEmpty) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
+    try {
+      final res = await _client
+          .from('lab_connections')
+          .select()
+          .eq('doctor_id', doctorId)
+          .eq('status', 'active')
+          .order('requested_at', ascending: false)
+          .limit(limit);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      final items = rows
+          .map(LabSupabaseMapper.connectionFromRow)
+          .whereType<LabConnection>()
+          .toList();
+      return FirestorePage(items: items, hasMore: items.length == limit);
+    } catch (_) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
+  }
+
+  /// One-time fetch for active connections for lab.
+  Future<FirestorePage<LabConnection>> fetchActiveConnectionsForLab(
+    String labId, {
+    int limit = 50,
+  }) async {
+    if (!SupabaseBootstrap.isReady || labId.isEmpty) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
+    try {
+      final res = await _client
+          .from('lab_connections')
+          .select()
+          .eq('lab_id', labId)
+          .eq('status', 'active')
+          .order('requested_at', ascending: false)
+          .limit(limit);
+      final rows = List<Map<String, dynamic>>.from(res as List);
+      final items = rows
+          .map(LabSupabaseMapper.connectionFromRow)
+          .whereType<LabConnection>()
+          .toList();
+      return FirestorePage(items: items, hasMore: items.length == limit);
+    } catch (_) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
   }
 }

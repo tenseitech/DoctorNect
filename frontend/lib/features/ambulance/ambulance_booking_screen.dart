@@ -1,4 +1,5 @@
 import '../../core/firebase/firestore_service.dart';
+import '../../core/config/doctor_patient_cutover_flag.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -2019,6 +2020,7 @@ class _BookingStatusCardState extends State<_BookingStatusCard> {
   }
 
   void _subscribeRejectedCount() {
+    if (DoctorPatientCutoverFlag.isEnabled) return;
     if (!FirebaseBootstrap.isReady) return;
     final broadcastId = booking.id;
     if (broadcastId.isEmpty) return;

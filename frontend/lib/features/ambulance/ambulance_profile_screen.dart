@@ -1,4 +1,5 @@
 import '../../core/firebase/firestore_service.dart';
+import '../../core/config/doctor_patient_cutover_flag.dart';
 import '../../core/notifications/app_toast.dart';
 
 import 'dart:async';
@@ -1072,8 +1073,8 @@ class _AmbulanceProfileCompletionCardState
             AmbulanceStore.instance.findAmbulance(widget.ambulance.id) ??
                 widget.ambulance;
 
-        if (uid.isEmpty) {
-          return _buildContent(context, uid, live, null);
+        if (uid.isEmpty || DoctorPatientCutoverFlag.isEnabled) {
+          return _buildContent(context, uid, live, {'verified': live.verified});
         }
 
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(

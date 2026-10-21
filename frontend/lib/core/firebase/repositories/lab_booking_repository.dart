@@ -3,12 +3,14 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/repositories/supabase_lab_repository.dart';
 import '../../constants/app_constants.dart';
 import '../../../features/patient/lab/models/lab_models.dart';
 import '../../../features/patient/lab/utils/patient_selected_investigations_mapper.dart';
 import '../lab_report_file_store.dart';
 import '../../storage/storage_service.dart';
-import '../../session/patient_session.dart'; // FIXED: scope slot queries to the current patient
+import '../../session/patient_session.dart';
 import '../firebase_bootstrap.dart';
 import '../firestore_paths.dart';
 import '../firestore_read_helper.dart';
@@ -109,9 +111,6 @@ class LabBookingRepository {
     String status = 'confirmed',
     String? familyMemberId,
   }) async {
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Firebase is not ready');
-    }
     if (draft.selectedDate == null || draft.selectedSlotLabel == null) {
       throw StateError('Booking date and time are required');
     }
@@ -129,6 +128,31 @@ class LabBookingRepository {
     final summary = PatientSelectedInvestigationsMapper.summaryFromNames(
       testNames,
     );
+
+    final record = LabBookingRecord(
+      bookingId: bookingId,
+      labId: draft.selectedLab?.id,
+      labName: draft.selectedLab?.name,
+      patientId: patientId,
+      patientName: draft.patientName,
+      testName: summary,
+      testNames: testNames,
+      dateTime: dateTime,
+      slotLabel: draft.selectedSlotLabel!,
+      collectionType: draft.collectionType.name,
+      address: draft.address ?? '',
+      status: status,
+      createdAt: DateTime.now(),
+    );
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      await SupabaseLabRepository.instance.saveBooking(record);
+      return record;
+    }
+
+    if (!FirebaseBootstrap.isReady) {
+      throw StateError('Firebase is not ready');
+    }
 
     await FirebaseFirestore.instance
         .collection(FirestorePaths.labBookings)
@@ -148,8 +172,7 @@ class LabBookingRepository {
       'collectionType': draft.collectionType.name,
       'partnerLab': draft.selectedLab?.name ?? '',
       if (draft.selectedLab?.id != null && draft.selectedLab!.id!.isNotEmpty)
-        'labId': draft.selectedLab!
-            .id, // FIXED: persist labId so the lab operator can query their bookings
+        'labId': draft.selectedLab!.id,
       'address': draft.address ?? '',
       'dateTime': Timestamp.fromDate(dateTime),
       'slotLabel': draft.selectedSlotLabel,
@@ -158,21 +181,7 @@ class LabBookingRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    return LabBookingRecord(
-      bookingId: bookingId,
-      labId: draft.selectedLab?.id,
-      labName: draft.selectedLab?.name,
-      patientId: patientId,
-      patientName: draft.patientName,
-      testName: summary,
-      testNames: testNames,
-      dateTime: dateTime,
-      slotLabel: draft.selectedSlotLabel!,
-      collectionType: draft.collectionType.name,
-      address: draft.address ?? '',
-      status: status,
-      createdAt: DateTime.now(),
-    );
+    return record;
   }
 
   /// Registers a walk-in patient at the lab counter (no patient app account).
@@ -185,9 +194,6 @@ class LabBookingRepository {
     required List<String> testNames,
     String? contactNumber,
   }) async {
-    if (!FirebaseBootstrap.isReady) {
-      throw StateError('Firebase is not ready');
-    }
     if (labId.isEmpty) {
       throw ArgumentError('Lab id is required');
     }
@@ -205,6 +211,31 @@ class LabBookingRepository {
     final summary = PatientSelectedInvestigationsMapper.summaryFromNames(
       trimmedTests,
     );
+
+    final record = LabBookingRecord(
+      bookingId: bookingId,
+      labId: labId,
+      labName: labName,
+      patientId: patientId,
+      patientName: patientName.trim(),
+      testName: summary,
+      testNames: trimmedTests,
+      dateTime: dateTime,
+      slotLabel: slotLabel,
+      collectionType: LabCollectionType.walkIn.name,
+      address: '',
+      status: 'confirmed',
+      createdAt: now,
+    );
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      await SupabaseLabRepository.instance.saveBooking(record);
+      return record;
+    }
+
+    if (!FirebaseBootstrap.isReady) {
+      throw StateError('Firebase is not ready');
+    }
 
     await FirebaseFirestore.instance
         .collection(FirestorePaths.labBookings)
@@ -238,35 +269,19 @@ class LabBookingRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    return LabBookingRecord(
-      bookingId: bookingId,
-      labId: labId,
-      labName: labName,
-      patientId: patientId,
-      patientName: patientName.trim(),
-      testName: summary,
-      testNames: trimmedTests,
-      dateTime: dateTime,
-      slotLabel: slotLabel,
-      collectionType: LabCollectionType.walkIn.name,
-      address: '',
-      status: 'confirmed',
-      createdAt: now,
-    );
+    return record;
   }
 
   Future<Set<String>> bookedSlotLabelsForDate(DateTime date) async {
     if (!FirebaseBootstrap.isReady) return {};
 
     final patientId = PatientSession.loggedInPatientId;
-    if (patientId.isEmpty)
-      return {}; // FIXED: no patient context, nothing to query
+    if (patientId.isEmpty) return {};
 
     final dayStart = DateTime(date.year, date.month, date.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
 
     final snapshot = await FirestoreReadHelper.getQuery(
-      // FIXED: filter by patientId so the query satisfies Firestore rules (patients can't read others' bookings)
       query: FirebaseFirestore.instance
           .collection(FirestorePaths.labBookings)
           .where('patientId', isEqualTo: patientId)
@@ -297,6 +312,9 @@ class LabBookingRepository {
     String patientId, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance.fetchBookingsForPatient(patientId);
+    }
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
@@ -316,6 +334,9 @@ class LabBookingRepository {
   }
 
   Future<List<LabBookingRecord>> fetchForLab(String labId) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance.fetchBookingsForLab(labId);
+    }
     if (!FirebaseBootstrap.isReady || labId.isEmpty) return const [];
 
     final snapshot = await FirestoreReadHelper.getQuery(
@@ -333,8 +354,12 @@ class LabBookingRepository {
   }
 
   Stream<List<LabBookingRecord>> watchForLab(String labId) {
-    if (!FirebaseBootstrap.isReady || labId.isEmpty)
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance.watchBookingsForLab(labId);
+    }
+    if (!FirebaseBootstrap.isReady || labId.isEmpty) {
       return const Stream.empty();
+    }
 
     return FirebaseFirestore.instance
         .collection(FirestorePaths.labBookings)
@@ -351,8 +376,12 @@ class LabBookingRepository {
   }
 
   Stream<List<LabBookingRecord>> watchForPatient(String patientId) {
-    if (!FirebaseBootstrap.isReady || patientId.isEmpty)
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance.watchBookingsForPatient(patientId);
+    }
+    if (!FirebaseBootstrap.isReady || patientId.isEmpty) {
       return const Stream.empty();
+    }
 
     return FirebaseFirestore.instance
         .collection(FirestorePaths.labBookings)
@@ -369,6 +398,13 @@ class LabBookingRepository {
   }
 
   Future<void> updateBookingStatus(String bookingId, String status) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      await SupabaseLabRepository.instance.updateLabBookingStatus(
+        bookingId: bookingId,
+        newStatus: status,
+      );
+      return;
+    }
     if (!FirebaseBootstrap.isReady || bookingId.isEmpty) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.labBookings)
@@ -384,13 +420,14 @@ class LabBookingRepository {
     List<String> linkedBookingIds = const [],
     String? existingReportStorageKey,
   }) async {
-    if ((!FirebaseBootstrap.isReady && firestoreOverride == null) ||
-        bookingId.isEmpty ||
-        patientId.isEmpty) {
-      throw StateError('Firebase is not ready');
+    if (bookingId.trim().isEmpty) {
+      throw ArgumentError('bookingId cannot be empty');
     }
-    if (bytes.isEmpty || bytes.length > LabReportFileStore.maxFileBytes) {
-      throw ArgumentError('Invalid report file size');
+    if (patientId.trim().isEmpty) {
+      throw ArgumentError('patientId cannot be empty');
+    }
+    if (bytes.isEmpty) {
+      throw ArgumentError('Report file cannot be empty');
     }
 
     final uploadResult = await LabReportFileStore.uploadReport(
@@ -412,6 +449,15 @@ class LabBookingRepository {
       bytes: bytes,
       storageKey: uploadResult.objectKey,
     );
+
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      await SupabaseLabRepository.instance.updateLabBookingStatus(
+        bookingId: bookingId,
+        newStatus: 'completed',
+        notes: uploadResult.objectKey,
+      );
+      return uploadResult;
+    }
 
     final updatePayload = <String, dynamic>{
       'status': 'completed',
@@ -447,7 +493,6 @@ class LabBookingRepository {
       await batch.commit().timeout(const Duration(seconds: 20));
     }
 
-    // Best-effort delete old S3 report ONLY after Firestore update succeeded
     if (existingReportStorageKey != null &&
         existingReportStorageKey.trim().isNotEmpty &&
         existingReportStorageKey != uploadResult.objectKey) {
