@@ -57,18 +57,33 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
     -- Seed doctors
-    INSERT INTO doctors (doctor_id, owner_uid, name, email, mobile, specialization, qualification, verified, deactivated, profile_completed)
+    INSERT INTO doctors (doctor_id, owner_uid, name, email, mobile, specialization, qualification, verified, deactivated, profile_completed, fcm_token)
     VALUES 
-      (v_doc1_id, v_doc1_uid, 'Dr. Alpha', 'doc1@test.com', '9800000001', 'Cardiology', 'MD', TRUE, FALSE, TRUE),
-      (v_doc_unver_id, v_doc_unver_uid, 'Dr. Pending', 'unver@test.com', '9800000002', 'General', 'MBBS', FALSE, FALSE, TRUE)
+      (v_doc1_id, v_doc1_uid, 'Dr. Alpha', 'doc1@test.com', '9800000001', 'Cardiology', 'MD', TRUE, FALSE, TRUE, 'fcm_doctor_alpha_secret'),
+      (v_doc_unver_id, v_doc_unver_uid, 'Dr. Pending', 'unver@test.com', '9800000002', 'General', 'MBBS', FALSE, FALSE, TRUE, NULL)
     ON CONFLICT (doctor_id) DO NOTHING;
 
-    -- Seed patients
-    INSERT INTO patients (patient_id, owner_uid, name, mobile, share_records_with_doctors, profile_completed, verified)
+    -- Seed doctor_private PII rows
+    INSERT INTO doctor_private (doctor_id, phone, email, state_council, council_number)
+    VALUES
+      (v_doc1_id, '9800000001', 'doc1@test.com', 'Maharashtra Medical Council', 'MMC/2001/1234')
+    ON CONFLICT (doctor_id) DO UPDATE
+      SET phone = EXCLUDED.phone, email = EXCLUDED.email,
+          state_council = EXCLUDED.state_council, council_number = EXCLUDED.council_number;
+
+    -- Seed patients (include fcm_token to verify doctor cannot read it)
+    INSERT INTO patients (patient_id, owner_uid, name, mobile, share_records_with_doctors, profile_completed, verified, fcm_token)
     VALUES 
-      (v_pat1_id, v_pat1_uid, 'Patient One', '9800000003', TRUE, TRUE, TRUE),
-      (v_pat2_id, v_pat2_uid, 'Patient Two', '9800000004', FALSE, TRUE, TRUE)
+      (v_pat1_id, v_pat1_uid, 'Patient One', '9800000003', TRUE, TRUE, TRUE, 'fcm_patient_one_secret'),
+      (v_pat2_id, v_pat2_uid, 'Patient Two', '9800000004', FALSE, TRUE, TRUE, NULL)
     ON CONFLICT (patient_id) DO NOTHING;
+
+    -- Seed user_devices (FCM token registry)
+    INSERT INTO user_devices (user_id, platform, fcm_token)
+    VALUES
+      (v_doc1_uid, 'android', 'fcm_device_doctor_alpha'),
+      (v_pat1_uid, 'ios',     'fcm_device_patient_one')
+    ON CONFLICT (user_id, platform) DO UPDATE SET fcm_token = EXCLUDED.fcm_token;
 
     -- Seed appointments
     INSERT INTO appointments (appointment_id, doctor_id, patient_id, doctor_name, specialization, patient_name, patient_age, patient_gender, date_time, slot_label, visit_type, patient_status, doctor_status)
@@ -637,11 +652,11 @@ SET LOCAL ROLE authenticated;
 INSERT INTO test_results (test_num, test_name, expected, actual, status)
 SELECT
     31,
-    'Patient with active appointment can read assigned doctor (1 row)',
+    'Patient with active appointment can read assigned doctor via doctor_directory (1 row)',
     '1',
     COUNT(*)::text,
     CASE WHEN COUNT(*) = 1 THEN 'PASS' ELSE 'FAIL' END
-FROM public.doctors
+FROM public.doctor_directory
 WHERE doctor_id = 'd_001';
 
 -- ============================================================================
@@ -656,6 +671,112 @@ SELECT
     COUNT(*)::text,
     CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
 FROM public.storage_audit_logs;
+
+-- ============================================================================
+-- TEST 23-27: SENSITIVE DATA ISOLATION (doctor_private / user_devices)
+-- ============================================================================
+
+-- TEST 23: Patient WITH active appointment CANNOT read doctor_private
+-- (patient has apt_test_01 with d_001, but must NOT see doctor PII row)
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_001", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    33,
+    'Patient WITH appointment CANNOT read doctor_private (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctor_private
+WHERE doctor_id = 'd_001';
+
+-- TEST 24: Patient WITH appointment CANNOT read doctors.fcm_token column via direct doctors query
+-- Verified patients must NOT see raw doctors row at all (only via doctor_directory view)
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    34,
+    'Patient WITH appointment CANNOT query doctors table directly (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctors
+WHERE doctor_id = 'd_001';
+
+-- TEST 25: Doctor WITH relationship CANNOT read patient fcm_token via user_devices
+-- Doctor d_001 has appointment with p_001; must NOT see p_001 user_devices row
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_doc_001", "role": "authenticated", "user_role": "doctor", "app_role": "doctor"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    35,
+    'Doctor WITH appointment CANNOT read patient user_devices (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.user_devices
+WHERE user_id = 'fb_uid_pat_001';
+
+-- TEST 26: Doctor OWNER can read their own doctor_private row
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    36,
+    'Doctor owner CAN read own doctor_private row (1 row)',
+    '1',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 1 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctor_private
+WHERE doctor_id = 'd_001';
+
+-- TEST 27: Doctor owner CAN read own user_devices row
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    37,
+    'Doctor owner CAN read own user_devices row (1 row)',
+    '1',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 1 THEN 'PASS' ELSE 'FAIL' END
+FROM public.user_devices
+WHERE user_id = 'fb_uid_doc_001';
+
+-- TEST 28: Patient CANNOT read another patient's user_devices row
+SELECT set_config('request.jwt.claims', '{"sub": "fb_uid_pat_002", "role": "authenticated", "user_role": "patient", "app_role": "patient"}', true);
+SET LOCAL ROLE authenticated;
+
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    38,
+    'Patient CANNOT read another patient user_devices row (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.user_devices
+WHERE user_id = 'fb_uid_pat_001';
+
+-- TEST 29: Patient CAN see verified doctor via doctor_directory (appointment relationship not required)
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    39,
+    'Patient can still search doctor_directory after doctors_select tightening (1 row)',
+    '1',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 1 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctor_directory
+WHERE doctor_id = 'd_001';
+
+-- ============================================================================
+-- TEST 30: DEACTIVATED DOCTOR EXCLUDED FROM DIRECTORY
+-- ============================================================================
+INSERT INTO test_results (test_num, test_name, expected, actual, status)
+SELECT
+    40,
+    'Deactivated doctor excluded from doctor_directory (0 rows)',
+    '0',
+    COUNT(*)::text,
+    CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END
+FROM public.doctor_directory
+WHERE doctor_id = 'd_unver';
 
 -- Reset role to print results
 RESET ROLE;

@@ -113,3 +113,6 @@ baseline_functions.json
 secrets.txt
 secrets*.txt
 
+# Local agent tooling (not project files)
+.agents/skills/gravitas/
+
