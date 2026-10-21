@@ -229,6 +229,32 @@ class PharmacyFirestoreRepository {
       ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
   }
 
+  Future<List<PharmacyPrescriptionDelivery>> fetchDeliveriesForStore(
+    String storeId, {
+    bool preferCache = true,
+  }) async {
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabasePharmacyRepository.instance
+          .fetchDeliveriesForStore(storeId);
+    }
+    if (!FirebaseBootstrap.isReady || storeId.isEmpty) return const [];
+
+    final snapshot = await FirestoreReadHelper.getQuery(
+      query: FirebaseFirestore.instance
+          .collection(FirestorePaths.pharmacyDeliveries)
+          .where('storeId', isEqualTo: storeId)
+          .orderBy('sentAt', descending: true)
+          .limit(FirestoreQueryLimits.connectionsPage),
+      preferCache: preferCache,
+    );
+
+    return snapshot.docs
+        .map((doc) => _deliveryFromMap(doc.id, doc.data()))
+        .whereType<PharmacyPrescriptionDelivery>()
+        .toList()
+      ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
+  }
+
   /// Real-time listener for a store's incoming deliveries.
   Stream<List<PharmacyPrescriptionDelivery>> watchDeliveriesForStore(
     String storeId,

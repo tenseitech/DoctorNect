@@ -124,6 +124,35 @@ class LabOrderRepository {
     );
   }
 
+  /// Doctor-facing fetch — empty when the patient has turned off sharing.
+  Future<FirestorePage<DoctorLabOrder>> fetchForPatientForDoctor(
+    String patientId, {
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+    int limit = FirestoreQueryLimits.labOrdersPage,
+    bool preferCache = true,
+  }) async {
+    if (patientId.isEmpty) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
+    if (DoctorPatientCutoverFlag.isEnabled) {
+      return SupabaseLabRepository.instance
+          .fetchOrdersForPatient(patientId, limit: limit);
+    }
+    if (!await PatientProfileRepository.instance
+        .isPatientSharingClinicalDataWithDoctors(
+      patientId,
+      preferCache: preferCache,
+    )) {
+      return const FirestorePage(items: [], hasMore: false);
+    }
+    return fetchForPatient(
+      patientId,
+      startAfter: startAfter,
+      limit: limit,
+      preferCache: preferCache,
+    );
+  }
+
   Future<FirestorePage<DoctorLabOrder>> fetchForLab(
     String labId, {
     DocumentSnapshot<Map<String, dynamic>>? startAfter,

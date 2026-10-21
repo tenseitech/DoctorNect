@@ -89,9 +89,10 @@ class SupabaseWatcherStateMachine<T> {
     if (_isDisposed) return;
     switch (event.type) {
       case WatcherEventType.upsert:
-        if (event.item != null) {
-          final id = event.id ?? getId(event.item!);
-          _cache[id] = event.item!;
+        final item = event.item;
+        if (item != null) {
+          final id = event.id ?? getId(item);
+          _cache[id] = item;
           if (_controller != null && !_controller!.isClosed) {
             _controller!.add(cachedList);
           }
