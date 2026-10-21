@@ -177,6 +177,7 @@ function withSecurityLogging(callableName, handler) {
 }
 
 module.exports = {
+  emit,
   SEVERITY,
   hashIdentifier,
   logAuthAttempt,

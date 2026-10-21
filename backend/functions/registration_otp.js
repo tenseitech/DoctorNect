@@ -15,6 +15,7 @@ const {
   GENERIC_MOBILE_LOGIN_FAILED,
   logInternalError,
 } = require('./public_error_messages');
+const { emit, SEVERITY, hashIdentifier } = require('./security_logger');
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000;
 const SESSION_EXPIRY_MS = 30 * 60 * 1000;
@@ -273,6 +274,84 @@ async function deleteOtpRedisKeys(redis, role, digits) {
 
 // Read at process start from the environment. Default false.
 // Set ALLOW_LEGACY_UNSALTED_OTP_HASH=true only as an instant rollback.
+
+/**
+ * Play Store / App Store reviewer login bypass.
+ * Server-side allowlist for fictitious review test accounts.
+ * Required env vars:
+ *   REVIEW_TEST_NUMBERS (comma-separated 10-digit fictitious numbers)
+ *   REVIEW_FIXED_OTP (fixed 6-digit OTP code)
+ *   REVIEW_ACCESS_UNTIL (ISO 8601 date string, after which bypass is completely disabled)
+ * Production default is OFF (inactive unless all env vars are explicitly set and not expired).
+ */
+const REVIEW_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const REVIEW_RATE_LIMIT_MAX = 5;
+const reviewerAttemptTracker = new Map();
+
+function getReviewerConfig() {
+  const rawNumbers = String(process.env.REVIEW_TEST_NUMBERS || '').trim();
+  const fixedOtp = String(process.env.REVIEW_FIXED_OTP || '').trim();
+  const accessUntil = String(process.env.REVIEW_ACCESS_UNTIL || '').trim();
+
+  // Production default is OFF: if any required setting is missing, return null
+  if (!rawNumbers || !fixedOtp || !accessUntil) {
+    return null;
+  }
+
+  const expiryDate = new Date(accessUntil);
+  if (isNaN(expiryDate.getTime())) {
+    return null;
+  }
+
+  // Bypass stops working immediately after accessUntil timestamp
+  if (Date.now() > expiryDate.getTime()) {
+    return null;
+  }
+
+  const testNumbers = rawNumbers
+    .split(',')
+    .map((n) => normalizeMobileDigits(n))
+    .filter(Boolean);
+
+  if (testNumbers.length === 0) {
+    return null;
+  }
+
+  return {
+    testNumbers,
+    fixedOtp,
+    accessUntil: expiryDate,
+  };
+}
+
+function isReviewerPhone(digits) {
+  const config = getReviewerConfig();
+  if (!config) return false;
+  const d = normalizeMobileDigits(digits);
+  return config.testNumbers.includes(d);
+}
+
+function checkReviewerRateLimit(digits) {
+  const now = Date.now();
+  const d = normalizeMobileDigits(digits);
+  const hash = crypto.createHash('sha256').update(`reviewer:${d}`).digest('hex');
+  let record = reviewerAttemptTracker.get(hash);
+  if (!record || now - record.windowStart > REVIEW_RATE_LIMIT_WINDOW_MS) {
+    record = { count: 1, windowStart: now };
+    reviewerAttemptTracker.set(hash, record);
+    return true;
+  }
+  record.count += 1;
+  if (record.count > REVIEW_RATE_LIMIT_MAX) {
+    return false;
+  }
+  return true;
+}
+
+function resetReviewerRateLimitForTesting() {
+  reviewerAttemptTracker.clear();
+}
+
 function allowLegacyUnsaltedOtpHash() {
   return String(process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH || '')
     .trim()
@@ -1705,6 +1784,23 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   const challengeRef = db.collection('otp_challenges').doc(mobileHash(role, digits));
   const existing = await challengeRef.get();
   const isDemoAccount = await isDemoPhone(digits, role);
+  const isReviewerAccount = isReviewerPhone(digits);
+  if (isReviewerAccount) {
+    if (!checkReviewerRateLimit(digits)) {
+      emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
+        securityEvent: true,
+        mobileHash: hashIdentifier(digits),
+        role,
+        reason: 'exceeded_reviewer_send_rate_limit',
+      });
+      throw new HttpsError('resource-exhausted', 'Reviewer verification rate limit exceeded. Please try again later.');
+    }
+    emit(SEVERITY.INFO, 'security', 'reviewer.otp_send', {
+      securityEvent: true,
+      mobileHash: hashIdentifier(digits),
+      role,
+    });
+  }
 
   if (existing.exists && !isDemoAccount) {
     const existingData = existing.data() || {};
@@ -1807,7 +1903,10 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     throw new HttpsError('internal', 'Demo configuration missing demoOtp');
   }
 
-  const code = isDemoAccount ? config.demoOtp : generateOtpCode();
+  const reviewerConfig = getReviewerConfig();
+  const code = isReviewerAccount
+    ? reviewerConfig.fixedOtp
+    : (isDemoAccount ? config.demoOtp : generateOtpCode());
   const expiryMs = OTP_EXPIRY_MS;
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
 
@@ -1819,6 +1918,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     sentAt: FieldValue.serverTimestamp(),
     attempts: 0,
     ...(isDemoAccount ? { demoAccount: true } : {}),
+    ...(isReviewerAccount ? { reviewerAccount: true } : {}),
   });
 
   // Mirror OTP challenge token in Redis cache (only when OTP_REDIS_MIRROR=on)
@@ -1942,6 +2042,18 @@ async function consumeOtpChallengeAtomically(
   // Role-scoped challenge only. A missing doc is not replaced by another
   // role's challenge for the same mobile.
   const effectiveChallengeRef = challengeRef;
+  const isReviewer = isReviewerPhone(digits);
+  if (isReviewer) {
+    if (!checkReviewerRateLimit(digits)) {
+      emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
+        securityEvent: true,
+        mobileHash: hashIdentifier(digits),
+        role: normalizedRole,
+        reason: 'exceeded_reviewer_verify_rate_limit',
+      });
+      throw new HttpsError('resource-exhausted', 'Reviewer verification rate limit exceeded. Please try again later.');
+    }
+  }
 
   // 2. Query Redis cache for OTP token (only when OTP_REDIS_MIRROR=on)
   let redisChallenge = null;
@@ -2010,7 +2122,10 @@ async function consumeOtpChallengeAtomically(
       }
     }
 
-    const localMatch = verifyChallengeOtpHash(otp, challenge, role, digits)
+    const reviewerCfg = getReviewerConfig();
+    const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits) && otp === reviewerCfg.fixedOtp;
+    const localMatch = isReviewerValid
+      || verifyChallengeOtpHash(otp, challenge, role, digits)
       || (treatAsDemo && demoOtp != null && otp === demoOtp)
       || (!treatAsDemo && isTestMode() && otp === DEV_TEST_OTP)
       || (redisChallenge?.otpHash && verifyChallengeOtpHash(otp, {
@@ -2025,7 +2140,7 @@ async function consumeOtpChallengeAtomically(
     }
 
     // Local hash didn't match. Check if MSG91 verify API should be queried outside transaction.
-    const canCheckMsg91 = !treatAsDemo && !isTestMode() && Boolean(challenge.mobileDigits || digits);
+    const canCheckMsg91 = !isReviewer && !treatAsDemo && !isTestMode() && Boolean(challenge.mobileDigits || digits);
     if (canCheckMsg91) {
       return { status: 'check_msg91', challenge, attempts };
     }
@@ -2069,6 +2184,14 @@ async function consumeOtpChallengeAtomically(
   }
 
   if (outcome.status === 'invalid') {
+    if (isReviewer) {
+      emit(SEVERITY.WARNING, 'security', 'reviewer.login_failure', {
+        securityEvent: true,
+        mobileHash: hashIdentifier(digits),
+        role: normalizedRole,
+        reason: 'invalid_otp',
+      });
+    }
     if (outcome.treatAsDemo && isProductionFirebaseProject() && !isFunctionsEmulator() && digits) {
       await recordDemoVerifyFailure(db, { role, digits }).catch(() => {});
     }
@@ -3294,4 +3417,8 @@ module.exports = {
   recordDemoVerifyFailure,
   DEMO_SEND_MAX,
   DEMO_VERIFY_FAIL_MAX,
+  getReviewerConfig,
+  isReviewerPhone,
+  checkReviewerRateLimit,
+  resetReviewerRateLimitForTesting,
 };
