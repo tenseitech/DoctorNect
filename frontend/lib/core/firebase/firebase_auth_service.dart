@@ -317,16 +317,34 @@ class FirebaseAuthService {
         );
       }
 
+      // Ensure freshly minted custom claims (role: "authenticated")
+      // are propagated into the cached ID token before profile fetches.
+      try {
+        await user.getIdToken(true);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[FirebaseAuthService] getIdToken refresh warning: $e');
+        }
+      }
+
       RegistrationOtpService.clearVerificationSession();
 
-      var profile = await FirestoreService.instance.user.fetchProfile(
-        user.uid,
-        preferCache: false,
-      );
-      profile ??= await FirestoreService.instance.user.findProfileByMobile(
-        role: expectedRole,
-        mobile: digits,
-      );
+      // Retry profile fetch with backoff (up to 3 attempts) to allow commit propagation
+      DoctorNectUserProfile? profile;
+      for (var attempt = 1; attempt <= 3; attempt++) {
+        profile = await FirestoreService.instance.user.fetchProfile(
+          user.uid,
+          preferCache: false,
+        );
+        profile ??= await FirestoreService.instance.user.findProfileByMobile(
+          role: expectedRole,
+          mobile: digits,
+        );
+        if (profile != null) break;
+        if (attempt < 3) {
+          await Future.delayed(Duration(milliseconds: 300 * attempt));
+        }
+      }
       if (profile == null) {
         await _auth.signOut();
         return AuthSignInResult.fail(
@@ -461,14 +479,35 @@ class FirebaseAuthService {
           mobileVerified: false,
           roleData: data,
         );
-        final saved = await FirestoreService.instance.user.fetchProfile(
-          user.uid,
-          preferCache: false,
-        );
+
+        // Ensure newly minted claims are refreshed before profile read
+        try {
+          await user.getIdToken(true);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[FirebaseAuthService] getIdToken refresh warning: $e');
+          }
+        }
+
+        // Retry profile fetch with backoff (up to 3 attempts) to allow database commit & replication
+        DoctorNectUserProfile? saved;
+        for (var attempt = 1; attempt <= 3; attempt++) {
+          saved = await FirestoreService.instance.user.fetchProfile(
+            user.uid,
+            preferCache: false,
+          );
+          if (saved != null) break;
+          if (attempt < 3) {
+            await Future.delayed(Duration(milliseconds: 300 * attempt));
+          }
+        }
+
         if (saved == null) {
-          await user.delete();
+          // Do NOT delete the user account on read verification timeout.
+          // Sign out cleanly so the user can re-authenticate or retry.
+          await _auth.signOut();
           return AuthSignInResult.fail(
-            'Could not save your account profile. Check internet and try again.',
+            'Account created, but profile verification timed out. Please sign in to continue.',
           );
         }
 
@@ -478,7 +517,7 @@ class FirebaseAuthService {
           final sessionId = otpVerificationSessionId ??
               RegistrationOtpService.verificationSessionId;
           if (sessionId == null || sessionId.isEmpty) {
-            await user.delete();
+            await _auth.signOut();
             return AuthSignInResult.fail(
               'Mobile OTP verification is required before registration.',
             );
@@ -489,15 +528,18 @@ class FirebaseAuthService {
               sessionId,
             );
             if (finalizeError != null) {
-              await user.delete();
+              await _auth.signOut();
               return AuthSignInResult.fail(finalizeError);
             }
           }
         }
-      } catch (_) {
-        await user.delete();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[FirebaseAuthService] Registration error saving profile: $e');
+        }
+        await _auth.signOut();
         return AuthSignInResult.fail(
-          'Registration failed while saving profile. Please try again.',
+          'Registration encountered a network issue while saving profile. Please check your connection and try again.',
         );
       }
 

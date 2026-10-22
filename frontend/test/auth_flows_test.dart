@@ -229,4 +229,26 @@ void main() {
       expect(result.message, contains('Firebase is not available'));
     });
   });
+
+  group('FirebaseAuthService — registration null-profile resilience', () {
+    test('profile timeout result preserves account without premature deletion message', () {
+      final timeoutResult = AuthSignInResult.fail(
+        'Account created, but profile verification timed out. Please sign in to continue.',
+      );
+      expect(timeoutResult.success, isFalse);
+      expect(timeoutResult.message, contains('profile verification timed out'));
+      expect(timeoutResult.message, contains('Please sign in to continue'));
+      expect(timeoutResult.message, isNot(contains('delete')));
+    });
+
+    test('network issue result during profile save preserves user account without deletion', () {
+      final networkErrorResult = AuthSignInResult.fail(
+        'Registration encountered a network issue while saving profile. Please check your connection and try again.',
+      );
+      expect(networkErrorResult.success, isFalse);
+      expect(networkErrorResult.message, contains('saving profile'));
+      expect(networkErrorResult.message, contains('check your connection'));
+      expect(networkErrorResult.message, isNot(contains('delete')));
+    });
+  });
 }

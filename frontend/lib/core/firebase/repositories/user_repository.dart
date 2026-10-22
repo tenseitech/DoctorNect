@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../config/doctor_patient_cutover_flag.dart';
 import '../../supabase/supabase_bootstrap.dart';
+import '../../supabase/repositories/supabase_user_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -72,6 +73,23 @@ class UserRepository {
     bool mobileVerified = false,
     Map<String, dynamic>? roleData,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        await SupabaseUserRepository.instance.createProfile(
+          user: user,
+          role: role,
+          profileId: profileId,
+          displayName: displayName,
+          mobile: mobile,
+          mobileVerified: mobileVerified,
+          roleData: roleData,
+        ).timeout(const Duration(seconds: 5));
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[UserRepository] Supabase createProfile non-fatal error: $e');
+        }
+      }
+    }
     final userRef = _db.collection(FirestorePaths.users).doc(user.uid);
     final normalizedMobile =
         mobile == null ? null : FormValidators.mobileDigits(mobile);

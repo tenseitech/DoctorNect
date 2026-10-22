@@ -105,6 +105,18 @@ BEGIN
         ALTER TABLE IF EXISTS private.admin_users ALTER COLUMN user_id TYPE TEXT USING user_id::TEXT;
         ALTER TABLE IF EXISTS private.admin_users ALTER COLUMN granted_by TYPE TEXT USING granted_by::TEXT;
 
+        -- Clean up orphaned references before re-adding foreign keys
+        UPDATE public.doctors SET owner_uid = NULL WHERE owner_uid IS NOT NULL AND owner_uid NOT IN (SELECT id FROM public.users);
+        UPDATE public.patients SET owner_uid = NULL WHERE owner_uid IS NOT NULL AND owner_uid NOT IN (SELECT id FROM public.users);
+        UPDATE public.medical_stores SET owner_uid = NULL WHERE owner_uid IS NOT NULL AND owner_uid NOT IN (SELECT id FROM public.users);
+        UPDATE public.labs SET owner_uid = NULL WHERE owner_uid IS NOT NULL AND owner_uid NOT IN (SELECT id FROM public.users);
+        UPDATE public.ambulances SET auth_uid = NULL WHERE auth_uid IS NOT NULL AND auth_uid NOT IN (SELECT id FROM public.users);
+        DELETE FROM public.in_app_notifications WHERE recipient_uid NOT IN (SELECT id FROM public.users);
+        UPDATE public.admin_audit_logs SET admin_uid = NULL WHERE admin_uid IS NOT NULL AND admin_uid NOT IN (SELECT id FROM public.users);
+        UPDATE public.security_events SET uid = NULL WHERE uid IS NOT NULL AND uid NOT IN (SELECT id FROM public.users);
+        DELETE FROM private.admin_users WHERE user_id NOT IN (SELECT id FROM public.users);
+        UPDATE private.admin_users SET granted_by = NULL WHERE granted_by IS NOT NULL AND granted_by NOT IN (SELECT id FROM public.users);
+
         -- Re-add foreign key constraints pointing to public.users(id)
         ALTER TABLE IF EXISTS public.doctors ADD CONSTRAINT doctors_owner_uid_fkey FOREIGN KEY (owner_uid) REFERENCES public.users(id) ON DELETE SET NULL;
         ALTER TABLE IF EXISTS public.patients ADD CONSTRAINT patients_owner_uid_fkey FOREIGN KEY (owner_uid) REFERENCES public.users(id) ON DELETE SET NULL;
