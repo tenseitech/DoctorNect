@@ -157,7 +157,7 @@ function verifyProductionConfig(options = {}) {
   // If running in client-only mode (called during flutter build), we can finish early if no backend keys needed
   if (!isClientOnly) {
     // =========================================================================
-    // 2. MSG91 SMS GATEWAY & PROXY CREDENTIALS (for Supabase auth-otp Edge Function)
+    // 2. MSG91 SMS GATEWAY & PROXY CREDENTIALS (for Cloud Functions / MSG91 egress)
     // =========================================================================
     console.log('\n--- 2. Checking MSG91 Gateway & Egress Proxy Configuration ---');
     const proxyUrlRes = resolveParam('MSG91_PROXY_URL', options);
