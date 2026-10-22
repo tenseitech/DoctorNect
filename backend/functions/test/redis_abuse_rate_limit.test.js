@@ -251,7 +251,7 @@ test('Redis rate limiting: window expiry resets the counter', async () => {
   }
 });
 
-test('Redis rate limiting: Redis down/error falls back to Firestore transaction', async () => {
+test('Redis rate limiting: Redis down/error fails closed with unavailable error (no Firestore fallback)', async () => {
   const orig = process.env.RATE_LIMIT_BACKEND;
   process.env.RATE_LIMIT_BACKEND = 'redis';
 
@@ -274,18 +274,22 @@ test('Redis rate limiting: Redis down/error falls back to Firestore transaction'
       auth: null,
     };
 
-    // Should NOT throw a Redis error to the caller; should fallback to Firestore
-    const res = await enforceAbuseLimit(db, req, 'otp_send', {
-      identifier: rawPhone,
-    });
-    assert.deepEqual(res, { ok: true });
+    // Under pure Redis mode, failure to reach Redis must fail closed
+    await assert.rejects(
+      async () => {
+        await enforceAbuseLimit(db, req, 'otp_send', {
+          identifier: rawPhone,
+        });
+      },
+      (err) => {
+        assert.ok(err instanceof HttpsError);
+        assert.equal(err.code, 'unavailable');
+        return true;
+      },
+    );
 
-    // Verify Firestore doc was created in abuse_rate_limits collection
-    const idHash = hashKey(rawPhone);
-    const firestoreKey = `abuse_rate_limits/otp_send_id_${idHash}`;
-    assert.ok(db.docs.has(firestoreKey), 'Expected Firestore document to be created as fallback');
-    const docData = db.docs.get(firestoreKey);
-    assert.equal(docData.count, 1);
+    // Verify Firestore doc was NEVER touched (no fallback)
+    assert.equal(db.docs.size, 0, 'Firestore must NOT be touched when Redis fails');
   } finally {
     setRedisClientForTesting(null);
     if (orig !== undefined) process.env.RATE_LIMIT_BACKEND = orig;

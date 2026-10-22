@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../config/firestore_forbidden_guard.dart';
 
 import '../../firebase_options.dart';
 import '../constants/app_constants.dart';
@@ -35,7 +36,7 @@ abstract final class FirebaseBootstrap {
         await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
       }
       try {
-        FirebaseFirestore.instance.settings = const Settings(
+        if (!FirestoreForbiddenGuard.isForbidden) FirebaseFirestore.instance.settings = const Settings(
           persistenceEnabled: true,
           cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
         );

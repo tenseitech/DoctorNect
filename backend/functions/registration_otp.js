@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { HttpsError } = require('firebase-functions/v2/https');
+const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
 const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const { sendMsg91Email } = require('./msg91_email');
@@ -367,6 +368,37 @@ function hashRateLimitKey(value) {
 }
 
 async function assertOtpRateLimit(db, { bucket, windowMs, maxAttempts }) {
+  const isCutover = await isDoctorPatientSupabasePrimary();
+  if (isCutover || isOtpRedisMirrorEnabled()) {
+    let redis = null;
+    try {
+      redis = getOtpRedisClient() || require('./redis').redis;
+    } catch (_) {}
+    if (!redis) {
+      if (isCutover) {
+        throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
+      }
+    } else {
+      try {
+        const { assertBucketRedis } = require('./abuse_rate_limit');
+        await assertBucketRedis(redis, {
+          key: `ratelimit:otp:${bucket}`,
+          windowMs,
+          maxAttempts,
+          message: 'Too many OTP requests. Please try again later.',
+        });
+        return;
+      } catch (err) {
+        if (err instanceof HttpsError && err.code === 'resource-exhausted') {
+          throw err;
+        }
+        if (isCutover) {
+          throw new HttpsError('unavailable', 'Rate limit service temporarily unavailable.');
+        }
+      }
+    }
+  }
+
   const ref = db.collection('otp_rate_limits').doc(bucket);
   const nowMs = Date.now();
 
@@ -586,6 +618,27 @@ async function approveUserAccount(db, data, auth) {
     updatedAt: now,
   }, { merge: true });
   await batch.commit();
+
+  const claims = supabaseCompatibleCustomClaims(role, { verified: true });
+  try {
+    await getAuth().setCustomUserClaims(ownerUid, claims);
+  } catch (claimErr) {
+    console.warn('[approveUserAccount] Failed to set custom claims:', claimErr?.message || claimErr);
+  }
+
+  if (await isDoctorPatientSupabasePrimary()) {
+    try {
+      const { createClient } = require('@supabase/supabase-js');
+      const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (supabaseKey) {
+        const client = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
+        await client.from('users').update({ verified: true, updated_at: new Date().toISOString() }).eq('firebase_uid', ownerUid);
+      }
+    } catch (sbErr) {
+      console.warn('[approveUserAccount] Supabase user verify update skipped:', sbErr?.message || sbErr);
+    }
+  }
 
   return { ok: true, role, profileId, ownerUid, verified: true };
 }
@@ -1219,6 +1272,21 @@ async function resolveActiveAccountUid(db, role, doc) {
 }
 
 async function findUserByMobileDigits(db, digits) {
+  if (await isDoctorPatientSupabasePrimary()) {
+    try {
+      const { createClient } = require('@supabase/supabase-js');
+      const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (supabaseKey) {
+        const client = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
+        const { data } = await client.from('users').select('id, role, mobile, profile_id').eq('mobile', digits).limit(1);
+        if (data && data[0]) {
+          return { found: true, role: data[0].role, uid: data[0].id, data: data[0] };
+        }
+      }
+    } catch (_) {}
+    return { found: false, role: null, uid: null, data: null };
+  }
   const candidates = [digits, `+91${digits}`, `+91 ${digits}`, `+91-${digits}`, `91${digits}`, `0${digits}`];
   const fields = ['mobile', 'phone', 'phoneNumber', 'mobileNumber'];
   const collectionMap = {
@@ -1483,7 +1551,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
       });
       throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
     }
-    if (search.uid && otpType === 'login') {
+    if (search.uid && otpType === 'login' && !(await isDoctorPatientSupabasePrimary())) {
       await db.collection('users').doc(search.uid).set({
         role,
         mobile: digits,
@@ -1505,6 +1573,81 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
       });
     }
     throw err;
+  }
+
+  const isCutover = await isDoctorPatientSupabasePrimary();
+  if (isCutover) {
+    const isReviewerAccount = isReviewerPhone(digits);
+    if (isReviewerAccount) {
+      if (!checkReviewerRateLimit(digits)) {
+        emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
+          securityEvent: true,
+          mobileHash: hashIdentifier(digits),
+          role,
+          reason: 'exceeded_reviewer_send_rate_limit',
+        });
+        throw new HttpsError('resource-exhausted', 'Reviewer verification rate limit exceeded. Please try again later.');
+      }
+    }
+
+    let redis = null;
+    try {
+      redis = getOtpRedisClient() || require('./redis').redis;
+    } catch (_) {}
+    if (!redis) {
+      throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+    }
+
+    const keyNull = otpRedisKey(null, digits);
+    const keyRole = role ? otpRedisKey(role, digits) : null;
+    let existingInRedis = null;
+    try {
+      const rawExisting = (keyNull ? await withOtpRedisTimeout(redis.get(keyNull)) : null)
+        || (keyRole ? await withOtpRedisTimeout(redis.get(keyRole)) : null);
+      if (rawExisting) existingInRedis = JSON.parse(rawExisting);
+    } catch (err) {
+      throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+    }
+
+    if (existingInRedis?.sentAt && Date.now() - existingInRedis.sentAt < RESEND_COOLDOWN_MS) {
+      throw new HttpsError('resource-exhausted', 'Please wait a minute before requesting another OTP.');
+    }
+
+    const reviewerConfig = getReviewerConfig();
+    const code = isReviewerAccount ? reviewerConfig.fixedOtp : generateOtpCode();
+    const expiryMs = OTP_EXPIRY_MS;
+    const ttlSec = Math.max(1, Math.floor(expiryMs / 1000));
+    const redisPayload = JSON.stringify({
+      otpHash: hashOtp(code, { role, digits, purpose: 'create' }),
+      role,
+      mobileDigits: digits,
+      sentAt: Date.now(),
+      expiresAt: Date.now() + expiryMs,
+      attempts: 0,
+      ...(isReviewerAccount ? { reviewerAccount: true } : {}),
+    });
+
+    try {
+      await Promise.all([
+        keyNull ? withOtpRedisTimeout(redis.set(keyNull, redisPayload, 'EX', ttlSec)) : Promise.resolve(),
+        keyRole ? withOtpRedisTimeout(redis.set(keyRole, redisPayload, 'EX', ttlSec)) : Promise.resolve(),
+      ]);
+      const attemptsKey = `otp:attempts:${digits}`;
+      if (typeof redis.del === 'function') {
+        await withOtpRedisTimeout(redis.del(attemptsKey)).catch(() => {});
+      }
+    } catch (err) {
+      throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+    }
+
+    if (!isReviewerAccount) {
+      await sendMsg91SmsOtp(digits, code);
+    }
+
+    return {
+      ok: true,
+      expiresInSeconds: Math.floor(expiryMs / 1000),
+    };
   }
 
   const challengeRef = db.collection('otp_challenges').doc(mobileHash(role, digits));
@@ -1722,9 +1865,111 @@ async function consumeOtpChallengeAtomically(
   db,
   { challengeKey, otp, isDemoAccount, mobileDigits, role },
 ) {
-  const challengeRef = db.collection('otp_challenges').doc(challengeKey);
   const digits = normalizeMobileDigits(mobileDigits);
   const normalizedRole = role ? normalizeRole(role) : null;
+  const isCutover = await isDoctorPatientSupabasePrimary();
+
+  if (isCutover) {
+    let redis = null;
+    try {
+      redis = getOtpRedisClient() || require('./redis').redis;
+    } catch (_) {}
+    if (!redis) {
+      throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+    }
+
+    const keyNull = otpRedisKey(null, digits);
+    const keyRole = normalizedRole ? otpRedisKey(normalizedRole, digits) : null;
+    const attemptsKey = `otp:attempts:${digits}`;
+
+    let rawChallenge = null;
+    let attempts = 0;
+    try {
+      rawChallenge = (keyNull ? await withOtpRedisTimeout(redis.get(keyNull)) : null)
+        || (keyRole ? await withOtpRedisTimeout(redis.get(keyRole)) : null);
+      const attemptsRaw = (typeof redis.get === 'function')
+        ? await withOtpRedisTimeout(redis.get(attemptsKey)).catch(() => 0)
+        : 0;
+      attempts = Number(attemptsRaw) || 0;
+    } catch (err) {
+      throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+    }
+
+    if (!rawChallenge) {
+      throw new HttpsError('failed-precondition', 'Send OTP first.');
+    }
+
+    let challenge;
+    try {
+      challenge = JSON.parse(rawChallenge);
+    } catch (_) {
+      challenge = {};
+    }
+
+    if (attempts >= 5) {
+      try {
+        await deleteOtpRedisKeys(redis, normalizedRole, digits);
+        if (typeof redis.del === 'function') {
+          await withOtpRedisTimeout(redis.del(attemptsKey)).catch(() => {});
+        }
+      } catch (_) {}
+      throw new HttpsError('resource-exhausted', 'Too many failed attempts. Request a new OTP.');
+    }
+
+    if (challenge.expiresAt && Date.now() > challenge.expiresAt) {
+      try {
+        await deleteOtpRedisKeys(redis, normalizedRole, digits);
+      } catch (_) {}
+      throw new HttpsError('deadline-exceeded', 'OTP expired. Send a new one.');
+    }
+
+    const reviewerCfg = getReviewerConfig();
+    const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits) && otp === reviewerCfg.fixedOtp;
+    const localMatch = isReviewerValid || verifyChallengeOtpHash(otp, challenge, role, digits);
+
+    if (localMatch) {
+      let delCount = 0;
+      try {
+        if (keyNull && typeof redis.del === 'function') {
+          delCount = await withOtpRedisTimeout(redis.del(keyNull));
+        }
+        if (keyRole && typeof redis.del === 'function') {
+          await withOtpRedisTimeout(redis.del(keyRole)).catch(() => {});
+        }
+        if (typeof redis.del === 'function') {
+          await withOtpRedisTimeout(redis.del(attemptsKey)).catch(() => {});
+        }
+      } catch (err) {
+        throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+      }
+
+      if (delCount === 0 && keyNull) {
+        throw new HttpsError('failed-precondition', 'Send OTP first.');
+      }
+
+      return { consumed: true, challenge };
+    } else {
+      let newAttempts = attempts + 1;
+      try {
+        if (typeof redis.incr === 'function') {
+          newAttempts = await withOtpRedisTimeout(redis.incr(attemptsKey));
+          if (newAttempts === 1 && typeof redis.pexpire === 'function') {
+            await withOtpRedisTimeout(redis.pexpire(attemptsKey, 15 * 60 * 1000)).catch(() => {});
+          }
+        }
+        if (newAttempts >= 5) {
+          await deleteOtpRedisKeys(redis, normalizedRole, digits);
+          throw new HttpsError('resource-exhausted', 'Too many failed attempts. Request a new OTP.');
+        }
+      } catch (err) {
+        if (err instanceof HttpsError) throw err;
+        throw new HttpsError('unavailable', 'Authentication service temporarily unavailable.');
+      }
+      throw new HttpsError('invalid-argument', 'Invalid OTP.');
+    }
+  }
+
+  const challengeRef = db.collection('otp_challenges').doc(challengeKey);
 
   // Role-scoped challenge only. A missing doc is not replaced by another
   // role's challenge for the same mobile.
@@ -2201,6 +2446,13 @@ async function finalizePatientOtpVerification(db, data, auth) {
     mobileDigits: sessionMobile,
     role: userRole,
   });
+
+  const claims = supabaseCompatibleCustomClaims(userRole);
+  try {
+    await getAuth().setCustomUserClaims(auth.uid, claims);
+  } catch (claimErr) {
+    console.warn('[finalizePatientOtpVerification] Failed to set custom claims:', claimErr?.message || claimErr);
+  }
 
   return { ok: true, mobileVerified: true, profileId };
 }

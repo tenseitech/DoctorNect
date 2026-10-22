@@ -1,4 +1,5 @@
 // Deploy: disable OTP App Check until reCAPTCHA is configured.
+require('./firestore_forbidden_guard');
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { initializeApp } = require('firebase-admin/app');
