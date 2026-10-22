@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const {
   cleanupUserSupabaseRows,
+  cleanupUserRedisKeys,
   setSupabaseFetchForTesting,
 } = require('../delete_my_account');
 
@@ -76,6 +77,8 @@ test('cleanupUserSupabaseRows deletes patient graph using real table/column name
   assert.ok(paths.some((p) => p.includes('DELETE') && p.includes('/reviews?patient_id=eq.')));
   assert.ok(paths.some((p) => p.includes('DELETE') && p.includes('/appointments?patient_id=eq.')));
   assert.ok(paths.some((p) => p.includes('DELETE') && p.includes('/patients?patient_id=eq.')));
+  assert.ok(paths.some((p) => p.includes('DELETE') && p.includes(`/user_devices?user_id=eq.${USER_UUID}`)));
+  assert.ok(paths.some((p) => p.includes('PATCH') && p.includes(`/razorpay_orders?user_uid=eq.${UID}`)));
   assert.ok(paths.some((p) => p.includes('DELETE') && p.includes(`/users?firebase_uid=eq.${UID}`)));
   assert.equal(paths.some((p) => p.includes(process.env.SUPABASE_SERVICE_ROLE_KEY) && p.includes('https://')), false);
 });
@@ -121,8 +124,6 @@ test('TASK 1e: deletes auth.users row via dedicated admin fetch on success', asy
 });
 
 test('TASK 1e: treats 404 on auth.users deletion as success (user without auth row)', async () => {
-  const { toUserUuid } = require('../user_id_bridge');
-  const expectedUuid = toUserUuid(UID);
   let authCalled = false;
 
   setSupabaseFetchForTesting(async (url, options) => {
@@ -152,3 +153,23 @@ test('TASK 1e: surfaces 500 on auth.users deletion in failedSupabaseTables', asy
   assert.ok(result.failedSupabaseTables.includes('auth.users'), '500 on auth.users must be surfaced in failedSupabaseTables');
 });
 
+test('cleanupUserRedisKeys removes keys when OTP_REDIS_MIRROR is on', async () => {
+  process.env.OTP_REDIS_MIRROR = 'on';
+  const deletedKeys = [];
+  const { setRedisClientForTesting } = require('../redis');
+  setRedisClientForTesting({
+    del: async (k) => {
+      deletedKeys.push(k);
+      return 1;
+    },
+  });
+
+  try {
+    await cleanupUserRedisKeys({ mobileDigits: '9876543210', role: 'patient' });
+    assert.ok(deletedKeys.length > 0);
+    assert.ok(deletedKeys.some((k) => k.includes('9876543210')));
+  } finally {
+    delete process.env.OTP_REDIS_MIRROR;
+    setRedisClientForTesting(null);
+  }
+});

@@ -48,6 +48,31 @@ function getS3Client() {
   });
 }
 
+/**
+ * Deletes OTP challenge keys from Redis for the deleting user.
+ * Best-effort, fail-soft.
+ */
+async function cleanupUserRedisKeys({ mobileDigits, role }) {
+  if (String(process.env.OTP_REDIS_MIRROR || '').trim().toLowerCase() !== 'on') {
+    return;
+  }
+  const digits = normalizeMobileDigits(mobileDigits);
+  if (!digits) return;
+  try {
+    const { getRedisClient } = require('./redis');
+    const redis = getRedisClient();
+    if (!redis) return;
+    const roles = ['patient', 'doctor', 'medicalStore', 'lab', 'ambulance', null];
+    if (role && !roles.includes(role)) roles.push(role);
+    const keys = roles.map((r) => (r ? `otp:challenge:${r}:${digits}` : `otp:challenge:${digits}`));
+    await Promise.all(keys.map((k) => (typeof redis.del === 'function' ? redis.del(k) : Promise.resolve()).catch(() => {})));
+  } catch (err) {
+    logger.warn('deleteMyAccount: Redis cleanup failed (soft-fail)', {
+      error: err?.message || 'unknown',
+    });
+  }
+}
+
 const OTP_ROLES = ['patient', 'doctor', 'medicalStore', 'medical', 'lab', 'ambulance'];
 const ABUSE_CATEGORIES = ['api', 'login', 'signup', 'ai', 'scrape', 'payment'];
 
@@ -805,26 +830,52 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('family_members', q);
     await del('reviews', q);
     await del('appointments', q);
+    await del('pharmacy_orders', q);
+    await del('lab_bookings', q);
+    await del('ambulance_requests', q);
     await del('patients', q);
   }
 
   for (const doctorId of doctorIds) {
     const q = `doctor_id=eq.${encodeURIComponent(doctorId)}`;
+    await del('doctor_private', q);
     await del('reviews', q);
     await del('appointments', q);
     await del('doctors', q);
   }
 
   for (const storeId of storeIds) {
+    await del('pharmacy_orders', `store_id=eq.${encodeURIComponent(storeId)}`);
     await del('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`);
   }
   for (const labId of labIds) {
+    await del('lab_bookings', `lab_id=eq.${encodeURIComponent(labId)}`);
     await del('labs', `lab_id=eq.${encodeURIComponent(labId)}`);
   }
   for (const ambulanceId of ambulanceIds) {
     const q = `ambulance_id=eq.${encodeURIComponent(ambulanceId)}`;
     await del('ambulance_private_settings', q);
+    await del('ambulance_requests', q);
     await del('ambulances', q);
+  }
+
+  if (supabaseUserId) {
+    await del('user_devices', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
+    await del('ticket_messages', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
+    await del('support_tickets', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
+  }
+  await del('in_app_notifications', `recipient_uid=eq.${encodeURIComponent(uid)}`);
+
+  // Anonymize payment records (PII minimization while retaining accounting audit history)
+  try {
+    await supabaseRequest(
+      config,
+      'PATCH',
+      `razorpay_orders?user_uid=eq.${encodeURIComponent(uid)}`,
+      { user_uid: null },
+    );
+  } catch (err) {
+    recordFailure('razorpay_orders', err);
   }
 
   try {
@@ -1030,6 +1081,7 @@ module.exports = {
   resolveUserS3Prefixes,
   cleanupUserS3Prefixes,
   cleanupUserSupabaseRows,
+  cleanupUserRedisKeys,
   setS3ClientForTesting,
   setSupabaseFetchForTesting,
   getS3Client,
