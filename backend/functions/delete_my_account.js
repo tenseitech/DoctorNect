@@ -1,4 +1,5 @@
 'use strict';
+require('./firestore_forbidden_guard');
 
 const crypto = require('crypto');
 const { getFirestore } = require('firebase-admin/firestore');
@@ -800,6 +801,51 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     addIds(ambulanceIds, await getRows('ambulances', `auth_uid=eq.${encodeURIComponent(supabaseUserId)}`, 'ambulance_id'), 'ambulance_id');
   }
 
+  // 1. Collect and delete deliveries and medicines (RESTRICT on prescriptions/patients/stores/doctors)
+  const deliveryIds = new Set();
+  for (const pid of patientIds) {
+    addIds(deliveryIds, await getRows('pharmacy_deliveries', `patient_id=eq.${encodeURIComponent(pid)}`, 'delivery_id'), 'delivery_id');
+  }
+  for (const sid of storeIds) {
+    addIds(deliveryIds, await getRows('pharmacy_deliveries', `store_id=eq.${encodeURIComponent(sid)}`, 'delivery_id'), 'delivery_id');
+  }
+  for (const did of doctorIds) {
+    addIds(deliveryIds, await getRows('pharmacy_deliveries', `doctor_id=eq.${encodeURIComponent(did)}`, 'delivery_id'), 'delivery_id');
+  }
+  for (const delId of deliveryIds) {
+    await del('pharmacy_delivery_medicines', `delivery_id=eq.${encodeURIComponent(delId)}`);
+    await del('pharmacy_deliveries', `delivery_id=eq.${encodeURIComponent(delId)}`);
+  }
+
+  // 2. Lab orders & Lab bookings & Lab connections (RESTRICT on patients/doctors/labs)
+  for (const pid of patientIds) {
+    await del('lab_orders', `patient_id=eq.${encodeURIComponent(pid)}`);
+    await del('lab_bookings', `patient_id=eq.${encodeURIComponent(pid)}`);
+  }
+  for (const lid of labIds) {
+    await del('lab_orders', `lab_id=eq.${encodeURIComponent(lid)}`);
+    await del('lab_bookings', `lab_id=eq.${encodeURIComponent(lid)}`);
+    await del('lab_connections', `lab_id=eq.${encodeURIComponent(lid)}`);
+  }
+  for (const did of doctorIds) {
+    await del('lab_orders', `doctor_id=eq.${encodeURIComponent(did)}`);
+    await del('lab_connections', `doctor_id=eq.${encodeURIComponent(did)}`);
+    await del('pharmacy_connections', `doctor_id=eq.${encodeURIComponent(did)}`);
+  }
+  for (const sid of storeIds) {
+    await del('pharmacy_connections', `medical_store_id=eq.${encodeURIComponent(sid)}`);
+  }
+
+  // 3. Referrals (RESTRICT on patients/doctors)
+  for (const pid of patientIds) {
+    await del('referrals', `patient_id=eq.${encodeURIComponent(pid)}`);
+  }
+  for (const did of doctorIds) {
+    await del('referrals', `from_doctor_id=eq.${encodeURIComponent(did)}`);
+    await del('referrals', `to_doctor_id=eq.${encodeURIComponent(did)}`);
+  }
+
+  // 4. Prescriptions
   const prescriptionIds = new Set();
   for (const patientId of patientIds) {
     addIds(
@@ -824,45 +870,86 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('prescriptions', q);
   }
 
+  // 5. Patient records & relationships
   for (const patientId of patientIds) {
     const q = `patient_id=eq.${encodeURIComponent(patientId)}`;
     await del('health_records', q);
     await del('family_members', q);
+    await del('review_votes', q);
     await del('reviews', q);
+    await del('patient_doctor_links', q);
+    await del('patient_care_team', q);
     await del('appointments', q);
-    await del('pharmacy_orders', q);
-    await del('lab_bookings', q);
     await del('ambulance_requests', q);
+    await del('ambulance_broadcasts', q);
+    await del('patient_safe', q);
     await del('patients', q);
   }
 
+  // 6. Doctor records & relationships
   for (const doctorId of doctorIds) {
     const q = `doctor_id=eq.${encodeURIComponent(doctorId)}`;
     await del('doctor_private', q);
+    await del('doctor_availability', q);
+    await del('doctor_facilities', q);
+    await del('doctor_education', q);
+    await del('doctor_directory', q);
+    await del('doctor_blocked_dates', q);
+    await del('patient_doctor_links', q);
+    await del('patient_care_team', q);
     await del('reviews', q);
     await del('appointments', q);
     await del('doctors', q);
   }
 
+  // 7. Store records
   for (const storeId of storeIds) {
-    await del('pharmacy_orders', `store_id=eq.${encodeURIComponent(storeId)}`);
     await del('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`);
   }
+
+  // 8. Lab records
   for (const labId of labIds) {
-    await del('lab_bookings', `lab_id=eq.${encodeURIComponent(labId)}`);
     await del('labs', `lab_id=eq.${encodeURIComponent(labId)}`);
   }
+
+  // 9. Ambulance records
   for (const ambulanceId of ambulanceIds) {
     const q = `ambulance_id=eq.${encodeURIComponent(ambulanceId)}`;
     await del('ambulance_private_settings', q);
-    await del('ambulance_requests', q);
+    await del('ambulance_invites', q);
+    await del('ambulance_locations', `driver_id=eq.${encodeURIComponent(ambulanceId)}`);
+    await del('ambulance_requests', `driver_id=eq.${encodeURIComponent(ambulanceId)}`);
+    await del('ambulance_broadcasts', `accepted_driver_id=eq.${encodeURIComponent(ambulanceId)}`);
     await del('ambulances', q);
+  }
+
+  // 10. Support tickets & messages
+  const ticketIds = new Set();
+  for (const pid of patientIds) {
+    addIds(ticketIds, await getRows('support_tickets', `patient_id=eq.${encodeURIComponent(pid)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const did of doctorIds) {
+    addIds(ticketIds, await getRows('support_tickets', `doctor_id=eq.${encodeURIComponent(did)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const sid of storeIds) {
+    addIds(ticketIds, await getRows('support_tickets', `store_id=eq.${encodeURIComponent(sid)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const lid of labIds) {
+    addIds(ticketIds, await getRows('support_tickets', `lab_id=eq.${encodeURIComponent(lid)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const aid of ambulanceIds) {
+    addIds(ticketIds, await getRows('support_tickets', `ambulance_id=eq.${encodeURIComponent(aid)}`, 'ticket_id'), 'ticket_id');
+  }
+  if (supabaseUserId) {
+    addIds(ticketIds, await getRows('support_tickets', `user_id=eq.${encodeURIComponent(supabaseUserId)}`, 'ticket_id'), 'ticket_id');
+  }
+  for (const tid of ticketIds) {
+    await del('support_ticket_messages', `ticket_id=eq.${encodeURIComponent(tid)}`);
+    await del('support_tickets', `ticket_id=eq.${encodeURIComponent(tid)}`);
   }
 
   if (supabaseUserId) {
     await del('user_devices', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
-    await del('ticket_messages', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
-    await del('support_tickets', `user_id=eq.${encodeURIComponent(supabaseUserId)}`);
   }
   await del('in_app_notifications', `recipient_uid=eq.${encodeURIComponent(uid)}`);
 
