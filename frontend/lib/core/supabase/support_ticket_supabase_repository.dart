@@ -8,33 +8,47 @@ import 'supabase_watcher_state_machine.dart';
 class SupportTicketModel {
   const SupportTicketModel({
     required this.ticketId,
-    required this.subject,
+    String? issueType,
+    String? subject,
+    String? message,
     required this.status,
-    required this.priority,
+    String? priority,
+    this.category,
+    this.screenshotName,
     this.userId,
     this.patientId,
     this.doctorId,
     this.storeId,
     this.labId,
     this.ambulanceId,
-    this.category,
+    this.role,
     this.createdAt,
     this.updatedAt,
-  });
+  })  : issueType = issueType ?? subject ?? category ?? 'Other',
+        message = message ?? '',
+        priority = priority ?? 'normal';
 
   factory SupportTicketModel.fromJson(Map<String, dynamic> json) {
+    final cat = (json['category'] as String?)?.trim();
     return SupportTicketModel(
       ticketId: (json['ticket_id'] as String?)?.trim() ?? '',
-      subject: (json['subject'] as String?)?.trim() ?? '',
+      issueType: (json['issue_type'] as String?)?.trim() ??
+          (json['subject'] as String?)?.trim() ??
+          cat ??
+          'Other',
+      message: (json['message'] as String?)?.trim() ?? '',
       status: (json['status'] as String?)?.trim() ?? 'open',
       priority: (json['priority'] as String?)?.trim() ?? 'normal',
-      userId: (json['user_id'] as String?)?.trim(),
+      category: cat,
+      screenshotName: (json['screenshot_name'] as String?)?.trim(),
+      userId: (json['user_id'] as String?)?.trim() ??
+          (json['firebase_uid'] as String?)?.trim(),
       patientId: (json['patient_id'] as String?)?.trim(),
       doctorId: (json['doctor_id'] as String?)?.trim(),
       storeId: (json['store_id'] as String?)?.trim(),
       labId: (json['lab_id'] as String?)?.trim(),
       ambulanceId: (json['ambulance_id'] as String?)?.trim(),
-      category: (json['category'] as String?)?.trim(),
+      role: (json['role'] as String?)?.trim(),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -45,31 +59,40 @@ class SupportTicketModel {
   }
 
   final String ticketId;
-  final String subject;
+  final String issueType;
+  final String message;
   final String status;
   final String priority;
+  final String? category;
+  final String? screenshotName;
   final String? userId;
   final String? patientId;
   final String? doctorId;
   final String? storeId;
   final String? labId;
   final String? ambulanceId;
-  final String? category;
+  final String? role;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  // Compatibility getters
+  String get subject => issueType;
+
   Map<String, dynamic> toJson() => {
         'ticket_id': ticketId,
-        'subject': subject,
-        'status': status,
+        'issue_type': issueType,
+        'subject': issueType,
         'priority': priority,
+        'message': message,
+        'status': status,
+        if (screenshotName != null) 'screenshot_name': screenshotName,
         if (userId != null) 'user_id': userId,
         if (patientId != null) 'patient_id': patientId,
         if (doctorId != null) 'doctor_id': doctorId,
         if (storeId != null) 'store_id': storeId,
         if (labId != null) 'lab_id': labId,
         if (ambulanceId != null) 'ambulance_id': ambulanceId,
-        if (category != null) 'category': category,
+        if (role != null) 'role': role,
         if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
         if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
       };
@@ -80,8 +103,9 @@ class TicketMessageModel {
     required this.messageId,
     required this.ticketId,
     required this.senderId,
+    required this.senderName,
     required this.senderRole,
-    required this.messageText,
+    required this.text,
     this.createdAt,
   });
 
@@ -90,8 +114,11 @@ class TicketMessageModel {
       messageId: (json['message_id'] as String?)?.trim() ?? '',
       ticketId: (json['ticket_id'] as String?)?.trim() ?? '',
       senderId: (json['sender_id'] as String?)?.trim() ?? '',
+      senderName: (json['sender_name'] as String?)?.trim() ?? 'User',
       senderRole: (json['sender_role'] as String?)?.trim() ?? 'patient',
-      messageText: (json['message_text'] as String?)?.trim() ?? '',
+      text: (json['text'] as String?)?.trim() ??
+          (json['message_text'] as String?)?.trim() ??
+          '',
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -101,16 +128,22 @@ class TicketMessageModel {
   final String messageId;
   final String ticketId;
   final String senderId;
+  final String senderName;
   final String senderRole;
-  final String messageText;
+  final String text;
   final DateTime? createdAt;
+
+  // Compatibility getter
+  String get messageText => text;
 
   Map<String, dynamic> toJson() => {
         'message_id': messageId,
         'ticket_id': ticketId,
         'sender_id': senderId,
+        'sender_name': senderName,
         'sender_role': senderRole,
-        'message_text': messageText,
+        'text': text,
+        'message_text': text,
         if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       };
 }
@@ -127,45 +160,47 @@ class SupportTicketSupabaseRepository {
     _mockClient = client;
   }
 
-  SupabaseClient get _client =>
-      _mockClient ?? SupabaseBootstrap.client;
+  SupabaseClient get _client => _mockClient ?? SupabaseBootstrap.client;
 
   Future<String> createTicket({
-    required String subject,
     required String message,
+    String? issueType,
+    String? subject,
     String? category,
+    String? screenshotName,
     String? patientId,
     String? doctorId,
     String? storeId,
     String? labId,
     String? ambulanceId,
     String? role,
+    String? userId,
   }) async {
     final ticketId = 'tkt_${DateTime.now().millisecondsSinceEpoch}';
+    final resolvedIssueType = (issueType ?? subject ?? category ?? 'Other').trim();
+    // Validate constraint: 'Appointment', 'Records', 'Technical', 'Other'
+    final validTypes = const ['Appointment', 'Records', 'Technical', 'Other'];
+    final normalizedIssueType =
+        validTypes.contains(resolvedIssueType) ? resolvedIssueType : 'Other';
+
     final payload = <String, dynamic>{
       'ticket_id': ticketId,
-      'subject': subject,
+      'issue_type': normalizedIssueType,
+      'message': message,
       'status': 'open',
-      'priority': 'normal',
-      if (category != null) 'category': category,
-      if (patientId != null) 'patient_id': patientId,
-      if (doctorId != null) 'doctor_id': doctorId,
-      if (storeId != null) 'store_id': storeId,
-      if (labId != null) 'lab_id': labId,
-      if (ambulanceId != null) 'ambulance_id': ambulanceId,
-      if (role != null) 'role': role,
+      if (screenshotName != null && screenshotName.isNotEmpty)
+        'screenshot_name': screenshotName,
+      if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
+      if (doctorId != null && doctorId.isNotEmpty) 'doctor_id': doctorId,
+      if (storeId != null && storeId.isNotEmpty) 'store_id': storeId,
+      if (labId != null && labId.isNotEmpty) 'lab_id': labId,
+      if (ambulanceId != null && ambulanceId.isNotEmpty)
+        'ambulance_id': ambulanceId,
+      if (role != null && role.isNotEmpty) 'role': role,
+      if (userId != null && userId.isNotEmpty) 'user_id': userId,
     };
 
     await _client.from('support_tickets').insert(payload);
-
-    if (message.trim().isNotEmpty) {
-      await sendMessage(
-        ticketId: ticketId,
-        senderId: patientId ?? doctorId ?? storeId ?? labId ?? ambulanceId ?? 'user',
-        senderRole: role ?? 'patient',
-        messageText: message,
-      );
-    }
 
     return ticketId;
   }
@@ -173,16 +208,18 @@ class SupportTicketSupabaseRepository {
   Future<void> sendMessage({
     required String ticketId,
     required String senderId,
+    required String senderName,
     required String senderRole,
-    required String messageText,
+    required String text,
   }) async {
     final messageId = 'msg_${DateTime.now().millisecondsSinceEpoch}';
     await _client.from('support_ticket_messages').insert({
       'message_id': messageId,
       'ticket_id': ticketId,
       'sender_id': senderId,
+      'sender_name': senderName,
       'sender_role': senderRole,
-      'message_text': messageText,
+      'text': text,
     });
   }
 
@@ -257,5 +294,155 @@ class SupportTicketSupabaseRepository {
           (a.createdAt ?? DateTime(0)).compareTo(b.createdAt ?? DateTime(0))),
       eventStream: eventStream,
     );
+  }
+
+  Stream<List<SupportTicketModel>> watchMyTickets({
+    String? patientId,
+    String? doctorId,
+    String? storeId,
+    String? labId,
+    String? ambulanceId,
+  }) {
+    late final StreamController<List<SupportTicketModel>> controller;
+    RealtimeChannel? channel;
+
+    controller = StreamController<List<SupportTicketModel>>.broadcast(
+      onListen: () async {
+        try {
+          final initial = await fetchMyTickets(
+            patientId: patientId,
+            doctorId: doctorId,
+            storeId: storeId,
+            labId: labId,
+            ambulanceId: ambulanceId,
+          );
+          if (!controller.isClosed) {
+            controller.add(initial);
+          }
+        } catch (e, st) {
+          if (!controller.isClosed) {
+            controller.addError(e, st);
+          }
+        }
+
+        try {
+          final filterCol = patientId != null
+              ? 'patient_id'
+              : (doctorId != null
+                  ? 'doctor_id'
+                  : (storeId != null
+                      ? 'store_id'
+                      : (labId != null ? 'lab_id' : 'ambulance_id')));
+          final filterVal = patientId ??
+              doctorId ??
+              storeId ??
+              labId ??
+              ambulanceId ??
+              '';
+
+          channel = _client.channel('public:support_tickets:$filterCol:$filterVal')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'support_tickets',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: filterCol,
+                value: filterVal,
+              ),
+              callback: (payload) async {
+                try {
+                  final updated = await fetchMyTickets(
+                    patientId: patientId,
+                    doctorId: doctorId,
+                    storeId: storeId,
+                    labId: labId,
+                    ambulanceId: ambulanceId,
+                  );
+                  if (!controller.isClosed) {
+                    controller.add(updated);
+                  }
+                } catch (e, st) {
+                  if (!controller.isClosed) {
+                    controller.addError(e, st);
+                  }
+                }
+              },
+            )
+            ..subscribe();
+        } catch (e) {
+          debugPrint(
+              '[SupportTicketSupabaseRepository] Realtime subscription warning: $e');
+        }
+      },
+      onCancel: () async {
+        if (channel != null) {
+          try {
+            await _client.removeChannel(channel!);
+          } catch (_) {}
+        }
+      },
+    );
+
+    return controller.stream;
+  }
+
+  Stream<List<TicketMessageModel>> watchTicketMessages(String ticketId) {
+    late final StreamController<List<TicketMessageModel>> controller;
+    RealtimeChannel? channel;
+
+    controller = StreamController<List<TicketMessageModel>>.broadcast(
+      onListen: () async {
+        try {
+          final initial = await fetchTicketMessages(ticketId);
+          if (!controller.isClosed) {
+            controller.add(initial);
+          }
+        } catch (e, st) {
+          if (!controller.isClosed) {
+            controller.addError(e, st);
+          }
+        }
+
+        try {
+          channel = _client.channel('public:support_ticket_messages:$ticketId')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'support_ticket_messages',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'ticket_id',
+                value: ticketId,
+              ),
+              callback: (payload) async {
+                try {
+                  final updated = await fetchTicketMessages(ticketId);
+                  if (!controller.isClosed) {
+                    controller.add(updated);
+                  }
+                } catch (e, st) {
+                  if (!controller.isClosed) {
+                    controller.addError(e, st);
+                  }
+                }
+              },
+            )
+            ..subscribe();
+        } catch (e) {
+          debugPrint(
+              '[SupportTicketSupabaseRepository] Realtime subscription warning: $e');
+        }
+      },
+      onCancel: () async {
+        if (channel != null) {
+          try {
+            await _client.removeChannel(channel!);
+          } catch (_) {}
+        }
+      },
+    );
+
+    return controller.stream;
   }
 }

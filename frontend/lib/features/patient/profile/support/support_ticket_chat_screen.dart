@@ -3,13 +3,31 @@ import '../../../../core/notifications/app_toast.dart';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/config/doctor_patient_cutover_flag.dart';
 import '../../../../core/session/patient_session.dart';
+import '../../../../core/supabase/supabase_bootstrap.dart';
+import '../../../../core/supabase/support_ticket_supabase_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../widgets/patient_profile_form_styles.dart';
 import '../../../../core/theme/app_typography.dart';
+
+class _ChatMessageItemData {
+  const _ChatMessageItemData({
+    required this.senderRole,
+    required this.senderName,
+    required this.text,
+    this.createdAt,
+  });
+
+  final String senderRole;
+  final String senderName;
+  final String text;
+  final DateTime? createdAt;
+}
 
 class SupportTicketChatScreen extends StatefulWidget {
   final String ticketId;
@@ -60,15 +78,30 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
     if (text.isEmpty) return;
     _controller.clear();
 
-    final messageData = {
-      'senderId': PatientSession.loggedInPatientId,
-      'senderName': 'You',
-      'senderRole': 'patient',
-      'text': text,
-      'createdAt': FieldValue.serverTimestamp(),
-    };
-
     try {
+      if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+        final senderId = PatientSession.loggedInPatientId.isNotEmpty
+            ? PatientSession.loggedInPatientId
+            : (FirebaseAuth.instance.currentUser?.uid ?? 'patient');
+        await SupportTicketSupabaseRepository.instance.sendMessage(
+          ticketId: widget.ticketId,
+          senderId: senderId,
+          senderName: 'You',
+          senderRole: 'patient',
+          text: text,
+        );
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        return;
+      }
+
+      final messageData = {
+        'senderId': PatientSession.loggedInPatientId,
+        'senderName': 'You',
+        'senderRole': 'patient',
+        'text': text,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
       await FirebaseFirestore.instance
           .collection('support_tickets')
           .doc(widget.ticketId)
@@ -245,7 +278,7 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
                           ),
                         ),
                         if (widget.screenshot != null) ...[
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Row(
                             children: [
                               Icon(
@@ -274,209 +307,67 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
 
                   // Chat Messages Area
                   Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('support_tickets')
-                          .doc(widget.ticketId)
-                          .collection('messages')
-                          .orderBy('createdAt', descending: false)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.patientTeal,
-                            ),
-                          );
-                        }
-
-                        final messages = snapshot.data?.docs ?? [];
-
-                        // Trigger scroll to bottom on load
-                        if (messages.isNotEmpty) {
-                          WidgetsBinding.instance.addPostFrameCallback(
-                            (_) => _scrollToBottom(),
-                          );
-                        }
-
-                        return ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          itemCount: messages.isEmpty ? 1 : messages.length,
-                          itemBuilder: (context, index) {
-                            if (messages.isEmpty) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 32.0,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'No messages yet. Send a message to start conversation.',
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: AppTypography.bodySmall,
-                                      color: AppColors.textSecondaryOf(context),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-
-                            final msgDoc = messages[index];
-                            final msgData =
-                                msgDoc.data() as Map<String, dynamic>;
-                            final isMe = msgData['senderRole'] == 'patient';
-                            final senderName =
-                                msgData['senderName'] as String? ?? 'User';
-                            final text = msgData['text'] as String? ?? '';
-                            final timestamp =
-                                msgData['createdAt'] as Timestamp?;
-
-                            final timeLabel = timestamp != null
-                                ? DateFormat('hh:mm a')
-                                    .format(timestamp.toDate())
-                                : 'Sending...';
-
-                            return Align(
-                              alignment: isMe
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                constraints: BoxConstraints(
-                                  maxWidth: constraints.maxWidth * 0.75,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isMe
-                                      ? AppColors.patientTeal
-                                      : AppColors.surfaceOf(context),
-                                  border: isMe
-                                      ? null
-                                      : Border.all(
-                                          color: AppColors.borderOf(context),
-                                          width: 0.5,
-                                        ),
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: const Radius.circular(12),
-                                    topRight: const Radius.circular(12),
-                                    bottomLeft: Radius.circular(isMe ? 12 : 0),
-                                    bottomRight: Radius.circular(isMe ? 0 : 12),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (!isMe) ...[
-                                      Text(
-                                        senderName,
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: AppTypography.labelSmall,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.patientTeal,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                    ],
-                                    Text(
-                                      text,
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: AppTypography.bodyMedium,
-                                        color: isMe
-                                            ? AppColors.surfaceOf(context)
-                                            : AppColors.textPrimaryOf(context),
-                                        height: 1.3,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Align(
-                                      alignment: Alignment.bottomRight,
-                                      child: Text(
-                                        timeLabel,
-                                        style: TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontSize: 9,
-                                          color: isMe
-                                              ? AppColors.surfaceOf(context)
-                                                  .withValues(alpha: 0.7)
-                                              : AppColors.textSecondaryOf(
-                                                  context,
-                                                ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
+                    child: (DoctorPatientCutoverFlag.isEnabled &&
+                            SupabaseBootstrap.isReady)
+                        ? _buildSupabaseMessages(constraints)
+                        : _buildFirestoreMessages(constraints),
                   ),
 
-                  // Message Input Field
-                  SafeArea(
-                    top: false,
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceOf(context),
-                        border: Border(
-                          top: BorderSide(
-                            color: AppColors.borderOf(context),
-                            width: 0.5,
-                          ),
+                  // Message Input Bar
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceOf(context),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          offset: const Offset(0, -2),
+                          blurRadius: 4,
                         ),
-                      ),
+                      ],
+                    ),
+                    child: SafeArea(
                       child: Row(
                         children: [
                           Expanded(
                             child: TextField(
                               controller: _controller,
                               decoration: InputDecoration(
-                                hintText: 'Type a message...',
+                                hintText: 'Type your message...',
                                 hintStyle: TextStyle(
                                   fontFamily: 'Inter',
-                                  color: AppColors.textSecondaryOf(context),
                                   fontSize: AppTypography.bodyMedium,
+                                  color: AppColors.textSecondaryOf(context),
                                 ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(24),
-                                  borderSide: BorderSide.none,
+                                  borderSide: BorderSide(
+                                    color: AppColors.borderOf(context),
+                                    width: 1,
+                                  ),
                                 ),
-                                filled: true,
-                                fillColor: AppColors.cardBgOf(context),
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 10,
                                 ),
                               ),
-                              textCapitalization: TextCapitalization.sentences,
+                              maxLines: null,
+                              keyboardType: TextInputType.multiline,
+                              textInputAction: TextInputAction.send,
                               onSubmitted: (_) => _sendMessage(),
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Container(
-                            decoration: const BoxDecoration(
-                              color: AppColors.patientTeal,
-                              shape: BoxShape.circle,
-                            ),
+                          CircleAvatar(
+                            backgroundColor: AppColors.patientTeal,
                             child: IconButton(
                               icon: const Icon(
                                 Icons.send,
-                                color: AppColors.white,
-                                size: 20,
+                                color: Colors.white,
+                                size: 18,
                               ),
                               onPressed: _sendMessage,
                             ),
@@ -491,6 +382,189 @@ class _SupportTicketChatScreenState extends State<SupportTicketChatScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildSupabaseMessages(BoxConstraints constraints) {
+    return StreamBuilder<List<TicketMessageModel>>(
+      stream: SupportTicketSupabaseRepository.instance
+          .watchTicketMessages(widget.ticketId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.patientTeal),
+          );
+        }
+
+        final messages = (snapshot.data ?? [])
+            .map((m) => _ChatMessageItemData(
+                  senderRole: m.senderRole,
+                  senderName: m.senderName,
+                  text: m.text,
+                  createdAt: m.createdAt,
+                ))
+            .toList();
+
+        if (messages.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        }
+
+        return _buildMessagesList(messages, constraints);
+      },
+    );
+  }
+
+  Widget _buildFirestoreMessages(BoxConstraints constraints) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('support_tickets')
+          .doc(widget.ticketId)
+          .collection('messages')
+          .orderBy('createdAt', descending: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.patientTeal),
+          );
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+        final messages = docs.map((doc) {
+          final msgData = doc.data() as Map<String, dynamic>;
+          final timestamp = msgData['createdAt'] as Timestamp?;
+          return _ChatMessageItemData(
+            senderRole: msgData['senderRole'] as String? ?? 'patient',
+            senderName: msgData['senderName'] as String? ?? 'User',
+            text: msgData['text'] as String? ?? '',
+            createdAt: timestamp?.toDate(),
+          );
+        }).toList();
+
+        if (messages.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        }
+
+        return _buildMessagesList(messages, constraints);
+      },
+    );
+  }
+
+  Widget _buildMessagesList(
+    List<_ChatMessageItemData> messages,
+    BoxConstraints constraints,
+  ) {
+    if (messages.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32.0),
+        child: Center(
+          child: Text(
+            'No messages yet. Send a message to start conversation.',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: AppTypography.bodySmall,
+              color: AppColors.textSecondaryOf(context),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final msgData = messages[index];
+        final isMe = msgData.senderRole == 'patient';
+        final senderName = msgData.senderName;
+        final text = msgData.text;
+        final timestamp = msgData.createdAt;
+
+        final timeLabel = timestamp != null
+            ? DateFormat('hh:mm a').format(timestamp)
+            : 'Sending...';
+
+        return Align(
+          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            constraints: BoxConstraints(
+              maxWidth: constraints.maxWidth * 0.75,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 10,
+            ),
+            decoration: BoxDecoration(
+              color: isMe
+                  ? AppColors.patientTeal
+                  : AppColors.surfaceOf(context),
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(14),
+                topRight: const Radius.circular(14),
+                bottomLeft: Radius.circular(isMe ? 14 : 2),
+                bottomRight: Radius.circular(isMe ? 2 : 14),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  offset: const Offset(0, 1),
+                  blurRadius: 2,
+                ),
+              ],
+              border: isMe
+                  ? null
+                  : Border.all(
+                      color: AppColors.borderOf(context),
+                      width: 0.5,
+                    ),
+            ),
+            child: Column(
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                if (!isMe)
+                  Text(
+                    senderName,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.patientTeal,
+                    ),
+                  ),
+                if (!isMe) const SizedBox(height: 2),
+                Text(
+                  text,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: AppTypography.bodySmall,
+                    color: isMe ? Colors.white : AppColors.textPrimaryOf(context),
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  timeLabel,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 9,
+                    color: isMe
+                        ? Colors.white.withValues(alpha: 0.7)
+                        : AppColors.textSecondaryOf(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
