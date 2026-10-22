@@ -1,3 +1,4 @@
+const { resolveCallerIdentity } = require('./caller_identity');
 // Deploy: disable OTP App Check until reCAPTCHA is configured.
 require('./firestore_forbidden_guard');
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
@@ -1573,11 +1574,7 @@ exports.submitAmbulanceRating = onCall(
   const db = getFirestore();
   const uid = request.auth.uid;
 
-  const userSnap = await db.collection('users').doc(uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('permission-denied', 'Unauthorized.');
-  }
-  const profile = userSnap.data() || {};
+  const profile = await resolveCallerIdentity({ db, uid });
 
   const broadcastRef = db.collection('ambulance_broadcasts').doc(broadcastId);
   const ambRef = db.collection('ambulances').doc(ambulanceId);

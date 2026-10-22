@@ -1,3 +1,4 @@
+require('./firestore_forbidden_guard');
 const crypto = require('crypto');
 const { HttpsError } = require('firebase-functions/v2/https');
 const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
@@ -1279,7 +1280,8 @@ async function findUserByMobileDigits(db, digits) {
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       if (supabaseKey) {
         const client = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
-        const { data } = await client.from('users').select('id, role, mobile, profile_id').eq('mobile', digits).limit(1);
+        const candidates = [digits, '+91' + digits, '+91 ' + digits, '+91-' + digits, '91' + digits, '0' + digits];
+        const { data } = await client.from('users').select('id, role, mobile, profile_id').in('mobile', candidates).limit(1);
         if (data && data[0]) {
           return { found: true, role: data[0].role, uid: data[0].id, data: data[0] };
         }

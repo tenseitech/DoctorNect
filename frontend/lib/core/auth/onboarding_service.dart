@@ -1,3 +1,5 @@
+import '../config/doctor_patient_cutover_flag.dart';
+import '../supabase/supabase_bootstrap.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -121,8 +123,32 @@ class OnboardingService {
       name: trimmedName,
     );
 
-    // Persist to Cloud Firestore if connected
-    if (FirebaseBootstrap.isReady) {
+    // Persist to Supabase if cutover flag is ON
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      final effectiveUid = uid ?? profileId;
+      final email = RegistrationCredentials.emailForMobile(cleanDigits);
+      try {
+        final client = SupabaseBootstrap.client;
+        await client.from('users').upsert({
+          'id': effectiveUid,
+          'firebase_uid': effectiveUid,
+          'role': roleStr,
+          'profile_id': profileId,
+          'display_name': trimmedName,
+          'email': email,
+          'mobile': cleanDigits,
+          'profile_completed': false,
+          'verified': role == UserType.patient,
+          'status': role == UserType.patient ? 'approved' : 'pending_review',
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      } catch (e) {
+        if (kDebugMode) debugPrint('[OnboardingService] Supabase upsert error: $e');
+      }
+    }
+
+    // Persist to Cloud Firestore if connected and cutover is OFF
+    if (FirebaseBootstrap.isReady && !DoctorPatientCutoverFlag.isEnabled) {
       final db = FirebaseFirestore.instance;
       final effectiveUid = uid ?? profileId;
       final batch = db.batch();

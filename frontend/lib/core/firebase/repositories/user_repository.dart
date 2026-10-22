@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/supabase_bootstrap.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,6 +23,38 @@ class UserRepository {
     String uid, {
     bool preferCache = true,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        final client = SupabaseBootstrap.client;
+        final res = await client
+            .from('users')
+            .select('*')
+            .or('id.eq.$uid,firebase_uid.eq.$uid')
+            .maybeSingle();
+        if (res != null) {
+          return DoctorNectUserProfile.fromMap(uid, {
+            'role': res['role'],
+            'profileId': res['profile_id'],
+            'displayName': res['display_name'],
+            'name': res['display_name'],
+            'email': res['email'],
+            'mobile': res['mobile'],
+            'profileCompleted': res['profile_completed'] ?? false,
+            'verified': res['verified'] ?? false,
+            'status': res['status'] ?? 'approved',
+            'photoUrl': res['photo_url'],
+            'photoS3Key': res['photo_s3_key'],
+            'photoS3Bucket': res['photo_s3_bucket'],
+            'photoStorageProvider': res['photo_storage_provider'],
+          });
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('[UserRepository] Supabase fetchProfile error: $e');
+        }
+      }
+    }
+
     final snap = await FirestoreReadHelper.getDocument(
       reference: _db.collection(FirestorePaths.users).doc(uid),
       preferCache: preferCache,

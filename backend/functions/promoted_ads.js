@@ -1,3 +1,4 @@
+const { resolveCallerIdentity } = require('./caller_identity');
 require('./firestore_forbidden_guard');
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
@@ -77,11 +78,8 @@ async function isAdOwner(db, adData, uid) {
   if (!adData || !uid) return false;
   if (adData.providerId === uid) return true;
   try {
-    const userDoc = await db.collection('users').doc(uid).get();
-    if (userDoc.exists) {
-      const profileId = userDoc.data()?.profileId;
-      if (profileId && adData.providerId === profileId) return true;
-    }
+    const caller = await resolveCallerIdentity({ db, uid });
+    if (caller && (caller.profileId || caller.profile_id) && adData.providerId === (caller.profileId || caller.profile_id)) return true;
   } catch (err) {
     console.warn('[isAdOwner] Failed to check user profileId:', err.message);
   }
@@ -91,9 +89,9 @@ async function isAdOwner(db, adData, uid) {
 /** Helper: ensure patients cannot create or pay for promotional campaigns */
 async function assertCanPromote(db, uid) {
   try {
-    const userDoc = await db.collection('users').doc(uid).get();
-    if (userDoc.exists) {
-      const role = String(userDoc.data()?.role || '').toLowerCase();
+    const caller = await resolveCallerIdentity({ db, uid });
+    if (caller) {
+      const role = String(caller.role || '').toLowerCase();
       if (role === 'patient') {
         throw new HttpsError('permission-denied', 'Patients are not permitted to create promotions.');
       }
@@ -477,8 +475,8 @@ async function activatePromotedAdPayment(db, {
     const ownerUid = callerUid || providerUid;
     if (ownerUid) {
       if (currentAd.providerId !== ownerUid) {
-        const callerUserDoc = await tx.get(db.collection('users').doc(ownerUid));
-        const callerProfileId = callerUserDoc.exists ? callerUserDoc.data()?.profileId : null;
+        const callerUser = await resolveCallerIdentity({ db, uid: ownerUid });
+        const callerProfileId = callerUser.profileId || callerUser.profile_id || null;
         if (!callerProfileId || currentAd.providerId !== callerProfileId) {
           throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
         }
@@ -1118,8 +1116,7 @@ async function reviewPromotedAdHandler(db, data, auth) {
     ? requireString(String(rawReason), 'reason', { min: 1, max: 500 })
     : '';
 
-  const userSnap = await db.collection('users').doc(auth.uid).get();
-  const userDoc = userSnap.exists ? (userSnap.data() || {}) : {};
+  const userDoc = await resolveCallerIdentity({ db, uid: auth.uid });
   if (!isSuperAdmin(auth, userDoc)) {
     throw new HttpsError('permission-denied', 'Super admin access required.');
   }

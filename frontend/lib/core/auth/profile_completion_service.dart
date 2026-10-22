@@ -1,3 +1,5 @@
+import '../config/doctor_patient_cutover_flag.dart';
+import '../supabase/supabase_bootstrap.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -28,6 +30,24 @@ class ProfileCompletionService extends ChangeNotifier {
       _isComplete = true;
       notifyListeners();
       return;
+    }
+
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady && uid.isNotEmpty) {
+      try {
+        final client = SupabaseBootstrap.client;
+        final res = await client
+            .from('users')
+            .select('profile_completed')
+            .or('id.eq.$uid,firebase_uid.eq.$uid')
+            .maybeSingle();
+        if (res != null && res['profile_completed'] is bool) {
+          _isComplete = res['profile_completed'] as bool;
+          notifyListeners();
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('[ProfileCompletionService] Supabase error: $e');
+      }
     }
 
     if (!FirebaseBootstrap.isReady || uid.isEmpty) {
@@ -107,6 +127,20 @@ class ProfileCompletionService extends ChangeNotifier {
     required String uid,
     required String profileId,
   }) async {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        final client = SupabaseBootstrap.client;
+        await client.from('users').update({
+          'profile_completed': true,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).or('id.eq.$uid,firebase_uid.eq.$uid');
+        _isComplete = true;
+        notifyListeners();
+      } catch (e) {
+        if (kDebugMode) debugPrint('[ProfileCompletionService] Supabase markComplete error: $e');
+      }
+      return;
+    }
     if (!FirebaseBootstrap.isReady) return;
 
     final batch = FirebaseFirestore.instance.batch();

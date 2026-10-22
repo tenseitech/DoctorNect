@@ -1,3 +1,4 @@
+require('./firestore_forbidden_guard');
 'use strict';
 
 const crypto = require('crypto');
@@ -248,40 +249,18 @@ function isPublicMediaKey(key) {
   return false;
 }
 
+const { resolveCallerIdentity } = require('./caller_identity');
+
 /**
  * Resolves caller profile from users/{uid} or Supabase public.users.
  */
 async function resolveCallerUser(db, uid, ctx = {}) {
-  const isSupabase = ctx.isSupabase ?? false;
-  const supabase = ctx.supabase || null;
-
-  if (isSupabase && supabase) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', uid)
-      .maybeSingle();
-    if (error || !data) {
-      throw new HttpsError('unauthenticated', 'User profile document not found.');
-    }
-    return {
-      id: data.id,
-      role: data.role,
-      profileId: data.profile_id,
-      profileCompleted: data.profile_completed,
-      verified: data.verified,
-      deactivated: data.deactivated,
-      email: data.email,
-      phone: data.mobile,
-      ...data,
-    };
-  }
-
-  const userSnap = await db.collection('users').doc(uid).get();
-  if (!userSnap.exists) {
-    throw new HttpsError('unauthenticated', 'User profile document not found.');
-  }
-  return { id: userSnap.id, ...userSnap.data() };
+  return resolveCallerIdentity({
+    db,
+    uid,
+    supabaseClient: ctx.supabase || null,
+    forceSupabase: ctx.isSupabase ?? false,
+  });
 }
 
 /**
