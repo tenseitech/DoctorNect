@@ -176,7 +176,7 @@ async function enforceAbuseLimit(db, request, category, {
   const ip = clientIpFromRequest(request);
   const uid = request?.auth?.uid || '';
   const isCutover = await isDoctorPatientSupabasePrimary();
-  const useRedis = isCutover || getRateLimitBackend() === 'redis';
+  const useRedis = isCutover || getRateLimitBackend() === 'redis' || process.env.FIRESTORE_FORBIDDEN === '1';
   let redisClient = null;
   if (useRedis) {
     try {

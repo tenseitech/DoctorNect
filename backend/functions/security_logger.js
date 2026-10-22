@@ -1,3 +1,4 @@
+require('./firestore_forbidden_guard');
 'use strict';
 
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
@@ -70,6 +71,32 @@ function emit(severity, category, action, fields) {
  */
 async function persistSecurityEvent(payload) {
   try {
+    const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+    const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+    if (isCutover) {
+      const { getSupabaseAdminClient } = require('./caller_identity');
+      const sb = getSupabaseAdminClient();
+      if (sb) {
+        const eventId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+        await sb.from('security_events').insert({
+          event_id: eventId,
+          severity: payload.severity || 'INFO',
+          category: payload.category || 'general',
+          action: payload.action || 'event',
+          uid: payload.uid || null,
+          email_hash: payload.emailHash || null,
+          client_ip_hash: payload.clientIpHash || 'unknown',
+          app_check_present: Boolean(payload.appCheckPresent),
+          method: payload.method || null,
+          pattern: payload.pattern || null,
+          detail: payload.detail || payload.reason || null,
+          created_at: payload.timestamp || new Date().toISOString(),
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+        return;
+      }
+    }
+
     const db = getFirestore();
     await db.collection('security_events').add({
       ...payload,
