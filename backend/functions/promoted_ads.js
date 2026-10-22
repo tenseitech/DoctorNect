@@ -1,8 +1,26 @@
+require('./firestore_forbidden_guard');
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const crypto = require('crypto');
+const { createClient } = require('@supabase/supabase-js');
+const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+
+let _testingSupabaseClient = null;
+function setSupabaseClientForTesting(client) {
+  _testingSupabaseClient = client;
+}
+
+function getSupabaseAdmin() {
+  if (_testingSupabaseClient) return _testingSupabaseClient;
+  const supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 const https = require('https');
 const { enforceAbuseLimit, assertAppCheck } = require('./abuse_rate_limit');
 const { readSecret } = require('./secure_config');
@@ -290,6 +308,146 @@ async function activatePromotedAdPayment(db, {
   const expectedPriceINR = AD_PRICING_TABLE[noteDurationHours];
   if (!expectedPriceINR || amountPaise !== expectedPriceINR * 100) {
     throw new HttpsError('failed-precondition', 'Payment amount or duration mismatch.');
+  }
+
+  const isCutover = await isDoctorPatientSupabasePrimary();
+  if (isCutover) {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      throw new HttpsError('unavailable', 'Database service temporarily unavailable.');
+    }
+
+    const safeEventId = eventId ? requireDocId(eventId, 'eventId') : null;
+
+    // 1. Check event idempotency
+    if (safeEventId) {
+      const { data: eventRows } = await supabase
+        .from('razorpay_webhook_events')
+        .select('*')
+        .eq('event_id', safeEventId);
+      if (eventRows && eventRows.length > 0) {
+        return {
+          success: true,
+          idempotent: true,
+          message: 'Webhook event already processed (idempotent)',
+          adId: safeAdId,
+        };
+      }
+    }
+
+    // 2. Check existing payment in razorpay_payments
+    const { data: existingPayments } = await supabase
+      .from('razorpay_payments')
+      .select('*')
+      .eq('payment_id', safePaymentId);
+
+    if (existingPayments && existingPayments.length > 0) {
+      const prevPay = existingPayments[0];
+      if (prevPay.order_id === safeOrderId) {
+        return {
+          success: true,
+          idempotent: true,
+          message: 'Payment already processed (idempotent)',
+          adId: safeAdId,
+        };
+      }
+      throw new HttpsError('already-exists', 'This payment has already been used.');
+    }
+
+    // 3. Query promoted_ads row
+    const { data: adRows } = await supabase
+      .from('promoted_ads')
+      .select('*')
+      .eq('ad_id', safeAdId);
+
+    if (!adRows || adRows.length === 0) {
+      throw new HttpsError('not-found', 'Promoted ad document not found.');
+    }
+
+    const currentAd = adRows[0];
+
+    // Verify ownership
+    const ownerUid = callerUid || providerUid;
+    if (ownerUid) {
+      if (currentAd.provider_id !== ownerUid) {
+        const { data: userRows } = await supabase
+          .from('users')
+          .select('profile_id')
+          .eq('firebase_uid', ownerUid);
+        const profileId = userRows && userRows[0] ? userRows[0].profile_id : null;
+        if (!profileId || currentAd.provider_id !== profileId) {
+          throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
+        }
+      }
+    }
+
+    const paidStatuses = new Set(['pending_approval', 'active', 'rejected']);
+    if (paidStatuses.has(currentAd.status) && currentAd.razorpay_payment_id === safePaymentId) {
+      return {
+        success: true,
+        idempotent: true,
+        message: 'Payment already verified and banner ad is under review (idempotent)',
+        adId: safeAdId,
+      };
+    }
+
+    if (currentAd.status !== 'pending_payment' || currentAd.razorpay_order_id !== safeOrderId) {
+      throw new HttpsError(
+        'failed-precondition',
+        `Ad is not in pending_payment state or order ID mismatch (status: ${currentAd.status}).`
+      );
+    }
+
+    // 4. Record webhook event, orders, payments, and update ad
+    const nowIso = new Date().toISOString();
+    if (safeEventId) {
+      await supabase.from('razorpay_webhook_events').upsert({
+        event_id: safeEventId,
+        event_type: 'payment.captured',
+        payload: { adId: safeAdId, orderId: safeOrderId, paymentId: safePaymentId },
+        processed_at: nowIso,
+      }, { onConflict: 'event_id' });
+    }
+
+    await supabase.from('razorpay_orders').upsert({
+      order_id: safeOrderId,
+      user_uid: ownerUid || currentAd.provider_id,
+      ad_id: safeAdId,
+      amount_paise: expectedPriceINR * 100,
+      currency: currency || 'INR',
+      receipt: safeAdId.slice(0, 40),
+      status: 'paid',
+      updated_at: nowIso,
+    }, { onConflict: 'order_id' });
+
+    await supabase.from('razorpay_payments').upsert({
+      payment_id: safePaymentId,
+      order_id: safeOrderId,
+      signature: 'verified',
+      amount_paise: expectedPriceINR * 100,
+      currency: currency || 'INR',
+      status: 'captured',
+      method: 'webhook',
+    }, { onConflict: 'payment_id' });
+
+    await supabase.from('promoted_ads').update({
+      payment_status: 'verified',
+      status: 'pending_approval',
+      razorpay_order_id: safeOrderId,
+      razorpay_payment_id: safePaymentId,
+      duration_hours: noteDurationHours,
+      amount_paid: expectedPriceINR,
+      updated_at: nowIso,
+    }).eq('ad_id', safeAdId);
+
+    return {
+      success: true,
+      idempotent: false,
+      message: 'Payment verified. Banner ad submitted for review.',
+      adId: safeAdId,
+      startTime: currentAd.start_time || null,
+      endTime: currentAd.end_time || null,
+    };
   }
 
   const adRef = db.collection('promotedAds').doc(safeAdId);
@@ -626,6 +784,91 @@ async function razorpayWebhookHandler(req, res, db) {
   const adId = typeof notes.adId === 'string' ? notes.adId.trim() : null;
   const providerUid = typeof notes.providerUid === 'string' ? notes.providerUid.trim() : null;
   const durationHours = notes.durationHours ? parseInt(notes.durationHours, 10) : null;
+
+  const isCutover = await isDoctorPatientSupabasePrimary();
+  if (isCutover) {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      res.status(503).json({ error: { message: 'Database service unavailable' } });
+      return;
+    }
+
+    if (!adId || !providerUid || !durationHours) {
+      console.warn('[razorpayWebhook] order_notes_missing');
+      res.status(200).json({ status: 'rejected', reason: 'order_notes_missing' });
+      return;
+    }
+
+    if (!paymentId || !orderId) {
+      console.warn('[razorpayWebhook] missing_identifiers');
+      res.status(200).json({ status: 'rejected', reason: 'missing_identifiers' });
+      return;
+    }
+
+    if (currency !== 'INR') {
+      console.warn('[razorpayWebhook] currency_mismatch');
+      res.status(200).json({ status: 'rejected', reason: 'currency_mismatch' });
+      return;
+    }
+
+    const expectedPriceINR = AD_PRICING_TABLE[durationHours];
+    if (!expectedPriceINR || amountPaise !== expectedPriceINR * 100) {
+      console.warn('[razorpayWebhook] amount_mismatch');
+      res.status(200).json({ status: 'rejected', reason: 'amount_mismatch' });
+      return;
+    }
+
+    const { data: adRows } = await supabase.from('promoted_ads').select('*').eq('ad_id', adId);
+    if (!adRows || adRows.length === 0) {
+      console.warn('[razorpayWebhook] ad_not_found');
+      res.status(200).json({ status: 'rejected', reason: 'ad_not_found' });
+      return;
+    }
+
+    const adData = adRows[0];
+    const expectedOrderId = String(adData.razorpay_order_id || '').trim();
+    if (!expectedOrderId || expectedOrderId !== orderId) {
+      console.warn('[razorpayWebhook] order_id_mismatch');
+      res.status(200).json({ status: 'rejected', reason: 'order_id_mismatch' });
+      return;
+    }
+
+    try {
+      const activation = await activatePromotedAdPayment(null, {
+        adId,
+        orderId,
+        paymentId,
+        providerUid,
+        durationHours,
+        amountPaise,
+        currency,
+        eventId,
+      });
+
+      console.info(`[razorpayWebhook] Successfully processed ${eventType} for ad ${adId} (idempotent: ${activation.idempotent})`);
+      res.status(200).json({
+        success: true,
+        idempotent: activation.idempotent,
+        adId: activation.adId,
+      });
+      return;
+    } catch (err) {
+      if (err instanceof HttpsError) {
+        if (err.code === 'already-exists') {
+          res.status(200).json({ status: 'rejected', reason: 'payment_already_used' });
+          return;
+        }
+        if (err.code === 'permission-denied') {
+          res.status(200).json({ status: 'rejected', reason: 'permission-denied' });
+          return;
+        }
+        res.status(200).json({ status: 'rejected', reason: err.code });
+        return;
+      }
+      res.status(500).json({ error: { message: 'Failed to process webhook' } });
+      return;
+    }
+  }
 
   const firestore = db || getFirestore();
 
@@ -1021,6 +1264,8 @@ module.exports = {
   activatePromotedAdPayment,
   razorpayWebhook,
   razorpayWebhookHandler,
+  setSupabaseClientForTesting,
+  getSupabaseAdmin,
   razorpayWebhookSecret,
   recordWebhookRejection,
 };
