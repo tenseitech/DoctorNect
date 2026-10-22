@@ -889,6 +889,8 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
   // 6. Doctor records & relationships
   for (const doctorId of doctorIds) {
     const q = `doctor_id=eq.${encodeURIComponent(doctorId)}`;
+    await del('doctor_invites', q);
+    await del('pharmacy_doctor_invites', q);
     await del('doctor_private', q);
     await del('doctor_availability', q);
     await del('doctor_facilities', q);
@@ -903,6 +905,7 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
 
   // 7. Store records
   for (const storeId of storeIds) {
+    await del('pharmacy_doctor_invites', `store_id=eq.${encodeURIComponent(storeId)}`);
     await del('medical_stores', `store_id=eq.${encodeURIComponent(storeId)}`);
   }
 

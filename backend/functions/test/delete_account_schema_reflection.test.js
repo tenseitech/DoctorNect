@@ -52,6 +52,8 @@ test('schema reflection: all user/profile linked tables accounted for in delete 
       'doctor_directory',             // deleted
       'doctor_education',             // deleted
       'doctor_facilities',            // deleted
+      'doctor_invites',               // deleted
+      'pharmacy_doctor_invites',      // deleted
       'doctor_private',               // deleted
       'doctors',                      // deleted
       'family_members',               // deleted

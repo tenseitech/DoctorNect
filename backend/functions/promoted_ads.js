@@ -97,7 +97,7 @@ async function assertCanPromote(db, uid) {
       }
     }
   } catch (err) {
-    if (err instanceof HttpsError) throw err;
+    if (err && err.code === 'permission-denied') throw err;
     console.warn('[assertCanPromote] Failed to check user role:', err.message);
   }
 }
@@ -475,8 +475,8 @@ async function activatePromotedAdPayment(db, {
     const ownerUid = callerUid || providerUid;
     if (ownerUid) {
       if (currentAd.providerId !== ownerUid) {
-        const callerUser = await resolveCallerIdentity({ db, uid: ownerUid });
-        const callerProfileId = callerUser.profileId || callerUser.profile_id || null;
+        let callerUser = null; try { callerUser = await resolveCallerIdentity({ db, uid: ownerUid }); } catch (_) {}
+        const callerProfileId = callerUser ? (callerUser.profileId || callerUser.profile_id || null) : null;
         if (!callerProfileId || currentAd.providerId !== callerProfileId) {
           throw new HttpsError('permission-denied', 'You do not own this promoted ad document.');
         }
