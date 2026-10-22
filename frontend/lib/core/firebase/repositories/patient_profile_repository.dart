@@ -263,6 +263,30 @@ class PatientProfileRepository {
   }
 
   Future<void> savePatientFcmToken(String patientId, String token) async {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null && uid.isNotEmpty) {
+          final platform = kIsWeb
+              ? 'web'
+              : (defaultTargetPlatform == TargetPlatform.android
+                  ? 'android'
+                  : (defaultTargetPlatform == TargetPlatform.iOS
+                      ? 'ios'
+                      : 'unknown'));
+          await SupabaseBootstrap.client.from('user_devices').upsert({
+            'user_id': uid,
+            'platform': platform,
+            'fcm_token': token,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }, onConflict: 'user_id,platform');
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('[savePatientFcmToken] Supabase error: $e');
+      }
+      return;
+    }
+
     if (!FirebaseBootstrap.isReady || patientId.isEmpty || token.isEmpty)
       return;
     await FirebaseFirestore.instance
@@ -275,6 +299,28 @@ class PatientProfileRepository {
   }
 
   Future<void> clearPatientFcmToken(String patientId) async {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null && uid.isNotEmpty) {
+          final platform = kIsWeb
+              ? 'web'
+              : (defaultTargetPlatform == TargetPlatform.android
+                  ? 'android'
+                  : (defaultTargetPlatform == TargetPlatform.iOS
+                      ? 'ios'
+                      : 'unknown'));
+          await SupabaseBootstrap.client
+              .from('user_devices')
+              .delete()
+              .match({'user_id': uid, 'platform': platform});
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('[clearPatientFcmToken] Supabase error: $e');
+      }
+      return;
+    }
+
     if (!FirebaseBootstrap.isReady || patientId.isEmpty) return;
     await FirebaseFirestore.instance
         .collection(FirestorePaths.patients)

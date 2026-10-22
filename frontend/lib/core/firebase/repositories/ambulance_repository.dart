@@ -141,6 +141,30 @@ class AmbulanceRepository {
 
   /// Saves the device FCM token so Cloud Functions can send push alerts.
   Future<void> saveDriverFcmToken(String ambulanceId, String token) async {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null && uid.isNotEmpty) {
+          final platform = kIsWeb
+              ? 'web'
+              : (defaultTargetPlatform == TargetPlatform.android
+                  ? 'android'
+                  : (defaultTargetPlatform == TargetPlatform.iOS
+                      ? 'ios'
+                      : 'unknown'));
+          await SupabaseBootstrap.client.from('user_devices').upsert({
+            'user_id': uid,
+            'platform': platform,
+            'fcm_token': token,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          }, onConflict: 'user_id,platform');
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('saveDriverFcmToken Supabase failed: $e');
+      }
+      return;
+    }
+
     if (!FirebaseBootstrap.isReady || ambulanceId.isEmpty || token.isEmpty)
       return;
 
@@ -161,6 +185,28 @@ class AmbulanceRepository {
 
   /// Removes FCM token on driver logout.
   Future<void> clearDriverFcmToken(String ambulanceId) async {
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      try {
+        final uid = FirebaseAuth.instance.currentUser?.uid;
+        if (uid != null && uid.isNotEmpty) {
+          final platform = kIsWeb
+              ? 'web'
+              : (defaultTargetPlatform == TargetPlatform.android
+                  ? 'android'
+                  : (defaultTargetPlatform == TargetPlatform.iOS
+                      ? 'ios'
+                      : 'unknown'));
+          await SupabaseBootstrap.client
+              .from('user_devices')
+              .delete()
+              .match({'user_id': uid, 'platform': platform});
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('clearDriverFcmToken Supabase failed: $e');
+      }
+      return;
+    }
+
     if (!FirebaseBootstrap.isReady || ambulanceId.isEmpty) return;
 
     try {
