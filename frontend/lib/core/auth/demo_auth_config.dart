@@ -35,11 +35,11 @@ abstract final class DemoAuthConfig {
 
   static String? validateOtp(String? value) => FormValidators.otp(value);
 
-  static const String demoDoctorPhone = '7666892394';
-  static const String demoPatientPhone = '7058809803';
-  static const String demoPharmacyPhone = '9359503874';
-  static const String demoLabPhone = '9409858233';
-  static const String demoAmbulancePhone = '9307583929';
+  static const String demoDoctorPhone = '9999900002';
+  static const String demoPatientPhone = '9999900001';
+  static const String demoPharmacyPhone = '9999900003';
+  static const String demoLabPhone = '9999900004';
+  static const String demoAmbulancePhone = '9999900005';
   static const String demoSuperAdminPhone = '9999988888';
 
   static bool isDemoDoctorPhone(String? phone) {

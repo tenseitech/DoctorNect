@@ -49,8 +49,6 @@ const {
   clearFailedLogins,
   hashAmbulancePin,
   ambulancePinMatches,
-  isPlayReviewMobileInput,
-  isDemoMobileInput,
   lookupMobileRegistration,
 } = require('./registration_otp');
 const {
@@ -982,7 +980,6 @@ async function enforceSendUserRegistrationOtpRateLimit(firestore, request) {
   const otpType = String(request.data?.otpType || 'registration').trim();
   const mobile = request.data?.mobile || request.data?.email || request.data?.identifier;
   const role = String(request.data?.role || 'patient').trim();
-  if (!(await isDemoMobileInput(mobile, role))) {
     const digits10 = String(mobile || '').replace(/\D/g, '').slice(-10);
     const identifier = digits10 || mobile;
     if (otpType === 'registration') {
@@ -998,7 +995,6 @@ async function enforceSendUserRegistrationOtpRateLimit(firestore, request) {
     } else {
       await enforceAbuseLimit(firestore, request, 'api');
     }
-  }
 }
 
 /** Sends registration OTP (server-side storage; SMS optional). */

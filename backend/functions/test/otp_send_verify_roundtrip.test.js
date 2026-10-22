@@ -18,8 +18,6 @@ const {
   sendUserRegistrationOtp,
   verifyUserRegistrationOtp,
   hashOtp,
-  setDemoConfigDocForTesting,
-  resetDemoConfigCacheForTesting,
 } = require('../registration_otp');
 
 function mobileHash(role, digits) {
@@ -132,13 +130,9 @@ async function roundTrip({ role, mobile, demo }) {
   });
   try {
     if (demo) {
-      setDemoConfigDocForTesting({
-        demoLoginEnabled: true,
-        demoOtp: '111111',
-        demoPhones: { [role]: [mobile] },
-      });
-    } else {
-      setDemoConfigDocForTesting(null);
+      process.env.REVIEW_TEST_NUMBERS = mobile;
+      process.env.REVIEW_FIXED_OTP = '111111';
+      process.env.REVIEW_ACCESS_UNTIL = '2099-01-01T00:00:00Z';
     }
 
     const sent = await sendUserRegistrationOtp(db, {
@@ -183,8 +177,9 @@ async function roundTrip({ role, mobile, demo }) {
     assert.equal(db.docs.get(challengeKey), undefined);
   } finally {
     restoreSms();
-    setDemoConfigDocForTesting(undefined);
-    resetDemoConfigCacheForTesting();
+    delete process.env.REVIEW_TEST_NUMBERS;
+    delete process.env.REVIEW_FIXED_OTP;
+    delete process.env.REVIEW_ACCESS_UNTIL;
   }
 }
 
@@ -193,12 +188,13 @@ test('patient send then verify accepts the stored HMAC and rejects a wrong code'
   await roundTrip({ role: 'patient', mobile: '9000000001', demo: false });
 });
 
-test('demo account send then verify accepts the configured code and rejects a wrong code', async () => {
+test('reviewer account send then verify accepts the configured code and rejects a wrong code', async () => {
   assert.equal(process.env.ALLOW_LEGACY_UNSALTED_OTP_HASH, undefined);
   await roundTrip({ role: 'doctor', mobile: '9000000002', demo: true });
 });
 
 test.after(() => {
-  setDemoConfigDocForTesting(undefined);
-  resetDemoConfigCacheForTesting();
+  delete process.env.REVIEW_TEST_NUMBERS;
+  delete process.env.REVIEW_FIXED_OTP;
+  delete process.env.REVIEW_ACCESS_UNTIL;
 });

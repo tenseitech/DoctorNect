@@ -81,11 +81,11 @@ adminFirestore.getFirestore = () => ({
         data: () => ({
           demoOtp: '000000',
           demoPhones: {
-            patient: ['7058809803'],
-            doctor: ['7666892394'],
-            medicalStore: ['9359503874'],
-            lab: ['9409858233'],
-            ambulance: ['9307583929'],
+            patient: ['9999900001'],
+            doctor: ['9999900002'],
+            medicalStore: ['9999900003'],
+            lab: ['9999900004'],
+            ambulance: ['9999900005'],
             superAdmin: ['9999988888'],
           },
           enableDemoSuperAdmin: true,
@@ -236,38 +236,22 @@ test('c. otp_send blocks the 7th request for the same mobile within 15 minutes',
   );
 });
 
-test('d. demo phone bypasses all limits across all roles', async () => {
-  const rolesAndPhones = [
-    { role: 'doctor', phone: '7666892394' },
-    { role: 'patient', phone: '7058809803' },
-    { role: 'medicalStore', phone: '9359503874' },
-    { role: 'lab', phone: '9409858233' },
-    { role: 'ambulance', phone: '9307583929' },
-    { role: 'superAdmin', phone: '9999988888' },
-    { role: 'super_admin', phone: '9999988888' },
-  ];
-
-  for (const { role, phone } of rolesAndPhones) {
-    const db = createMockFirestore();
-
-    // Send 10 consecutive requests (well beyond signup limit 3 and otp_send limit 6)
-    for (let i = 0; i < 10; i++) {
-      await assert.doesNotReject(
-        () => enforceSendUserRegistrationOtpRateLimit(db, {
-          data: {
-            otpType: i % 2 === 0 ? 'login' : 'registration',
-            mobile: phone,
-            role,
-          },
-          rawRequest: {
-            ip: '198.51.100.99',
-          },
-        }),
-        `Demo account for role ${role} should bypass rate limiting`,
-      );
-    }
-
-    // No abuse rate limit documents should have been created for the demo account
-    assert.equal(db.docs.size, 0, `No abuse buckets should be written for demo role ${role}`);
+test('d. formerly-demo phone does not bypass limits and is properly rate limited', async () => {
+  const db = createMockFirestore();
+  const phone = '9999900001';
+  // First 3 registrations pass signup limit
+  for (let i = 0; i < 3; i++) {
+    await assert.doesNotReject(() => enforceSendUserRegistrationOtpRateLimit(db, {
+      data: { otpType: 'registration', mobile: phone, role: 'patient' },
+      rawRequest: { ip: '198.51.100.99' },
+    }));
   }
+  // 4th request must be rejected with resource-exhausted
+  await assert.rejects(
+    () => enforceSendUserRegistrationOtpRateLimit(db, {
+      data: { otpType: 'registration', mobile: phone, role: 'patient' },
+      rawRequest: { ip: '198.51.100.99' },
+    }),
+    (err) => err.code === 'resource-exhausted'
+  );
 });

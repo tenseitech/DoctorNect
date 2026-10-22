@@ -128,7 +128,7 @@ async function seedEnvironment(env) {
       authUid: AMB_UID,
       serviceName: 'Rapid Response Ambulance',
       username: 'ambdriver',
-      phone: '9307583929',
+      phone: '9888800001',
       isAvailable: true,
     });
 
@@ -315,7 +315,7 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
         const client = env.authenticatedContext(AMB_UID).firestore();
         // Client queries like ambulances.where('phone', '==', ...) or unfiltered ambulances fail
         // because the list rule branches on unbound driverId and unconstrained resource.data
-        const query = client.collection('ambulances').where('phone', '==', '9307583929').limit(1);
+        const query = client.collection('ambulances').where('phone', '==', '9888800001').limit(1);
         await assertFails(query.get());
       });
 
@@ -393,16 +393,6 @@ if (!process.env.FIRESTORE_EMULATOR_HOST) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('completeAmbulanceMobileOtpLogin unit test with fake db', () => {
-  const { setDemoConfigDocForTesting } = require('../registration_otp');
-
-  before(() => {
-    // Mock demo config doc so no FirebaseApp / network call is attempted
-    setDemoConfigDocForTesting({});
-  });
-
-  after(() => {
-    setDemoConfigDocForTesting(undefined);
-  });
 
   function createFakeDb(initialDocs = {}) {
     const store = new Map(Object.entries(initialDocs));
@@ -507,12 +497,12 @@ describe('completeAmbulanceMobileOtpLogin unit test with fake db', () => {
       'otp_verification_sessions/session_valid': {
         role: 'ambulance',
         mobileVerified: true,
-        mobileDigits: '9307583929',
+        mobileDigits: '9888800001',
         consumed: false,
         expiresAt: { toDate: () => futureDate },
       },
       'ambulances/amb_123': {
-        phone: '9307583929',
+        phone: '9888800001',
         username: 'city_amb',
         serviceName: 'City Ambulance',
         authUid: 'old_or_missing_auth_uid',
@@ -522,7 +512,7 @@ describe('completeAmbulanceMobileOtpLogin unit test with fake db', () => {
     const auth = { uid: 'new_anon_auth_uid_777' };
     const res = await completeAmbulanceMobileOtpLoginWithPatch(
       db,
-      { mobile: '9307583929', sessionId: 'session_valid' },
+      { mobile: '9888800001', sessionId: 'session_valid' },
       auth,
     );
 
@@ -544,7 +534,7 @@ describe('completeAmbulanceMobileOtpLogin unit test with fake db', () => {
         expiresAt: { toDate: () => new Date(Date.now() + 600000) },
       },
       'ambulances/amb_123': {
-        phone: '9307583929',
+        phone: '9888800001',
         username: 'city_amb',
         serviceName: 'City Ambulance',
         authUid: 'original_auth_uid',
@@ -557,7 +547,7 @@ describe('completeAmbulanceMobileOtpLogin unit test with fake db', () => {
       async () => {
         await completeAmbulanceMobileOtpLoginWithPatch(
           db,
-          { mobile: '9307583929', sessionId: 'session_wrong_phone' },
+          { mobile: '9888800001', sessionId: 'session_wrong_phone' },
           auth,
         );
       },
@@ -575,7 +565,7 @@ describe('completeAmbulanceMobileOtpLogin unit test with fake db', () => {
   test('non-existent or expired session: sets nothing on ambulances/{id}', async () => {
     const db = createFakeDb({
       'ambulances/amb_123': {
-        phone: '9307583929',
+        phone: '9888800001',
         username: 'city_amb',
         serviceName: 'City Ambulance',
         authUid: 'original_auth_uid',
@@ -588,7 +578,7 @@ describe('completeAmbulanceMobileOtpLogin unit test with fake db', () => {
       async () => {
         await completeAmbulanceMobileOtpLoginWithPatch(
           db,
-          { mobile: '9307583929', sessionId: 'missing_session' },
+          { mobile: '9888800001', sessionId: 'missing_session' },
           auth,
         );
       },

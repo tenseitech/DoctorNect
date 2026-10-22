@@ -21,10 +21,8 @@ const {
   hashOtp,
   legacyHashOtp,
   allowLegacyUnsaltedOtpHash,
-  setDemoConfigDocForTesting,
 } = require('../registration_otp');
 
-setDemoConfigDocForTesting(null);
 
 function createConcurrentMockFirestore() {
   const docs = new Map();

@@ -5,11 +5,11 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 // Play Store review demo accounts config
 const DEMO_ACCOUNTS: Record<string, string[]> = {
-  patient: ["7058809803"],
-  doctor: ["7666892394"],
-  medicalStore: ["9359503874"],
-  lab: ["9409858233"],
-  ambulance: ["9307583929"],
+  patient: ["9999900001"],
+  doctor: ["9999900002"],
+  medicalStore: ["9999900003"],
+  lab: ["9999900004"],
+  ambulance: ["9999900005"],
 };
 
 function normalizeMobile(raw: string): string {

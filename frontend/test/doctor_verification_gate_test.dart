@@ -67,17 +67,17 @@ void main() {
       );
     });
 
-    test('demo doctor phone 7666892394 is always verified', () {
+    test('demo doctor phone 9999900002 is always verified', () {
       expect(
         DoctorVerificationRepository.parseVerifiedFromDoctorData({
-          'mobile': '7666892394',
+          'mobile': '9999900002',
           'verified': false,
         }),
         isTrue,
       );
       expect(
         DoctorVerificationRepository.parseVerifiedFromDoctorData({
-          'phone': '+917666892394',
+          'phone': '+919999900002',
         }),
         isTrue,
       );

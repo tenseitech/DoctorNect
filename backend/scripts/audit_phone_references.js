@@ -9,8 +9,8 @@ try {
   else if (cfg.phones && Array.isArray(cfg.phones)) numbers = cfg.phones;
   else if (typeof cfg === 'object') numbers = Object.values(cfg).flat();
 } catch (_) {
-  // Fallback to legacy targets
-  numbers = ['7058809803', '7666892394', '9359503874', '9409858233', '9307583929'];
+  // Read from environment if demo_phones.json is not present
+  numbers = (process.env.AUDIT_TARGET_PHONES || '').split(',').map((s) => s.trim()).filter(Boolean);
 }
 
 console.log('=== WORKING TREE MATCHES (FILE PATHS ONLY) ===');

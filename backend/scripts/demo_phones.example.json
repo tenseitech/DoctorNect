@@ -1,11 +1,7 @@
-{
-  "description": "Example configuration for demo/test phone numbers to purge before production launch. Copy to demo_phones.json (which is gitignored) and fill in your environment's demo numbers.",
-  "demo_phones": [
-    "9999900001",
-    "9999900002",
-    "9999900003",
-    "9999900004",
-    "9999900005",
-    "9999900006"
-  ]
-}
+[
+  "9999900001",
+  "9999900002",
+  "9999900003",
+  "9999900004",
+  "9999900005"
+]

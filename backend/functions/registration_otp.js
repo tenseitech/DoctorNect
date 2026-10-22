@@ -20,176 +20,8 @@ const { emit, SEVERITY, hashIdentifier } = require('./security_logger');
 const OTP_EXPIRY_MS = 10 * 60 * 1000;
 const SESSION_EXPIRY_MS = 30 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
-/** Dev-only: when OTP_TEST_MODE=true, all numbers accept this OTP (never returned in prod). */
-const DEV_TEST_OTP = '123456';
-/**
- * Demo / store-review accounts — fixed OTP 000000, no SMS, one phone per role.
- * Set DEMO_PHONE_* in functions env (server-only). Legacy: GOOGLE_PLAY_REVIEW_PHONE = patient.
- */
-// No hardcoded DEMO_OTP here anymore. It must come from Firestore.
+// Demo bypass removed: Play Store reviewer login in reviewer_login.js is the only fixed-OTP path.
 
-/** Env keys tried in order per role (first non-empty wins). */
-const DEMO_PHONE_ENV_BY_ROLE = {
-  patient: ['DEMO_PHONE_PATIENT', 'GOOGLE_PLAY_REVIEW_PHONE', 'TEST_PHONE_NUMBER'],
-  doctor: ['DEMO_PHONE_DOCTOR'],
-  medicalStore: ['DEMO_PHONE_MEDICAL_STORE', 'DEMO_PHONE_PHARMACY'],
-  lab: ['DEMO_PHONE_LAB'],
-  ambulance: ['DEMO_PHONE_AMBULANCE'],
-  superAdmin: ['DEMO_PHONE_SUPER_ADMIN'],
-  super_admin: ['DEMO_PHONE_SUPER_ADMIN'],
-};
-
-const DEFAULT_DEMO_CONFIG = {
-  demoOtp: '000000',
-  demoPhones: {
-    patient: ['7058809803'],
-    doctor: ['7666892394'],
-    medicalStore: ['9359503874'],
-    lab: ['9409858233'],
-    ambulance: ['9307583929'],
-    superAdmin: ['9999988888'],
-  },
-  enableDemoSuperAdmin: false,
-};
-
-// Cache for demo config to reduce Firestore reads (lives for the life of the Cloud Function instance)
-let cachedDemoConfig = null;
-let lastDemoConfigFetchTime = 0;
-const DEMO_CONFIG_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-let testDemoConfigDocOverride = undefined;
-
-function setDemoConfigDocForTesting(override) {
-  testDemoConfigDocOverride = override;
-  resetDemoConfigCacheForTesting();
-}
-
-function resetDemoConfigCacheForTesting() {
-  cachedDemoConfig = null;
-  lastDemoConfigFetchTime = 0;
-}
-
-async function getDemoConfig() {
-  if (cachedDemoConfig && (Date.now() - lastDemoConfigFetchTime < DEMO_CONFIG_CACHE_TTL_MS)) {
-    return cachedDemoConfig;
-  }
-
-  const isProd = isProductionFirebaseProject() && !isFunctionsEmulator();
-
-  try {
-    let exists = false;
-    let data = null;
-
-    if (testDemoConfigDocOverride !== undefined) {
-      if (testDemoConfigDocOverride !== null) {
-        exists = true;
-        data = testDemoConfigDocOverride;
-      }
-    } else {
-      const { getFirestore } = require('firebase-admin/firestore');
-      const doc = await getFirestore().collection('app_config').doc('demo_accounts').get();
-      if (doc.exists) {
-        exists = true;
-        data = doc.data();
-      }
-    }
-
-    if (exists && data) {
-      if (isProd) {
-        if (data.demoLoginEnabled === true) {
-          cachedDemoConfig = data;
-          lastDemoConfigFetchTime = Date.now();
-          return cachedDemoConfig;
-        }
-        cachedDemoConfig = null;
-        lastDemoConfigFetchTime = Date.now();
-        return null;
-      }
-      cachedDemoConfig = data;
-      lastDemoConfigFetchTime = Date.now();
-      return cachedDemoConfig;
-    }
-  } catch (error) {
-    console.error('Error fetching demo config:', error);
-  }
-
-  if (isProd) {
-    cachedDemoConfig = null;
-    lastDemoConfigFetchTime = Date.now();
-    return null;
-  }
-
-  return DEFAULT_DEMO_CONFIG;
-}
-
-function demoPhoneDigitsForRole(role) {
-  const r = String(role || '').trim();
-  const keys = DEMO_PHONE_ENV_BY_ROLE[r];
-  if (!keys) return null;
-  for (const key of keys) {
-    const raw = String(process.env[key] || '').trim();
-    if (!raw) continue;
-    const digits = normalizeMobileDigits(raw);
-    if (digits) return digits;
-  }
-  return null;
-}
-
-/** True when [digits] is the env-configured demo number for [role] only. */
-async function isDemoPhone(digits, role) {
-  const r = String(role || '').trim();
-  const isSuperAdminRole = r === 'superAdmin' || r === 'super_admin';
-  const config = await getDemoConfig();
-
-  // Safety gate: demo Super Admin is enabled ONLY when dev/demo flag is on
-  // In production with flag off, behaves like a normal number!
-  if (isSuperAdminRole) {
-    const isProd = isProductionFirebaseProject();
-    const isExplicitlyEnabled = Boolean(
-      config && (config.enableDemoSuperAdmin === true || config.demoSuperAdminEnabled === true)
-    );
-    if (isProd && !isExplicitlyEnabled) {
-      return false;
-    }
-  }
-  
-  // 1. Check remote config (Firestore)
-  if (config && config.demoPhones && config.demoOtp) {
-    const remoteList = config.demoPhones[r] || (isSuperAdminRole ? (config.demoPhones.superAdmin || config.demoPhones.super_admin) : null);
-    if (Array.isArray(remoteList)) {
-      for (const remoteNumber of remoteList) {
-        if (normalizeMobileDigits(remoteNumber) === digits) {
-          return true;
-        }
-      }
-    }
-  }
-
-  // 2. Block env-based demo numbers in production to prevent accidental leaks
-  if (isProductionFirebaseProject()) {
-    return false;
-  }
-  
-  const expected = demoPhoneDigitsForRole(role);
-  return expected != null && expected === digits;
-}
-
-/** Callable/request mobile + role — demo bypass only for matching role number. */
-async function isDemoMobileInput(mobile, role) {
-  const digits = normalizeMobileDigits(mobile);
-  if (!digits) return false;
-  return await isDemoPhone(digits, String(role || 'patient').trim());
-}
-
-/** @deprecated use isDemoPhone(digits, role) */
-async function isPlayReviewPhone(digits) {
-  return await isDemoPhone(digits, 'patient');
-}
-
-/** @deprecated use isDemoMobileInput(mobile, role) */
-async function isPlayReviewMobileInput(mobile) {
-  return await isDemoMobileInput(mobile, 'patient');
-}
 const SEND_IP_WINDOW_MS = 60 * 60 * 1000;
 const SEND_IP_MAX = 10;
 const SEND_MOBILE_WINDOW_MS = 60 * 60 * 1000;
@@ -205,14 +37,6 @@ const PASSWORD_RESET_IDENTIFIER_MAX = 5;
 const PBKDF2_ITERATIONS = 120000;
 const PBKDF2_KEYLEN = 32;
 const PBKDF2_DIGEST = 'sha256';
-
-function isTestMode() {
-  if (isProductionFirebaseProject()) {
-    return false;
-  }
-  const mode = String(process.env.OTP_TEST_MODE || '').trim().toLowerCase();
-  return mode === 'true' || mode === '1';
-}
 
 function normalizeMobileDigits(mobile) {
   let digits = String(mobile || '').replace(/\D/g, '');
@@ -570,68 +394,7 @@ async function assertOtpRateLimit(db, { bucket, windowMs, maxAttempts }) {
   });
 }
 
-const DEMO_HOURLY_WINDOW_MS = 60 * 60 * 1000;
-const DEMO_SEND_MAX = 10;
-const DEMO_VERIFY_FAIL_MAX = 10;
-
-async function checkDemoVerifyFailureLimit(db, { role, digits }) {
-  const ref = db.collection('otp_rate_limits').doc(`verify_demo_fail_${mobileHash(role, digits)}`);
-  const snap = await ref.get();
-  if (!snap.exists) return;
-  const data = snap.data() || {};
-  const windowStartMs = data.windowStart?.toDate?.()?.getTime() || 0;
-  const nowMs = Date.now();
-  const withinWindow = windowStartMs > 0 && nowMs - windowStartMs < DEMO_HOURLY_WINDOW_MS;
-  const count = withinWindow ? (Number(data.count) || 0) : 0;
-  if (count >= DEMO_VERIFY_FAIL_MAX) {
-    throw new HttpsError(
-      'resource-exhausted',
-      'Too many invalid OTP attempts. Please try again later.',
-    );
-  }
-}
-
-async function recordDemoVerifyFailure(db, { role, digits }) {
-  const ref = db.collection('otp_rate_limits').doc(`verify_demo_fail_${mobileHash(role, digits)}`);
-  const nowMs = Date.now();
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const data = snap.data() || {};
-    const windowStartMs = data.windowStart?.toDate?.()?.getTime() || 0;
-    const withinWindow = windowStartMs > 0 && nowMs - windowStartMs < DEMO_HOURLY_WINDOW_MS;
-    const count = withinWindow ? (Number(data.count) || 0) : 0;
-
-    tx.set(ref, {
-      count: count + 1,
-      windowStart: withinWindow
-        ? data.windowStart
-        : Timestamp.fromDate(new Date(nowMs)),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-  });
-}
-
 async function enforceSendOtpRateLimits(db, { clientIp, role, digits }) {
-  const isDemo = await isDemoPhone(digits, role);
-  if (isDemo) {
-    if (!isProductionFirebaseProject() || isFunctionsEmulator()) {
-      return;
-    }
-    // Production demo rate limits: keep IP limit, apply per-phone cap on sends (max 10 per hour)
-    await assertOtpRateLimit(db, {
-      bucket: `send_ip_${hashRateLimitKey(clientIp)}`,
-      windowMs: SEND_IP_WINDOW_MS,
-      maxAttempts: SEND_IP_MAX,
-    });
-    await assertOtpRateLimit(db, {
-      bucket: `send_demo_${mobileHash(role, digits)}`,
-      windowMs: DEMO_HOURLY_WINDOW_MS,
-      maxAttempts: DEMO_SEND_MAX,
-      message: 'Too many OTP requests. Please try again later.',
-    });
-    return;
-  }
-
   await assertOtpRateLimit(db, {
     bucket: `send_ip_${hashRateLimitKey(clientIp)}`,
     windowMs: SEND_IP_WINDOW_MS,
@@ -645,21 +408,6 @@ async function enforceSendOtpRateLimits(db, { clientIp, role, digits }) {
 }
 
 async function enforceVerifyOtpRateLimits(db, { clientIp, role, digits }) {
-  const isDemo = await isDemoPhone(digits, role);
-  if (isDemo) {
-    if (!isProductionFirebaseProject() || isFunctionsEmulator()) {
-      return;
-    }
-    // Production demo rate limits: keep IP limit, enforce per-phone cap on failed verifications (max 10 per hour)
-    await assertOtpRateLimit(db, {
-      bucket: `verify_ip_${hashRateLimitKey(clientIp)}`,
-      windowMs: VERIFY_IP_WINDOW_MS,
-      maxAttempts: VERIFY_IP_MAX,
-    });
-    await checkDemoVerifyFailureLimit(db, { role, digits });
-    return;
-  }
-
   await assertOtpRateLimit(db, {
     bucket: `verify_ip_${hashRateLimitKey(clientIp)}`,
     windowMs: VERIFY_IP_WINDOW_MS,
@@ -1607,7 +1355,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     mobileLast4: initialMobileLast4,
   });
 
-  if (isProductionFirebaseProject() && (isTestMode() || isOtpTestModeConfigured())) {
+  if (isProductionFirebaseProject() && isOtpTestModeConfigured()) {
     console.error('[sendUserRegistrationOtp] OTP test mode is enabled in production');
     throw new HttpsError('failed-precondition', 'OTP test mode is enabled in production');
   }
@@ -1699,28 +1447,6 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
       mobileLast4,
     });
 
-    const isDemo = await isDemoPhone(digits, role);
-    if ((!search.found || !search.uid) && isDemo) {
-      console.info('[sendUserRegistrationOtp] Demo phone detected without active account, ensuring demo account', {
-        role,
-        mobileLast4,
-      });
-      try {
-        search = await ensureDemoAccount(db, digits, role);
-        matchedField = search.matchedField || 'mobile';
-        docId = search.doc?.id || search.docId || search.uid || null;
-        console.info('[sendUserRegistrationOtp] findUserByMobileDigits result (demo auto-provisioned)', {
-          found: Boolean(search.found),
-          matchedField,
-          docId,
-          'doc.id': docId,
-          storedRole: search.role || null,
-          mobileLast4,
-        });
-      } catch (err) {
-        console.warn('[sendUserRegistrationOtp] Failed to ensure demo account:', err.message);
-      }
-    }
     if (!search.found) {
       console.warn('[sendUserRegistrationOtp] Early exit', {
         reason: 'USER_NOT_FOUND',
@@ -1783,7 +1509,6 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
 
   const challengeRef = db.collection('otp_challenges').doc(mobileHash(role, digits));
   const existing = await challengeRef.get();
-  const isDemoAccount = await isDemoPhone(digits, role);
   const isReviewerAccount = isReviewerPhone(digits);
   if (isReviewerAccount) {
     if (!checkReviewerRateLimit(digits)) {
@@ -1802,7 +1527,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     });
   }
 
-  if (existing.exists && !isDemoAccount) {
+  if (existing.exists) {
     const existingData = existing.data() || {};
     const lastSentAt = existingData.sentAt?.toDate?.();
     if (lastSentAt && Date.now() - lastSentAt.getTime() < RESEND_COOLDOWN_MS) {
@@ -1818,24 +1543,12 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
       );
     }
     // MSG91 retry resends the same OTP session; rotating our hash breaks verify.
-    if (!isTestMode() && existingData.otpHash) {
-      const expiryMs = OTP_EXPIRY_MS;
-      const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
+    if (!isReviewerAccount) {
       try {
-        const retryTemplateId = resolveMsg91TemplateId(otpType);
-        console.info('[sendUserRegistrationOtp] Calling SMS provider (retry)', {
-          provider: 'MSG91',
-          action: 'retry',
-          templateId: retryTemplateId || 'retry_existing_template',
-          dltId: retryTemplateId || 'retry_existing_template',
-          calling: true,
-          callInitiated: true,
-          mobileLast4,
-        });
         const retryResult = await retryMsg91SmsOtp(digits);
-        console.info('[sendUserRegistrationOtp] SMS provider call completed (retry)', {
+        console.info('[sendUserRegistrationOtp] SMS provider retry call completed', {
           provider: 'MSG91',
-          action: 'retry',
+          requestId: retryResult?.requestId || null,
           httpStatus: retryResult?.httpStatus || 200,
           responseBody: sanitizeResponseBody(retryResult?.responseBody),
           mobileLast4,
@@ -1892,21 +1605,8 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     }
   }
 
-
-  const config = await getDemoConfig();
-  if (isDemoAccount && (!config || !config.demoOtp)) {
-    console.warn('[sendUserRegistrationOtp] Early exit', {
-      reason: 'DEMO_CONFIG_MISSING',
-      role,
-      mobileLast4,
-    });
-    throw new HttpsError('internal', 'Demo configuration missing demoOtp');
-  }
-
   const reviewerConfig = getReviewerConfig();
-  const code = isReviewerAccount
-    ? reviewerConfig.fixedOtp
-    : (isDemoAccount ? config.demoOtp : generateOtpCode());
+  const code = isReviewerAccount ? reviewerConfig.fixedOtp : generateOtpCode();
   const expiryMs = OTP_EXPIRY_MS;
   const expiresAt = Timestamp.fromDate(new Date(Date.now() + expiryMs));
 
@@ -1917,7 +1617,6 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
     expiresAt,
     sentAt: FieldValue.serverTimestamp(),
     attempts: 0,
-    ...(isDemoAccount ? { demoAccount: true } : {}),
     ...(isReviewerAccount ? { reviewerAccount: true } : {}),
   });
 
@@ -1956,10 +1655,8 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
 
   // Outbound MSG91 API call via VPC Connector (static IP).
   try {
-    if (isDemoAccount) {
-      // No SMS — demo/store-review number for this role only; OTP comes from Firestore.
-      console.info('[sendUserRegistrationOtp] Silent skip SMS provider call', {
-        reason: 'DEMO_PATH',
+    if (isReviewerAccount) {
+      console.info('[sendUserRegistrationOtp] Silent skip SMS for reviewer account', {
         role,
         mobileLast4,
       });
@@ -1985,7 +1682,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
         mobileLast4,
       });
     }
-  } catch (err) {
+    } catch (err) {
     console.error('[sendUserRegistrationOtp] SMS provider call failed', {
       provider: 'MSG91',
       httpStatus: err?.httpStatus || null,
@@ -2003,23 +1700,13 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   return {
     ok: true,
     expiresInSeconds: Math.floor(expiryMs / 1000),
-    ...(isTestMode() && !isDemoAccount ? { debugOtp: DEV_TEST_OTP } : {}),
   };
 }
 
-async function isChallengeOtpValid({ otp, challenge, isDemoAccount, demoOtp }) {
+async function isChallengeOtpValid({ otp, challenge }) {
   const entered = String(otp || '').trim();
-  if (isDemoAccount && demoOtp != null && entered === String(demoOtp).trim()) {
-    return true;
-  }
-  if (!isDemoAccount && isTestMode() && entered === DEV_TEST_OTP) {
-    return true;
-  }
   if (verifyChallengeOtpHash(entered, challenge)) {
     return true;
-  }
-  if (isTestMode() || isDemoAccount) {
-    return false;
   }
   return verifyMsg91Otp(challenge.mobileDigits, otp);
 }
@@ -2087,10 +1774,6 @@ async function consumeOtpChallengeAtomically(
     } catch (_) {}
   };
 
-  const demoConfig = await getDemoConfig();
-  const demoOtp =
-    demoConfig?.demoOtp != null ? String(demoConfig.demoOtp).trim() : null;
-
   // 3. Atomically check challenge state and fast-path local hash match
   const outcome = await db.runTransaction(async (tx) => {
     const challengeSnap = await tx.get(effectiveChallengeRef);
@@ -2105,29 +1788,16 @@ async function consumeOtpChallengeAtomically(
       return { status: 'expired' };
     }
 
-    const treatAsDemo = Boolean(isDemoAccount || challenge.demoAccount === true);
-
     const attempts = Number(challenge.attempts) || 0;
     if (attempts >= 5) {
       tx.delete(effectiveChallengeRef);
-      return { status: 'locked', treatAsDemo };
-    }
-
-    // In production, reject and delete any challenge tagged demoAccount if demo login is not currently enabled
-    if (challenge.demoAccount === true && isProductionFirebaseProject() && !isFunctionsEmulator()) {
-      const isDemoActive = Boolean(demoConfig && demoConfig.demoLoginEnabled === true && isDemoAccount);
-      if (!isDemoActive) {
-        tx.delete(effectiveChallengeRef);
-        return { status: 'stale_demo' };
-      }
+      return { status: 'locked' };
     }
 
     const reviewerCfg = getReviewerConfig();
     const isReviewerValid = reviewerCfg && isReviewerPhone(digits || challenge.mobileDigits) && otp === reviewerCfg.fixedOtp;
     const localMatch = isReviewerValid
       || verifyChallengeOtpHash(otp, challenge, role, digits)
-      || (treatAsDemo && demoOtp != null && otp === demoOtp)
-      || (!treatAsDemo && isTestMode() && otp === DEV_TEST_OTP)
       || (redisChallenge?.otpHash && verifyChallengeOtpHash(otp, {
            role: redisChallenge.role || challenge.role || role,
            mobileDigits: digits || challenge.mobileDigits,
@@ -2136,18 +1806,18 @@ async function consumeOtpChallengeAtomically(
 
     if (localMatch) {
       tx.delete(effectiveChallengeRef);
-      return { status: 'consumed', challenge, treatAsDemo };
+      return { status: 'consumed', challenge };
     }
 
     // Local hash didn't match. Check if MSG91 verify API should be queried outside transaction.
-    const canCheckMsg91 = !isReviewer && !treatAsDemo && !isTestMode() && Boolean(challenge.mobileDigits || digits);
+    const canCheckMsg91 = !isReviewer && Boolean(challenge.mobileDigits || digits);
     if (canCheckMsg91) {
       return { status: 'check_msg91', challenge, attempts };
     }
 
-    // No MSG91 fallback available (e.g. test mode, demo, or missing mobile). Increment attempts.
+    // No MSG91 fallback available (e.g. reviewer or missing mobile). Increment attempts.
     tx.set(effectiveChallengeRef, { attempts: attempts + 1 }, { merge: true });
-    return { status: 'invalid', attempts: attempts + 1, challenge, treatAsDemo };
+    return { status: 'invalid', attempts: attempts + 1, challenge };
   });
 
   // Handle immediate outcomes
@@ -2162,12 +1832,6 @@ async function consumeOtpChallengeAtomically(
     throw new HttpsError('failed-precondition', 'Send OTP first.');
   }
 
-  if (outcome.status === 'stale_demo') {
-    console.warn(`[consumeOtpChallengeAtomically] STALE_DEMO_CHALLENGE rejected and deleted for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
-    await cleanupRedisChallenge();
-    throw new HttpsError('permission-denied', 'Invalid OTP.');
-  }
-
   if (outcome.status === 'expired') {
     console.warn(`[consumeOtpChallengeAtomically] OTP_EXPIRED for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
     await cleanupRedisChallenge();
@@ -2175,9 +1839,6 @@ async function consumeOtpChallengeAtomically(
   }
 
   if (outcome.status === 'locked') {
-    if (outcome.treatAsDemo && isProductionFirebaseProject() && !isFunctionsEmulator() && digits) {
-      await recordDemoVerifyFailure(db, { role, digits }).catch(() => {});
-    }
     console.warn(`[consumeOtpChallengeAtomically] OTP_LOCKED for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
     await cleanupRedisChallenge();
     throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
@@ -2191,9 +1852,6 @@ async function consumeOtpChallengeAtomically(
         role: normalizedRole,
         reason: 'invalid_otp',
       });
-    }
-    if (outcome.treatAsDemo && isProductionFirebaseProject() && !isFunctionsEmulator() && digits) {
-      await recordDemoVerifyFailure(db, { role, digits }).catch(() => {});
     }
     console.warn(`[consumeOtpChallengeAtomically] INVALID_CODE attempt ${outcome.attempts}/5 for mobile ending ${digits ? digits.slice(-4) : 'unknown'}`);
     throw new HttpsError('permission-denied', 'Invalid OTP.');
@@ -2222,11 +1880,12 @@ async function consumeOtpChallengeAtomically(
     const failOutcome = await db.runTransaction(async (tx) => {
       const snap = await tx.get(effectiveChallengeRef);
       if (!snap.exists) return { status: 'missing' };
-      const curAttempts = (Number(snap.data()?.attempts) || 0) + 1;
-      if (curAttempts >= 5) {
+      const priorAttempts = Number(snap.data()?.attempts) || 0;
+      if (priorAttempts >= 5) {
         tx.delete(effectiveChallengeRef);
-        return { status: 'locked', attempts: curAttempts };
+        return { status: 'locked', attempts: priorAttempts };
       }
+      const curAttempts = priorAttempts + 1;
       tx.set(effectiveChallengeRef, { attempts: curAttempts }, { merge: true });
       return { status: 'invalid', attempts: curAttempts };
     });
@@ -2235,6 +1894,10 @@ async function consumeOtpChallengeAtomically(
     if (failOutcome.status === 'locked') {
       await cleanupRedisChallenge();
       throw new HttpsError('resource-exhausted', 'Too many invalid attempts. Send a new OTP.');
+    }
+    if (failOutcome.status === 'missing') {
+      await cleanupRedisChallenge();
+      throw new HttpsError('failed-precondition', 'Too many invalid attempts. Send a new OTP.');
     }
     throw new HttpsError('permission-denied', 'Invalid OTP.');
   }
@@ -2364,12 +2027,10 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
   await enforceVerifyOtpRateLimits(db, { clientIp, role, digits });
 
   const challengeKey = mobileHash(role, digits);
-  const isDemoAccount = await isDemoPhone(digits, role);
 
   await consumeOtpChallengeAtomically(db, {
     challengeKey,
     otp,
-    isDemoAccount,
     mobileDigits: digits,
     role,
   });
@@ -2439,15 +2100,7 @@ async function verifyUserRegistrationOtp(db, data, auth, { clientIp = 'unknown' 
 
   // Phone OTP login must establish a real Firebase Auth session.
   if (otpType === 'login') {
-    let search = await findUserByMobileDigits(db, digits);
-    const isDemo = await isDemoPhone(digits, role);
-    if ((!search.found || !search.uid) && isDemo) {
-      try {
-        search = await ensureDemoAccount(db, digits, role);
-      } catch (err) {
-        console.warn('[verifyUserRegistrationOtp] Failed to ensure demo account:', err.message);
-      }
-    }
+    const search = await findUserByMobileDigits(db, digits);
     if (!search.found || !search.uid) {
       throw new HttpsError('not-found', 'No account found for this mobile number. Please register first.');
     }
@@ -2841,327 +2494,6 @@ async function resetUserPasswordWithOtp(db, data, { clientIp = 'unknown' } = {})
   return { ok: true, success: true, message: 'Password updated successfully! You can now log in.' };
 }
 
-async function ensureDoctorFullVerified(db, uid, profileId, overrides = {}) {
-  const doctorId = profileId || `demo_doctor_${overrides.mobile || '7666892394'}`;
-  const mobile = overrides.mobile || '7666892394';
-  const email = overrides.email || `doctor.${mobile}@doctornect.com`;
-  const displayName = overrides.displayName || 'Dr. Demo Doctor';
-
-  const batch = db.batch();
-  const userRef = db.collection('users').doc(uid);
-  batch.set(userRef, {
-    role: 'doctor',
-    profileId: doctorId,
-    displayName,
-    email,
-    mobile,
-    phone: mobile,
-    verified: true,
-    verificationStatus: 'verified',
-    status: 'approved',
-    profileCompleted: true,
-    mobileVerified: true,
-    kycSubmitted: true,
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  const doctorRef = db.collection('doctors').doc(doctorId);
-  batch.set(doctorRef, {
-    doctorId,
-    ownerUid: uid,
-    name: displayName,
-    fullName: displayName,
-    mobile,
-    phone: mobile,
-    email,
-    qualification: 'MBBS, MD (General Medicine)',
-    specialization: 'General Medicine (Internal Medicine)',
-    councilNumber: `MCI-${mobile}`,
-    stateCouncil: 'Maharashtra Medical Council',
-    registrationYear: 2016,
-    yearsExperience: 10,
-    clinicName: 'Dr. Demo Healthcare Clinic',
-    clinicType: 'Private Clinic',
-    addressLine1: 'Suite 101, Medical Enclave',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    country: 'India',
-    pincode: '400001',
-    verified: true,
-    verificationStatus: 'verified',
-    status: 'approved',
-    kycSubmitted: true,
-    profileCompleted: true,
-    deactivated: false,
-    rating: 4.9,
-    reviewCount: 24,
-    registrationCertificate: 'https://storage.googleapis.com/demo/medical_council_cert.pdf',
-    idProof: 'https://storage.googleapis.com/demo/doctor_id_proof.pdf',
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  await batch.commit();
-}
-
-async function ensureRoleFullVerified(db, uid, role, profileId, overrides = {}) {
-  const r = normalizeRole(role || 'patient');
-  if (r === 'doctor') {
-    return ensureDoctorFullVerified(db, uid, profileId, overrides);
-  }
-  const mobile = overrides.mobile || '';
-  const knownProfileIds = {
-    '9359503874': 'ms1784184914244',
-    '9409858233': 'l1784185011933',
-    '9307583929': 'amb-reg-1787919627226',
-    '9999988888': 'demo_super_admin_9999988888',
-  };
-  const knownDisplayNames = {
-    '9359503874': 'KD Rx Pharma',
-    '9409858233': 'KD Labs',
-    '9307583929': 'Demo Ambulance',
-    '9999988888': 'Demo Super Admin',
-  };
-  const roleMeta = {
-    medicalStore: { collection: 'medical_stores', idField: 'storeId', defaultName: 'Demo Medical Store' },
-    lab: { collection: 'labs', idField: 'labId', defaultName: 'Demo Diagnostic Lab' },
-    ambulance: { collection: 'ambulances', idField: 'ambulanceId', defaultName: 'Demo Ambulance Service' },
-    superAdmin: { collection: 'super_admins', idField: 'adminId', defaultName: 'Demo Super Admin' },
-    super_admin: { collection: 'super_admins', idField: 'adminId', defaultName: 'Demo Super Admin' },
-  };
-  const meta = roleMeta[r];
-  if (!meta) return;
-
-  const effProfileId = profileId || knownProfileIds[mobile] || `${r}_${mobile}`;
-  const displayName = overrides.displayName || knownDisplayNames[mobile] || meta.defaultName;
-
-  const batch = db.batch();
-  const userRef = db.collection('users').doc(uid);
-  const dbRole = (r === 'superAdmin' || r === 'super_admin') ? 'super_admin' : r;
-  batch.set(userRef, {
-    role: dbRole,
-    profileId: effProfileId,
-    displayName,
-    verified: true,
-    verificationStatus: 'verified',
-    status: 'approved',
-    profileCompleted: true,
-    mobileVerified: true,
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  const roleDocRef = db.collection(meta.collection).doc(effProfileId);
-  batch.set(roleDocRef, {
-    [meta.idField]: effProfileId,
-    ownerUid: uid,
-    authUid: uid,
-    name: displayName,
-    verified: true,
-    verificationStatus: 'verified',
-    status: 'approved',
-    profileCompleted: true,
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  await batch.commit();
-}
-
-async function ensureDemoDoctorAccount(db, mobileDigits) {
-  const doctorId = `demo_doctor_${mobileDigits}`;
-  const email = `doctor.${mobileDigits}@doctornect.com`;
-  const displayName = 'Dr. Demo Doctor';
-
-  let authUser;
-  try {
-    authUser = await getAuth().getUserByEmail(email);
-  } catch (e) {
-    if (e.code !== 'auth/user-not-found') {
-      console.warn('Error finding user by email:', e.message);
-    }
-  }
-
-  if (!authUser) {
-    try {
-      authUser = await getAuth().createUser({
-        email,
-        displayName,
-        emailVerified: true,
-      });
-    } catch (err) {
-      authUser = await getAuth().getUserByEmail(email).catch(() => null);
-      if (!authUser) {
-        authUser = { uid: `demo_user_${mobileDigits}` };
-      }
-    }
-  }
-
-  const uid = authUser.uid;
-  await ensureDoctorFullVerified(db, uid, doctorId, { mobile: mobileDigits, email, displayName });
-  return {
-    found: true,
-    role: 'doctor',
-    uid,
-    doc: { id: doctorId },
-    docId: doctorId,
-    matchedField: 'mobile',
-    data: {
-      profileId: doctorId,
-      role: 'doctor',
-      mobile: mobileDigits,
-      verified: true,
-      verificationStatus: 'verified',
-    },
-  };
-}
-
-async function ensureDemoAccount(db, mobileDigits, role) {
-  const r = normalizeRole(role || 'patient');
-  if (r === 'doctor') {
-    return ensureDemoDoctorAccount(db, mobileDigits);
-  }
-
-  const roleMeta = {
-    patient: {
-      collection: 'patients',
-      idPrefix: 'demo_patient_',
-      idField: 'patientId',
-      emailPrefix: 'patient',
-      displayName: 'Demo Patient',
-    },
-    medicalStore: {
-      collection: 'medical_stores',
-      idPrefix: 'demo_store_',
-      idField: 'storeId',
-      emailPrefix: 'pharmacy',
-      displayName: 'Demo Medical Store',
-    },
-    lab: {
-      collection: 'labs',
-      idPrefix: 'demo_lab_',
-      idField: 'labId',
-      emailPrefix: 'lab',
-      displayName: 'Demo Diagnostic Lab',
-    },
-    ambulance: {
-      collection: 'ambulances',
-      idPrefix: 'demo_ambulance_',
-      idField: 'ambulanceId',
-      emailPrefix: 'ambulance',
-      displayName: 'Demo Ambulance Service',
-    },
-    superAdmin: {
-      collection: 'super_admins',
-      idPrefix: 'demo_admin_',
-      idField: 'adminId',
-      emailPrefix: 'superadmin',
-      displayName: 'Demo Super Admin',
-    },
-    super_admin: {
-      collection: 'super_admins',
-      idPrefix: 'demo_admin_',
-      idField: 'adminId',
-      emailPrefix: 'superadmin',
-      displayName: 'Demo Super Admin',
-    },
-  };
-
-  const knownProfileIds = {
-    '9359503874': 'ms1784184914244',
-    '9409858233': 'l1784185011933',
-    '9307583929': 'amb-reg-1787919627226',
-    '7666892394': 'demo_doctor_7666892394',
-    '9999988888': 'demo_super_admin_9999988888',
-  };
-  const knownDisplayNames = {
-    '9359503874': 'KD Rx Pharma',
-    '9409858233': 'KD Labs',
-    '9307583929': 'Demo Ambulance',
-    '7666892394': 'Dr. Demo Doctor',
-    '9999988888': 'Demo Super Admin',
-  };
-
-  const meta = roleMeta[r] || roleMeta.patient;
-  const profileId = knownProfileIds[mobileDigits] || `${meta.idPrefix}${mobileDigits}`;
-  const displayName = knownDisplayNames[mobileDigits] || meta.displayName;
-  const email = `${meta.emailPrefix}.${mobileDigits}@doctornect.com`;
-
-  let authUser;
-  try {
-    authUser = await getAuth().getUserByEmail(email);
-  } catch (e) {
-    if (e.code !== 'auth/user-not-found') {
-      console.warn('Error finding user by email:', e.message);
-    }
-  }
-
-  if (!authUser) {
-    try {
-      authUser = await getAuth().createUser({
-        email,
-        displayName,
-        emailVerified: true,
-      });
-    } catch (err) {
-      authUser = await getAuth().getUserByEmail(email).catch(() => null);
-      if (!authUser) {
-        authUser = { uid: `demo_user_${r}_${mobileDigits}` };
-      }
-    }
-  }
-
-  const uid = authUser.uid;
-  const batch = db.batch();
-  const userRef = db.collection('users').doc(uid);
-  const dbRole = (r === 'superAdmin' || r === 'super_admin') ? 'super_admin' : r;
-  batch.set(userRef, {
-    role: dbRole,
-    profileId,
-    displayName,
-    email,
-    mobile: mobileDigits,
-    phone: mobileDigits,
-    verified: true,
-    verificationStatus: 'verified',
-    status: 'approved',
-    profileCompleted: true,
-    mobileVerified: true,
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  const roleDocRef = db.collection(meta.collection).doc(profileId);
-  batch.set(roleDocRef, {
-    [meta.idField]: profileId,
-    ownerUid: uid,
-    name: displayName,
-    fullName: displayName,
-    mobile: mobileDigits,
-    phone: mobileDigits,
-    email,
-    verified: true,
-    verificationStatus: 'verified',
-    status: 'approved',
-    profileCompleted: true,
-    updatedAt: FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  await batch.commit();
-
-  return {
-    found: true,
-    role: r,
-    uid,
-    doc: { id: profileId },
-    docId: profileId,
-    matchedField: 'mobile',
-    data: {
-      profileId,
-      role: r,
-      mobile: mobileDigits,
-      verified: true,
-      verificationStatus: 'verified',
-    },
-  };
-}
-
 /**
  * Exchanges a verified mobile OTP session for a Firebase custom token so the
  * client gets a real Auth session (request.auth) instead of a local-only profile.
@@ -3200,15 +2532,7 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     },
   });
 
-  const isDemo = await isDemoPhone(mobileDigits, role);
-  let search = await findUserByMobileDigits(db, mobileDigits);
-  if ((!search.found || !search.uid) && isDemo) {
-    try {
-      search = await ensureDemoAccount(db, mobileDigits, role);
-    } catch (err) {
-      console.warn('[completeMobileOtpLogin] Failed to ensure demo account:', err.message);
-    }
-  }
+  const search = await findUserByMobileDigits(db, mobileDigits);
   if (!search.found || !search.uid) {
     throw new HttpsError('not-found', 'No account found for this mobile number.');
   }
@@ -3221,27 +2545,12 @@ async function completeMobileOtpLogin(db, data, { clientIp = 'unknown' } = {}) {
     throw new HttpsError('failed-precondition', LOGIN_WRONG_ACCOUNT_TYPE_MESSAGE);
   }
 
-  let authUid = search.uid;
-  if (role === 'doctor') {
-    await ensureDoctorFullVerified(db, authUid, search.data?.profileId, { mobile: mobileDigits });
-  } else if (isDemo) {
-    await ensureRoleFullVerified(db, authUid, role, search.data?.profileId, { mobile: mobileDigits });
-  }
-
+  const authUid = search.uid;
   try {
     await getAuth().getUser(authUid);
   } catch (e) {
     if (e.code === 'auth/user-not-found') {
-      if (isDemo) {
-        await getAuth().createUser({
-          uid: authUid,
-          email: `${role}.${mobileDigits}@doctornect.com`,
-          displayName: `Demo ${role}`,
-          emailVerified: true,
-        }).catch(() => {});
-      } else {
-        throw new HttpsError('not-found', 'No Firebase account found for this mobile number.');
-      }
+      throw new HttpsError('not-found', 'No Firebase account found for this mobile number.');
     } else {
       logInternalError('completeMobileOtpLogin', e, { authUid, stage: 'getUser' });
       throw new HttpsError('internal', GENERIC_MOBILE_LOGIN_FAILED);
@@ -3332,14 +2641,7 @@ async function lookupMobileRegistration(db, data) {
     throw new HttpsError('invalid-argument', 'Invalid lookup intent.');
   }
   const requestedRole = normalizeRole(data?.role || '');
-  const effectiveRole = requestedRole || 'doctor';
-  const isDemo = await isDemoPhone(digits, effectiveRole);
-  let search = await findUserByMobileDigits(db, digits);
-  if (!search.found && isDemo) {
-    try {
-      search = await ensureDemoAccount(db, digits, effectiveRole);
-    } catch (_) {}
-  }
+  const search = await findUserByMobileDigits(db, digits);
   const conflict = resolveMobileLookupConflict({
     found: search.found,
     registeredRole: search.role,
@@ -3394,29 +2696,18 @@ module.exports = {
   resetLoginAttempts,
   hashAmbulancePin,
   ambulancePinMatches,
-  isPlayReviewMobileInput,
   supabaseCompatibleCustomClaims,
-  isDemoMobileInput,
-  isDemoPhone,
-  isTestMode,
   normalizeRole,
   normalizeMobileDigits,
   verifyMsg91Otp,
   otpRedisKey,
   isOtpRedisMirrorEnabled,
   OTP_REDIS_TIMEOUT_MS,
-  getDemoConfig,
-  setDemoConfigDocForTesting,
-  resetDemoConfigCacheForTesting,
   allowLegacyUnsaltedOtpHash,
   legacyHashOtp,
   verifyChallengeOtpHash,
   enforceSendOtpRateLimits,
   enforceVerifyOtpRateLimits,
-  checkDemoVerifyFailureLimit,
-  recordDemoVerifyFailure,
-  DEMO_SEND_MAX,
-  DEMO_VERIFY_FAIL_MAX,
   getReviewerConfig,
   isReviewerPhone,
   checkReviewerRateLimit,

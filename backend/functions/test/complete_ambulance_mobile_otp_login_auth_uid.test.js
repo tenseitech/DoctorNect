@@ -5,7 +5,6 @@ const assert = require('node:assert/strict');
 const { HttpsError } = require('firebase-functions/v2/https');
 const {
   completeAmbulanceMobileOtpLogin,
-  setDemoConfigDocForTesting,
 } = require('../registration_otp');
 
 function createFakeDb(initialDocs = {}, { customQueryHandler } = {}) {
@@ -137,13 +136,6 @@ test.describe('completeAmbulanceMobileOtpLogin server-side authUid binding', () 
   const driverUid = 'driver-auth-uid-456';
   const ambDocId = 'amb-reg-1001';
 
-  test.beforeEach(() => {
-    setDemoConfigDocForTesting(null);
-  });
-
-  test.afterEach(() => {
-    setDemoConfigDocForTesting(undefined);
-  });
 
   function validSetup(overrides = {}) {
     return {

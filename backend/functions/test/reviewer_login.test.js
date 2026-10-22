@@ -9,17 +9,12 @@ const {
   checkReviewerRateLimit,
   resetReviewerRateLimitForTesting,
   consumeOtpChallengeAtomically,
-  setDemoConfigDocForTesting,
 } = require('../registration_otp');
 
 test.describe('Play Store Server-Side Reviewer Login Gating', () => {
   const origReviewNumbers = process.env.REVIEW_TEST_NUMBERS;
   const origReviewOtp = process.env.REVIEW_FIXED_OTP;
   const origReviewUntil = process.env.REVIEW_ACCESS_UNTIL;
-
-  test.beforeEach(() => {
-    setDemoConfigDocForTesting(null);
-  });
 
   test.afterEach(() => {
     if (origReviewNumbers === undefined) delete process.env.REVIEW_TEST_NUMBERS;
@@ -32,7 +27,6 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     else process.env.REVIEW_ACCESS_UNTIL = origReviewUntil;
 
     resetReviewerRateLimitForTesting();
-    setDemoConfigDocForTesting(undefined);
   });
 
   test('Case 1: Production Default is OFF (unset env vars disables reviewer bypass)', () => {
@@ -42,7 +36,7 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
 
     assert.equal(getReviewerConfig(), null, 'Reviewer config must be null when env vars are unset');
     assert.equal(isReviewerPhone('9999900001'), false, 'Allowlist check must return false when env is unset');
-    assert.equal(isReviewerPhone('7058809803'), false, 'Non-reviewer number must return false');
+    assert.equal(isReviewerPhone('9999900003'), false, 'Non-reviewer number must return false');
   });
 
   test('Case 2: Expired REVIEW_ACCESS_UNTIL disables reviewer bypass', () => {

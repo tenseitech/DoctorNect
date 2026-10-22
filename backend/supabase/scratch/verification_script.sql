@@ -1475,7 +1475,7 @@ BEGIN
         id, role, profile_id, display_name, email, mobile,
         profile_completed, verified, deactivated, status
     ) VALUES (
-        v_demo_doc_uid, 'doctor', v_demo_doc_id, 'Dr. Demo Doctor', 'demo_doctor_iso@doctornect.com', '7666892394',
+        v_demo_doc_uid, 'doctor', v_demo_doc_id, 'Dr. Demo Doctor', 'demo_doctor_iso@doctornect.com', '9999900002',
         TRUE, TRUE, FALSE, 'approved'
     )
     ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, profile_id = EXCLUDED.profile_id;
@@ -1484,7 +1484,7 @@ BEGIN
         doctor_id, owner_uid, name, email, mobile, specialization, qualification, experience_years, verified
     ) VALUES (
         v_demo_doc_id, v_demo_doc_uid, 'Dr. Demo Doctor', 'demo_doctor_iso@doctornect.com',
-        '7666892394', 'General Medicine', 'MBBS, MD', 10, TRUE
+        '9999900002', 'General Medicine', 'MBBS, MD', 10, TRUE
     );
 
     -- 2. Setup completely unlinked patient and doctor data
