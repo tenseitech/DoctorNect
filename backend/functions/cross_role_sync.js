@@ -1,3 +1,4 @@
+require('./firestore_forbidden_guard');
 'use strict';
 
 /**

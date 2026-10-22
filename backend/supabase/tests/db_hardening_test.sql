@@ -106,6 +106,11 @@ $$;
 -- 4. Verify find_auth_user(text) restricted to service_role with search_path = ''
 DO $$
 BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'find_auth_user') THEN
+        RAISE NOTICE '[PASS] 4. find_auth_user dropped completely in Phase F';
+        RETURN;
+    END IF;
+
     IF NOT EXISTS (
         SELECT 1 FROM pg_proc
         WHERE proname = 'find_auth_user'

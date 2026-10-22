@@ -506,9 +506,9 @@ END $$;
 -- Direct UPDATE on medical_stores.verified -> BLOCKED
 DO $$
 BEGIN
-    UPDATE public.medical_stores SET verified = TRUE WHERE store_id = 'ms_001';
+    UPDATE public.medical_stores SET verified = FALSE WHERE store_id = 'ms_001';
     -- Column lock trigger prevents changing verified
-    INSERT INTO phase_d_test_results VALUES (24, 'Column Lock: Direct UPDATE medical_stores verified locked', 'PASS', 'PASS', 'PASS');
+    INSERT INTO phase_d_test_results VALUES (24, 'Column Lock: Direct UPDATE medical_stores verified locked', '42501', 'PASSED', 'FAIL');
 EXCEPTION WHEN OTHERS THEN
     IF SQLSTATE = '42501' THEN
         INSERT INTO phase_d_test_results VALUES (24, 'Column Lock: Direct UPDATE medical_stores verified locked', '42501', SQLSTATE, 'PASS');
