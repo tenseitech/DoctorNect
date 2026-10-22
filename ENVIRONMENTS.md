@@ -152,6 +152,6 @@ node backend/scripts/purge_demo_test_data.js --confirm-prod-purge=doctornect-pro
 ```
 
 #### Targeted Demo Identifiers:
-- **Demo Phone Numbers:** `7666892394` (Doctor), `7058809803` (Patient), `9359503874` (Pharmacy), `9409858233` (Lab), `9307583929` (Ambulance), `9999988888` (Super Admin).
+- **Demo Phone Numbers:** `9999900002` (Doctor), `9999900001` (Patient), `9999900003` (Pharmacy), `9999900004` (Lab), `9999900005` (Ambulance), `9999988888` (Super Admin).
 - **Synthetic Test UIDs:** `demo_*`, `fb_uid_*`, `test_*`.
 - **Test Email Domains:** `*@test.com`, `*@doctornect.com` (demo prefixes).

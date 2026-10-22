@@ -3229,7 +3229,7 @@ In `backend/functions/registration_otp.js:2937, 2788`:
 ```javascript
 const profileId = knownProfileIds[mobileDigits] || `${meta.idPrefix}${mobileDigits}`;
 ```
-For doctors, medical stores, labs, and ambulances, `profileId` contains role-prefixed identifiers (e.g. `doc_7666892394`, `store_9876543210`, `lab_9876543210`, `amb_9876543210`), whereas `auth.uid` is an arbitrary Firebase Authentication UID.
+For doctors, medical stores, labs, and ambulances, `profileId` contains role-prefixed identifiers (e.g. `doc_9999900002`, `store_9876543210`, `lab_9876543210`, `amb_9876543210`), whereas `auth.uid` is an arbitrary Firebase Authentication UID.
 
 ### 6.2 Rules Lines Denied Due to UID vs ProfileId Discrepancy
 1. **Walk-in Appointment Create (`backend/firestore.rules:359`):**

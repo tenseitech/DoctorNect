@@ -324,17 +324,17 @@ Run these verification queries in Supabase SQL editor:
 -- 1. Verify 5 Google Play review demo accounts exist and are verified
 SELECT uid, role, mobile, verified, display_name 
 FROM users 
-WHERE mobile IN ('7058809803', '7666892394', '9359503874', '9409858233', '9307583929');
+WHERE mobile IN ('9999900001', '9999900002', '9999900003', '9999900004', '9999900005');
 
 -- 2. Verify Doctor profile is approved
 SELECT doctor_id, name, specialization, verified 
 FROM doctors 
-WHERE mobile = '7666892394';
+WHERE mobile = '9999900002';
 
 -- 3. Verify Ambulance private settings and PIN hash
 SELECT ambulance_id, pin_hash 
 FROM ambulance_private_settings 
-WHERE ambulance_id = '9307583929';
+WHERE ambulance_id = '9999900005';
 ```
 
 ---
