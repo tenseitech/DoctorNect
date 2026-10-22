@@ -1,3 +1,4 @@
+const { resolveCallerIdentity } = require('./caller_identity');
 'use strict';
 require('./firestore_forbidden_guard');
 
@@ -882,7 +883,6 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('appointments', q);
     await del('ambulance_requests', q);
     await del('ambulance_broadcasts', q);
-    await del('patient_safe', q);
     await del('patients', q);
   }
 
@@ -893,7 +893,6 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     await del('doctor_availability', q);
     await del('doctor_facilities', q);
     await del('doctor_education', q);
-    await del('doctor_directory', q);
     await del('doctor_blocked_dates', q);
     await del('patient_doctor_links', q);
     await del('patient_care_team', q);
@@ -987,37 +986,7 @@ async function cleanupUserSupabaseRows({ uid, role, profileId }) {
     }
   }
 
-  // TASK 1e: Delete auth.users row via dedicated admin fetch to remove PII
-  const userUuid = toUserUuid(uid);
-  if (userUuid) {
-    try {
-      const doFetch = _testingSupabaseFetch || fetch;
-      const authUrl = `${config.url}/auth/v1/admin/users/${encodeURIComponent(userUuid)}`;
-      const authResp = await doFetch(authUrl, {
-        method: 'DELETE',
-        headers: {
-          apikey: config.key,
-          Authorization: `Bearer ${config.key}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      // 404 is treated as success (users without auth.users row)
-      if (!authResp.ok && authResp.status !== 404) {
-        recordFailure('auth.users', { status: authResp.status });
-        logger.warn('deleteMyAccount: Failed to delete auth.users row', {
-          uidHash: hashKey(uid).slice(0, 16),
-          status: authResp.status,
-        });
-      }
-    } catch (authErr) {
-      recordFailure('auth.users', authErr);
-      logger.warn('deleteMyAccount: Failed to delete auth.users row', {
-        uidHash: hashKey(uid).slice(0, 16),
-        error: authErr?.message || 'unknown',
-      });
-    }
-  }
+  // TASK 1e: auth.users admin call removed (Firebase Auth is primary)
 
   return { skipped: false, failedSupabaseTables };
 }
@@ -1031,6 +1000,96 @@ async function deleteMyAccountHandler(uid) {
   const normalizedUid = String(uid || '').trim();
   if (!normalizedUid) {
     throw new HttpsError('unauthenticated', 'Authentication required.');
+  }
+
+  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+
+  if (isCutover) {
+    let profile = null;
+    try {
+      profile = await resolveCallerIdentity({ uid: normalizedUid, forceSupabase: true });
+    } catch (err) {
+      // User not found in Supabase
+    }
+
+    if (!profile) {
+      try {
+        await getAuth().deleteUser(normalizedUid);
+      } catch (err) {
+        if (err?.code !== 'auth/user-not-found') {
+          logger.error('deleteMyAccount auth cleanup failed for missing profile', {
+            uid: normalizedUid,
+            code: err?.code || 'unknown',
+          });
+          throw new HttpsError('internal', 'Could not delete account. Please try again.');
+        }
+      }
+      return { ok: true, alreadyDeleted: true };
+    }
+
+    const role = String(profile.role || '').trim();
+    const profileId = String(profile.profileId || profile.profile_id || '').trim();
+
+    // S3 cleanup
+    let failedS3Prefixes = [];
+    try {
+      const s3 = getS3Client();
+      const s3Prefixes = [];
+      if (profileId) {
+        if (role === 'doctor') s3Prefixes.push(`doctor_profiles/${profileId}/`);
+        if (role === 'patient') {
+          s3Prefixes.push(`patient_profiles/${profileId}/`);
+          s3Prefixes.push(`health_records/${profileId}/`);
+        }
+        if (role === 'lab') s3Prefixes.push(`lab_reports/${profileId}/`);
+        if (role === 'medicalStore' || role === 'medical') s3Prefixes.push(`pharmacy_licenses/${profileId}/`);
+        s3Prefixes.push(`promoted_ads/${profileId}/`);
+      }
+      s3Prefixes.push(`avatars/${normalizedUid}/`);
+      failedS3Prefixes = await cleanupUserS3Prefixes(s3, S3_BUCKET, s3Prefixes);
+    } catch (s3Err) {
+      logger.warn('deleteMyAccount S3 cleanup unexpected failure (soft-fail)', {
+        uid: normalizedUid,
+        message: s3Err?.message || 'unknown',
+      });
+    }
+
+    // Supabase row cleanup
+    let failedSupabaseTables = [];
+    try {
+      const supabaseCleanup = await cleanupUserSupabaseRows({
+        uid: normalizedUid,
+        role,
+        profileId,
+      });
+      failedSupabaseTables = supabaseCleanup.failedSupabaseTables || [];
+    } catch (sbErr) {
+      logger.warn('deleteMyAccount Supabase cleanup unexpected failure (soft-fail)', {
+        uid: normalizedUid,
+        message: sbErr?.message || 'unknown',
+      });
+    }
+
+    // Delete Firebase Auth user LAST
+    try {
+      await getAuth().deleteUser(normalizedUid);
+    } catch (authErr) {
+      if (authErr?.code !== 'auth/user-not-found') {
+        logger.error('deleteMyAccount Firebase Auth deletion failed', {
+          uid: normalizedUid,
+          code: authErr?.code || 'unknown',
+        });
+        throw new HttpsError('internal', 'Could not delete account. Please try again.');
+      }
+    }
+
+    return {
+      ok: true,
+      supabase: true,
+      failedS3Prefixes,
+      failedSupabaseTables,
+    };
   }
 
   const db = getFirestore();

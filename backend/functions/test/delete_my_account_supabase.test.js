@@ -2,12 +2,16 @@
 
 const { test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const { initializeApp, getApps } = require('firebase-admin/app');
+if (!getApps().length) initializeApp({ projectId: 'demo-delete-test' });
 
 const {
   cleanupUserSupabaseRows,
   cleanupUserRedisKeys,
+  deleteMyAccountHandler,
   setSupabaseFetchForTesting,
 } = require('../delete_my_account');
+const { setSupabaseClientForTesting } = require('../caller_identity');
 
 const UID = 'firebase_uid_patient_1';
 const USER_UUID = '11111111-2222-3333-4444-555555555555';
@@ -21,8 +25,11 @@ beforeEach(() => {
 
 afterEach(() => {
   setSupabaseFetchForTesting(null);
+  setSupabaseClientForTesting(null);
   delete process.env.SUPABASE_URL;
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  delete process.env.FIRESTORE_FORBIDDEN;
+  delete process.env.USE_SUPABASE_DB_DOCTOR_PATIENT;
 });
 
 test('cleanupUserSupabaseRows skips when secrets are absent', async () => {
@@ -81,6 +88,13 @@ test('cleanupUserSupabaseRows deletes patient graph using real table/column name
   assert.ok(paths.some((p) => p.includes('PATCH') && p.includes(`/razorpay_orders?user_uid=eq.${UID}`)));
   assert.ok(paths.some((p) => p.includes('DELETE') && p.includes(`/users?firebase_uid=eq.${UID}`)));
   assert.equal(paths.some((p) => p.includes(process.env.SUPABASE_SERVICE_ROLE_KEY) && p.includes('https://')), false);
+
+  // Assert views patient_safe and doctor_directory are NEVER deleted
+  assert.equal(paths.some((p) => p.includes('/patient_safe')), false, 'Views must not be in delete order');
+  assert.equal(paths.some((p) => p.includes('/doctor_directory')), false, 'Views must not be in delete order');
+
+  // Assert auth/v1/admin/users is NEVER called
+  assert.equal(paths.some((p) => p.includes('/auth/v1/admin/users')), false, 'Supabase Auth admin must not be called');
 });
 
 test('cleanupUserSupabaseRows records table failures without throwing', async () => {
@@ -99,58 +113,61 @@ test('cleanupUserSupabaseRows records table failures without throwing', async ()
   assert.ok(result.failedSupabaseTables.length > 0);
 });
 
-test('TASK 1e: deletes auth.users row via dedicated admin fetch on success', async () => {
-  const { toUserUuid } = require('../user_id_bridge');
-  const expectedUuid = toUserUuid(UID);
-  const calls = [];
+test('deleteMyAccountHandler runs with FIRESTORE_FORBIDDEN=1 without touching Firestore', async () => {
+  process.env.FIRESTORE_FORBIDDEN = '1';
+  process.env.USE_SUPABASE_DB_DOCTOR_PATIENT = 'true';
 
-  setSupabaseFetchForTesting(async (url, options) => {
-    calls.push({ url, method: options.method, headers: options.headers });
-    if (url.includes('/auth/v1/admin/users/')) {
-      return { ok: true, status: 200, text: async () => '{}' };
-    }
+  let firebaseAuthDeleted = false;
+  // Mock Firebase Admin getAuth
+  const { getAuth } = require('firebase-admin/auth');
+  const authInstance = getAuth();
+  const origDeleteUser = authInstance.deleteUser;
+  authInstance.deleteUser = async (uid) => {
+    assert.equal(uid, UID);
+    firebaseAuthDeleted = true;
+    return {};
+  };
+
+  // Mock Supabase service role client for caller_identity
+  const mockSupabase = {
+    from: (table) => {
+      if (table === 'users') {
+        return {
+          select: () => ({
+            or: () => ({
+              maybeSingle: async () => ({
+                data: {
+                  id: UID,
+                  firebase_uid: UID,
+                  role: 'patient',
+                  profile_id: PATIENT_ID,
+                  email: 'patient@example.com',
+                  mobile: '9876543210',
+                },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      throw new Error('Unexpected table ' + table);
+    },
+  };
+  setSupabaseClientForTesting(mockSupabase);
+
+  // Mock Supabase fetch for row cleanup
+  setSupabaseFetchForTesting(async () => {
     return { ok: true, status: 200, text: async () => '[]' };
   });
 
-  const result = await cleanupUserSupabaseRows({ uid: UID, role: 'patient', profileId: PATIENT_ID });
-  assert.equal(result.skipped, false);
-  assert.ok(!result.failedSupabaseTables.includes('auth.users'), 'auth.users should not be in failedSupabaseTables on success');
-
-  const authCall = calls.find((c) => c.url.includes('/auth/v1/admin/users/'));
-  assert.ok(authCall, 'Dedicated fetch to /auth/v1/admin/users/ must be made');
-  assert.equal(authCall.method, 'DELETE');
-  assert.equal(authCall.url, `https://example.supabase.co/auth/v1/admin/users/${expectedUuid}`);
-  assert.equal(authCall.headers.Authorization, 'Bearer service-role-test');
-});
-
-test('TASK 1e: treats 404 on auth.users deletion as success (user without auth row)', async () => {
-  let authCalled = false;
-
-  setSupabaseFetchForTesting(async (url, options) => {
-    if (url.includes('/auth/v1/admin/users/')) {
-      authCalled = true;
-      return { ok: false, status: 404, text: async () => '{"message":"User not found"}' };
-    }
-    return { ok: true, status: 200, text: async () => '[]' };
-  });
-
-  const result = await cleanupUserSupabaseRows({ uid: UID, role: 'patient', profileId: PATIENT_ID });
-  assert.equal(result.skipped, false);
-  assert.equal(authCalled, true);
-  assert.ok(!result.failedSupabaseTables.includes('auth.users'), '404 must be treated as success, not failure');
-});
-
-test('TASK 1e: surfaces 500 on auth.users deletion in failedSupabaseTables', async () => {
-  setSupabaseFetchForTesting(async (url, options) => {
-    if (url.includes('/auth/v1/admin/users/')) {
-      return { ok: false, status: 500, text: async () => '{"message":"Internal Server Error"}' };
-    }
-    return { ok: true, status: 200, text: async () => '[]' };
-  });
-
-  const result = await cleanupUserSupabaseRows({ uid: UID, role: 'patient', profileId: PATIENT_ID });
-  assert.equal(result.skipped, false);
-  assert.ok(result.failedSupabaseTables.includes('auth.users'), '500 on auth.users must be surfaced in failedSupabaseTables');
+  try {
+    const result = await deleteMyAccountHandler(UID);
+    assert.equal(result.ok, true);
+    assert.equal(result.supabase, true);
+    assert.equal(firebaseAuthDeleted, true, 'Firebase Auth user must be deleted last');
+  } finally {
+    authInstance.deleteUser = origDeleteUser;
+  }
 });
 
 test('cleanupUserRedisKeys removes keys when OTP_REDIS_MIRROR is on', async () => {
