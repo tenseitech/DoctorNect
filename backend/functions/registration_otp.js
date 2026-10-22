@@ -591,6 +591,72 @@ async function approveUserAccount(db, data, auth) {
     throw new HttpsError('invalid-argument', `${roleConfig.idField} is required.`);
   }
 
+  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+
+  if (isCutover) {
+    const { getSupabaseAdminClient } = require('./caller_identity');
+    const sb = getSupabaseAdminClient();
+    if (!sb) throw new HttpsError('internal', 'Supabase admin client not configured.');
+
+    const tableConfig = {
+      patient: { table: 'patients', idCol: 'patient_id', ownerCol: 'owner_uid' },
+      doctor: { table: 'doctors', idCol: 'doctor_id', ownerCol: 'owner_uid' },
+      lab: { table: 'labs', idCol: 'lab_id', ownerCol: 'owner_uid' },
+      medicalStore: { table: 'medical_stores', idCol: 'store_id', ownerCol: 'owner_uid' },
+      ambulance: { table: 'ambulances', idCol: 'ambulance_id', ownerCol: 'auth_uid' },
+    }[role];
+
+    const { data: roleRow, error: roleErr } = await sb
+      .from(tableConfig.table)
+      .select('*')
+      .eq(tableConfig.idCol, profileId)
+      .maybeSingle();
+
+    if (roleErr || !roleRow) {
+      throw new HttpsError('not-found', `${role} profile not found.`);
+    }
+
+    let ownerUid = String(roleRow[tableConfig.ownerCol] || '').trim();
+    if (!ownerUid) {
+      const { data: userRow } = await sb
+        .from('users')
+        .select('id, firebase_uid')
+        .or(`id.eq.${profileId},firebase_uid.eq.${profileId}`)
+        .maybeSingle();
+      ownerUid = String(userRow?.firebase_uid || userRow?.id || '').trim();
+    }
+    if (!ownerUid) {
+      throw new HttpsError('failed-precondition', `${role} ownerUid is missing.`);
+    }
+
+    const nowIso = new Date().toISOString();
+    await sb
+      .from(tableConfig.table)
+      .update({
+        verified: true,
+        status: 'active',
+        updated_at: nowIso,
+      })
+      .eq(tableConfig.idCol, profileId);
+
+    await sb
+      .from('users')
+      .update({
+        verified: true,
+        updated_at: nowIso,
+      })
+      .or(`id.eq.${ownerUid},firebase_uid.eq.${ownerUid}`);
+
+    const claims = supabaseCompatibleCustomClaims(role, { verified: true });
+    try {
+      await getAuth().setCustomUserClaims(ownerUid, claims);
+    } catch (claimErr) {
+      console.warn('[approveUserAccount] Failed to set custom claims:', claimErr?.message || claimErr);
+    }
+
+    return { ok: true, role, profileId, ownerUid, verified: true };
+  }
+
   const roleRef = db.collection(roleConfig.collection).doc(profileId);
   const roleSnap = await roleRef.get();
   if (!roleSnap.exists) {

@@ -1121,6 +1121,64 @@ async function reviewPromotedAdHandler(db, data, auth) {
     throw new HttpsError('permission-denied', 'Super admin access required.');
   }
 
+  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+
+  if (isCutover) {
+    const { getSupabaseAdminClient } = require('./caller_identity');
+    const sb = getSupabaseAdminClient();
+    if (!sb) throw new HttpsError('internal', 'Supabase client not configured.');
+
+    const { data: adData, error } = await sb
+      .from('promoted_ads')
+      .select('*')
+      .eq('ad_id', safeAdId)
+      .maybeSingle();
+
+    if (error || !adData) {
+      throw new HttpsError('not-found', 'Promoted ad document not found.');
+    }
+    if (adData.status !== 'pending_approval' && adData.status !== 'pending_review') {
+      throw new HttpsError(
+        'failed-precondition',
+        `Ad is not pending approval (status: ${adData.status}).`,
+      );
+    }
+
+    const providerId = String(adData.provider_id || '').trim();
+    const callerProfileId = String(userDoc.profileId || userDoc.profile_id || '').trim();
+    if (
+      providerId
+      && (providerId === auth.uid || (callerProfileId && providerId === callerProfileId))
+    ) {
+      throw new HttpsError('permission-denied', 'You cannot review your own promoted ad.');
+    }
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+    if (safeDecision === 'approve') {
+      const hours = parseInt(adData.duration_hours, 10);
+      if (!AD_PRICING_TABLE[hours]) {
+        throw new HttpsError('failed-precondition', 'Ad duration is invalid.');
+      }
+      const endTimeIso = new Date(now.getTime() + hours * 3600 * 1000).toISOString();
+      await sb.from('promoted_ads').update({
+        status: 'active',
+        start_time: nowIso,
+        end_time: endTimeIso,
+        updated_at: nowIso,
+      }).eq('ad_id', safeAdId);
+      return { ok: true, adId: safeAdId, status: 'active' };
+    }
+
+    await sb.from('promoted_ads').update({
+      status: 'rejected',
+      rejection_reason: safeReason || 'Rejected by admin',
+      updated_at: nowIso,
+    }).eq('ad_id', safeAdId);
+    return { ok: true, adId: safeAdId, status: 'rejected' };
+  }
+
   const adRef = db.collection('promotedAds').doc(safeAdId);
   const adSnap = await adRef.get();
   if (!adSnap.exists) {

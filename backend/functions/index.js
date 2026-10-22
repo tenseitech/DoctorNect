@@ -263,6 +263,46 @@ async function verifyAmbulanceCredentials(db, username, pin) {
     return { ok: false, invalidCredentials: true };
   }
 
+  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+
+  if (isCutover) {
+    const { getSupabaseAdminClient } = require('./caller_identity');
+    const sb = getSupabaseAdminClient();
+    if (!sb) return { ok: false, invalidCredentials: true };
+
+    const { data: amb } = await sb
+      .from('ambulances')
+      .select('*')
+      .ilike('username', username.trim().toLowerCase())
+      .maybeSingle();
+
+    if (!amb) {
+      return { ok: false, invalidCredentials: true };
+    }
+
+    const { data: priv } = await sb
+      .from('ambulance_private_settings')
+      .select('pin_hash')
+      .eq('ambulance_id', amb.ambulance_id)
+      .maybeSingle();
+
+    const storedPin = priv?.pin_hash;
+    if (!isAmbulancePinHash(storedPin)) {
+      return { ok: false, invalidCredentials: true, pinUpgradeRequired: !!storedPin };
+    }
+    if (!pinMatches(storedPin, pinNorm)) {
+      return { ok: false, invalidCredentials: true };
+    }
+
+    return {
+      ok: true,
+      driverId: amb.ambulance_id,
+      data: amb,
+      username: amb.username,
+    };
+  }
+
   const found = await findAmbulanceByUsername(db, username);
   if (!found) {
     return { ok: false, invalidCredentials: true };
@@ -1261,6 +1301,37 @@ exports.getAmbulanceInvite = onCall(
   }
   const inviteId = requireDocId(request.data?.inviteId, 'inviteId');
   const token = requireInviteToken(request.data?.token, 'token');
+
+  const { isDoctorPatientSupabasePrimary } = require('./sync_flags');
+  const isCutover = (await isDoctorPatientSupabasePrimary()) || process.env.FIRESTORE_FORBIDDEN === '1';
+
+  if (isCutover) {
+    const { getSupabaseAdminClient } = require('./caller_identity');
+    const sb = getSupabaseAdminClient();
+    if (!sb) throw new HttpsError('internal', 'Supabase admin client not configured.');
+
+    const { data: inv, error } = await sb
+      .from('ambulance_invites')
+      .select('*')
+      .eq('invite_id', inviteId)
+      .maybeSingle();
+
+    if (error || !inv) {
+      throw new HttpsError('not-found', 'Invite not found.');
+    }
+    if (String(inv.token || '') !== token) {
+      logUnusualTraffic(request, {
+        pattern: 'forbidden_resource',
+        detail: 'ambulance_invite_token_mismatch',
+        identifier: inviteId,
+      });
+      throw new HttpsError('permission-denied', 'Invalid invite link.');
+    }
+    if (String(inv.status || '') !== 'pending') {
+      throw new HttpsError('failed-precondition', 'This invite has already been used.');
+    }
+    return { ok: true, inviteId: inv.invite_id, invite: inv };
+  }
 
   const firestore = getFirestore();
   const snap = await firestore.collection('ambulance_invites').doc(inviteId).get();
