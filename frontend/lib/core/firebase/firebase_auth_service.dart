@@ -220,6 +220,7 @@ class FirebaseAuthService {
       await _applyProfile(profile, deferPatientProfile: true);
       await SessionExpiry.markAuthenticated();
       await LastLoginStore.save(expectedRole, cleanEmail);
+      await SupabaseBootstrap.refreshAndVerifySession(forceRefresh: true);
       return AuthSignInResult.ok(profile.role);
     } on FirebaseAuthException catch (e) {
       AuthRateLimiter.recordFailure('email_login', cleanEmail);
@@ -350,6 +351,7 @@ class FirebaseAuthService {
         expectedRole,
         profile.email.isNotEmpty ? profile.email : mobile,
       );
+      await SupabaseBootstrap.refreshAndVerifySession(forceRefresh: true);
       return AuthSignInResult.ok(profile.role);
     } on FirebaseFunctionsException catch (e) {
       AuthRateLimiter.recordFailure('otp_login', digits);
@@ -517,6 +519,7 @@ class FirebaseAuthService {
       await _applyProfile(profile);
       await SessionExpiry.markAuthenticated();
       await LastLoginStore.save(role, email);
+      await SupabaseBootstrap.refreshAndVerifySession(forceRefresh: true);
       return AuthSignInResult.ok(role);
     } on FirebaseAuthException catch (e) {
       return AuthSignInResult.fail(describeFirebaseAuthError(e));

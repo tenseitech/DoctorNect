@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../supabase/supabase_bootstrap.dart';
 import 'demo_auth_config.dart';
 import '../enums/user_type.dart';
 import '../session/ambulance_session.dart';
@@ -631,6 +632,9 @@ class RoleVerificationController extends ChangeNotifier {
       _rejectionReasons.remove(role);
     }
     _syncStoreVerificationFlag(role, stage.isVerified);
+    if (stage == VerificationStage.verified) {
+      SupabaseBootstrap.refreshAndVerifySession(forceRefresh: true);
+    }
     notifyListeners();
   }
 
