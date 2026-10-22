@@ -37,7 +37,7 @@ if (!EMULATOR_RUNNING) {
         await db.collection('users').doc(PROVIDER_UID).set({
           role: 'doctor',
           profileId: 'doc_123',
-          mobile: '7666892394',
+          mobile: '9888800002',
         });
         await db.collection('users').doc('other_provider_uid_2').set({
           role: 'doctor',
