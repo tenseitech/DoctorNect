@@ -1,3 +1,4 @@
+import '../../core/config/doctor_patient_cutover_flag.dart';
 import 'package:medibond/core/firebase/firestore_service.dart';
 
 import 'dart:async';
@@ -744,6 +745,27 @@ class SharedAppointmentsStore extends ChangeNotifier {
   ) async {
     final override = debugBookAppointmentOverride;
     if (override != null) return override(payload);
+
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      final res = await SupabasePatientRepository.instance.bookAppointment(
+        context: null,
+        appointmentId: payload['appointmentId'] as String? ?? 'app_${DateTime.now().millisecondsSinceEpoch}',
+        doctorId: payload['doctorId'] as String,
+        doctorName: payload['doctorName'] as String? ?? '',
+        specialization: payload['specialization'] as String? ?? '',
+        patientId: payload['patientId'] as String? ?? '',
+        patientName: payload['patientName'] as String? ?? '',
+        patientAge: payload['patientAge'] as int? ?? 30,
+        patientGender: payload['patientGender'] as String? ?? 'other',
+        dateTime: DateTime.tryParse(payload['dateTime'] as String? ?? '') ?? DateTime.now(),
+        slotLabel: payload['slotLabel'] as String? ?? '',
+        visitType: payload['visitType'] as String? ?? 'newVisit',
+        clinicName: payload['clinicName'] as String?,
+        clinicAddress: payload['clinicAddress'] as String?,
+      );
+      return res;
+    }
+
     if (!FirebaseBootstrap.isReady) {
       throw StateError(
         'Could not save appointment. Firebase is not available.',
@@ -762,6 +784,29 @@ class SharedAppointmentsStore extends ChangeNotifier {
   ) async {
     final override = debugRescheduleAppointmentOverride;
     if (override != null) return override(payload);
+
+    if (DoctorPatientCutoverFlag.isEnabled && SupabaseBootstrap.isReady) {
+      final appointmentId = payload['appointmentId'] as String;
+      final newDateStr = payload['newDate'] as String;
+      final newSlot = payload['newSlot'] as String;
+      final doctorId = payload['doctorId'] as String? ?? '';
+
+      final res = await SupabaseBootstrap.client.rpc(
+        'reschedule_appointment_atomic',
+        params: {
+          'p_appointment_id': appointmentId,
+          'p_doctor_id': doctorId,
+          'p_new_date': newDateStr,
+          'p_new_slot': newSlot,
+          'p_rescheduled_by': payload['rescheduledBy'] as String? ?? 'patient',
+          'p_reason': payload['reason'] as String?,
+        },
+      );
+      if (res is Map<String, dynamic>) return res;
+      if (res is Map) return Map<String, dynamic>.from(res);
+      return {'ok': true, 'appointmentId': appointmentId};
+    }
+
     if (!FirebaseBootstrap.isReady) {
       throw StateError(
         'Could not save appointment. Firebase is not available.',
