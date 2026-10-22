@@ -1,3 +1,6 @@
+import '../../../../core/config/doctor_patient_cutover_flag.dart';
+import '../../../../core/config/firestore_forbidden_guard.dart';
+import '../../../../core/supabase/supabase_bootstrap.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -62,6 +65,35 @@ class CommunityMedicineRepository {
   List<CommunityMedicine> get cached => List.unmodifiable(_cache);
 
   Future<void> fetchAll() async {
+    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
+        FirestoreForbiddenGuard.isForbidden;
+    if (useSupabase) {
+      if (SupabaseBootstrap.isReady) {
+        try {
+          final res = await SupabaseBootstrap.client
+              .from('community_medicines')
+              .select('id, name, dosage_unit, form, added_by_doctor_id')
+              .order('name', ascending: true)
+              .limit(_fetchLimit);
+          _cache
+            ..clear()
+            ..addAll((res as List).map((row) => CommunityMedicine(
+                  id: row['id']?.toString() ?? '',
+                  name: row['name']?.toString() ?? '',
+                  dosageUnit: row['dosage_unit']?.toString() ?? '',
+                  form: row['form']?.toString() ?? '',
+                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+                )));
+          return;
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('CommunityMedicineRepository.fetchAll Supabase failed: $e\n$st');
+          }
+        }
+      }
+      return;
+    }
+
     if (!FirebaseBootstrap.isReady) return;
     try {
       final query = FirebaseFirestore.instance

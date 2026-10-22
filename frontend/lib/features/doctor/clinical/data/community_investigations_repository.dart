@@ -1,3 +1,6 @@
+import '../../../../core/config/doctor_patient_cutover_flag.dart';
+import '../../../../core/config/firestore_forbidden_guard.dart';
+import '../../../../core/supabase/supabase_bootstrap.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -66,6 +69,49 @@ class CommunityInvestigationsRepository {
       List.unmodifiable(_bodyPartCache);
 
   Future<void> fetchAll() async {
+    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
+        FirestoreForbiddenGuard.isForbidden;
+    if (useSupabase) {
+      if (SupabaseBootstrap.isReady) {
+        try {
+          final results = await Future.wait([
+            SupabaseBootstrap.client.from('community_lab_tests').select('id, name, group_name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
+            SupabaseBootstrap.client.from('community_radiology').select('id, name, group_name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
+            SupabaseBootstrap.client.from('community_body_parts').select('id, name, added_by_doctor_id').order('name', ascending: true).limit(_fetchLimit),
+          ]);
+          _labCache
+            ..clear()
+            ..addAll((results[0] as List).map((row) => CommunityLabTest(
+                  id: row['id']?.toString() ?? '',
+                  name: row['name']?.toString() ?? '',
+                  group: row['group_name']?.toString() ?? '',
+                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+                )));
+          _radiologyCache
+            ..clear()
+            ..addAll((results[1] as List).map((row) => CommunityRadiologyTest(
+                  id: row['id']?.toString() ?? '',
+                  name: row['name']?.toString() ?? '',
+                  group: row['group_name']?.toString() ?? '',
+                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+                )));
+          _bodyPartCache
+            ..clear()
+            ..addAll((results[2] as List).map((row) => CommunityBodyPart(
+                  id: row['id']?.toString() ?? '',
+                  name: row['name']?.toString() ?? '',
+                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+                )));
+          return;
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('CommunityInvestigationsRepository.fetchAll Supabase failed: $e\n$st');
+          }
+        }
+      }
+      return;
+    }
+
     if (!FirebaseBootstrap.isReady) return;
     await Future.wait([
       _fetchLabTests(),

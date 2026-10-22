@@ -15,23 +15,18 @@ class BannerConfigModel {
   final String bannerNotice;
   final DateTime? updatedAt;
 
-  factory BannerConfigModel.fromFirestore(DocumentSnapshot doc) {
-    if (!doc.exists || doc.data() == null) {
-      return const BannerConfigModel();
-    }
-    final data = doc.data() as Map<String, dynamic>;
-
+  factory BannerConfigModel.fromMap(Map<String, dynamic> data) {
     DateTime? parseDate(dynamic val) {
       if (val is Timestamp) return val.toDate();
       if (val is String) return DateTime.tryParse(val);
       return null;
     }
 
-    final rawTiers = data['pricingTiers'] as Map<String, dynamic>?;
+    final rawTiers = data['pricingTiers'] ?? data['pricing_tiers'];
     final Map<int, int> tiers = {};
-    if (rawTiers != null) {
+    if (rawTiers is Map) {
       rawTiers.forEach((k, v) {
-        final hours = int.tryParse(k);
+        final hours = int.tryParse(k.toString());
         final price = (v as num?)?.toInt();
         if (hours != null && price != null) {
           tiers[hours] = price;
@@ -44,10 +39,17 @@ class BannerConfigModel {
       pricingTiers: tiers.isNotEmpty
           ? tiers
           : const {24: 300, 72: 750, 168: 1500, 720: 5000},
-      maxActiveBanners: (data['maxActiveBanners'] as num?)?.toInt() ?? 10,
-      bannerNotice: data['bannerNotice'] as String? ?? '',
-      updatedAt: parseDate(data['updatedAt']),
+      maxActiveBanners: (data['maxActiveBanners'] ?? data['max_active_banners'] as num?)?.toInt() ?? 10,
+      bannerNotice: (data['bannerNotice'] ?? data['banner_notice']) as String? ?? '',
+      updatedAt: parseDate(data['updatedAt'] ?? data['updated_at']),
     );
+  }
+
+  factory BannerConfigModel.fromFirestore(DocumentSnapshot doc) {
+    if (!doc.exists || doc.data() == null) {
+      return const BannerConfigModel();
+    }
+    return BannerConfigModel.fromMap(doc.data() as Map<String, dynamic>);
   }
 
   Map<String, dynamic> toMap() {

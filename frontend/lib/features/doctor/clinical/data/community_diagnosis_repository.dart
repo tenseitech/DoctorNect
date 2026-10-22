@@ -1,3 +1,6 @@
+import '../../../../core/config/doctor_patient_cutover_flag.dart';
+import '../../../../core/config/firestore_forbidden_guard.dart';
+import '../../../../core/supabase/supabase_bootstrap.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -32,6 +35,33 @@ class CommunityDiagnosisRepository {
   List<CommunityDiagnosis> get cached => List.unmodifiable(_cache);
 
   Future<void> fetchAll() async {
+    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
+        FirestoreForbiddenGuard.isForbidden;
+    if (useSupabase) {
+      if (SupabaseBootstrap.isReady) {
+        try {
+          final res = await SupabaseBootstrap.client
+              .from('community_diagnoses')
+              .select('id, text, added_by_doctor_id')
+              .order('text', ascending: true)
+              .limit(_fetchLimit);
+          _cache
+            ..clear()
+            ..addAll((res as List).map((row) => CommunityDiagnosis(
+                  id: row['id']?.toString() ?? '',
+                  text: row['text']?.toString() ?? '',
+                  addedByDoctorId: row['added_by_doctor_id']?.toString() ?? '',
+                )));
+          return;
+        } catch (e, st) {
+          if (kDebugMode) {
+            debugPrint('CommunityDiagnosisRepository.fetchAll Supabase failed: $e\n$st');
+          }
+        }
+      }
+      return;
+    }
+
     if (!FirebaseBootstrap.isReady) return;
     try {
       final query = FirebaseFirestore.instance
@@ -120,6 +150,27 @@ class CommunityDiagnosisRepository {
 
     final existing = findByText(trimmed);
     if (existing != null) return existing;
+
+    final bool useSupabase = DoctorPatientCutoverFlag.isEnabled ||
+        FirestoreForbiddenGuard.isForbidden;
+    if (useSupabase) {
+      if (SupabaseBootstrap.isReady) {
+        final res = await SupabaseBootstrap.client.from('community_diagnoses').insert({
+          'text': trimmed,
+          'text_lower': trimmed.toLowerCase(),
+          'added_by_doctor_id': doctorId,
+        }).select('id').maybeSingle();
+        final diagnosis = CommunityDiagnosis(
+          id: res?['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          text: trimmed,
+          addedByDoctorId: doctorId,
+        );
+        _cache.add(diagnosis);
+        _cache.sort((a, b) => a.text.toLowerCase().compareTo(b.text.toLowerCase()));
+        return diagnosis;
+      }
+      return null;
+    }
 
     if (!FirebaseBootstrap.isReady) {
       throw StateError('Internet is required to save a custom diagnosis.');

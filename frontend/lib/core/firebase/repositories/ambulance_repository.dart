@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../config/doctor_patient_cutover_flag.dart';
+import '../../supabase/supabase_bootstrap.dart';
 import '../../supabase/repositories/supabase_ambulance_repository.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
