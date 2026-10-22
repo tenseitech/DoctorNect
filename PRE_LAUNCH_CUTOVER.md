@@ -1,8 +1,8 @@
 # DoctorNect: Pre-Launch Clean Cutover Plan
 
-**Document Version:** 2.0.0 (Pre-Launch Simplification)  
+**Document Version:** 2.1.0 (Pre-Launch Hardening Complete)  
 **Target Architecture:** Firebase Auth + Supabase PostgreSQL ONLY + AWS S3 + Redis  
-**Scope:** Core 5 Modules (Doctor, Patient, Pharmacy, Lab, Ambulance)  
+**Scope:** Core 5 Modules (Doctor, Patient, Pharmacy, Lab, Ambulance) + Auth, Support, Payments, Storage  
 **Status:** Pre-Launch Preparation (Staging Verified $\rightarrow$ Direct Production Cutover)
 
 ---
@@ -12,15 +12,17 @@
 ### Zero Real Users & Test-Data-Only Baseline
 - There are **no real users** on the DoctorNect platform today; all existing records in Firestore and Supabase are synthetic test accounts or developer fixtures.
 - The **current Supabase project will directly become the production database** upon launch.
-- **No data migration** from Firestore to Supabase is required.
+- **No data migration** from Firestore to Supabase is required (`migrate_firestore_to_supabase.js` remains optional/test-data only).
 - **No temporary dual-write sync bridges** or dead-letter queues (DLQs) are required after cutover.
 
 ### Clean Target Architecture
-- **Authentication:** Firebase Authentication (JWT bearer tokens verified directly by Supabase via third-party auth).
+- **Authentication:** Firebase Authentication (JWT bearer tokens verified directly by Supabase via third-party auth, using `auth.jwt()->>'sub'`).
 - **Primary Database:** Supabase PostgreSQL ONLY. Cloud Firestore is completely retired for all 5 core modules.
 - **Object Storage:** AWS S3 (private bucket, presigned URLs for medical vault records, lab reports, profile photos, doctor KYC).
-- **In-Memory Cache / Rate Limiting:** Redis (OTP mirrors, sessions, rate limits).
+- **In-Memory Cache / Rate Limiting:** Redis ONLY (TTL-based OTP challenges, attempts, abuse limits; fails closed without Firestore fallback).
 - **Push Notifications:** Supabase Database Webhooks $\rightarrow$ Cloud Functions `supabaseDatabaseWebhook` $\rightarrow$ Firebase Cloud Messaging (FCM).
+- **Support Tickets & Realtime:** Supabase PostgreSQL `support_tickets` and `support_ticket_messages` tables with change signal + refetch watcher state machine.
+- **Payments:** Razorpay webhook handler writing to `razorpay_orders`, `razorpay_payments`, and `razorpay_webhook_events` with raw body HMAC verification and idempotent transaction execution.
 
 ```mermaid
 graph LR
@@ -34,28 +36,61 @@ graph LR
 
 ---
 
-## 2. Components To Be Retired & Removed
+## 2. Hardening & Security Milestones Completed
 
-Because Supabase will be the sole primary database and no live data migration is needed, four legacy sync layers are decommissioned:
+### 2.1 Firestore-Forbidden Test Mode (`FIRESTORE_FORBIDDEN=1`)
+- Implemented `backend/functions/firestore_forbidden_guard.js` and `frontend/lib/core/config/firestore_forbidden_guard.dart`.
+- When set, any attempted Firestore read or write throws immediately, proving zero covert Firestore dependencies in the Supabase-primary path.
 
-### 2.1 Dual-Write Sync Triggers (Firestore $\rightarrow$ Supabase)
-All 19 `onDocumentWritten` triggers in Cloud Functions that listened to Firestore writes and copied them to Supabase are eliminated. They added compute overhead, latency, and operational complexity that was only needed when legacy users were still writing to Firestore.
+### 2.2 Pure Redis OTP & Abuse Rate Limits
+- Under cutover flag ON or `RATE_LIMIT_BACKEND=redis`, `sendUserRegistrationOtp`, `consumeOtpChallengeAtomically`, and `assertOtpRateLimit` rely strictly on Redis TTL keys.
+- Eliminates Firestore fallback; fails closed (`HttpsError('unavailable')`) if Redis is unreachable.
+- Enforces 5 failed attempts lockout and atomic challenge consumption.
 
-### 2.2 Reverse Sync Function (Supabase $\rightarrow$ Firestore)
-The Supabase Edge Function `sync-to-firestore` and its companion database webhooks are eliminated. No data needs to be pushed back to Firestore because zero clients will read from Firestore in production.
+### 2.3 Server-Driven Firebase Custom Claims
+- `finalizePatientOtpVerification` and `approveUserAccount` write directly to Firebase Auth custom claims (`role=authenticated`, `app_role`) and PostgreSQL `users` table with zero dependency on Firestore `profile_claims` documents or triggers.
+- Client invokes `getIdToken(true)` upon login or registration approval to force instant token refresh.
 
-### 2.3 Loop-Guard & Sync-Origin Code
-The `sync_origin` metadata tagging (`'patient_supabase'`, `'firestore'`, `'reconciler_bot'`) and associated loop-prevention logic in triggers and write guards (`PatientWriteGuard`) are eliminated. Direct SQL queries and stored procedures execute without intermediate sync metadata tagging.
+### 2.4 Razorpay & Promoted Ads in PostgreSQL
+- Fully implemented PostgreSQL path in `promoted_ads.js`:
+  - `razorpay_orders` stores order metadata and `user_uid`.
+  - `razorpay_payments` stores confirmed transaction records with UNIQUE `payment_id`.
+  - `razorpay_webhook_events` enforces idempotent processing with UNIQUE `event_id`.
+  - Ad activation only succeeds after verified amount, currency, and ownership checks.
+  - Verified by 11 Webhook Security tests + Docker PostgreSQL integration test.
 
-### 2.4 Dual-Path Notification Gating
-Previously, notifications could originate either from Firestore triggers (`notifyDoctorOnAppointmentCreated`, `notifyDoctorOnReferralCreated`, `notifyPatientOnAppointmentStatusChanged`) or from Supabase webhooks (`supabaseDatabaseWebhook`), gated by `isDoctorPatientSupabasePrimary()`.  
-Under the clean cutover, notifications originate **exclusively from Supabase database webhooks**. The old Firestore triggers and gating logic are retired.
+### 2.5 Support Tickets Dual-Mode & Realtime Watcher
+- `help_support_screen.dart`, `support_tickets_history_screen.dart`, and `support_ticket_chat_screen.dart` delegate to `SupportTicketSupabaseRepository` when the cutover flag is enabled.
+- Realtime updates use change-signal + refetch pattern via `SupabaseWatcherStateMachine`.
+- Verified by unit and watcher state machine tests.
+
+### 2.6 Full Dependency-Ordered Account Deletion
+- `delete_my_account.js` executes strict deletion ordering against PostgreSQL foreign key constraints:
+  1. `pharmacy_delivery_medicines` & `pharmacy_deliveries`
+  2. `lab_orders`, `lab_bookings`, `lab_connections`
+  3. `pharmacy_connections`
+  4. `referrals`
+  5. `prescription_medicines`, `prescription_investigations`, `prescription_referrals`, `prescriptions`
+  6. `health_records`, `family_members`, `review_votes`, `reviews`, `patient_doctor_links`, `patient_care_team`, `appointments`, `ambulance_requests`, `ambulance_broadcasts`, `patient_safe`, `patients`
+  7. `doctor_private`, `doctor_availability`, `doctor_facilities`, `doctor_education`, `doctor_directory`, `doctor_blocked_dates`, `doctors`
+  8. `medical_stores`, `labs`, `ambulances`, `ambulance_private_settings`, `ambulance_invites`, `ambulance_locations`
+  9. `support_ticket_messages`, `support_tickets`, `user_devices`, `in_app_notifications`
+  10. Anonymize `razorpay_orders` (`user_uid = null`)
+  11. Delete `users` row
+  12. S3 user prefix & report deletion
+  13. Redis key cleanup
+  14. Firebase Auth user deletion (`getAuth().deleteUser(uid)`) last.
+- Verified by schema reflection against `information_schema.columns` and Docker PostgreSQL integration tests.
+
+### 2.7 Supabase Auth Leftovers & Dashboard Steps
+- `auth-otp` Edge function deleted from repository.
+- `backend/supabase/scratch/` deleted.
+- `seed_demo_accounts.js` guarded with a strict production environment blocker.
+- Dashboard configuration steps documented in `docs/SUPABASE_AUTH_AUDIT.md`.
 
 ---
 
 ## 3. Two-Step Cutover & Separate Commit Sequence
-
-To guarantee safety and reviewability, the cutover follows a strict two-stage process:
 
 ```mermaid
 flowchart TD
@@ -84,9 +119,7 @@ flowchart TD
 
 ## 4. Comprehensive File Inventory (Deletions & Modifications)
 
-Below is the complete, explicit inventory of all files to be deleted or changed during the Stage 2 cutover commit.
-
-### 4.1 Files To Be Deleted
+### 4.1 Files To Be Deleted in Stage 2
 
 | # | File Path | Purpose / Reason for Deletion |
 |---|---|---|
@@ -122,7 +155,7 @@ Below is the complete, explicit inventory of all files to be deleted or changed 
 | 30 | `frontend/lib/core/firebase/repositories/lab_order_repository.dart` | Legacy Firestore lab orders repository |
 | 31 | `frontend/lib/core/firebase/repositories/ambulance_repository.dart` | Legacy Firestore ambulance repository |
 
-### 4.2 Files To Be Modified
+### 4.2 Files To Be Modified in Stage 2
 
 | # | File Path | Description of Changes |
 |---|---|---|
@@ -135,26 +168,6 @@ Below is the complete, explicit inventory of all files to be deleted or changed 
 | 7 | `frontend/lib/features/patient/records/add_record_screen.dart` | Remove cutover flag check; call `SupabasePatientRepository.instance.addHealthRecord` directly. |
 | 8 | `frontend/lib/core/notifications/patient_notification_prefs_sync.dart` | Remove cutover flag branching; sync preferences directly to Supabase `patients.notification_preferences`. |
 | 9 | `backend/firestore.rules` | Lock down all 5 module collections: `match /{document=**} { allow read, write: if false; }`. |
-
-### 4.3 External Consumer & Admin App Dependency Analysis
-
-Before executing the deletions or locking Firestore rules in Stage 2, evaluate the following external dependencies:
-
-1. **Separate Admin App / Portal:**
-   - **Doctor Verifications (`doctors` / `doctor_verification`):** If an external Admin portal currently verifies doctors by writing `{ verified: true }` directly to Firestore collection `doctors/{id}`, deleting `exports.syncDoctorsToSupabase` will stop those verifications from propagating to Supabase. The Admin portal must either:
-     - Connect directly to Supabase via PostgREST / Supabase Client using a Service Role key or `super_admins` credentials.
-     - Call an authenticated admin Cloud Function / RPC that updates PostgreSQL directly.
-   - **Promoted Ads Approval (`promoted_ads`):** The Admin portal must review and update ads in Supabase table `promoted_ads` (status transitions: `pending_approval` $\rightarrow$ `active` or `rejected`).
-   - **Support Tickets & System Alerts (`support_tickets`, `ticket_messages`):** Admin oversight must query PostgreSQL tables `support_tickets` and `mail_queue` (which enforce `is_super_admin(auth.jwt()->>'sub')`).
-
-2. **Firestore Rules Lockdown (`backend/firestore.rules`):**
-   - Setting `match /{document=**} { allow read, write: if false; }` blocks **all** web/mobile clients using the Firebase Client SDK.
-   - Backend services using the Firebase Admin SDK (Node.js) are **not** affected by Firestore rules (Admin SDK bypasses security rules).
-   - If an Admin Web Dashboard uses Firebase Client SDK with Firestore rules, it must be migrated to Supabase before locking rules.
-
-3. **Supabase $\rightarrow$ Firestore Sync Functions (`sync-to-firestore` Edge Function & Worker):**
-   - Deleting `sync-to-firestore` means Firestore will receive no new appointments, prescriptions, or patient data.
-   - Any analytics pipeline or third-party service reading from Firestore must be pointed to PostgreSQL / Supabase replicas.
 
 ---
 

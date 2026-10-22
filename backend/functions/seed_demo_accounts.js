@@ -1,3 +1,15 @@
+// PRODUCTION GUARD: Demo seeding is strictly forbidden in production environments
+if (
+  process.env.NODE_ENV === 'production' ||
+  process.env.ENVIRONMENT === 'production' ||
+  process.env.APP_ENV === 'production' ||
+  process.env.FIREBASE_ENV === 'production' ||
+  process.env.SUPABASE_ENV === 'production'
+) {
+  console.error('[SECURITY FATAL] Refusing to run seed_demo_accounts: Strictly forbidden in production environments.');
+  process.exit(1);
+}
+
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
