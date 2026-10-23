@@ -313,12 +313,14 @@ service cloud.firestore {
     }
 
     // Only patient starts verified. Professional/service roles (doctor, pharmacy, lab, ambulance)
-    // start unverified until Super Admin approval.
+    // start unverified until Super Admin approval. Client cannot self-approve or self-complete profile on create.
     function registrationVerifiedFieldsValid() {
       return request.resource.data.get('role', '') == 'patient'
         || (
           (!('verified' in request.resource.data) || request.resource.data.verified == false)
           && (!('verificationStatus' in request.resource.data) || request.resource.data.verificationStatus in ['registered', 'profile_incomplete'])
+          && (!('status' in request.resource.data) || request.resource.data.status in ['pending_review', 'pending', 'registered', 'profile_incomplete'])
+          && (!('profileCompleted' in request.resource.data) || request.resource.data.profileCompleted == false)
           && !('verifiedAt' in request.resource.data)
         );
     }

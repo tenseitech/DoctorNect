@@ -799,3 +799,111 @@ test('(5) cross-role claim: owner of that doctor doc claiming role doctor -> all
   );
 });
 
+test('(6) registrationVerifiedFieldsValid: doctor attempting to self-approve status on create is denied', async () => {
+  const uid = 'uid_doctor_self_approve';
+  const profileId = 'd_doctor_self_approve_1';
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'doctor',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'doctor',
+    profileId,
+    displayName: 'Dr. Hack',
+    status: 'approved', // Malicious self-approval attempt
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('doctors').doc(profileId), {
+    doctorId: profileId,
+    ownerUid: uid,
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'approved',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+
+  await assertFails(batch.commit());
+});
+
+test('(7) registrationVerifiedFieldsValid: doctor attempting to set profileCompleted: true on create is denied', async () => {
+  const uid = 'uid_doctor_self_complete';
+  const profileId = 'd_doctor_self_complete_1';
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'doctor',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'doctor',
+    profileId,
+    displayName: 'Dr. Complete',
+    status: 'pending_review',
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    profileCompleted: true, // Malicious self-complete attempt
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('doctors').doc(profileId), {
+    doctorId: profileId,
+    ownerUid: uid,
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: true,
+    createdAt: new Date(),
+  });
+
+  await assertFails(batch.commit());
+});
+
+test('(8) registrationVerifiedFieldsValid: doctor attempting to set verified: true on create is denied', async () => {
+  const uid = 'uid_doctor_self_verify';
+  const profileId = 'd_doctor_self_verify_1';
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'doctor',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'doctor',
+    profileId,
+    displayName: 'Dr. Verified',
+    status: 'pending_review',
+    verified: true, // Malicious self-verify attempt
+    verificationStatus: 'profile_incomplete',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('doctors').doc(profileId), {
+    doctorId: profileId,
+    ownerUid: uid,
+    verified: true,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+
+  await assertFails(batch.commit());
+});
+

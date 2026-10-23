@@ -260,7 +260,7 @@ class UserRepository {
       ),
       if (data['mobile'] is String) 'mobile': data['mobile'],
       if (data['phone'] is String) 'mobile': data['phone'],
-      if (expectedRole == UserType.doctor &&
+      if (kDebugMode && expectedRole == UserType.doctor &&
           DemoAuthConfig.isDemoDoctorPhone(
             data['mobile'] as String? ?? data['phone'] as String?,
           )) ...{

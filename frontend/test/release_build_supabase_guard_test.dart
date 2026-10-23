@@ -61,4 +61,122 @@ void main() {
       );
     });
   });
+
+  group('Behavioral Release Build Process Execution Tests (--dry-run)', () {
+    bool isBashAvailable() {
+      try {
+        final res = Process.runSync('bash', ['-c', 'echo ready']);
+        return res.exitCode == 0 && res.stdout.toString().contains('ready');
+      } catch (_) {
+        return false;
+      }
+    }
+
+    bool isPowershellAvailable() {
+      try {
+        final cmd = Platform.isWindows ? 'powershell' : 'pwsh';
+        final res = Process.runSync(cmd, ['-NoProfile', '-Command', 'echo ready']);
+        return res.exitCode == 0 && res.stdout.toString().contains('ready');
+      } catch (_) {
+        return false;
+      }
+    }
+
+    test('PowerShell release_build.ps1 behavioral test', () async {
+      if (!isPowershellAvailable()) {
+        print('Skipping [PowerShell release_build.ps1 behavioral test]: powershell/pwsh is not available on this platform');
+        return;
+      }
+
+      final pwshCmd = Platform.isWindows ? 'powershell' : 'pwsh';
+      final baseEnv = {
+        'FIREBASE_API_KEY_ANDROID': 'dummy_android_key_123',
+        'ENABLE_SUPABASE': '',
+        'SUPABASE_URL': '',
+        'SUPABASE_ANON_KEY': '',
+        'SUPABASE_SERVICE_ROLE_KEY': '',
+      };
+
+      // (a) ENABLE_SUPABASE unset -> exit 0 and output does NOT contain SUPABASE_URL
+      final resA = await Process.run(
+        pwshCmd,
+        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun'],
+        environment: baseEnv,
+      );
+      expect(resA.exitCode, 0, reason: 'Script must succeed with code 0 on valid dry-run: ${resA.stderr}');
+      expect(resA.stdout.toString().contains('--dart-define=SUPABASE_URL='), isFalse, reason: 'SUPABASE_URL define must not be injected when unset');
+
+      // (b) ENABLE_SUPABASE=1 and SUPABASE_URL missing -> non-zero exit
+      final resB = await Process.run(
+        pwshCmd,
+        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun'],
+        environment: {
+          ...baseEnv,
+          'ENABLE_SUPABASE': '1',
+          'SUPABASE_URL': '',
+          'SUPABASE_ANON_KEY': '',
+        },
+      );
+      expect(resB.exitCode, isNot(0), reason: 'Missing SUPABASE_URL must fail with non-zero exit');
+
+      // (c) SUPABASE_SERVICE_ROLE_KEY present -> non-zero exit
+      final resC = await Process.run(
+        pwshCmd,
+        ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/release_build.ps1', '-DryRun'],
+        environment: {
+          ...baseEnv,
+          'SUPABASE_SERVICE_ROLE_KEY': 'leak_service_role_key_value',
+        },
+      );
+      expect(resC.exitCode, isNot(0), reason: 'SUPABASE_SERVICE_ROLE_KEY leakage must fail with non-zero exit');
+    });
+
+    test('Bash release_build.sh behavioral test', () async {
+      if (!isBashAvailable()) {
+        print('Skipping [Bash release_build.sh behavioral test]: bash is not available or non-functional on this platform');
+        return;
+      }
+
+      final baseEnv = {
+        'FIREBASE_API_KEY_ANDROID': 'dummy_android_key_123',
+        'ENABLE_SUPABASE': '',
+        'SUPABASE_URL': '',
+        'SUPABASE_ANON_KEY': '',
+        'SUPABASE_SERVICE_ROLE_KEY': '',
+      };
+
+      // (a) ENABLE_SUPABASE unset -> exit 0 and output does NOT contain SUPABASE_URL
+      final resA = await Process.run(
+        'bash',
+        ['scripts/release_build.sh', '--dry-run'],
+        environment: baseEnv,
+      );
+      expect(resA.exitCode, 0, reason: 'Script must succeed with code 0 on valid dry-run: ${resA.stderr}');
+      expect(resA.stdout.toString().contains('--dart-define=SUPABASE_URL='), isFalse, reason: 'SUPABASE_URL define must not be injected when unset');
+
+      // (b) ENABLE_SUPABASE=1 and SUPABASE_URL missing -> non-zero exit
+      final resB = await Process.run(
+        'bash',
+        ['scripts/release_build.sh', '--dry-run'],
+        environment: {
+          ...baseEnv,
+          'ENABLE_SUPABASE': '1',
+          'SUPABASE_URL': '',
+          'SUPABASE_ANON_KEY': '',
+        },
+      );
+      expect(resB.exitCode, isNot(0), reason: 'Missing SUPABASE_URL must fail with non-zero exit');
+
+      // (c) SUPABASE_SERVICE_ROLE_KEY present -> non-zero exit
+      final resC = await Process.run(
+        'bash',
+        ['scripts/release_build.sh', '--dry-run'],
+        environment: {
+          ...baseEnv,
+          'SUPABASE_SERVICE_ROLE_KEY': 'leak_service_role_key_value',
+        },
+      );
+      expect(resC.exitCode, isNot(0), reason: 'SUPABASE_SERVICE_ROLE_KEY leakage must fail with non-zero exit');
+    });
+  });
 }

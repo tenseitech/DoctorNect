@@ -394,5 +394,55 @@ void main() {
 
       expect(repaired, isNull);
     });
+
+
+    test('(i) role doc ka ownerUid kisi aur uid ka ho, repair null return kare aur users/{uid} na bane', () async {
+      when(() => mockUser.uid).thenReturn('attacker_uid_111');
+      when(() => mockUser.email).thenReturn('attacker@example.com');
+
+      // Patient doc belongs to victim_uid_999
+      await fakeDb.collection('patients').doc('patient_victim_001').set({
+        'patientId': 'patient_victim_001',
+        'ownerUid': 'victim_uid_999',
+        'name': 'Victim Patient',
+        'email': 'victim@example.com',
+        'mobile': '9111111111',
+        'profileCompleted': true,
+      });
+
+      final repaired = await UserRepository.instance.repairMissingProfile(
+        user: mockUser,
+        expectedRole: UserType.patient,
+      );
+
+      expect(repaired, isNull);
+      final attackerUserDoc = await fakeDb.collection('users').doc('attacker_uid_111').get();
+      expect(attackerUserDoc.exists, isFalse);
+    });
+
+    test('(ii) user ka role doc patients mein ho par expectedRole doctor ho, null return kare aur users/{uid} na bane', () async {
+      when(() => mockUser.uid).thenReturn('cross_role_uid_222');
+      when(() => mockUser.email).thenReturn('cross@example.com');
+
+      // User has a legitimate patient doc
+      await fakeDb.collection('patients').doc('patient_cross_002').set({
+        'patientId': 'patient_cross_002',
+        'ownerUid': 'cross_role_uid_222',
+        'name': 'Cross Role User',
+        'email': 'cross@example.com',
+        'mobile': '9222222222',
+        'profileCompleted': true,
+      });
+
+      // Attacker asks to repair as doctor
+      final repaired = await UserRepository.instance.repairMissingProfile(
+        user: mockUser,
+        expectedRole: UserType.doctor,
+      );
+
+      expect(repaired, isNull);
+      final userDoc = await fakeDb.collection('users').doc('cross_role_uid_222').get();
+      expect(userDoc.exists, isFalse);
+    });
   });
 }
