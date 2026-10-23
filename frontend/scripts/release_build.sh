@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
 # Auto-increment versionCode in pubspec.yaml, then build a Play Store release AAB.
-# Run from project root: ./scripts/release_build.sh
+# Run from frontend root: ./scripts/release_build.sh
+#
+# Supabase Cutover Release:
+#   To build a cutover release with Supabase connectivity enabled, pass ENABLE_SUPABASE=1:
+#     ENABLE_SUPABASE=1 ./scripts/release_build.sh
+#   Requires SUPABASE_URL and SUPABASE_ANON_KEY to be set in .env or shell environment.
+#   NEVER set SUPABASE_SERVICE_ROLE_KEY in client environment (build will fail).
 #
 # Optional:
 #   --dry-run         Preview the next versionCode and build command without changing pubspec or building
 #   --skip-increment  Build with the current versionCode (no pubspec change)
+#   --allow-staging   Allow staging Supabase URL during build verification
 
 set -euo pipefail
 
 DRY_RUN=0
 SKIP_INCREMENT=0
+ALLOW_STAGING=0
 
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=1 ;;
     --skip-increment) SKIP_INCREMENT=1 ;;
+    --allow-staging) ALLOW_STAGING=1 ;;
     *)
       echo "Unknown argument: $arg" >&2
-      echo "Usage: $0 [--dry-run] [--skip-increment]" >&2
+      echo "Usage: $0 [--dry-run] [--skip-increment] [--allow-staging]" >&2
       exit 1
       ;;
   esac
@@ -106,22 +115,53 @@ EOF
     DART_DEFINES+=(--dart-define=RECAPTCHA_SITE_KEY="$RECAPTCHA_SITE_KEY")
   fi
 
+  # Guard: SUPABASE_SERVICE_ROLE_KEY must NEVER be present in client release build environment
+  if [[ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
+    echo "SECURITY ERROR: SUPABASE_SERVICE_ROLE_KEY detected in environment. Service role keys must NEVER be present during client builds." >&2
+    exit 1
+  fi
+
   # Never pass USE_SUPABASE_AUTH. Inject Supabase compile-time config only when
   # ENABLE_SUPABASE=1 is set explicitly for this release.
   if [[ "${ENABLE_SUPABASE:-}" == "1" ]]; then
     echo "WARNING: ENABLE_SUPABASE=1 — injecting SUPABASE_URL and SUPABASE_ANON_KEY dart-defines into this release build." >&2
+    if [[ -z "${SUPABASE_URL:-}" ]]; then
+      echo "Missing required environment variable: SUPABASE_URL (required when ENABLE_SUPABASE=1)" >&2
+      exit 1
+    fi
+    if [[ -z "${SUPABASE_ANON_KEY:-}" ]]; then
+      echo "Missing required environment variable: SUPABASE_ANON_KEY (required when ENABLE_SUPABASE=1)" >&2
+      exit 1
+    fi
+    DART_DEFINES+=(--dart-define=SUPABASE_URL="$SUPABASE_URL")
+    DART_DEFINES+=(--dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY")
+  fi
+}
+
+validate_production_build_config() {
+  local validator="$SCRIPT_DIR/verify_production_build_config.js"
+  if [[ ! -f "$validator" ]]; then
+    validator="$PROJECT_ROOT/../backend/scripts/verify_production_build_config.js"
+  fi
+  if [[ -f "$validator" ]]; then
+    local validator_args=("$validator" "--client-only")
+    if [[ "$ALLOW_STAGING" -eq 1 || "${ALLOW_STAGING_BUILD:-}" == "true" ]]; then
+      validator_args+=("--allow-staging")
+    fi
     if [[ -n "${SUPABASE_URL:-}" ]]; then
-      DART_DEFINES+=(--dart-define=SUPABASE_URL="$SUPABASE_URL")
+      validator_args+=("--supabase-url=$SUPABASE_URL")
     fi
     if [[ -n "${SUPABASE_ANON_KEY:-}" ]]; then
-      DART_DEFINES+=(--dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY")
+      validator_args+=("--supabase-anon-key=$SUPABASE_ANON_KEY")
     fi
+    node "${validator_args[@]}"
   fi
 }
 
 cd "$PROJECT_ROOT"
 import_dotenv "$PROJECT_ROOT/.env"
 build_dart_defines
+validate_production_build_config
 read_version
 
 CURRENT_VERSION_CODE="$VERSION_CODE"

@@ -1,9 +1,16 @@
 # Auto-increment versionCode in pubspec.yaml, then build a Play Store release AAB.
-# Run from project root: .\scripts\release_build.ps1
+# Run from frontend root: .\scripts\release_build.ps1
+#
+# Supabase Cutover Release:
+#   To build a cutover release with Supabase connectivity enabled, pass ENABLE_SUPABASE=1:
+#     $env:ENABLE_SUPABASE="1"; .\scripts\release_build.ps1
+#   Requires SUPABASE_URL and SUPABASE_ANON_KEY to be set in .env or shell environment.
+#   NEVER set SUPABASE_SERVICE_ROLE_KEY in client environment (build will fail).
 #
 # Optional:
 #   -DryRun          Preview the next versionCode and build command without changing pubspec or building
-#   -SkipIncrement    Build with the current versionCode (no pubspec change)
+#   -SkipIncrement   Build with the current versionCode (no pubspec change)
+#   -AllowStaging    Allow staging Supabase URL during build verification
 
 [CmdletBinding()]
 param(
@@ -81,20 +88,25 @@ Set FIREBASE_API_KEY_ANDROID in project root .env (not functions/.env), or expor
         }
     }
 
+    # Guard: SUPABASE_SERVICE_ROLE_KEY must NEVER be present in client release build environment
+    if (-not [string]::IsNullOrWhiteSpace($env:SUPABASE_SERVICE_ROLE_KEY)) {
+        throw "SECURITY ERROR: SUPABASE_SERVICE_ROLE_KEY detected in environment. Service role keys must NEVER be present during client builds."
+    }
+
     # Never pass USE_SUPABASE_AUTH. Inject Supabase compile-time config only when
     # ENABLE_SUPABASE=1 is set explicitly for this release.
     if ($env:ENABLE_SUPABASE -eq '1') {
         Write-Host 'WARNING: ENABLE_SUPABASE=1 — injecting SUPABASE_URL and SUPABASE_ANON_KEY dart-defines into this release build.' -ForegroundColor Yellow
-        foreach ($name in @('SUPABASE_URL', 'SUPABASE_ANON_KEY')) {
-            $item = Get-Item -Path "Env:$name" -ErrorAction SilentlyContinue
-            if ($null -eq $item) {
-                continue
-            }
-            $value = $item.Value
-            if (-not [string]::IsNullOrWhiteSpace($value)) {
-                $defines.Add("--dart-define=$name=$value")
-            }
+        
+        if ([string]::IsNullOrWhiteSpace($env:SUPABASE_URL)) {
+            throw "Missing required environment variable: SUPABASE_URL (required when ENABLE_SUPABASE=1)"
         }
+        if ([string]::IsNullOrWhiteSpace($env:SUPABASE_ANON_KEY)) {
+            throw "Missing required environment variable: SUPABASE_ANON_KEY (required when ENABLE_SUPABASE=1)"
+        }
+
+        $defines.Add("--dart-define=SUPABASE_URL=$($env:SUPABASE_URL)")
+        $defines.Add("--dart-define=SUPABASE_ANON_KEY=$($env:SUPABASE_ANON_KEY)")
     }
 
     return ,$defines.ToArray()
