@@ -186,15 +186,15 @@ test.describe('P0 Demo Bypass Removal & Reviewer-Only Fixed OTP Guard', () => {
     assert.equal(isReviewerPhone('9999900001'), false, 'isReviewerPhone must be false when expired');
   });
 
-  test('6. Reviewer rate limit enforces maximum 5 attempts', () => {
+  test('6. Reviewer rate limit enforces maximum 5 attempts', async () => {
     process.env.REVIEW_TEST_NUMBERS = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-01-01T00:00:00Z';
 
     const phone = '9999900001';
     for (let i = 1; i <= 5; i++) {
-      assert.equal(checkReviewerRateLimit(phone), true, `Attempt ${i} must be allowed`);
+      assert.equal(await checkReviewerRateLimit(phone), true, `Attempt ${i} must be allowed`);
     }
-    assert.equal(checkReviewerRateLimit(phone), false, 'Attempt 6 must be blocked by rate limit');
+    assert.equal(await checkReviewerRateLimit(phone), false, 'Attempt 6 must be blocked by rate limit');
   });
 });

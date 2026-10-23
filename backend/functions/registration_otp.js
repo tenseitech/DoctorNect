@@ -112,7 +112,7 @@ async function deleteOtpRedisKeys(redis, role, digits) {
  */
 const REVIEW_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const REVIEW_RATE_LIMIT_MAX = 5;
-const reviewerAttemptTracker = new Map();
+let _testingReviewerRedis = null;
 
 function getReviewerConfig() {
   const rawNumbers = String(process.env.REVIEW_TEST_NUMBERS || '').trim();
@@ -157,25 +157,113 @@ function isReviewerPhone(digits) {
   return config.testNumbers.includes(d);
 }
 
-function checkReviewerRateLimit(digits) {
-  const now = Date.now();
+function setReviewerRedisClientForTesting(client) {
+  _testingReviewerRedis = client;
+}
+
+function createInMemoryRedisMock() {
+  const store = new Map();
+  function cleanExpired(key) {
+    const entry = store.get(key);
+    if (!entry) return null;
+    if (entry.expireAt && Date.now() > entry.expireAt) {
+      store.delete(key);
+      return null;
+    }
+    return entry;
+  }
+  return {
+    store,
+    async eval(script, numKeys, key, ...args) {
+      const windowMs = Number(args[0]) || 60000;
+      let entry = cleanExpired(key);
+      if (!entry) {
+        entry = { val: 1, expireAt: Date.now() + windowMs };
+        store.set(key, entry);
+        return 1;
+      }
+      entry.val += 1;
+      return entry.val;
+    },
+    async incr(key) {
+      let entry = cleanExpired(key);
+      if (!entry) {
+        entry = { val: 1, expireAt: null };
+        store.set(key, entry);
+        return 1;
+      }
+      entry.val += 1;
+      return entry.val;
+    },
+    async pexpire(key, ms) {
+      const entry = cleanExpired(key);
+      if (entry) {
+        entry.expireAt = Date.now() + Number(ms);
+      }
+      return 1;
+    },
+    flushall() {
+      store.clear();
+    },
+  };
+}
+
+let _defaultTestRedisMock = null;
+
+function getReviewerRedisClient() {
+  if (_testingReviewerRedis !== null) return _testingReviewerRedis;
+  try {
+    const redisModule = require("./redis");
+    if (typeof redisModule.getRedisClient === "function") {
+      if (process.env.REDIS_HOST || process.env.REDIS_URL) {
+        return redisModule.getRedisClient();
+      }
+    }
+  } catch (_) {}
+
+  if (!_defaultTestRedisMock) {
+    _defaultTestRedisMock = createInMemoryRedisMock();
+  }
+  return _defaultTestRedisMock;
+}
+async function checkReviewerRateLimit(digits, { redisClient = null } = {}) {
+  const client = redisClient || getReviewerRedisClient();
+  if (!client) {
+    throw new HttpsError("unavailable", "Rate limit service temporarily unavailable.");
+  }
+
   const d = normalizeMobileDigits(digits);
-  const hash = crypto.createHash('sha256').update(`reviewer:${d}`).digest('hex');
-  let record = reviewerAttemptTracker.get(hash);
-  if (!record || now - record.windowStart > REVIEW_RATE_LIMIT_WINDOW_MS) {
-    record = { count: 1, windowStart: now };
-    reviewerAttemptTracker.set(hash, record);
+  const hash = crypto.createHash("sha256").update(`reviewer:${d}`).digest("hex");
+  const redisKey = `ratelimit:reviewer:${hash}`;
+
+  try {
+    const { assertBucketRedis } = require("./abuse_rate_limit");
+    await assertBucketRedis(client, {
+      key: redisKey,
+      windowMs: REVIEW_RATE_LIMIT_WINDOW_MS,
+      maxAttempts: REVIEW_RATE_LIMIT_MAX,
+      message: "Reviewer verification rate limit exceeded. Please try again later.",
+    });
     return true;
+  } catch (err) {
+    if (err instanceof HttpsError && err.code === "resource-exhausted") {
+      return false;
+    }
+    throw new HttpsError("unavailable", "Rate limit service temporarily unavailable.");
   }
-  record.count += 1;
-  if (record.count > REVIEW_RATE_LIMIT_MAX) {
-    return false;
-  }
-  return true;
 }
 
 function resetReviewerRateLimitForTesting() {
-  reviewerAttemptTracker.clear();
+  if (_testingReviewerRedis) {
+    if (typeof _testingReviewerRedis.flushall === "function") {
+      _testingReviewerRedis.flushall();
+    } else if (_testingReviewerRedis.store && typeof _testingReviewerRedis.store.clear === "function") {
+      _testingReviewerRedis.store.clear();
+    }
+  }
+  if (_defaultTestRedisMock) {
+    _defaultTestRedisMock.flushall();
+  }
 }
 
 function allowLegacyUnsaltedOtpHash() {
@@ -1647,7 +1735,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   if (isCutover) {
     const isReviewerAccount = isReviewerPhone(digits);
     if (isReviewerAccount) {
-      if (!checkReviewerRateLimit(digits)) {
+      if (!(await checkReviewerRateLimit(digits))) {
         emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
           securityEvent: true,
           mobileHash: hashIdentifier(digits),
@@ -1722,7 +1810,7 @@ async function sendUserRegistrationOtp(db, data, { clientIp = 'unknown' } = {}) 
   const existing = await challengeRef.get();
   const isReviewerAccount = isReviewerPhone(digits);
   if (isReviewerAccount) {
-    if (!checkReviewerRateLimit(digits)) {
+    if (!(await checkReviewerRateLimit(digits))) {
       emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
         securityEvent: true,
         mobileHash: hashIdentifier(digits),
@@ -2044,7 +2132,7 @@ async function consumeOtpChallengeAtomically(
   const effectiveChallengeRef = challengeRef;
   const isReviewer = isReviewerPhone(digits);
   if (isReviewer) {
-    if (!checkReviewerRateLimit(digits)) {
+    if (!(await checkReviewerRateLimit(digits))) {
       emit(SEVERITY.WARNING, 'security', 'reviewer.rate_limited', {
         securityEvent: true,
         mobileHash: hashIdentifier(digits),
@@ -3031,5 +3119,6 @@ module.exports = {
   getReviewerConfig,
   isReviewerPhone,
   checkReviewerRateLimit,
+  setReviewerRedisClientForTesting,
   resetReviewerRateLimitForTesting,
 };

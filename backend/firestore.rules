@@ -469,6 +469,8 @@ service cloud.firestore {
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'profileId', 'verified', 'verifiedAt'])
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
               || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
+              || request.resource.data.status in ['pending_review', 'pending', 'registered', 'profile_incomplete'])
           && validUserProfileStorage(request.resource.data, uid));
       allow delete: if isSuperAdmin();
     }
@@ -498,6 +500,8 @@ service cloud.firestore {
               .hasAny(['verified', 'verifiedAt', 'mobile', 'phone', 'rating', 'reviewCount'])
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
               || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
+              || request.resource.data.status in ['pending_review', 'pending', 'registered', 'profile_incomplete'])
           && validDoctorProfileStorage(request.resource.data, doctorId))
         || (doctorEmailMatchesAuth()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerUid'])
@@ -925,7 +929,9 @@ service cloud.firestore {
           && !request.resource.data.diff(resource.data).affectedKeys()
               .hasAny(['verified', 'verifiedAt', 'phone', 'mobile'])
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
-              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']));
+              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
+              || request.resource.data.status in ['pending_review', 'pending', 'registered', 'profile_incomplete']));
       allow delete: if isSuperAdmin();
     }
 
@@ -952,7 +958,9 @@ service cloud.firestore {
           && !request.resource.data.diff(resource.data).affectedKeys()
               .hasAny(['verified', 'verifiedAt', 'phone', 'mobile'])
           && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
-              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']));
+              || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete'])
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
+              || request.resource.data.status in ['pending_review', 'pending', 'registered', 'profile_incomplete']));
       allow delete: if isSuperAdmin();
     }
 
@@ -1216,7 +1224,9 @@ service cloud.firestore {
           || (isDriverOwner(driverId)
             && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pin', 'fcmToken', 'authUid', 'ratingCount', 'totalRating', 'verified', 'verifiedAt'])
             && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['verificationStatus'])
-                || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete']))
+                || request.resource.data.verificationStatus in ['submitted_for_verification', 'profile_incomplete'])
+            && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['status'])
+                || request.resource.data.status in ['pending_review', 'pending', 'registered', 'profile_incomplete']))
           || canLinkAmbulanceAuthUid(driverId)
         ))
       );

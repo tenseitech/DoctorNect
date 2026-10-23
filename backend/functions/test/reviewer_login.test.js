@@ -7,6 +7,7 @@ const {
   getReviewerConfig,
   isReviewerPhone,
   checkReviewerRateLimit,
+  setReviewerRedisClientForTesting,
   resetReviewerRateLimitForTesting,
   consumeOtpChallengeAtomically,
 } = require('../registration_otp');
@@ -75,19 +76,19 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     assert.ok(!config.testNumbers.includes('9888800001'));
   });
 
-  test('Case 5: Reviewer rate limit locks out after exceeding max attempts', () => {
+  test('Case 5: Reviewer rate limit locks out after exceeding max attempts', async () => {
     process.env.REVIEW_TEST_NUMBERS = '9999900001';
     process.env.REVIEW_FIXED_OTP = '112233';
     process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
 
     const digits = '9999900001';
     for (let i = 1; i <= 5; i++) {
-      assert.equal(checkReviewerRateLimit(digits), true, `Attempt ${i} within limit must be allowed`);
+      assert.equal(await checkReviewerRateLimit(digits), true, `Attempt ${i} within limit must be allowed`);
     }
     // 6th attempt must be blocked
-    assert.equal(checkReviewerRateLimit(digits), false, '6th attempt must be rejected by rate limiter');
+    assert.equal(await checkReviewerRateLimit(digits), false, '6th attempt must be rejected by rate limiter');
     // Different allowlisted number is not locked out
-    assert.equal(checkReviewerRateLimit('9999900002'), true, 'Independent number must not be affected by lockout');
+    assert.equal(await checkReviewerRateLimit('9999900002'), true, 'Independent number must not be affected by lockout');
   });
 
   test('Case 6: Full OTP verification flow with reviewer bypass', async () => {
@@ -159,4 +160,31 @@ test.describe('Play Store Server-Side Reviewer Login Gating', () => {
     });
     assert.equal(correctRes.consumed, true, 'Fixed OTP must consume challenge for allowlisted reviewer');
   });
+
+  test('Case 7: Fail-closed when Redis is unavailable or broken', async () => {
+    process.env.REVIEW_TEST_NUMBERS = '9999900001';
+    process.env.REVIEW_FIXED_OTP = '112233';
+    process.env.REVIEW_ACCESS_UNTIL = '2099-12-31T23:59:59Z';
+
+    const brokenRedis = {
+      async eval() { throw new Error('ECONNREFUSED 127.0.0.1:6379'); },
+      async incr() { throw new Error('ECONNREFUSED 127.0.0.1:6379'); },
+    };
+    setReviewerRedisClientForTesting(brokenRedis);
+
+    try {
+      await assert.rejects(
+        async () => {
+          await checkReviewerRateLimit('9999900001');
+        },
+        (err) => {
+          assert.equal(err.code, 'unavailable');
+          return true;
+        }
+      );
+    } finally {
+      setReviewerRedisClientForTesting(null);
+    }
+  });
 });
+

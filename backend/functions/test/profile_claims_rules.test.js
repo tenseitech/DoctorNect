@@ -907,3 +907,442 @@ test('(8) registrationVerifiedFieldsValid: doctor attempting to set verified: tr
   await assertFails(batch.commit());
 });
 
+test('(9) positive registration: doctor legit create with full registration fields succeeds', async () => {
+  const uid = 'uid_pos_doctor';
+  const profileId = 'd_pos_doc_1';
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'doctor',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'doctor',
+    profileId,
+    displayName: 'Dr. Positive Test',
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('doctors').doc(profileId), {
+    doctorId: profileId,
+    ownerUid: uid,
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+
+  await assertSucceeds(batch.commit());
+});
+
+test('(10) positive registration: medicalStore legit create with full registration fields succeeds', async () => {
+  const uid = 'uid_pos_store';
+  const profileId = 'm_pos_store_1';
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'medicalStore',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'medicalStore',
+    profileId,
+    displayName: 'City Pharmacy',
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('medical_stores').doc(profileId), {
+    storeId: profileId,
+    ownerUid: uid,
+    storeName: 'City Pharmacy',
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+
+  await assertSucceeds(batch.commit());
+});
+
+test('(11) positive registration: lab legit create with full registration fields succeeds', async () => {
+  const uid = 'uid_pos_lab';
+  const profileId = 'l_pos_lab_1';
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'lab',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'lab',
+    profileId,
+    displayName: 'City Lab',
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('labs').doc(profileId), {
+    labId: profileId,
+    ownerUid: uid,
+    labName: 'City Lab',
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+
+  await assertSucceeds(batch.commit());
+});
+
+test('(12) positive registration: ambulance legit create with full registration fields succeeds', async () => {
+  const uid = 'uid_pos_amb';
+  const profileId = 'a_pos_amb_1';
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'ambulance',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'ambulance',
+    profileId,
+    displayName: 'City Ambulance',
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('ambulances').doc(profileId), {
+    ambulanceId: profileId,
+    authUid: uid,
+    driverName: 'Driver 1',
+    verified: false,
+    verificationStatus: 'profile_incomplete',
+    status: 'pending_review',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+
+  await assertSucceeds(batch.commit());
+});
+
+test('(13) positive registration: patient legit create with full registration fields succeeds', async () => {
+  const uid = 'uid_pos_patient';
+  const profileId = 'p_pos_patient_1';
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  const batch = db.batch();
+  batch.set(db.collection('profile_claims').doc(profileId), {
+    uid,
+    role: 'patient',
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('users').doc(uid), {
+    role: 'patient',
+    profileId,
+    displayName: 'John Patient',
+    verified: true,
+    verificationStatus: 'verified',
+    status: 'approved',
+    profileCompleted: false,
+    createdAt: new Date(),
+  });
+  batch.set(db.collection('patients').doc(profileId), {
+    patientId: profileId,
+    ownerUid: uid,
+    role: 'patient',
+    verified: true,
+    createdAt: new Date(),
+  });
+
+  await assertSucceeds(batch.commit());
+});
+
+test('(14) users update: client attempting to self-approve status on update is denied', async () => {
+  const uid = 'uid_update_status_lock';
+  const profileId = 'd_update_lock_1';
+
+  // Seed user
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await db.collection('profile_claims').doc(profileId).set({
+      uid,
+      role: 'doctor',
+      createdAt: new Date(),
+    });
+    await db.collection('users').doc(uid).set({
+      role: 'doctor',
+      profileId,
+      displayName: 'Dr. Pending',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+  });
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  // Attacker tries to update status to 'approved'
+  await assertFails(
+    db.collection('users').doc(uid).update({
+      status: 'approved',
+    })
+  );
+
+  // CONTROL: Updating status to valid pending value succeeds
+  await assertSucceeds(
+    db.collection('users').doc(uid).update({
+      status: 'pending_review',
+      verificationStatus: 'submitted_for_verification',
+    })
+  );
+
+  // CONTROL: Updating profileCompleted to true succeeds
+  await assertSucceeds(
+    db.collection('users').doc(uid).update({
+      profileCompleted: true,
+    })
+  );
+});
+
+test('(15) doctors update: client attempting to self-approve status or verified is denied; legitimate updates succeed', async () => {
+  const uid = 'uid_doctor_status_lock';
+  const profileId = 'd_status_lock_doc';
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await db.collection('users').doc(uid).set({
+      role: 'doctor',
+      profileId,
+      displayName: 'Dr. Lock Test',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+    await db.collection('doctors').doc(profileId).set({
+      doctorId: profileId,
+      ownerUid: uid,
+      displayName: 'Dr. Lock Test',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+  });
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  // Negative 1: Self-approve status: 'approved' denied
+  await assertFails(
+    db.collection('doctors').doc(profileId).update({
+      status: 'approved',
+    })
+  );
+
+  // Negative 2: Self-verify verified: true denied
+  await assertFails(
+    db.collection('doctors').doc(profileId).update({
+      verified: true,
+    })
+  );
+
+  // Positive: Allowed status or other profile updates succeed
+  await assertSucceeds(
+    db.collection('doctors').doc(profileId).update({
+      status: 'pending_review',
+      verificationStatus: 'submitted_for_verification',
+      experienceYears: 7,
+    })
+  );
+});
+
+test('(16) medical_stores update: client attempting to self-approve status or verified is denied; legitimate updates succeed', async () => {
+  const uid = 'uid_store_status_lock';
+  const profileId = 'm_status_lock_store';
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await db.collection('users').doc(uid).set({
+      role: 'medicalStore',
+      profileId,
+      displayName: 'Store Lock Test',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+    await db.collection('medical_stores').doc(profileId).set({
+      storeId: profileId,
+      ownerUid: uid,
+      storeName: 'Lock Test Pharmacy',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+  });
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  // Negative 1: Self-approve status: 'approved' denied
+  await assertFails(
+    db.collection('medical_stores').doc(profileId).update({
+      status: 'approved',
+    })
+  );
+
+  // Negative 2: Self-verify verified: true denied
+  await assertFails(
+    db.collection('medical_stores').doc(profileId).update({
+      verified: true,
+    })
+  );
+
+  // Positive: Allowed status or address update succeeds
+  await assertSucceeds(
+    db.collection('medical_stores').doc(profileId).update({
+      status: 'pending_review',
+      verificationStatus: 'submitted_for_verification',
+      address: 'Shop 12, Main Bazaar',
+    })
+  );
+});
+
+test('(17) labs update: client attempting to self-approve status or verified is denied; legitimate updates succeed', async () => {
+  const uid = 'uid_lab_status_lock';
+  const profileId = 'l_status_lock_lab';
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await db.collection('users').doc(uid).set({
+      role: 'lab',
+      profileId,
+      displayName: 'Lab Lock Test',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+    await db.collection('labs').doc(profileId).set({
+      labId: profileId,
+      ownerUid: uid,
+      labName: 'Lock Test Pathology',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+  });
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  // Negative 1: Self-approve status: 'approved' denied
+  await assertFails(
+    db.collection('labs').doc(profileId).update({
+      status: 'approved',
+    })
+  );
+
+  // Negative 2: Self-verify verified: true denied
+  await assertFails(
+    db.collection('labs').doc(profileId).update({
+      verified: true,
+    })
+  );
+
+  // Positive: Allowed status or address update succeeds
+  await assertSucceeds(
+    db.collection('labs').doc(profileId).update({
+      status: 'pending_review',
+      verificationStatus: 'submitted_for_verification',
+      address: 'Plot 4, Diagnostic Lane',
+    })
+  );
+});
+
+test('(18) ambulances update: client attempting to self-approve status or verified is denied; legitimate updates succeed', async () => {
+  const uid = 'uid_ambulance_status_lock';
+  const profileId = 'a_status_lock_amb';
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await db.collection('users').doc(uid).set({
+      role: 'ambulance',
+      profileId,
+      displayName: 'Ambulance Lock Test',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+    await db.collection('ambulances').doc(profileId).set({
+      ambulanceId: profileId,
+      authUid: uid,
+      driverName: 'Lock Test Driver',
+      status: 'pending_review',
+      verified: false,
+      verificationStatus: 'profile_incomplete',
+      createdAt: new Date(),
+    });
+  });
+
+  const ctx = testEnv.authenticatedContext(uid);
+  const db = ctx.firestore();
+
+  // Negative 1: Self-approve status: 'approved' denied
+  await assertFails(
+    db.collection('ambulances').doc(profileId).update({
+      status: 'approved',
+    })
+  );
+
+  // Negative 2: Self-verify verified: true denied
+  await assertFails(
+    db.collection('ambulances').doc(profileId).update({
+      verified: true,
+    })
+  );
+
+  // Positive: Allowed status or vehicleNumber update succeeds
+  await assertSucceeds(
+    db.collection('ambulances').doc(profileId).update({
+      status: 'pending_review',
+      verificationStatus: 'submitted_for_verification',
+      vehicleNumber: 'DL01AB9999',
+    })
+  );
+});
+
+
+
