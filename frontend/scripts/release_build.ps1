@@ -57,6 +57,12 @@ function Get-FlutterDartDefines {
     $androidKey = $env:FIREBASE_API_KEY_ANDROID
     if ([string]::IsNullOrWhiteSpace($androidKey)) {
         $rootEnv = Join-Path (Get-ProjectRoot) '.env'
+        if (-not (Test-Path -LiteralPath $rootEnv)) {
+            $parentEnv = Join-Path (Get-ProjectRoot) '..\.env'
+            if (Test-Path -LiteralPath $parentEnv) {
+                $rootEnv = $parentEnv
+            }
+        }
         $hint = if (-not (Test-Path -LiteralPath $rootEnv)) {
 @"
 
@@ -188,6 +194,9 @@ Push-Location $projectRoot
 
 try {
     Import-DotEnv -Path (Join-Path $projectRoot '.env')
+    if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.env'))) {
+        Import-DotEnv -Path (Join-Path $projectRoot '..\.env')
+    }
     Test-ProductionBuildConfig -AllowStaging:$AllowStaging
     $dartDefines = Get-FlutterDartDefines
     $pubspecPath = Join-Path $projectRoot 'pubspec.yaml'

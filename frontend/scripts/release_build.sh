@@ -82,7 +82,7 @@ build_dart_defines() {
   DART_DEFINES=()
 
   if [[ -z "${FIREBASE_API_KEY_ANDROID:-}" ]]; then
-    if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
+    if [[ ! -f "$PROJECT_ROOT/.env" && ! -f "$PROJECT_ROOT/../.env" ]]; then
       cat >&2 <<'EOF'
 Missing FIREBASE_API_KEY_ANDROID.
 
@@ -160,6 +160,9 @@ validate_production_build_config() {
 
 cd "$PROJECT_ROOT"
 import_dotenv "$PROJECT_ROOT/.env"
+if [[ ! -f "$PROJECT_ROOT/.env" && -f "$PROJECT_ROOT/../.env" ]]; then
+  import_dotenv "$PROJECT_ROOT/../.env"
+fi
 build_dart_defines
 validate_production_build_config
 read_version
