@@ -13,9 +13,17 @@ const {
 
 const DOCKER_PG_URL = process.env.LOCAL_DOCKER_PG_URL || 'postgres://postgres:postgres@127.0.0.1:54322/postgres';
 
-test('S3 Supabase-mode integration test on local Docker Postgres', async () => {
+test('S3 Supabase-mode integration test on local Docker Postgres', async (t) => {
   const pgClient = new Client({ connectionString: DOCKER_PG_URL });
-  await pgClient.connect();
+  try {
+    await pgClient.connect();
+  } catch (err) {
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      t.skip('Local Docker Postgres not running on 127.0.0.1:54322');
+      return;
+    }
+    throw err;
+  }
 
   try {
     // 1. Verify connection and clean prior test rows

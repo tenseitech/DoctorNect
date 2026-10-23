@@ -526,9 +526,17 @@ runWebhookSecurityTestSuite('Firestore Path', false);
 runWebhookSecurityTestSuite('Supabase Path', true);
 
 // 3. Local Docker PostgreSQL Integration Test for Supabase Path
-test('Razorpay Supabase Path: Local Docker PostgreSQL Integration Test', async () => {
+test('Razorpay Supabase Path: Local Docker PostgreSQL Integration Test', async (t) => {
   const pgClient = new Client({ connectionString: DOCKER_PG_URL });
-  await pgClient.connect();
+  try {
+    await pgClient.connect();
+  } catch (err) {
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      t.skip('Local Docker Postgres not running on 127.0.0.1:54322');
+      return;
+    }
+    throw err;
+  }
 
   try {
     const ts = Date.now();

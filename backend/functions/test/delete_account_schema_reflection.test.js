@@ -6,9 +6,23 @@ const { Client } = require('../../node_modules/pg');
 
 const DOCKER_PG_URL = process.env.LOCAL_DOCKER_PG_URL || 'postgres://postgres:postgres@127.0.0.1:54322/postgres';
 
-test('schema reflection: all user/profile linked tables accounted for in delete policy', async () => {
+async function connectOrSkip(t) {
   const pgClient = new Client({ connectionString: DOCKER_PG_URL });
-  await pgClient.connect();
+  try {
+    await pgClient.connect();
+    return pgClient;
+  } catch (err) {
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      t.skip('Local Docker Postgres not running on 127.0.0.1:54322');
+      return null;
+    }
+    throw err;
+  }
+}
+
+test('schema reflection: all user/profile linked tables accounted for in delete policy', async (t) => {
+  const pgClient = await connectOrSkip(t);
+  if (!pgClient) return;
 
   try {
     const res = await pgClient.query(`
@@ -104,9 +118,9 @@ test('schema reflection: all user/profile linked tables accounted for in delete 
   }
 });
 
-test('Docker integration: full multi-table user graph deletion order succeeds without FK violations', async () => {
-  const pgClient = new Client({ connectionString: DOCKER_PG_URL });
-  await pgClient.connect();
+test('Docker integration: full multi-table user graph deletion order succeeds without FK violations', async (t) => {
+  const pgClient = await connectOrSkip(t);
+  if (!pgClient) return;
 
   const ts = Date.now();
   const userId = `00000000-0000-0000-0000-${String(ts).slice(-12).padStart(12, '0')}`;

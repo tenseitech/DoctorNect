@@ -6,9 +6,17 @@ const { Client } = require('../../node_modules/pg');
 
 const DOCKER_PG_URL = process.env.LOCAL_DOCKER_PG_URL || 'postgres://postgres:postgres@127.0.0.1:54322/postgres';
 
-test('delete_my_account Postgres integration test on local Docker', async () => {
+test('delete_my_account Postgres integration test on local Docker', async (t) => {
   const pgClient = new Client({ connectionString: DOCKER_PG_URL });
-  await pgClient.connect();
+  try {
+    await pgClient.connect();
+  } catch (err) {
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      t.skip('Local Docker Postgres not running on 127.0.0.1:54322');
+      return;
+    }
+    throw err;
+  }
 
   try {
     const health = await pgClient.query('SELECT 1 as healthy;');
