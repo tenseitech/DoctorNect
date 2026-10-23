@@ -129,8 +129,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
             _IntroSlideContent(
               headline: 'Seamless consultations',
               supportingText:
-                  'Connect with patients through in-clinic visits and video consultations with instant follow-ups.',
-              placeholderIcon: Icons.videocam_outlined,
+                  'Connect with patients through in-clinic visits and timely follow-ups — all managed from your phone.',
+              placeholderIcon: Icons.calendar_month_outlined,
             ),
           ],
         UserType.patient => const [
@@ -266,8 +266,8 @@ class _UnifiedAuthIntroScreenState extends State<UnifiedAuthIntroScreen> {
               label: 'Access prescriptions anytime'
             ),
             (
-              icon: Icons.video_call_outlined,
-              label: 'Video consult top doctors'
+              icon: Icons.receipt_long_outlined,
+              label: 'Digital prescriptions anytime'
             ),
           ],
         UserType.medical || UserType.medicalStore => const [
