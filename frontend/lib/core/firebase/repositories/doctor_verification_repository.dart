@@ -31,7 +31,7 @@ class DoctorVerificationRepository {
     if (DemoAuthConfig.isDemoDoctorPhone(mobile)) return true;
     final docId = data['doctorId'] as String? ?? data['id'] as String?;
     if (DemoAuthConfig.isDemoDoctorPhone(docId) ||
-        (docId != null && docId.contains(DemoAuthConfig.demoDoctorPhone))) {
+        DemoAuthConfig.isDemoDoctorId(docId)) {
       return true;
     }
     final verified = data['verified'];
@@ -56,7 +56,7 @@ class DoctorVerificationRepository {
     }
 
     if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
+        DemoAuthConfig.isDemoDoctorId(doctorId)) {
       return Stream<bool>.value(true);
     }
 
@@ -79,7 +79,7 @@ class DoctorVerificationRepository {
       return SupabaseDoctorRepository.instance.isDoctorVerified(doctorId);
     }
     if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
+        DemoAuthConfig.isDemoDoctorId(doctorId)) {
       return Future<bool>.value(true);
     }
     return DoctorAccountRepository.instance.isVerified(

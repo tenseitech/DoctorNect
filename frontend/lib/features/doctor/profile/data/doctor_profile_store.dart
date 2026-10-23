@@ -488,10 +488,10 @@ class DoctorProfileStore extends ChangeNotifier {
 
   Future<void> loadFromFirestore(String doctorId) async {
     final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
+        DemoAuthConfig.isDemoDoctorId(doctorId) ||
         DemoAuthConfig.isDemoDoctorPhone(profile.mobile) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
-        DoctorSession.loggedInDoctorId.contains(DemoAuthConfig.demoDoctorPhone);
+        DemoAuthConfig.isDemoDoctorId(DoctorSession.loggedInDoctorId);
     if (isDemoDoc) {
       profile.verificationStatus = VerificationStatus.verified;
     }

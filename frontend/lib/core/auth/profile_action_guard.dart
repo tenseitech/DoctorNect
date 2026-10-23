@@ -40,7 +40,7 @@ abstract final class ProfileActionGuard {
       final docId = DoctorSession.loggedInDoctorId;
       final mobile = DoctorProfileStore.instance.profile.mobile;
       if (DemoAuthConfig.isDemoDoctorPhone(docId) ||
-          docId.contains(DemoAuthConfig.demoDoctorPhone) ||
+          DemoAuthConfig.isDemoDoctorId(docId) ||
           DemoAuthConfig.isDemoDoctorPhone(mobile)) {
         return true;
       }
@@ -50,7 +50,7 @@ abstract final class ProfileActionGuard {
     if (role == UserType.medicalStore) {
       final storeId = MedicalStoreSession.loggedInStoreId;
       if (DemoAuthConfig.isDemoPharmacyPhone(storeId) ||
-          storeId.contains(DemoAuthConfig.demoPharmacyPhone)) {
+          DemoAuthConfig.isDemoPharmacyId(storeId)) {
         return true;
       }
     }
@@ -59,7 +59,7 @@ abstract final class ProfileActionGuard {
     if (role == UserType.lab) {
       final labId = LabSession.loggedInLabId;
       if (DemoAuthConfig.isDemoLabPhone(labId) ||
-          labId.contains(DemoAuthConfig.demoLabPhone)) {
+          DemoAuthConfig.isDemoLabId(labId)) {
         return true;
       }
     }
@@ -68,7 +68,7 @@ abstract final class ProfileActionGuard {
     if (role == UserType.ambulance) {
       final ambId = AmbulanceSession.loggedInAmbulanceId;
       if (DemoAuthConfig.isDemoAmbulancePhone(ambId) ||
-          ambId.contains(DemoAuthConfig.demoAmbulancePhone)) {
+          DemoAuthConfig.isDemoAmbulanceId(ambId)) {
         return true;
       }
     }

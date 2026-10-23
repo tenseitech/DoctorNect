@@ -121,11 +121,9 @@ class _DoctorShellState extends State<DoctorShell> {
           DoctorProfileStore.instance.profile.mobile,
         ) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
+        DemoAuthConfig.isDemoDoctorId(DoctorSession.loggedInDoctorId) ||
         DemoAuthConfig.isDemoDoctorPhone(AppSession.doctorId) ||
-        DoctorSession.loggedInDoctorId.contains(
-          DemoAuthConfig.demoDoctorPhone,
-        ) ||
-        AppSession.doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
+        DemoAuthConfig.isDemoDoctorId(AppSession.doctorId) ||
         DemoAuthConfig.isDemoDoctorPhone(authPhone);
   }
 

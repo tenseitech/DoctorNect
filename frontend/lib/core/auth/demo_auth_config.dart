@@ -35,6 +35,18 @@ abstract final class DemoAuthConfig {
 
   static String? validateOtp(String? value) => FormValidators.otp(value);
 
+  /// Injectable flag for testing release mode behavior.
+  /// When true, acts as if running under kReleaseMode.
+  @visibleForTesting
+  static bool? debugReleaseModeOverride;
+
+  /// Returns true only when demo mode is allowed (disabled in release builds).
+  static bool get isDemoAllowed {
+    final isRelease = debugReleaseModeOverride ?? kReleaseMode;
+    if (isRelease) return false;
+    return enabled || kDebugMode;
+  }
+
   static const String demoDoctorPhone = '9999900002';
   static const String demoPatientPhone = '9999900001';
   static const String demoPharmacyPhone = '9999900003';
@@ -43,6 +55,7 @@ abstract final class DemoAuthConfig {
   static const String demoSuperAdminPhone = '9999988888';
 
   static bool isDemoDoctorPhone(String? phone) {
+    if (!isDemoAllowed) return false;
     if (phone == null || phone.isEmpty) return false;
     final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
@@ -50,6 +63,7 @@ abstract final class DemoAuthConfig {
   }
 
   static bool isDemoPharmacyPhone(String? phone) {
+    if (!isDemoAllowed) return false;
     if (phone == null || phone.isEmpty) return false;
     final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
@@ -57,6 +71,7 @@ abstract final class DemoAuthConfig {
   }
 
   static bool isDemoLabPhone(String? phone) {
+    if (!isDemoAllowed) return false;
     if (phone == null || phone.isEmpty) return false;
     final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
@@ -64,6 +79,7 @@ abstract final class DemoAuthConfig {
   }
 
   static bool isDemoAmbulancePhone(String? phone) {
+    if (!isDemoAllowed) return false;
     if (phone == null || phone.isEmpty) return false;
     final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
@@ -71,6 +87,7 @@ abstract final class DemoAuthConfig {
   }
 
   static bool isDemoPatientPhone(String? phone) {
+    if (!isDemoAllowed) return false;
     if (phone == null || phone.isEmpty) return false;
     final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
@@ -78,11 +95,49 @@ abstract final class DemoAuthConfig {
   }
 
   static bool isDemoSuperAdminPhone(String? phone) {
-    if (!enableDemoSuperAdmin) return false;
+    if (!isDemoAllowed || !enableDemoSuperAdmin) return false;
     if (phone == null || phone.isEmpty) return false;
     final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
     return digits == demoSuperAdminPhone;
+  }
+
+  /// Safely checks if a profile document ID matches a demo doctor ID.
+  /// Strictly requires [isDemoAllowed] and exact match (or standard 'd_' prefix).
+  static bool isDemoDoctorId(String? docId) {
+    if (!isDemoAllowed) return false;
+    if (docId == null || docId.isEmpty) return false;
+    final trimmed = docId.trim();
+    return trimmed == demoDoctorPhone ||
+        trimmed == 'd_$demoDoctorPhone' ||
+        trimmed == '+91$demoDoctorPhone';
+  }
+
+  static bool isDemoPharmacyId(String? storeId) {
+    if (!isDemoAllowed) return false;
+    if (storeId == null || storeId.isEmpty) return false;
+    final trimmed = storeId.trim();
+    return trimmed == demoPharmacyPhone ||
+        trimmed == 'm_$demoPharmacyPhone' ||
+        trimmed == '+91$demoPharmacyPhone';
+  }
+
+  static bool isDemoLabId(String? labId) {
+    if (!isDemoAllowed) return false;
+    if (labId == null || labId.isEmpty) return false;
+    final trimmed = labId.trim();
+    return trimmed == demoLabPhone ||
+        trimmed == 'l_$demoLabPhone' ||
+        trimmed == '+91$demoLabPhone';
+  }
+
+  static bool isDemoAmbulanceId(String? ambId) {
+    if (!isDemoAllowed) return false;
+    if (ambId == null || ambId.isEmpty) return false;
+    final trimmed = ambId.trim();
+    return trimmed == demoAmbulancePhone ||
+        trimmed == 'a_$demoAmbulancePhone' ||
+        trimmed == '+91$demoAmbulancePhone';
   }
 
   static bool isDemoRolePhone(UserType role, String? phone) {
@@ -97,6 +152,7 @@ abstract final class DemoAuthConfig {
   }
 
   static bool isAnyDemoPhone(String? phone) {
+    if (!isDemoAllowed) return false;
     if (phone == null || phone.isEmpty) return false;
     final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);
@@ -109,6 +165,7 @@ abstract final class DemoAuthConfig {
   }
 
   static UserType? roleForDemoPhone(String? phone) {
+    if (!isDemoAllowed) return null;
     if (phone == null || phone.isEmpty) return null;
     final digits = FormValidators.mobileDigits(phone) ??
         FormValidators.registrationMobileDigits(phone);

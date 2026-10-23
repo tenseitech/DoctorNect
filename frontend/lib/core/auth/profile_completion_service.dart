@@ -63,8 +63,7 @@ class ProfileCompletionService extends ChangeNotifier {
       );
       if (role == UserType.doctor &&
           (DemoAuthConfig.isDemoDoctorPhone(profileId) ||
-              (profileId != null &&
-                  profileId.contains(DemoAuthConfig.demoDoctorPhone)))) {
+              DemoAuthConfig.isDemoDoctorId(profileId))) {
         _isComplete = true;
         notifyListeners();
         return;

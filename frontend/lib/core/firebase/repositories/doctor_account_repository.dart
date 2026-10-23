@@ -107,7 +107,7 @@ class DoctorAccountRepository {
 
   Future<bool> isVerified(String doctorId, {bool preferCache = false}) async {
     if (DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone)) {
+        DemoAuthConfig.isDemoDoctorId(doctorId)) {
       return true;
     }
     if (!FirebaseBootstrap.isReady) return false;

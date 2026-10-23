@@ -42,14 +42,12 @@ class DoctorVerificationGate extends StatelessWidget {
         : null;
 
     final isDemoDoc = DemoAuthConfig.isDemoDoctorPhone(doctorId) ||
-        doctorId.contains(DemoAuthConfig.demoDoctorPhone) ||
+        DemoAuthConfig.isDemoDoctorId(doctorId) ||
         DemoAuthConfig.isDemoDoctorPhone(
           DoctorProfileStore.instance.profile.mobile,
         ) ||
         DemoAuthConfig.isDemoDoctorPhone(DoctorSession.loggedInDoctorId) ||
-        DoctorSession.loggedInDoctorId.contains(
-          DemoAuthConfig.demoDoctorPhone,
-        ) ||
+        DemoAuthConfig.isDemoDoctorId(DoctorSession.loggedInDoctorId) ||
         DemoAuthConfig.isDemoDoctorPhone(authPhone);
 
     if (isDemoDoc) {

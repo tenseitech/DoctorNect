@@ -247,18 +247,16 @@ class ProfileDataGate extends StatelessWidget {
             data['phone'] as String? ??
             data['phoneNumber'] as String?;
         final profileId = data['profileId'] as String? ?? '';
-        final email = data['email'] as String? ?? '';
-        final isDemo = isDemoAccount ||
-            DemoAuthConfig.isDemoRolePhone(role, mobile) ||
-            DemoAuthConfig.isDemoRolePhone(role, profileId) ||
-            profileId.contains(DemoAuthConfig.demoDoctorPhone) ||
-            profileId.contains(DemoAuthConfig.demoPharmacyPhone) ||
-            profileId.contains(DemoAuthConfig.demoLabPhone) ||
-            profileId.contains(DemoAuthConfig.demoAmbulancePhone) ||
-            (email.toLowerCase().contains('demo') &&
-                (email.toLowerCase().contains(role.name.toLowerCase()) ||
-                    (role == UserType.medicalStore &&
-                        email.toLowerCase().contains('pharm'))));
+        final isDemo = DemoAuthConfig.isDemoAllowed &&
+            (isDemoAccount ||
+                DemoAuthConfig.isDemoRolePhone(role, mobile) ||
+                DemoAuthConfig.isDemoRolePhone(role, profileId) ||
+                (role == UserType.doctor && DemoAuthConfig.isDemoDoctorId(profileId)) ||
+                ((role == UserType.medical || role == UserType.medicalStore) &&
+                    DemoAuthConfig.isDemoPharmacyId(profileId)) ||
+                (role == UserType.lab && DemoAuthConfig.isDemoLabId(profileId)) ||
+                (role == UserType.ambulance &&
+                    DemoAuthConfig.isDemoAmbulanceId(profileId)));
         if (isDemo) {
           if (data['verified'] != true ||
               data['verificationStatus'] != 'verified' ||

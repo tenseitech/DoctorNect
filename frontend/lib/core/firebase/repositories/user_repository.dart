@@ -367,69 +367,6 @@ class UserRepository {
     return null;
   }
 
-  /// Automatically provisions a patient profile when a new user signs in with Google.
-  Future<DoctorNectUserProfile?> createGooglePatientProfile({
-    required User user,
-  }) async {
-    try {
-      final patientId = 'p${DateTime.now().millisecondsSinceEpoch}';
-      final rawName = user.displayName?.trim();
-      final displayName =
-          (rawName != null && rawName.isNotEmpty) ? rawName : 'Patient';
-      final rawEmail = user.email?.trim() ?? '';
-      final normalizedEmail = _normalizeEmail(rawEmail);
-      final photoUrl = user.photoURL;
-
-      final patientData = <String, dynamic>{
-        'patientId': patientId,
-        'ownerUid': user.uid,
-        'name': displayName,
-        if (normalizedEmail != null && normalizedEmail.isNotEmpty)
-          'email': normalizedEmail,
-        if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
-          'mobile': user.phoneNumber,
-        'verified': true,
-        'status': 'approved',
-        if (photoUrl != null && photoUrl.isNotEmpty) 'photoUrl': photoUrl,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-
-      final batch = _db.batch();
-      final claimRef = _db.collection('profile_claims').doc(patientId);
-      batch.set(claimRef, {
-        'uid': user.uid,
-        'role': 'patient',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      batch.set(
-        _db.collection(FirestorePaths.patients).doc(patientId),
-        patientData,
-      );
-
-      batch.set(_db.collection(FirestorePaths.users).doc(user.uid), {
-        'role': 'patient',
-        'profileId': patientId,
-        'displayName': displayName,
-        'email': normalizedEmail,
-        if (user.phoneNumber != null && user.phoneNumber!.isNotEmpty)
-          'mobile': user.phoneNumber,
-        'verified': true,
-        'status': 'approved',
-        if (photoUrl != null && photoUrl.isNotEmpty) 'photoUrl': photoUrl,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      await batch.commit();
-
-      return await fetchProfile(user.uid, preferCache: false);
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// Searches for a user profile by email address across user documents.
   Future<DoctorNectUserProfile?> findProfileByEmail(String email) async {
     final normalized = _normalizeEmail(email);
