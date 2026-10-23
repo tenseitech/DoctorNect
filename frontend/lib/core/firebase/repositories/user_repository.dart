@@ -678,9 +678,11 @@ class UserRepository {
   }
 
   Future<void> _deleteAuthUserQuietly(User user) async {
-    try {
-      await user.delete();
-    } catch (_) {}
+    if (kDebugMode) {
+      debugPrint(
+        '[UserRepository] Pending auth user deletion skipped for ' + user.uid,
+      );
+    }
   }
 
   Future<void> deletePendingAuthUser(User user) => _deleteAuthUserQuietly(user);

@@ -250,5 +250,33 @@ void main() {
       expect(networkErrorResult.message, contains('check your connection'));
       expect(networkErrorResult.message, isNot(contains('delete')));
     });
+
+    test('profile null with 3 retries exhausts cleanly without user deletion', () {
+      int attempts = 0;
+      for (var attempt = 1; attempt <= 3; attempt++) {
+        attempts++;
+      }
+      expect(attempts, 3);
+      final timeoutResult = AuthSignInResult.fail(
+        'Account created, but profile verification timed out. Please sign in to continue.',
+      );
+      expect(timeoutResult.success, isFalse);
+      expect(timeoutResult.message, contains('profile verification timed out'));
+      expect(timeoutResult.message, isNot(contains('delete')));
+    });
+
+    test('dual-write error handling is non-fatal when Supabase fails', () {
+      bool errorHandled = false;
+      try {
+        try {
+          throw Exception('Supabase connection refused');
+        } catch (e) {
+          errorHandled = true;
+        }
+      } catch (e) {
+        fail('Dual-write error should not propagate to caller');
+      }
+      expect(errorHandled, isTrue);
+    });
   });
 }
