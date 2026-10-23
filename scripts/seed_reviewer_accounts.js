@@ -1,28 +1,35 @@
 'use strict';
 
 /**
- * seed_reviewer_accounts.js
+ * scripts/seed_reviewer_accounts.js
  *
- * Provisions server-side pre-approved Play Store / App Store reviewer dummy accounts
- * into Firebase (Auth + Firestore) via Firebase Admin SDK.
+ * Provisions or cleans up server-side pre-approved Play Store / App Store reviewer
+ * accounts in Firebase (Auth + Firestore) via Firebase Admin SDK.
  *
  * Safety Guards:
- *   - DRY-RUN by default. Zero writes without explicit --apply flag.
+ *   - DRY-RUN by default. Zero writes without explicit --apply or --delete flag.
  *   - Only fictitious dummy numbers (9999900001 - 9999900005).
- *   - Sets verified: true, status: 'approved', verificationStatus: 'verified', profileCompleted: true.
+ *   - Strictly guarded cleanup: --delete will REFUSE to delete any UID or document ID
+ *     that does not start with the strict prefix "rev_".
+ *   - Idempotent: Can be run multiple times safely without duplicate errors or data corruption.
+ *   - ZERO secret values, keys, or tokens are printed or logged.
  *
  * Usage:
  *   node scripts/seed_reviewer_accounts.js            # DRY RUN (safe preview)
- *   node scripts/seed_reviewer_accounts.js --apply    # Execute writes
+ *   node scripts/seed_reviewer_accounts.js --dry-run  # Explicit DRY RUN
+ *   node scripts/seed_reviewer_accounts.js --apply    # Execute idempotent seed writes
+ *   node scripts/seed_reviewer_accounts.js --delete   # Clean up only rev_* accounts
+ *   node scripts/seed_reviewer_accounts.js --delete --dry-run # Preview deletion without writing
  */
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 
 const args = process.argv.slice(2);
 const isApply = args.includes('--apply');
-const isDryRun = !isApply;
+const isDelete = args.includes('--delete');
+const isExplicitDryRun = args.includes('--dry-run');
+const isDryRun = isExplicitDryRun || (!isApply && !isDelete) || (isDelete && isExplicitDryRun);
 
 const REVIEWER_ACCOUNTS = [
   {
@@ -39,6 +46,7 @@ const REVIEWER_ACCOUNTS = [
       name: 'Reviewer Patient',
       email: 'reviewer.patient@doctornect.test',
       mobile: '9999900001',
+      phone: '9999900001',
       verified: true,
       status: 'approved',
       verificationStatus: 'verified',
@@ -58,8 +66,10 @@ const REVIEWER_ACCOUNTS = [
       doctorId: 'rev_doc_001',
       ownerUid: 'rev_fb_doc_001',
       displayName: 'Dr. Reviewer',
+      name: 'Dr. Reviewer',
       email: 'reviewer.doctor@doctornect.test',
       mobile: '9999900002',
+      phone: '9999900002',
       specialization: 'General Medicine',
       qualification: 'MBBS, MD',
       experienceYears: 10,
@@ -84,11 +94,14 @@ const REVIEWER_ACCOUNTS = [
       storeId: 'rev_store_001',
       ownerUid: 'rev_fb_store_001',
       storeName: 'Reviewer Pharmacy',
+      name: 'Reviewer Pharmacy',
       ownerName: 'Reviewer Owner',
       email: 'reviewer.pharmacy@doctornect.test',
       mobile: '9999900003',
+      phone: '9999900003',
       drugLicenseNumber: 'REV-20B-99999',
       address: 'Shop 101, Medical Market, Review City',
+      city: 'Review City',
       verified: true,
       status: 'approved',
       verificationStatus: 'verified',
@@ -108,10 +121,13 @@ const REVIEWER_ACCOUNTS = [
       labId: 'rev_lab_001',
       ownerUid: 'rev_fb_lab_001',
       labName: 'Reviewer Diagnostics',
+      name: 'Reviewer Diagnostics',
       email: 'reviewer.lab@doctornect.test',
       mobile: '9999900004',
+      phone: '9999900004',
       licenseNumber: 'REV-NABL-99999',
       address: 'Diagnostic Complex, Sector 4, Review City',
+      city: 'Review City',
       verified: true,
       status: 'approved',
       verificationStatus: 'verified',
@@ -128,14 +144,18 @@ const REVIEWER_ACCOUNTS = [
     email: 'reviewer.ambulance@doctornect.test',
     collection: 'ambulances',
     profileData: {
+      id: 'rev_amb_001',
       ambulanceId: 'rev_amb_001',
       authUid: 'rev_fb_amb_001',
+      username: 'rev_driver', // Required: length >= 3 for completeAmbulanceMobileOtpLogin / isRegisteredAmbulanceData
       driverName: 'Reviewer Driver',
       serviceName: 'Reviewer Emergency Ambulance',
       email: 'reviewer.ambulance@doctornect.test',
       mobile: '9999900005',
+      phone: '9999900005', // Required: completeAmbulanceMobileOtpLogin queries ambulances on 'phone'
       vehicleNumber: 'DL-01-REV-108',
       ambulanceType: 'als',
+      city: 'Review City',
       isAvailable: true,
       verified: true,
       status: 'approved',
@@ -157,60 +177,180 @@ function initializeAdminSdk() {
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
+      projectId: serviceAccount.project_id || 'medibond-45fad',
     });
   } else {
     admin.initializeApp({
-      projectId: process.env.GCLOUD_PROJECT || 'doctornect-prod',
+      projectId: process.env.GCLOUD_PROJECT || 'medibond-45fad',
     });
   }
   return admin;
 }
 
-async function main() {
-  console.log('================================================================');
-  console.log('  SEED PLAY STORE / APP STORE REVIEWER ACCOUNTS (ADMIN SDK)    ');
-  console.log('================================================================');
-  console.log(`MODE: ${isDryRun ? 'DRY-RUN (Safe preview — NO WRITES)' : 'APPLY (WRITES ENABLED)'}`);
-  console.log(`Accounts to seed: ${REVIEWER_ACCOUNTS.length}`);
+/**
+ * Asserts strict rev_ prefix invariant on all identifiers to guarantee
+ * zero possibility of touching or deleting production user documents.
+ */
+function assertReviewerIdPrefix(acc) {
+  if (!acc.firebaseUid.startsWith('rev_')) {
+    throw new Error(`SAFETY FATAL: firebaseUid "${acc.firebaseUid}" does not start with "rev_" prefix! Refusing operation.`);
+  }
+  if (!acc.profileId.startsWith('rev_')) {
+    throw new Error(`SAFETY FATAL: profileId "${acc.profileId}" does not start with "rev_" prefix! Refusing operation.`);
+  }
+}
 
-  if (isDryRun) {
-    console.log('\n[DRY RUN] Previewing operations for each reviewer account:');
-    for (const acc of REVIEWER_ACCOUNTS) {
-      console.log(`\n--- Role: ${acc.role.toUpperCase()} ---`);
-      console.log(`  UID:               ${acc.firebaseUid}`);
-      console.log(`  Profile ID:        ${acc.profileId}`);
-      console.log(`  Mobile:            ${acc.mobile}`);
-      console.log(`  Email:             ${acc.email}`);
-      console.log(`  Firestore Paths:`);
-      console.log(`    - profile_claims/${acc.profileId} (role: ${acc.role})`);
-      console.log(`    - users/${acc.firebaseUid} (verified: true, status: 'approved', profileCompleted: true)`);
-      console.log(`    - ${acc.collection}/${acc.profileId} (verified: true, status: 'approved')`);
-      console.log(`  Auth Claims:       { role: '${acc.role}', verified: true }`);
+async function handleDryRun(admin) {
+  const db = admin.firestore();
+  const auth = admin.auth();
+
+  console.log('\n[DRY RUN] Inspecting live state to preview actions (NO WRITES):');
+  console.log('----------------------------------------------------------------');
+
+  for (const acc of REVIEWER_ACCOUNTS) {
+    assertReviewerIdPrefix(acc);
+
+    let authUserExists = false;
+    try {
+      await auth.getUser(acc.firebaseUid);
+      authUserExists = true;
+    } catch (err) {
+      if (err.code !== 'auth/user-not-found') throw err;
     }
 
-    console.log('\n================================================================');
-    console.log('DRY RUN COMPLETE: 0 documents written, 0 auth users created.');
-    console.log('To apply these changes, rerun with:');
-    console.log('  node scripts/seed_reviewer_accounts.js --apply');
-    console.log('================================================================');
-    return;
+    const [userDocSnap, claimDocSnap, domainDocSnap] = await Promise.all([
+      db.collection('users').doc(acc.firebaseUid).get(),
+      db.collection('profile_claims').doc(acc.profileId).get(),
+      db.collection(acc.collection).doc(acc.profileId).get(),
+    ]);
+
+    const authAction = authUserExists ? 'SKIP (already exists)' : 'CREATE';
+    const userAction = userDocSnap.exists ? 'MERGE / UPDATE' : 'CREATE';
+    const claimAction = claimDocSnap.exists ? 'MERGE / UPDATE' : 'CREATE';
+    const domainAction = domainDocSnap.exists ? 'MERGE / UPDATE' : 'CREATE';
+
+    console.log(`\nRole: ${acc.role.toUpperCase()} (Phone: ${acc.mobile})`);
+    console.log(`  Auth User:         ${acc.firebaseUid} -> [${authAction}]`);
+    console.log(`  Firestore Paths:`);
+    console.log(`    - users/${acc.firebaseUid} -> [${userAction}]`);
+    console.log(`    - profile_claims/${acc.profileId} -> [${claimAction}]`);
+    console.log(`    - ${acc.collection}/${acc.profileId} -> [${domainAction}]`);
+    console.log(`  Auth Custom Claims: { role: '${acc.role}', verified: true, profileId: '${acc.profileId}' }`);
   }
 
-  // --- EXECUTION PATH (ONLY REACHED WITH --apply) ---
-  console.log('\n[APPLY] Initializing Firebase Admin SDK...');
-  const admin = initializeAdminSdk();
+  console.log('\n================================================================');
+  console.log('DRY RUN COMPLETE: 0 documents written, 0 auth users touched.');
+  console.log('To apply these changes, rerun with:');
+  console.log('  node scripts/seed_reviewer_accounts.js --apply');
+  console.log('================================================================\n');
+}
+
+async function handleDeleteDryRun(admin) {
+  const db = admin.firestore();
+  const auth = admin.auth();
+
+  console.log('\n[DELETE DRY-RUN] Inspecting existing reviewer documents to delete (NO WRITES):');
+  console.log('----------------------------------------------------------------');
+
+  for (const acc of REVIEWER_ACCOUNTS) {
+    assertReviewerIdPrefix(acc);
+
+    let authUserExists = false;
+    try {
+      await auth.getUser(acc.firebaseUid);
+      authUserExists = true;
+    } catch (_) {}
+
+    const [userDocSnap, claimDocSnap, domainDocSnap] = await Promise.all([
+      db.collection('users').doc(acc.firebaseUid).get(),
+      db.collection('profile_claims').doc(acc.profileId).get(),
+      db.collection(acc.collection).doc(acc.profileId).get(),
+    ]);
+
+    console.log(`\nRole: ${acc.role.toUpperCase()}`);
+    console.log(`  Auth UID:          ${acc.firebaseUid} -> ${authUserExists ? '[WOULD DELETE]' : '[NOT FOUND / NO-OP]'}`);
+    console.log(`  Firestore Paths:`);
+    console.log(`    - users/${acc.firebaseUid} -> ${userDocSnap.exists ? '[WOULD DELETE]' : '[NOT FOUND / NO-OP]'}`);
+    console.log(`    - profile_claims/${acc.profileId} -> ${claimDocSnap.exists ? '[WOULD DELETE]' : '[NOT FOUND / NO-OP]'}`);
+    console.log(`    - ${acc.collection}/${acc.profileId} -> ${domainDocSnap.exists ? '[WOULD DELETE]' : '[NOT FOUND / NO-OP]'}`);
+  }
+
+  console.log('\n================================================================');
+  console.log('DELETE DRY-RUN COMPLETE: 0 documents deleted.');
+  console.log('To execute deletion, rerun with:');
+  console.log('  node scripts/seed_reviewer_accounts.js --delete');
+  console.log('================================================================\n');
+}
+
+async function handleDelete(admin) {
+  const db = admin.firestore();
+  const auth = admin.auth();
+
+  console.log('\n[DELETE] Executing cleanup of reviewer accounts (rev_* ONLY)...');
+  console.log('----------------------------------------------------------------');
+
+  for (const acc of REVIEWER_ACCOUNTS) {
+    // 1. Strict invariant check: must start with rev_
+    assertReviewerIdPrefix(acc);
+
+    console.log(`\nCleaning up ${acc.role} (${acc.firebaseUid} / ${acc.profileId})...`);
+
+    // 2. Delete Auth User if exists
+    try {
+      await auth.deleteUser(acc.firebaseUid);
+      console.log(`  Deleted Auth user: ${acc.firebaseUid}`);
+    } catch (err) {
+      if (err.code === 'auth/user-not-found') {
+        console.log(`  Auth user ${acc.firebaseUid} not found (already clean).`);
+      } else {
+        console.warn(`  Warning deleting Auth user ${acc.firebaseUid}:`, err.message);
+      }
+    }
+
+    // 3. Delete Firestore docs
+    const batch = db.batch();
+    const userRef = db.collection('users').doc(acc.firebaseUid);
+    const claimRef = db.collection('profile_claims').doc(acc.profileId);
+    const domainRef = db.collection(acc.collection).doc(acc.profileId);
+
+    batch.delete(userRef);
+    batch.delete(claimRef);
+    batch.delete(domainRef);
+
+    await batch.commit();
+    console.log(`  Deleted Firestore docs: users/${acc.firebaseUid}, profile_claims/${acc.profileId}, ${acc.collection}/${acc.profileId}`);
+  }
+
+  console.log('\n================================================================');
+  console.log('DELETE COMPLETE: All rev_* reviewer accounts cleaned up.');
+  console.log('Non-rev_ documents were strictly untouched.');
+  console.log('================================================================\n');
+}
+
+async function handleApply(admin) {
   const db = admin.firestore();
   const auth = admin.auth();
   const now = admin.firestore.FieldValue.serverTimestamp();
 
+  console.log('\n[APPLY] Executing idempotent seed of reviewer accounts...');
+  console.log('----------------------------------------------------------------');
+
   for (const acc of REVIEWER_ACCOUNTS) {
+    assertReviewerIdPrefix(acc);
+
     console.log(`\nSeeding ${acc.role} (${acc.profileId})...`);
 
     // 1. Ensure Firebase Auth user exists
     let authUser;
     try {
       authUser = await auth.getUser(acc.firebaseUid);
-      console.log(`  Found existing Auth user: ${authUser.uid}`);
+      console.log(`  Found existing Auth user: ${authUser.uid} (updating)`);
+      await auth.updateUser(acc.firebaseUid, {
+        displayName: acc.displayName,
+        email: acc.email,
+        phoneNumber: `+91${acc.mobile}`,
+        emailVerified: true,
+      });
     } catch (err) {
       if (err.code === 'auth/user-not-found') {
         authUser = await auth.createUser({
@@ -232,12 +372,12 @@ async function main() {
       verified: true,
       profileId: acc.profileId,
     });
-    console.log(`  Set Custom Claims: role=${acc.role}, verified=true`);
+    console.log(`  Set Custom Claims: role=${acc.role}, verified=true, profileId=${acc.profileId}`);
 
-    // 3. Write Firestore batch
+    // 3. Write Firestore batch (idempotent merge)
     const batch = db.batch();
 
-    // profile_claims
+    // profile_claims/{profileId}
     const claimRef = db.collection('profile_claims').doc(acc.profileId);
     batch.set(claimRef, {
       uid: acc.firebaseUid,
@@ -254,6 +394,7 @@ async function main() {
       displayName: acc.displayName,
       email: acc.email,
       mobile: acc.mobile,
+      phone: acc.mobile,
       verified: true,
       status: 'approved',
       verificationStatus: 'verified',
@@ -263,7 +404,7 @@ async function main() {
       updatedAt: now,
     }, { merge: true });
 
-    // domain profile
+    // domain profile ({collection}/{profileId})
     const domainRef = db.collection(acc.collection).doc(acc.profileId);
     batch.set(domainRef, {
       ...acc.profileData,
@@ -272,17 +413,44 @@ async function main() {
     }, { merge: true });
 
     await batch.commit();
-    console.log(`  Committed Firestore docs for ${acc.role}`);
+    console.log(`  Committed Firestore docs for ${acc.role} (${acc.collection}/${acc.profileId})`);
   }
 
   console.log('\n================================================================');
   console.log('APPLY COMPLETE: All 5 reviewer accounts successfully seeded.');
+  console.log('Idempotent run: repeat executions maintain exact valid state.');
+  console.log('================================================================\n');
+}
+
+async function main() {
   console.log('================================================================');
+  console.log('  DOCTORNECT: PLAY STORE / APP STORE REVIEWER ACCOUNTS TOOL     ');
+  console.log('================================================================');
+
+  let modeStr = 'DRY-RUN (Safe preview — NO WRITES)';
+  if (isDelete && !isExplicitDryRun) modeStr = 'DELETE (Cleanup rev_* accounts)';
+  else if (isDelete && isExplicitDryRun) modeStr = 'DELETE DRY-RUN (Preview cleanup)';
+  else if (isApply) modeStr = 'APPLY (Idempotent writes)';
+
+  console.log(`MODE: ${modeStr}`);
+  console.log(`Target accounts: ${REVIEWER_ACCOUNTS.length} (9999900001 - 9999900005)`);
+
+  const admin = initializeAdminSdk();
+
+  if (isDelete && !isExplicitDryRun) {
+    await handleDelete(admin);
+  } else if (isDelete && isExplicitDryRun) {
+    await handleDeleteDryRun(admin);
+  } else if (isDryRun) {
+    await handleDryRun(admin);
+  } else if (isApply) {
+    await handleApply(admin);
+  }
 }
 
 if (require.main === module) {
   main().catch((err) => {
-    console.error('Fatal error seeding reviewer accounts:', err);
+    console.error('Fatal error in reviewer accounts tool:', err);
     process.exit(1);
   });
 }
@@ -290,4 +458,5 @@ if (require.main === module) {
 module.exports = {
   REVIEWER_ACCOUNTS,
   isDryRun,
+  assertReviewerIdPrefix,
 };
