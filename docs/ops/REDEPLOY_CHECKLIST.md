@@ -24,6 +24,10 @@ Inspection of `baseline_functions.json` (56 total functions deployed in producti
    ```bash
    cd backend/functions && npm test
    ```
+5. [ ] Verify Google Play reviewer account configuration and active expiry window:
+   ```bash
+   node scripts/check_reviewer_config.js
+   ```
 
 ---
 
