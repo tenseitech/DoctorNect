@@ -40,7 +40,6 @@ dependencies:
   screenshot: ^3.0.0
   encrypt: ^5.0.3
   flutter_secure_storage: ^10.3.1
-  google_sign_in: ^6.2.2
   geolocator: ^13.0.2
   geocoding: ^3.0.0
   http: ^1.2.2
